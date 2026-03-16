@@ -1,0 +1,64 @@
+services:
+  # ========== PostgreSQL ==========
+  postgres:
+    image: postgres:15-alpine
+    container_name: parent_med_postgres
+    environment:
+      POSTGRES_DB: parent_med
+      POSTGRES_USER: parent_med_user
+      POSTGRES_PASSWORD: parent_med_secure_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U parent_med_user -d parent_med"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - parent_med_network
+
+  # ========== Backend (FastAPI) ==========
+  backend:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+    container_name: parent_med_backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://parent_med_user:parent_med_secure_password@postgres:5432/parent_med
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src:ro
+      - ./backend/alembic:/app/alembic:ro
+      - backend_logs:/app/logs
+    networks:
+      - parent_med_network
+
+  # ========== Frontend (React + Vite) ==========
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: docker/Dockerfile
+    container_name: parent_med_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - parent_med_network
+
+volumes:
+  postgres_data:
+  backend_logs:
+
+networks:
+  parent_med_network:
+    driver: bridge

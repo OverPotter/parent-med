@@ -1,0 +1,19 @@
+# Зависимости и сборка
+node_modules
+dist
+*.local
+
+# Env (если появятся)
+.env
+.env.*
+
+# Git и IDE
+.git
+.gitignore
+.idea
+.vscode
+
+# Логи и кэш
+npm-debug.log*
+.npm
+*.log

@@ -1,0 +1,28 @@
+# Виртуальное окружение и кэш
+.venv
+.uv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Локальные env (в compose передаём через env_file)
+.env
+.env.*
+
+# Тесты и dev
+tests
+*.md
+!README.md
+
+# Git и IDE
+.git
+.gitignore
+.idea
+.vscode
+
+# Прочее
+*.log
+logs
+data
