@@ -7,6 +7,25 @@ export interface Family {
   name: string;
 }
 
+export interface Account {
+  id: string;
+  email: string;
+  familyId: string;
+}
+
+export interface AuthSessionResponse {
+  tokenType: string;
+  accessToken: string;
+  refreshToken: string;
+  account: Account;
+  family: Family;
+}
+
+export interface AuthStateResponse {
+  account: Account;
+  family: Family;
+}
+
 export interface Parent {
   id: string;
   familyId: string;

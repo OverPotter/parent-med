@@ -1,6 +1,6 @@
 """Сервис приёмов лекарств (с проходом через Safety Engine)."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from src.application.dto.administration_event import (
@@ -63,7 +63,7 @@ class AdministrationService:
         if not household:
             raise NotFoundError("Упаковка не найдена", resource="household_medicine")
         check_household_medicine_for_administration(household)
-        administered_at = dto.administered_at or datetime.now(datetime.UTC)
+        administered_at = dto.administered_at or datetime.now(timezone.utc)
         entity = AdministrationEvent(
             id=uuid4(),
             episode_id=dto.episode_id,

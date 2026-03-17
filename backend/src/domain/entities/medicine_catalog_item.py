@@ -1,4 +1,4 @@
-"""Сущность: справочник препарата (название, форма, концентрация)."""
+"""Сущность: справочник препарата."""
 
 from dataclasses import dataclass
 from uuid import UUID
@@ -12,3 +12,7 @@ class MedicineCatalogItem:
     name: str
     form: str  # tablet, syrup, drops, etc.
     concentration: str | None  # например "100 мг/5 мл"
+    description: str | None
+    dosage: str | None
+    source: str = "manual"
+    source_id: str | None = None

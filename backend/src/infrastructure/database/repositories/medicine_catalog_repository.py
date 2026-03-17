@@ -22,6 +22,10 @@ class SqlMedicineCatalogRepository(MedicineCatalogRepository):
             name=m.name,
             form=m.form,
             concentration=m.concentration,
+            description=m.description,
+            dosage=m.dosage,
+            source=m.source,
+            source_id=m.source_id,
         )
 
     def _to_model(self, e: MedicineCatalogItem) -> MedicineCatalogItemModel:
@@ -30,6 +34,10 @@ class SqlMedicineCatalogRepository(MedicineCatalogRepository):
             name=e.name,
             form=e.form,
             concentration=e.concentration,
+            description=e.description,
+            dosage=e.dosage,
+            source=e.source,
+            source_id=e.source_id,
         )
 
     async def get_by_id(self, id: UUID) -> MedicineCatalogItem | None:
@@ -44,6 +52,7 @@ class SqlMedicineCatalogRepository(MedicineCatalogRepository):
         result = await self._session.execute(
             select(MedicineCatalogItemModel)
             .where(MedicineCatalogItemModel.name.ilike(pattern))
+            .order_by(MedicineCatalogItemModel.name.asc())
             .limit(limit)
         )
         return [self._to_entity(r) for r in result.scalars().all()]

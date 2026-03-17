@@ -3,6 +3,8 @@
 from fastapi import Depends
 
 from src.api.deps.repositories import (
+    get_account_repo,
+    get_account_session_repo,
     get_administration_repo,
     get_child_repo,
     get_family_repo,
@@ -13,6 +15,7 @@ from src.api.deps.repositories import (
     get_temperature_entry_repo,
     get_weight_entry_repo,
 )
+from src.application.services.auth_service import AuthService
 from src.application.services.administration_service import AdministrationService
 from src.application.services.child_service import ChildService
 from src.application.services.family_service import FamilyService
@@ -22,6 +25,18 @@ from src.application.services.medicine_catalog_service import MedicineCatalogSer
 from src.application.services.parent_service import ParentService
 from src.application.services.temperature_entry_service import TemperatureEntryService
 from src.application.services.weight_entry_service import WeightEntryService
+
+
+def get_auth_service(
+    account_repo=Depends(get_account_repo),
+    session_repo=Depends(get_account_session_repo),
+    family_repo=Depends(get_family_repo),
+) -> AuthService:
+    return AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=family_repo,
+    )
 
 
 def get_family_service(

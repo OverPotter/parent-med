@@ -26,6 +26,20 @@ class ValidationError(AppException):
         super().__init__(message=message, code=code, status_code=status_code)
 
 
+class UnauthorizedError(AppException):
+    """Пользователь не аутентифицирован."""
+
+    def __init__(self, message: str = "Требуется авторизация", code: str = "UNAUTHORIZED"):
+        super().__init__(message=message, code=code, status_code=401)
+
+
+class ForbiddenError(AppException):
+    """У пользователя нет доступа к ресурсу."""
+
+    def __init__(self, message: str = "Недостаточно прав", code: str = "FORBIDDEN"):
+        super().__init__(message=message, code=code, status_code=403)
+
+
 class SafetyBlockedError(AppException):
     """Safety Engine заблокировал действие (небезопасно)."""
 

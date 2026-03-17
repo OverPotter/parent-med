@@ -1,6 +1,6 @@
 """Сервис записей веса."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from src.application.dto.weight_entry import WeightEntryCreateDto, WeightEntryResponseDto
@@ -48,7 +48,7 @@ class WeightEntryService:
     async def create(self, dto: WeightEntryCreateDto) -> WeightEntryResponseDto:
         if await self._child_repo.get_by_id(dto.child_id) is None:
             raise NotFoundError("Ребёнок не найден", resource="child")
-        measured_at = dto.measured_at or datetime.now(datetime.UTC)
+        measured_at = dto.measured_at or datetime.now(timezone.utc)
         entity = WeightEntry(
             id=uuid4(),
             child_id=dto.child_id,

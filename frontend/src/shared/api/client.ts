@@ -3,6 +3,7 @@
  */
 
 import axios, { type AxiosError } from "axios";
+import { useAppStore } from "@shared/store/useAppStore";
 
 const baseURL = "/api/v1";
 
@@ -13,24 +14,68 @@ export const apiClient = axios.create({
 
 /** Токен для авторизации (MVP: можно хранить в Zustand или localStorage). */
 let bearerToken: string | null = null;
+let refreshHandler: (() => Promise<string | null>) | null = null;
+let refreshPromise: Promise<string | null> | null = null;
 
 export function setBearerToken(token: string | null): void {
   bearerToken = token;
 }
 
+export function setRefreshHandler(handler: (() => Promise<string | null>) | null): void {
+  refreshHandler = handler;
+}
+
 apiClient.interceptors.request.use((config) => {
-  if (bearerToken) {
-    config.headers.Authorization = `Bearer ${bearerToken}`;
+  const token = bearerToken ?? useAppStore.getState().authToken;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
+function shouldSkipRefresh(url?: string): boolean {
+  return (
+    !url ||
+    url.includes("/auth/login") ||
+    url.includes("/auth/register") ||
+    url.includes("/auth/refresh")
+  );
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const originalRequest = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !shouldSkipRefresh(originalRequest.url)
+    ) {
+      originalRequest._retry = true;
+      try {
+        if (!refreshHandler) {
+          throw error;
+        }
+        refreshPromise ??= refreshHandler().finally(() => {
+          refreshPromise = null;
+        });
+        const nextToken = await refreshPromise;
+        if (!nextToken) {
+          throw error;
+        }
+        originalRequest.headers = originalRequest.headers ?? {};
+        originalRequest.headers.Authorization = `Bearer ${nextToken}`;
+        return apiClient(originalRequest);
+      } catch {
+        setBearerToken(null);
+        window.dispatchEvent(new CustomEvent("auth:logout"));
+        return Promise.reject(error);
+      }
+    }
+
     if (error.response?.status === 401) {
       setBearerToken(null);
-      // При необходимости: редирект на логин или обновление токена
       window.dispatchEvent(new CustomEvent("auth:logout"));
     }
     return Promise.reject(error);
