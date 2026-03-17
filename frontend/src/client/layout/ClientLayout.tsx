@@ -17,12 +17,14 @@ const clientNavLinks = [
 ];
 
 export function ClientLayout() {
+  const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const { data: families = [], isSuccess } = useQuery({
-    queryKey: ["families"],
+    queryKey: ["families", accountId],
     queryFn: fetchFamilies,
+    enabled: !!accountId,
   });
 
   useEffect(() => {

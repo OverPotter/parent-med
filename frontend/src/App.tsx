@@ -3,7 +3,7 @@
  */
 
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { setBearerToken, setRefreshHandler } from "@shared/api/client";
@@ -29,6 +29,7 @@ function ThemeSync() {
 }
 
 function AuthSync() {
+  const queryClient = useQueryClient();
   const authToken = useAppStore((s) => s.authToken);
   const refreshToken = useAppStore((s) => s.refreshToken);
   const setSession = useAppStore((s) => s.setSession);
@@ -69,15 +70,19 @@ function AuthSync() {
 
   useEffect(() => {
     if (error) {
+      queryClient.clear();
       clearSession();
     }
-  }, [error, clearSession]);
+  }, [error, clearSession, queryClient]);
 
   useEffect(() => {
-    const handleLogout = () => clearSession();
+    const handleLogout = () => {
+      queryClient.clear();
+      clearSession();
+    };
     window.addEventListener("auth:logout", handleLogout);
     return () => window.removeEventListener("auth:logout", handleLogout);
-  }, [clearSession]);
+  }, [clearSession, queryClient]);
 
   return null;
 }

@@ -2,7 +2,7 @@
 
 from uuid import uuid4
 
-from sqlalchemy import String, Text, UniqueConstraint
+from sqlalchemy import Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,6 +23,7 @@ class MedicineCatalogItemModel(Base):
     concentration: Mapped[str | None] = mapped_column(String(128), nullable=True)
     description: Mapped[str | None] = mapped_column(Text(), nullable=True)
     dosage: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    default_opened_shelf_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     source: Mapped[str] = mapped_column(String(32), nullable=False, default="manual")
     source_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 

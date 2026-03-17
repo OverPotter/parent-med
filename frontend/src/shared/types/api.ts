@@ -52,16 +52,31 @@ export interface MedicineCatalogItem {
   name: string;
   form: string;
   concentration: string | null;
+  description?: string | null;
+  dosage?: string | null;
+  defaultOpenedShelfDays?: number | null;
 }
 
 export interface HouseholdMedicine {
   id: string;
   familyId: string;
-  catalogItemId: string;
+  catalogItemId: string | null;
+  medicineName: string;
+  medicineForm: string;
+  medicineConcentration: string | null;
+  medicineDescription: string | null;
+  medicineDosage: string | null;
   expiryDate: string;
   openedAt: string | null;
-  storagePlace: string | null;
+  openedShelfDays: number | null;
+  effectiveOpenedShelfDays: number | null;
   comment: string | null;
+  status: string;
+  statusLabel: string;
+  expiryAlertDate: string | null;
+  expiresInDays: number;
+  openedExpiresAt: string | null;
+  openedExpiresInDays: number | null;
 }
 
 export interface IllnessEpisode {

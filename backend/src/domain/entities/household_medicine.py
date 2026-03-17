@@ -11,8 +11,13 @@ class HouseholdMedicine:
 
     id: UUID
     family_id: UUID
-    catalog_item_id: UUID
+    catalog_item_id: UUID | None
+    medicine_name: str
+    medicine_form: str
+    medicine_concentration: str | None
+    medicine_description: str | None
+    medicine_dosage: str | None
     expiry_date: date
     opened_at: datetime | None
-    storage_place: str | None
+    opened_shelf_days: int | None
     comment: str | None

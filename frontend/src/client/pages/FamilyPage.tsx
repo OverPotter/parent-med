@@ -22,6 +22,7 @@ export function FamilyPage() {
   const [editingParentName, setEditingParentName] = useState("");
   const [editingParentRole, setEditingParentRole] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const queryClient = useQueryClient();
@@ -31,8 +32,9 @@ export function FamilyPage() {
     isLoading: familyLoading,
     error: familyError,
   } = useQuery({
-    queryKey: ["families"],
+    queryKey: ["families", accountId],
     queryFn: fetchFamilies,
+    enabled: !!accountId,
   });
 
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
@@ -61,7 +63,7 @@ export function FamilyPage() {
     onSuccess: (createdFamily) => {
       setCurrentFamily(createdFamily);
       setError(null);
-      queryClient.invalidateQueries({ queryKey: ["families"] });
+      queryClient.invalidateQueries({ queryKey: ["families", accountId] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
       setError(err.response?.data?.detail ?? "Ошибка создания семьи");
@@ -73,7 +75,7 @@ export function FamilyPage() {
     onSuccess: (updatedFamily) => {
       setCurrentFamily(updatedFamily);
       setError(null);
-      queryClient.invalidateQueries({ queryKey: ["families"] });
+      queryClient.invalidateQueries({ queryKey: ["families", accountId] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
       setError(err.response?.data?.detail ?? "Ошибка обновления семьи");

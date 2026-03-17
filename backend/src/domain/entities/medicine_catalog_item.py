@@ -14,5 +14,6 @@ class MedicineCatalogItem:
     concentration: str | None  # например "100 мг/5 мл"
     description: str | None
     dosage: str | None
+    default_opened_shelf_days: int | None = None
     source: str = "manual"
     source_id: str | None = None

@@ -24,6 +24,7 @@ class SqlMedicineCatalogRepository(MedicineCatalogRepository):
             concentration=m.concentration,
             description=m.description,
             dosage=m.dosage,
+            default_opened_shelf_days=m.default_opened_shelf_days,
             source=m.source,
             source_id=m.source_id,
         )
@@ -36,6 +37,7 @@ class SqlMedicineCatalogRepository(MedicineCatalogRepository):
             concentration=e.concentration,
             description=e.description,
             dosage=e.dosage,
+            default_opened_shelf_days=e.default_opened_shelf_days,
             source=e.source,
             source_id=e.source_id,
         )
