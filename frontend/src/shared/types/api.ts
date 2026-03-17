@@ -7,6 +7,13 @@ export interface Family {
   name: string;
 }
 
+export interface Parent {
+  id: string;
+  familyId: string;
+  name: string;
+  role: string;
+}
+
 export interface Child {
   id: string;
   familyId: string;

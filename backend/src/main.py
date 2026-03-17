@@ -13,6 +13,7 @@ from src.api.routers import (
     household_medicines,
     illness_episodes,
     medicine_catalog,
+    parents,
     temperature_entries,
     weight_entries,
 )
@@ -38,6 +39,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(AppException, app_exception_handler)
 
     app.include_router(families.router, prefix="/api/v1")
+    app.include_router(parents.router, prefix="/api/v1")
     app.include_router(children.router, prefix="/api/v1")
     app.include_router(weight_entries.router, prefix="/api/v1")
     app.include_router(medicine_catalog.router, prefix="/api/v1")

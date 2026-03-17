@@ -6,6 +6,7 @@ from src.infrastructure.database.models.family import FamilyModel
 from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
 from src.infrastructure.database.models.illness_episode import IllnessEpisodeModel
 from src.infrastructure.database.models.medicine_catalog_item import MedicineCatalogItemModel
+from src.infrastructure.database.models.parent import ParentModel
 from src.infrastructure.database.models.temperature_entry import TemperatureEntryModel
 from src.infrastructure.database.models.weight_entry import WeightEntryModel
 
@@ -14,6 +15,7 @@ __all__ = [
     "ChildModel",
     "WeightEntryModel",
     "MedicineCatalogItemModel",
+    "ParentModel",
     "HouseholdMedicineModel",
     "IllnessEpisodeModel",
     "TemperatureEntryModel",

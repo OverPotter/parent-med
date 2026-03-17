@@ -21,6 +21,7 @@ from src.infrastructure.database.models import (  # noqa: F401
     HouseholdMedicineModel,
     IllnessEpisodeModel,
     MedicineCatalogItemModel,
+    ParentModel,
     TemperatureEntryModel,
     WeightEntryModel,
 )

@@ -11,6 +11,14 @@ from src.application.services.family_service import FamilyService
 router = APIRouter(prefix="/families", tags=["families"])
 
 
+@router.get("", response_model=list[FamilyResponseDto])
+async def list_families(
+    service: FamilyService = Depends(get_family_service),
+) -> list[FamilyResponseDto]:
+    """Получить список семей."""
+    return await service.list_all()
+
+
 @router.get("/{family_id}", response_model=FamilyResponseDto)
 async def get_family(
     family_id: UUID,

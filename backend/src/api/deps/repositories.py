@@ -10,6 +10,7 @@ from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 from src.domain.repositories.medicine_catalog_repository import MedicineCatalogRepository
+from src.domain.repositories.parent_repository import ParentRepository
 from src.domain.repositories.temperature_entry_repository import TemperatureEntryRepository
 from src.domain.repositories.weight_entry_repository import WeightEntryRepository
 from src.infrastructure.database.repositories.administration_event_repository import (
@@ -26,6 +27,7 @@ from src.infrastructure.database.repositories.illness_episode_repository import 
 from src.infrastructure.database.repositories.medicine_catalog_repository import (
     SqlMedicineCatalogRepository,
 )
+from src.infrastructure.database.repositories.parent_repository import SqlParentRepository
 from src.infrastructure.database.repositories.temperature_entry_repository import (
     SqlTemperatureEntryRepository,
 )
@@ -40,6 +42,10 @@ def get_family_repo(session: AsyncSession = Depends(get_db_session)) -> FamilyRe
 
 def get_child_repo(session: AsyncSession = Depends(get_db_session)) -> ChildRepository:
     return SqlChildRepository(session)
+
+
+def get_parent_repo(session: AsyncSession = Depends(get_db_session)) -> ParentRepository:
+    return SqlParentRepository(session)
 
 
 def get_weight_entry_repo(

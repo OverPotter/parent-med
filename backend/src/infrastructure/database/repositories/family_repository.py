@@ -22,6 +22,10 @@ class SqlFamilyRepository(FamilyRepository):
     def _to_model(self, e: Family) -> FamilyModel:
         return FamilyModel(id=e.id, name=e.name)
 
+    async def list_all(self) -> list[Family]:
+        result = await self._session.execute(select(FamilyModel).order_by(FamilyModel.name))
+        return [self._to_entity(row) for row in result.scalars().all()]
+
     async def get_by_id(self, id: UUID) -> Family | None:
         result = await self._session.execute(select(FamilyModel).where(FamilyModel.id == id))
         row = result.scalars().one_or_none()

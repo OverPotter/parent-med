@@ -9,10 +9,11 @@ interface LayoutProps {
   children: React.ReactNode;
   /** Ссылки для навигации (client или admin). */
   navLinks?: { to: string; label: string }[];
+  showCurrentFamily?: boolean;
 }
 
-export function Layout({ children, navLinks = [] }: LayoutProps) {
-  const { theme, toggleTheme } = useAppStore();
+export function Layout({ children, navLinks = [], showCurrentFamily = false }: LayoutProps) {
+  const { theme, toggleTheme, currentFamilyName } = useAppStore();
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -22,6 +23,11 @@ export function Layout({ children, navLinks = [] }: LayoutProps) {
             Parent Med
           </Link>
           <nav className="flex items-center gap-2 sm:gap-4 min-w-0">
+            {showCurrentFamily && currentFamilyName && (
+              <span className="hidden max-w-40 truncate rounded-full border border-border px-2 py-1 text-xs text-muted sm:inline">
+                Семья: {currentFamilyName}
+              </span>
+            )}
             {navLinks.map(({ to, label }) => (
               <Link
                 key={to}

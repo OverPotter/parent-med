@@ -17,7 +17,8 @@ interface AppState {
   setRole: (role: Role) => void;
   /** ID выбранной семьи для контекста (MVP: один пользователь — одна семья). */
   currentFamilyId: string | null;
-  setCurrentFamilyId: (id: string | null) => void;
+  currentFamilyName: string | null;
+  setCurrentFamily: (family: { id: string; name: string } | null) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -38,11 +39,21 @@ export const useAppStore = create<AppState>()(
       role: "client",
       setRole: (role) => set({ role }),
       currentFamilyId: null,
-      setCurrentFamilyId: (id) => set({ currentFamilyId: id }),
+      currentFamilyName: null,
+      setCurrentFamily: (family) =>
+        set({
+          currentFamilyId: family?.id ?? null,
+          currentFamilyName: family?.name ?? null,
+        }),
     }),
     {
       name: "parent-med-app",
-      partialize: (s) => ({ theme: s.theme, role: s.role, currentFamilyId: s.currentFamilyId }),
+      partialize: (s) => ({
+        theme: s.theme,
+        role: s.role,
+        currentFamilyId: s.currentFamilyId,
+        currentFamilyName: s.currentFamilyName,
+      }),
     }
   )
 );

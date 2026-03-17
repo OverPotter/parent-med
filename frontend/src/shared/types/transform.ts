@@ -4,6 +4,7 @@
 
 import type {
   Family,
+  Parent,
   Child,
   WeightEntry,
   MedicineCatalogItem,
@@ -23,6 +24,13 @@ interface RawChild {
   family_id: string;
   name: string;
   birth_date: string | null;
+}
+
+interface RawParent {
+  id: string;
+  family_id: string;
+  name: string;
+  role: string;
 }
 
 interface RawWeightEntry {
@@ -79,6 +87,15 @@ interface RawAdministrationEvent {
 
 export function toFamily(r: RawFamily): Family {
   return { id: r.id, name: r.name };
+}
+
+export function toParent(r: RawParent): Parent {
+  return {
+    id: r.id,
+    familyId: r.family_id,
+    name: r.name,
+    role: r.role,
+  };
 }
 
 export function toChild(r: RawChild): Child {

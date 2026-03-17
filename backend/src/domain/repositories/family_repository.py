@@ -11,6 +11,11 @@ class FamilyRepository(BaseRepository[Family]):
     """Репозиторий семей."""
 
     @abstractmethod
+    async def list_all(self) -> list[Family]:
+        """Получить список всех семей."""
+        ...
+
+    @abstractmethod
     async def get_by_id(self, id: UUID) -> Family | None:
         """Получить семью по id."""
         ...
