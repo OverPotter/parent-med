@@ -23,6 +23,9 @@ class MedicineCatalogService:
             name=entity.name,
             form=entity.form,
             concentration=entity.concentration,
+            description=entity.description,
+            dosage=entity.dosage,
+            default_opened_shelf_days=entity.default_opened_shelf_days,
         )
 
     async def get_by_id(self, id: UUID) -> MedicineCatalogResponseDto:
@@ -41,6 +44,9 @@ class MedicineCatalogService:
             name=dto.name,
             form=dto.form,
             concentration=dto.concentration,
+            description=dto.description,
+            dosage=dto.dosage,
+            default_opened_shelf_days=dto.default_opened_shelf_days,
         )
         created = await self._repo.add(entity)
         return self._to_response(created)

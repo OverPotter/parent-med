@@ -21,9 +21,14 @@ class SqlHouseholdMedicineRepository(HouseholdMedicineRepository):
             id=m.id,
             family_id=m.family_id,
             catalog_item_id=m.catalog_item_id,
+            medicine_name=m.medicine_name,
+            medicine_form=m.medicine_form,
+            medicine_concentration=m.medicine_concentration,
+            medicine_description=m.medicine_description,
+            medicine_dosage=m.medicine_dosage,
             expiry_date=m.expiry_date,
             opened_at=m.opened_at,
-            storage_place=m.storage_place,
+            opened_shelf_days=m.opened_shelf_days,
             comment=m.comment,
         )
 
@@ -32,9 +37,14 @@ class SqlHouseholdMedicineRepository(HouseholdMedicineRepository):
             id=e.id,
             family_id=e.family_id,
             catalog_item_id=e.catalog_item_id,
+            medicine_name=e.medicine_name,
+            medicine_form=e.medicine_form,
+            medicine_concentration=e.medicine_concentration,
+            medicine_description=e.medicine_description,
+            medicine_dosage=e.medicine_dosage,
             expiry_date=e.expiry_date,
             opened_at=e.opened_at,
-            storage_place=e.storage_place,
+            opened_shelf_days=e.opened_shelf_days,
             comment=e.comment,
         )
 
@@ -69,7 +79,7 @@ class SqlHouseholdMedicineRepository(HouseholdMedicineRepository):
             raise ValueError(f"HouseholdMedicine {entity.id} not found")
         row.expiry_date = entity.expiry_date
         row.opened_at = entity.opened_at
-        row.storage_place = entity.storage_place
+        row.opened_shelf_days = entity.opened_shelf_days
         row.comment = entity.comment
         await self._session.flush()
         await self._session.refresh(row)

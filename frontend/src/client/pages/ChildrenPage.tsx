@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@shared/store/useAppStore";
 import { fetchChildrenByFamilyId, createChild, deleteChild } from "@shared/api/children";
 import type { Child } from "@shared/types/api";
+import { formatDate } from "@shared/utils/date";
 
 export function ChildrenPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
@@ -147,7 +148,9 @@ function ChildCard({
         >
           {child.name}
         </Link>
-        {child.birthDate && <p className="text-sm text-muted truncate">Рожд. {child.birthDate}</p>}
+        {child.birthDate && (
+          <p className="text-sm text-muted truncate">Рожд. {formatDate(child.birthDate)}</p>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <Link

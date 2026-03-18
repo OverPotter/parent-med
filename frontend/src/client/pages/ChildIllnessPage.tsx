@@ -20,8 +20,9 @@ import {
   fetchAdministrationEventsByEpisodeId,
   createAdministrationEvent,
 } from "@shared/api/administrationEvents";
-import { fetchHouseholdMedicinesByFamilyId } from "@shared/api/householdMedicines";
+import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import { useAppStore } from "@shared/store/useAppStore";
+import { formatDate, formatDateTime } from "@shared/utils/date";
 
 export function ChildIllnessPage() {
   const { childId } = useParams<{ childId: string }>();
@@ -110,7 +111,7 @@ export function ChildIllnessPage() {
             {episodes.map((ep) => (
               <li key={ep.id} className="rounded-lg border border-border p-3">
                 <span className="text-foreground">
-                  {ep.startedAt} — {ep.status}
+                  {formatDate(ep.startedAt)} — {ep.status}
                 </span>
                 {ep.status === "active" && (
                   <EpisodeBlock
@@ -185,6 +186,7 @@ function EpisodeBlock({
   familyId: string | null;
 }) {
   const queryClient = useQueryClient();
+  const accountId = useAppStore((s) => s.accountId);
 
   const { data: temps = [] } = useQuery({
     queryKey: ["temperature-entries", episodeId],
@@ -199,10 +201,13 @@ function EpisodeBlock({
   });
 
   const { data: householdMedicines = [] } = useQuery({
-    queryKey: ["household-medicines", familyId],
-    queryFn: () => fetchHouseholdMedicinesByFamilyId(familyId!),
-    enabled: !!familyId,
+    queryKey: ["household-medicines", accountId],
+    queryFn: fetchHouseholdMedicines,
+    enabled: !!familyId && !!accountId,
   });
+  const usableHouseholdMedicines = householdMedicines.filter(
+    (medicine) => medicine.status !== "expired" && medicine.status !== "expired_after_opening"
+  );
 
   const addTempMutation = useMutation({
     mutationFn: (valueCelsius: number) =>
@@ -267,7 +272,7 @@ function EpisodeBlock({
         <ul className="mt-2 text-sm text-muted">
           {temps.map((t) => (
             <li key={t.id}>
-              {t.valueCelsius} °C — {t.measuredAt.slice(0, 16)}
+              {t.valueCelsius} °C — {formatDateTime(t.measuredAt)}
             </li>
           ))}
         </ul>
@@ -283,9 +288,9 @@ function EpisodeBlock({
               className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1 text-foreground max-w-xs"
             >
               <option value="">Выберите упаковку</option>
-              {householdMedicines.map((m) => (
+              {usableHouseholdMedicines.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.id.slice(0, 8)}… до {m.expiryDate}
+                  {m.medicineName} · {m.statusLabel} · до {formatDate(m.expiryDate)}
                 </option>
               ))}
             </select>
@@ -314,6 +319,11 @@ function EpisodeBlock({
               Записать приём
             </button>
           </div>
+          {usableHouseholdMedicines.length === 0 && (
+            <p className="mt-1 text-sm text-muted">
+              В аптечке нет доступных упаковок для приёма. Просроченные препараты скрыты.
+            </p>
+          )}
           {addAdminMutation.isError && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
               {(addAdminMutation.error as { response?: { data?: { detail?: string } } }).response
@@ -323,7 +333,7 @@ function EpisodeBlock({
           <ul className="mt-2 text-sm text-muted">
             {administrations.map((a) => (
               <li key={a.id}>
-                {a.amount} — {a.administeredAt.slice(0, 16)}
+                {a.amount} — {formatDateTime(a.administeredAt)}
               </li>
             ))}
           </ul>

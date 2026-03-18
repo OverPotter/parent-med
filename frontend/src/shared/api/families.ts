@@ -6,6 +6,11 @@ import { apiClient } from "./client";
 import type { Family } from "@shared/types/api";
 import { toFamily } from "@shared/types/transform";
 
+export async function fetchFamilies(): Promise<Family[]> {
+  const res = await apiClient.get<Array<{ id: string; name: string }>>("/families");
+  return res.data.map(toFamily);
+}
+
 export async function fetchFamily(id: string): Promise<Family> {
   const res = await apiClient.get<{ id: string; name: string }>(`/families/${id}`);
   return toFamily(res.data);

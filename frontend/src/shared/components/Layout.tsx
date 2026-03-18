@@ -3,16 +3,28 @@
  */
 
 import { Link } from "react-router-dom";
+import { logout } from "@shared/api/auth";
 import { useAppStore } from "@shared/store/useAppStore";
 
 interface LayoutProps {
   children: React.ReactNode;
   /** Ссылки для навигации (client или admin). */
   navLinks?: { to: string; label: string }[];
+  showCurrentFamily?: boolean;
 }
 
-export function Layout({ children, navLinks = [] }: LayoutProps) {
-  const { theme, toggleTheme } = useAppStore();
+export function Layout({ children, navLinks = [], showCurrentFamily = false }: LayoutProps) {
+  const { theme, toggleTheme, currentFamilyName, accountEmail, clearSession } = useAppStore();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // Локальный выход всё равно должен отработать, даже если сессия уже истекла.
+    } finally {
+      clearSession();
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -22,6 +34,16 @@ export function Layout({ children, navLinks = [] }: LayoutProps) {
             Parent Med
           </Link>
           <nav className="flex items-center gap-2 sm:gap-4 min-w-0">
+            {accountEmail && (
+              <span className="hidden max-w-40 truncate text-xs text-muted sm:inline">
+                {accountEmail}
+              </span>
+            )}
+            {showCurrentFamily && currentFamilyName && (
+              <span className="hidden max-w-40 truncate rounded-full border border-border px-2 py-1 text-xs text-muted sm:inline">
+                Семья: {currentFamilyName}
+              </span>
+            )}
             {navLinks.map(({ to, label }) => (
               <Link
                 key={to}
@@ -39,6 +61,15 @@ export function Layout({ children, navLinks = [] }: LayoutProps) {
             >
               {theme === "light" ? "🌙" : "☀️"}
             </button>
+            {accountEmail && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/30"
+              >
+                Выйти
+              </button>
+            )}
           </nav>
         </div>
       </header>

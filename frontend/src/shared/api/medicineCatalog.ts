@@ -11,6 +11,9 @@ interface RawMedicineCatalogItem {
   name: string;
   form: string;
   concentration: string | null;
+  description?: string | null;
+  dosage?: string | null;
+  default_opened_shelf_days?: number | null;
 }
 
 export async function searchMedicineCatalog(
@@ -32,6 +35,9 @@ export async function createMedicineCatalogItem(body: {
   name: string;
   form: string;
   concentration?: string | null;
+  description?: string | null;
+  dosage?: string | null;
+  default_opened_shelf_days?: number | null;
 }): Promise<MedicineCatalogItem> {
   const res = await apiClient.post<RawMedicineCatalogItem>("/medicine-catalog", body);
   return toMedicineCatalogItem(res.data);

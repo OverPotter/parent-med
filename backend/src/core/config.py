@@ -17,6 +17,10 @@ class Settings(BaseSettings):
 
     # БД
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/parent_med"
+    jwt_secret: str = "dev-jwt-secret-change-me"
+    jwt_issuer: str = "parent-med"
+    access_token_ttl_minutes: int = 15
+    refresh_token_ttl_days: int = 30
 
 
 settings = Settings()

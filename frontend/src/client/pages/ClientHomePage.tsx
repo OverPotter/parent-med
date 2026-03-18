@@ -7,6 +7,7 @@ import { useAppStore } from "@shared/store/useAppStore";
 
 export function ClientHomePage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const currentFamilyName = useAppStore((s) => s.currentFamilyName);
 
   return (
     <div className="min-w-0">
@@ -17,13 +18,18 @@ export function ClientHomePage() {
         Выберите семью в разделе «Семья», затем добавляйте детей, препараты и ведите эпизоды
         болезни.
       </p>
+      {currentFamilyName && (
+        <p className="mt-4 rounded-lg border border-border bg-primary/5 p-4 text-sm text-foreground">
+          Текущая семья: <span className="font-medium">{currentFamilyName}</span>
+        </p>
+      )}
       {!currentFamilyId && (
         <p className="mt-4 rounded-lg border border-border bg-muted/20 p-4 text-sm text-foreground">
           Семья не выбрана. Перейдите в раздел{" "}
           <Link to="/family" className="text-primary underline">
             Семья
           </Link>{" "}
-          и создайте или выберите семью.
+          и создайте семью.
         </p>
       )}
       <ul className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -33,7 +39,7 @@ export function ClientHomePage() {
             className="block rounded-xl border border-border bg-background p-4 transition hover:border-primary hover:bg-primary/5"
           >
             <span className="font-medium text-foreground">Семья</span>
-            <span className="mt-1 block text-sm text-muted">Создать или выбрать семью</span>
+            <span className="mt-1 block text-sm text-muted">Название семьи и родители</span>
           </Link>
         </li>
         <li>

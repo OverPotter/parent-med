@@ -1,6 +1,6 @@
 """Сервис записей температуры."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from src.application.dto.temperature_entry import (
@@ -49,7 +49,7 @@ class TemperatureEntryService:
     async def create(self, dto: TemperatureEntryCreateDto) -> TemperatureEntryResponseDto:
         if await self._episode_repo.get_by_id(dto.episode_id) is None:
             raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
-        measured_at = dto.measured_at or datetime.now(datetime.UTC)
+        measured_at = dto.measured_at or datetime.now(UTC)
         entity = TemperatureEntry(
             id=uuid4(),
             episode_id=dto.episode_id,

@@ -15,12 +15,15 @@ from src.infrastructure.database.base import Base
 
 # Импорт всех моделей для регистрации в Base.metadata
 from src.infrastructure.database.models import (  # noqa: F401
+    AccountModel,
+    AccountSessionModel,
     AdministrationEventModel,
     ChildModel,
     FamilyModel,
     HouseholdMedicineModel,
     IllnessEpisodeModel,
     MedicineCatalogItemModel,
+    ParentModel,
     TemperatureEntryModel,
     WeightEntryModel,
 )
