@@ -6,12 +6,12 @@ from fastapi import APIRouter, Depends
 
 from src.api.deps import get_household_medicine_service
 from src.api.deps.auth import get_current_account
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.household_medicine import (
     HouseholdMedicineCreateDto,
     HouseholdMedicineResponseDto,
     HouseholdMedicineUpdateDto,
 )
-from src.application.services.auth_service import AuthenticatedAccount
 from src.application.services.household_medicine_service import HouseholdMedicineService
 
 router = APIRouter(prefix="/household-medicines", tags=["household-medicines"])

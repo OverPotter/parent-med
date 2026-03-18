@@ -6,17 +6,31 @@ Safety Engine: проверки перед действием с лекарст�
 """
 
 from datetime import date, timedelta
+from typing import TypedDict
 
 from src.core.exceptions import SafetyBlockedError
 from src.domain.entities.household_medicine import HouseholdMedicine
+from src.domain.enums.household_medicine_status import HouseholdMedicineStatus
 
-EXPIRING_SOON_DAYS = 30
+_EXPIRING_SOON_DAYS = 30
+
+
+class HouseholdMedicineStatusInfo(TypedDict):
+    """Результат расчёта статуса упаковки."""
+
+    status: HouseholdMedicineStatus
+    status_label: str
+    expiry_alert_date: date | None
+    expires_in_days: int
+    opened_expires_at: date | None
+    opened_expires_in_days: int | None
+    effective_opened_shelf_days: int | None
 
 
 def calculate_household_medicine_status(
     household: HouseholdMedicine,
     today: date | None = None,
-) -> dict[str, int | str | date | None]:
+) -> HouseholdMedicineStatusInfo:
     """Возвращает статус упаковки по сроку годности и сроку после вскрытия."""
     if today is None:
         today = date.today()
@@ -33,8 +47,8 @@ def calculate_household_medicine_status(
 
     if expires_in_days < 0:
         return {
-            "status": "expired",
-            "status_label": "Просрочен",
+            "status": HouseholdMedicineStatus.EXPIRED,
+            "status_label": HouseholdMedicineStatus.EXPIRED.label,
             "expiry_alert_date": household.expiry_date,
             "expires_in_days": expires_in_days,
             "opened_expires_at": opened_expires_at,
@@ -44,8 +58,8 @@ def calculate_household_medicine_status(
 
     if opened_expires_in_days is not None and opened_expires_in_days < 0:
         return {
-            "status": "expired_after_opening",
-            "status_label": "Истёк срок после вскрытия",
+            "status": HouseholdMedicineStatus.EXPIRED_AFTER_OPENING,
+            "status_label": HouseholdMedicineStatus.EXPIRED_AFTER_OPENING.label,
             "expiry_alert_date": opened_expires_at,
             "expires_in_days": expires_in_days,
             "opened_expires_at": opened_expires_at,
@@ -55,8 +69,8 @@ def calculate_household_medicine_status(
 
     if opened_expires_in_days is not None and opened_expires_in_days <= 7:
         return {
-            "status": "expiring_after_opening",
-            "status_label": "Скоро истечёт после вскрытия",
+            "status": HouseholdMedicineStatus.EXPIRING_AFTER_OPENING,
+            "status_label": HouseholdMedicineStatus.EXPIRING_AFTER_OPENING.label,
             "expiry_alert_date": opened_expires_at,
             "expires_in_days": expires_in_days,
             "opened_expires_at": opened_expires_at,
@@ -64,10 +78,10 @@ def calculate_household_medicine_status(
             "effective_opened_shelf_days": effective_opened_shelf_days,
         }
 
-    if expires_in_days <= EXPIRING_SOON_DAYS:
+    if expires_in_days <= _EXPIRING_SOON_DAYS:
         return {
-            "status": "expiring_soon",
-            "status_label": "Скоро истечёт срок годности",
+            "status": HouseholdMedicineStatus.EXPIRING_SOON,
+            "status_label": HouseholdMedicineStatus.EXPIRING_SOON.label,
             "expiry_alert_date": household.expiry_date,
             "expires_in_days": expires_in_days,
             "opened_expires_at": opened_expires_at,
@@ -76,8 +90,8 @@ def calculate_household_medicine_status(
         }
 
     return {
-        "status": "ok",
-        "status_label": "Можно использовать",
+        "status": HouseholdMedicineStatus.OK,
+        "status_label": HouseholdMedicineStatus.OK.label,
         "expiry_alert_date": opened_expires_at or household.expiry_date,
         "expires_in_days": expires_in_days,
         "opened_expires_at": opened_expires_at,

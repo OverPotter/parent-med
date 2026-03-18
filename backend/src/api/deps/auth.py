@@ -4,7 +4,8 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.api.deps.services import get_auth_service
-from src.application.services.auth_service import AuthService, AuthenticatedAccount
+from src.application.dto.auth import AuthenticatedAccount
+from src.application.services.base_auth_service import BaseAuthService
 from src.core.exceptions import UnauthorizedError
 
 http_bearer = HTTPBearer(auto_error=False)
@@ -21,7 +22,7 @@ async def get_bearer_token(
 
 async def get_current_account(
     token: str = Depends(get_bearer_token),
-    service: AuthService = Depends(get_auth_service),
+    service: BaseAuthService = Depends(get_auth_service),
 ) -> AuthenticatedAccount:
     """Возвращает текущий аккаунт по Bearer-токену."""
     return await service.get_current_account(token)

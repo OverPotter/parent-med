@@ -40,7 +40,9 @@ class SqlAccountRepository(AccountRepository):
         return self._to_entity(row) if row else None
 
     async def get_by_email(self, email: str) -> Account | None:
-        result = await self._session.execute(select(AccountModel).where(AccountModel.email == email))
+        result = await self._session.execute(
+            select(AccountModel).where(AccountModel.email == email)
+        )
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
 

@@ -8,20 +8,12 @@ from src.application.dto.household_medicine import (
     HouseholdMedicineResponseDto,
     HouseholdMedicineUpdateDto,
 )
+from src.application.services.safety_engine import calculate_household_medicine_status
 from src.core.exceptions import NotFoundError, ValidationError
 from src.domain.entities.household_medicine import HouseholdMedicine
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.medicine_catalog_repository import MedicineCatalogRepository
-from src.application.services.safety_engine import calculate_household_medicine_status
-
-STATUS_PRIORITY = {
-    "expired": 0,
-    "expired_after_opening": 1,
-    "expiring_after_opening": 2,
-    "expiring_soon": 3,
-    "ok": 4,
-}
 
 
 class HouseholdMedicineService:
@@ -57,11 +49,19 @@ class HouseholdMedicineService:
                 else None
             ),
             comment=entity.comment,
-            status=str(status["status"]),
-            status_label=str(status["status_label"]),
-            expiry_alert_date=status["expiry_alert_date"] if isinstance(status["expiry_alert_date"], date) else None,
+            status=status["status"].value,
+            status_label=status["status_label"],
+            expiry_alert_date=(
+                status["expiry_alert_date"]
+                if isinstance(status["expiry_alert_date"], date)
+                else None
+            ),
             expires_in_days=int(status["expires_in_days"]),
-            opened_expires_at=status["opened_expires_at"] if isinstance(status["opened_expires_at"], date) else None,
+            opened_expires_at=(
+                status["opened_expires_at"]
+                if isinstance(status["opened_expires_at"], date)
+                else None
+            ),
             opened_expires_in_days=(
                 int(status["opened_expires_in_days"])
                 if isinstance(status["opened_expires_in_days"], int)
@@ -84,17 +84,21 @@ class HouseholdMedicineService:
         entities = sorted(
             entities,
             key=lambda item: (
-                STATUS_PRIORITY[str(calculate_household_medicine_status(item)["status"])],
+                calculate_household_medicine_status(item)["status"].priority,
                 item.expiry_date,
             ),
         )
         return [await self._to_response(e) for e in entities]
 
-    async def create(self, family_id: UUID, dto: HouseholdMedicineCreateDto) -> HouseholdMedicineResponseDto:
+    async def create(
+        self, family_id: UUID, dto: HouseholdMedicineCreateDto
+    ) -> HouseholdMedicineResponseDto:
         if await self._family_repo.get_by_id(family_id) is None:
             raise NotFoundError("Семья не найдена", resource="family")
         if dto.opened_at is not None and dto.opened_at.date() > date.today():
-            raise ValidationError("Дата вскрытия не может быть в будущем", code="OPENED_AT_IN_FUTURE")
+            raise ValidationError(
+                "Дата вскрытия не может быть в будущем", code="OPENED_AT_IN_FUTURE"
+            )
         if dto.catalog_item_id is not None:
             catalog_item = await self._catalog_repo.get_by_id(dto.catalog_item_id)
             if catalog_item is None:
@@ -158,8 +162,12 @@ class HouseholdMedicineService:
         medicine_dosage = entity.medicine_dosage
 
         if entity.catalog_item_id is None:
-            medicine_name = dto.medicine_name if "medicine_name" in fields_set else entity.medicine_name
-            medicine_form = dto.medicine_form if "medicine_form" in fields_set else entity.medicine_form
+            medicine_name = (
+                dto.medicine_name if "medicine_name" in fields_set else entity.medicine_name
+            )
+            medicine_form = (
+                dto.medicine_form if "medicine_form" in fields_set else entity.medicine_form
+            )
             medicine_concentration = (
                 dto.medicine_concentration
                 if "medicine_concentration" in fields_set
@@ -181,7 +189,9 @@ class HouseholdMedicineService:
                 )
 
         if opened_at is not None and opened_at.date() > date.today():
-            raise ValidationError("Дата вскрытия не может быть в будущем", code="OPENED_AT_IN_FUTURE")
+            raise ValidationError(
+                "Дата вскрытия не может быть в будущем", code="OPENED_AT_IN_FUTURE"
+            )
         entity = HouseholdMedicine(
             id=entity.id,
             family_id=entity.family_id,

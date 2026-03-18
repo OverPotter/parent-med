@@ -30,7 +30,8 @@ class HouseholdMedicineCreateDto(BaseModel):
             return self
         if not self.medicine_name or not self.medicine_form:
             raise ValueError(
-                "Для своего препарата нужно указать название и форму, если справочник не используется"
+                "Для своего препарата нужно указать название и форму, "
+                "если справочник не используется"
             )
         return self
 

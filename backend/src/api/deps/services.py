@@ -15,8 +15,9 @@ from src.api.deps.repositories import (
     get_temperature_entry_repo,
     get_weight_entry_repo,
 )
-from src.application.services.auth_service import AuthService
 from src.application.services.administration_service import AdministrationService
+from src.application.services.auth_service import AuthService
+from src.application.services.base_auth_service import BaseAuthService
 from src.application.services.child_service import ChildService
 from src.application.services.family_service import FamilyService
 from src.application.services.household_medicine_service import HouseholdMedicineService
@@ -31,7 +32,7 @@ def get_auth_service(
     account_repo=Depends(get_account_repo),
     session_repo=Depends(get_account_session_repo),
     family_repo=Depends(get_family_repo),
-) -> AuthService:
+) -> BaseAuthService:
     return AuthService(
         account_repo=account_repo,
         session_repo=session_repo,

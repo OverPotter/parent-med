@@ -1,29 +1,28 @@
 """Базовые утилиты безопасности: пароли и токены."""
 
-import json
 import hashlib
 import hmac
+import json
 import secrets
-from datetime import datetime, timedelta, timezone
 from base64 import urlsafe_b64decode, urlsafe_b64encode
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from src.core.config import settings
 from src.core.exceptions import UnauthorizedError
 
-
-PBKDF2_ITERATIONS = 100_000
-SALT_BYTES = 16
-JWT_ALGORITHM = "HS256"
+_PBKDF2_ITERATIONS = 100_000
+_SALT_BYTES = 16
+_JWT_ALGORITHM = "HS256"
 
 
 def hash_password(password: str) -> str:
     """Хеширует пароль через PBKDF2-HMAC-SHA256."""
-    salt = secrets.token_bytes(SALT_BYTES)
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ITERATIONS)
+    salt = secrets.token_bytes(_SALT_BYTES)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, _PBKDF2_ITERATIONS)
     encoded_salt = urlsafe_b64encode(salt).decode("ascii")
     encoded_digest = urlsafe_b64encode(digest).decode("ascii")
-    return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${encoded_salt}${encoded_digest}"
+    return f"pbkdf2_sha256${_PBKDF2_ITERATIONS}${encoded_salt}${encoded_digest}"
 
 
 def verify_password(password: str, password_hash: str) -> bool:
@@ -66,7 +65,7 @@ def _sign(message: bytes) -> str:
 
 
 def _encode_jwt(payload: dict[str, str | int]) -> str:
-    header = {"alg": JWT_ALGORITHM, "typ": "JWT"}
+    header = {"alg": _JWT_ALGORITHM, "typ": "JWT"}
     header_b64 = _b64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
     payload_b64 = _b64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
     signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
@@ -86,7 +85,7 @@ def _decode_jwt(token: str, expected_type: str) -> dict[str, str | int]:
         raise UnauthorizedError(code="INVALID_TOKEN")
 
     header = json.loads(_b64url_decode(header_b64).decode("utf-8"))
-    if header.get("alg") != JWT_ALGORITHM:
+    if header.get("alg") != _JWT_ALGORITHM:
         raise UnauthorizedError(code="INVALID_TOKEN")
 
     payload = json.loads(_b64url_decode(payload_b64).decode("utf-8"))
@@ -94,13 +93,13 @@ def _decode_jwt(token: str, expected_type: str) -> dict[str, str | int]:
         raise UnauthorizedError(code="INVALID_TOKEN")
 
     expires_at = payload.get("exp")
-    if not isinstance(expires_at, int) or expires_at <= int(datetime.now(timezone.utc).timestamp()):
+    if not isinstance(expires_at, int) or expires_at <= int(datetime.now(UTC).timestamp()):
         raise UnauthorizedError(code="TOKEN_EXPIRED")
     return payload
 
 
 def create_access_token(account_id: UUID, email: str, family_id: UUID) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expires_at = now + timedelta(minutes=settings.access_token_ttl_minutes)
     payload = {
         "sub": str(account_id),
@@ -120,7 +119,7 @@ def create_refresh_token(
     session_id: UUID,
     expires_at: datetime,
 ) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": str(account_id),
         "family_id": str(family_id),

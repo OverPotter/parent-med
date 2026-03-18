@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from src.api.deps import get_current_account, get_parent_service
-from src.application.services.auth_service import AuthenticatedAccount
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.parent import ParentCreateDto, ParentResponseDto, ParentUpdateDto
 from src.application.services.parent_service import ParentService
 

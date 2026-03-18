@@ -1,6 +1,6 @@
 """Сервис эпизодов болезни."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from src.application.dto.illness_episode import (
@@ -79,7 +79,7 @@ class IllnessEpisodeService:
         note = dto.note if dto.note is not None else entity.note
         closed_at = dto.closed_at if dto.closed_at is not None else entity.closed_at
         if status == "closed" and closed_at is None:
-            closed_at = datetime.now(timezone.utc)
+            closed_at = datetime.now(UTC)
         entity = IllnessEpisode(
             id=entity.id,
             child_id=entity.child_id,

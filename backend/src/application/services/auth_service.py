@@ -1,20 +1,19 @@
 """Сервис базовой регистрации и авторизации."""
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from src.application.dto.auth import (
-    AccountResponseDto,
+    AuthenticatedAccount,
     AuthResponseDto,
     AuthStateResponseDto,
     LoginDto,
     RefreshDto,
     RegisterDto,
 )
-from src.application.dto.family import FamilyResponseDto
-from src.core.exceptions import ForbiddenError, UnauthorizedError, ValidationError
+from src.application.services.base_auth_service import BaseAuthService
 from src.core.config import settings
+from src.core.exceptions import ForbiddenError, UnauthorizedError, ValidationError
 from src.core.security import (
     create_access_token,
     create_refresh_token,
@@ -27,47 +26,15 @@ from src.core.security import (
 from src.domain.entities.account import Account
 from src.domain.entities.account_session import AccountSession
 from src.domain.entities.family import Family
-from src.domain.repositories.account_repository import AccountRepository
-from src.domain.repositories.account_session_repository import AccountSessionRepository
-from src.domain.repositories.family_repository import FamilyRepository
 
-DEFAULT_FAMILY_NAME = "Моя семья"
+_DEFAULT_FAMILY_NAME = "Моя семья"
 
 
-@dataclass
-class AuthenticatedAccount:
-    """Текущий авторизованный аккаунт."""
-
-    id: UUID
-    email: str
-    family_id: UUID
-
-
-class AuthService:
+class AuthService(BaseAuthService):
     """Регистрация, логин и проверка Bearer-сессии."""
 
-    def __init__(
-        self,
-        account_repo: AccountRepository,
-        session_repo: AccountSessionRepository,
-        family_repo: FamilyRepository,
-    ) -> None:
-        self._account_repo = account_repo
-        self._session_repo = session_repo
-        self._family_repo = family_repo
-
-    def _account_to_response(self, entity: Account) -> AccountResponseDto:
-        return AccountResponseDto(
-            id=entity.id,
-            email=entity.email,
-            family_id=entity.family_id,
-        )
-
-    def _family_to_response(self, entity: Family) -> FamilyResponseDto:
-        return FamilyResponseDto(id=entity.id, name=entity.name)
-
     async def _create_auth_response(self, account: Account, family: Family) -> AuthResponseDto:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         session_id = uuid4()
         refresh_expires_at = now + timedelta(days=settings.refresh_token_ttl_days)
         refresh_token = create_refresh_token(
@@ -95,7 +62,7 @@ class AuthService:
             family=self._family_to_response(family),
         )
 
-    async def register(self, dto: RegisterDto) -> AuthResponseDto:
+    async def signup(self, dto: RegisterDto) -> AuthResponseDto:
         email = dto.email.strip().lower()
         if await self._account_repo.get_by_email(email) is not None:
             raise ValidationError(
@@ -103,19 +70,22 @@ class AuthService:
                 code="ACCOUNT_ALREADY_EXISTS",
                 status_code=409,
             )
-        family = Family(id=uuid4(), name=DEFAULT_FAMILY_NAME)
+        family = Family(id=uuid4(), name=_DEFAULT_FAMILY_NAME)
         created_family = await self._family_repo.add(family)
         account = Account(
             id=uuid4(),
             email=email,
             password_hash=hash_password(dto.password),
             family_id=created_family.id,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         created_account = await self._account_repo.add(account)
         return await self._create_auth_response(created_account, created_family)
 
-    async def login(self, dto: LoginDto) -> AuthResponseDto:
+    async def register(self, dto: RegisterDto) -> AuthResponseDto:
+        return await self.signup(dto)
+
+    async def signin(self, dto: LoginDto) -> AuthResponseDto:
         email = dto.email.strip().lower()
         account = await self._account_repo.get_by_email(email)
         if not account or not verify_password(dto.password, account.password_hash):
@@ -125,6 +95,9 @@ class AuthService:
             raise ForbiddenError("У аккаунта не найдена семья", code="FAMILY_NOT_LINKED")
         await self._session_repo.delete_by_account_id(account.id)
         return await self._create_auth_response(account, family)
+
+    async def login(self, dto: LoginDto) -> AuthResponseDto:
+        return await self.signin(dto)
 
     async def get_current_account(self, token: str) -> AuthenticatedAccount:
         payload = decode_access_token(token)
@@ -160,7 +133,7 @@ class AuthService:
             raise UnauthorizedError(code="INVALID_REFRESH_TOKEN")
         if session.token_hash != hash_session_token(dto.refresh_token):
             raise UnauthorizedError(code="INVALID_REFRESH_TOKEN")
-        if session.expires_at <= datetime.now(timezone.utc):
+        if session.expires_at <= datetime.now(UTC):
             await self._session_repo.delete(session.id)
             raise UnauthorizedError(code="TOKEN_EXPIRED")
 

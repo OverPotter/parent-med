@@ -6,9 +6,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 
+from src.api.deps.auth import get_current_account
 from src.api.routers import (
-    auth,
     administration_events,
+    auth,
     children,
     families,
     household_medicines,
@@ -18,7 +19,6 @@ from src.api.routers import (
     temperature_entries,
     weight_entries,
 )
-from src.api.deps.auth import get_current_account
 from src.core.exception_handlers import app_exception_handler
 from src.core.exceptions import AppException
 from src.core.lifespan import lifespan_context

@@ -16,8 +16,8 @@ from src.api.deps.repositories import (
     get_weight_entry_repo,
 )
 from src.api.deps.services import (
-    get_auth_service,
     get_administration_service,
+    get_auth_service,
     get_child_service,
     get_family_service,
     get_household_medicine_service,

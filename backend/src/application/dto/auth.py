@@ -1,5 +1,6 @@
 """DTO для регистрации и авторизации."""
 
+from dataclasses import dataclass
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -30,6 +31,15 @@ class RefreshDto(BaseModel):
 
 class AccountResponseDto(ResponseBase):
     """Ответ: аккаунт."""
+
+    id: UUID
+    email: str
+    family_id: UUID
+
+
+@dataclass
+class AuthenticatedAccount:
+    """Текущий авторизованный аккаунт."""
 
     id: UUID
     email: str

@@ -5,10 +5,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from src.api.deps import get_current_account, get_family_service
-from src.core.exceptions import ValidationError
-from src.application.services.auth_service import AuthenticatedAccount
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.family import FamilyCreateDto, FamilyResponseDto, FamilyUpdateDto
 from src.application.services.family_service import FamilyService
+from src.core.exceptions import ValidationError
 
 router = APIRouter(prefix="/families", tags=["families"])
 
@@ -84,7 +84,9 @@ async def delete_family(
 ) -> None:
     """Удалить семью."""
     if family_id != account.family_id:
-        raise ValidationError("Нет доступа к чужой семье", code="FOREIGN_FAMILY_ACCESS", status_code=403)
+        raise ValidationError(
+            "Нет доступа к чужой семье", code="FOREIGN_FAMILY_ACCESS", status_code=403
+        )
     raise ValidationError(
         "Семья создаётся вместе с аккаунтом и не удаляется отдельно",
         code="FAMILY_DELETE_DISABLED",
