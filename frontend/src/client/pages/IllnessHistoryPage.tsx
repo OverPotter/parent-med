@@ -68,12 +68,10 @@ export function IllnessHistoryPage() {
     .sort((left, right) => right.episodes.length - left.episodes.length);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-7">
       <div>
         <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">История болезней</h1>
-        <p className="mt-1 text-sm text-muted">
-          Краткий обзор по детям и переход в историю ребёнка.
-        </p>
+        <p className="mt-2 text-sm leading-6 text-muted">Завершённые эпизоды по детям.</p>
       </div>
 
       {(isLoading || isEpisodesLoading) && <p className="text-muted">Загрузка…</p>}
@@ -83,7 +81,7 @@ export function IllnessHistoryPage() {
       )}
 
       {!isLoading && !isEpisodesLoading && childHistory.length > 0 && (
-        <ul className="grid gap-3">
+        <ul className="grid gap-4">
           {childHistory.map(({ child, episodes, activeEpisode }) => (
             <HistoryCard
               key={child.id}
@@ -114,17 +112,21 @@ function HistoryCard({
       <RowSurface>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
-            <p className="mt-1 text-sm text-muted">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
+              <span className="soft-pill rounded-full px-2.5 py-1 text-xs">
+                {episodes.length} в архиве
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-muted">
               {child.ageLabel ? `${child.ageLabel} • ` : ""}
-              Завершённых эпизодов: {episodes.length}
               {lastEpisode
-                ? ` • Последний: ${formatDate(lastEpisode.startedAt)}`
-                : " • История пуста"}
+                ? `Последний начался ${formatDate(lastEpisode.startedAt)}`
+                : "История пуста"}
             </p>
             {hasActiveEpisode && (
-              <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
-                Сейчас есть активный эпизод, он не входит в историю
+              <p className="mt-1 text-sm text-[color:var(--color-success)]">
+                Сейчас есть активный эпизод, в архив не входит
               </p>
             )}
             {lastEpisode?.closedAt && (
@@ -136,7 +138,7 @@ function HistoryCard({
 
           <Link
             to={`/children/${child.id}/illness?view=history`}
-            className="rounded-xl border border-border px-4 py-2 text-sm text-foreground hover:bg-muted/30"
+            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
           >
             История
           </Link>

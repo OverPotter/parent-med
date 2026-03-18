@@ -49,11 +49,11 @@ export function ActiveIllnessesPage() {
     .filter((item) => item.episode);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-7">
       <div>
         <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Активные болезни</h1>
-        <p className="mt-1 text-sm text-muted">
-          Здесь только текущие эпизоды. Нажми на строку и открой эпизод.
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Только текущие эпизоды без архивной информации.
         </p>
       </div>
 
@@ -64,7 +64,7 @@ export function ActiveIllnessesPage() {
       )}
 
       {!isLoading && !isActiveEpisodesLoading && activeChildren.length > 0 && (
-        <ul className="grid gap-2">
+        <ul className="grid gap-3">
           {activeChildren.map(({ child, episode }) => (
             <ActiveIllnessCard key={child.id} child={child} episode={episode!} />
           ))}
@@ -79,18 +79,25 @@ function ActiveIllnessCard({ child, episode }: { child: Child; episode: IllnessE
     <li>
       <Link
         to={`/children/${child.id}/illness`}
-        className="block transition hover:border-primary/40 hover:bg-primary/5"
+        className="block transition-transform duration-200 hover:-translate-y-0.5"
       >
         <RowSurface>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
-              <p className="mt-1 text-sm text-muted">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
+                <span className="soft-pill-success rounded-full px-2.5 py-1 text-xs">
+                  Сейчас болеет
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-muted">
                 {child.ageLabel ? `${child.ageLabel} • ` : ""}С {formatDate(episode.startedAt)}
               </p>
-              {episode.title && <p className="mt-1 text-sm text-muted">{episode.title}</p>}
+              {episode.title && (
+                <p className="mt-3 text-sm leading-7 text-foreground">{episode.title}</p>
+              )}
             </div>
-            <span className="text-sm text-primary">Открыть</span>
+            <span className="soft-pill-primary rounded-full px-3 py-1 text-xs">Открыть</span>
           </div>
         </RowSurface>
       </Link>

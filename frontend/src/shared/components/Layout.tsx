@@ -28,44 +28,40 @@ export function Layout({ children, navLinks = [], showCurrentFamily = false }: L
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur min-w-0">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6">
-          <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <Link to="/" className="block min-w-0">
-                <p className="truncate text-lg font-semibold tracking-[0.08em] text-primary">
-                  Parent Med
-                </p>
-                <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">
-                  Семейный журнал здоровья
-                </p>
-              </Link>
-            </div>
+      <header className="sticky top-0 z-10 min-w-0 border-b border-border/70 bg-background/88 backdrop-blur-xl">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-4 py-6">
+            <Link to="/" className="min-w-0">
+              <p className="truncate text-base font-semibold tracking-[0.04em] text-primary sm:text-lg">
+                Parent Med
+              </p>
+              <p className="mt-1 text-sm leading-7 text-muted">Семейный журнал здоровья</p>
+            </Link>
 
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               {showCurrentFamily && currentFamilyName && (
-                <span className="max-w-full truncate border border-border bg-muted/10 px-3 py-1.5 text-xs text-muted">
-                  Семья: {currentFamilyName}
+                <span className="soft-pill max-w-full truncate rounded-full px-3.5 py-1.5 text-xs">
+                  {currentFamilyName}
                 </span>
               )}
               {accountEmail && (
-                <span className="max-w-full truncate border border-border bg-background px-3 py-1.5 text-xs text-muted">
+                <span className="soft-pill max-w-full truncate rounded-full px-3.5 py-1.5 text-xs">
                   {accountEmail}
                 </span>
               )}
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="border border-border px-3 py-1.5 text-xs text-muted hover:bg-muted/30"
+                className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
                 aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
               >
-                {theme === "light" ? "Тема: ночь" : "Тема: день"}
+                {theme === "light" ? "Ночь" : "День"}
               </button>
               {accountEmail && (
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="border border-border px-3 py-1.5 text-xs text-foreground hover:bg-muted/30"
+                  className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
                 >
                   Выйти
                 </button>
@@ -74,7 +70,7 @@ export function Layout({ children, navLinks = [], showCurrentFamily = false }: L
           </div>
 
           {navLinks.length > 0 && (
-            <nav className="-mx-1 flex gap-2 overflow-x-auto pb-4">
+            <nav className="-mx-1 flex gap-2 overflow-x-auto pb-6">
               {navLinks.map(({ to, label }) => (
                 <NavLink
                   key={to}
@@ -82,10 +78,8 @@ export function Layout({ children, navLinks = [], showCurrentFamily = false }: L
                   end={to === "/"}
                   className={({ isActive }) =>
                     [
-                      "whitespace-nowrap border px-4 py-2 text-sm transition-colors",
-                      isActive
-                        ? "border-primary/30 bg-primary text-white"
-                        : "border-border bg-background text-foreground hover:bg-muted/30",
+                      "whitespace-nowrap rounded-full px-4 py-2.5 text-sm transition-colors",
+                      isActive ? "soft-tab-active" : "soft-tab",
                     ].join(" ")
                   }
                 >
@@ -96,7 +90,7 @@ export function Layout({ children, navLinks = [], showCurrentFamily = false }: L
           )}
         </div>
       </header>
-      <main className="flex-1 mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 sm:py-8 min-w-0">
+      <main className="mx-auto flex-1 w-full max-w-5xl min-w-0 px-4 py-9 sm:px-6 sm:py-11">
         {children}
       </main>
     </div>

@@ -23,6 +23,7 @@ import {
   fetchTemperatureEntriesByEpisodeId,
   createTemperatureEntry,
 } from "@shared/api/temperatureEntries";
+import { DateField } from "@shared/components/DateField";
 import { useAppStore } from "@shared/store/useAppStore";
 import type {
   AdministrationEvent,
@@ -39,8 +40,8 @@ const EPISODE_STATUS_LABELS: Record<string, string> = {
 };
 
 const EPISODE_STATUS_STYLES: Record<string, string> = {
-  active: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  closed: "border-slate-400/30 bg-slate-500/10 text-slate-700 dark:text-slate-300",
+  active: "soft-pill-success",
+  closed: "soft-pill",
 };
 
 export function ChildIllnessPage() {
@@ -157,19 +158,18 @@ export function ChildIllnessPage() {
     : historyEpisodes;
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-7">
       <Link to="/children" className="inline-flex text-sm text-primary hover:underline">
         ← К списку детей
       </Link>
 
-      <section className="relative overflow-hidden rounded-[28px] border border-border bg-background shadow-sm">
-        <div className="absolute inset-x-0 top-0 h-28 bg-primary/6" />
+      <section className="soft-panel soft-hero relative overflow-hidden rounded-[30px]">
         <div className="relative p-6 sm:p-8">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">Журнал болезни</p>
+          <p className="text-xs tracking-[0.12em] text-muted">Журнал болезни</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             {child.name}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+          <p className="mt-4 max-w-2xl text-sm leading-8 text-muted">
             {historyOnlyView
               ? "История завершённых эпизодов ребёнка. Открывай один эпизод и работай с ним без визуального шума."
               : activeEpisode
@@ -179,7 +179,7 @@ export function ChildIllnessPage() {
                   : "Сейчас активного эпизода нет. Когда болезнь начнётся, здесь появится рабочий экран эпизода."}
           </p>
 
-          <div className="mt-6 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-7 grid gap-4 border-t border-border/70 pt-5 sm:grid-cols-2 xl:grid-cols-4">
             <SnapshotItem label="Возраст" value={child.ageLabel || "Не указан"} />
             <SnapshotItem
               label="Дата рождения"
@@ -201,7 +201,7 @@ export function ChildIllnessPage() {
           </div>
 
           {!currentFamilyId && (
-            <div className="mt-6 rounded-2xl border-l-4 border-amber-500 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+            <div className="soft-note-warning mt-6 rounded-2xl px-4 py-3 text-sm">
               Семья не выбрана. Сначала открой страницу «Семья».
             </div>
           )}
@@ -246,7 +246,7 @@ export function ChildIllnessPage() {
       )}
 
       {!activeEpisode && !createMode && !historyOnlyView && (
-        <section className="rounded-[24px] border border-dashed border-border bg-background px-5 py-8 text-sm text-muted">
+        <section className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
           Активного эпизода сейчас нет. Новый эпизод можно начать из раздела «Дети».
         </section>
       )}
@@ -265,14 +265,14 @@ export function ChildIllnessPage() {
           />
 
           {openHistoryEpisodeId && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background px-4 py-3">
+            <div className="soft-panel-muted flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-4 py-3">
               <p className="text-sm text-muted">
                 Показан 1 эпизод из {historyEpisodes.length}. Остальные скрыты.
               </p>
               <button
                 type="button"
                 onClick={() => setOpenHistoryEpisodeId(null)}
-                className="rounded-xl border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/30"
+                className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
               >
                 Показать все эпизоды
               </button>
@@ -302,7 +302,7 @@ export function ChildIllnessPage() {
               ))}
             </ul>
           ) : (
-            <div className="rounded-[24px] border border-dashed border-border bg-background px-5 py-8 text-sm text-muted">
+            <div className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
               История пока пустая.
             </div>
           )}
@@ -313,17 +313,13 @@ export function ChildIllnessPage() {
 }
 
 function InfoPill({ label }: { label: string }) {
-  return (
-    <span className="rounded-full border border-border bg-muted/10 px-3 py-1 text-sm text-muted">
-      {label}
-    </span>
-  );
+  return <span className="soft-pill rounded-full px-3 py-1 text-sm">{label}</span>;
 }
 
 function SnapshotItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-[0.12em] text-muted">{label}</p>
+      <p className="text-xs tracking-[0.08em] text-muted">{label}</p>
       <p className="mt-2 text-lg font-semibold text-foreground">{value}</p>
     </div>
   );
@@ -387,13 +383,13 @@ function HistoryEpisodeCard({
 
   return (
     <li
-      className={`rounded-[24px] border px-5 py-4 shadow-sm transition-colors sm:px-6 sm:py-5 ${
-        isOpen ? "border-primary/35 bg-primary/5" : "border-border bg-background"
+      className={`rounded-[28px] px-5 py-4 transition-colors sm:px-6 sm:py-5 ${
+        isOpen ? "soft-panel soft-hero" : "soft-card"
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.12em] text-muted">
+          <p className="text-xs tracking-[0.08em] text-muted">
             Эпизод {episodeNumber} · {formatEpisodePeriod(episode.startedAt, episode.closedAt)}
           </p>
           <p className="mt-2 text-base font-medium text-foreground">
@@ -412,10 +408,8 @@ function HistoryEpisodeCard({
         <button
           type="button"
           onClick={onToggle}
-          className={`rounded-xl border px-3 py-1.5 text-sm transition-colors ${
-            isOpen
-              ? "border-primary/30 bg-background text-foreground hover:bg-background/80"
-              : "border-border text-foreground hover:bg-muted/30"
+          className={`rounded-2xl px-3 py-1.5 text-sm transition-colors ${
+            isOpen ? "soft-tab-active" : "soft-button-secondary"
           }`}
         >
           {isOpen ? "Скрыть" : "Открыть"}
@@ -423,7 +417,7 @@ function HistoryEpisodeCard({
       </div>
 
       {isOpen && (
-        <div className="mt-6 space-y-6 border-t border-primary/20 pt-6">
+        <div className="mt-6 space-y-6 border-t border-border/70 pt-6">
           <section className="space-y-4">
             <div>
               <h3 className="text-sm font-semibold text-foreground">Описание</h3>
@@ -433,7 +427,7 @@ function HistoryEpisodeCard({
               </p>
             </div>
 
-            <div className="mt-4 border-l-2 border-primary/20 pl-4">
+            <div className="soft-panel-muted mt-4 rounded-[22px] px-4 py-4">
               <p className="text-sm leading-6 text-muted">
                 {episode.note?.trim() || "Описание не заполнено."}
               </p>
@@ -448,7 +442,7 @@ function HistoryEpisodeCard({
                 <EpisodeTimelineList items={timelineItems} />
               </div>
             ) : (
-              <div className="mt-4 border border-dashed border-border bg-background px-4 py-6 text-sm text-muted">
+              <div className="soft-empty mt-4 rounded-[22px] px-4 py-6 text-sm text-muted">
                 Для этого эпизода ещё нет температур и записей о приёмах.
               </div>
             )}
@@ -471,7 +465,7 @@ function HistoryEpisodeCard({
                   deleteEpisodeMutation.mutate();
                 }}
                 disabled={deleteEpisodeMutation.isPending}
-                className="rounded-xl border border-red-500/40 px-3 py-1.5 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
+                className="soft-button-danger rounded-2xl px-3 py-1.5 text-sm disabled:opacity-50"
               >
                 {deleteEpisodeMutation.isPending ? "Удаляем…" : "Удалить из истории"}
               </button>
@@ -583,17 +577,17 @@ function EpisodeBlock({
   const timelineItems = buildEpisodeTimeline(temps, administrations, comments, householdMedicines);
 
   return (
-    <div className="rounded-[28px] border border-border bg-background shadow-sm">
-      <div className="rounded-t-[28px] border-b border-border bg-primary/5 px-5 py-5 sm:px-6 sm:py-6">
+    <div className="soft-panel rounded-[30px]">
+      <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-6 sm:px-6 sm:py-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted">Текущий эпизод</p>
+            <p className="text-xs tracking-[0.1em] text-muted">Текущий эпизод</p>
             <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
               {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
             </h3>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span
-                className={`rounded-full border px-3 py-1 text-sm ${
+                className={`rounded-full px-3 py-1 text-sm ${
                   EPISODE_STATUS_STYLES[episode.status] ?? EPISODE_STATUS_STYLES.closed
                 }`}
               >
@@ -610,7 +604,7 @@ function EpisodeBlock({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-border bg-background px-4 py-2 text-sm text-foreground hover:bg-muted/30"
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
               Закрыть эпизод
             </button>
@@ -618,7 +612,7 @@ function EpisodeBlock({
         </div>
       </div>
 
-      <div className="space-y-6 px-5 py-5 sm:px-6 sm:py-6">
+      <div className="space-y-7 px-5 py-5 sm:px-6 sm:py-6">
         <section>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -635,7 +629,7 @@ function EpisodeBlock({
                 value={episodeTitle}
                 onChange={(e) => setEpisodeTitle(e.target.value)}
                 placeholder="Например: ОРВИ с температурой"
-                className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground"
+                className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
               />
             </label>
             <textarea
@@ -643,10 +637,10 @@ function EpisodeBlock({
               value={episodeNote}
               onChange={(e) => setEpisodeNote(e.target.value)}
               placeholder="Описание эпизода: как началось заболевание, какие основные симптомы и общий контекст."
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground"
+              className="soft-input w-full rounded-2xl px-4 py-3"
             />
             {updateEpisodeNoteMutation.isError && (
-              <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+              <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
                 {(
                   updateEpisodeNoteMutation.error as {
                     response?: { data?: { detail?: string } };
@@ -659,7 +653,7 @@ function EpisodeBlock({
                 type="button"
                 onClick={() => updateEpisodeNoteMutation.mutate()}
                 disabled={updateEpisodeNoteMutation.isPending}
-                className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+                className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
               >
                 {updateEpisodeNoteMutation.isPending ? "Сохраняем…" : "Сохранить карточку"}
               </button>
@@ -670,7 +664,7 @@ function EpisodeBlock({
                   setEpisodeNote(episode.note ?? "");
                 }}
                 disabled={updateEpisodeNoteMutation.isPending}
-                className="rounded-xl border border-border px-4 py-2 text-sm text-foreground hover:bg-muted/30 disabled:opacity-50"
+                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
               >
                 Сбросить
               </button>
@@ -721,7 +715,7 @@ function EpisodeBlock({
 
             {composerMode === "administration" &&
               (usableHouseholdMedicines.length === 0 ? (
-                <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200">
+                <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
                   В аптечке нет доступных упаковок для приёма. Просроченные скрыты автоматически.
                 </div>
               ) : (
@@ -744,7 +738,7 @@ function EpisodeBlock({
                 />
               ))}
             {composerMode === "administration" && addAdminMutation.isError && (
-              <p className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+              <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
                 {(addAdminMutation.error as { response?: { data?: { detail?: string } } }).response
                   ?.data?.detail ?? "Ошибка записи. Проверь срок годности и срок после вскрытия."}
               </p>
@@ -787,7 +781,7 @@ function EpisodeBlock({
             {timelineItems.length > 0 ? (
               <EpisodeTimelineList items={timelineItems} />
             ) : (
-              <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-6 text-sm text-muted">
+              <div className="soft-empty rounded-[22px] px-4 py-6 text-sm text-muted">
                 Записей по эпизоду пока нет.
               </div>
             )}
@@ -846,28 +840,26 @@ function EpisodeActivationCard({
   );
 
   return (
-    <div className="rounded-[28px] border border-border bg-background shadow-sm">
-      <div className="rounded-t-[28px] border-b border-border bg-primary/5 px-5 py-5 sm:px-6 sm:py-6">
-        <p className="text-xs uppercase tracking-[0.16em] text-muted">Подготовка эпизода</p>
+    <div className="soft-panel rounded-[30px]">
+      <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-6 sm:px-6 sm:py-7">
+        <p className="text-xs tracking-[0.1em] text-muted">Подготовка эпизода</p>
         <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{childName}</h3>
         <p className="mt-3 text-sm text-muted">
           Пока эпизод не активирован, он не появляется в активных болезнях и ничего не сохраняет.
         </p>
       </div>
 
-      <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+      <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
         {errorMessage && (
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
-            {errorMessage}
-          </div>
+          <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{errorMessage}</div>
         )}
         <label className="block">
           <span className="block text-sm text-muted">Дата начала</span>
-          <input
-            type="date"
+          <DateField
             value={startedAt}
-            onChange={(e) => setStartedAt(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground"
+            onChange={setStartedAt}
+            max={new Date().toISOString().slice(0, 10)}
+            className="mt-1"
           />
         </label>
         <label className="block">
@@ -877,7 +869,7 @@ function EpisodeActivationCard({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Например: ОРВИ с температурой"
-            className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground"
+            className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
           />
         </label>
         <label className="block">
@@ -887,7 +879,7 @@ function EpisodeActivationCard({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Коротко опиши симптомы и контекст."
-            className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground"
+            className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
           />
         </label>
         <section className="border-t border-border pt-6">
@@ -937,7 +929,7 @@ function EpisodeActivationCard({
 
             {composerMode === "administration" &&
               (usableMedicines.length === 0 ? (
-                <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200">
+                <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
                   В аптечке нет доступных упаковок для приёма. Просроченные скрыты автоматически.
                 </div>
               ) : (
@@ -1036,7 +1028,7 @@ function EpisodeActivationCard({
                       }
                       setComments((current) => current.filter((entry) => entry.id !== item.id));
                     }}
-                    className="rounded-xl border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/30"
+                    className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
                   >
                     Удалить
                   </button>
@@ -1062,7 +1054,7 @@ function EpisodeActivationCard({
               })
             }
             disabled={isPending || !startedAt}
-            className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+            className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
           >
             {isPending ? "Активируем…" : "Активировать эпизод"}
           </button>
@@ -1070,7 +1062,7 @@ function EpisodeActivationCard({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="rounded-xl border border-border px-4 py-2 text-sm text-foreground hover:bg-muted/30 disabled:opacity-50"
+            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
           >
             Назад
           </button>
@@ -1094,10 +1086,8 @@ function ComposerToggle({
       type="button"
       onClick={onClick}
       className={[
-        "rounded-xl border px-4 py-2 text-sm transition-colors",
-        active
-          ? "border-primary/30 bg-primary text-white"
-          : "border-border bg-background text-foreground hover:bg-muted/30",
+        "rounded-2xl px-4 py-2.5 text-sm transition-colors",
+        active ? "soft-tab-active" : "soft-tab",
       ].join(" ")}
     >
       {label}
@@ -1117,7 +1107,7 @@ function TemperatureForm({
   isPending: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-background p-3">
+    <div className="soft-panel-muted rounded-[24px] p-3">
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
           <span className="block text-sm text-muted">Температура</span>
@@ -1127,14 +1117,14 @@ function TemperatureForm({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="36.6"
-            className="mt-1 w-24 rounded-xl border border-border bg-background px-3 py-2 text-foreground"
+            className="soft-input mt-1 w-24 rounded-2xl px-3 py-2"
           />
         </label>
         <button
           type="button"
           onClick={onSubmit}
           disabled={isPending || !value}
-          className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+          className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
         >
           {isPending ? "Сохраняем…" : "Добавить"}
         </button>
@@ -1161,13 +1151,13 @@ function AdministrationForm({
   isPending: boolean;
 }) {
   return (
-    <div className="grid gap-3 rounded-2xl border border-border bg-background p-3 sm:grid-cols-[minmax(0,1fr)_140px_auto]">
+    <div className="soft-panel-muted grid gap-3 rounded-[24px] p-3 sm:grid-cols-[minmax(0,1fr)_140px_auto]">
       <label className="block min-w-0">
         <span className="block text-sm text-muted">Упаковка</span>
         <select
           value={selectedMedicineId}
           onChange={(e) => onMedicineChange(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
+          className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
         >
           <option value="">Выберите упаковку</option>
           {medicines.map((medicine) => (
@@ -1186,7 +1176,7 @@ function AdministrationForm({
           value={amount}
           onChange={(e) => onAmountChange(e.target.value)}
           placeholder="5 мл"
-          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
+          className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
         />
       </label>
 
@@ -1194,7 +1184,7 @@ function AdministrationForm({
         type="button"
         onClick={onSubmit}
         disabled={isPending || !selectedMedicineId || !amount.trim()}
-        className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+        className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
       >
         {isPending ? "Сохраняем…" : "Записать"}
       </button>
@@ -1214,7 +1204,7 @@ function EpisodeTimelineList({ items }: { items: EpisodeTimelineItem[] }) {
   return (
     <ul className="space-y-2">
       {items.map((item) => (
-        <li key={item.id} className="rounded-2xl border border-border bg-background px-4 py-3">
+        <li key={item.id} className="soft-card rounded-[24px] px-4 py-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -1237,20 +1227,20 @@ function TimelineKindPill({ kind }: { kind: EpisodeTimelineItem["kind"] }) {
   const config: Record<EpisodeTimelineItem["kind"], { label: string; className: string }> = {
     temperature: {
       label: "Температура",
-      className: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+      className: "soft-note-danger",
     },
     administration: {
       label: "Лекарство",
-      className: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+      className: "soft-note-info",
     },
     comment: {
       label: "Комментарий",
-      className: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+      className: "soft-note-warning",
     },
   };
 
   return (
-    <span className={`rounded-full border px-2.5 py-1 text-xs ${config[kind].className}`}>
+    <span className={`rounded-full px-2.5 py-1 text-xs ${config[kind].className}`}>
       {config[kind].label}
     </span>
   );

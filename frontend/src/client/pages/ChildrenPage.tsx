@@ -2,7 +2,7 @@
  * Дети: создание, редактирование, удаление и переход к истории болезней.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,16 +15,19 @@ import {
   fetchActiveIllnessEpisodeByChildId,
   fetchIllnessEpisodesByChildId,
 } from "@shared/api/illnessEpisodes";
+import { DateField } from "@shared/components/DateField";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child } from "@shared/types/api";
 import { formatDate } from "@shared/utils/date";
+import { normalizeIsoDateInput } from "@shared/utils/dateInput";
 
 export function ChildrenPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
+  const [createFormResetKey, setCreateFormResetKey] = useState(0);
 
   const {
     data: children = [],
@@ -55,7 +58,10 @@ export function ChildrenPage() {
   const createMutation = useMutation({
     mutationFn: ({ name, birthDate }: { name: string; birthDate?: string | null }) =>
       createChild(currentFamilyId!, name, birthDate),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
+      setCreateFormResetKey((current) => current + 1);
+    },
   });
 
   const updateMutation = useMutation({
@@ -92,22 +98,30 @@ export function ChildrenPage() {
   }
 
   return (
-    <div className="space-y-5 min-w-0">
+    <div className="min-w-0 space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Дети</h1>
-        <p className="mt-1 text-sm text-muted">
-          Создание, редактирование, удаление и запуск эпизода болезни.
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Профили детей, история и переход в текущую болезнь.
         </p>
       </div>
 
       <AddChildForm
         onSubmit={(name, birthDate) => createMutation.mutate({ name, birthDate })}
         isPending={createMutation.isPending}
+        resetKey={createFormResetKey}
+        errorMessage={
+          (
+            createMutation.error as {
+              response?: { data?: { detail?: string } };
+            }
+          )?.response?.data?.detail ?? null
+        }
       />
 
       {isLoading && <p className="text-muted">Загрузка…</p>}
       {error && (
-        <p className="text-red-600 dark:text-red-400">
+        <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
           {(error as { message?: string }).message ?? "Ошибка загрузки"}
         </p>
       )}
@@ -116,7 +130,7 @@ export function ChildrenPage() {
       )}
 
       {children.length > 0 && (
-        <ul className="grid gap-3">
+        <ul className="grid gap-4">
           {children.map((child, index) => {
             const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
             const episodes = historyQueries[index]?.data ?? [];
@@ -158,51 +172,79 @@ export function ChildrenPage() {
 function AddChildForm({
   onSubmit,
   isPending,
+  resetKey,
+  errorMessage,
 }: {
   onSubmit: (name: string, birthDate?: string | null) => void;
   isPending: boolean;
+  resetKey: number;
+  errorMessage: string | null;
 }) {
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setName("");
+    setBirthDate("");
+    setValidationError(null);
+  }, [resetKey]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSubmit(name.trim(), birthDate || undefined);
-    setName("");
-    setBirthDate("");
+
+    const normalizedBirthDate = normalizeIsoDateInput(birthDate);
+    if (birthDate && !normalizedBirthDate) {
+      setValidationError("Укажите корректную дату рождения через календарь.");
+      return;
+    }
+
+    setValidationError(null);
+    onSubmit(name.trim(), normalizedBirthDate ?? undefined);
   };
 
   return (
-    <Surface className="p-4">
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-wrap items-end gap-3">
+    <Surface className="p-5 sm:p-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
           <label className="min-w-0 flex-1">
             <span className="block text-sm text-muted">Имя</span>
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full border border-border bg-background px-3 py-2 text-foreground"
+              onChange={(e) => {
+                setName(e.target.value);
+                setValidationError(null);
+              }}
+              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
             />
           </label>
           <label className="block">
             <span className="block text-sm text-muted">Дата рождения</span>
-            <input
-              type="date"
+            <DateField
               value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
-              className="mt-1 border border-border bg-background px-3 py-2 text-foreground"
+              onChange={(nextValue) => {
+                setBirthDate(nextValue);
+                setValidationError(null);
+              }}
+              max={new Date().toISOString().slice(0, 10)}
+              className="mt-1"
             />
           </label>
           <button
             type="submit"
             disabled={isPending || !name.trim()}
-            className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+            className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:self-end"
           >
             {isPending ? "Добавляем…" : "Добавить"}
           </button>
         </div>
+        {(validationError || errorMessage) && (
+          <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+            {validationError ?? errorMessage}
+          </p>
+        )}
       </form>
     </Surface>
   );
@@ -241,25 +283,32 @@ function ChildCard({
   return (
     <li>
       <RowSurface>
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
-            <p className="mt-1 text-sm text-muted">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
+              {hasActiveEpisode && (
+                <span className="soft-pill-success rounded-full px-2.5 py-1 text-xs">
+                  Активная болезнь
+                </span>
+              )}
+            </div>
+            <p className="mt-3 text-sm leading-7 text-muted">
               {child.ageLabel ? `${child.ageLabel} • ` : ""}
               {child.birthDate ? `Рожд. ${formatDate(child.birthDate)} • ` : ""}
               Эпизодов: {episodeCount}
             </p>
             {hasActiveEpisode && activeEpisodeStartedAt && (
-              <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
-                Сейчас болеет с {formatDate(activeEpisodeStartedAt)}
+              <p className="mt-1 text-sm text-[color:var(--color-success)]">
+                С текущим эпизодом с {formatDate(activeEpisodeStartedAt)}
               </p>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 sm:justify-end">
             <Link
               to={`/children/${child.id}/illness?view=history`}
-              className="rounded-xl border border-border px-4 py-2 text-sm text-foreground hover:bg-muted/30"
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
               История
             </Link>
@@ -267,7 +316,7 @@ function ChildCard({
               type="button"
               onClick={onStartEpisode}
               disabled={isStartingEpisode}
-              className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+              className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
             >
               {hasActiveEpisode
                 ? "Смотреть активный"
@@ -278,7 +327,7 @@ function ChildCard({
             <button
               type="button"
               onClick={onEditToggle}
-              className="rounded-xl border border-border px-4 py-2 text-sm text-foreground hover:bg-muted/30"
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
               {isEditing ? "Закрыть" : "Редактировать"}
             </button>
@@ -286,7 +335,7 @@ function ChildCard({
               type="button"
               onClick={onDelete}
               disabled={isDeleting}
-              className="rounded-xl border border-red-500/40 px-4 py-2 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
+              className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
             >
               Удалить
             </button>
@@ -294,30 +343,30 @@ function ChildCard({
         </div>
 
         {isEditing && (
-          <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-[minmax(0,1fr)_220px_auto]">
+          <div className="mt-5 grid gap-3 border-t border-border/70 pt-5 sm:grid-cols-[minmax(0,1fr)_220px_auto]">
             <label className="block min-w-0">
               <span className="block text-sm text-muted">Имя</span>
               <input
                 type="text"
                 value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
-                className="mt-1 w-full border border-border bg-background px-3 py-2 text-foreground"
+                className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
               />
             </label>
             <label className="block">
               <span className="block text-sm text-muted">Дата рождения</span>
-              <input
-                type="date"
+              <DateField
                 value={draftBirthDate}
-                onChange={(e) => setDraftBirthDate(e.target.value)}
-                className="mt-1 w-full border border-border bg-background px-3 py-2 text-foreground"
+                onChange={setDraftBirthDate}
+                max={new Date().toISOString().slice(0, 10)}
+                className="mt-1 w-full"
               />
             </label>
             <button
               type="button"
               onClick={() => onSave(draftName.trim(), draftBirthDate || null)}
               disabled={isSaving || !draftName.trim()}
-              className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+              className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
             >
               {isSaving ? "Сохраняем…" : "Сохранить"}
             </button>

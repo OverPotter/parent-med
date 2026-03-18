@@ -30,6 +30,29 @@ function ThemeSync() {
   return null;
 }
 
+function DisplayModeSync() {
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(display-mode: standalone)");
+
+    const applyDisplayMode = () => {
+      const isStandalone =
+        mediaQuery.matches ||
+        Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
+      document.documentElement.setAttribute(
+        "data-display-mode",
+        isStandalone ? "standalone" : "browser"
+      );
+    };
+
+    applyDisplayMode();
+    mediaQuery.addEventListener("change", applyDisplayMode);
+
+    return () => mediaQuery.removeEventListener("change", applyDisplayMode);
+  }, []);
+
+  return null;
+}
+
 function AuthSync() {
   const queryClient = useQueryClient();
   const authToken = useAppStore((s) => s.authToken);
@@ -99,6 +122,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ThemeSync />
+      <DisplayModeSync />
       <AuthSync />
       <Routes>
         {!(authToken || accountId) ? (

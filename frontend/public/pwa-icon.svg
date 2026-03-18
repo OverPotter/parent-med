@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <rect width="1024" height="1024" rx="240" fill="#0F766E"/>
+  <rect x="112" y="112" width="800" height="800" rx="208" fill="url(#panel)"/>
+  <path
+    d="M512 286c-46-58-111-86-179-86-107 0-193 82-193 193 0 197 224 313 342 431 11 11 29 11 40 0 118-118 342-234 342-431 0-111-86-193-193-193-68 0-133 28-179 86Z"
+    fill="#F8FAFC"
+    fill-opacity=".94"
+  />
+  <path
+    d="M512 338c-32 0-58 26-58 58v52h-52c-32 0-58 26-58 58s26 58 58 58h52v52c0 32 26 58 58 58s58-26 58-58v-52h52c32 0 58-26 58-58s-26-58-58-58h-52v-52c0-32-26-58-58-58Z"
+    fill="#14B8A6"
+  />
+  <defs>
+    <linearGradient id="panel" x1="176" y1="144" x2="864" y2="896" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#115E59"/>
+      <stop offset="1" stop-color="#0B3B39"/>
+    </linearGradient>
+  </defs>
+</svg>
