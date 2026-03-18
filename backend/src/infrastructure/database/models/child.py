@@ -25,5 +25,13 @@ class ChildModel(Base):
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     family: Mapped["FamilyModel"] = relationship("FamilyModel", back_populates="children")
-    weight_entries: Mapped[list] = relationship("WeightEntryModel", back_populates="child")
-    illness_episodes: Mapped[list] = relationship("IllnessEpisodeModel", back_populates="child")
+    weight_entries: Mapped[list] = relationship(
+        "WeightEntryModel",
+        back_populates="child",
+        passive_deletes=True,
+    )
+    illness_episodes: Mapped[list] = relationship(
+        "IllnessEpisodeModel",
+        back_populates="child",
+        passive_deletes=True,
+    )

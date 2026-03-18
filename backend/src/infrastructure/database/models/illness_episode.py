@@ -22,9 +22,11 @@ class IllnessEpisodeModel(Base):
         UUID(as_uuid=True), ForeignKey("children.id", ondelete="CASCADE"), nullable=False
     )
     started_at: Mapped[date] = mapped_column(Date, nullable=False)
+    title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
     note: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     child: Mapped["ChildModel"] = relationship("ChildModel", back_populates="illness_episodes")
     temperature_entries: Mapped[list] = relationship(

@@ -252,7 +252,9 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   {item.name} ({item.form}
                   {item.concentration ? `, ${item.concentration}` : ""})
                 </p>
-                {item.dosage && <p className="mt-1 text-xs text-muted">Как применять: {item.dosage}</p>}
+                {item.dosage && (
+                  <p className="mt-1 text-xs text-muted">Как применять: {item.dosage}</p>
+                )}
                 {item.description && (
                   <p className="mt-1 line-clamp-2 text-xs text-muted">{item.description}</p>
                 )}
@@ -392,7 +394,8 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 }
               />
               <span className="mt-1 block text-xs text-muted">
-                Если у препарата есть срок после вскрытия в справочнике, он подставится автоматически.
+                Если у препарата есть срок после вскрытия в справочнике, он подставится
+                автоматически.
               </span>
             </label>
           </div>
@@ -404,8 +407,8 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
           )}
           {hasUnknownAfterOpening && (
             <p className="rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm text-sky-800">
-              Дата вскрытия указана, но срок после вскрытия не задан. Препарат сохранится, но
-              оценка после вскрытия будет считаться неизвестной.
+              Дата вскрытия указана, но срок после вскрытия не задан. Препарат сохранится, но оценка
+              после вскрытия будет считаться неизвестной.
             </p>
           )}
           <label className="block">
@@ -431,7 +434,9 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
               <button
                 type="button"
                 onClick={handleCreateNewAndAdd}
-                disabled={!newMedicineName.trim() || !expiryDate || createHouseholdMutation.isPending}
+                disabled={
+                  !newMedicineName.trim() || !expiryDate || createHouseholdMutation.isPending
+                }
                 className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
               >
                 Добавить свой препарат в аптечку
@@ -484,7 +489,9 @@ function MedicineItemCard({
   const [medicineConcentration, setMedicineConcentration] = useState(
     medicine.medicineConcentration ?? ""
   );
-  const [medicineDescription, setMedicineDescription] = useState(medicine.medicineDescription ?? "");
+  const [medicineDescription, setMedicineDescription] = useState(
+    medicine.medicineDescription ?? ""
+  );
   const [medicineDosage, setMedicineDosage] = useState(medicine.medicineDosage ?? "");
   const isExpired = isExpiredDate(expiryDate);
   const hasUnknownAfterOpening = hasUnknownOpenedShelfLife(openedAt, openedShelfDays);
@@ -539,7 +546,8 @@ function MedicineItemCard({
             <p className="mt-1 text-sm text-muted">Описание: {medicine.medicineDescription}</p>
           )}
           <p className="mt-2 text-sm text-muted">
-            Срок годности: {formatDate(medicine.expiryDate)} · Осталось: {medicine.expiresInDays} дн.
+            Срок годности: {formatDate(medicine.expiryDate)} · Осталось: {medicine.expiresInDays}{" "}
+            дн.
           </p>
           {medicine.openedAt && (
             <p className="text-sm text-muted">
@@ -552,10 +560,10 @@ function MedicineItemCard({
                 : ""}
             </p>
           )}
-          <p className={`text-sm ${intakeMessage.className}`}>
-            {intakeMessage.text}
-          </p>
-          {medicine.comment && <p className="text-sm text-muted">Комментарий: {medicine.comment}</p>}
+          <p className={`text-sm ${intakeMessage.className}`}>{intakeMessage.text}</p>
+          {medicine.comment && (
+            <p className="text-sm text-muted">Комментарий: {medicine.comment}</p>
+          )}
         </div>
         <div className="flex gap-2">
           <button
@@ -655,8 +663,8 @@ function MedicineItemCard({
           </label>
           {isExpired && (
             <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 sm:col-span-2">
-              Срок годности уже истёк. Препарат останется в аптечке для учёта, но использовать его
-              в приёмах нельзя.
+              Срок годности уже истёк. Препарат останется в аптечке для учёта, но использовать его в
+              приёмах нельзя.
             </p>
           )}
           {hasUnknownAfterOpening && (
@@ -678,7 +686,8 @@ function MedicineItemCard({
               type="button"
               onClick={() => updateMutation.mutate()}
               disabled={
-                updateMutation.isPending || (isOwnMedicine && (!medicineName.trim() || !medicineForm.trim()))
+                updateMutation.isPending ||
+                (isOwnMedicine && (!medicineName.trim() || !medicineForm.trim()))
               }
               className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
             >

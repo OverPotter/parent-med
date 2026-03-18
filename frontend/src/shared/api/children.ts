@@ -8,7 +8,13 @@ import { toChild } from "@shared/types/transform";
 
 export async function fetchChildrenByFamilyId(familyId: string): Promise<Child[]> {
   const res = await apiClient.get<
-    Array<{ id: string; family_id: string; name: string; birth_date: string | null }>
+    Array<{
+      id: string;
+      family_id: string;
+      name: string;
+      birth_date: string | null;
+      age_label: string | null;
+    }>
   >("/children", { params: { family_id: familyId } });
   return (res.data ?? []).map(toChild);
 }
@@ -19,6 +25,7 @@ export async function fetchChild(id: string): Promise<Child> {
     family_id: string;
     name: string;
     birth_date: string | null;
+    age_label: string | null;
   }>(`/children/${id}`);
   return toChild(res.data);
 }
@@ -40,6 +47,7 @@ export async function createChild(
     family_id: string;
     name: string;
     birth_date: string | null;
+    age_label: string | null;
   }>("/children", body);
   return toChild(res.data);
 }
@@ -54,6 +62,7 @@ export async function updateChild(
     family_id: string;
     name: string;
     birth_date: string | null;
+    age_label: string | null;
   }>(`/children/${id}`, { name, birth_date: birthDate ?? undefined });
   return toChild(res.data);
 }

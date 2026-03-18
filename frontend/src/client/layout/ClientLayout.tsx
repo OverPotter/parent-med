@@ -11,8 +11,10 @@ import { useAppStore } from "@shared/store/useAppStore";
 
 const clientNavLinks = [
   { to: "/", label: "Главная" },
-  { to: "/family", label: "Семья" },
   { to: "/children", label: "Дети" },
+  { to: "/illnesses/active", label: "Активные болезни" },
+  { to: "/illnesses/history", label: "История болезней" },
+  { to: "/family", label: "Семья" },
   { to: "/medicine-cabinet", label: "Аптечка" },
 ];
 

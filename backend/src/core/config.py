@@ -21,6 +21,16 @@ class Settings(BaseSettings):
     jwt_issuer: str = "parent-med"
     access_token_ttl_minutes: int = 15
     refresh_token_ttl_days: int = 30
+    cors_allowed_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+    access_cookie_name: str = "parent_med_access_token"
+    refresh_cookie_name: str = "parent_med_refresh_token"
+    auth_cookie_secure: bool = False
+    auth_cookie_samesite: str = "lax"
 
 
 settings = Settings()

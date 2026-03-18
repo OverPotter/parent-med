@@ -1,0 +1,76 @@
+"""Реализация репозитория комментариев эпизода."""
+
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domain.entities.illness_comment import IllnessComment
+from src.domain.repositories.illness_comment_repository import IllnessCommentRepository
+from src.infrastructure.database.models.illness_episode_event import IllnessEpisodeEventModel
+
+
+class SqlIllnessCommentRepository(IllnessCommentRepository):
+    """Репозиторий комментариев на общей таблице событий эпизода."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    def _to_entity(self, model: IllnessEpisodeEventModel) -> IllnessComment:
+        return IllnessComment(
+            id=model.id,
+            episode_id=model.episode_id,
+            created_at=model.occurred_at,
+            text=model.comment or "",
+        )
+
+    def _to_model(self, entity: IllnessComment) -> IllnessEpisodeEventModel:
+        return IllnessEpisodeEventModel(
+            id=entity.id,
+            episode_id=entity.episode_id,
+            event_type="comment",
+            occurred_at=entity.created_at,
+            comment=entity.text,
+        )
+
+    async def get_by_id(self, id: UUID) -> IllnessComment | None:
+        result = await self._session.execute(
+            select(IllnessEpisodeEventModel).where(
+                IllnessEpisodeEventModel.id == id,
+                IllnessEpisodeEventModel.event_type == "comment",
+            )
+        )
+        row = result.scalars().one_or_none()
+        return self._to_entity(row) if row else None
+
+    async def get_by_episode_id(self, episode_id: UUID) -> list[IllnessComment]:
+        result = await self._session.execute(
+            select(IllnessEpisodeEventModel)
+            .where(
+                IllnessEpisodeEventModel.episode_id == episode_id,
+                IllnessEpisodeEventModel.event_type == "comment",
+            )
+            .order_by(IllnessEpisodeEventModel.occurred_at.desc())
+        )
+        return [self._to_entity(row) for row in result.scalars().all()]
+
+    async def add(self, entity: IllnessComment) -> IllnessComment:
+        model = self._to_model(entity)
+        self._session.add(model)
+        await self._session.flush()
+        await self._session.refresh(model)
+        return self._to_entity(model)
+
+    async def delete(self, id: UUID) -> bool:
+        result = await self._session.execute(
+            select(IllnessEpisodeEventModel).where(
+                IllnessEpisodeEventModel.id == id,
+                IllnessEpisodeEventModel.event_type == "comment",
+            )
+        )
+        row = result.scalars().one_or_none()
+        if row:
+            await self._session.delete(row)
+            await self._session.flush()
+            return True
+        return False

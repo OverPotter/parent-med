@@ -9,6 +9,7 @@ from src.api.deps.repositories import (
     get_child_repo,
     get_family_repo,
     get_household_medicine_repo,
+    get_illness_comment_repo,
     get_illness_episode_repo,
     get_medicine_catalog_repo,
     get_parent_repo,
@@ -21,6 +22,7 @@ from src.application.services.base_auth_service import BaseAuthService
 from src.application.services.child_service import ChildService
 from src.application.services.family_service import FamilyService
 from src.application.services.household_medicine_service import HouseholdMedicineService
+from src.application.services.illness_comment_service import IllnessCommentService
 from src.application.services.illness_episode_service import IllnessEpisodeService
 from src.application.services.medicine_catalog_service import MedicineCatalogService
 from src.application.services.parent_service import ParentService
@@ -90,6 +92,13 @@ def get_illness_episode_service(
     child_repo=Depends(get_child_repo),
 ) -> IllnessEpisodeService:
     return IllnessEpisodeService(episode_repo=episode_repo, child_repo=child_repo)
+
+
+def get_illness_comment_service(
+    comment_repo=Depends(get_illness_comment_repo),
+    episode_repo=Depends(get_illness_episode_repo),
+) -> IllnessCommentService:
+    return IllnessCommentService(comment_repo=comment_repo, episode_repo=episode_repo)
 
 
 def get_temperature_entry_service(

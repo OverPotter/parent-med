@@ -2,32 +2,56 @@
  * Эпизоды болезни ребёнка: список, создание, журнал температуры и приёмы.
  */
 
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchChild } from "@shared/api/children";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  fetchIllnessEpisodesByChildId,
-  fetchActiveIllnessEpisodeByChildId,
+  fetchAdministrationEventsByEpisodeId,
+  createAdministrationEvent,
+} from "@shared/api/administrationEvents";
+import { fetchChild } from "@shared/api/children";
+import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
+import { createIllnessComment, fetchIllnessCommentsByEpisodeId } from "@shared/api/illnessComments";
+import {
   createIllnessEpisode,
+  deleteIllnessEpisode,
+  fetchActiveIllnessEpisodeByChildId,
+  fetchIllnessEpisodesByChildId,
   updateIllnessEpisode,
 } from "@shared/api/illnessEpisodes";
 import {
   fetchTemperatureEntriesByEpisodeId,
   createTemperatureEntry,
 } from "@shared/api/temperatureEntries";
-import {
-  fetchAdministrationEventsByEpisodeId,
-  createAdministrationEvent,
-} from "@shared/api/administrationEvents";
-import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import { useAppStore } from "@shared/store/useAppStore";
+import type {
+  AdministrationEvent,
+  HouseholdMedicine,
+  IllnessComment,
+  IllnessEpisode,
+  TemperatureEntry,
+} from "@shared/types/api";
 import { formatDate, formatDateTime } from "@shared/utils/date";
+
+const EPISODE_STATUS_LABELS: Record<string, string> = {
+  active: "Активный",
+  closed: "Закрыт",
+};
+
+const EPISODE_STATUS_STYLES: Record<string, string> = {
+  active: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  closed: "border-slate-400/30 bg-slate-500/10 text-slate-700 dark:text-slate-300",
+};
 
 export function ChildIllnessPage() {
   const { childId } = useParams<{ childId: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const queryClient = useQueryClient();
+  const [openHistoryEpisodeId, setOpenHistoryEpisodeId] = useState<string | null>(null);
+  const historyOnlyView = searchParams.get("view") === "history";
+  const createMode = searchParams.get("mode") === "create";
 
   const { data: child, isLoading: childLoading } = useQuery({
     queryKey: ["child", childId],
@@ -47,13 +71,10 @@ export function ChildIllnessPage() {
     enabled: !!childId,
   });
 
-  const createEpisodeMutation = useMutation({
-    mutationFn: (startedAt: string) =>
-      createIllnessEpisode({ child_id: childId!, started_at: startedAt }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
-      queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
-    },
+  const { data: familyMedicines = [] } = useQuery({
+    queryKey: ["household-medicines", currentFamilyId],
+    queryFn: fetchHouseholdMedicines,
+    enabled: !!currentFamilyId,
   });
 
   const closeEpisodeMutation = useMutation({
@@ -61,6 +82,64 @@ export function ChildIllnessPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
+    },
+  });
+  const createEpisodeMutation = useMutation({
+    mutationFn: async (payload: {
+      started_at: string;
+      title?: string | null;
+      note?: string | null;
+      temperatures: Array<{ value_celsius: number }>;
+      administrations: Array<{ household_medicine_id: string; amount: string }>;
+      comments: Array<{ text: string }>;
+    }) => {
+      const episode = await createIllnessEpisode({
+        child_id: childId!,
+        started_at: payload.started_at,
+        title: payload.title,
+        note: payload.note,
+      });
+
+      await Promise.all([
+        ...payload.temperatures.map((item) =>
+          createTemperatureEntry({
+            episode_id: episode.id,
+            value_celsius: item.value_celsius,
+          })
+        ),
+        ...payload.administrations.map((item) =>
+          createAdministrationEvent({
+            episode_id: episode.id,
+            household_medicine_id: item.household_medicine_id,
+            amount: item.amount,
+          })
+        ),
+        ...payload.comments.map((item) =>
+          createIllnessComment({
+            episode_id: episode.id,
+            text: item.text,
+          })
+        ),
+      ]);
+
+      return episode;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
+      navigate(`/children/${childId}/illness`);
+    },
+    onError: async (error) => {
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["illness-episodes", childId] }),
+        queryClient.refetchQueries({ queryKey: ["illness-episode-active", childId] }),
+      ]);
+
+      const detail =
+        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "";
+      if (detail.includes("активный эпизод")) {
+        navigate(`/children/${childId}/illness`);
+      }
     },
   });
 
@@ -72,132 +151,378 @@ export function ChildIllnessPage() {
     );
   }
 
+  const historyEpisodes = episodes.filter((episode) => episode.status === "closed");
+  const visibleHistoryEpisodes = openHistoryEpisodeId
+    ? historyEpisodes.filter((episode) => episode.id === openHistoryEpisodeId)
+    : historyEpisodes;
+
   return (
-    <div className="min-w-0">
-      <Link to="/children" className="text-sm text-primary hover:underline">
+    <div className="min-w-0 space-y-6">
+      <Link to="/children" className="inline-flex text-sm text-primary hover:underline">
         ← К списку детей
       </Link>
-      <h1 className="mt-2 text-xl font-semibold text-foreground sm:text-2xl">
-        Болезни: {child.name}
-      </h1>
 
-      {!currentFamilyId && (
-        <p className="mt-2 text-muted">Семья не выбрана. Выберите семью на странице «Семья».</p>
-      )}
+      <section className="relative overflow-hidden rounded-[28px] border border-border bg-background shadow-sm">
+        <div className="absolute inset-x-0 top-0 h-28 bg-primary/6" />
+        <div className="relative p-6 sm:p-8">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Журнал болезни</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            {child.name}
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+            {historyOnlyView
+              ? "История завершённых эпизодов ребёнка. Открывай один эпизод и работай с ним без визуального шума."
+              : activeEpisode
+                ? "Текущий экран болезни: фиксируй температуру, приёмы лекарств и заметки по состоянию."
+                : createMode
+                  ? "Подготовь эпизод болезни и активируй его, когда будешь уверен, что нужно начать журнал."
+                  : "Сейчас активного эпизода нет. Когда болезнь начнётся, здесь появится рабочий экран эпизода."}
+          </p>
 
-      <CreateEpisodeForm
-        onSubmit={(startedAt) => createEpisodeMutation.mutate(startedAt)}
-        isPending={createEpisodeMutation.isPending}
-        hasActive={!!activeEpisode}
-      />
+          <div className="mt-6 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 xl:grid-cols-4">
+            <SnapshotItem label="Возраст" value={child.ageLabel || "Не указан"} />
+            <SnapshotItem
+              label="Дата рождения"
+              value={child.birthDate ? formatDate(child.birthDate) : "Не указана"}
+            />
+            <SnapshotItem label="Всего эпизодов" value={String(episodes.length)} />
+            <SnapshotItem
+              label="Состояние"
+              value={
+                historyOnlyView
+                  ? "Просмотр истории"
+                  : activeEpisode
+                    ? "Есть активный эпизод"
+                    : createMode
+                      ? "Подготовка нового эпизода"
+                      : "Без активного эпизода"
+              }
+            />
+          </div>
 
-      {activeEpisode && (
-        <section className="mt-6">
-          <h2 className="text-lg font-medium text-foreground">Активный эпизод</h2>
+          {!currentFamilyId && (
+            <div className="mt-6 rounded-2xl border-l-4 border-amber-500 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+              Семья не выбрана. Сначала открой страницу «Семья».
+            </div>
+          )}
+        </div>
+      </section>
+
+      {activeEpisode && !historyOnlyView && (
+        <section className="space-y-3">
+          <SectionTitle
+            title="Активный эпизод"
+            subtitle="Главный рабочий блок: температура, приёмы и закрытие текущего состояния."
+          />
           <EpisodeBlock
-            episodeId={activeEpisode.id}
-            startedAt={activeEpisode.startedAt}
-            status={activeEpisode.status}
+            episode={activeEpisode}
             onClose={() => closeEpisodeMutation.mutate(activeEpisode.id)}
             familyId={currentFamilyId}
           />
         </section>
       )}
 
-      {episodes.length > 0 && (
-        <section className="mt-6">
-          <h2 className="text-lg font-medium text-foreground">Все эпизоды</h2>
-          <ul className="mt-2 space-y-2">
-            {episodes.map((ep) => (
-              <li key={ep.id} className="rounded-lg border border-border p-3">
-                <span className="text-foreground">
-                  {formatDate(ep.startedAt)} — {ep.status}
-                </span>
-                {ep.status === "active" && (
-                  <EpisodeBlock
-                    episodeId={ep.id}
-                    startedAt={ep.startedAt}
-                    status={ep.status}
-                    onClose={() => closeEpisodeMutation.mutate(ep.id)}
-                    familyId={currentFamilyId ?? null}
-                  />
-                )}
-              </li>
-            ))}
-          </ul>
+      {!activeEpisode && createMode && !historyOnlyView && (
+        <section className="space-y-3">
+          <SectionTitle
+            title="Новый эпизод"
+            subtitle="Пока ты только готовишь эпизод. Он появится в активных болезнях только после активации."
+          />
+          <EpisodeActivationCard
+            childName={child.name}
+            medicines={familyMedicines}
+            isPending={createEpisodeMutation.isPending}
+            errorMessage={
+              (
+                createEpisodeMutation.error as {
+                  response?: { data?: { detail?: string } };
+                }
+              )?.response?.data?.detail ?? null
+            }
+            onActivate={(payload) => createEpisodeMutation.mutate(payload)}
+            onCancel={() => navigate("/children")}
+          />
+        </section>
+      )}
+
+      {!activeEpisode && !createMode && !historyOnlyView && (
+        <section className="rounded-[24px] border border-dashed border-border bg-background px-5 py-8 text-sm text-muted">
+          Активного эпизода сейчас нет. Новый эпизод можно начать из раздела «Дети».
+        </section>
+      )}
+
+      {historyOnlyView && (
+        <section className="space-y-3">
+          <SectionTitle
+            title="История"
+            subtitle={
+              openHistoryEpisodeId
+                ? "Открыт один эпизод. Остальные скрыты, чтобы было проще читать и редактировать."
+                : historyEpisodes.length > 0
+                  ? "Краткие карточки с описанием. При необходимости эпизод можно раскрыть и исправить."
+                  : "Когда появятся завершённые эпизоды, они будут показаны здесь."
+            }
+          />
+
+          {openHistoryEpisodeId && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background px-4 py-3">
+              <p className="text-sm text-muted">
+                Показан 1 эпизод из {historyEpisodes.length}. Остальные скрыты.
+              </p>
+              <button
+                type="button"
+                onClick={() => setOpenHistoryEpisodeId(null)}
+                className="rounded-xl border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/30"
+              >
+                Показать все эпизоды
+              </button>
+            </div>
+          )}
+
+          {historyEpisodes.length > 0 ? (
+            <ul className="grid gap-4">
+              {visibleHistoryEpisodes.map((episode) => (
+                <HistoryEpisodeCard
+                  key={episode.id}
+                  childId={childId}
+                  episode={episode}
+                  episodeNumber={
+                    historyEpisodes.length -
+                    historyEpisodes.findIndex((item) => item.id === episode.id)
+                  }
+                  isOpen={openHistoryEpisodeId === episode.id}
+                  medicines={familyMedicines}
+                  onDeleted={() => setOpenHistoryEpisodeId(null)}
+                  onToggle={() =>
+                    setOpenHistoryEpisodeId((current) =>
+                      current === episode.id ? null : episode.id
+                    )
+                  }
+                />
+              ))}
+            </ul>
+          ) : (
+            <div className="rounded-[24px] border border-dashed border-border bg-background px-5 py-8 text-sm text-muted">
+              История пока пустая.
+            </div>
+          )}
         </section>
       )}
     </div>
   );
 }
 
-function CreateEpisodeForm({
-  onSubmit,
-  isPending,
-  hasActive,
-}: {
-  onSubmit: (startedAt: string) => void;
-  isPending: boolean;
-  hasActive: boolean;
-}) {
-  const [startedAt, setStartedAt] = useState(() => new Date().toISOString().slice(0, 10));
+function InfoPill({ label }: { label: string }) {
+  return (
+    <span className="rounded-full border border-border bg-muted/10 px-3 py-1 text-sm text-muted">
+      {label}
+    </span>
+  );
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!startedAt) return;
-    onSubmit(startedAt);
-  };
+function SnapshotItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-[0.12em] text-muted">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-foreground sm:text-xl">{title}</h2>
+      <p className="mt-1 text-sm leading-6 text-muted">{subtitle}</p>
+    </div>
+  );
+}
+
+function HistoryEpisodeCard({
+  childId,
+  episode,
+  episodeNumber,
+  isOpen,
+  medicines,
+  onDeleted,
+  onToggle,
+}: {
+  childId: string;
+  episode: IllnessEpisode;
+  episodeNumber: number;
+  isOpen: boolean;
+  medicines: HouseholdMedicine[];
+  onDeleted: () => void;
+  onToggle: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const { data: temps = [] } = useQuery({
+    queryKey: ["temperature-entries", episode.id],
+    queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
+    enabled: isOpen,
+  });
+
+  const { data: administrations = [] } = useQuery({
+    queryKey: ["administration-events", episode.id],
+    queryFn: () => fetchAdministrationEventsByEpisodeId(episode.id),
+    enabled: isOpen,
+  });
+
+  const { data: comments = [] } = useQuery({
+    queryKey: ["illness-comments", episode.id],
+    queryFn: () => fetchIllnessCommentsByEpisodeId(episode.id),
+    enabled: isOpen,
+  });
+
+  const deleteEpisodeMutation = useMutation({
+    mutationFn: () => deleteIllnessEpisode(episode.id),
+    onSuccess: () => {
+      onDeleted();
+      queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
+    },
+  });
+
+  const timelineItems = buildEpisodeTimeline(temps, administrations, comments, medicines);
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-border p-4"
+    <li
+      className={`rounded-[24px] border px-5 py-4 shadow-sm transition-colors sm:px-6 sm:py-5 ${
+        isOpen ? "border-primary/35 bg-primary/5" : "border-border bg-background"
+      }`}
     >
-      <label>
-        <span className="block text-sm text-muted">Дата начала</span>
-        <input
-          type="date"
-          value={startedAt}
-          onChange={(e) => setStartedAt(e.target.value)}
-          className="mt-1 rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-        />
-      </label>
-      <button
-        type="submit"
-        disabled={isPending || hasActive}
-        className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
-      >
-        {hasActive ? "Есть активный эпизод" : isPending ? "Создаём…" : "Новый эпизод"}
-      </button>
-    </form>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-[0.12em] text-muted">
+            Эпизод {episodeNumber} · {formatEpisodePeriod(episode.startedAt, episode.closedAt)}
+          </p>
+          <p className="mt-2 text-base font-medium text-foreground">
+            {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            {episode.closedAt
+              ? `Закрыт ${formatDateTime(episode.closedAt)}`
+              : "Дата закрытия не указана"}
+          </p>
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
+            {episode.note?.trim() || "Описание не заполнено."}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`rounded-xl border px-3 py-1.5 text-sm transition-colors ${
+            isOpen
+              ? "border-primary/30 bg-background text-foreground hover:bg-background/80"
+              : "border-border text-foreground hover:bg-muted/30"
+          }`}
+        >
+          {isOpen ? "Скрыть" : "Открыть"}
+        </button>
+      </div>
+
+      {isOpen && (
+        <div className="mt-6 space-y-6 border-t border-primary/20 pt-6">
+          <section className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Описание</h3>
+              <p className="mt-1 text-sm text-muted">
+                {formatEpisodePeriod(episode.startedAt, episode.closedAt)} ·{" "}
+                {formatEntrySummary(temps.length, administrations.length, comments.length)}
+              </p>
+            </div>
+
+            <div className="mt-4 border-l-2 border-primary/20 pl-4">
+              <p className="text-sm leading-6 text-muted">
+                {episode.note?.trim() || "Описание не заполнено."}
+              </p>
+            </div>
+          </section>
+
+          <section className="border-t border-border pt-5">
+            <h3 className="text-sm font-semibold text-foreground">Записи эпизода</h3>
+
+            {timelineItems.length > 0 ? (
+              <div className="mt-4">
+                <EpisodeTimelineList items={timelineItems} />
+              </div>
+            ) : (
+              <div className="mt-4 border border-dashed border-border bg-background px-4 py-6 text-sm text-muted">
+                Для этого эпизода ещё нет температур и записей о приёмах.
+              </div>
+            )}
+          </section>
+
+          <section className="border-t border-border pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Действия с эпизодом</h3>
+                <p className="mt-1 text-sm text-muted">
+                  Удаление скрывает этот эпизод из истории, но не стирает его из базы.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!window.confirm("Удалить эпизод из истории болезней?")) {
+                    return;
+                  }
+                  deleteEpisodeMutation.mutate();
+                }}
+                disabled={deleteEpisodeMutation.isPending}
+                className="rounded-xl border border-red-500/40 px-3 py-1.5 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
+              >
+                {deleteEpisodeMutation.isPending ? "Удаляем…" : "Удалить из истории"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </li>
   );
 }
 
 function EpisodeBlock({
-  episodeId,
-  status,
+  episode,
   onClose,
   familyId,
 }: {
-  episodeId: string;
-  startedAt: string;
-  status: string;
+  episode: IllnessEpisode;
   onClose: () => void;
   familyId: string | null;
 }) {
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
+  const isActive = episode.status === "active";
+  const [episodeTitle, setEpisodeTitle] = useState(episode.title ?? "");
+  const [episodeNote, setEpisodeNote] = useState(episode.note ?? "");
+  const [commentText, setCommentText] = useState("");
+  const [composerMode, setComposerMode] = useState<"temperature" | "administration" | "comment">(
+    "temperature"
+  );
+
+  useEffect(() => {
+    setEpisodeTitle(episode.title ?? "");
+    setEpisodeNote(episode.note ?? "");
+  }, [episode.id, episode.note, episode.title]);
 
   const { data: temps = [] } = useQuery({
-    queryKey: ["temperature-entries", episodeId],
-    queryFn: () => fetchTemperatureEntriesByEpisodeId(episodeId),
-    enabled: !!episodeId,
+    queryKey: ["temperature-entries", episode.id],
+    queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
+    enabled: !!episode.id,
   });
 
   const { data: administrations = [] } = useQuery({
-    queryKey: ["administration-events", episodeId],
-    queryFn: () => fetchAdministrationEventsByEpisodeId(episodeId),
-    enabled: !!episodeId,
+    queryKey: ["administration-events", episode.id],
+    queryFn: () => fetchAdministrationEventsByEpisodeId(episode.id),
+    enabled: !!episode.id,
+  });
+
+  const { data: comments = [] } = useQuery({
+    queryKey: ["illness-comments", episode.id],
+    queryFn: () => fetchIllnessCommentsByEpisodeId(episode.id),
+    enabled: !!episode.id,
   });
 
   const { data: householdMedicines = [] } = useQuery({
@@ -205,140 +530,830 @@ function EpisodeBlock({
     queryFn: fetchHouseholdMedicines,
     enabled: !!familyId && !!accountId,
   });
+
   const usableHouseholdMedicines = householdMedicines.filter(
     (medicine) => medicine.status !== "expired" && medicine.status !== "expired_after_opening"
   );
 
   const addTempMutation = useMutation({
     mutationFn: (valueCelsius: number) =>
-      createTemperatureEntry({ episode_id: episodeId, value_celsius: valueCelsius }),
+      createTemperatureEntry({ episode_id: episode.id, value_celsius: valueCelsius }),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["temperature-entries", episodeId] }),
+      queryClient.invalidateQueries({ queryKey: ["temperature-entries", episode.id] }),
   });
 
   const addAdminMutation = useMutation({
-    mutationFn: (p: { household_medicine_id: string; amount: string }) =>
+    mutationFn: (payload: { household_medicine_id: string; amount: string }) =>
       createAdministrationEvent({
-        episode_id: episodeId,
-        household_medicine_id: p.household_medicine_id,
-        amount: p.amount,
+        episode_id: episode.id,
+        household_medicine_id: payload.household_medicine_id,
+        amount: payload.amount,
       }),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["administration-events", episodeId] }),
+      queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] }),
+  });
+
+  const updateEpisodeNoteMutation = useMutation({
+    mutationFn: () =>
+      updateIllnessEpisode(episode.id, {
+        title: episodeTitle.trim() ? episodeTitle.trim() : null,
+        note: episodeNote.trim() ? episodeNote.trim() : null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["illness-episodes", episode.childId] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-active", episode.childId] });
+    },
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: () =>
+      createIllnessComment({
+        episode_id: episode.id,
+        text: commentText.trim(),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["illness-comments", episode.id] });
+      setCommentText("");
+    },
   });
 
   const [tempValue, setTempValue] = useState("");
   const [adminMedicineId, setAdminMedicineId] = useState("");
   const [adminAmount, setAdminAmount] = useState("");
+  const timelineItems = buildEpisodeTimeline(temps, administrations, comments, householdMedicines);
 
   return (
-    <div className="mt-3 space-y-4 pl-0 sm:pl-2">
-      {status === "active" && (
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted/30"
-        >
-          Закрыть эпизод
-        </button>
-      )}
+    <div className="rounded-[28px] border border-border bg-background shadow-sm">
+      <div className="rounded-t-[28px] border-b border-border bg-primary/5 px-5 py-5 sm:px-6 sm:py-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.16em] text-muted">Текущий эпизод</p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+              {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
+            </h3>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded-full border px-3 py-1 text-sm ${
+                  EPISODE_STATUS_STYLES[episode.status] ?? EPISODE_STATUS_STYLES.closed
+                }`}
+              >
+                {EPISODE_STATUS_LABELS[episode.status] ?? episode.status}
+              </span>
+              <p className="text-sm text-muted">
+                Начался {formatDate(episode.startedAt)} ·{" "}
+                {formatEntrySummary(temps.length, administrations.length, comments.length)}
+              </p>
+            </div>
+          </div>
 
-      <div>
-        <h3 className="text-sm font-medium text-foreground">Температура</h3>
-        <div className="mt-1 flex flex-wrap gap-2">
+          {isActive && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-border bg-background px-4 py-2 text-sm text-foreground hover:bg-muted/30"
+            >
+              Закрыть эпизод
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-6 px-5 py-5 sm:px-6 sm:py-6">
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h4 className="text-base font-semibold text-foreground">Карточка эпизода</h4>
+              <p className="mt-1 text-sm text-muted">Название и общее описание болезни.</p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3">
+            <label className="block">
+              <span className="block text-sm text-muted">Название эпизода</span>
+              <input
+                type="text"
+                value={episodeTitle}
+                onChange={(e) => setEpisodeTitle(e.target.value)}
+                placeholder="Например: ОРВИ с температурой"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground"
+              />
+            </label>
+            <textarea
+              rows={4}
+              value={episodeNote}
+              onChange={(e) => setEpisodeNote(e.target.value)}
+              placeholder="Описание эпизода: как началось заболевание, какие основные симптомы и общий контекст."
+              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground"
+            />
+            {updateEpisodeNoteMutation.isError && (
+              <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                {(
+                  updateEpisodeNoteMutation.error as {
+                    response?: { data?: { detail?: string } };
+                  }
+                ).response?.data?.detail ?? "Не удалось сохранить комментарий."}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => updateEpisodeNoteMutation.mutate()}
+                disabled={updateEpisodeNoteMutation.isPending}
+                className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+              >
+                {updateEpisodeNoteMutation.isPending ? "Сохраняем…" : "Сохранить карточку"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEpisodeTitle(episode.title ?? "");
+                  setEpisodeNote(episode.note ?? "");
+                }}
+                disabled={updateEpisodeNoteMutation.isPending}
+                className="rounded-xl border border-border px-4 py-2 text-sm text-foreground hover:bg-muted/30 disabled:opacity-50"
+              >
+                Сбросить
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-border pt-6">
+          <div>
+            <h4 className="text-base font-semibold text-foreground">Добавить запись</h4>
+            <p className="mt-1 text-sm text-muted">
+              Выбери тип записи и внеси одно новое действие.
+            </p>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <ComposerToggle
+              label="Температура"
+              active={composerMode === "temperature"}
+              onClick={() => setComposerMode("temperature")}
+            />
+            <ComposerToggle
+              label="Лекарство"
+              active={composerMode === "administration"}
+              onClick={() => setComposerMode("administration")}
+            />
+            <ComposerToggle
+              label="Комментарий"
+              active={composerMode === "comment"}
+              onClick={() => setComposerMode("comment")}
+            />
+          </div>
+
+          <div className="mt-4 border-t border-border pt-4">
+            {composerMode === "temperature" && (
+              <TemperatureForm
+                value={tempValue}
+                onChange={setTempValue}
+                onSubmit={() => {
+                  const parsed = parseFloat(tempValue);
+                  if (Number.isNaN(parsed)) return;
+                  addTempMutation.mutate(parsed);
+                  setTempValue("");
+                }}
+                isPending={addTempMutation.isPending}
+              />
+            )}
+
+            {composerMode === "administration" &&
+              (usableHouseholdMedicines.length === 0 ? (
+                <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200">
+                  В аптечке нет доступных упаковок для приёма. Просроченные скрыты автоматически.
+                </div>
+              ) : (
+                <AdministrationForm
+                  medicines={usableHouseholdMedicines}
+                  selectedMedicineId={adminMedicineId}
+                  amount={adminAmount}
+                  onMedicineChange={setAdminMedicineId}
+                  onAmountChange={setAdminAmount}
+                  onSubmit={() => {
+                    if (!adminMedicineId || !adminAmount.trim()) return;
+                    addAdminMutation.mutate({
+                      household_medicine_id: adminMedicineId,
+                      amount: adminAmount.trim(),
+                    });
+                    setAdminMedicineId("");
+                    setAdminAmount("");
+                  }}
+                  isPending={addAdminMutation.isPending}
+                />
+              ))}
+            {composerMode === "administration" && addAdminMutation.isError && (
+              <p className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                {(addAdminMutation.error as { response?: { data?: { detail?: string } } }).response
+                  ?.data?.detail ?? "Ошибка записи. Проверь срок годности и срок после вскрытия."}
+              </p>
+            )}
+
+            {composerMode === "comment" && (
+              <div className="grid gap-3 rounded-2xl border border-border bg-background p-3">
+                <textarea
+                  rows={3}
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Например: к вечеру стал бодрее, после сна снова поднялась температура."
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!commentText.trim()) return;
+                      addCommentMutation.mutate();
+                    }}
+                    disabled={addCommentMutation.isPending || !commentText.trim()}
+                    className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+                  >
+                    {addCommentMutation.isPending ? "Сохраняем…" : "Добавить комментарий"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="border-t border-border pt-6">
+          <div>
+            <h4 className="text-base font-semibold text-foreground">Лента эпизода</h4>
+            <p className="mt-1 text-sm text-muted">Последние записи по времени.</p>
+          </div>
+
+          <div className="mt-4">
+            {timelineItems.length > 0 ? (
+              <EpisodeTimelineList items={timelineItems} />
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-6 text-sm text-muted">
+                Записей по эпизоду пока нет.
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function EpisodeActivationCard({
+  childName,
+  medicines,
+  isPending,
+  errorMessage,
+  onActivate,
+  onCancel,
+}: {
+  childName: string;
+  medicines: HouseholdMedicine[];
+  isPending: boolean;
+  errorMessage: string | null;
+  onActivate: (payload: {
+    started_at: string;
+    title?: string | null;
+    note?: string | null;
+    temperatures: Array<{ value_celsius: number }>;
+    administrations: Array<{ household_medicine_id: string; amount: string }>;
+    comments: Array<{ text: string }>;
+  }) => void;
+  onCancel: () => void;
+}) {
+  const [startedAt, setStartedAt] = useState(() => new Date().toISOString().slice(0, 10));
+  const [title, setTitle] = useState("");
+  const [note, setNote] = useState("");
+  const [composerMode, setComposerMode] = useState<"temperature" | "administration" | "comment">(
+    "temperature"
+  );
+  const [tempValue, setTempValue] = useState("");
+  const [adminMedicineId, setAdminMedicineId] = useState("");
+  const [adminAmount, setAdminAmount] = useState("");
+  const [commentText, setCommentText] = useState("");
+  const [temperatures, setTemperatures] = useState<Array<{ id: string; valueCelsius: number }>>([]);
+  const [administrations, setAdministrations] = useState<
+    Array<{ id: string; householdMedicineId: string; amount: string }>
+  >([]);
+  const [comments, setComments] = useState<Array<{ id: string; text: string }>>([]);
+  const usableMedicines = medicines.filter(
+    (medicine) => medicine.status !== "expired" && medicine.status !== "expired_after_opening"
+  );
+  const pendingItems = buildPendingActivationTimeline(
+    temperatures,
+    administrations,
+    comments,
+    medicines
+  );
+
+  return (
+    <div className="rounded-[28px] border border-border bg-background shadow-sm">
+      <div className="rounded-t-[28px] border-b border-border bg-primary/5 px-5 py-5 sm:px-6 sm:py-6">
+        <p className="text-xs uppercase tracking-[0.16em] text-muted">Подготовка эпизода</p>
+        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{childName}</h3>
+        <p className="mt-3 text-sm text-muted">
+          Пока эпизод не активирован, он не появляется в активных болезнях и ничего не сохраняет.
+        </p>
+      </div>
+
+      <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+        {errorMessage && (
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+            {errorMessage}
+          </div>
+        )}
+        <label className="block">
+          <span className="block text-sm text-muted">Дата начала</span>
+          <input
+            type="date"
+            value={startedAt}
+            onChange={(e) => setStartedAt(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground"
+          />
+        </label>
+        <label className="block">
+          <span className="block text-sm text-muted">Название эпизода</span>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Например: ОРВИ с температурой"
+            className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground"
+          />
+        </label>
+        <label className="block">
+          <span className="block text-sm text-muted">Что происходит</span>
+          <textarea
+            rows={4}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Коротко опиши симптомы и контекст."
+            className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground"
+          />
+        </label>
+        <section className="border-t border-border pt-6">
+          <div>
+            <h4 className="text-base font-semibold text-foreground">Подготовить записи</h4>
+            <p className="mt-1 text-sm text-muted">
+              Можно заранее добавить температуры, лекарства и комментарии. Они сохранятся вместе с
+              активацией.
+            </p>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <ComposerToggle
+              label="Температура"
+              active={composerMode === "temperature"}
+              onClick={() => setComposerMode("temperature")}
+            />
+            <ComposerToggle
+              label="Лекарство"
+              active={composerMode === "administration"}
+              onClick={() => setComposerMode("administration")}
+            />
+            <ComposerToggle
+              label="Комментарий"
+              active={composerMode === "comment"}
+              onClick={() => setComposerMode("comment")}
+            />
+          </div>
+
+          <div className="mt-4 border-t border-border pt-4">
+            {composerMode === "temperature" && (
+              <TemperatureForm
+                value={tempValue}
+                onChange={setTempValue}
+                onSubmit={() => {
+                  const parsed = parseFloat(tempValue);
+                  if (Number.isNaN(parsed)) return;
+                  setTemperatures((current) => [
+                    ...current,
+                    { id: makeLocalId(), valueCelsius: parsed },
+                  ]);
+                  setTempValue("");
+                }}
+                isPending={false}
+              />
+            )}
+
+            {composerMode === "administration" &&
+              (usableMedicines.length === 0 ? (
+                <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200">
+                  В аптечке нет доступных упаковок для приёма. Просроченные скрыты автоматически.
+                </div>
+              ) : (
+                <AdministrationForm
+                  medicines={usableMedicines}
+                  selectedMedicineId={adminMedicineId}
+                  amount={adminAmount}
+                  onMedicineChange={setAdminMedicineId}
+                  onAmountChange={setAdminAmount}
+                  onSubmit={() => {
+                    if (!adminMedicineId || !adminAmount.trim()) return;
+                    setAdministrations((current) => [
+                      ...current,
+                      {
+                        id: makeLocalId(),
+                        householdMedicineId: adminMedicineId,
+                        amount: adminAmount.trim(),
+                      },
+                    ]);
+                    setAdminMedicineId("");
+                    setAdminAmount("");
+                  }}
+                  isPending={false}
+                />
+              ))}
+
+            {composerMode === "comment" && (
+              <div className="grid gap-3 rounded-2xl border border-border bg-background p-3">
+                <textarea
+                  rows={3}
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Например: к вечеру стал бодрее, после сна снова поднялась температура."
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!commentText.trim()) return;
+                      setComments((current) => [
+                        ...current,
+                        { id: makeLocalId(), text: commentText.trim() },
+                      ]);
+                      setCommentText("");
+                    }}
+                    disabled={!commentText.trim()}
+                    className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+                  >
+                    Добавить комментарий
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {pendingItems.length > 0 && (
+          <section className="border-t border-border pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h4 className="text-base font-semibold text-foreground">Что будет сохранено</h4>
+                <p className="mt-1 text-sm text-muted">
+                  Этот набор запишется сразу после активации эпизода.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {pendingItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-border bg-background px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <TimelineKindPill kind={item.kind} />
+                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                    </div>
+                    <p className="mt-2 text-sm text-muted">{item.description}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (item.kind === "temperature") {
+                        setTemperatures((current) =>
+                          current.filter((entry) => entry.id !== item.id)
+                        );
+                        return;
+                      }
+                      if (item.kind === "administration") {
+                        setAdministrations((current) =>
+                          current.filter((entry) => entry.id !== item.id)
+                        );
+                        return;
+                      }
+                      setComments((current) => current.filter((entry) => entry.id !== item.id));
+                    }}
+                    className="rounded-xl border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted/30"
+                  >
+                    Удалить
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              onActivate({
+                started_at: startedAt,
+                title: title.trim() ? title.trim() : null,
+                note: note.trim() ? note.trim() : null,
+                temperatures: temperatures.map((item) => ({ value_celsius: item.valueCelsius })),
+                administrations: administrations.map((item) => ({
+                  household_medicine_id: item.householdMedicineId,
+                  amount: item.amount,
+                })),
+                comments: comments.map((item) => ({ text: item.text })),
+              })
+            }
+            disabled={isPending || !startedAt}
+            className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+          >
+            {isPending ? "Активируем…" : "Активировать эпизод"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isPending}
+            className="rounded-xl border border-border px-4 py-2 text-sm text-foreground hover:bg-muted/30 disabled:opacity-50"
+          >
+            Назад
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ComposerToggle({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "rounded-xl border px-4 py-2 text-sm transition-colors",
+        active
+          ? "border-primary/30 bg-primary text-white"
+          : "border-border bg-background text-foreground hover:bg-muted/30",
+      ].join(" ")}
+    >
+      {label}
+    </button>
+  );
+}
+
+function TemperatureForm({
+  value,
+  onChange,
+  onSubmit,
+  isPending,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-background p-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="block">
+          <span className="block text-sm text-muted">Температура</span>
           <input
             type="number"
             step={0.1}
-            value={tempValue}
-            onChange={(e) => setTempValue(e.target.value)}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
             placeholder="36.6"
-            className="w-20 rounded-lg border border-border bg-background px-2 py-1 text-foreground"
+            className="mt-1 w-24 rounded-xl border border-border bg-background px-3 py-2 text-foreground"
           />
-          <button
-            type="button"
-            onClick={() => {
-              const v = parseFloat(tempValue);
-              if (!Number.isNaN(v)) {
-                addTempMutation.mutate(v);
-                setTempValue("");
-              }
-            }}
-            disabled={addTempMutation.isPending || !tempValue}
-            className="rounded-lg bg-primary px-3 py-1 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
-          >
-            Добавить
-          </button>
-        </div>
-        <ul className="mt-2 text-sm text-muted">
-          {temps.map((t) => (
-            <li key={t.id}>
-              {t.valueCelsius} °C — {formatDateTime(t.measuredAt)}
-            </li>
-          ))}
-        </ul>
+        </label>
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={isPending || !value}
+          className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+        >
+          {isPending ? "Сохраняем…" : "Добавить"}
+        </button>
       </div>
-
-      {status === "active" && familyId && (
-        <div>
-          <h3 className="text-sm font-medium text-foreground">Приём лекарства</h3>
-          <div className="mt-1 flex flex-wrap gap-2">
-            <select
-              value={adminMedicineId}
-              onChange={(e) => setAdminMedicineId(e.target.value)}
-              className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1 text-foreground max-w-xs"
-            >
-              <option value="">Выберите упаковку</option>
-              {usableHouseholdMedicines.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.medicineName} · {m.statusLabel} · до {formatDate(m.expiryDate)}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={adminAmount}
-              onChange={(e) => setAdminAmount(e.target.value)}
-              placeholder="5 мл"
-              className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-foreground"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                if (adminMedicineId && adminAmount.trim()) {
-                  addAdminMutation.mutate({
-                    household_medicine_id: adminMedicineId,
-                    amount: adminAmount.trim(),
-                  });
-                  setAdminMedicineId("");
-                  setAdminAmount("");
-                }
-              }}
-              disabled={addAdminMutation.isPending || !adminMedicineId || !adminAmount.trim()}
-              className="rounded-lg bg-primary px-3 py-1 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
-            >
-              Записать приём
-            </button>
-          </div>
-          {usableHouseholdMedicines.length === 0 && (
-            <p className="mt-1 text-sm text-muted">
-              В аптечке нет доступных упаковок для приёма. Просроченные препараты скрыты.
-            </p>
-          )}
-          {addAdminMutation.isError && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {(addAdminMutation.error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail ?? "Ошибка (проверьте срок годности и вскрытие — Safety Engine)"}
-            </p>
-          )}
-          <ul className="mt-2 text-sm text-muted">
-            {administrations.map((a) => (
-              <li key={a.id}>
-                {a.amount} — {formatDateTime(a.administeredAt)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
+}
+
+function AdministrationForm({
+  medicines,
+  selectedMedicineId,
+  amount,
+  onMedicineChange,
+  onAmountChange,
+  onSubmit,
+  isPending,
+}: {
+  medicines: HouseholdMedicine[];
+  selectedMedicineId: string;
+  amount: string;
+  onMedicineChange: (value: string) => void;
+  onAmountChange: (value: string) => void;
+  onSubmit: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <div className="grid gap-3 rounded-2xl border border-border bg-background p-3 sm:grid-cols-[minmax(0,1fr)_140px_auto]">
+      <label className="block min-w-0">
+        <span className="block text-sm text-muted">Упаковка</span>
+        <select
+          value={selectedMedicineId}
+          onChange={(e) => onMedicineChange(e.target.value)}
+          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
+        >
+          <option value="">Выберите упаковку</option>
+          {medicines.map((medicine) => (
+            <option key={medicine.id} value={medicine.id}>
+              {medicine.medicineName} · {medicine.statusLabel} · до{" "}
+              {formatDate(medicine.expiryDate)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="block">
+        <span className="block text-sm text-muted">Доза</span>
+        <input
+          type="text"
+          value={amount}
+          onChange={(e) => onAmountChange(e.target.value)}
+          placeholder="5 мл"
+          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
+        />
+      </label>
+
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={isPending || !selectedMedicineId || !amount.trim()}
+        className="rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary-focus disabled:opacity-50"
+      >
+        {isPending ? "Сохраняем…" : "Записать"}
+      </button>
+    </div>
+  );
+}
+
+type EpisodeTimelineItem = {
+  id: string;
+  at: string;
+  kind: "temperature" | "administration" | "comment";
+  title: string;
+  description: string;
+};
+
+function EpisodeTimelineList({ items }: { items: EpisodeTimelineItem[] }) {
+  return (
+    <ul className="space-y-2">
+      {items.map((item) => (
+        <li key={item.id} className="rounded-2xl border border-border bg-background px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <TimelineKindPill kind={item.kind} />
+                <p className="text-base font-semibold text-foreground">{item.title}</p>
+              </div>
+              <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted">
+                {item.description}
+              </p>
+            </div>
+            <InfoPill label={formatDateTime(item.at)} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function TimelineKindPill({ kind }: { kind: EpisodeTimelineItem["kind"] }) {
+  const config: Record<EpisodeTimelineItem["kind"], { label: string; className: string }> = {
+    temperature: {
+      label: "Температура",
+      className: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+    },
+    administration: {
+      label: "Лекарство",
+      className: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+    },
+    comment: {
+      label: "Комментарий",
+      className: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    },
+  };
+
+  return (
+    <span className={`rounded-full border px-2.5 py-1 text-xs ${config[kind].className}`}>
+      {config[kind].label}
+    </span>
+  );
+}
+
+function formatEpisodePeriod(startedAt: string, closedAt: string | null) {
+  return closedAt
+    ? `${formatDate(startedAt)} - ${formatDate(closedAt)}`
+    : `с ${formatDate(startedAt)}`;
+}
+
+function formatEntrySummary(
+  temperatureCount: number,
+  administrationCount: number,
+  commentCount: number
+) {
+  return [
+    `${temperatureCount} темп.`,
+    `${administrationCount} приёма`,
+    `${commentCount} комм.`,
+  ].join(" • ");
+}
+
+function buildEpisodeTimeline(
+  temperatures: TemperatureEntry[],
+  administrations: AdministrationEvent[],
+  comments: IllnessComment[],
+  medicines: HouseholdMedicine[]
+): EpisodeTimelineItem[] {
+  const temperatureItems = temperatures.map((entry) => ({
+    id: `temp-${entry.id}`,
+    at: entry.measuredAt,
+    kind: "temperature" as const,
+    title: `${entry.valueCelsius} °C`,
+    description: entry.comment?.trim() || "Замер температуры",
+  }));
+
+  const administrationItems = administrations.map((entry) => {
+    const medicine = medicines.find((item) => item.id === entry.householdMedicineId);
+
+    return {
+      id: `admin-${entry.id}`,
+      at: entry.administeredAt,
+      kind: "administration" as const,
+      title: medicine?.medicineName ?? "Приём лекарства",
+      description: entry.reason?.trim()
+        ? `Доза: ${entry.amount}\nКомментарий: ${entry.reason.trim()}`
+        : `Доза: ${entry.amount}`,
+    };
+  });
+
+  const commentItems = comments.map((entry) => ({
+    id: `comment-${entry.id}`,
+    at: entry.createdAt,
+    kind: "comment" as const,
+    title: "Комментарий",
+    description: entry.text,
+  }));
+
+  return [...temperatureItems, ...administrationItems, ...commentItems].sort((left, right) =>
+    right.at.localeCompare(left.at)
+  );
+}
+
+function buildPendingActivationTimeline(
+  temperatures: Array<{ id: string; valueCelsius: number }>,
+  administrations: Array<{ id: string; householdMedicineId: string; amount: string }>,
+  comments: Array<{ id: string; text: string }>,
+  medicines: HouseholdMedicine[]
+): EpisodeTimelineItem[] {
+  const at = new Date().toISOString();
+
+  const temperatureItems = temperatures.map((entry) => ({
+    id: entry.id,
+    at,
+    kind: "temperature" as const,
+    title: `${entry.valueCelsius} °C`,
+    description: "Будет сохранено как начальный замер температуры",
+  }));
+
+  const administrationItems = administrations.map((entry) => {
+    const medicine = medicines.find((item) => item.id === entry.householdMedicineId);
+
+    return {
+      id: entry.id,
+      at,
+      kind: "administration" as const,
+      title: medicine?.medicineName ?? "Приём лекарства",
+      description: `Доза: ${entry.amount}`,
+    };
+  });
+
+  const commentItems = comments.map((entry) => ({
+    id: entry.id,
+    at,
+    kind: "comment" as const,
+    title: "Комментарий",
+    description: entry.text,
+  }));
+
+  return [...temperatureItems, ...administrationItems, ...commentItems];
+}
+
+function makeLocalId() {
+  return Math.random().toString(36).slice(2, 10);
 }

@@ -9,6 +9,7 @@ const baseURL = "/api/v1";
 
 export const apiClient = axios.create({
   baseURL,
+  withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -37,7 +38,9 @@ function shouldSkipRefresh(url?: string): boolean {
   return (
     !url ||
     url.includes("/auth/login") ||
+    url.includes("/auth/signin") ||
     url.includes("/auth/register") ||
+    url.includes("/auth/signup") ||
     url.includes("/auth/refresh")
   );
 }
@@ -45,7 +48,9 @@ function shouldSkipRefresh(url?: string): boolean {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
+    const originalRequest = error.config as
+      | (typeof error.config & { _retry?: boolean })
+      | undefined;
     if (
       error.response?.status === 401 &&
       originalRequest &&

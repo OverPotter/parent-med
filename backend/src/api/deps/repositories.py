@@ -10,6 +10,7 @@ from src.domain.repositories.administration_event_repository import Administrati
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
+from src.domain.repositories.illness_comment_repository import IllnessCommentRepository
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 from src.domain.repositories.medicine_catalog_repository import MedicineCatalogRepository
 from src.domain.repositories.parent_repository import ParentRepository
@@ -26,6 +27,9 @@ from src.infrastructure.database.repositories.child_repository import SqlChildRe
 from src.infrastructure.database.repositories.family_repository import SqlFamilyRepository
 from src.infrastructure.database.repositories.household_medicine_repository import (
     SqlHouseholdMedicineRepository,
+)
+from src.infrastructure.database.repositories.illness_comment_repository import (
+    SqlIllnessCommentRepository,
 )
 from src.infrastructure.database.repositories.illness_episode_repository import (
     SqlIllnessEpisodeRepository,
@@ -86,6 +90,12 @@ def get_illness_episode_repo(
     session: AsyncSession = Depends(get_db_session),
 ) -> IllnessEpisodeRepository:
     return SqlIllnessEpisodeRepository(session)
+
+
+def get_illness_comment_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> IllnessCommentRepository:
+    return SqlIllnessCommentRepository(session)
 
 
 def get_temperature_entry_repo(
