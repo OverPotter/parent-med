@@ -7,6 +7,9 @@ from src.infrastructure.database.models.child import ChildModel
 from src.infrastructure.database.models.episode_medication_plan import EpisodeMedicationPlanModel
 from src.infrastructure.database.models.family import FamilyModel
 from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
+from src.infrastructure.database.models.household_medicine_notification_delivery import (
+    HouseholdMedicineNotificationDeliveryModel,
+)
 from src.infrastructure.database.models.illness_episode import IllnessEpisodeModel
 from src.infrastructure.database.models.illness_episode_event import IllnessEpisodeEventModel
 from src.infrastructure.database.models.medicine_catalog_item import MedicineCatalogItemModel
@@ -26,6 +29,7 @@ __all__ = [
     "ParentModel",
     "PushSubscriptionModel",
     "HouseholdMedicineModel",
+    "HouseholdMedicineNotificationDeliveryModel",
     "IllnessEpisodeModel",
     "IllnessEpisodeEventModel",
     "TemperatureEntryModel",

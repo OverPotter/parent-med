@@ -86,6 +86,7 @@ class EpisodeMedicationPlanService:
             notify_at_due=True,
             last_before_notification_for_at=None,
             last_due_notification_for_at=None,
+            last_overdue_notification_for_at=None,
             created_at=datetime.now(UTC),
         )
         created = await self._repo.add(entity)
@@ -152,6 +153,7 @@ class EpisodeMedicationPlanService:
                 notify_at_due=True,
                 last_before_notification_for_at=entity.last_before_notification_for_at,
                 last_due_notification_for_at=entity.last_due_notification_for_at,
+                last_overdue_notification_for_at=entity.last_overdue_notification_for_at,
                 created_at=entity.created_at,
             )
         )

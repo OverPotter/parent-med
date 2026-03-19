@@ -138,6 +138,10 @@ export interface PushNotificationConfig {
 export interface PushNotificationPreferences {
   beforeReminderMinutes: number;
   dueReminderEnabled: boolean;
+  cabinetNotify30Days: boolean;
+  cabinetNotify15Days: boolean;
+  cabinetNotify7Days: boolean;
+  cabinetNotify1Day: boolean;
 }
 
 /** Ответ API с ошибкой (detail + code). */

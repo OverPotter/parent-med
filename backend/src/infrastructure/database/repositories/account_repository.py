@@ -23,6 +23,10 @@ class SqlAccountRepository(AccountRepository):
             password_hash=model.password_hash,
             family_id=model.family_id,
             push_before_reminder_minutes=model.push_before_reminder_minutes,
+            cabinet_notify_30_days=model.cabinet_notify_30_days,
+            cabinet_notify_15_days=model.cabinet_notify_15_days,
+            cabinet_notify_7_days=model.cabinet_notify_7_days,
+            cabinet_notify_1_day=model.cabinet_notify_1_day,
             created_at=model.created_at,
         )
 
@@ -33,6 +37,10 @@ class SqlAccountRepository(AccountRepository):
             password_hash=entity.password_hash,
             family_id=entity.family_id,
             push_before_reminder_minutes=entity.push_before_reminder_minutes,
+            cabinet_notify_30_days=entity.cabinet_notify_30_days,
+            cabinet_notify_15_days=entity.cabinet_notify_15_days,
+            cabinet_notify_7_days=entity.cabinet_notify_7_days,
+            cabinet_notify_1_day=entity.cabinet_notify_1_day,
             created_at=entity.created_at,
         )
 
@@ -71,6 +79,10 @@ class SqlAccountRepository(AccountRepository):
         row.password_hash = entity.password_hash
         row.family_id = entity.family_id
         row.push_before_reminder_minutes = entity.push_before_reminder_minutes
+        row.cabinet_notify_30_days = entity.cabinet_notify_30_days
+        row.cabinet_notify_15_days = entity.cabinet_notify_15_days
+        row.cabinet_notify_7_days = entity.cabinet_notify_7_days
+        row.cabinet_notify_1_day = entity.cabinet_notify_1_day
         await self._session.flush()
         await self._session.refresh(row)
         return self._to_entity(row)

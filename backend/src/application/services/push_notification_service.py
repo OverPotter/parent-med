@@ -45,6 +45,10 @@ class PushNotificationService:
         return PushNotificationPreferencesResponseDto(
             before_reminder_minutes=account.push_before_reminder_minutes,
             due_reminder_enabled=True,
+            cabinet_notify_30_days=account.cabinet_notify_30_days,
+            cabinet_notify_15_days=account.cabinet_notify_15_days,
+            cabinet_notify_7_days=account.cabinet_notify_7_days,
+            cabinet_notify_1_day=account.cabinet_notify_1_day,
         )
 
     async def update_preferences(
@@ -52,24 +56,62 @@ class PushNotificationService:
         account_id: UUID,
         dto: PushNotificationPreferencesUpdateDto,
     ) -> PushNotificationPreferencesResponseDto:
-        if dto.before_reminder_minutes not in self.ALLOWED_BEFORE_REMINDER_MINUTES:
-            raise ValidationError("Можно выбрать только 5, 10, 15 или 20 минут")
         account = await self._account_repo.get_by_id(account_id)
         if not account:
             raise NotFoundError("Аккаунт не найден", resource="account")
+
+        before_reminder_minutes = account.push_before_reminder_minutes
+        if dto.before_reminder_minutes is not None:
+            if dto.before_reminder_minutes not in self.ALLOWED_BEFORE_REMINDER_MINUTES:
+                raise ValidationError("Можно выбрать только 5, 10, 15 или 20 минут")
+            before_reminder_minutes = dto.before_reminder_minutes
+
+        if (
+            dto.before_reminder_minutes is None
+            and dto.cabinet_notify_30_days is None
+            and dto.cabinet_notify_15_days is None
+            and dto.cabinet_notify_7_days is None
+            and dto.cabinet_notify_1_day is None
+        ):
+            return await self.get_preferences(account_id)
+
         updated = await self._account_repo.update(
             Account(
                 id=account.id,
                 email=account.email,
                 password_hash=account.password_hash,
                 family_id=account.family_id,
-                push_before_reminder_minutes=dto.before_reminder_minutes,
+                push_before_reminder_minutes=before_reminder_minutes,
+                cabinet_notify_30_days=(
+                    dto.cabinet_notify_30_days
+                    if dto.cabinet_notify_30_days is not None
+                    else account.cabinet_notify_30_days
+                ),
+                cabinet_notify_15_days=(
+                    dto.cabinet_notify_15_days
+                    if dto.cabinet_notify_15_days is not None
+                    else account.cabinet_notify_15_days
+                ),
+                cabinet_notify_7_days=(
+                    dto.cabinet_notify_7_days
+                    if dto.cabinet_notify_7_days is not None
+                    else account.cabinet_notify_7_days
+                ),
+                cabinet_notify_1_day=(
+                    dto.cabinet_notify_1_day
+                    if dto.cabinet_notify_1_day is not None
+                    else account.cabinet_notify_1_day
+                ),
                 created_at=account.created_at,
             )
         )
         return PushNotificationPreferencesResponseDto(
             before_reminder_minutes=updated.push_before_reminder_minutes,
             due_reminder_enabled=True,
+            cabinet_notify_30_days=updated.cabinet_notify_30_days,
+            cabinet_notify_15_days=updated.cabinet_notify_15_days,
+            cabinet_notify_7_days=updated.cabinet_notify_7_days,
+            cabinet_notify_1_day=updated.cabinet_notify_1_day,
         )
 
     def _to_response(self, entity: PushSubscription) -> PushSubscriptionResponseDto:

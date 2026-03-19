@@ -9,6 +9,10 @@ interface RawPushNotificationConfig {
 interface RawPushNotificationPreferences {
   before_reminder_minutes: number;
   due_reminder_enabled: boolean;
+  cabinet_notify_30_days: boolean;
+  cabinet_notify_15_days: boolean;
+  cabinet_notify_7_days: boolean;
+  cabinet_notify_1_day: boolean;
 }
 
 export async function fetchPushNotificationConfig(): Promise<PushNotificationConfig> {
@@ -26,11 +30,19 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
   return {
     beforeReminderMinutes: res.data.before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,
+    cabinetNotify30Days: res.data.cabinet_notify_30_days,
+    cabinetNotify15Days: res.data.cabinet_notify_15_days,
+    cabinetNotify7Days: res.data.cabinet_notify_7_days,
+    cabinetNotify1Day: res.data.cabinet_notify_1_day,
   };
 }
 
 export async function updatePushNotificationPreferences(body: {
-  before_reminder_minutes: number;
+  before_reminder_minutes?: number;
+  cabinet_notify_30_days?: boolean;
+  cabinet_notify_15_days?: boolean;
+  cabinet_notify_7_days?: boolean;
+  cabinet_notify_1_day?: boolean;
 }): Promise<PushNotificationPreferences> {
   const res = await apiClient.patch<RawPushNotificationPreferences>(
     "/push-notifications/preferences",
@@ -39,6 +51,10 @@ export async function updatePushNotificationPreferences(body: {
   return {
     beforeReminderMinutes: res.data.before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,
+    cabinetNotify30Days: res.data.cabinet_notify_30_days,
+    cabinetNotify15Days: res.data.cabinet_notify_15_days,
+    cabinetNotify7Days: res.data.cabinet_notify_7_days,
+    cabinetNotify1Day: res.data.cabinet_notify_1_day,
   };
 }
 

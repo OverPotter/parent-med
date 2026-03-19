@@ -23,4 +23,5 @@ class EpisodeMedicationPlan:
     notify_at_due: bool
     last_before_notification_for_at: datetime | None
     last_due_notification_for_at: datetime | None
+    last_overdue_notification_for_at: datetime | None
     created_at: datetime

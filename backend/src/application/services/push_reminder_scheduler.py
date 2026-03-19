@@ -6,15 +6,18 @@ import asyncio
 import json
 import logging
 from dataclasses import replace
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from src.application.services.safety_engine import calculate_household_medicine_status
 from src.core.config import settings
 from src.domain.entities.episode_medication_plan import EpisodeMedicationPlan
 from src.domain.entities.push_subscription import PushSubscription
+from src.domain.entities.household_medicine import HouseholdMedicine
 from src.infrastructure.database.repositories.account_repository import SqlAccountRepository
 from src.infrastructure.database.repositories.administration_event_repository import (
     SqlAdministrationEventRepository,
@@ -32,9 +35,14 @@ from src.infrastructure.database.repositories.illness_episode_repository import 
 from src.infrastructure.database.repositories.push_subscription_repository import (
     SqlPushSubscriptionRepository,
 )
+from src.infrastructure.database.models.household_medicine_notification_delivery import (
+    HouseholdMedicineNotificationDeliveryModel,
+)
+from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
 
 logger = logging.getLogger(__name__)
 DEFAULT_REMINDER_BEFORE_MINUTES = 10
+MEDICINE_CABINET_REMINDER_OFFSETS = (30, 15, 7, 1)
 
 try:
     from pywebpush import WebPushException, webpush
@@ -55,6 +63,19 @@ def _format_due_body(child_name: str, medicine_name: str, dose_amount: str) -> s
     return f"{child_name}: сейчас пора дать {medicine_name}."
 
 
+def _format_overdue_body(child_name: str, medicine_name: str, dose_amount: str) -> str:
+    dose_text = dose_amount.strip()
+    if dose_text:
+        return (
+            f"{child_name}: уже 2 минуты можно дать {medicine_name} {dose_text}. "
+            "Если уже дали, просто отметьте приём."
+        )
+    return (
+        f"{child_name}: уже 2 минуты пора дать {medicine_name}. "
+        "Если уже дали, просто отметьте приём."
+    )
+
+
 def _format_before_body(
     child_name: str,
     medicine_name: str,
@@ -68,6 +89,72 @@ def _format_before_body(
             f"{medicine_name} {dose_text}."
         )
     return f"{child_name}: через {reminder_before_minutes} мин можно будет дать {medicine_name}."
+
+
+def _format_days_label(days: int) -> str:
+    if days % 10 == 1 and days % 100 != 11:
+        return f"{days} день"
+    if days % 10 in (2, 3, 4) and days % 100 not in (12, 13, 14):
+        return f"{days} дня"
+    return f"{days} дней"
+
+
+def _get_cabinet_offsets(account: Any) -> list[int]:
+    mapping = (
+        (30, account.cabinet_notify_30_days),
+        (15, account.cabinet_notify_15_days),
+        (7, account.cabinet_notify_7_days),
+        (1, account.cabinet_notify_1_day),
+    )
+    return [days for days, enabled in mapping if enabled]
+
+
+def _build_cabinet_payload(
+    medicine: HouseholdMedicine,
+    target_date: date,
+    days_before: int,
+    is_opened_limit: bool,
+) -> dict[str, Any]:
+    label = "срок после вскрытия" if is_opened_limit else "срок годности"
+    day_text = _format_days_label(days_before)
+    return {
+        "title": f"{medicine.medicine_name} скоро нельзя будет принимать",
+        "body": (
+            f"Через {day_text} истечёт {label}. "
+            f"Проверь аптечку до {target_date.strftime('%d.%m.%Y')}."
+        ),
+        "url": "/medicine-cabinet",
+        "tag": f"cabinet-{medicine.id}-{target_date.isoformat()}-{days_before}",
+        "data": {
+            "medicineId": str(medicine.id),
+            "targetDate": target_date.isoformat(),
+            "daysBefore": days_before,
+            "kind": "opened" if is_opened_limit else "expiry",
+        },
+    }
+
+
+def _build_cabinet_expired_payload(
+    medicine: HouseholdMedicine,
+    target_date: date,
+    is_opened_limit: bool,
+) -> dict[str, Any]:
+    label = "срок после вскрытия" if is_opened_limit else "срок годности"
+    return {
+        "title": f"{medicine.medicine_name} больше нельзя принимать",
+        "body": (
+            f"Истёк {label} {target_date.strftime('%d.%m.%Y')}. "
+            "Проверь упаковку в аптечке."
+        ),
+        "url": "/medicine-cabinet",
+        "tag": f"cabinet-expired-{medicine.id}-{target_date.isoformat()}",
+        "data": {
+            "medicineId": str(medicine.id),
+            "targetDate": target_date.isoformat(),
+            "daysBefore": -1,
+            "kind": "opened_expired" if is_opened_limit else "expired",
+        },
+    }
 
 
 class PushNotificationScheduler:
@@ -187,7 +274,9 @@ class PushNotificationScheduler:
                 if not subscriptions:
                     continue
 
-                preferred_before_minutes = account.push_before_reminder_minutes or DEFAULT_REMINDER_BEFORE_MINUTES
+                preferred_before_minutes = (
+                    account.push_before_reminder_minutes or DEFAULT_REMINDER_BEFORE_MINUTES
+                )
                 reminder_before_minutes = min(
                     preferred_before_minutes,
                     max(plan.min_interval_minutes - 1, 0),
@@ -246,7 +335,201 @@ class PushNotificationScheduler:
                         updated = replace(plan, last_due_notification_for_at=next_allowed_at)
                         await plan_repo.update_notification_marks(updated)
 
+                overdue_at = next_allowed_at + timedelta(minutes=2)
+                if (
+                    now >= overdue_at
+                    and plan.last_overdue_notification_for_at != next_allowed_at
+                ):
+                    payload = {
+                        "title": f"{medicine.medicine_name} всё ещё не отмечен",
+                        "body": _format_overdue_body(
+                            child.name,
+                            medicine.medicine_name,
+                            plan.dose_amount,
+                        ),
+                        "url": f"/children/{child.id}/illness",
+                        "tag": f"plan-overdue-{plan.id}-{int(next_allowed_at.timestamp())}",
+                        "data": {
+                            "childId": str(child.id),
+                            "episodeId": str(episode.id),
+                            "planId": str(plan.id),
+                        },
+                    }
+                    if await self._send_to_subscriptions(
+                        subscriptions=subscriptions,
+                        subscription_repo=subscription_repo,
+                        payload=payload,
+                    ):
+                        updated = replace(plan, last_overdue_notification_for_at=next_allowed_at)
+                        await plan_repo.update_notification_marks(updated)
+
+            await self._process_household_medicine_reminders(
+                session=session,
+                account_repo=account_repo,
+                medicine_repo=medicine_repo,
+                subscription_repo=subscription_repo,
+                now=now,
+            )
+
             await session.commit()
+
+    async def _process_household_medicine_reminders(
+        self,
+        *,
+        session: Any,
+        account_repo: SqlAccountRepository,
+        medicine_repo: SqlHouseholdMedicineRepository,
+        subscription_repo: SqlPushSubscriptionRepository,
+        now: datetime,
+    ) -> None:
+        result = await session.execute(
+            select(HouseholdMedicineModel.family_id).distinct()
+        )
+        family_ids = [family_id for family_id in result.scalars().all() if family_id is not None]
+        today = now.astimezone(self._timezone).date()
+
+        for family_id in family_ids:
+            account = await account_repo.get_by_family_id(family_id)
+            if not account:
+                continue
+            reminder_offsets = _get_cabinet_offsets(account)
+
+            subscriptions = await subscription_repo.get_by_account_id(account.id)
+            if not subscriptions:
+                continue
+
+            medicines = await medicine_repo.get_by_family_id(family_id)
+            for medicine in medicines:
+                await self._process_single_household_medicine(
+                    session=session,
+                    subscriptions=subscriptions,
+                    subscription_repo=subscription_repo,
+                    medicine=medicine,
+                    reminder_offsets=reminder_offsets,
+                    today=today,
+                    now=now,
+                )
+
+    async def _process_single_household_medicine(
+        self,
+        *,
+        session: Any,
+        subscriptions: list[PushSubscription],
+        subscription_repo: SqlPushSubscriptionRepository,
+        medicine: HouseholdMedicine,
+        reminder_offsets: list[int],
+        today: date,
+        now: datetime,
+    ) -> None:
+        status = calculate_household_medicine_status(medicine, today=today)
+        target_date = status["expiry_alert_date"]
+        if not target_date:
+            return
+
+        days_until = (target_date - today).days
+        if days_until == -1:
+            await self._send_expired_household_medicine_notification(
+                session=session,
+                subscriptions=subscriptions,
+                subscription_repo=subscription_repo,
+                medicine=medicine,
+                target_date=target_date,
+                is_opened_limit=(
+                    status["opened_expires_at"] is not None
+                    and status["opened_expires_at"] == target_date
+                ),
+                now=now,
+            )
+            return
+
+        if days_until not in reminder_offsets or days_until <= 0:
+            return
+
+        is_opened_limit = (
+            status["opened_expires_at"] is not None and status["opened_expires_at"] == target_date
+        )
+        notification_kind = "opened_limit" if is_opened_limit else "expiry_date"
+
+        already_sent_result = await session.execute(
+            select(HouseholdMedicineNotificationDeliveryModel.id).where(
+                HouseholdMedicineNotificationDeliveryModel.household_medicine_id == medicine.id,
+                HouseholdMedicineNotificationDeliveryModel.notification_kind == notification_kind,
+                HouseholdMedicineNotificationDeliveryModel.target_date == target_date,
+                HouseholdMedicineNotificationDeliveryModel.days_before == days_until,
+            )
+        )
+        if already_sent_result.scalar_one_or_none() is not None:
+            return
+
+        payload = _build_cabinet_payload(
+            medicine=medicine,
+            target_date=target_date,
+            days_before=days_until,
+            is_opened_limit=is_opened_limit,
+        )
+        sent = await self._send_to_subscriptions(
+            subscriptions=subscriptions,
+            subscription_repo=subscription_repo,
+            payload=payload,
+        )
+        if not sent:
+            return
+
+        session.add(
+            HouseholdMedicineNotificationDeliveryModel(
+                household_medicine_id=medicine.id,
+                notification_kind=notification_kind,
+                target_date=target_date,
+                days_before=days_until,
+                sent_at=now,
+            )
+        )
+
+    async def _send_expired_household_medicine_notification(
+        self,
+        *,
+        session: Any,
+        subscriptions: list[PushSubscription],
+        subscription_repo: SqlPushSubscriptionRepository,
+        medicine: HouseholdMedicine,
+        target_date: date,
+        is_opened_limit: bool,
+        now: datetime,
+    ) -> None:
+        notification_kind = "opened_expired" if is_opened_limit else "expired"
+        already_sent_result = await session.execute(
+            select(HouseholdMedicineNotificationDeliveryModel.id).where(
+                HouseholdMedicineNotificationDeliveryModel.household_medicine_id == medicine.id,
+                HouseholdMedicineNotificationDeliveryModel.notification_kind == notification_kind,
+                HouseholdMedicineNotificationDeliveryModel.target_date == target_date,
+                HouseholdMedicineNotificationDeliveryModel.days_before == -1,
+            )
+        )
+        if already_sent_result.scalar_one_or_none() is not None:
+            return
+
+        payload = _build_cabinet_expired_payload(
+            medicine=medicine,
+            target_date=target_date,
+            is_opened_limit=is_opened_limit,
+        )
+        sent = await self._send_to_subscriptions(
+            subscriptions=subscriptions,
+            subscription_repo=subscription_repo,
+            payload=payload,
+        )
+        if not sent:
+            return
+
+        session.add(
+            HouseholdMedicineNotificationDeliveryModel(
+                household_medicine_id=medicine.id,
+                notification_kind=notification_kind,
+                target_date=target_date,
+                days_before=-1,
+                sent_at=now,
+            )
+        )
 
     async def _send_to_subscriptions(
         self,

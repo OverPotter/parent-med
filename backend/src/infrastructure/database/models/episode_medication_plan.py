@@ -58,6 +58,9 @@ class EpisodeMedicationPlanModel(Base):
     last_due_notification_for_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    last_overdue_notification_for_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     episode: Mapped["IllnessEpisodeModel"] = relationship(

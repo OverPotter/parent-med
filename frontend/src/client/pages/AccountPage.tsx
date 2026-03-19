@@ -63,8 +63,13 @@ export function AccountPage() {
   });
 
   const updatePushPreferencesMutation = useMutation({
-    mutationFn: (beforeReminderMinutes: number) =>
-      updatePushNotificationPreferences({ before_reminder_minutes: beforeReminderMinutes }),
+    mutationFn: (payload: {
+      before_reminder_minutes?: number;
+      cabinet_notify_30_days?: boolean;
+      cabinet_notify_15_days?: boolean;
+      cabinet_notify_7_days?: boolean;
+      cabinet_notify_1_day?: boolean;
+    }) => updatePushNotificationPreferences(payload),
     onSuccess: (nextPreferences) => {
       setSelectedReminderMinutes(String(nextPreferences.beforeReminderMinutes));
       queryClient.setQueryData(["push", "preferences", "account"], nextPreferences);
@@ -210,7 +215,19 @@ export function AccountPage() {
   const handleReminderMinutesChange = (value: string) => {
     setSelectedReminderMinutes(value);
     setPushError(null);
-    updatePushPreferencesMutation.mutate(parseInt(value, 10));
+    updatePushPreferencesMutation.mutate({ before_reminder_minutes: parseInt(value, 10) });
+  };
+
+  const handleCabinetReminderToggle = (
+    key:
+      | "cabinet_notify_30_days"
+      | "cabinet_notify_15_days"
+      | "cabinet_notify_7_days"
+      | "cabinet_notify_1_day",
+    nextValue: boolean
+  ) => {
+    setPushError(null);
+    updatePushPreferencesMutation.mutate({ [key]: nextValue });
   };
 
   const handleSubmitPasswordChange = () => {
@@ -434,6 +451,48 @@ export function AccountPage() {
                 } rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50`}
               >
                 {minutes} мин
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-5 border-t border-border/70 pt-4">
+          <p className="text-sm font-medium text-foreground">Напоминания по аптечке</p>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Отдельные push-напоминания по сроку годности или сроку после вскрытия.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {[
+              {
+                key: "cabinet_notify_30_days" as const,
+                label: "За 30 дней",
+                enabled: pushPreferences?.cabinetNotify30Days ?? false,
+              },
+              {
+                key: "cabinet_notify_15_days" as const,
+                label: "За 15 дней",
+                enabled: pushPreferences?.cabinetNotify15Days ?? false,
+              },
+              {
+                key: "cabinet_notify_7_days" as const,
+                label: "За 7 дней",
+                enabled: pushPreferences?.cabinetNotify7Days ?? false,
+              },
+              {
+                key: "cabinet_notify_1_day" as const,
+                label: "За 1 день",
+                enabled: pushPreferences?.cabinetNotify1Day ?? false,
+              },
+            ].map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => handleCabinetReminderToggle(option.key, !option.enabled)}
+                disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
+                className={`${
+                  option.enabled ? "soft-tab-active" : "soft-tab"
+                } rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50`}
+              >
+                {option.label}
               </button>
             ))}
           </div>

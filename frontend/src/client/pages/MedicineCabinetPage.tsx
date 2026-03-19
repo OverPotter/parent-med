@@ -49,6 +49,13 @@ export function MedicineCabinetPage() {
       queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] }),
   });
 
+  const handleWriteOff = (id: string) => {
+    if (!window.confirm("Списать препарат из аптечки?")) {
+      return;
+    }
+    deleteMutation.mutate(id);
+  };
+
   const normalizedCabinetSearch = cabinetSearch.trim().toLowerCase();
   const filteredMedicines = medicines.filter((medicine) => {
     if (!normalizedCabinetSearch) {
@@ -127,7 +134,7 @@ export function MedicineCabinetPage() {
           {medicines.length > 0 && (
             <ul className="mt-6 space-y-3">
               {filteredMedicines.map((m) => (
-                <MedicineItemCard key={m.id} medicine={m} onDelete={deleteMutation.mutate} />
+                <MedicineItemCard key={m.id} medicine={m} onDelete={handleWriteOff} />
               ))}
             </ul>
           )}
@@ -808,14 +815,14 @@ function MedicineItemCard({
                   onClick={() => setIsEditing((value) => !value)}
                   className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm"
                 >
-                  {isEditing ? "Закрыть" : "Изменить"}
+                  {isEditing ? "Закрыть" : "Новая упаковка"}
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete(medicine.id)}
                   className="soft-button-danger w-full rounded-2xl px-4 py-2.5 text-sm"
                 >
-                  Удалить
+                  Списать
                 </button>
               </div>
             </div>
@@ -833,20 +840,24 @@ function MedicineItemCard({
               onClick={() => setIsEditing((value) => !value)}
               className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
-              {isEditing ? "Закрыть" : "Изменить"}
+              {isEditing ? "Закрыть" : "Новая упаковка"}
             </button>
             <button
               type="button"
               onClick={() => onDelete(medicine.id)}
               className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm"
             >
-              Удалить
+              Списать
             </button>
           </div>
         </div>
 
         {isEditing && (
           <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
+            <p className="sm:col-span-2 text-sm text-muted">
+              Если купили новую упаковку этого же препарата, обновите здесь срок годности и дату
+              вскрытия. Старую карточку заводить заново не нужно.
+            </p>
             {isOwnMedicine && (
               <>
                 <label className="block">

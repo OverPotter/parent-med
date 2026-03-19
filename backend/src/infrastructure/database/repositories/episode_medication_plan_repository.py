@@ -36,6 +36,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             notify_at_due=m.notify_at_due,
             last_before_notification_for_at=m.last_before_notification_for_at,
             last_due_notification_for_at=m.last_due_notification_for_at,
+            last_overdue_notification_for_at=m.last_overdue_notification_for_at,
             created_at=m.created_at,
         )
 
@@ -55,6 +56,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             notify_at_due=e.notify_at_due,
             last_before_notification_for_at=e.last_before_notification_for_at,
             last_due_notification_for_at=e.last_due_notification_for_at,
+            last_overdue_notification_for_at=e.last_overdue_notification_for_at,
             created_at=e.created_at,
         )
 
@@ -111,6 +113,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
         row.notify_at_due = entity.notify_at_due
         row.last_before_notification_for_at = entity.last_before_notification_for_at
         row.last_due_notification_for_at = entity.last_due_notification_for_at
+        row.last_overdue_notification_for_at = entity.last_overdue_notification_for_at
         await self._session.flush()
         await self._session.refresh(row)
         return self._to_entity(row)
@@ -130,6 +133,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             raise ValueError(f"EpisodeMedicationPlan {entity.id} not found")
         row.last_before_notification_for_at = entity.last_before_notification_for_at
         row.last_due_notification_for_at = entity.last_due_notification_for_at
+        row.last_overdue_notification_for_at = entity.last_overdue_notification_for_at
         await self._session.flush()
         await self._session.refresh(row)
         return self._to_entity(row)
