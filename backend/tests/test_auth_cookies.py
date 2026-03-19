@@ -1,6 +1,6 @@
 from fastapi import Response
 
-from src.api.auth_cookies import clear_auth_cookies, set_auth_cookies
+from src.api.utils.auth_cookies import clear_auth_cookies, set_auth_cookies
 from src.application.dto.auth import AccountResponseDto, AuthResponseDto
 from src.application.dto.family import FamilyResponseDto
 from src.core.config import settings
