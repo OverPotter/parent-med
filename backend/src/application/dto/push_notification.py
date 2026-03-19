@@ -20,10 +20,9 @@ class PushNotificationPreferencesResponseDto(ResponseBase):
 
     before_reminder_minutes: int
     due_reminder_enabled: bool = True
-    cabinet_notify_30_days: bool
-    cabinet_notify_15_days: bool
+    cabinet_notify_10_days: bool
     cabinet_notify_7_days: bool
-    cabinet_notify_1_day: bool
+    cabinet_notify_3_days: bool
 
 
 class PushNotificationPreferencesUpdateDto(BaseModel):
@@ -32,17 +31,14 @@ class PushNotificationPreferencesUpdateDto(BaseModel):
     before_reminder_minutes: int | None = Field(
         None, description="За сколько минут прислать раннее напоминание"
     )
-    cabinet_notify_30_days: bool | None = Field(
-        None, description="Присылать reminder по аптечке за 30 дней"
-    )
-    cabinet_notify_15_days: bool | None = Field(
-        None, description="Присылать reminder по аптечке за 15 дней"
+    cabinet_notify_10_days: bool | None = Field(
+        None, description="Присылать reminder по аптечке за 10 дней"
     )
     cabinet_notify_7_days: bool | None = Field(
         None, description="Присылать reminder по аптечке за 7 дней"
     )
-    cabinet_notify_1_day: bool | None = Field(
-        None, description="Присылать reminder по аптечке за 1 день"
+    cabinet_notify_3_days: bool | None = Field(
+        None, description="Присылать reminder по аптечке за 3 дня"
     )
 
 

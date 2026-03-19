@@ -41,6 +41,10 @@ class AccountModel(Base):
         Boolean,
         nullable=False, default=True, server_default="true"
     )
+    cabinet_notify_3_days: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False, default=True, server_default="true"
+    )
     cabinet_notify_1_day: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False, default=True, server_default="true"

@@ -138,7 +138,7 @@ export function ChildrenPage() {
     <div className="min-w-0 space-y-8">
       <PageIntro
         title="Дети"
-        subtitle="Профили детей, быстрый вход в текущее наблюдение и история болезней без лишнего шума."
+        subtitle="Профили детей, быстрый вход в текущее наблюдение и архив прошлых записей без лишнего шума."
         action={
           <button
             type="button"
@@ -151,6 +151,7 @@ export function ChildrenPage() {
             {isCreateFormOpen ? "Скрыть форму" : "Добавить ребёнка"}
           </button>
         }
+        hideOnMobile
       />
 
       {isCreateFormOpen && (
@@ -178,7 +179,7 @@ export function ChildrenPage() {
       {!isLoading && !error && children.length === 0 && !isCreateFormOpen && (
         <EmptyState className="text-foreground">
           <div className="space-y-4">
-            <p>Пока нет детей. Добавьте первого ребёнка, чтобы перейти к болезням и записям.</p>
+            <p>Пока нет детей. Добавьте первого ребёнка, чтобы вести записи и наблюдение.</p>
             <button
               type="button"
               onClick={() => setIsCreateFormOpen(true)}
@@ -413,7 +414,7 @@ function ChildCard({
                 <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
                 {hasActiveEpisode && (
                   <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
-                    Идёт наблюдение
+                    Наблюдение
                   </span>
                 )}
               </div>
@@ -424,11 +425,11 @@ function ChildCard({
             <p className="mt-3 text-sm leading-7 text-muted">
               {child.ageLabel ? `${child.ageLabel} • ` : ""}
               {child.birthDate ? `Рожд. ${formatDate(child.birthDate)} • ` : ""}
-              Эпизодов: {episodeCount}
+              Случаев в истории: {episodeCount}
             </p>
             {hasActiveEpisode && activeEpisodeStartedAt && (
-              <p className="mt-1 text-sm text-[color:var(--color-danger)]">
-                С текущим эпизодом с {formatDate(activeEpisodeStartedAt)}
+              <p className="soft-text-danger mt-1 text-sm">
+                Наблюдение с {formatDate(activeEpisodeStartedAt)}
               </p>
             )}
             {hasActiveEpisode && medicationReminder && (
@@ -436,11 +437,11 @@ function ChildCard({
                 className={[
                   "mt-2 text-sm",
                   medicationReminder.tone === "success"
-                    ? "text-[color:var(--color-success)]"
+                    ? "soft-text-success"
                     : medicationReminder.tone === "warning"
-                      ? "text-[color:var(--color-warning)]"
+                      ? "soft-text-warning"
                       : medicationReminder.tone === "danger"
-                        ? "text-[color:var(--color-danger)]"
+                        ? "soft-text-danger"
                         : "text-muted",
                 ].join(" ")}
               >
@@ -463,7 +464,7 @@ function ChildCard({
               className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
             >
               {hasActiveEpisode
-                ? "Открыть болезнь"
+                ? "Открыть"
                 : isStartingEpisode
                   ? "Открываем…"
                   : "Начать наблюдение"}

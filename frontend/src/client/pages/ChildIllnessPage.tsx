@@ -45,8 +45,10 @@ import type {
 } from "@shared/types/api";
 import {
   buildPlanAdministrationStats,
-  formatIntervalForDisplay,
   buildWeightDoseHint,
+  formatRelativeDateTime,
+  formatIntervalForDisplay,
+  getPrioritizedMedicationPlanItems,
 } from "../utils/medicationPlans";
 import { formatDate, formatDateTime } from "@shared/utils/date";
 
@@ -60,6 +62,14 @@ export function ChildIllnessPage() {
   const [isChildSummaryExpanded, setIsChildSummaryExpanded] = useState(false);
   const historyOnlyView = searchParams.get("view") === "history";
   const createMode = searchParams.get("mode") === "create";
+  const focusMode = searchParams.get("focus") ?? searchParams.get("compose");
+  const quickComposeMode =
+    focusMode === "temperature" || focusMode === "administration" || focusMode === "comment"
+      ? focusMode
+      : null;
+  const quickTimelineMode = focusMode === "timeline";
+  const initialManualComposerExpanded = quickComposeMode !== null;
+  const initialComposerMode = quickComposeMode ?? "temperature";
 
   const { data: child, isLoading: childLoading } = useQuery({
     queryKey: ["child", childId],
@@ -105,10 +115,15 @@ export function ChildIllnessPage() {
       medication_mode: string;
       note?: string | null;
       temperatures: Array<{ value_celsius: number }>;
-      administrations: Array<{ household_medicine_id: string; amount: string }>;
+      administrations: Array<{
+        household_medicine_id?: string | null;
+        custom_medicine_name?: string | null;
+        amount: string;
+      }>;
       comments: Array<{ text: string }>;
       medication_plans: Array<{
-        household_medicine_id: string;
+        household_medicine_id?: string | null;
+        custom_medicine_name?: string | null;
         dose_amount: string;
         min_interval_minutes: number;
         max_doses_per_day?: number | null;
@@ -136,6 +151,7 @@ export function ChildIllnessPage() {
           createAdministrationEvent({
             episode_id: episode.id,
             household_medicine_id: item.household_medicine_id,
+            custom_medicine_name: item.custom_medicine_name,
             amount: item.amount,
           })
         ),
@@ -149,6 +165,7 @@ export function ChildIllnessPage() {
           createEpisodeMedicationPlan({
             episode_id: episode.id,
             household_medicine_id: item.household_medicine_id,
+            custom_medicine_name: item.custom_medicine_name,
             dose_amount: item.dose_amount,
             min_interval_minutes: item.min_interval_minutes,
             max_doses_per_day: item.max_doses_per_day ?? null,
@@ -215,7 +232,7 @@ export function ChildIllnessPage() {
                 </h1>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                    {historyOnlyView ? "История" : createMode ? "Новый эпизод" : "Без эпизода"}
+                    {historyOnlyView ? "История" : createMode ? "Новое наблюдение" : "Пока пусто"}
                   </span>
                   {child.ageLabel && (
                     <span className="soft-pill rounded-full px-3 py-1 text-xs">
@@ -267,6 +284,10 @@ export function ChildIllnessPage() {
             onClose={() => closeEpisodeMutation.mutate(activeEpisode.id)}
             familyId={currentFamilyId}
             latestWeight={latestWeight}
+            initialManualComposerExpanded={initialManualComposerExpanded}
+            initialComposerMode={initialComposerMode}
+            quickComposeMode={quickComposeMode}
+            quickTimelineMode={quickTimelineMode}
           />
         </section>
       )}
@@ -274,8 +295,8 @@ export function ChildIllnessPage() {
       {!activeEpisode && createMode && !historyOnlyView && (
         <section className="space-y-3">
           <SectionTitle
-            title="Новый эпизод"
-            subtitle="Пока ты только готовишь эпизод. Он появится в активных болезнях только после активации."
+            title="Новое наблюдение"
+            subtitle="Пока ты только готовишь наблюдение. Оно появится в активных болезнях только после запуска."
           />
           <EpisodeActivationCard
             childName={child.name}
@@ -298,7 +319,7 @@ export function ChildIllnessPage() {
 
       {!activeEpisode && !createMode && !historyOnlyView && (
         <section className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
-          Активного эпизода сейчас нет. Новый эпизод можно начать из раздела «Дети».
+          Сейчас ничего не отслеживается. Новое наблюдение можно начать из раздела «Дети».
         </section>
       )}
 
@@ -308,24 +329,24 @@ export function ChildIllnessPage() {
             title="История"
             subtitle={
               openHistoryEpisodeId
-                ? "Открыт один эпизод. Остальные скрыты, чтобы было проще читать и редактировать."
+                ? "Открыта одна запись. Остальные скрыты, чтобы было проще читать и редактировать."
                 : historyEpisodes.length > 0
-                  ? "Краткие карточки с описанием. При необходимости эпизод можно раскрыть и исправить."
-                  : "Когда появятся завершённые эпизоды, они будут показаны здесь."
+                  ? "Краткие карточки с описанием. При необходимости запись можно раскрыть и исправить."
+                  : "Когда появятся завершённые наблюдения, они будут показаны здесь."
             }
           />
 
           {openHistoryEpisodeId && (
             <div className="soft-panel-muted flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-4 py-3">
               <p className="text-sm text-muted">
-                Показан 1 эпизод из {historyEpisodes.length}. Остальные скрыты.
+                Показана 1 запись из {historyEpisodes.length}. Остальные скрыты.
               </p>
               <button
                 type="button"
                 onClick={() => setOpenHistoryEpisodeId(null)}
                 className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
               >
-                Показать все эпизоды
+                Показать всю историю
               </button>
             </div>
           )}
@@ -485,7 +506,7 @@ function HistoryEpisodeCard({
           </section>
 
           <section className="border-t border-border pt-5">
-            <h3 className="text-sm font-semibold text-foreground">Записи эпизода</h3>
+            <h3 className="text-sm font-semibold text-foreground">Что уже записано</h3>
 
             {timelineItems.length > 0 ? (
               <div className="mt-4">
@@ -493,7 +514,7 @@ function HistoryEpisodeCard({
               </div>
             ) : (
               <div className="soft-empty mt-4 rounded-[22px] px-4 py-6 text-sm text-muted">
-                Для этого эпизода ещё нет температур и записей о приёмах.
+                Для этого наблюдения ещё нет температур и записей о лекарствах.
               </div>
             )}
           </section>
@@ -501,15 +522,15 @@ function HistoryEpisodeCard({
           <section className="border-t border-border pt-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-foreground">Действия с эпизодом</h3>
+                <h3 className="text-sm font-semibold text-foreground">Действия</h3>
                 <p className="mt-1 text-sm text-muted">
-                  Удаление скрывает этот эпизод из истории, но не стирает его из базы.
+                  Удаление скрывает эту запись из истории, но не стирает её из базы.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  if (!window.confirm("Удалить эпизод из истории болезней?")) {
+                  if (!window.confirm("Удалить запись из истории?")) {
                     return;
                   }
                   deleteEpisodeMutation.mutate();
@@ -534,6 +555,10 @@ function EpisodeBlock({
   onClose,
   familyId,
   latestWeight,
+  initialManualComposerExpanded,
+  initialComposerMode,
+  quickComposeMode,
+  quickTimelineMode,
 }: {
   childName: string;
   childId: string;
@@ -541,17 +566,22 @@ function EpisodeBlock({
   onClose: () => void;
   familyId: string | null;
   latestWeight: WeightEntry | null;
+  initialManualComposerExpanded: boolean;
+  initialComposerMode: "temperature" | "administration" | "comment";
+  quickComposeMode: "temperature" | "administration" | "comment" | null;
+  quickTimelineMode: boolean;
 }) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
   const isActive = episode.status === "active";
   const [commentText, setCommentText] = useState("");
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
   const [isManualComposerExpanded, setIsManualComposerExpanded] = useState(
-    episode.medicationMode !== "guided"
+    episode.medicationMode !== "guided" || initialManualComposerExpanded
   );
   const [composerMode, setComposerMode] = useState<"temperature" | "administration" | "comment">(
-    "temperature"
+    initialComposerMode
   );
 
   const { data: temperatureEntries = [] } = useQuery({
@@ -591,25 +621,40 @@ function EpisodeBlock({
   const addTempMutation = useMutation({
     mutationFn: (valueCelsius: number) =>
       createTemperatureEntry({ episode_id: episode.id, value_celsius: valueCelsius }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["temperature-entries", episode.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["temperature-entries", episode.id] });
+      if (quickComposeMode) {
+        navigate("/illnesses/active");
+      }
+    },
   });
 
   const addAdminMutation = useMutation({
-    mutationFn: (payload: { household_medicine_id: string; amount: string; reason?: string }) =>
+    mutationFn: (payload: {
+      household_medicine_id?: string | null;
+      custom_medicine_name?: string;
+      amount: string;
+      reason?: string;
+    }) =>
       createAdministrationEvent({
         episode_id: episode.id,
         household_medicine_id: payload.household_medicine_id,
+        custom_medicine_name: payload.custom_medicine_name,
         amount: payload.amount,
         reason: payload.reason,
       }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
+      if (quickComposeMode) {
+        navigate("/illnesses/active");
+      }
+    },
   });
 
   const createPlanMutation = useMutation({
     mutationFn: (payload: {
-      household_medicine_id: string;
+      household_medicine_id?: string | null;
+      custom_medicine_name?: string | null;
       dose_amount: string;
       min_interval_minutes: number;
       max_doses_per_day?: number | null;
@@ -620,6 +665,7 @@ function EpisodeBlock({
       createEpisodeMedicationPlan({
         episode_id: episode.id,
         household_medicine_id: payload.household_medicine_id,
+        custom_medicine_name: payload.custom_medicine_name,
         dose_amount: payload.dose_amount,
         min_interval_minutes: payload.min_interval_minutes,
         max_doses_per_day: payload.max_doses_per_day ?? null,
@@ -644,7 +690,8 @@ function EpisodeBlock({
     }: {
       id: string;
       payload: {
-        household_medicine_id?: string;
+        household_medicine_id?: string | null;
+        custom_medicine_name?: string | null;
         dose_amount?: string;
         min_interval_minutes?: number;
         max_doses_per_day?: number | null;
@@ -666,11 +713,16 @@ function EpisodeBlock({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["illness-comments", episode.id] });
       setCommentText("");
+      if (quickComposeMode) {
+        navigate("/illnesses/active");
+      }
     },
   });
 
   const [tempValue, setTempValue] = useState("");
+  const [adminMedicineMode, setAdminMedicineMode] = useState<"cabinet" | "manual">("cabinet");
   const [adminMedicineId, setAdminMedicineId] = useState("");
+  const [adminCustomMedicineName, setAdminCustomMedicineName] = useState("");
   const [adminAmount, setAdminAmount] = useState("");
   const timelineItems = buildEpisodeTimeline(
     temperatureEntries,
@@ -678,6 +730,265 @@ function EpisodeBlock({
     comments,
     householdMedicines
   );
+  const manualComposerSection = (
+    <div
+      className={[
+        episode.medicationMode === "guided" && !quickComposeMode ? "mt-2" : "",
+        "soft-panel-muted rounded-[24px] px-4 py-5 sm:px-5 sm:py-6",
+      ].join(" ")}
+    >
+      {quickComposeMode ? (
+        <div>
+          <h4 className="text-base font-semibold text-foreground">Быстрая запись</h4>
+          <p className="mt-1 text-sm text-muted">
+            Добавь температуру, лекарство или комментарий без лишних блоков.
+          </p>
+        </div>
+      ) : (
+        <DisclosureHeader
+          isOpen={isManualComposerExpanded}
+          onToggle={() => setIsManualComposerExpanded((current) => !current)}
+        >
+          <>
+            <h4 className="text-base font-semibold text-foreground">
+              {episode.medicationMode === "guided" ? "Быстрая запись" : "Добавить запись"}
+            </h4>
+            <p className="mt-1 text-sm text-muted">
+              {episode.medicationMode === "guided"
+                ? "Отдельно можно добавить температуру, лекарство или комментарий."
+                : "Выбери тип записи и внеси одно новое действие."}
+            </p>
+          </>
+        </DisclosureHeader>
+      )}
+
+      {(quickComposeMode || isManualComposerExpanded) && (
+        <>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <ComposerToggle
+              label="Температура"
+              active={composerMode === "temperature"}
+              onClick={() => setComposerMode("temperature")}
+            />
+            <ComposerToggle
+              label="Лекарство"
+              active={composerMode === "administration"}
+              onClick={() => setComposerMode("administration")}
+            />
+            <ComposerToggle
+              label="Комментарий"
+              active={composerMode === "comment"}
+              onClick={() => setComposerMode("comment")}
+            />
+          </div>
+
+          <div className="mt-4">
+            {composerMode === "temperature" && (
+              <TemperatureForm
+                value={tempValue}
+                onChange={setTempValue}
+                onSubmit={() => {
+                  const parsed = parseFloat(tempValue);
+                  if (Number.isNaN(parsed)) return;
+                  addTempMutation.mutate(parsed);
+                  setTempValue("");
+                }}
+                isPending={addTempMutation.isPending}
+              />
+            )}
+
+            {composerMode === "administration" &&
+              (usableHouseholdMedicines.length === 0 ? (
+                <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
+                  В аптечке нет доступных упаковок для приёма. Просроченные скрыты автоматически.
+                </div>
+              ) : (
+                <AdministrationForm
+                  medicines={usableHouseholdMedicines}
+                  mode={adminMedicineMode}
+                  selectedMedicineId={adminMedicineId}
+                  customMedicineName={adminCustomMedicineName}
+                  amount={adminAmount}
+                  onModeChange={setAdminMedicineMode}
+                  onMedicineChange={setAdminMedicineId}
+                  onCustomMedicineNameChange={setAdminCustomMedicineName}
+                  onAmountChange={setAdminAmount}
+                  onSubmit={() => {
+                    if (
+                      (adminMedicineMode === "cabinet" && !adminMedicineId) ||
+                      (adminMedicineMode === "manual" && !adminCustomMedicineName.trim()) ||
+                      !adminAmount.trim()
+                    ) {
+                      return;
+                    }
+                    addAdminMutation.mutate({
+                      household_medicine_id:
+                        adminMedicineMode === "cabinet" ? adminMedicineId : undefined,
+                      custom_medicine_name:
+                        adminMedicineMode === "manual" ? adminCustomMedicineName.trim() : undefined,
+                      amount: adminAmount.trim(),
+                    });
+                    setAdminMedicineMode("cabinet");
+                    setAdminMedicineId("");
+                    setAdminCustomMedicineName("");
+                    setAdminAmount("");
+                  }}
+                  isPending={addAdminMutation.isPending}
+                />
+              ))}
+            {composerMode === "administration" && addAdminMutation.isError && (
+              <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
+                {(addAdminMutation.error as { response?: { data?: { detail?: string } } }).response
+                  ?.data?.detail ?? "Ошибка записи. Проверь срок годности и срок после вскрытия."}
+              </p>
+            )}
+
+            {composerMode === "comment" && (
+              <div className="soft-panel-muted grid gap-3 rounded-[24px] p-3">
+                <textarea
+                  rows={3}
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Например: к вечеру стал бодрее, после сна снова поднялась температура."
+                  className="soft-input w-full rounded-2xl px-3 py-2"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!commentText.trim()) return;
+                      addCommentMutation.mutate();
+                    }}
+                    disabled={addCommentMutation.isPending || !commentText.trim()}
+                    className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                  >
+                    {addCommentMutation.isPending ? "Сохраняем…" : "Добавить комментарий"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+  const timelineSection = (
+    <section className="soft-panel-muted rounded-[24px] px-4 py-5 sm:px-5 sm:py-6">
+      {quickTimelineMode ? (
+        <div>
+          <h4 className="text-base font-semibold text-foreground">Лента наблюдения</h4>
+          <p className="mt-1 text-sm text-muted">Последние записи по времени.</p>
+        </div>
+      ) : (
+        <DisclosureHeader
+          isOpen={isTimelineExpanded}
+          onToggle={() => {
+            setIsTimelineExpanded((current) => !current);
+          }}
+          desktopClosedLabel={`Показать ленту (${timelineItems.length})`}
+          desktopOpenLabel="Скрыть ленту"
+          disabled={timelineItems.length === 0}
+        >
+          <>
+            <h4 className="text-base font-semibold text-foreground">Лента наблюдения</h4>
+            <p className="mt-1 text-sm text-muted">Последние записи по времени.</p>
+          </>
+        </DisclosureHeader>
+      )}
+
+      <div className="mt-4">
+        {timelineItems.length > 0 ? (
+          quickTimelineMode || isTimelineExpanded ? (
+            <EpisodeTimelineList items={timelineItems} />
+          ) : (
+            <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
+              Лента свернута. Открой её, если нужно посмотреть предыдущие записи.
+            </div>
+          )
+        ) : (
+          <div className="soft-empty rounded-[22px] px-4 py-6 text-sm text-muted">
+            Записей пока нет.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+
+  if (quickComposeMode) {
+    return (
+      <div className="soft-panel rounded-[30px]">
+        <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-4 sm:px-6 sm:py-5">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-end gap-3">
+              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {childName}
+              </p>
+              <p className="pb-0.5 text-xs text-muted">С {formatDate(episode.startedAt)}</p>
+            </div>
+            <h3 className="text-base font-medium tracking-tight text-muted sm:text-lg">
+              Быстрая запись
+            </h3>
+          </div>
+        </div>
+
+        <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+          {manualComposerSection}
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={`/children/${childId}/illness`}
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+            >
+              Полное наблюдение
+            </Link>
+            <Link
+              to="/illnesses/active"
+              className="soft-pill rounded-full px-3 py-2 text-xs text-muted"
+            >
+              Назад
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (quickTimelineMode) {
+    return (
+      <div className="soft-panel rounded-[30px]">
+        <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-4 sm:px-6 sm:py-5">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-end gap-3">
+              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {childName}
+              </p>
+              <p className="pb-0.5 text-xs text-muted">С {formatDate(episode.startedAt)}</p>
+            </div>
+            <h3 className="text-base font-medium tracking-tight text-muted sm:text-lg">
+              Лента наблюдения
+            </h3>
+          </div>
+        </div>
+
+        <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+          {timelineSection}
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={`/children/${childId}/illness`}
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+            >
+              Полное наблюдение
+            </Link>
+            <Link
+              to="/illnesses/active"
+              className="soft-pill rounded-full px-3 py-2 text-xs text-muted"
+            >
+              Назад
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="soft-panel rounded-[30px]">
@@ -698,14 +1009,14 @@ function EpisodeBlock({
             <button
               type="button"
               onClick={() => {
-                if (!window.confirm("Закрыть текущий эпизод?")) {
+                if (!window.confirm("Закрыть текущее наблюдение?")) {
                   return;
                 }
                 onClose();
               }}
-              className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto"
+              className="soft-button-secondary hidden rounded-2xl px-4 py-2.5 text-sm sm:inline-flex"
             >
-              Закрыть эпизод
+              Закрыть наблюдение
             </button>
           </div>
         ) : (
@@ -749,6 +1060,7 @@ function EpisodeBlock({
                   id: planId,
                   payload: {
                     household_medicine_id: payload.householdMedicineId,
+                    custom_medicine_name: payload.customMedicineName,
                     dose_amount: payload.doseAmount,
                     min_interval_minutes: payload.minIntervalMinutes,
                     max_doses_per_day: payload.maxDosesPerDay,
@@ -762,6 +1074,7 @@ function EpisodeBlock({
               onTakeDose={(plan) =>
                 addAdminMutation.mutate({
                   household_medicine_id: plan.householdMedicineId,
+                  custom_medicine_name: plan.customMedicineName ?? undefined,
                   amount: plan.doseAmount,
                   reason: "Дали по плану",
                 })
@@ -769,160 +1082,27 @@ function EpisodeBlock({
             />
           )}
 
-          <div
-            className={[
-              episode.medicationMode === "guided" ? "mt-2" : "",
-              "soft-panel-muted rounded-[24px] px-4 py-5 sm:px-5 sm:py-6",
-            ].join(" ")}
-          >
-            <DisclosureHeader
-              isOpen={isManualComposerExpanded}
-              onToggle={() => setIsManualComposerExpanded((current) => !current)}
+          {manualComposerSection}
+        </section>
+
+        {timelineSection}
+
+        {isActive && (
+          <div className="sm:hidden">
+            <button
+              type="button"
+              onClick={() => {
+                if (!window.confirm("Закрыть текущее наблюдение?")) {
+                  return;
+                }
+                onClose();
+              }}
+              className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm"
             >
-              <>
-                <h4 className="text-base font-semibold text-foreground">
-                  {episode.medicationMode === "guided"
-                    ? "Добавить запись вручную"
-                    : "Добавить запись"}
-                </h4>
-                <p className="mt-1 text-sm text-muted">
-                  {episode.medicationMode === "guided"
-                    ? "Отдельно можно внести температуру, лекарство или комментарий."
-                    : "Выбери тип записи и внеси одно новое действие."}
-                </p>
-              </>
-            </DisclosureHeader>
-
-            {isManualComposerExpanded && (
-              <>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <ComposerToggle
-                    label="Температура"
-                    active={composerMode === "temperature"}
-                    onClick={() => setComposerMode("temperature")}
-                  />
-                  <ComposerToggle
-                    label="Лекарство"
-                    active={composerMode === "administration"}
-                    onClick={() => setComposerMode("administration")}
-                  />
-                  <ComposerToggle
-                    label="Комментарий"
-                    active={composerMode === "comment"}
-                    onClick={() => setComposerMode("comment")}
-                  />
-                </div>
-
-                <div className="mt-4">
-                  {composerMode === "temperature" && (
-                    <TemperatureForm
-                      value={tempValue}
-                      onChange={setTempValue}
-                      onSubmit={() => {
-                        const parsed = parseFloat(tempValue);
-                        if (Number.isNaN(parsed)) return;
-                        addTempMutation.mutate(parsed);
-                        setTempValue("");
-                      }}
-                      isPending={addTempMutation.isPending}
-                    />
-                  )}
-
-                  {composerMode === "administration" &&
-                    (usableHouseholdMedicines.length === 0 ? (
-                      <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
-                        В аптечке нет доступных упаковок для приёма. Просроченные скрыты
-                        автоматически.
-                      </div>
-                    ) : (
-                      <AdministrationForm
-                        medicines={usableHouseholdMedicines}
-                        selectedMedicineId={adminMedicineId}
-                        amount={adminAmount}
-                        onMedicineChange={setAdminMedicineId}
-                        onAmountChange={setAdminAmount}
-                        onSubmit={() => {
-                          if (!adminMedicineId || !adminAmount.trim()) return;
-                          addAdminMutation.mutate({
-                            household_medicine_id: adminMedicineId,
-                            amount: adminAmount.trim(),
-                          });
-                          setAdminMedicineId("");
-                          setAdminAmount("");
-                        }}
-                        isPending={addAdminMutation.isPending}
-                      />
-                    ))}
-                  {composerMode === "administration" && addAdminMutation.isError && (
-                    <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
-                      {(addAdminMutation.error as { response?: { data?: { detail?: string } } })
-                        .response?.data?.detail ??
-                        "Ошибка записи. Проверь срок годности и срок после вскрытия."}
-                    </p>
-                  )}
-
-                  {composerMode === "comment" && (
-                    <div className="soft-panel-muted grid gap-3 rounded-[24px] p-3">
-                      <textarea
-                        rows={3}
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Например: к вечеру стал бодрее, после сна снова поднялась температура."
-                        className="soft-input w-full rounded-2xl px-3 py-2"
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!commentText.trim()) return;
-                            addCommentMutation.mutate();
-                          }}
-                          disabled={addCommentMutation.isPending || !commentText.trim()}
-                          className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-                        >
-                          {addCommentMutation.isPending ? "Сохраняем…" : "Добавить комментарий"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
+              Закрыть наблюдение
+            </button>
           </div>
-        </section>
-
-        <section className="soft-panel-muted rounded-[24px] px-4 py-5 sm:px-5 sm:py-6">
-          <DisclosureHeader
-            isOpen={isTimelineExpanded}
-            onToggle={() => {
-              setIsTimelineExpanded((current) => !current);
-            }}
-            desktopClosedLabel={`Показать ленту (${timelineItems.length})`}
-            desktopOpenLabel="Скрыть ленту"
-            disabled={timelineItems.length === 0}
-          >
-            <>
-              <h4 className="text-base font-semibold text-foreground">Лента эпизода</h4>
-              <p className="mt-1 text-sm text-muted">Последние записи по времени.</p>
-            </>
-          </DisclosureHeader>
-
-          <div className="mt-4">
-            {timelineItems.length > 0 ? (
-              isTimelineExpanded ? (
-                <EpisodeTimelineList items={timelineItems} />
-              ) : (
-                <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
-                  Лента свернута. Открой её, если нужно посмотреть предыдущие записи.
-                </div>
-              )
-            ) : (
-              <div className="soft-empty rounded-[22px] px-4 py-6 text-sm text-muted">
-                Записей по эпизоду пока нет.
-              </div>
-            )}
-          </div>
-        </section>
+        )}
       </div>
     </div>
   );
@@ -950,10 +1130,15 @@ function EpisodeActivationCard({
     medication_mode: string;
     note?: string | null;
     temperatures: Array<{ value_celsius: number }>;
-    administrations: Array<{ household_medicine_id: string; amount: string }>;
+    administrations: Array<{
+      household_medicine_id?: string | null;
+      custom_medicine_name?: string | null;
+      amount: string;
+    }>;
     comments: Array<{ text: string }>;
     medication_plans: Array<{
-      household_medicine_id: string;
+      household_medicine_id?: string | null;
+      custom_medicine_name?: string | null;
       dose_amount: string;
       min_interval_minutes: number;
       max_doses_per_day?: number | null;
@@ -970,14 +1155,21 @@ function EpisodeActivationCard({
     "temperature"
   );
   const [tempValue, setTempValue] = useState("");
+  const [adminMedicineMode, setAdminMedicineMode] = useState<"cabinet" | "manual">("cabinet");
   const [adminMedicineId, setAdminMedicineId] = useState("");
+  const [adminCustomMedicineName, setAdminCustomMedicineName] = useState("");
   const [adminAmount, setAdminAmount] = useState("");
   const [commentText, setCommentText] = useState("");
-  const [isActivationPlansExpanded, setIsActivationPlansExpanded] = useState(true);
+  const [isActivationPlansExpanded, setIsActivationPlansExpanded] = useState(false);
   const [medicationPlans, setMedicationPlans] = useState<DraftMedicationPlan[]>([]);
   const [temperatures, setTemperatures] = useState<Array<{ id: string; valueCelsius: number }>>([]);
   const [administrations, setAdministrations] = useState<
-    Array<{ id: string; householdMedicineId: string; amount: string }>
+    Array<{
+      id: string;
+      householdMedicineId: string | null;
+      customMedicineName: string | null;
+      amount: string;
+    }>
   >([]);
   const [comments, setComments] = useState<Array<{ id: string; text: string }>>([]);
   const usableMedicines = medicines.filter(
@@ -993,10 +1185,10 @@ function EpisodeActivationCard({
   return (
     <div className="soft-panel rounded-[30px]">
       <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-6 sm:px-6 sm:py-7">
-        <p className="text-xs tracking-[0.1em] text-muted">Подготовка эпизода</p>
+        <p className="text-xs tracking-[0.1em] text-muted">Подготовка наблюдения</p>
         <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{childName}</h3>
         <p className="mt-3 text-sm text-muted">
-          Пока эпизод не активирован, он не появляется в активных болезнях и ничего не сохраняет.
+          Пока наблюдение не запущено, оно не появляется в активных болезнях и ничего не сохраняет.
         </p>
       </div>
 
@@ -1014,7 +1206,7 @@ function EpisodeActivationCard({
           />
         </label>
         <label className="block">
-          <span className="block text-sm text-muted">Название эпизода</span>
+          <span className="block text-sm text-muted">Название наблюдения</span>
           <input
             type="text"
             value={title}
@@ -1023,71 +1215,66 @@ function EpisodeActivationCard({
             className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
           />
         </label>
-        <section className="border-t border-border pt-6">
+        <section className="soft-panel-muted rounded-[24px] p-4 sm:p-5">
           <DisclosureHeader
             isOpen={isActivationPlansExpanded}
             onToggle={() => setIsActivationPlansExpanded((current) => !current)}
           >
-            <>
-              <h4 className="text-base font-semibold text-foreground">Планы лекарства</h4>
+            <div>
+              <h4 className="text-base font-semibold text-foreground">Отслеживание по времени</h4>
               <p className="mt-1 text-sm text-muted">
-                Здесь можно сразу настроить интервалы и будущие приёмы. Ручной журнал ниже тоже
-                останется доступен.
+                Если нужен интервал и напоминания, добавь схему здесь.
               </p>
-            </>
+              {!isActivationPlansExpanded && medicationPlans.length > 0 && (
+                <p className="mt-2 text-xs text-muted">Уже добавлено: {medicationPlans.length}</p>
+              )}
+            </div>
           </DisclosureHeader>
 
-          {isActivationPlansExpanded &&
-            (usableMedicines.length === 0 ? (
-              <div className="soft-note-info mt-4 rounded-2xl px-4 py-3 text-sm">
-                В аптечке нет доступных упаковок для планов лекарства.
+          {isActivationPlansExpanded && (
+            <>
+              <div className="mt-4">
+                <MedicationPlanComposer
+                  childId={childId}
+                  medicines={usableMedicines}
+                  latestWeight={latestWeight}
+                  onSubmit={(plan) => {
+                    setMedicationPlans((current) => [...current, { id: makeLocalId(), ...plan }]);
+                    setIsActivationPlansExpanded(false);
+                  }}
+                  submitLabel="Добавить план"
+                  isPending={false}
+                />
               </div>
-            ) : (
-              <>
+
+              {medicationPlans.length > 0 && (
                 <div className="mt-4">
-                  <MedicationPlanComposer
+                  <MedicationPlanList
+                    plans={medicationPlans}
                     childId={childId}
                     medicines={usableMedicines}
                     latestWeight={latestWeight}
-                    onSubmit={(plan) =>
-                      setMedicationPlans((current) => [...current, { id: makeLocalId(), ...plan }])
+                    onUpdate={(planId, payload) =>
+                      setMedicationPlans((current) =>
+                        current.map((plan) =>
+                          plan.id === planId ? { id: plan.id, ...payload } : plan
+                        )
+                      )
                     }
-                    submitLabel="Добавить план"
-                    isPending={false}
+                    onDelete={(planId) =>
+                      setMedicationPlans((current) => current.filter((plan) => plan.id !== planId))
+                    }
                   />
                 </div>
-
-                {medicationPlans.length > 0 && (
-                  <div className="mt-4">
-                    <MedicationPlanList
-                      plans={medicationPlans}
-                      childId={childId}
-                      medicines={usableMedicines}
-                      latestWeight={latestWeight}
-                      onUpdate={(planId, payload) =>
-                        setMedicationPlans((current) =>
-                          current.map((plan) =>
-                            plan.id === planId ? { id: plan.id, ...payload } : plan
-                          )
-                        )
-                      }
-                      onDelete={(planId) =>
-                        setMedicationPlans((current) =>
-                          current.filter((plan) => plan.id !== planId)
-                        )
-                      }
-                    />
-                  </div>
-                )}
-              </>
-            ))}
+              )}
+            </>
+          )}
         </section>
-        <section className="border-t border-border pt-6">
+        <section className="soft-card rounded-[24px] p-4 sm:p-5">
           <div>
-            <h4 className="text-base font-semibold text-foreground">Подготовить записи</h4>
+            <h4 className="text-base font-semibold text-foreground">Быстрые записи</h4>
             <p className="mt-1 text-sm text-muted">
-              Можно заранее добавить температуры, лекарства и комментарии. Они сохранятся вместе с
-              активацией.
+              Температура, лекарство или комментарий. Всё сохранится вместе с запуском.
             </p>
           </div>
 
@@ -1109,7 +1296,7 @@ function EpisodeActivationCard({
             />
           </div>
 
-          <div className="mt-4 border-t border-border pt-4">
+          <div className="mt-4 border-t border-border/70 pt-4">
             {composerMode === "temperature" && (
               <TemperatureForm
                 value={tempValue}
@@ -1135,21 +1322,36 @@ function EpisodeActivationCard({
               ) : (
                 <AdministrationForm
                   medicines={usableMedicines}
+                  mode={adminMedicineMode}
                   selectedMedicineId={adminMedicineId}
+                  customMedicineName={adminCustomMedicineName}
                   amount={adminAmount}
+                  onModeChange={setAdminMedicineMode}
                   onMedicineChange={setAdminMedicineId}
+                  onCustomMedicineNameChange={setAdminCustomMedicineName}
                   onAmountChange={setAdminAmount}
                   onSubmit={() => {
-                    if (!adminMedicineId || !adminAmount.trim()) return;
+                    if (
+                      (adminMedicineMode === "cabinet" && !adminMedicineId) ||
+                      (adminMedicineMode === "manual" && !adminCustomMedicineName.trim()) ||
+                      !adminAmount.trim()
+                    ) {
+                      return;
+                    }
                     setAdministrations((current) => [
                       ...current,
                       {
                         id: makeLocalId(),
-                        householdMedicineId: adminMedicineId,
+                        householdMedicineId:
+                          adminMedicineMode === "cabinet" ? adminMedicineId : null,
+                        customMedicineName:
+                          adminMedicineMode === "manual" ? adminCustomMedicineName.trim() : null,
                         amount: adminAmount.trim(),
                       },
                     ]);
+                    setAdminMedicineMode("cabinet");
                     setAdminMedicineId("");
+                    setAdminCustomMedicineName("");
                     setAdminAmount("");
                   }}
                   isPending={false}
@@ -1188,12 +1390,12 @@ function EpisodeActivationCard({
         </section>
 
         {pendingItems.length > 0 && (
-          <section className="border-t border-border pt-6">
+          <section className="soft-panel-muted rounded-[24px] p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h4 className="text-base font-semibold text-foreground">Что будет сохранено</h4>
                 <p className="mt-1 text-sm text-muted">
-                  Этот набор запишется сразу после активации эпизода.
+                  Этот набор сохранится сразу после запуска наблюдения.
                 </p>
               </div>
             </div>
@@ -1249,11 +1451,13 @@ function EpisodeActivationCard({
                 temperatures: temperatures.map((item) => ({ value_celsius: item.valueCelsius })),
                 administrations: administrations.map((item) => ({
                   household_medicine_id: item.householdMedicineId,
+                  custom_medicine_name: item.customMedicineName,
                   amount: item.amount,
                 })),
                 comments: comments.map((item) => ({ text: item.text })),
                 medication_plans: medicationPlans.map((item) => ({
                   household_medicine_id: item.householdMedicineId,
+                  custom_medicine_name: item.customMedicineName,
                   dose_amount: item.doseAmount,
                   min_interval_minutes: item.minIntervalMinutes,
                   max_doses_per_day: item.maxDosesPerDay ?? null,
@@ -1266,7 +1470,7 @@ function EpisodeActivationCard({
             disabled={isPending || !startedAt}
             className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
           >
-            {isPending ? "Активируем…" : "Активировать эпизод"}
+            {isPending ? "Запускаем…" : "Начать наблюдение"}
           </button>
           <button
             type="button"
@@ -1392,41 +1596,74 @@ function TemperatureForm({
 
 function AdministrationForm({
   medicines,
+  mode,
   selectedMedicineId,
+  customMedicineName,
   amount,
+  onModeChange,
   onMedicineChange,
+  onCustomMedicineNameChange,
   onAmountChange,
   onSubmit,
   isPending,
 }: {
   medicines: HouseholdMedicine[];
+  mode: "cabinet" | "manual";
   selectedMedicineId: string;
+  customMedicineName: string;
   amount: string;
+  onModeChange: (value: "cabinet" | "manual") => void;
   onMedicineChange: (value: string) => void;
+  onCustomMedicineNameChange: (value: string) => void;
   onAmountChange: (value: string) => void;
   onSubmit: () => void;
   isPending: boolean;
 }) {
   return (
     <div className="soft-panel rounded-[24px] p-4">
+      <div className="mb-3 flex flex-wrap gap-2">
+        <ComposerToggle
+          label="Из аптечки"
+          active={mode === "cabinet"}
+          onClick={() => onModeChange("cabinet")}
+        />
+        <ComposerToggle
+          label="Просто записать"
+          active={mode === "manual"}
+          onClick={() => onModeChange("manual")}
+        />
+      </div>
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_auto]">
         <FormFieldCard className="min-w-0">
-          <label className="block min-w-0">
-            <span className="block text-sm text-muted">Упаковка</span>
-            <select
-              value={selectedMedicineId}
-              onChange={(e) => onMedicineChange(e.target.value)}
-              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-            >
-              <option value="">Выберите упаковку</option>
-              {medicines.map((medicine) => (
-                <option key={medicine.id} value={medicine.id}>
-                  {medicine.medicineName} · {medicine.statusLabel} · до{" "}
-                  {formatDate(medicine.expiryDate)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {mode === "cabinet" ? (
+            <label className="block min-w-0">
+              <span className="block text-sm text-muted">Упаковка</span>
+              <select
+                value={selectedMedicineId}
+                onChange={(e) => onMedicineChange(e.target.value)}
+                className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+              >
+                <option value="">Выберите упаковку</option>
+                {medicines.map((medicine) => (
+                  <option key={medicine.id} value={medicine.id}>
+                    {medicine.medicineName} · {medicine.statusLabel} · до{" "}
+                    {formatDate(medicine.expiryDate)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <label className="block min-w-0">
+              <span className="block text-sm text-muted">Название лекарства</span>
+              <input
+                type="text"
+                value={customMedicineName}
+                onChange={(e) => onCustomMedicineNameChange(e.target.value)}
+                placeholder="Например: Ибупрофен"
+                className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+              />
+            </label>
+          )}
         </FormFieldCard>
 
         <FormFieldCard>
@@ -1436,9 +1673,10 @@ function AdministrationForm({
               type="text"
               value={amount}
               onChange={(e) => onAmountChange(e.target.value)}
-              placeholder="5 мл"
+              placeholder="Например: 5 мл, 1 таб., 200 мг"
               className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
             />
+            <p className="mt-2 text-xs text-muted">Можно указать мл, таб., мг, кап. и т.д.</p>
           </label>
         </FormFieldCard>
 
@@ -1446,7 +1684,11 @@ function AdministrationForm({
           <button
             type="button"
             onClick={onSubmit}
-            disabled={isPending || !selectedMedicineId || !amount.trim()}
+            disabled={
+              isPending ||
+              (mode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim()) ||
+              !amount.trim()
+            }
             className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
           >
             {isPending ? "Сохраняем…" : "Записать"}
@@ -1458,7 +1700,8 @@ function AdministrationForm({
 }
 
 type MedicationPlanPayload = {
-  householdMedicineId: string;
+  householdMedicineId: string | null;
+  customMedicineName: string | null;
   doseAmount: string;
   minIntervalMinutes: number;
   maxDosesPerDay: number | null;
@@ -1514,7 +1757,8 @@ function GuidedMedicationSection({
   isDeletingPlan: boolean;
   planErrorMessage: string | null;
   onCreatePlan: (payload: {
-    household_medicine_id: string;
+    household_medicine_id?: string | null;
+    custom_medicine_name?: string | null;
     dose_amount: string;
     min_interval_minutes: number;
     max_doses_per_day?: number | null;
@@ -1536,21 +1780,44 @@ function GuidedMedicationSection({
       <DisclosureHeader
         isOpen={isComposerOpen}
         onToggle={() => {
-          if (usableMedicines.length === 0) {
-            return;
-          }
           setIsComposerOpen((current) => !current);
         }}
         desktopClosedLabel="Добавить план"
         desktopOpenLabel="Скрыть форму"
         mobileClosedLabel="Добавить"
         mobileOpenLabel="Скрыть"
-        disabled={usableMedicines.length === 0}
       >
         <div>
-          <h4 className="text-base font-semibold text-foreground">Лекарства с подсказками</h4>
+          <h4 className="text-base font-semibold text-foreground">Отслеживание по времени</h4>
+          {!isComposerOpen && plans.length > 0 && (
+            <p className="mt-1 text-xs text-muted">Добавлено: {plans.length}</p>
+          )}
         </div>
       </DisclosureHeader>
+
+      {isComposerOpen ? (
+        <MedicationPlanComposer
+          childId={childId}
+          medicines={usableMedicines}
+          latestWeight={latestWeight}
+          onSubmit={(plan) => {
+            onCreatePlan({
+              household_medicine_id: plan.householdMedicineId,
+              custom_medicine_name: plan.customMedicineName,
+              dose_amount: plan.doseAmount,
+              min_interval_minutes: plan.minIntervalMinutes,
+              max_doses_per_day: plan.maxDosesPerDay,
+              weight_kg: plan.weightKg,
+              dose_mg_per_kg: plan.doseMgPerKg,
+              notes: plan.notes,
+            });
+            setIsComposerOpen(false);
+          }}
+          submitLabel="Добавить план"
+          isPending={isSubmittingPlan}
+          onCancel={() => setIsComposerOpen(false)}
+        />
+      ) : null}
 
       {plans.length > 0 ? (
         <MedicationPlanList
@@ -1568,36 +1835,10 @@ function GuidedMedicationSection({
         />
       ) : (
         <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
-          Планов лекарства пока нет. Ниже можно добавить новый план, если в эпизоде появилось ещё
-          одно лекарство или нужно восстановить забытый сценарий.
+          Пока ничего не отслеживается по времени. Ниже можно добавить новый план, если нужно
+          напоминать о следующем приёме.
         </div>
       )}
-
-      {usableMedicines.length === 0 ? (
-        <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
-          В аптечке нет доступных упаковок для guided-режима.
-        </div>
-      ) : isComposerOpen ? (
-        <MedicationPlanComposer
-          childId={childId}
-          medicines={usableMedicines}
-          latestWeight={latestWeight}
-          onSubmit={(plan) =>
-            onCreatePlan({
-              household_medicine_id: plan.householdMedicineId,
-              dose_amount: plan.doseAmount,
-              min_interval_minutes: plan.minIntervalMinutes,
-              max_doses_per_day: plan.maxDosesPerDay,
-              weight_kg: plan.weightKg,
-              dose_mg_per_kg: plan.doseMgPerKg,
-              notes: plan.notes,
-            })
-          }
-          submitLabel="Добавить план"
-          isPending={isSubmittingPlan}
-          onCancel={() => setIsComposerOpen(false)}
-        />
-      ) : null}
 
       {planErrorMessage && (
         <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{planErrorMessage}</div>
@@ -1627,8 +1868,17 @@ function MedicationPlanComposer({
 }) {
   const queryClient = useQueryClient();
   const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
+  const defaultPlanMode: "cabinet" | "manual" = initialValue?.householdMedicineId
+    ? "cabinet"
+    : medicines.length > 0
+      ? "cabinet"
+      : "manual";
+  const [planMode, setPlanMode] = useState<"cabinet" | "manual">(defaultPlanMode);
   const [selectedMedicineId, setSelectedMedicineId] = useState(
     initialValue?.householdMedicineId ?? ""
+  );
+  const [customMedicineName, setCustomMedicineName] = useState(
+    initialValue?.customMedicineName ?? ""
   );
   const [doseAmount, setDoseAmount] = useState(initialValue?.doseAmount ?? "");
   const [minIntervalInput, setMinIntervalInput] = useState(
@@ -1651,8 +1901,6 @@ function MedicationPlanComposer({
   const [doseMgPerKg, setDoseMgPerKg] = useState(
     initialValue?.doseMgPerKg ? String(initialValue.doseMgPerKg) : ""
   );
-  const [notes, setNotes] = useState(initialValue?.notes ?? "");
-
   const selectedMedicine = medicines.find((medicine) => medicine.id === selectedMedicineId) ?? null;
   const parsedWeightKg = parseNullableNumber(weightKg);
   const weightHint = buildWeightDoseHint(
@@ -1681,24 +1929,50 @@ function MedicationPlanComposer({
 
   return (
     <div className="soft-panel rounded-[24px] p-4 sm:p-5">
+      <div className="mb-3 flex flex-wrap gap-2">
+        <ComposerToggle
+          label="Из аптечки"
+          active={planMode === "cabinet"}
+          onClick={() => setPlanMode("cabinet")}
+        />
+        <ComposerToggle
+          label="Просто ввести"
+          active={planMode === "manual"}
+          onClick={() => setPlanMode("manual")}
+        />
+      </div>
       <div className="grid gap-3 xl:grid-cols-2">
         <FormFieldCard className="min-w-0">
-          <label className="block min-w-0">
-            <span className="block text-sm text-muted">Упаковка</span>
-            <select
-              value={selectedMedicineId}
-              onChange={(e) => setSelectedMedicineId(e.target.value)}
-              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-            >
-              <option value="">Выберите упаковку</option>
-              {medicines.map((medicine) => (
-                <option key={medicine.id} value={medicine.id}>
-                  {medicine.medicineName}
-                  {medicine.medicineConcentration ? ` · ${medicine.medicineConcentration}` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+          {planMode === "cabinet" ? (
+            <label className="block min-w-0">
+              <span className="block text-sm text-muted">Лекарство из аптечки</span>
+              <select
+                value={selectedMedicineId}
+                onChange={(event) => setSelectedMedicineId(event.target.value)}
+                className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+              >
+                <option value="">Выберите упаковку</option>
+                {medicines.map((medicine) => (
+                  <option key={medicine.id} value={medicine.id}>
+                    {medicine.medicineName}
+                    {medicine.medicineConcentration ? ` · ${medicine.medicineConcentration}` : ""}
+                    {` · до ${formatDate(medicine.expiryDate)}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <label className="block min-w-0">
+              <span className="block text-sm text-muted">Название лекарства</span>
+              <input
+                type="text"
+                value={customMedicineName}
+                onChange={(event) => setCustomMedicineName(event.target.value)}
+                placeholder="Например: Ибуклин"
+                className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+              />
+            </label>
+          )}
         </FormFieldCard>
 
         <FormFieldCard>
@@ -1717,7 +1991,7 @@ function MedicationPlanComposer({
               </p>
             )}
             {hasInvalidDose && (
-              <p className="mt-2 text-xs text-[color:var(--color-danger)]">
+              <p className="soft-text-danger mt-2 text-xs">
                 Укажи единицу дозы: мл, таб., мг, кап. и т.д.
               </p>
             )}
@@ -1740,7 +2014,9 @@ function MedicationPlanComposer({
             />
           </label>
         </FormFieldCard>
+      </div>
 
+      <div className="mt-3 grid gap-3 xl:grid-cols-2">
         <FormFieldCard>
           <label className="block">
             <span className="block text-sm text-muted">Максимум в сутки</span>
@@ -1818,19 +2094,6 @@ function MedicationPlanComposer({
         </FormFieldCard>
       </div>
 
-      <FormFieldCard className="mt-3">
-        <label className="block">
-          <span className="block text-sm text-muted">Комментарий к схеме</span>
-          <textarea
-            rows={2}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Например: по назначению врача, только при высокой температуре."
-            className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-          />
-        </label>
-      </FormFieldCard>
-
       {weightHint && (
         <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">{weightHint}</div>
       )}
@@ -1839,33 +2102,39 @@ function MedicationPlanComposer({
         <button
           type="button"
           onClick={() => {
-            if (!selectedMedicineId || parsedIntervalMinutes === null || hasInvalidDose) {
+            if (
+              parsedIntervalMinutes === null ||
+              hasInvalidDose ||
+              (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim())
+            ) {
               return;
             }
 
             onSubmit({
-              householdMedicineId: selectedMedicineId,
+              householdMedicineId: planMode === "cabinet" ? selectedMedicineId : null,
+              customMedicineName: planMode === "manual" ? customMedicineName.trim() : null,
               doseAmount: doseAmount.trim(),
               minIntervalMinutes: parsedIntervalMinutes,
               maxDosesPerDay: parseNullableInteger(maxDosesPerDay),
               weightKg: parseNullableNumber(weightKg),
               doseMgPerKg: parseNullableNumber(doseMgPerKg),
-              notes: notes.trim() || null,
+              notes: null,
             });
 
             if (!initialValue) {
+              setPlanMode("cabinet");
               setSelectedMedicineId("");
+              setCustomMedicineName("");
               setDoseAmount("");
               setMinIntervalInput(intervalUnit === "minutes" ? "180" : "3");
               setMaxDosesPerDay("");
               setDoseMgPerKg("");
-              setNotes("");
             }
             onCancel?.();
           }}
           disabled={
             isPending ||
-            !selectedMedicineId ||
+            (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim()) ||
             !minIntervalInput ||
             hasInvalidDose ||
             parsedIntervalMinutes === null
@@ -1918,7 +2187,16 @@ function MedicationPlanList({
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [actionMenuPlanId, setActionMenuPlanId] = useState<string | null>(null);
   const now = useNow();
+  const currentTime = new Date(now);
   const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
+  const prioritizedPlans = administrations
+    ? getPrioritizedMedicationPlanItems(plans, administrations, medicines, currentTime)
+    : plans.map((plan) => ({
+        plan,
+        medicine: medicines.find((item) => item.id === plan.householdMedicineId) ?? null,
+        stats: buildPlanAdministrationStats(plan, [], currentTime),
+        isUnavailable: false,
+      }));
 
   const collapsePlan = (planId: string) => {
     setActionMenuPlanId((current) => (current === planId ? null : current));
@@ -1928,14 +2206,9 @@ function MedicationPlanList({
 
   return (
     <div className="space-y-3">
-      {plans.map((plan) => {
-        const medicine = medicines.find((item) => item.id === plan.householdMedicineId) ?? null;
-        const stats = administrations
-          ? buildPlanAdministrationStats(plan, administrations, new Date(now))
-          : null;
+      {prioritizedPlans.map(({ plan, medicine, stats, isUnavailable }) => {
+        const planName = plan.customMedicineName ?? medicine?.medicineName ?? "Лекарство";
         const weightHint = buildWeightDoseHint(medicine, plan.weightKg, plan.doseMgPerKg);
-        const isMedicineUnavailable =
-          medicine?.status === "expired" || medicine?.status === "expired_after_opening";
         const editableMedicines = Array.from(
           new Map(
             medicines
@@ -1955,14 +2228,14 @@ function MedicationPlanList({
         const nextDoseLabel = stats?.blockedByDailyLimit
           ? "Следующий приём: лимит на сегодня достигнут"
           : stats?.nextAllowedAt
-            ? stats.nextAllowedAt <= new Date()
+            ? stats.nextAllowedAt <= currentTime
               ? "Следующий приём: можно сейчас"
-              : `Следующий приём: ${formatClockTime(stats.nextAllowedAt)}`
+              : `Следующий приём: ${formatRelativeDateTime(stats.nextAllowedAt, currentTime)}`
             : "Следующий приём: можно сейчас";
         const nextDoseToneClass = stats?.blockedByDailyLimit
           ? "soft-pill-danger"
           : stats?.nextAllowedAt
-            ? stats.nextAllowedAt <= new Date()
+            ? stats.nextAllowedAt <= currentTime
               ? "soft-pill-success"
               : "soft-pill-warning"
             : "soft-pill-info";
@@ -1995,9 +2268,7 @@ function MedicationPlanList({
             >
               <div className="min-w-0">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-base font-semibold text-foreground">
-                    {medicine?.medicineName ?? "Лекарство"}
-                  </p>
+                  <p className="text-base font-semibold text-foreground">{planName}</p>
                   <span className="soft-pill rounded-full px-2.5 py-1 text-[11px] sm:hidden">
                     {actionMenuPlanId === plan.id || isExpanded || isEditing ? "Скрыть" : "Открыть"}
                   </span>
@@ -2010,8 +2281,8 @@ function MedicationPlanList({
                     {nextDoseLabel}
                   </p>
                 </div>
-                {isMedicineUnavailable && (
-                  <p className="mt-2 text-sm text-[color:var(--color-danger)]">
+                {isUnavailable && (
+                  <p className="soft-text-danger mt-2 text-sm">
                     Эта упаковка сейчас недоступна для приёма.
                   </p>
                 )}
@@ -2025,17 +2296,15 @@ function MedicationPlanList({
                       event.stopPropagation();
                       onTakeDose(plan as EpisodeMedicationPlan);
                     }}
-                    disabled={
-                      isSubmittingAdministration || !!stats?.isBlocked || isMedicineUnavailable
-                    }
+                    disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
                     className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
                   >
                     {isSubmittingAdministration
                       ? "Отмечаем…"
-                      : isMedicineUnavailable
+                      : isUnavailable
                         ? "Недоступно"
                         : stats?.isBlocked
-                          ? "Пока рано"
+                          ? "Рано"
                           : "Дать препарат"}
                   </button>
                 )}
@@ -2068,17 +2337,15 @@ function MedicationPlanList({
                     event.stopPropagation();
                     onTakeDose(plan as EpisodeMedicationPlan);
                   }}
-                  disabled={
-                    isSubmittingAdministration || !!stats?.isBlocked || isMedicineUnavailable
-                  }
+                  disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
                   className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
                 >
                   {isSubmittingAdministration
                     ? "Отмечаем…"
-                    : isMedicineUnavailable
+                    : isUnavailable
                       ? "Недоступно"
                       : stats?.isBlocked
-                        ? "Пока рано"
+                        ? "Рано"
                         : "Дать препарат"}
                 </button>
               </div>
@@ -2101,7 +2368,7 @@ function MedicationPlanList({
                     type="button"
                     onClick={() => {
                       const shouldFinish = window.confirm(
-                        `Завершить план для «${medicine?.medicineName ?? "лекарства"}»? Он исчезнет из активного эпизода.`
+                        `Завершить план для «${planName}»? Он исчезнет из текущего наблюдения.`
                       );
                       if (!shouldFinish) {
                         return;
@@ -2119,9 +2386,7 @@ function MedicationPlanList({
                   <button
                     type="button"
                     onClick={() => {
-                      const shouldEdit = window.confirm(
-                        `Точно изменить план для «${medicine?.medicineName ?? "лекарства"}»?`
-                      );
+                      const shouldEdit = window.confirm(`Точно изменить план для «${planName}»?`);
                       if (!shouldEdit) {
                         return;
                       }
@@ -2137,9 +2402,7 @@ function MedicationPlanList({
                 <button
                   type="button"
                   onClick={() => {
-                    const shouldDelete = window.confirm(
-                      `Точно удалить план для «${medicine?.medicineName ?? "лекарства"}»?`
-                    );
+                    const shouldDelete = window.confirm(`Точно удалить план для «${planName}»?`);
                     if (!shouldDelete) {
                       return;
                     }
@@ -2164,6 +2427,7 @@ function MedicationPlanList({
                     latestWeight={latestWeight}
                     initialValue={{
                       householdMedicineId: plan.householdMedicineId,
+                      customMedicineName: plan.customMedicineName,
                       doseAmount: plan.doseAmount,
                       minIntervalMinutes: plan.minIntervalMinutes,
                       maxDosesPerDay: plan.maxDosesPerDay,
@@ -2182,12 +2446,14 @@ function MedicationPlanList({
                 ) : (
                   <div className="space-y-2 text-sm text-muted">
                     {plan.doseAmount && <p>Разовая доза: {plan.doseAmount}</p>}
-                    <p>
-                      {medicine?.medicineForm ?? "Форма не указана"}
-                      {medicine?.medicineConcentration
-                        ? ` · ${medicine.medicineConcentration}`
-                        : ""}
-                    </p>
+                    {medicine && (
+                      <p>
+                        {medicine.medicineForm ?? "Форма не указана"}
+                        {medicine.medicineConcentration
+                          ? ` · ${medicine.medicineConcentration}`
+                          : ""}
+                      </p>
+                    )}
                     <p>
                       Интервал: {formatIntervalForDisplay(plan.minIntervalMinutes, intervalUnit)}
                       {plan.maxDosesPerDay ? ` · до ${plan.maxDosesPerDay} раз в сутки` : ""}
@@ -2208,7 +2474,6 @@ function MedicationPlanList({
                       </>
                     )}
                     {weightHint && <p>{weightHint}</p>}
-                    {plan.notes && <p>{plan.notes}</p>}
                   </div>
                 )}
               </div>
@@ -2292,26 +2557,6 @@ function formatEntrySummary(
   ].join(" • ");
 }
 
-function formatClockTime(value: string | Date | null | undefined) {
-  if (!value) {
-    return "";
-  }
-
-  if (value instanceof Date) {
-    return value.toLocaleTimeString("ru-RU", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  const timePart = value.slice(11, 16);
-  if (timePart && timePart.length === 5) {
-    return timePart;
-  }
-
-  return formatDateTime(value);
-}
-
 function buildEpisodeTimeline(
   temperatures: TemperatureEntry[],
   administrations: AdministrationEvent[],
@@ -2327,14 +2572,16 @@ function buildEpisodeTimeline(
   }));
 
   const administrationItems = administrations.map((entry) => {
-    const medicine = medicines.find((item) => item.id === entry.householdMedicineId);
+    const medicine = entry.householdMedicineId
+      ? medicines.find((item) => item.id === entry.householdMedicineId)
+      : null;
     const reason = entry.reason?.trim();
 
     return {
       id: `admin-${entry.id}`,
       at: entry.administeredAt,
       kind: "administration" as const,
-      title: medicine?.medicineName ?? "Приём лекарства",
+      title: entry.customMedicineName ?? medicine?.medicineName ?? "Приём лекарства",
       description: reason ? `Доза: ${entry.amount}\n${reason}` : `Доза: ${entry.amount}`,
     };
   });
@@ -2354,7 +2601,12 @@ function buildEpisodeTimeline(
 
 function buildPendingActivationTimeline(
   temperatures: Array<{ id: string; valueCelsius: number }>,
-  administrations: Array<{ id: string; householdMedicineId: string; amount: string }>,
+  administrations: Array<{
+    id: string;
+    householdMedicineId: string | null;
+    customMedicineName: string | null;
+    amount: string;
+  }>,
   comments: Array<{ id: string; text: string }>,
   medicines: HouseholdMedicine[]
 ): EpisodeTimelineItem[] {
@@ -2369,13 +2621,15 @@ function buildPendingActivationTimeline(
   }));
 
   const administrationItems = administrations.map((entry) => {
-    const medicine = medicines.find((item) => item.id === entry.householdMedicineId);
+    const medicine = entry.householdMedicineId
+      ? medicines.find((item) => item.id === entry.householdMedicineId)
+      : null;
 
     return {
       id: entry.id,
       at,
       kind: "administration" as const,
-      title: medicine?.medicineName ?? "Приём лекарства",
+      title: entry.customMedicineName ?? medicine?.medicineName ?? "Приём лекарства",
       description: `Доза: ${entry.amount}`,
     };
   });

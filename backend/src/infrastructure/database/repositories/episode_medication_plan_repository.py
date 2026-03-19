@@ -25,6 +25,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             id=m.id,
             episode_id=m.episode_id,
             household_medicine_id=m.household_medicine_id,
+            custom_medicine_name=m.custom_medicine_name,
             dose_amount=m.dose_amount,
             min_interval_minutes=m.min_interval_minutes,
             max_doses_per_day=m.max_doses_per_day,
@@ -45,6 +46,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             id=e.id,
             episode_id=e.episode_id,
             household_medicine_id=e.household_medicine_id,
+            custom_medicine_name=e.custom_medicine_name,
             dose_amount=e.dose_amount,
             min_interval_minutes=e.min_interval_minutes,
             max_doses_per_day=e.max_doses_per_day,
@@ -102,6 +104,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
         if not row:
             raise ValueError(f"EpisodeMedicationPlan {entity.id} not found")
         row.household_medicine_id = entity.household_medicine_id
+        row.custom_medicine_name = entity.custom_medicine_name
         row.dose_amount = entity.dose_amount
         row.min_interval_minutes = entity.min_interval_minutes
         row.max_doses_per_day = entity.max_doses_per_day

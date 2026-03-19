@@ -12,7 +12,8 @@ class EpisodeMedicationPlanCreateDto(BaseModel):
     """Создание guided-плана лекарства."""
 
     episode_id: UUID = Field(..., description="ID эпизода болезни")
-    household_medicine_id: UUID = Field(..., description="ID упаковки из аптечки")
+    household_medicine_id: UUID | None = Field(None, description="ID упаковки из аптечки")
+    custom_medicine_name: str | None = Field(None, description="Свободное название лекарства")
     dose_amount: str = Field(..., description="Разовая доза, напр. 5 мл")
     min_interval_minutes: int = Field(
         ..., ge=1, le=1440, description="Минимальный интервал в минутах"
@@ -31,6 +32,7 @@ class EpisodeMedicationPlanUpdateDto(BaseModel):
     """Обновление guided-плана лекарства."""
 
     household_medicine_id: UUID | None = Field(None, description="ID упаковки из аптечки")
+    custom_medicine_name: str | None = Field(None, description="Свободное название лекарства")
     dose_amount: str | None = Field(None, description="Разовая доза, напр. 5 мл")
     min_interval_minutes: int | None = Field(
         None, ge=1, le=1440, description="Минимальный интервал в минутах"
@@ -48,7 +50,8 @@ class EpisodeMedicationPlanResponseDto(ResponseBase):
 
     id: UUID
     episode_id: UUID
-    household_medicine_id: UUID
+    household_medicine_id: UUID | None
+    custom_medicine_name: str | None
     dose_amount: str
     min_interval_minutes: int
     max_doses_per_day: int | None

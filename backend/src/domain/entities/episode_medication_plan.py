@@ -11,7 +11,8 @@ class EpisodeMedicationPlan:
 
     id: UUID
     episode_id: UUID
-    household_medicine_id: UUID
+    household_medicine_id: UUID | None
+    custom_medicine_name: str | None
     dose_amount: str
     min_interval_minutes: int
     max_doses_per_day: int | None

@@ -14,8 +14,8 @@ const moreLinks = [
   },
   {
     to: "/illnesses/history",
-    title: "История болезней",
-    description: "Архив завершённых эпизодов по детям.",
+    title: "История",
+    description: "Архив завершённых наблюдений по детям.",
   },
   {
     to: "/about",

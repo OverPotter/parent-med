@@ -42,7 +42,7 @@ from src.infrastructure.database.models.household_medicine import HouseholdMedic
 
 logger = logging.getLogger(__name__)
 DEFAULT_REMINDER_BEFORE_MINUTES = 10
-MEDICINE_CABINET_REMINDER_OFFSETS = (30, 15, 7, 1)
+MEDICINE_CABINET_REMINDER_OFFSETS = (7, 3, 1)
 
 try:
     from pywebpush import WebPushException, webpush
@@ -91,6 +91,10 @@ def _format_before_body(
     return f"{child_name}: через {reminder_before_minutes} мин можно будет дать {medicine_name}."
 
 
+def _normalize_medicine_name(value: str | None) -> str:
+    return (value or "").strip().casefold()
+
+
 def _format_days_label(days: int) -> str:
     if days % 10 == 1 and days % 100 != 11:
         return f"{days} день"
@@ -101,12 +105,12 @@ def _format_days_label(days: int) -> str:
 
 def _get_cabinet_offsets(account: Any) -> list[int]:
     mapping = (
-        (30, account.cabinet_notify_30_days),
-        (15, account.cabinet_notify_15_days),
+        (10, account.cabinet_notify_10_days),
         (7, account.cabinet_notify_7_days),
-        (1, account.cabinet_notify_1_day),
+        (3, account.cabinet_notify_3_days),
     )
-    return [days for days, enabled in mapping if enabled]
+    optional_offsets = [days for days, enabled in mapping if enabled]
+    return sorted({*optional_offsets, 1}, reverse=True)
 
 
 def _build_cabinet_payload(
@@ -239,16 +243,31 @@ class PushNotificationScheduler:
                 if not account:
                     continue
 
-                medicine = await medicine_repo.get_by_id(plan.household_medicine_id)
-                if not medicine:
+                medicine = None
+                medicine_name = (plan.custom_medicine_name or "").strip()
+                if plan.household_medicine_id:
+                    medicine = await medicine_repo.get_by_id(plan.household_medicine_id)
+                    if not medicine:
+                        continue
+                    medicine_name = medicine.medicine_name
+                elif not medicine_name:
                     continue
 
                 administrations = await administration_repo.get_by_episode_id(episode.id)
+                normalized_plan_name = _normalize_medicine_name(plan.custom_medicine_name)
                 related = sorted(
                     (
                         entry
                         for entry in administrations
-                        if entry.household_medicine_id == plan.household_medicine_id
+                        if (
+                            plan.household_medicine_id
+                            and entry.household_medicine_id == plan.household_medicine_id
+                        )
+                        or (
+                            not plan.household_medicine_id
+                            and _normalize_medicine_name(entry.custom_medicine_name)
+                            == normalized_plan_name
+                        )
                     ),
                     key=lambda entry: entry.administered_at,
                     reverse=True,
@@ -288,10 +307,10 @@ class PushNotificationScheduler:
                         and plan.last_before_notification_for_at != next_allowed_at
                     ):
                         payload = {
-                            "title": f"{medicine.medicine_name} скоро можно дать",
+                            "title": f"{medicine_name} скоро можно дать",
                             "body": _format_before_body(
                                 child.name,
-                                medicine.medicine_name,
+                                medicine_name,
                                 plan.dose_amount,
                                 reminder_before_minutes,
                             ),
@@ -313,10 +332,10 @@ class PushNotificationScheduler:
 
                 if now >= next_allowed_at and plan.last_due_notification_for_at != next_allowed_at:
                     payload = {
-                        "title": f"Можно дать {medicine.medicine_name}",
+                        "title": f"Можно дать {medicine_name}",
                         "body": _format_due_body(
                             child.name,
-                            medicine.medicine_name,
+                            medicine_name,
                             plan.dose_amount,
                         ),
                         "url": f"/children/{child.id}/illness",
@@ -341,10 +360,10 @@ class PushNotificationScheduler:
                     and plan.last_overdue_notification_for_at != next_allowed_at
                 ):
                     payload = {
-                        "title": f"{medicine.medicine_name} всё ещё не отмечен",
+                        "title": f"{medicine_name} всё ещё не отмечен",
                         "body": _format_overdue_body(
                             child.name,
-                            medicine.medicine_name,
+                            medicine_name,
                             plan.dose_amount,
                         ),
                         "url": f"/children/{child.id}/illness",

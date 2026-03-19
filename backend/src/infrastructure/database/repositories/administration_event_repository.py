@@ -21,6 +21,7 @@ class SqlAdministrationEventRepository(AdministrationEventRepository):
             id=m.id,
             episode_id=m.episode_id,
             household_medicine_id=m.household_medicine_id,
+            custom_medicine_name=m.comment,
             administered_at=m.occurred_at,
             amount=m.amount or "",
             unit=m.unit,
@@ -37,6 +38,7 @@ class SqlAdministrationEventRepository(AdministrationEventRepository):
             amount=e.amount,
             unit=e.unit,
             reason=e.reason,
+            comment=e.custom_medicine_name,
         )
 
     async def get_by_id(self, id: UUID) -> AdministrationEvent | None:

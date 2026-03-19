@@ -105,7 +105,8 @@ interface RawTemperatureEntry {
 interface RawAdministrationEvent {
   id: string;
   episode_id: string;
-  household_medicine_id: string;
+  household_medicine_id: string | null;
+  custom_medicine_name: string | null;
   administered_at: string;
   amount: string;
   unit: string | null;
@@ -115,7 +116,8 @@ interface RawAdministrationEvent {
 interface RawEpisodeMedicationPlan {
   id: string;
   episode_id: string;
-  household_medicine_id: string;
+  household_medicine_id: string | null;
+  custom_medicine_name: string | null;
   dose_amount: string;
   min_interval_minutes: number;
   max_doses_per_day: number | null;
@@ -230,7 +232,8 @@ export function toAdministrationEvent(r: RawAdministrationEvent): Administration
   return {
     id: r.id,
     episodeId: r.episode_id,
-    householdMedicineId: r.household_medicine_id,
+    householdMedicineId: r.household_medicine_id ?? null,
+    customMedicineName: r.custom_medicine_name ?? null,
     administeredAt: r.administered_at,
     amount: r.amount,
     unit: r.unit ?? null,
@@ -242,7 +245,8 @@ export function toEpisodeMedicationPlan(r: RawEpisodeMedicationPlan): EpisodeMed
   return {
     id: r.id,
     episodeId: r.episode_id,
-    householdMedicineId: r.household_medicine_id,
+    householdMedicineId: r.household_medicine_id ?? null,
+    customMedicineName: r.custom_medicine_name ?? null,
     doseAmount: r.dose_amount,
     minIntervalMinutes: r.min_interval_minutes,
     maxDosesPerDay: r.max_doses_per_day ?? null,

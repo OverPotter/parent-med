@@ -8,7 +8,7 @@ from src.application.dto.administration_event import (
     AdministrationEventResponseDto,
 )
 from src.application.services.safety_engine import check_household_medicine_for_administration
-from src.core.exceptions import NotFoundError
+from src.core.exceptions import NotFoundError, ValidationError
 from src.domain.entities.administration_event import AdministrationEvent
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
@@ -33,6 +33,7 @@ class AdministrationService:
             id=entity.id,
             episode_id=entity.episode_id,
             household_medicine_id=entity.household_medicine_id,
+            custom_medicine_name=entity.custom_medicine_name,
             administered_at=entity.administered_at,
             amount=entity.amount,
             unit=entity.unit,
@@ -59,15 +60,21 @@ class AdministrationService:
             raise NotFoundError(
                 "Эпизод закрыт, приёмы добавлять нельзя", resource="illness_episode"
             )
-        household = await self._household_repo.get_by_id(dto.household_medicine_id)
-        if not household:
-            raise NotFoundError("Упаковка не найдена", resource="household_medicine")
-        check_household_medicine_for_administration(household)
+        if not dto.household_medicine_id and not (dto.custom_medicine_name or "").strip():
+            raise ValidationError("Укажи препарат из аптечки или введи название вручную")
+
+        household = None
+        if dto.household_medicine_id:
+            household = await self._household_repo.get_by_id(dto.household_medicine_id)
+            if not household:
+                raise NotFoundError("Упаковка не найдена", resource="household_medicine")
+            check_household_medicine_for_administration(household)
         administered_at = dto.administered_at or datetime.now(UTC)
         entity = AdministrationEvent(
             id=uuid4(),
             episode_id=dto.episode_id,
             household_medicine_id=dto.household_medicine_id,
+            custom_medicine_name=(dto.custom_medicine_name or "").strip() or None,
             administered_at=administered_at,
             amount=dto.amount,
             unit=dto.unit,

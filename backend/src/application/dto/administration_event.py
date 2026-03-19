@@ -12,7 +12,8 @@ class AdministrationEventCreateDto(BaseModel):
     """Фиксация приёма лекарства (после проверки Safety Engine)."""
 
     episode_id: UUID = Field(..., description="ID эпизода болезни")
-    household_medicine_id: UUID = Field(..., description="ID упаковки из аптечки")
+    household_medicine_id: UUID | None = Field(None, description="ID упаковки из аптечки")
+    custom_medicine_name: str | None = Field(None, description="Свободное название лекарства")
     administered_at: datetime | None = Field(None, description="Время приёма")
     amount: str = Field(..., description="Количество, напр. 5 мл, 1 таб")
     unit: str | None = Field(None, description="Единица измерения")
@@ -24,7 +25,8 @@ class AdministrationEventResponseDto(ResponseBase):
 
     id: UUID
     episode_id: UUID
-    household_medicine_id: UUID
+    household_medicine_id: UUID | None
+    custom_medicine_name: str | None
     administered_at: datetime
     amount: str
     unit: str | None

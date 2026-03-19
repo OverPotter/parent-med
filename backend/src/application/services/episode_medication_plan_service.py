@@ -32,11 +32,16 @@ class EpisodeMedicationPlanService:
         self._episode_repo = episode_repo
         self._household_repo = household_repo
 
+    @staticmethod
+    def _normalize_manual_name(value: str | None) -> str:
+        return (value or "").strip().casefold()
+
     def _to_response(self, entity: EpisodeMedicationPlan) -> EpisodeMedicationPlanResponseDto:
         return EpisodeMedicationPlanResponseDto(
             id=entity.id,
             episode_id=entity.episode_id,
             household_medicine_id=entity.household_medicine_id,
+            custom_medicine_name=entity.custom_medicine_name,
             dose_amount=entity.dose_amount,
             min_interval_minutes=entity.min_interval_minutes,
             max_doses_per_day=entity.max_doses_per_day,
@@ -61,20 +66,35 @@ class EpisodeMedicationPlanService:
         if episode.status != "active":
             raise ValidationError("Для закрытого эпизода план лекарства создавать нельзя")
 
-        household = await self._household_repo.get_by_id(dto.household_medicine_id)
-        if not household:
-            raise NotFoundError("Упаковка не найдена", resource="household_medicine")
+        household_medicine_id = dto.household_medicine_id
+        custom_medicine_name = (dto.custom_medicine_name or "").strip() or None
+        if not household_medicine_id and not custom_medicine_name:
+            raise ValidationError("Выбери лекарство из аптечки или введи название вручную")
 
-        existing = await self._repo.get_by_episode_and_medicine(
-            dto.episode_id, dto.household_medicine_id
-        )
-        if existing:
-            raise ValidationError("Для этой упаковки уже есть план внутри эпизода")
+        if household_medicine_id:
+            household = await self._household_repo.get_by_id(household_medicine_id)
+            if not household:
+                raise NotFoundError("Упаковка не найдена", resource="household_medicine")
+
+            existing = await self._repo.get_by_episode_and_medicine(
+                dto.episode_id, household_medicine_id
+            )
+            if existing:
+                raise ValidationError("Для этой упаковки уже есть план внутри эпизода")
+        else:
+            existing_plans = await self._repo.get_by_episode_id(dto.episode_id)
+            if any(
+                self._normalize_manual_name(plan.custom_medicine_name)
+                == self._normalize_manual_name(custom_medicine_name)
+                for plan in existing_plans
+            ):
+                raise ValidationError("Для этого лекарства уже есть план внутри эпизода")
 
         entity = EpisodeMedicationPlan(
             id=uuid4(),
             episode_id=dto.episode_id,
-            household_medicine_id=dto.household_medicine_id,
+            household_medicine_id=household_medicine_id,
+            custom_medicine_name=custom_medicine_name,
             dose_amount=dto.dose_amount.strip(),
             min_interval_minutes=dto.min_interval_minutes,
             max_doses_per_day=dto.max_doses_per_day,
@@ -111,6 +131,11 @@ class EpisodeMedicationPlanService:
             if "household_medicine_id" in fields_set
             else entity.household_medicine_id
         )
+        custom_medicine_name = (
+            dto.custom_medicine_name.strip()
+            if "custom_medicine_name" in fields_set and dto.custom_medicine_name
+            else (None if "custom_medicine_name" in fields_set else entity.custom_medicine_name)
+        )
         dose_amount = dto.dose_amount.strip() if "dose_amount" in fields_set and dto.dose_amount else (
             entity.dose_amount
         )
@@ -129,19 +154,33 @@ class EpisodeMedicationPlanService:
         notes = dto.notes.strip() if "notes" in fields_set and dto.notes else (
             None if "notes" in fields_set else entity.notes
         )
-        household = await self._household_repo.get_by_id(household_medicine_id)
-        if not household:
-            raise NotFoundError("Упаковка не найдена", resource="household_medicine")
+        if not household_medicine_id and not custom_medicine_name:
+            raise ValidationError("Выбери лекарство из аптечки или введи название вручную")
 
-        existing = await self._repo.get_by_episode_and_medicine(entity.episode_id, household_medicine_id)
-        if existing and existing.id != entity.id:
-            raise ValidationError("Для этой упаковки уже есть другой план внутри эпизода")
+        if household_medicine_id:
+            household = await self._household_repo.get_by_id(household_medicine_id)
+            if not household:
+                raise NotFoundError("Упаковка не найдена", resource="household_medicine")
+
+            existing = await self._repo.get_by_episode_and_medicine(entity.episode_id, household_medicine_id)
+            if existing and existing.id != entity.id:
+                raise ValidationError("Для этой упаковки уже есть другой план внутри эпизода")
+        else:
+            existing_plans = await self._repo.get_by_episode_id(entity.episode_id)
+            if any(
+                plan.id != entity.id
+                and self._normalize_manual_name(plan.custom_medicine_name)
+                == self._normalize_manual_name(custom_medicine_name)
+                for plan in existing_plans
+            ):
+                raise ValidationError("Для этого лекарства уже есть другой план внутри эпизода")
 
         updated = await self._repo.update(
             EpisodeMedicationPlan(
                 id=entity.id,
                 episode_id=entity.episode_id,
                 household_medicine_id=household_medicine_id,
+                custom_medicine_name=custom_medicine_name,
                 dose_amount=dose_amount,
                 min_interval_minutes=min_interval_minutes,
                 max_doses_per_day=max_doses_per_day,

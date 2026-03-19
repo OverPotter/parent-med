@@ -9,7 +9,8 @@ import { toEpisodeMedicationPlan } from "@shared/types/transform";
 interface RawEpisodeMedicationPlan {
   id: string;
   episode_id: string;
-  household_medicine_id: string;
+  household_medicine_id: string | null;
+  custom_medicine_name: string | null;
   dose_amount: string;
   min_interval_minutes: number;
   max_doses_per_day: number | null;
@@ -30,7 +31,8 @@ export async function fetchEpisodeMedicationPlansByEpisodeId(
 
 export async function createEpisodeMedicationPlan(body: {
   episode_id: string;
-  household_medicine_id: string;
+  household_medicine_id?: string | null;
+  custom_medicine_name?: string | null;
   dose_amount: string;
   min_interval_minutes: number;
   max_doses_per_day?: number | null;
@@ -45,7 +47,8 @@ export async function createEpisodeMedicationPlan(body: {
 export async function updateEpisodeMedicationPlan(
   id: string,
   body: {
-    household_medicine_id?: string;
+    household_medicine_id?: string | null;
+    custom_medicine_name?: string | null;
     dose_amount?: string;
     min_interval_minutes?: number;
     max_doses_per_day?: number | null;

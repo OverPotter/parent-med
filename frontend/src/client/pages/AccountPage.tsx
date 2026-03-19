@@ -65,10 +65,9 @@ export function AccountPage() {
   const updatePushPreferencesMutation = useMutation({
     mutationFn: (payload: {
       before_reminder_minutes?: number;
-      cabinet_notify_30_days?: boolean;
-      cabinet_notify_15_days?: boolean;
+      cabinet_notify_10_days?: boolean;
       cabinet_notify_7_days?: boolean;
-      cabinet_notify_1_day?: boolean;
+      cabinet_notify_3_days?: boolean;
     }) => updatePushNotificationPreferences(payload),
     onSuccess: (nextPreferences) => {
       setSelectedReminderMinutes(String(nextPreferences.beforeReminderMinutes));
@@ -219,11 +218,7 @@ export function AccountPage() {
   };
 
   const handleCabinetReminderToggle = (
-    key:
-      | "cabinet_notify_30_days"
-      | "cabinet_notify_15_days"
-      | "cabinet_notify_7_days"
-      | "cabinet_notify_1_day",
+    key: "cabinet_notify_10_days" | "cabinet_notify_7_days" | "cabinet_notify_3_days",
     nextValue: boolean
   ) => {
     setPushError(null);
@@ -353,9 +348,7 @@ export function AccountPage() {
               >
                 {changePasswordMutation.isPending ? "Сохраняем…" : "Обновить пароль"}
               </button>
-              {passwordSuccess && (
-                <p className="text-sm text-[color:var(--color-success)]">{passwordSuccess}</p>
-              )}
+              {passwordSuccess && <p className="soft-text-success text-sm">{passwordSuccess}</p>}
             </div>
             {passwordError && (
               <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
@@ -369,7 +362,7 @@ export function AccountPage() {
       <Surface className="p-5 sm:p-6">
         <p className="text-sm font-medium text-foreground">Планы лекарства</p>
         <p className="mt-3 text-sm leading-7 text-muted">
-          Как показывать и вводить интервал в guided-планах: в часах или в минутах.
+          Как показывать и вводить интервал в планах по времени: в часах или в минутах.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {(
@@ -458,19 +451,15 @@ export function AccountPage() {
         <div className="mt-5 border-t border-border/70 pt-4">
           <p className="text-sm font-medium text-foreground">Напоминания по аптечке</p>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Отдельные push-напоминания по сроку годности или сроку после вскрытия.
+            Отдельные push-напоминания по сроку годности или сроку после вскрытия. Напоминание за 1
+            день приходит всегда.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {[
               {
-                key: "cabinet_notify_30_days" as const,
-                label: "За 30 дней",
-                enabled: pushPreferences?.cabinetNotify30Days ?? false,
-              },
-              {
-                key: "cabinet_notify_15_days" as const,
-                label: "За 15 дней",
-                enabled: pushPreferences?.cabinetNotify15Days ?? false,
+                key: "cabinet_notify_10_days" as const,
+                label: "За 10 дней",
+                enabled: pushPreferences?.cabinetNotify10Days ?? false,
               },
               {
                 key: "cabinet_notify_7_days" as const,
@@ -478,9 +467,9 @@ export function AccountPage() {
                 enabled: pushPreferences?.cabinetNotify7Days ?? false,
               },
               {
-                key: "cabinet_notify_1_day" as const,
-                label: "За 1 день",
-                enabled: pushPreferences?.cabinetNotify1Day ?? false,
+                key: "cabinet_notify_3_days" as const,
+                label: "За 3 дня",
+                enabled: pushPreferences?.cabinetNotify3Days ?? false,
               },
             ].map((option) => (
               <button

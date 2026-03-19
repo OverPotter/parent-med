@@ -41,8 +41,9 @@ class EpisodeMedicationPlanModel(Base):
     household_medicine_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("household_medicines.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
     )
+    custom_medicine_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     dose_amount: Mapped[str] = mapped_column(String(64), nullable=False)
     min_interval_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     max_doses_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)

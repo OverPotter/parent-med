@@ -110,7 +110,8 @@ export interface TemperatureEntry {
 export interface AdministrationEvent {
   id: string;
   episodeId: string;
-  householdMedicineId: string;
+  householdMedicineId: string | null;
+  customMedicineName: string | null;
   administeredAt: string;
   amount: string;
   unit: string | null;
@@ -120,7 +121,8 @@ export interface AdministrationEvent {
 export interface EpisodeMedicationPlan {
   id: string;
   episodeId: string;
-  householdMedicineId: string;
+  householdMedicineId: string | null;
+  customMedicineName: string | null;
   doseAmount: string;
   minIntervalMinutes: number;
   maxDosesPerDay: number | null;
@@ -138,10 +140,9 @@ export interface PushNotificationConfig {
 export interface PushNotificationPreferences {
   beforeReminderMinutes: number;
   dueReminderEnabled: boolean;
-  cabinetNotify30Days: boolean;
-  cabinetNotify15Days: boolean;
+  cabinetNotify10Days: boolean;
   cabinetNotify7Days: boolean;
-  cabinetNotify1Day: boolean;
+  cabinetNotify3Days: boolean;
 }
 
 /** Ответ API с ошибкой (detail + code). */

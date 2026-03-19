@@ -9,10 +9,9 @@ interface RawPushNotificationConfig {
 interface RawPushNotificationPreferences {
   before_reminder_minutes: number;
   due_reminder_enabled: boolean;
-  cabinet_notify_30_days: boolean;
-  cabinet_notify_15_days: boolean;
+  cabinet_notify_10_days: boolean;
   cabinet_notify_7_days: boolean;
-  cabinet_notify_1_day: boolean;
+  cabinet_notify_3_days: boolean;
 }
 
 export async function fetchPushNotificationConfig(): Promise<PushNotificationConfig> {
@@ -30,19 +29,17 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
   return {
     beforeReminderMinutes: res.data.before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,
-    cabinetNotify30Days: res.data.cabinet_notify_30_days,
-    cabinetNotify15Days: res.data.cabinet_notify_15_days,
+    cabinetNotify10Days: res.data.cabinet_notify_10_days,
     cabinetNotify7Days: res.data.cabinet_notify_7_days,
-    cabinetNotify1Day: res.data.cabinet_notify_1_day,
+    cabinetNotify3Days: res.data.cabinet_notify_3_days,
   };
 }
 
 export async function updatePushNotificationPreferences(body: {
   before_reminder_minutes?: number;
-  cabinet_notify_30_days?: boolean;
-  cabinet_notify_15_days?: boolean;
+  cabinet_notify_10_days?: boolean;
   cabinet_notify_7_days?: boolean;
-  cabinet_notify_1_day?: boolean;
+  cabinet_notify_3_days?: boolean;
 }): Promise<PushNotificationPreferences> {
   const res = await apiClient.patch<RawPushNotificationPreferences>(
     "/push-notifications/preferences",
@@ -51,10 +48,9 @@ export async function updatePushNotificationPreferences(body: {
   return {
     beforeReminderMinutes: res.data.before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,
-    cabinetNotify30Days: res.data.cabinet_notify_30_days,
-    cabinetNotify15Days: res.data.cabinet_notify_15_days,
+    cabinetNotify10Days: res.data.cabinet_notify_10_days,
     cabinetNotify7Days: res.data.cabinet_notify_7_days,
-    cabinetNotify1Day: res.data.cabinet_notify_1_day,
+    cabinetNotify3Days: res.data.cabinet_notify_3_days,
   };
 }
 

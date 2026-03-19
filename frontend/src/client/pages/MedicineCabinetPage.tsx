@@ -78,6 +78,7 @@ export function MedicineCabinetPage() {
       <PageIntro
         title="Аптечка"
         subtitle="Реальные упаковки дома: срок годности, дата вскрытия и можно ли использовать препарат сейчас."
+        hideOnMobile
       />
       <div className="soft-nav-shell inline-flex flex-wrap gap-2 rounded-[24px] p-2">
         <button

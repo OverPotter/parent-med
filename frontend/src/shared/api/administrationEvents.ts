@@ -9,7 +9,8 @@ import { toAdministrationEvent } from "@shared/types/transform";
 interface RawAdministrationEvent {
   id: string;
   episode_id: string;
-  household_medicine_id: string;
+  household_medicine_id: string | null;
+  custom_medicine_name: string | null;
   administered_at: string;
   amount: string;
   unit: string | null;
@@ -27,7 +28,8 @@ export async function fetchAdministrationEventsByEpisodeId(
 
 export async function createAdministrationEvent(body: {
   episode_id: string;
-  household_medicine_id: string;
+  household_medicine_id?: string | null;
+  custom_medicine_name?: string | null;
   administered_at?: string | null;
   amount: string;
   unit?: string | null;

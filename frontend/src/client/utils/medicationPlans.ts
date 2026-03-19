@@ -8,8 +8,15 @@ const INTERVAL_MINUTE_MS = 60 * 1000;
 
 type MedicationPlanLike = Pick<
   EpisodeMedicationPlan,
-  "householdMedicineId" | "minIntervalMinutes" | "maxDosesPerDay"
+  "householdMedicineId" | "customMedicineName" | "minIntervalMinutes" | "maxDosesPerDay"
 >;
+
+export type MedicationPlanPriorityItem<TPlan extends MedicationPlanLike = EpisodeMedicationPlan> = {
+  plan: TPlan;
+  medicine: HouseholdMedicine | null;
+  stats: ReturnType<typeof buildPlanAdministrationStats>;
+  isUnavailable: boolean;
+};
 
 export function buildPlanAdministrationStats(
   plan: MedicationPlanLike,
@@ -17,7 +24,13 @@ export function buildPlanAdministrationStats(
   now = new Date()
 ) {
   const relatedAdministrations = administrations
-    .filter((entry) => entry.householdMedicineId === plan.householdMedicineId)
+    .filter((entry) =>
+      plan.householdMedicineId
+        ? entry.householdMedicineId === plan.householdMedicineId
+        : !!plan.customMedicineName &&
+          entry.customMedicineName?.trim().toLowerCase() ===
+            plan.customMedicineName.trim().toLowerCase()
+    )
     .sort((left, right) => right.administeredAt.localeCompare(left.administeredAt));
   const lastAdministration = relatedAdministrations[0] ?? null;
   const todayCount = relatedAdministrations.filter(
@@ -96,20 +109,15 @@ export function getEpisodeMedicationReminder(
     return null;
   }
 
-  const items = plans.map((plan) => {
-    const medicine = medicines.find((item) => item.id === plan.householdMedicineId) ?? null;
-    const stats = buildPlanAdministrationStats(plan, administrations, now);
-    const isUnavailable =
-      medicine?.status === "expired" || medicine?.status === "expired_after_opening";
-
-    return { plan, medicine, stats, isUnavailable };
-  });
+  const items = getPrioritizedMedicationPlanItems(plans, administrations, medicines, now);
 
   const availableNow = items.find((item) => !item.isUnavailable && !item.stats.isBlocked);
   if (availableNow) {
     return {
       tone: "success" as const,
-      text: `Сейчас можно дать ${availableNow.medicine?.medicineName ?? "лекарство"}`,
+      text: `Сейчас можно дать ${
+        availableNow.plan.customMedicineName ?? availableNow.medicine?.medicineName ?? "лекарство"
+      }`,
     };
   }
 
@@ -124,10 +132,9 @@ export function getEpisodeMedicationReminder(
   if (upcoming?.stats.nextAllowedAt) {
     return {
       tone: "warning" as const,
-      text: `Следующее лекарство: ${upcoming.medicine?.medicineName ?? "лекарство"} ${formatRelativeDateTime(
-        upcoming.stats.nextAllowedAt,
-        now
-      )}`,
+      text: `Следующее лекарство: ${
+        upcoming.plan.customMedicineName ?? upcoming.medicine?.medicineName ?? "лекарство"
+      } ${formatRelativeDateTime(upcoming.stats.nextAllowedAt, now)}`,
     };
   }
 
@@ -149,6 +156,33 @@ export function getEpisodeMedicationReminder(
     tone: "muted" as const,
     text: "Планы лекарства уже настроены",
   };
+}
+
+export function getPrioritizedMedicationPlanItems<TPlan extends MedicationPlanLike>(
+  plans: TPlan[],
+  administrations: AdministrationEvent[],
+  medicines: HouseholdMedicine[],
+  now = new Date()
+): MedicationPlanPriorityItem<TPlan>[] {
+  return plans
+    .map((plan) => {
+      const medicine = medicines.find((item) => item.id === plan.householdMedicineId) ?? null;
+      const stats = buildPlanAdministrationStats(plan, administrations, now);
+      const isUnavailable =
+        medicine?.status === "expired" || medicine?.status === "expired_after_opening";
+
+      return { plan, medicine, stats, isUnavailable };
+    })
+    .sort((left, right) => compareMedicationPlanItems(left, right));
+}
+
+export function getEpisodeMedicationLead(
+  plans: EpisodeMedicationPlan[],
+  administrations: AdministrationEvent[],
+  medicines: HouseholdMedicine[],
+  now = new Date()
+) {
+  return getPrioritizedMedicationPlanItems(plans, administrations, medicines, now)[0] ?? null;
 }
 
 export function formatRelativeDateTime(date: Date, now = new Date()) {
@@ -196,4 +230,41 @@ function parseMedicineConcentration(concentration: string | null) {
 
 function formatDecimal(value: number) {
   return value % 1 === 0 ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+}
+
+function compareMedicationPlanItems<TPlan extends MedicationPlanLike>(
+  left: MedicationPlanPriorityItem<TPlan>,
+  right: MedicationPlanPriorityItem<TPlan>
+) {
+  const leftPriority = getMedicationPlanPriority(left);
+  const rightPriority = getMedicationPlanPriority(right);
+
+  if (leftPriority !== rightPriority) {
+    return leftPriority - rightPriority;
+  }
+
+  const leftTime = left.stats.nextAllowedAt?.getTime() ?? 0;
+  const rightTime = right.stats.nextAllowedAt?.getTime() ?? 0;
+  if (leftTime !== rightTime) {
+    return leftTime - rightTime;
+  }
+
+  const leftName = left.plan.customMedicineName ?? left.medicine?.medicineName ?? "";
+  const rightName = right.plan.customMedicineName ?? right.medicine?.medicineName ?? "";
+  return leftName.localeCompare(rightName, "ru");
+}
+
+function getMedicationPlanPriority<TPlan extends MedicationPlanLike>(
+  item: MedicationPlanPriorityItem<TPlan>
+) {
+  if (item.isUnavailable) {
+    return 3;
+  }
+  if (item.stats.blockedByDailyLimit) {
+    return 2;
+  }
+  if (item.stats.blockedByInterval) {
+    return 1;
+  }
+  return 0;
 }

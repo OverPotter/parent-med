@@ -374,6 +374,22 @@ p {
     color: var(--color-success);
   }
 
+  .soft-text-success {
+    color: var(--color-success);
+  }
+
+  .soft-text-warning {
+    color: var(--color-warning);
+  }
+
+  .soft-text-danger {
+    color: var(--color-danger);
+  }
+
+  .soft-text-info {
+    color: var(--color-info);
+  }
+
   [data-theme="light"] .soft-button-primary {
     border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
     background: linear-gradient(

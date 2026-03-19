@@ -79,9 +79,9 @@ class AuthService(BaseAuthService):
             password_hash=hash_password(dto.password),
             family_id=created_family.id,
             push_before_reminder_minutes=10,
-            cabinet_notify_30_days=True,
-            cabinet_notify_15_days=True,
+            cabinet_notify_10_days=True,
             cabinet_notify_7_days=True,
+            cabinet_notify_3_days=True,
             cabinet_notify_1_day=True,
             created_at=datetime.now(UTC),
         )
@@ -170,9 +170,9 @@ class AuthService(BaseAuthService):
                 password_hash=hash_password(dto.new_password),
                 family_id=account.family_id,
                 push_before_reminder_minutes=account.push_before_reminder_minutes,
-                cabinet_notify_30_days=account.cabinet_notify_30_days,
-                cabinet_notify_15_days=account.cabinet_notify_15_days,
+                cabinet_notify_10_days=account.cabinet_notify_10_days,
                 cabinet_notify_7_days=account.cabinet_notify_7_days,
+                cabinet_notify_3_days=account.cabinet_notify_3_days,
                 cabinet_notify_1_day=account.cabinet_notify_1_day,
                 created_at=account.created_at,
             )
