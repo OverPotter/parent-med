@@ -1342,6 +1342,16 @@ function InlineHint({ text }: { text: string }) {
   );
 }
 
+function FormFieldCard({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return <div className={`soft-card rounded-[22px] p-4 ${className}`.trim()}>{children}</div>;
+}
+
 function TemperatureForm({
   value,
   onChange,
@@ -1398,43 +1408,51 @@ function AdministrationForm({
   isPending: boolean;
 }) {
   return (
-    <div className="soft-panel-muted grid gap-3 rounded-[24px] p-3 sm:grid-cols-[minmax(0,1fr)_140px_auto]">
-      <label className="block min-w-0">
-        <span className="block text-sm text-muted">Упаковка</span>
-        <select
-          value={selectedMedicineId}
-          onChange={(e) => onMedicineChange(e.target.value)}
-          className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
-        >
-          <option value="">Выберите упаковку</option>
-          {medicines.map((medicine) => (
-            <option key={medicine.id} value={medicine.id}>
-              {medicine.medicineName} · {medicine.statusLabel} · до{" "}
-              {formatDate(medicine.expiryDate)}
-            </option>
-          ))}
-        </select>
-      </label>
+    <div className="soft-panel rounded-[24px] p-4">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_auto]">
+        <FormFieldCard className="min-w-0">
+          <label className="block min-w-0">
+            <span className="block text-sm text-muted">Упаковка</span>
+            <select
+              value={selectedMedicineId}
+              onChange={(e) => onMedicineChange(e.target.value)}
+              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+            >
+              <option value="">Выберите упаковку</option>
+              {medicines.map((medicine) => (
+                <option key={medicine.id} value={medicine.id}>
+                  {medicine.medicineName} · {medicine.statusLabel} · до{" "}
+                  {formatDate(medicine.expiryDate)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </FormFieldCard>
 
-      <label className="block">
-        <span className="block text-sm text-muted">Доза</span>
-        <input
-          type="text"
-          value={amount}
-          onChange={(e) => onAmountChange(e.target.value)}
-          placeholder="5 мл"
-          className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
-        />
-      </label>
+        <FormFieldCard>
+          <label className="block">
+            <span className="block text-sm text-muted">Доза</span>
+            <input
+              type="text"
+              value={amount}
+              onChange={(e) => onAmountChange(e.target.value)}
+              placeholder="5 мл"
+              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+            />
+          </label>
+        </FormFieldCard>
 
-      <button
-        type="button"
-        onClick={onSubmit}
-        disabled={isPending || !selectedMedicineId || !amount.trim()}
-        className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-      >
-        {isPending ? "Сохраняем…" : "Записать"}
-      </button>
+        <div className="flex items-end">
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={isPending || !selectedMedicineId || !amount.trim()}
+            className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+          >
+            {isPending ? "Сохраняем…" : "Записать"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1662,140 +1680,156 @@ function MedicationPlanComposer({
   });
 
   return (
-    <div className="soft-panel-muted rounded-[24px] p-4">
-      <div className="grid gap-3 lg:grid-cols-2">
-        <label className="block min-w-0">
-          <span className="block text-sm text-muted">Упаковка</span>
-          <select
-            value={selectedMedicineId}
-            onChange={(e) => setSelectedMedicineId(e.target.value)}
-            className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
-          >
-            <option value="">Выберите упаковку</option>
-            {medicines.map((medicine) => (
-              <option key={medicine.id} value={medicine.id}>
-                {medicine.medicineName}
-                {medicine.medicineConcentration ? ` · ${medicine.medicineConcentration}` : ""}
-              </option>
-            ))}
-          </select>
-        </label>
+    <div className="soft-panel rounded-[24px] p-4 sm:p-5">
+      <div className="grid gap-3 xl:grid-cols-2">
+        <FormFieldCard className="min-w-0">
+          <label className="block min-w-0">
+            <span className="block text-sm text-muted">Упаковка</span>
+            <select
+              value={selectedMedicineId}
+              onChange={(e) => setSelectedMedicineId(e.target.value)}
+              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+            >
+              <option value="">Выберите упаковку</option>
+              {medicines.map((medicine) => (
+                <option key={medicine.id} value={medicine.id}>
+                  {medicine.medicineName}
+                  {medicine.medicineConcentration ? ` · ${medicine.medicineConcentration}` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        </FormFieldCard>
 
-        <label className="block">
-          <span className="block text-sm text-muted">Разовая доза, если нужна</span>
-          <input
-            type="text"
-            value={doseAmount}
-            onChange={(e) => setDoseAmount(e.target.value)}
-            placeholder="Например: 10 мл или 1 таб."
-            className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
-          />
-          {hasDoseUnitHint && (
-            <p className="mt-1 text-xs text-muted">Лучше добавить единицу: мл, таб., кап. и т.д.</p>
-          )}
-          {hasInvalidDose && (
-            <p className="mt-1 text-xs text-[color:var(--color-danger)]">
-              Укажи единицу дозы: мл, таб., мг, кап. и т.д.
-            </p>
-          )}
-        </label>
+        <FormFieldCard>
+          <label className="block">
+            <span className="block text-sm text-muted">Разовая доза, если нужна</span>
+            <input
+              type="text"
+              value={doseAmount}
+              onChange={(e) => setDoseAmount(e.target.value)}
+              placeholder="Например: 10 мл или 1 таб."
+              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+            />
+            {hasDoseUnitHint && (
+              <p className="mt-2 text-xs text-muted">
+                Лучше добавить единицу: мл, таб., кап. и т.д.
+              </p>
+            )}
+            {hasInvalidDose && (
+              <p className="mt-2 text-xs text-[color:var(--color-danger)]">
+                Укажи единицу дозы: мл, таб., мг, кап. и т.д.
+              </p>
+            )}
+          </label>
+        </FormFieldCard>
 
-        <label className="block">
-          <span className="block text-sm text-muted">
-            Минимальный интервал, {intervalUnit === "minutes" ? "минут" : "часов"}
-          </span>
-          <input
-            type="number"
-            min="1"
-            max={intervalUnit === "minutes" ? "1440" : "24"}
-            step={intervalUnit === "minutes" ? "1" : "0.5"}
-            value={minIntervalInput}
-            onChange={(e) => setMinIntervalInput(e.target.value)}
-            className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
-          />
-        </label>
+        <FormFieldCard>
+          <label className="block">
+            <span className="block text-sm text-muted">
+              Минимальный интервал, {intervalUnit === "minutes" ? "минут" : "часов"}
+            </span>
+            <input
+              type="number"
+              min="1"
+              max={intervalUnit === "minutes" ? "1440" : "24"}
+              step={intervalUnit === "minutes" ? "1" : "0.5"}
+              value={minIntervalInput}
+              onChange={(e) => setMinIntervalInput(e.target.value)}
+              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+            />
+          </label>
+        </FormFieldCard>
 
-        <label className="block">
-          <span className="block text-sm text-muted">Максимум в сутки</span>
-          <input
-            type="number"
-            min="1"
-            max="24"
-            value={maxDosesPerDay}
-            onChange={(e) => setMaxDosesPerDay(e.target.value)}
-            placeholder="Необязательно"
-            className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
-          />
-        </label>
+        <FormFieldCard>
+          <label className="block">
+            <span className="block text-sm text-muted">Максимум в сутки</span>
+            <input
+              type="number"
+              min="1"
+              max="24"
+              value={maxDosesPerDay}
+              onChange={(e) => setMaxDosesPerDay(e.target.value)}
+              placeholder="Необязательно"
+              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+            />
+          </label>
+        </FormFieldCard>
 
-        <label className="block">
-          <span className="flex items-center gap-2 text-sm text-muted">
-            Вес ребёнка, кг
-            <InlineHint text="Нужно только для расчёта по весу. Если разовая доза уже известна, это поле можно не заполнять." />
-          </span>
-          <input
-            type="number"
-            min="0"
-            step="0.1"
-            value={weightKg}
-            onChange={(e) => setWeightKg(e.target.value)}
-            placeholder={latestWeight ? String(latestWeight.valueKg) : "Необязательно"}
-            className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
-          />
-          {latestWeight && (
-            <p className="mt-1 text-xs text-muted">
-              Последний вес: {latestWeight.valueKg} кг от {formatDate(latestWeight.measuredAt)}
-            </p>
-          )}
-          {shouldOfferWeightSync && (
-            <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">
-              <p>В плане указан вес {parsedWeightKg} кг. Обновить его и в карточке ребёнка?</p>
-              <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (parsedWeightKg === null) {
-                      return;
-                    }
-                    syncWeightMutation.mutate(parsedWeightKg);
-                  }}
-                  disabled={syncWeightMutation.isPending}
-                  className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-                >
-                  {syncWeightMutation.isPending ? "Сохраняем вес…" : "Обновить вес ребёнка"}
-                </button>
+        <FormFieldCard>
+          <label className="block">
+            <span className="flex items-center gap-2 text-sm text-muted">
+              Вес ребёнка, кг
+              <InlineHint text="Нужно только для расчёта по весу. Если разовая доза уже известна, это поле можно не заполнять." />
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={weightKg}
+              onChange={(e) => setWeightKg(e.target.value)}
+              placeholder={latestWeight ? String(latestWeight.valueKg) : "Необязательно"}
+              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+            />
+            {latestWeight && (
+              <p className="mt-2 text-xs text-muted">
+                Последний вес: {latestWeight.valueKg} кг от {formatDate(latestWeight.measuredAt)}
+              </p>
+            )}
+            {shouldOfferWeightSync && (
+              <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">
+                <p>В плане указан вес {parsedWeightKg} кг. Обновить его и в карточке ребёнка?</p>
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (parsedWeightKg === null) {
+                        return;
+                      }
+                      syncWeightMutation.mutate(parsedWeightKg);
+                    }}
+                    disabled={syncWeightMutation.isPending}
+                    className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                  >
+                    {syncWeightMutation.isPending ? "Сохраняем вес…" : "Обновить вес ребёнка"}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </label>
+            )}
+          </label>
+        </FormFieldCard>
 
-        <label className="block">
-          <span className="flex items-center gap-2 text-sm text-muted">
-            Расчёт, мг/кг
-            <InlineHint text="Используй это поле, если дозировку знают как мг на кг веса. Это только подсказка и не заменяет вручную указанную разовую дозу." />
-          </span>
-          <input
-            type="number"
-            min="0"
-            step="0.1"
-            value={doseMgPerKg}
-            onChange={(e) => setDoseMgPerKg(e.target.value)}
-            placeholder="Необязательно"
-            className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
-          />
-        </label>
+        <FormFieldCard>
+          <label className="block">
+            <span className="flex items-center gap-2 text-sm text-muted">
+              Расчёт, мг/кг
+              <InlineHint text="Используй это поле, если дозировку знают как мг на кг веса. Это только подсказка и не заменяет вручную указанную разовую дозу." />
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={doseMgPerKg}
+              onChange={(e) => setDoseMgPerKg(e.target.value)}
+              placeholder="Необязательно"
+              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+            />
+          </label>
+        </FormFieldCard>
       </div>
 
-      <label className="mt-3 block">
-        <span className="block text-sm text-muted">Комментарий к схеме</span>
-        <textarea
-          rows={2}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Например: по назначению врача, только при высокой температуре."
-          className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
-        />
-      </label>
+      <FormFieldCard className="mt-3">
+        <label className="block">
+          <span className="block text-sm text-muted">Комментарий к схеме</span>
+          <textarea
+            rows={2}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Например: по назначению врача, только при высокой температуре."
+            className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+          />
+        </label>
+      </FormFieldCard>
 
       {weightHint && (
         <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">{weightHint}</div>
