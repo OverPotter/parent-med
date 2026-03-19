@@ -245,7 +245,7 @@ export function DateField({
       ? createPortal(
           <div
             ref={panelRef}
-            className="soft-panel fixed z-[140] overflow-y-auto rounded-[24px] p-3.5"
+            className="soft-panel fixed z-[140] overflow-y-auto rounded-[28px] p-4"
             style={{
               top: panelPosition.top,
               left: panelPosition.left,
@@ -253,7 +253,7 @@ export function DateField({
               maxHeight: panelPosition.maxHeight,
             }}
           >
-            <div className="mb-3 space-y-2.5">
+            <div className="mb-4 space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
@@ -262,7 +262,7 @@ export function DateField({
                       (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1)
                     )
                   }
-                  className="soft-button-secondary rounded-2xl px-2.5 py-1.5 text-sm"
+                  className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
                   aria-label="Предыдущий месяц"
                 >
                   ←
@@ -275,7 +275,7 @@ export function DateField({
                       (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1)
                     )
                   }
-                  className="soft-button-secondary rounded-2xl px-2.5 py-1.5 text-sm"
+                  className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
                   aria-label="Следующий месяц"
                 >
                   →
@@ -319,7 +319,7 @@ export function DateField({
               </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-muted">
+            <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] text-muted">
               {WEEKDAY_LABELS.map((label) => (
                 <div key={label} className="py-0.5">
                   {label}
@@ -327,7 +327,7 @@ export function DateField({
               ))}
             </div>
 
-            <div className="mt-1.5 grid grid-cols-7 gap-1">
+            <div className="mt-2 grid grid-cols-7 gap-1.5">
               {monthDays.map((date) => {
                 const isoValue = toIsoDate(date);
                 const inCurrentMonth = date.getMonth() === viewDate.getMonth();
@@ -349,9 +349,9 @@ export function DateField({
                       isSelected
                         ? "soft-tab-active"
                         : inCurrentMonth
-                          ? "soft-button-secondary"
-                          : "soft-button-secondary text-muted opacity-65",
-                      isToday && !isSelected ? "ring-1 ring-primary/30" : "",
+                          ? "soft-tab"
+                          : "soft-tab text-muted opacity-60",
+                      isToday && !isSelected ? "ring-1 ring-primary/20" : "",
                       disabledDate ? "cursor-not-allowed opacity-35" : "",
                     ].join(" ")}
                   >
@@ -410,7 +410,7 @@ export function DateField({
         <span className={value ? "text-foreground" : "text-muted"}>
           {value ? formatDisplayDate(value) : placeholder}
         </span>
-        <span className="soft-pill rounded-full px-2.5 py-1 text-xs">Дата</span>
+        <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">Дата</span>
       </button>
       {panel}
     </div>

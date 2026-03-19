@@ -6,16 +6,19 @@
 :root,
 [data-theme="light"] {
   --font-sans: "Manrope", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --color-primary: #0f766e;
-  --color-primary-focus: #0d9488;
-  --color-background: #eef3f6;
-  --color-foreground: #162431;
-  --color-muted: #6c7f91;
-  --color-border: #d5dee7;
-  --color-surface: rgba(250, 252, 253, 0.92);
-  --color-surface-soft: rgba(241, 246, 249, 0.96);
-  --color-surface-hero: rgba(15, 118, 110, 0.05);
-  --color-shadow: 15 23 42;
+  --color-primary: #476f6a;
+  --color-primary-focus: #6d8884;
+  --color-background: #d9e2e6;
+  --color-foreground: #203039;
+  --color-muted: #6d7b84;
+  --color-border: #c1cdd3;
+  --color-surface: rgba(238, 243, 245, 0.78);
+  --color-surface-soft: rgba(229, 235, 238, 0.86);
+  --color-surface-hero: rgba(71, 111, 106, 0.036);
+  --color-shadow: 17 26 40;
+  --color-page-highlight: rgba(255, 255, 255, 0.08);
+  --color-surface-glare: rgba(255, 255, 255, 0.032);
+  --color-surface-glare-soft: rgba(255, 255, 255, 0.02);
   --color-danger: #be123c;
   --color-danger-soft: rgba(244, 63, 94, 0.1);
   --color-success: #047857;
@@ -27,16 +30,19 @@
 }
 
 [data-theme="dark"] {
-  --color-primary: #2dd4bf;
-  --color-primary-focus: #5eead4;
-  --color-background: #0d1822;
+  --color-primary: #79c9bf;
+  --color-primary-focus: #99ddd5;
+  --color-background: #0f1821;
   --color-foreground: #dbe6ef;
   --color-muted: #97a9bc;
-  --color-border: #294051;
-  --color-surface: rgba(17, 32, 45, 0.92);
-  --color-surface-soft: rgba(22, 40, 56, 0.9);
-  --color-surface-hero: rgba(45, 212, 191, 0.08);
-  --color-shadow: 2 8 20;
+  --color-border: #2d4251;
+  --color-surface: rgba(20, 33, 44, 0.82);
+  --color-surface-soft: rgba(24, 39, 53, 0.9);
+  --color-surface-hero: rgba(111, 207, 194, 0.1);
+  --color-shadow: 3 10 24;
+  --color-page-highlight: rgba(255, 255, 255, 0.05);
+  --color-surface-glare: rgba(255, 255, 255, 0.07);
+  --color-surface-glare-soft: rgba(255, 255, 255, 0.045);
   --color-danger: #fda4af;
   --color-danger-soft: rgba(251, 113, 133, 0.12);
   --color-success: #9ee3c7;
@@ -66,10 +72,11 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at top, var(--color-surface-hero), transparent 32%),
+    radial-gradient(circle at top left, var(--color-surface-hero), transparent 34%),
+    radial-gradient(circle at top right, var(--color-page-highlight), transparent 24%),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-background) 94%, white),
+      color-mix(in srgb, var(--color-background) 99%, white),
       var(--color-background)
     );
   color: var(--color-foreground);
@@ -108,22 +115,32 @@ p {
 
 @layer components {
   .soft-panel {
-    border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
-    background: var(--color-surface);
-    box-shadow: 0 18px 45px -28px rgb(var(--color-shadow) / 0.45);
-    backdrop-filter: blur(18px);
+    border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+    background:
+      linear-gradient(180deg, var(--color-surface-glare), transparent 38%),
+      var(--color-surface);
+    box-shadow:
+      0 20px 54px -34px rgb(var(--color-shadow) / 0.28),
+      0 6px 18px -14px rgb(var(--color-shadow) / 0.18);
+    backdrop-filter: blur(22px);
   }
 
   .soft-card {
-    border: 1px solid color-mix(in srgb, var(--color-border) 86%, transparent);
-    background: var(--color-surface);
-    box-shadow: 0 16px 34px -26px rgb(var(--color-shadow) / 0.42);
-    backdrop-filter: blur(14px);
+    border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+    background:
+      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 44%),
+      var(--color-surface);
+    box-shadow:
+      0 16px 40px -30px rgb(var(--color-shadow) / 0.24),
+      0 4px 12px -12px rgb(var(--color-shadow) / 0.14);
+    backdrop-filter: blur(18px);
   }
 
   .soft-panel-muted {
-    border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
-    background: var(--color-surface-soft);
+    border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+    background:
+      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 40%),
+      color-mix(in srgb, var(--color-surface-soft) 92%, transparent);
   }
 
   .soft-hero {
@@ -137,8 +154,8 @@ p {
   }
 
   .soft-pill {
-    border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
-    background: color-mix(in srgb, var(--color-surface-soft) 88%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+    background: color-mix(in srgb, var(--color-surface-soft) 84%, transparent);
     color: var(--color-muted);
   }
 
@@ -154,11 +171,31 @@ p {
     color: var(--color-success);
   }
 
+  .soft-pill-warning {
+    border: 1px solid color-mix(in srgb, var(--color-warning) 28%, transparent);
+    background: var(--color-warning-soft);
+    color: var(--color-warning);
+  }
+
+  .soft-pill-danger {
+    border: 1px solid color-mix(in srgb, var(--color-danger) 28%, transparent);
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+
+  .soft-pill-info {
+    border: 1px solid color-mix(in srgb, var(--color-info) 28%, transparent);
+    background: var(--color-info-soft);
+    color: var(--color-info);
+  }
+
   .soft-input {
-    border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
-    background: color-mix(in srgb, var(--color-surface-soft) 94%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+    background: color-mix(in srgb, var(--color-surface-soft) 90%, transparent);
     color: var(--color-foreground);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.05),
+      0 10px 20px -24px rgb(var(--color-shadow) / 0.18);
   }
 
   .soft-input::placeholder {
@@ -174,28 +211,29 @@ p {
   }
 
   .soft-button-primary {
-    border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-primary-focus) 88%, white),
-      var(--color-primary)
+      color-mix(in srgb, var(--color-primary-focus) 38%, var(--color-surface)),
+      color-mix(in srgb, var(--color-primary) 68%, var(--color-surface-soft))
     );
-    color: white;
-    box-shadow: 0 12px 24px -18px color-mix(in srgb, var(--color-primary) 60%, transparent);
+    color: color-mix(in srgb, white 94%, var(--color-foreground));
+    box-shadow: 0 10px 22px -20px color-mix(in srgb, var(--color-primary) 34%, transparent);
   }
 
   .soft-button-primary:hover {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-primary-focus) 96%, white),
-      color-mix(in srgb, var(--color-primary) 92%, black)
+      color-mix(in srgb, var(--color-primary-focus) 44%, var(--color-surface)),
+      color-mix(in srgb, var(--color-primary) 74%, var(--color-surface-soft))
     );
   }
 
   .soft-button-secondary {
-    border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
-    background: color-mix(in srgb, var(--color-surface-soft) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+    background: color-mix(in srgb, var(--color-surface-soft) 88%, transparent);
     color: var(--color-foreground);
+    box-shadow: 0 10px 20px -26px rgb(var(--color-shadow) / 0.18);
   }
 
   .soft-button-secondary:hover {
@@ -213,8 +251,8 @@ p {
   }
 
   .soft-tab {
-    border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
-    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+    background: color-mix(in srgb, var(--color-surface) 86%, transparent);
     color: var(--color-foreground);
   }
 
@@ -223,14 +261,10 @@ p {
   }
 
   .soft-tab-active {
-    border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-primary) 88%, white),
-      var(--color-primary)
-    );
-    color: white;
-    box-shadow: 0 10px 22px -18px color-mix(in srgb, var(--color-primary) 65%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+    color: var(--color-primary);
+    box-shadow: 0 10px 20px -22px color-mix(in srgb, var(--color-primary) 24%, transparent);
   }
 
   .soft-note-danger {
@@ -258,42 +292,60 @@ p {
   }
 
   [data-theme="light"] .soft-button-primary {
-    border-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-primary-focus) 62%, white),
-      color-mix(in srgb, var(--color-primary) 86%, white)
+      color-mix(in srgb, var(--color-primary-focus) 58%, #f4f8f8),
+      color-mix(in srgb, var(--color-primary) 84%, #edf3f2)
     );
-    box-shadow: 0 12px 24px -20px color-mix(in srgb, var(--color-primary) 38%, transparent);
+    color: #f8fcfb;
+    box-shadow:
+      0 14px 28px -22px color-mix(in srgb, var(--color-primary) 34%, transparent),
+      inset 0 1px 0 rgb(255 255 255 / 0.2);
   }
 
-  [data-theme="light"] .soft-button-primary:hover,
-  [data-theme="light"] .soft-tab-active:hover {
+  [data-theme="light"] .soft-button-primary:hover {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-primary-focus) 68%, white),
-      color-mix(in srgb, var(--color-primary) 90%, white)
+      color-mix(in srgb, var(--color-primary-focus) 66%, #f4f8f8),
+      color-mix(in srgb, var(--color-primary) 90%, #edf3f2)
     );
+  }
+
+  [data-theme="light"] .soft-tab-active:hover {
+    background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface-soft));
   }
 
   [data-theme="light"] .soft-tab-active {
-    border-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-primary-focus) 60%, white),
-      color-mix(in srgb, var(--color-primary) 84%, white)
-    );
-    box-shadow: 0 10px 22px -20px color-mix(in srgb, var(--color-primary) 36%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 14%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface-soft));
+    color: color-mix(in srgb, var(--color-primary) 68%, var(--color-foreground));
+    box-shadow: 0 8px 18px -26px color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
 
   [data-theme="light"] .soft-pill-primary {
-    border-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
-    background: color-mix(in srgb, var(--color-primary) 8%, white);
+    border-color: color-mix(in srgb, var(--color-primary) 14%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface-soft));
   }
 
   [data-theme="light"] .soft-pill-success {
     border-color: color-mix(in srgb, var(--color-success) 18%, transparent);
-    background: color-mix(in srgb, var(--color-success-soft) 70%, white);
+    background: color-mix(in srgb, var(--color-success-soft) 54%, var(--color-surface-soft));
+  }
+
+  [data-theme="light"] .soft-pill-warning {
+    border-color: color-mix(in srgb, var(--color-warning) 18%, transparent);
+    background: color-mix(in srgb, var(--color-warning-soft) 54%, var(--color-surface-soft));
+  }
+
+  [data-theme="light"] .soft-pill-danger {
+    border-color: color-mix(in srgb, var(--color-danger) 18%, transparent);
+    background: color-mix(in srgb, var(--color-danger-soft) 54%, var(--color-surface-soft));
+  }
+
+  [data-theme="light"] .soft-pill-info {
+    border-color: color-mix(in srgb, var(--color-info) 18%, transparent);
+    background: color-mix(in srgb, var(--color-info-soft) 54%, var(--color-surface-soft));
   }
 
   [data-theme="light"] .soft-note-danger,
@@ -304,23 +356,35 @@ p {
   }
 
   [data-theme="light"] .soft-note-danger {
-    background: color-mix(in srgb, var(--color-danger-soft) 62%, white);
+    background: color-mix(in srgb, var(--color-danger-soft) 52%, var(--color-surface-soft));
     border-color: color-mix(in srgb, var(--color-danger) 18%, transparent);
   }
 
   [data-theme="light"] .soft-note-info {
-    background: color-mix(in srgb, var(--color-info-soft) 62%, white);
+    background: color-mix(in srgb, var(--color-info-soft) 52%, var(--color-surface-soft));
     border-color: color-mix(in srgb, var(--color-info) 18%, transparent);
   }
 
   [data-theme="light"] .soft-note-warning {
-    background: color-mix(in srgb, var(--color-warning-soft) 62%, white);
+    background: color-mix(in srgb, var(--color-warning-soft) 52%, var(--color-surface-soft));
     border-color: color-mix(in srgb, var(--color-warning) 18%, transparent);
   }
 
   [data-theme="light"] .soft-note-success {
-    background: color-mix(in srgb, var(--color-success-soft) 62%, white);
+    background: color-mix(in srgb, var(--color-success-soft) 52%, var(--color-surface-soft));
     border-color: color-mix(in srgb, var(--color-success) 18%, transparent);
+  }
+
+  [data-theme="light"] .soft-panel {
+    box-shadow:
+      0 18px 44px -34px rgb(var(--color-shadow) / 0.2),
+      0 6px 14px -16px rgb(var(--color-shadow) / 0.1);
+  }
+
+  [data-theme="light"] .soft-card {
+    box-shadow:
+      0 14px 30px -28px rgb(var(--color-shadow) / 0.16),
+      0 4px 10px -12px rgb(var(--color-shadow) / 0.08);
   }
 }
 

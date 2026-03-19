@@ -11,6 +11,7 @@ import {
   fetchParentsByFamilyId,
   updateParent,
 } from "@shared/api/parents";
+import { RowSurface, Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Parent } from "@shared/types/api";
 
@@ -173,24 +174,22 @@ export function FamilyPage() {
   };
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 space-y-6">
       <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Семья</h1>
-      <p className="mt-2 text-muted">
-        Пока без регистрации в приложении доступна одна семья с названием и списком родителей.
-      </p>
+      <p className="mt-2 text-muted">Настройки семьи: название, родители и базовый контекст аккаунта.</p>
 
       {error && (
-        <p className="mt-3 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
+        <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
           {error}
         </p>
       )}
       {familyError && (
-        <p className="mt-3 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
+        <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
           {(familyError as { message?: string }).message ?? "Ошибка загрузки семьи"}
         </p>
       )}
 
-      <section className="mt-6 rounded-xl border border-border bg-background p-4">
+      <Surface className="p-5 sm:p-6">
         <h2 className="text-lg font-medium text-foreground">
           {family ? "Название семьи" : "Создать семью"}
         </h2>
@@ -201,7 +200,7 @@ export function FamilyPage() {
               type="text"
               value={familyName}
               onChange={(e) => setFamilyName(e.target.value)}
-              className="mt-1 w-full max-w-md rounded-lg border border-border bg-background px-3 py-2 text-foreground min-w-0"
+              className="soft-input mt-1 w-full max-w-md rounded-2xl px-4 py-3 min-w-0"
               placeholder="Например: Семья Ивановых"
             />
           </label>
@@ -213,7 +212,7 @@ export function FamilyPage() {
               updateFamilyMutation.isPending ||
               !familyName.trim()
             }
-            className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
+            className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
           >
             {family
               ? updateFamilyMutation.isPending
@@ -224,12 +223,12 @@ export function FamilyPage() {
                 : "Создать"}
           </button>
         </form>
-      </section>
+      </Surface>
 
-      <section className="mt-6 rounded-xl border border-border bg-background p-4">
+      <Surface className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-medium text-foreground">Родители</h2>
-          {family && <span className="text-sm text-muted">{parents.length} шт.</span>}
+          {family && <span className="soft-pill rounded-full px-3 py-1 text-xs">{parents.length} шт.</span>}
         </div>
 
         {!family && (
@@ -246,7 +245,7 @@ export function FamilyPage() {
                   type="text"
                   value={newParentName}
                   onChange={(e) => setNewParentName(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                   placeholder="Например: Анна"
                 />
               </label>
@@ -256,7 +255,7 @@ export function FamilyPage() {
                   type="text"
                   value={newParentRole}
                   onChange={(e) => setNewParentRole(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                   placeholder="Например: мама"
                 />
               </label>
@@ -265,7 +264,7 @@ export function FamilyPage() {
                 disabled={
                   createParentMutation.isPending || !newParentName.trim() || !newParentRole.trim()
                 }
-                className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
+                className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
               >
                 {createParentMutation.isPending ? "Добавляем…" : "Добавить"}
               </button>
@@ -289,10 +288,8 @@ export function FamilyPage() {
                     updateParentMutation.variables?.id === parent.id;
 
                   return (
-                    <li
-                      key={parent.id}
-                      className="rounded-xl border border-border bg-background/60 p-4"
-                    >
+                    <li key={parent.id}>
+                      <RowSurface>
                       {isEditing ? (
                         <div className="flex flex-wrap items-end gap-3">
                           <label className="min-w-0 flex-1">
@@ -301,7 +298,7 @@ export function FamilyPage() {
                               type="text"
                               value={editingParentName}
                               onChange={(e) => setEditingParentName(e.target.value)}
-                              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                             />
                           </label>
                           <label className="min-w-0 flex-1">
@@ -310,7 +307,7 @@ export function FamilyPage() {
                               type="text"
                               value={editingParentRole}
                               onChange={(e) => setEditingParentRole(e.target.value)}
-                              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                             />
                           </label>
                           <button
@@ -319,7 +316,7 @@ export function FamilyPage() {
                             disabled={
                               isSaving || !editingParentName.trim() || !editingParentRole.trim()
                             }
-                            className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
+                            className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
                           >
                             {isSaving ? "Сохраняем…" : "Сохранить"}
                           </button>
@@ -330,7 +327,7 @@ export function FamilyPage() {
                               setEditingParentName("");
                               setEditingParentRole("");
                             }}
-                            className="rounded-lg border border-border px-4 py-2 hover:bg-muted/30"
+                            className="soft-button-secondary rounded-2xl px-4 py-3 text-sm"
                           >
                             Отмена
                           </button>
@@ -345,7 +342,7 @@ export function FamilyPage() {
                             <button
                               type="button"
                               onClick={() => handleParentEditStart(parent)}
-                              className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted/30"
+                              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
                             >
                               Редактировать
                             </button>
@@ -353,13 +350,14 @@ export function FamilyPage() {
                               type="button"
                               onClick={() => deleteParentMutation.mutate(parent.id)}
                               disabled={deleteParentMutation.isPending}
-                              className="rounded-lg border border-red-500/50 px-3 py-1.5 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
+                              className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
                             >
                               Удалить
                             </button>
                           </div>
                         </div>
                       )}
+                      </RowSurface>
                     </li>
                   );
                 })}
@@ -367,7 +365,7 @@ export function FamilyPage() {
             )}
           </>
         )}
-      </section>
+      </Surface>
     </div>
   );
 }

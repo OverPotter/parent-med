@@ -9,13 +9,19 @@ import { fetchFamilies } from "@shared/api/families";
 import { Layout } from "@shared/components/Layout";
 import { useAppStore } from "@shared/store/useAppStore";
 
-const clientNavLinks = [
-  { to: "/", label: "Главная" },
-  { to: "/children", label: "Дети" },
-  { to: "/illnesses/active", label: "Активные болезни" },
-  { to: "/illnesses/history", label: "История болезней" },
-  { to: "/family", label: "Семья" },
-  { to: "/medicine-cabinet", label: "Аптечка" },
+const desktopNavLinks = [
+  { to: "/home", label: "Главная" },
+  { to: "/children", label: "Дети", mobileLabel: "Дети" },
+  { to: "/illnesses/active", label: "Активные болезни", mobileLabel: "Болезни" },
+  { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
+  { to: "/more", label: "Ещё", mobileLabel: "Ещё" },
+];
+
+const mobileNavLinks = [
+  { to: "/children", label: "Дети", mobileLabel: "Дети" },
+  { to: "/illnesses/active", label: "Активные болезни", mobileLabel: "Болезни" },
+  { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
+  { to: "/more", label: "Ещё", mobileLabel: "Ещё" },
 ];
 
 export function ClientLayout() {
@@ -51,7 +57,7 @@ export function ClientLayout() {
   }, [currentFamilyId, currentFamilyName, families, isSuccess, setCurrentFamily]);
 
   return (
-    <Layout navLinks={clientNavLinks} showCurrentFamily>
+    <Layout navLinks={desktopNavLinks} mobileNavLinks={mobileNavLinks} showCurrentFamily>
       <Outlet />
     </Layout>
   );

@@ -10,14 +10,19 @@ import { setBearerToken, setRefreshHandler } from "@shared/api/client";
 import { useAppStore } from "@shared/store/useAppStore";
 
 import { ClientLayout } from "@client/layout/ClientLayout";
+import { AccountPage } from "@client/pages/AccountPage";
 import { AuthPage } from "@client/pages/AuthPage";
+import { AboutPage } from "@client/pages/AboutPage";
 import { ClientHomePage } from "@client/pages/ClientHomePage";
+import { ClientIntroPage } from "@client/pages/ClientIntroPage";
+import { ClientStartPage } from "@client/pages/ClientStartPage";
 import { FamilyPage } from "@client/pages/FamilyPage";
 import { ChildrenPage } from "@client/pages/ChildrenPage";
 import { MedicineCabinetPage } from "@client/pages/MedicineCabinetPage";
 import { ChildIllnessPage } from "@client/pages/ChildIllnessPage";
 import { ActiveIllnessesPage } from "@client/pages/ActiveIllnessesPage";
 import { IllnessHistoryPage } from "@client/pages/IllnessHistoryPage";
+import { MorePage } from "@client/pages/MorePage";
 import { AdminLayout } from "@admin/layout/AdminLayout";
 import { AdminHomePage } from "@admin/pages/AdminHomePage";
 
@@ -143,12 +148,17 @@ export default function App() {
           <>
             <Route path="/" element={<ClientLayout />}>
               <Route path="auth" element={<Navigate to="/" replace />} />
-              <Route index element={<ClientHomePage />} />
+              <Route index element={<ClientStartPage />} />
+              <Route path="home" element={<ClientHomePage />} />
+              <Route path="intro" element={<ClientIntroPage />} />
               <Route path="family" element={<FamilyPage />} />
               <Route path="children" element={<ChildrenPage />} />
               <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
               <Route path="illnesses/history" element={<IllnessHistoryPage />} />
               <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
+              <Route path="more" element={<MorePage />} />
+              <Route path="account" element={<AccountPage />} />
+              <Route path="about" element={<AboutPage />} />
               <Route path="children/:childId/illness" element={<ChildIllnessPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

@@ -27,6 +27,7 @@ export function ChildrenPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormResetKey, setCreateFormResetKey] = useState(0);
 
   const {
@@ -61,6 +62,7 @@ export function ChildrenPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
       setCreateFormResetKey((current) => current + 1);
+      setIsCreateFormOpen(false);
     },
   });
 
@@ -99,25 +101,40 @@ export function ChildrenPage() {
 
   return (
     <div className="min-w-0 space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Дети</h1>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Профили детей, история и переход в текущую болезнь.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Дети</h1>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Профили детей, история и переход в текущую болезнь.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCreateFormOpen((current) => !current)}
+          className={[
+            "soft-button-primary rounded-2xl px-4 py-2.5 text-sm",
+            children.length > 0 ? "hidden sm:inline-flex" : "inline-flex",
+          ].join(" ")}
+        >
+          {isCreateFormOpen ? "Скрыть форму" : "Добавить ребёнка"}
+        </button>
       </div>
 
-      <AddChildForm
-        onSubmit={(name, birthDate) => createMutation.mutate({ name, birthDate })}
-        isPending={createMutation.isPending}
-        resetKey={createFormResetKey}
-        errorMessage={
-          (
-            createMutation.error as {
-              response?: { data?: { detail?: string } };
-            }
-          )?.response?.data?.detail ?? null
-        }
-      />
+      {isCreateFormOpen && (
+        <AddChildForm
+          onSubmit={(name, birthDate) => createMutation.mutate({ name, birthDate })}
+          isPending={createMutation.isPending}
+          resetKey={createFormResetKey}
+          errorMessage={
+            (
+              createMutation.error as {
+                response?: { data?: { detail?: string } };
+              }
+            )?.response?.data?.detail ?? null
+          }
+          onCancel={() => setIsCreateFormOpen(false)}
+        />
+      )}
 
       {isLoading && <p className="text-muted">Загрузка…</p>}
       {error && (
@@ -125,45 +142,76 @@ export function ChildrenPage() {
           {(error as { message?: string }).message ?? "Ошибка загрузки"}
         </p>
       )}
-      {!isLoading && !error && children.length === 0 && (
-        <EmptyState>Пока нет детей. Добавь первого ребёнка выше.</EmptyState>
+      {!isLoading && !error && children.length === 0 && !isCreateFormOpen && (
+        <EmptyState className="text-foreground">
+          <div className="space-y-4">
+            <p>Пока нет детей. Добавьте первого ребёнка, чтобы перейти к болезням и записям.</p>
+            <button
+              type="button"
+              onClick={() => setIsCreateFormOpen(true)}
+              className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm"
+            >
+              Добавить первого ребёнка
+            </button>
+          </div>
+        </EmptyState>
       )}
 
       {children.length > 0 && (
-        <ul className="grid gap-4">
-          {children.map((child, index) => {
-            const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
-            const episodes = historyQueries[index]?.data ?? [];
+        <>
+          <ul className="grid gap-4">
+            {children.map((child, index) => {
+              const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
+              const episodes = historyQueries[index]?.data ?? [];
 
-            return (
-              <ChildCard
-                key={child.id}
-                child={child}
-                isEditing={editingChildId === child.id}
-                activeEpisodeStartedAt={activeEpisode?.startedAt ?? null}
-                episodeCount={episodes.length}
-                onEditToggle={() =>
-                  setEditingChildId((current) => (current === child.id ? null : child.id))
-                }
-                onDelete={() => deleteMutation.mutate(child.id)}
-                onSave={(name, birthDate) =>
-                  updateMutation.mutate({ id: child.id, name, birthDate })
-                }
-                onStartEpisode={() => {
-                  if (activeEpisode) {
-                    navigate(`/children/${child.id}/illness`);
-                    return;
+              return (
+                <ChildCard
+                  key={child.id}
+                  child={child}
+                  isEditing={editingChildId === child.id}
+                  activeEpisodeStartedAt={activeEpisode?.startedAt ?? null}
+                  episodeCount={episodes.length}
+                  onEditToggle={() =>
+                    setEditingChildId((current) => (current === child.id ? null : child.id))
                   }
-                  navigate(`/children/${child.id}/illness?mode=create`);
-                }}
-                isSaving={updateMutation.isPending && editingChildId === child.id}
-                isDeleting={deleteMutation.isPending}
-                isStartingEpisode={false}
-                hasActiveEpisode={!!activeEpisode}
-              />
-            );
-          })}
-        </ul>
+                  onDelete={() => deleteMutation.mutate(child.id)}
+                  onSave={(name, birthDate) =>
+                    updateMutation.mutate({ id: child.id, name, birthDate })
+                  }
+                  onStartEpisode={() => {
+                    if (activeEpisode) {
+                      navigate(`/children/${child.id}/illness`);
+                      return;
+                    }
+                    navigate(`/children/${child.id}/illness?mode=create`);
+                  }}
+                  isSaving={updateMutation.isPending && editingChildId === child.id}
+                  isDeleting={deleteMutation.isPending}
+                  isStartingEpisode={false}
+                  hasActiveEpisode={!!activeEpisode}
+                />
+              );
+            })}
+          </ul>
+
+          {!isCreateFormOpen && (
+            <Surface className="soft-panel-muted p-4 sm:hidden">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Нужно добавить ещё ребёнка?</p>
+                  <p className="mt-1 text-sm text-muted">Кнопка перенесена вниз, чтобы не мешать списку.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateFormOpen(true)}
+                  className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                >
+                  Добавить
+                </button>
+              </div>
+            </Surface>
+          )}
+        </>
       )}
     </div>
   );
@@ -174,11 +222,13 @@ function AddChildForm({
   isPending,
   resetKey,
   errorMessage,
+  onCancel,
 }: {
   onSubmit: (name: string, birthDate?: string | null) => void;
   isPending: boolean;
   resetKey: number;
   errorMessage: string | null;
+  onCancel: () => void;
 }) {
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -207,6 +257,19 @@ function AddChildForm({
   return (
     <Surface className="p-5 sm:p-6">
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Новый ребёнок</h2>
+            <p className="mt-1 text-sm text-muted">Форма открывается только когда она нужна.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+          >
+            Отмена
+          </button>
+        </div>
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
           <label className="min-w-0 flex-1">
             <span className="block text-sm text-muted">Имя</span>
@@ -331,14 +394,6 @@ function ChildCard({
             >
               {isEditing ? "Закрыть" : "Редактировать"}
             </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              disabled={isDeleting}
-              className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-            >
-              Удалить
-            </button>
           </div>
         </div>
 
@@ -370,6 +425,24 @@ function ChildCard({
             >
               {isSaving ? "Сохраняем…" : "Сохранить"}
             </button>
+            <div className="sm:col-span-3 flex justify-start pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const shouldDelete = window.confirm(
+                    `Точно удалить ребёнка «${child.name}»? Это действие нельзя отменить.`
+                  );
+                  if (!shouldDelete) {
+                    return;
+                  }
+                  onDelete();
+                }}
+                disabled={isDeleting}
+                className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+              >
+                {isDeleting ? "Удаляем…" : "Удалить ребёнка"}
+              </button>
+            </div>
           </div>
         )}
       </RowSurface>

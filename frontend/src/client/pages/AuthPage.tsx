@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { login, register } from "@shared/api/auth";
+import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
 
 type Mode = "login" | "register";
@@ -66,7 +67,7 @@ export function AuthPage() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto grid min-h-screen max-w-6xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <section className="min-w-0">
-          <span className="inline-flex rounded-full border border-border px-3 py-1 text-xs uppercase tracking-[0.18em] text-muted">
+          <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs uppercase tracking-[0.18em]">
             Parent Med
           </span>
           <h1 className="mt-6 max-w-2xl text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
@@ -78,19 +79,19 @@ export function AuthPage() {
           </p>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border border-border bg-background/70 p-4">
+            <div className="soft-card rounded-[24px] p-4">
               <h2 className="text-sm font-medium text-foreground">О семье</h2>
               <p className="mt-2 text-sm leading-6 text-muted">
                 Название семьи, родители и общий контекст аккаунта.
               </p>
             </div>
-            <div className="rounded-2xl border border-border bg-background/70 p-4">
+            <div className="soft-card rounded-[24px] p-4">
               <h2 className="text-sm font-medium text-foreground">О детях</h2>
               <p className="mt-2 text-sm leading-6 text-muted">
                 Профили детей, вес, эпизоды болезни и температура.
               </p>
             </div>
-            <div className="rounded-2xl border border-border bg-background/70 p-4">
+            <div className="soft-card rounded-[24px] p-4">
               <h2 className="text-sm font-medium text-foreground">О лекарствах</h2>
               <p className="mt-2 text-sm leading-6 text-muted">
                 Аптечка, сроки годности и базовые safety-проверки.
@@ -99,19 +100,19 @@ export function AuthPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-border bg-background p-6 shadow-sm sm:p-8">
+        <Surface className="overflow-hidden p-6 sm:p-8">
           <h2 className="text-2xl font-semibold text-foreground">Начать работу</h2>
           <p className="mt-2 text-sm text-muted">
             Зарегистрируйте аккаунт или войдите в уже созданный профиль. Семья создастся
             автоматически внутри аккаунта.
           </p>
 
-          <div className="mt-6 flex rounded-xl border border-border p-1">
+          <div className="soft-panel-muted mt-6 flex rounded-[20px] p-1.5">
             <button
               type="button"
               onClick={() => setMode("login")}
-              className={`flex-1 rounded-lg px-3 py-2 text-sm ${
-                mode === "login" ? "bg-primary text-white" : "text-foreground hover:bg-muted/30"
+              className={`flex-1 rounded-2xl px-3 py-2.5 text-sm transition-colors ${
+                mode === "login" ? "soft-tab-active" : "soft-tab"
               }`}
             >
               Вход
@@ -119,8 +120,8 @@ export function AuthPage() {
             <button
               type="button"
               onClick={() => setMode("register")}
-              className={`flex-1 rounded-lg px-3 py-2 text-sm ${
-                mode === "register" ? "bg-primary text-white" : "text-foreground hover:bg-muted/30"
+              className={`flex-1 rounded-2xl px-3 py-2.5 text-sm transition-colors ${
+                mode === "register" ? "soft-tab-active" : "soft-tab"
               }`}
             >
               Регистрация
@@ -134,7 +135,7 @@ export function AuthPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                 placeholder="you@example.com"
               />
             </label>
@@ -145,7 +146,7 @@ export function AuthPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                 placeholder="Минимум 6 символов"
               />
             </label>
@@ -157,20 +158,20 @@ export function AuthPage() {
                   type="password"
                   value={passwordConfirm}
                   onChange={(e) => setPasswordConfirm(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                   placeholder="Повторите пароль"
                 />
               </label>
             )}
 
             {passwordsMismatch && (
-              <p className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-700">
+              <p className="soft-note-warning rounded-2xl p-3 text-sm">
                 Пароли должны совпадать.
               </p>
             )}
 
             {error && (
-              <p className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
+              <p className="soft-note-danger rounded-2xl p-3 text-sm">
                 {error}
               </p>
             )}
@@ -183,7 +184,7 @@ export function AuthPage() {
                 password.length < 6 ||
                 (mode === "register" && (!passwordConfirm || password !== passwordConfirm))
               }
-              className="w-full rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
+              className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
             >
               {mode === "login"
                 ? isPending
@@ -194,7 +195,7 @@ export function AuthPage() {
                   : "Создать аккаунт"}
             </button>
           </form>
-        </section>
+        </Surface>
       </div>
     </div>
   );

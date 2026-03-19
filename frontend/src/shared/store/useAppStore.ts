@@ -11,6 +11,8 @@ type Role = "client" | "admin";
 interface AppState {
   hydrated: boolean;
   setHydrated: (value: boolean) => void;
+  hasSeenWorkspaceIntro: boolean;
+  markWorkspaceIntroSeen: () => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
@@ -43,6 +45,8 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       hydrated: false,
       setHydrated: (value) => set({ hydrated: value }),
+      hasSeenWorkspaceIntro: false,
+      markWorkspaceIntroSeen: () => set({ hasSeenWorkspaceIntro: true }),
       theme: "dark",
       setTheme: (theme) => {
         set({ theme });
@@ -99,6 +103,7 @@ export const useAppStore = create<AppState>()(
       partialize: (s) => ({
         theme: s.theme,
         role: s.role,
+        hasSeenWorkspaceIntro: s.hasSeenWorkspaceIntro,
         authToken: s.authToken,
         refreshToken: s.refreshToken,
         accountId: s.accountId,

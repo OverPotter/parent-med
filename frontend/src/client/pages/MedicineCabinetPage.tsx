@@ -12,17 +12,18 @@ import {
 } from "@shared/api/householdMedicines";
 import { searchMedicineCatalog } from "@shared/api/medicineCatalog";
 import { DateField } from "@shared/components/DateField";
+import { RowSurface, Surface } from "@shared/components/Surface";
 import type { HouseholdMedicine, MedicineCatalogItem } from "@shared/types/api";
 import { formatDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
 import { useAppStore } from "@shared/store/useAppStore";
 
 const STATUS_STYLES: Record<string, string> = {
-  ok: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700",
-  expiring_soon: "border-amber-500/40 bg-amber-500/10 text-amber-700",
-  expiring_after_opening: "border-amber-500/40 bg-amber-500/10 text-amber-700",
-  expired: "border-red-500/40 bg-red-500/10 text-red-700",
-  expired_after_opening: "border-red-500/40 bg-red-500/10 text-red-700",
+  ok: "soft-pill-success",
+  expiring_soon: "soft-pill-warning",
+  expiring_after_opening: "soft-pill-warning",
+  expired: "soft-pill-danger",
+  expired_after_opening: "soft-pill-danger",
 };
 
 export function MedicineCabinetPage() {
@@ -47,20 +48,20 @@ export function MedicineCabinetPage() {
   });
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 space-y-6">
       <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Аптечка</h1>
       <p className="mt-2 text-sm text-muted">
         Здесь хранятся реальные упаковки дома: срок годности, дата вскрытия и срок использования
         после вскрытия.
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="soft-panel-muted mt-4 inline-flex flex-wrap gap-2 rounded-full p-2">
         <button
           type="button"
           onClick={() => setView("add")}
-          className={`rounded-lg px-4 py-2 text-sm ${
+          className={`rounded-full px-4 py-2 text-sm transition-colors ${
             view === "add"
-              ? "bg-primary text-white"
-              : "border border-border bg-background text-foreground hover:bg-muted/30"
+              ? "soft-tab-active"
+              : "soft-tab"
           }`}
         >
           Добавить препарат
@@ -68,10 +69,10 @@ export function MedicineCabinetPage() {
         <button
           type="button"
           onClick={() => setView("cabinet")}
-          className={`rounded-lg px-4 py-2 text-sm ${
+          className={`rounded-full px-4 py-2 text-sm transition-colors ${
             view === "cabinet"
-              ? "bg-primary text-white"
-              : "border border-border bg-background text-foreground hover:bg-muted/30"
+              ? "soft-tab-active"
+              : "soft-tab"
           }`}
         >
           Наша аптечка
@@ -84,12 +85,12 @@ export function MedicineCabinetPage() {
         <>
           {isLoading && <p className="mt-4 text-muted">Загрузка…</p>}
           {error && (
-            <p className="mt-4 text-red-600 dark:text-red-400">
+            <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
               {(error as { message?: string }).message ?? "Ошибка загрузки"}
             </p>
           )}
           {!isLoading && !error && medicines.length === 0 && (
-            <p className="mt-4 text-muted">
+            <p className="soft-panel-muted rounded-[24px] px-5 py-4 text-sm text-muted">
               В аптечке пока нет препаратов. Переключитесь на «Добавить препарат».
             </p>
           )}
@@ -123,20 +124,20 @@ function getIntakeMessage(medicine: HouseholdMedicine): {
   if (medicine.status === "expired" || medicine.status === "expired_after_opening") {
     return {
       text: "Принимать нельзя",
-      className: "text-red-600",
+      className: "soft-pill-danger inline-flex rounded-full px-3 py-1 text-xs",
     };
   }
 
   if (!medicine.openedAt) {
     return {
       text: "Дата вскрытия не указана. Если упаковка уже открыта, сначала укажите это.",
-      className: "text-amber-700",
+      className: "soft-pill-warning inline-flex rounded-full px-3 py-1 text-xs",
     };
   }
 
   return {
     text: "Принимать можно",
-    className: "text-emerald-700",
+    className: "soft-pill-success inline-flex rounded-full px-3 py-1 text-xs",
   };
 }
 
@@ -254,7 +255,8 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
   };
 
   return (
-    <div className="mt-4 space-y-4 rounded-lg border border-border p-4">
+    <Surface className="mt-4 p-5 sm:p-6">
+      <div className="space-y-4">
       <h2 className="text-lg font-medium text-foreground">Добавить упаковку</h2>
 
       <div className="flex flex-wrap gap-4">
@@ -267,7 +269,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
               setSearchName(e.target.value);
               setFormError(null);
             }}
-            className="mt-1 w-full max-w-xs rounded-lg border border-border bg-background px-3 py-2 text-foreground min-w-0"
+            className="soft-input mt-1 w-full max-w-xs rounded-2xl px-4 py-3 min-w-0"
             placeholder="Название препарата"
           />
         </label>
@@ -280,7 +282,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
               <button
                 type="button"
                 onClick={() => handleAddFromCatalog(item)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-3 text-left text-sm hover:bg-muted/30"
+                className="soft-card w-full rounded-[22px] px-4 py-4 text-left text-sm transition-colors hover:bg-[color:var(--color-surface-soft)]"
               >
                 <p className="font-medium text-foreground">
                   {item.name} ({item.form}
@@ -304,7 +306,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
       )}
 
       {catalogItem && (
-        <div className="rounded-lg border border-border bg-muted/20 p-4">
+        <div className="soft-panel-muted rounded-[24px] p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-medium text-foreground">
@@ -330,7 +332,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setCatalogItem(null);
                 setSearchName("");
               }}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted/30"
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
               Сменить препарат
             </button>
@@ -348,7 +350,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
               setFormError(null);
             }}
             placeholder="Название нового препарата"
-            className="rounded-lg border border-border bg-background px-3 py-2 text-foreground min-w-0 flex-1 max-w-xs"
+            className="soft-input min-w-0 flex-1 max-w-xs rounded-2xl px-4 py-3"
           />
           <select
             value={newMedicineForm}
@@ -356,7 +358,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
               setNewMedicineForm(e.target.value);
               setFormError(null);
             }}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+            className="soft-input rounded-2xl px-4 py-3"
           >
             <option value="таблетки">таблетки</option>
             <option value="сироп">сироп</option>
@@ -372,7 +374,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
               setFormError(null);
             }}
             placeholder="Концентрация"
-            className="rounded-lg border border-border bg-background px-3 py-2 text-foreground min-w-0 flex-1 max-w-xs"
+            className="soft-input min-w-0 flex-1 max-w-xs rounded-2xl px-4 py-3"
           />
         </div>
       )}
@@ -389,7 +391,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                     setNewMedicineDescription(e.target.value);
                     setFormError(null);
                   }}
-                  className="mt-1 min-h-20 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                  className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
                   placeholder="Для чего препарат и в каких случаях нужен"
                 />
               </label>
@@ -401,7 +403,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                     setNewMedicineDosage(e.target.value);
                     setFormError(null);
                   }}
-                  className="mt-1 min-h-20 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                  className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
                   placeholder="Например: по 5 мл 3 раза в день после еды"
                 />
               </label>
@@ -442,7 +444,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   setOpenedShelfDays(e.target.value);
                   setFormError(null);
                 }}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                 placeholder={
                   catalogItem?.defaultOpenedShelfDays
                     ? String(catalogItem.defaultOpenedShelfDays)
@@ -456,13 +458,13 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
             </label>
           </div>
           {isExpired && (
-            <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800">
+            <p className="soft-note-warning rounded-2xl px-4 py-3 text-sm">
               Срок годности уже истёк. Препарат можно сохранить в аптечку для учёта, но Safety
               Engine не даст использовать его в приёмах.
             </p>
           )}
           {hasUnknownAfterOpening && (
-            <p className="rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm text-sky-800">
+            <p className="soft-note-info rounded-2xl px-4 py-3 text-sm">
               Дата вскрытия указана, но срок после вскрытия не задан. Препарат сохранится, но оценка
               после вскрытия будет считаться неизвестной.
             </p>
@@ -475,14 +477,14 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setComment(e.target.value);
                 setFormError(null);
               }}
-              className="mt-1 min-h-20 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+              className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
               placeholder="Например: только ночью после еды"
             />
           </label>
           {(formError ||
             (createHouseholdMutation.error as { response?: { data?: { detail?: string } } })
               ?.response?.data?.detail) && (
-            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700">
+            <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
               {formError ??
                 (
                   createHouseholdMutation.error as {
@@ -498,7 +500,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 type="button"
                 onClick={handleAddSelected}
                 disabled={!expiryDate || createHouseholdMutation.isPending}
-                className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
+                className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
               >
                 Добавить в аптечку
               </button>
@@ -509,7 +511,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 disabled={
                   !newMedicineName.trim() || !expiryDate || createHouseholdMutation.isPending
                 }
-                className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
+                className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
               >
                 Добавить свой препарат в аптечку
               </button>
@@ -530,14 +532,15 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setNewMedicineDosage("");
                 setFormError(null);
               }}
-              className="rounded-lg border border-border px-4 py-2 hover:bg-muted/30"
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
               Сбросить
             </button>
           </div>
         </>
       )}
-    </div>
+      </div>
+    </Surface>
   );
 }
 
@@ -595,7 +598,8 @@ function MedicineItemCard({
   });
 
   return (
-    <li className="rounded-xl border border-border bg-background p-4 min-w-0">
+    <li>
+      <RowSurface className="min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -604,8 +608,8 @@ function MedicineItemCard({
               {medicine.medicineConcentration ? `, ${medicine.medicineConcentration}` : ""}
             </p>
             <span
-              className={`rounded-full border px-2 py-1 text-xs ${
-                STATUS_STYLES[medicine.status] ?? "border-border text-muted"
+              className={`rounded-full px-2.5 py-1 text-xs ${
+                STATUS_STYLES[medicine.status] ?? "soft-pill"
               }`}
             >
               {medicine.statusLabel}
@@ -633,7 +637,9 @@ function MedicineItemCard({
                 : ""}
             </p>
           )}
-          <p className={`text-sm ${intakeMessage.className}`}>{intakeMessage.text}</p>
+          <div className="mt-2">
+            <span className={intakeMessage.className}>{intakeMessage.text}</span>
+          </div>
           {medicine.comment && (
             <p className="text-sm text-muted">Комментарий: {medicine.comment}</p>
           )}
@@ -642,14 +648,14 @@ function MedicineItemCard({
           <button
             type="button"
             onClick={() => setIsEditing((v) => !v)}
-            className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted/30"
+            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
           >
             {isEditing ? "Закрыть" : "Изменить"}
           </button>
           <button
             type="button"
             onClick={() => onDelete(medicine.id)}
-            className="rounded-lg border border-red-500/50 px-3 py-1.5 text-sm text-red-600 hover:bg-red-500/10"
+            className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm"
           >
             Удалить
           </button>
@@ -666,7 +672,7 @@ function MedicineItemCard({
                   type="text"
                   value={medicineName}
                   onChange={(e) => setMedicineName(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                 />
               </label>
               <label className="block">
@@ -675,7 +681,7 @@ function MedicineItemCard({
                   type="text"
                   value={medicineForm}
                   onChange={(e) => setMedicineForm(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                 />
               </label>
               <label className="block sm:col-span-2">
@@ -684,7 +690,7 @@ function MedicineItemCard({
                   type="text"
                   value={medicineConcentration}
                   onChange={(e) => setMedicineConcentration(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
                 />
               </label>
               <label className="block sm:col-span-2">
@@ -692,7 +698,7 @@ function MedicineItemCard({
                 <textarea
                   value={medicineDescription}
                   onChange={(e) => setMedicineDescription(e.target.value)}
-                  className="mt-1 min-h-20 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                  className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
                 />
               </label>
               <label className="block sm:col-span-2">
@@ -700,7 +706,7 @@ function MedicineItemCard({
                 <textarea
                   value={medicineDosage}
                   onChange={(e) => setMedicineDosage(e.target.value)}
-                  className="mt-1 min-h-20 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                  className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
                 />
               </label>
             </>
@@ -721,17 +727,17 @@ function MedicineItemCard({
               max="3650"
               value={openedShelfDays}
               onChange={(e) => setOpenedShelfDays(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
             />
           </label>
           {isExpired && (
-            <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 sm:col-span-2">
+            <p className="soft-note-warning rounded-2xl px-4 py-3 text-sm sm:col-span-2">
               Срок годности уже истёк. Препарат останется в аптечке для учёта, но использовать его в
               приёмах нельзя.
             </p>
           )}
           {hasUnknownAfterOpening && (
-            <p className="rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm text-sky-800 sm:col-span-2">
+            <p className="soft-note-info rounded-2xl px-4 py-3 text-sm sm:col-span-2">
               Дата вскрытия указана, но срок после вскрытия не задан. Статус после вскрытия будет
               считаться неизвестным.
             </p>
@@ -741,7 +747,7 @@ function MedicineItemCard({
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="mt-1 min-h-20 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+              className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
             />
           </label>
           <div className="sm:col-span-2">
@@ -752,13 +758,14 @@ function MedicineItemCard({
                 updateMutation.isPending ||
                 (isOwnMedicine && (!medicineName.trim() || !medicineForm.trim()))
               }
-              className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
+              className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
             >
               Сохранить
             </button>
           </div>
         </div>
       )}
+      </RowSurface>
     </li>
   );
 }
