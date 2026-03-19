@@ -9,6 +9,7 @@ from src.application.dto.auth import (
     AuthenticatedAccount,
     AuthResponseDto,
     AuthStateResponseDto,
+    ChangePasswordDto,
     LoginDto,
     RefreshDto,
     RegisterDto,
@@ -82,3 +83,13 @@ async def logout(
     """Закрыть refresh-сессии текущего аккаунта."""
     await service.logout(current_account.id)
     clear_auth_cookies(response)
+
+
+@router.patch("/password", status_code=204)
+async def change_password(
+    dto: ChangePasswordDto,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: BaseAuthService = Depends(get_auth_service),
+) -> None:
+    """Сменить пароль текущего аккаунта."""
+    await service.change_password(current_account.id, dto)

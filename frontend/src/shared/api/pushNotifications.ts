@@ -20,7 +20,9 @@ export async function fetchPushNotificationConfig(): Promise<PushNotificationCon
 }
 
 export async function fetchPushNotificationPreferences(): Promise<PushNotificationPreferences> {
-  const res = await apiClient.get<RawPushNotificationPreferences>("/push-notifications/preferences");
+  const res = await apiClient.get<RawPushNotificationPreferences>(
+    "/push-notifications/preferences"
+  );
   return {
     beforeReminderMinutes: res.data.before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,

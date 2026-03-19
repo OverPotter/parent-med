@@ -42,7 +42,10 @@ export function MorePage() {
       <ul className="grid gap-4">
         {moreLinks.map((item) => (
           <li key={item.to}>
-            <Link to={item.to} className="block transition-transform duration-200 hover:-translate-y-0.5">
+            <Link
+              to={item.to}
+              className="block transition-transform duration-200 hover:-translate-y-0.5"
+            >
               <RowSurface>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

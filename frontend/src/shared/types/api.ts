@@ -122,7 +122,7 @@ export interface EpisodeMedicationPlan {
   episodeId: string;
   householdMedicineId: string;
   doseAmount: string;
-  minIntervalHours: number;
+  minIntervalMinutes: number;
   maxDosesPerDay: number | null;
   weightKg: number | null;
   doseMgPerKg: number | null;

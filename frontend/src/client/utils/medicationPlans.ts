@@ -1,10 +1,14 @@
-import type { AdministrationEvent, EpisodeMedicationPlan, HouseholdMedicine } from "@shared/types/api";
+import type {
+  AdministrationEvent,
+  EpisodeMedicationPlan,
+  HouseholdMedicine,
+} from "@shared/types/api";
 
-const TEST_INTERVAL_UNIT_MS = 60 * 1000;
+const INTERVAL_MINUTE_MS = 60 * 1000;
 
 type MedicationPlanLike = Pick<
   EpisodeMedicationPlan,
-  "householdMedicineId" | "minIntervalHours" | "maxDosesPerDay"
+  "householdMedicineId" | "minIntervalMinutes" | "maxDosesPerDay"
 >;
 
 export function buildPlanAdministrationStats(
@@ -21,7 +25,10 @@ export function buildPlanAdministrationStats(
   ).length;
 
   const nextAllowedAt = lastAdministration
-    ? new Date(new Date(lastAdministration.administeredAt).getTime() + plan.minIntervalHours * TEST_INTERVAL_UNIT_MS)
+    ? new Date(
+        new Date(lastAdministration.administeredAt).getTime() +
+          plan.minIntervalMinutes * INTERVAL_MINUTE_MS
+      )
     : null;
   const blockedByInterval = !!nextAllowedAt && nextAllowedAt > now;
   const blockedByDailyLimit = !!plan.maxDosesPerDay && todayCount >= plan.maxDosesPerDay;
@@ -41,6 +48,23 @@ export function buildPlanAdministrationStats(
           : `Следующую дозу можно ${formatRelativeDateTime(nextAllowedAt, now)}`
         : "Пока не было приёма, первую дозу можно отметить сразу",
   };
+}
+
+export function formatIntervalForDisplay(intervalMinutes: number, unit: "hours" | "minutes") {
+  if (unit === "minutes") {
+    return `каждые ${intervalMinutes} мин`;
+  }
+
+  if (intervalMinutes % 60 === 0) {
+    return `каждые ${intervalMinutes / 60} ч`;
+  }
+
+  const hours = Math.floor(intervalMinutes / 60);
+  const minutes = intervalMinutes % 60;
+  if (hours === 0) {
+    return `каждые ${minutes} мин`;
+  }
+  return `каждые ${hours} ч ${minutes} мин`;
 }
 
 export function buildWeightDoseHint(
@@ -91,14 +115,10 @@ export function getEpisodeMedicationReminder(
 
   const upcoming = items
     .filter(
-      (item) =>
-        !item.isUnavailable &&
-        !item.stats.blockedByDailyLimit &&
-        item.stats.nextAllowedAt
+      (item) => !item.isUnavailable && !item.stats.blockedByDailyLimit && item.stats.nextAllowedAt
     )
     .sort(
-      (left, right) =>
-        left.stats.nextAllowedAt!.getTime() - right.stats.nextAllowedAt!.getTime()
+      (left, right) => left.stats.nextAllowedAt!.getTime() - right.stats.nextAllowedAt!.getTime()
     )[0];
 
   if (upcoming?.stats.nextAllowedAt) {

@@ -38,7 +38,7 @@ class EpisodeMedicationPlanService:
             episode_id=entity.episode_id,
             household_medicine_id=entity.household_medicine_id,
             dose_amount=entity.dose_amount,
-            min_interval_hours=entity.min_interval_hours,
+            min_interval_minutes=entity.min_interval_minutes,
             max_doses_per_day=entity.max_doses_per_day,
             weight_kg=entity.weight_kg,
             dose_mg_per_kg=entity.dose_mg_per_kg,
@@ -76,7 +76,7 @@ class EpisodeMedicationPlanService:
             episode_id=dto.episode_id,
             household_medicine_id=dto.household_medicine_id,
             dose_amount=dto.dose_amount.strip(),
-            min_interval_hours=dto.min_interval_hours,
+            min_interval_minutes=dto.min_interval_minutes,
             max_doses_per_day=dto.max_doses_per_day,
             weight_kg=dto.weight_kg,
             dose_mg_per_kg=dto.dose_mg_per_kg,
@@ -113,8 +113,10 @@ class EpisodeMedicationPlanService:
         dose_amount = dto.dose_amount.strip() if "dose_amount" in fields_set and dto.dose_amount else (
             entity.dose_amount
         )
-        min_interval_hours = (
-            dto.min_interval_hours if "min_interval_hours" in fields_set else entity.min_interval_hours
+        min_interval_minutes = (
+            dto.min_interval_minutes
+            if "min_interval_minutes" in fields_set
+            else entity.min_interval_minutes
         )
         max_doses_per_day = (
             dto.max_doses_per_day if "max_doses_per_day" in fields_set else entity.max_doses_per_day
@@ -140,7 +142,7 @@ class EpisodeMedicationPlanService:
                 episode_id=entity.episode_id,
                 household_medicine_id=household_medicine_id,
                 dose_amount=dose_amount,
-                min_interval_hours=min_interval_hours,
+                min_interval_minutes=min_interval_minutes,
                 max_doses_per_day=max_doses_per_day,
                 weight_kg=weight_kg,
                 dose_mg_per_kg=dose_mg_per_kg,

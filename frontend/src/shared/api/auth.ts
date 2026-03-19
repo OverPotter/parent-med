@@ -1,5 +1,5 @@
 /**
- * Запросы к API: регистрация, логин, me, logout.
+ * Запросы к API: регистрация, логин, me, logout и смена пароля.
  */
 
 import { apiClient } from "./client";
@@ -86,4 +86,11 @@ export async function fetchMe(): Promise<AuthStateResponse> {
 
 export async function logout(): Promise<void> {
   await apiClient.post("/auth/logout");
+}
+
+export async function changePassword(payload: {
+  current_password: string;
+  new_password: string;
+}): Promise<void> {
+  await apiClient.patch("/auth/password", payload);
 }

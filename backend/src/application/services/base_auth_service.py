@@ -8,6 +8,7 @@ from src.application.dto.auth import (
     AuthenticatedAccount,
     AuthResponseDto,
     AuthStateResponseDto,
+    ChangePasswordDto,
     LoginDto,
     RefreshDto,
     RegisterDto,
@@ -66,3 +67,7 @@ class BaseAuthService(ABC):
     @abstractmethod
     async def logout(self, account_id: UUID) -> None:
         """Закрыть активные сессии аккаунта."""
+
+    @abstractmethod
+    async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
+        """Сменить пароль текущего аккаунта."""

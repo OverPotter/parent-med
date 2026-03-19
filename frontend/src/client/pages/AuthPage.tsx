@@ -165,16 +165,10 @@ export function AuthPage() {
             )}
 
             {passwordsMismatch && (
-              <p className="soft-note-warning rounded-2xl p-3 text-sm">
-                Пароли должны совпадать.
-              </p>
+              <p className="soft-note-warning rounded-2xl p-3 text-sm">Пароли должны совпадать.</p>
             )}
 
-            {error && (
-              <p className="soft-note-danger rounded-2xl p-3 text-sm">
-                {error}
-              </p>
-            )}
+            {error && <p className="soft-note-danger rounded-2xl p-3 text-sm">{error}</p>}
 
             <button
               type="submit"

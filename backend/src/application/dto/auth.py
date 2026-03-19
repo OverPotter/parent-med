@@ -23,6 +23,13 @@ class LoginDto(BaseModel):
     password: str = Field(..., min_length=6, description="Пароль")
 
 
+class ChangePasswordDto(BaseModel):
+    """Смена пароля авторизованного аккаунта."""
+
+    current_password: str = Field(..., min_length=6, description="Текущий пароль")
+    new_password: str = Field(..., min_length=6, description="Новый пароль")
+
+
 class RefreshDto(BaseModel):
     """Обновление access token по refresh token."""
 

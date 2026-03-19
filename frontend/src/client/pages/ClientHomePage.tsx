@@ -80,14 +80,19 @@ export function ClientHomePage() {
         <ul className="grid gap-4 xl:grid-cols-2">
           {quickLinks.map((item) => (
             <li key={item.to}>
-              <Link to={item.to} className="block transition-transform duration-200 hover:-translate-y-0.5">
+              <Link
+                to={item.to}
+                className="block transition-transform duration-200 hover:-translate-y-0.5"
+              >
                 <RowSurface className="h-full">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-base font-medium text-foreground">{item.title}</p>
                       <p className="mt-2 text-sm leading-7 text-muted">{item.description}</p>
                     </div>
-                    <span className="soft-pill-primary rounded-full px-3 py-1 text-xs">Открыть</span>
+                    <span className="soft-pill-primary rounded-full px-3 py-1 text-xs">
+                      Открыть
+                    </span>
                   </div>
                 </RowSurface>
               </Link>
@@ -109,10 +114,7 @@ export function ClientHomePage() {
             </p>
           </div>
           <div className="flex shrink-0">
-            <Link
-              to="/about"
-              className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm"
-            >
+            <Link to="/about" className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm">
               Как установить
             </Link>
           </div>

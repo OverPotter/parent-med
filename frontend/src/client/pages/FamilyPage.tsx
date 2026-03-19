@@ -176,13 +176,11 @@ export function FamilyPage() {
   return (
     <div className="min-w-0 space-y-6">
       <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Семья</h1>
-      <p className="mt-2 text-muted">Настройки семьи: название, родители и базовый контекст аккаунта.</p>
+      <p className="mt-2 text-muted">
+        Настройки семьи: название, родители и базовый контекст аккаунта.
+      </p>
 
-      {error && (
-        <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
-          {error}
-        </p>
-      )}
+      {error && <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{error}</p>}
       {familyError && (
         <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
           {(familyError as { message?: string }).message ?? "Ошибка загрузки семьи"}
@@ -228,7 +226,9 @@ export function FamilyPage() {
       <Surface className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-medium text-foreground">Родители</h2>
-          {family && <span className="soft-pill rounded-full px-3 py-1 text-xs">{parents.length} шт.</span>}
+          {family && (
+            <span className="soft-pill rounded-full px-3 py-1 text-xs">{parents.length} шт.</span>
+          )}
         </div>
 
         {!family && (
@@ -290,73 +290,73 @@ export function FamilyPage() {
                   return (
                     <li key={parent.id}>
                       <RowSurface>
-                      {isEditing ? (
-                        <div className="flex flex-wrap items-end gap-3">
-                          <label className="min-w-0 flex-1">
-                            <span className="block text-sm text-muted">Имя</span>
-                            <input
-                              type="text"
-                              value={editingParentName}
-                              onChange={(e) => setEditingParentName(e.target.value)}
-                              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
-                            />
-                          </label>
-                          <label className="min-w-0 flex-1">
-                            <span className="block text-sm text-muted">Роль</span>
-                            <input
-                              type="text"
-                              value={editingParentRole}
-                              onChange={(e) => setEditingParentRole(e.target.value)}
-                              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => handleParentSave(parent.id)}
-                            disabled={
-                              isSaving || !editingParentName.trim() || !editingParentRole.trim()
-                            }
-                            className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
-                          >
-                            {isSaving ? "Сохраняем…" : "Сохранить"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingParentId(null);
-                              setEditingParentName("");
-                              setEditingParentRole("");
-                            }}
-                            className="soft-button-secondary rounded-2xl px-4 py-3 text-sm"
-                          >
-                            Отмена
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-foreground">{parent.name}</p>
-                            <p className="mt-1 text-sm text-muted">{parent.role}</p>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
+                        {isEditing ? (
+                          <div className="flex flex-wrap items-end gap-3">
+                            <label className="min-w-0 flex-1">
+                              <span className="block text-sm text-muted">Имя</span>
+                              <input
+                                type="text"
+                                value={editingParentName}
+                                onChange={(e) => setEditingParentName(e.target.value)}
+                                className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                              />
+                            </label>
+                            <label className="min-w-0 flex-1">
+                              <span className="block text-sm text-muted">Роль</span>
+                              <input
+                                type="text"
+                                value={editingParentRole}
+                                onChange={(e) => setEditingParentRole(e.target.value)}
+                                className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                              />
+                            </label>
                             <button
                               type="button"
-                              onClick={() => handleParentEditStart(parent)}
-                              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                              onClick={() => handleParentSave(parent.id)}
+                              disabled={
+                                isSaving || !editingParentName.trim() || !editingParentRole.trim()
+                              }
+                              className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
                             >
-                              Редактировать
+                              {isSaving ? "Сохраняем…" : "Сохранить"}
                             </button>
                             <button
                               type="button"
-                              onClick={() => deleteParentMutation.mutate(parent.id)}
-                              disabled={deleteParentMutation.isPending}
-                              className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                              onClick={() => {
+                                setEditingParentId(null);
+                                setEditingParentName("");
+                                setEditingParentRole("");
+                              }}
+                              className="soft-button-secondary rounded-2xl px-4 py-3 text-sm"
                             >
-                              Удалить
+                              Отмена
                             </button>
                           </div>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-foreground">{parent.name}</p>
+                              <p className="mt-1 text-sm text-muted">{parent.role}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleParentEditStart(parent)}
+                                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                              >
+                                Редактировать
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteParentMutation.mutate(parent.id)}
+                                disabled={deleteParentMutation.isPending}
+                                className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                              >
+                                Удалить
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </RowSurface>
                     </li>
                   );

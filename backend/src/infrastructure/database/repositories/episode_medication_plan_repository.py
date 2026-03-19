@@ -26,7 +26,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             episode_id=m.episode_id,
             household_medicine_id=m.household_medicine_id,
             dose_amount=m.dose_amount,
-            min_interval_hours=m.min_interval_hours,
+            min_interval_minutes=m.min_interval_minutes,
             max_doses_per_day=m.max_doses_per_day,
             weight_kg=m.weight_kg,
             dose_mg_per_kg=m.dose_mg_per_kg,
@@ -45,7 +45,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             episode_id=e.episode_id,
             household_medicine_id=e.household_medicine_id,
             dose_amount=e.dose_amount,
-            min_interval_hours=e.min_interval_hours,
+            min_interval_minutes=e.min_interval_minutes,
             max_doses_per_day=e.max_doses_per_day,
             weight_kg=e.weight_kg,
             dose_mg_per_kg=e.dose_mg_per_kg,
@@ -101,7 +101,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             raise ValueError(f"EpisodeMedicationPlan {entity.id} not found")
         row.household_medicine_id = entity.household_medicine_id
         row.dose_amount = entity.dose_amount
-        row.min_interval_hours = entity.min_interval_hours
+        row.min_interval_minutes = entity.min_interval_minutes
         row.max_doses_per_day = entity.max_doses_per_day
         row.weight_kg = entity.weight_kg
         row.dose_mg_per_kg = entity.dose_mg_per_kg

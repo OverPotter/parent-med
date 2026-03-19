@@ -29,8 +29,9 @@ import {
   fetchTemperatureEntriesByEpisodeId,
   createTemperatureEntry,
 } from "@shared/api/temperatureEntries";
-import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
+import { createWeightEntry, fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { DateField } from "@shared/components/DateField";
+import { DisclosureHeader } from "@shared/components/DisclosureHeader";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
 import type {
@@ -44,6 +45,7 @@ import type {
 } from "@shared/types/api";
 import {
   buildPlanAdministrationStats,
+  formatIntervalForDisplay,
   buildWeightDoseHint,
 } from "../utils/medicationPlans";
 import { formatDate, formatDateTime } from "@shared/utils/date";
@@ -118,7 +120,7 @@ export function ChildIllnessPage() {
       medication_plans: Array<{
         household_medicine_id: string;
         dose_amount: string;
-        min_interval_hours: number;
+        min_interval_minutes: number;
         max_doses_per_day?: number | null;
         weight_kg?: number | null;
         dose_mg_per_kg?: number | null;
@@ -158,7 +160,7 @@ export function ChildIllnessPage() {
             episode_id: episode.id,
             household_medicine_id: item.household_medicine_id,
             dose_amount: item.dose_amount,
-            min_interval_hours: item.min_interval_hours,
+            min_interval_minutes: item.min_interval_minutes,
             max_doses_per_day: item.max_doses_per_day ?? null,
             weight_kg: item.weight_kg ?? null,
             dose_mg_per_kg: item.dose_mg_per_kg ?? null,
@@ -285,6 +287,7 @@ export function ChildIllnessPage() {
             subtitle="Главный рабочий блок: температура, приёмы и закрытие текущего состояния."
           />
           <EpisodeBlock
+            childId={child.id}
             episode={activeEpisode}
             onClose={() => closeEpisodeMutation.mutate(activeEpisode.id)}
             familyId={currentFamilyId}
@@ -301,6 +304,7 @@ export function ChildIllnessPage() {
           />
           <EpisodeActivationCard
             childName={child.name}
+            childId={child.id}
             medicines={familyMedicines}
             latestWeight={latestWeight}
             isPending={createEpisodeMutation.isPending}
@@ -424,7 +428,7 @@ function HistoryEpisodeCard({
   onToggle: () => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: temps = [] } = useQuery({
+  const { data: temperatureEntries = [] } = useQuery({
     queryKey: ["temperature-entries", episode.id],
     queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
     enabled: isOpen,
@@ -451,7 +455,12 @@ function HistoryEpisodeCard({
     },
   });
 
-  const timelineItems = buildEpisodeTimeline(temps, administrations, comments, medicines);
+  const timelineItems = buildEpisodeTimeline(
+    temperatureEntries,
+    administrations,
+    comments,
+    medicines
+  );
 
   return (
     <li
@@ -459,8 +468,8 @@ function HistoryEpisodeCard({
         isOpen ? "soft-panel soft-hero" : "soft-card"
       }`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
+      <DisclosureHeader isOpen={isOpen} onToggle={onToggle}>
+        <>
           <p className="text-xs tracking-[0.08em] text-muted">
             Эпизод {episodeNumber} · {formatEpisodePeriod(episode.startedAt, episode.closedAt)}
           </p>
@@ -475,18 +484,8 @@ function HistoryEpisodeCard({
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
             {episode.note?.trim() || "Описание не заполнено."}
           </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={onToggle}
-          className={`rounded-2xl px-3 py-1.5 text-sm transition-colors ${
-            isOpen ? "soft-tab-active" : "soft-button-secondary"
-          }`}
-        >
-          {isOpen ? "Скрыть" : "Открыть"}
-        </button>
-      </div>
+        </>
+      </DisclosureHeader>
 
       {isOpen && (
         <div className="mt-6 space-y-6 border-t border-border/70 pt-6">
@@ -495,7 +494,11 @@ function HistoryEpisodeCard({
               <h3 className="text-sm font-semibold text-foreground">Описание</h3>
               <p className="mt-1 text-sm text-muted">
                 {formatEpisodePeriod(episode.startedAt, episode.closedAt)} ·{" "}
-                {formatEntrySummary(temps.length, administrations.length, comments.length)}
+                {formatEntrySummary(
+                  temperatureEntries.length,
+                  administrations.length,
+                  comments.length
+                )}
               </p>
             </div>
 
@@ -550,11 +553,13 @@ function HistoryEpisodeCard({
 }
 
 function EpisodeBlock({
+  childId,
   episode,
   onClose,
   familyId,
   latestWeight,
 }: {
+  childId: string;
   episode: IllnessEpisode;
   onClose: () => void;
   familyId: string | null;
@@ -564,11 +569,16 @@ function EpisodeBlock({
   const accountId = useAppStore((s) => s.accountId);
   const isActive = episode.status === "active";
   const [commentText, setCommentText] = useState("");
+  const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
+  const [isEpisodeActionsOpen, setIsEpisodeActionsOpen] = useState(false);
+  const [isManualComposerExpanded, setIsManualComposerExpanded] = useState(
+    episode.medicationMode !== "guided"
+  );
   const [composerMode, setComposerMode] = useState<"temperature" | "administration" | "comment">(
     "temperature"
   );
 
-  const { data: temps = [] } = useQuery({
+  const { data: temperatureEntries = [] } = useQuery({
     queryKey: ["temperature-entries", episode.id],
     queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
     enabled: !!episode.id,
@@ -624,7 +634,7 @@ function EpisodeBlock({
     mutationFn: (payload: {
       household_medicine_id: string;
       dose_amount: string;
-      min_interval_hours: number;
+      min_interval_minutes: number;
       max_doses_per_day?: number | null;
       weight_kg?: number | null;
       dose_mg_per_kg?: number | null;
@@ -634,7 +644,7 @@ function EpisodeBlock({
         episode_id: episode.id,
         household_medicine_id: payload.household_medicine_id,
         dose_amount: payload.dose_amount,
-        min_interval_hours: payload.min_interval_hours,
+        min_interval_minutes: payload.min_interval_minutes,
         max_doses_per_day: payload.max_doses_per_day ?? null,
         weight_kg: payload.weight_kg ?? null,
         dose_mg_per_kg: payload.dose_mg_per_kg ?? null,
@@ -659,7 +669,7 @@ function EpisodeBlock({
       payload: {
         household_medicine_id?: string;
         dose_amount?: string;
-        min_interval_hours?: number;
+        min_interval_minutes?: number;
         max_doses_per_day?: number | null;
         weight_kg?: number | null;
         dose_mg_per_kg?: number | null;
@@ -685,48 +695,78 @@ function EpisodeBlock({
   const [tempValue, setTempValue] = useState("");
   const [adminMedicineId, setAdminMedicineId] = useState("");
   const [adminAmount, setAdminAmount] = useState("");
-  const timelineItems = buildEpisodeTimeline(temps, administrations, comments, householdMedicines);
+  const timelineItems = buildEpisodeTimeline(
+    temperatureEntries,
+    administrations,
+    comments,
+    householdMedicines
+  );
 
   return (
     <div className="soft-panel rounded-[30px]">
       <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-6 sm:px-6 sm:py-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs tracking-[0.1em] text-muted">Текущий эпизод</p>
-            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+        {isActive ? (
+          <DisclosureHeader
+            isOpen={isEpisodeActionsOpen}
+            onToggle={() => setIsEpisodeActionsOpen((current) => !current)}
+            desktopClosedLabel="Ещё"
+            desktopOpenLabel="Скрыть"
+            className="gap-4"
+          >
+            <>
+              <p className="text-[11px] tracking-[0.1em] text-muted">Наблюдение</p>
+              <h3 className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
+              </h3>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs ${
+                    EPISODE_STATUS_STYLES[episode.status] ?? EPISODE_STATUS_STYLES.closed
+                  }`}
+                >
+                  {EPISODE_STATUS_LABELS[episode.status] ?? episode.status}
+                </span>
+                <p className="text-xs text-muted">С {formatDate(episode.startedAt)}</p>
+              </div>
+            </>
+          </DisclosureHeader>
+        ) : (
+          <div>
+            <p className="text-[11px] tracking-[0.1em] text-muted">Наблюдение</p>
+            <h3 className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
               {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
             </h3>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span
-                className={`rounded-full px-3 py-1 text-sm ${
+                className={`rounded-full px-2.5 py-1 text-xs ${
                   EPISODE_STATUS_STYLES[episode.status] ?? EPISODE_STATUS_STYLES.closed
                 }`}
               >
                 {EPISODE_STATUS_LABELS[episode.status] ?? episode.status}
               </span>
-              <p className="text-sm text-muted">
-                Начался {formatDate(episode.startedAt)} ·{" "}
-                {formatEntrySummary(temps.length, administrations.length, comments.length)}
-              </p>
+              <p className="text-xs text-muted">С {formatDate(episode.startedAt)}</p>
             </div>
           </div>
+        )}
 
-          {isActive && (
+        {isActive && isEpisodeActionsOpen && (
+          <div className="mt-4 flex justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto"
             >
               Закрыть эпизод
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-7 px-5 py-5 sm:px-6 sm:py-6">
         <section>
           {episode.medicationMode === "guided" && (
             <GuidedMedicationSection
+              childId={childId}
               plans={medicationPlans}
               medicines={householdMedicines}
               administrations={administrations}
@@ -749,7 +789,7 @@ function EpisodeBlock({
                   payload: {
                     household_medicine_id: payload.householdMedicineId,
                     dose_amount: payload.doseAmount,
-                    min_interval_hours: payload.minIntervalHours,
+                    min_interval_minutes: payload.minIntervalMinutes,
                     max_doses_per_day: payload.maxDosesPerDay,
                     weight_kg: payload.weightKg,
                     dose_mg_per_kg: payload.doseMgPerKg,
@@ -767,119 +807,154 @@ function EpisodeBlock({
             />
           )}
 
-          <div className={episode.medicationMode === "guided" ? "border-t border-border pt-6" : ""}>
-            <div>
-              <h4 className="text-base font-semibold text-foreground">
-                {episode.medicationMode === "guided" ? "Добавить запись вручную" : "Добавить запись"}
-              </h4>
-              <p className="mt-1 text-sm text-muted">
-                {episode.medicationMode === "guided"
-                  ? "Ручной режим остаётся доступен: можно отдельно внести температуру, лекарство или комментарий."
-                  : "Выбери тип записи и внеси одно новое действие."}
-              </p>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <ComposerToggle
-                label="Температура"
-                active={composerMode === "temperature"}
-                onClick={() => setComposerMode("temperature")}
-              />
-              <ComposerToggle
-                label="Лекарство"
-                active={composerMode === "administration"}
-                onClick={() => setComposerMode("administration")}
-              />
-              <ComposerToggle
-                label="Комментарий"
-                active={composerMode === "comment"}
-                onClick={() => setComposerMode("comment")}
-              />
-            </div>
-
-            <div className="mt-4 border-t border-border pt-4">
-              {composerMode === "temperature" && (
-                <TemperatureForm
-                  value={tempValue}
-                  onChange={setTempValue}
-                  onSubmit={() => {
-                    const parsed = parseFloat(tempValue);
-                    if (Number.isNaN(parsed)) return;
-                    addTempMutation.mutate(parsed);
-                    setTempValue("");
-                  }}
-                  isPending={addTempMutation.isPending}
-                />
-              )}
-
-              {composerMode === "administration" &&
-                (usableHouseholdMedicines.length === 0 ? (
-                  <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
-                    В аптечке нет доступных упаковок для приёма. Просроченные скрыты автоматически.
-                  </div>
-                ) : (
-                  <AdministrationForm
-                    medicines={usableHouseholdMedicines}
-                    selectedMedicineId={adminMedicineId}
-                    amount={adminAmount}
-                    onMedicineChange={setAdminMedicineId}
-                    onAmountChange={setAdminAmount}
-                    onSubmit={() => {
-                      if (!adminMedicineId || !adminAmount.trim()) return;
-                      addAdminMutation.mutate({
-                        household_medicine_id: adminMedicineId,
-                        amount: adminAmount.trim(),
-                      });
-                      setAdminMedicineId("");
-                      setAdminAmount("");
-                    }}
-                    isPending={addAdminMutation.isPending}
-                  />
-                ))}
-              {composerMode === "administration" && addAdminMutation.isError && (
-                <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
-                  {(addAdminMutation.error as { response?: { data?: { detail?: string } } }).response
-                    ?.data?.detail ?? "Ошибка записи. Проверь срок годности и срок после вскрытия."}
+          <div
+            className={[
+              episode.medicationMode === "guided" ? "mt-2" : "",
+              "soft-panel-muted rounded-[24px] px-4 py-5 sm:px-5 sm:py-6",
+            ].join(" ")}
+          >
+            <DisclosureHeader
+              isOpen={isManualComposerExpanded}
+              onToggle={() => setIsManualComposerExpanded((current) => !current)}
+            >
+              <>
+                <h4 className="text-base font-semibold text-foreground">
+                  {episode.medicationMode === "guided"
+                    ? "Добавить запись вручную"
+                    : "Добавить запись"}
+                </h4>
+                <p className="mt-1 text-sm text-muted">
+                  {episode.medicationMode === "guided"
+                    ? "Отдельно можно внести температуру, лекарство или комментарий."
+                    : "Выбери тип записи и внеси одно новое действие."}
                 </p>
-              )}
+              </>
+            </DisclosureHeader>
 
-              {composerMode === "comment" && (
-                <div className="soft-panel-muted grid gap-3 rounded-[24px] p-3">
-                  <textarea
-                    rows={3}
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Например: к вечеру стал бодрее, после сна снова поднялась температура."
-                    className="soft-input w-full rounded-2xl px-3 py-2"
+            {isManualComposerExpanded && (
+              <>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <ComposerToggle
+                    label="Температура"
+                    active={composerMode === "temperature"}
+                    onClick={() => setComposerMode("temperature")}
                   />
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!commentText.trim()) return;
-                        addCommentMutation.mutate();
-                      }}
-                      disabled={addCommentMutation.isPending || !commentText.trim()}
-                      className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-                    >
-                      {addCommentMutation.isPending ? "Сохраняем…" : "Добавить комментарий"}
-                    </button>
-                  </div>
+                  <ComposerToggle
+                    label="Лекарство"
+                    active={composerMode === "administration"}
+                    onClick={() => setComposerMode("administration")}
+                  />
+                  <ComposerToggle
+                    label="Комментарий"
+                    active={composerMode === "comment"}
+                    onClick={() => setComposerMode("comment")}
+                  />
                 </div>
-              )}
-            </div>
+
+                <div className="mt-4">
+                  {composerMode === "temperature" && (
+                    <TemperatureForm
+                      value={tempValue}
+                      onChange={setTempValue}
+                      onSubmit={() => {
+                        const parsed = parseFloat(tempValue);
+                        if (Number.isNaN(parsed)) return;
+                        addTempMutation.mutate(parsed);
+                        setTempValue("");
+                      }}
+                      isPending={addTempMutation.isPending}
+                    />
+                  )}
+
+                  {composerMode === "administration" &&
+                    (usableHouseholdMedicines.length === 0 ? (
+                      <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
+                        В аптечке нет доступных упаковок для приёма. Просроченные скрыты
+                        автоматически.
+                      </div>
+                    ) : (
+                      <AdministrationForm
+                        medicines={usableHouseholdMedicines}
+                        selectedMedicineId={adminMedicineId}
+                        amount={adminAmount}
+                        onMedicineChange={setAdminMedicineId}
+                        onAmountChange={setAdminAmount}
+                        onSubmit={() => {
+                          if (!adminMedicineId || !adminAmount.trim()) return;
+                          addAdminMutation.mutate({
+                            household_medicine_id: adminMedicineId,
+                            amount: adminAmount.trim(),
+                          });
+                          setAdminMedicineId("");
+                          setAdminAmount("");
+                        }}
+                        isPending={addAdminMutation.isPending}
+                      />
+                    ))}
+                  {composerMode === "administration" && addAdminMutation.isError && (
+                    <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
+                      {(addAdminMutation.error as { response?: { data?: { detail?: string } } })
+                        .response?.data?.detail ??
+                        "Ошибка записи. Проверь срок годности и срок после вскрытия."}
+                    </p>
+                  )}
+
+                  {composerMode === "comment" && (
+                    <div className="soft-panel-muted grid gap-3 rounded-[24px] p-3">
+                      <textarea
+                        rows={3}
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Например: к вечеру стал бодрее, после сна снова поднялась температура."
+                        className="soft-input w-full rounded-2xl px-3 py-2"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!commentText.trim()) return;
+                            addCommentMutation.mutate();
+                          }}
+                          disabled={addCommentMutation.isPending || !commentText.trim()}
+                          className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                        >
+                          {addCommentMutation.isPending ? "Сохраняем…" : "Добавить комментарий"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </section>
 
-        <section className="border-t border-border pt-6">
-          <div>
-            <h4 className="text-base font-semibold text-foreground">Лента эпизода</h4>
-            <p className="mt-1 text-sm text-muted">Последние записи по времени.</p>
+        <section className="soft-panel-muted rounded-[24px] px-4 py-5 sm:px-5 sm:py-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h4 className="text-base font-semibold text-foreground">Лента эпизода</h4>
+              <p className="mt-1 text-sm text-muted">Последние записи по времени.</p>
+            </div>
+            {timelineItems.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsTimelineExpanded((current) => !current)}
+                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              >
+                {isTimelineExpanded ? "Скрыть ленту" : `Показать ленту (${timelineItems.length})`}
+              </button>
+            )}
           </div>
 
           <div className="mt-4">
             {timelineItems.length > 0 ? (
-              <EpisodeTimelineList items={timelineItems} />
+              isTimelineExpanded ? (
+                <EpisodeTimelineList items={timelineItems} />
+              ) : (
+                <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
+                  Лента свернута. Открой её, если нужно посмотреть предыдущие записи.
+                </div>
+              )
             ) : (
               <div className="soft-empty rounded-[22px] px-4 py-6 text-sm text-muted">
                 Записей по эпизоду пока нет.
@@ -894,6 +969,7 @@ function EpisodeBlock({
 
 function EpisodeActivationCard({
   childName,
+  childId,
   medicines,
   latestWeight,
   isPending,
@@ -902,6 +978,7 @@ function EpisodeActivationCard({
   onCancel,
 }: {
   childName: string;
+  childId: string;
   medicines: HouseholdMedicine[];
   latestWeight: WeightEntry | null;
   isPending: boolean;
@@ -917,7 +994,7 @@ function EpisodeActivationCard({
     medication_plans: Array<{
       household_medicine_id: string;
       dose_amount: string;
-      min_interval_hours: number;
+      min_interval_minutes: number;
       max_doses_per_day?: number | null;
       weight_kg?: number | null;
       dose_mg_per_kg?: number | null;
@@ -989,7 +1066,8 @@ function EpisodeActivationCard({
           <div>
             <h4 className="text-base font-semibold text-foreground">Как вести лекарства</h4>
             <p className="mt-1 text-sm text-muted">
-              Можно оставить привычный свободный журнал или включить дополнительный режим с планом доз.
+              Можно оставить привычный свободный журнал или включить дополнительный режим с планом
+              доз.
             </p>
           </div>
 
@@ -1026,6 +1104,7 @@ function EpisodeActivationCard({
               <>
                 <div className="mt-4">
                   <MedicationPlanComposer
+                    childId={childId}
                     medicines={usableMedicines}
                     latestWeight={latestWeight}
                     onSubmit={(plan) =>
@@ -1040,15 +1119,20 @@ function EpisodeActivationCard({
                   <div className="mt-4">
                     <MedicationPlanList
                       plans={medicationPlans}
+                      childId={childId}
                       medicines={usableMedicines}
                       latestWeight={latestWeight}
                       onUpdate={(planId, payload) =>
                         setMedicationPlans((current) =>
-                          current.map((plan) => (plan.id === planId ? { id: plan.id, ...payload } : plan))
+                          current.map((plan) =>
+                            plan.id === planId ? { id: plan.id, ...payload } : plan
+                          )
                         )
                       }
                       onDelete={(planId) =>
-                        setMedicationPlans((current) => current.filter((plan) => plan.id !== planId))
+                        setMedicationPlans((current) =>
+                          current.filter((plan) => plan.id !== planId)
+                        )
                       }
                     />
                   </div>
@@ -1230,7 +1314,7 @@ function EpisodeActivationCard({
                 medication_plans: medicationPlans.map((item) => ({
                   household_medicine_id: item.householdMedicineId,
                   dose_amount: item.doseAmount,
-                  min_interval_hours: item.minIntervalHours,
+                  min_interval_minutes: item.minIntervalMinutes,
                   max_doses_per_day: item.maxDosesPerDay ?? null,
                   weight_kg: item.weightKg ?? null,
                   dose_mg_per_kg: item.doseMgPerKg ?? null,
@@ -1380,7 +1464,7 @@ function AdministrationForm({
 type MedicationPlanPayload = {
   householdMedicineId: string;
   doseAmount: string;
-  minIntervalHours: number;
+  minIntervalMinutes: number;
   maxDosesPerDay: number | null;
   weightKg: number | null;
   doseMgPerKg: number | null;
@@ -1417,7 +1501,24 @@ function MedicationModeCard({
   );
 }
 
+function intervalMinutesToInputValue(intervalMinutes: number, unit: "hours" | "minutes") {
+  if (unit === "minutes") {
+    return String(intervalMinutes);
+  }
+  const hours = intervalMinutes / 60;
+  return Number.isInteger(hours) ? String(hours) : String(Number(hours.toFixed(2)));
+}
+
+function parseIntervalInputToMinutes(value: string, unit: "hours" | "minutes"): number | null {
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return unit === "minutes" ? Math.round(parsed) : Math.round(parsed * 60);
+}
+
 function GuidedMedicationSection({
+  childId,
   plans,
   medicines,
   administrations,
@@ -1432,6 +1533,7 @@ function GuidedMedicationSection({
   onDeletePlan,
   onTakeDose,
 }: {
+  childId: string;
   plans: EpisodeMedicationPlan[];
   medicines: HouseholdMedicine[];
   administrations: AdministrationEvent[];
@@ -1444,7 +1546,7 @@ function GuidedMedicationSection({
   onCreatePlan: (payload: {
     household_medicine_id: string;
     dose_amount: string;
-    min_interval_hours: number;
+    min_interval_minutes: number;
     max_doses_per_day?: number | null;
     weight_kg?: number | null;
     dose_mg_per_kg?: number | null;
@@ -1479,6 +1581,7 @@ function GuidedMedicationSection({
       {plans.length > 0 ? (
         <MedicationPlanList
           plans={plans}
+          childId={childId}
           medicines={medicines}
           administrations={administrations}
           latestWeight={latestWeight}
@@ -1502,13 +1605,14 @@ function GuidedMedicationSection({
         </div>
       ) : isComposerOpen ? (
         <MedicationPlanComposer
+          childId={childId}
           medicines={usableMedicines}
           latestWeight={latestWeight}
           onSubmit={(plan) =>
             onCreatePlan({
               household_medicine_id: plan.householdMedicineId,
               dose_amount: plan.doseAmount,
-              min_interval_hours: plan.minIntervalHours,
+              min_interval_minutes: plan.minIntervalMinutes,
               max_doses_per_day: plan.maxDosesPerDay,
               weight_kg: plan.weightKg,
               dose_mg_per_kg: plan.doseMgPerKg,
@@ -1529,6 +1633,7 @@ function GuidedMedicationSection({
 }
 
 function MedicationPlanComposer({
+  childId,
   medicines,
   latestWeight,
   onSubmit,
@@ -1537,6 +1642,7 @@ function MedicationPlanComposer({
   initialValue,
   onCancel,
 }: {
+  childId: string;
   medicines: HouseholdMedicine[];
   latestWeight: WeightEntry | null;
   onSubmit: (payload: MedicationPlanPayload) => void;
@@ -1545,10 +1651,18 @@ function MedicationPlanComposer({
   initialValue?: MedicationPlanPayload | null;
   onCancel?: () => void;
 }) {
-  const [selectedMedicineId, setSelectedMedicineId] = useState(initialValue?.householdMedicineId ?? "");
+  const queryClient = useQueryClient();
+  const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
+  const [selectedMedicineId, setSelectedMedicineId] = useState(
+    initialValue?.householdMedicineId ?? ""
+  );
   const [doseAmount, setDoseAmount] = useState(initialValue?.doseAmount ?? "");
-  const [minIntervalHours, setMinIntervalHours] = useState(
-    initialValue ? String(initialValue.minIntervalHours) : "3"
+  const [minIntervalInput, setMinIntervalInput] = useState(
+    initialValue
+      ? intervalMinutesToInputValue(initialValue.minIntervalMinutes, intervalUnit)
+      : intervalUnit === "minutes"
+        ? "180"
+        : "3"
   );
   const [maxDosesPerDay, setMaxDosesPerDay] = useState(
     initialValue?.maxDosesPerDay ? String(initialValue.maxDosesPerDay) : ""
@@ -1566,11 +1680,30 @@ function MedicationPlanComposer({
   const [notes, setNotes] = useState(initialValue?.notes ?? "");
 
   const selectedMedicine = medicines.find((medicine) => medicine.id === selectedMedicineId) ?? null;
+  const parsedWeightKg = parseNullableNumber(weightKg);
   const weightHint = buildWeightDoseHint(
     selectedMedicine,
-    parseNullableNumber(weightKg),
+    parsedWeightKg,
     parseNullableNumber(doseMgPerKg)
   );
+  const hasDoseUnitHint = doseAmount.trim().length > 0 && !/[A-Za-zА-Яа-я]/.test(doseAmount);
+  const hasInvalidDose = doseAmount.trim().length > 0 && hasDoseUnitHint;
+  const parsedIntervalMinutes = parseIntervalInputToMinutes(minIntervalInput, intervalUnit);
+  const latestWeightValue = latestWeight?.valueKg ?? null;
+  const shouldOfferWeightSync =
+    parsedWeightKg !== null &&
+    (latestWeightValue === null || Math.abs(parsedWeightKg - latestWeightValue) >= 0.1);
+
+  const syncWeightMutation = useMutation({
+    mutationFn: (valueKg: number) =>
+      createWeightEntry({
+        child_id: childId,
+        value_kg: valueKg,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["weight-entry-latest", childId] });
+    },
+  });
 
   return (
     <div className="soft-panel-muted rounded-[24px] p-4">
@@ -1593,24 +1726,35 @@ function MedicationPlanComposer({
         </label>
 
         <label className="block">
-          <span className="block text-sm text-muted">Разовая доза</span>
+          <span className="block text-sm text-muted">Разовая доза, если нужна</span>
           <input
             type="text"
             value={doseAmount}
             onChange={(e) => setDoseAmount(e.target.value)}
-            placeholder="Например: 5 мл"
+            placeholder="Например: 10 мл или 1 таб."
             className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
           />
+          {hasDoseUnitHint && (
+            <p className="mt-1 text-xs text-muted">Лучше добавить единицу: мл, таб., кап. и т.д.</p>
+          )}
+          {hasInvalidDose && (
+            <p className="mt-1 text-xs text-[color:var(--color-danger)]">
+              Укажи единицу дозы: мл, таб., мг, кап. и т.д.
+            </p>
+          )}
         </label>
 
         <label className="block">
-          <span className="block text-sm text-muted">Минимальный интервал, мин</span>
+          <span className="block text-sm text-muted">
+            Минимальный интервал, {intervalUnit === "minutes" ? "минут" : "часов"}
+          </span>
           <input
             type="number"
             min="1"
-            max="60"
-            value={minIntervalHours}
-            onChange={(e) => setMinIntervalHours(e.target.value)}
+            max={intervalUnit === "minutes" ? "1440" : "24"}
+            step={intervalUnit === "minutes" ? "1" : "0.5"}
+            value={minIntervalInput}
+            onChange={(e) => setMinIntervalInput(e.target.value)}
             className="soft-input mt-1 w-full rounded-2xl px-3 py-2"
           />
         </label>
@@ -1643,6 +1787,26 @@ function MedicationPlanComposer({
             <p className="mt-1 text-xs text-muted">
               Последний вес: {latestWeight.valueKg} кг от {formatDate(latestWeight.measuredAt)}
             </p>
+          )}
+          {shouldOfferWeightSync && (
+            <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">
+              <p>В плане указан вес {parsedWeightKg} кг. Обновить его и в карточке ребёнка?</p>
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (parsedWeightKg === null) {
+                      return;
+                    }
+                    syncWeightMutation.mutate(parsedWeightKg);
+                  }}
+                  disabled={syncWeightMutation.isPending}
+                  className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                >
+                  {syncWeightMutation.isPending ? "Сохраняем вес…" : "Обновить вес ребёнка"}
+                </button>
+              </div>
+            </div>
           )}
         </label>
 
@@ -1679,15 +1843,14 @@ function MedicationPlanComposer({
         <button
           type="button"
           onClick={() => {
-            const parsedInterval = parseInt(minIntervalHours, 10);
-            if (!selectedMedicineId || !doseAmount.trim() || Number.isNaN(parsedInterval)) {
+            if (!selectedMedicineId || parsedIntervalMinutes === null || hasInvalidDose) {
               return;
             }
 
             onSubmit({
               householdMedicineId: selectedMedicineId,
               doseAmount: doseAmount.trim(),
-              minIntervalHours: parsedInterval,
+              minIntervalMinutes: parsedIntervalMinutes,
               maxDosesPerDay: parseNullableInteger(maxDosesPerDay),
               weightKg: parseNullableNumber(weightKg),
               doseMgPerKg: parseNullableNumber(doseMgPerKg),
@@ -1697,14 +1860,20 @@ function MedicationPlanComposer({
             if (!initialValue) {
               setSelectedMedicineId("");
               setDoseAmount("");
-              setMinIntervalHours("3");
+              setMinIntervalInput(intervalUnit === "minutes" ? "180" : "3");
               setMaxDosesPerDay("");
               setDoseMgPerKg("");
               setNotes("");
             }
             onCancel?.();
           }}
-          disabled={isPending || !selectedMedicineId || !doseAmount.trim() || !minIntervalHours}
+          disabled={
+            isPending ||
+            !selectedMedicineId ||
+            !minIntervalInput ||
+            hasInvalidDose ||
+            parsedIntervalMinutes === null
+          }
           className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
         >
           {isPending ? "Сохраняем…" : submitLabel}
@@ -1726,6 +1895,7 @@ function MedicationPlanComposer({
 
 function MedicationPlanList({
   plans,
+  childId,
   medicines,
   administrations,
   latestWeight,
@@ -1737,6 +1907,7 @@ function MedicationPlanList({
   isSubmittingAdministration = false,
 }: {
   plans: Array<DraftMedicationPlan | EpisodeMedicationPlan>;
+  childId: string;
   medicines: HouseholdMedicine[];
   administrations?: AdministrationEvent[];
   latestWeight: WeightEntry | null;
@@ -1751,6 +1922,13 @@ function MedicationPlanList({
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [actionMenuPlanId, setActionMenuPlanId] = useState<string | null>(null);
   const now = useNow();
+  const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
+
+  const collapsePlan = (planId: string) => {
+    setActionMenuPlanId((current) => (current === planId ? null : current));
+    setExpandedPlanId((current) => (current === planId ? null : current));
+    setEditingPlanId((current) => (current === planId ? null : current));
+  };
 
   return (
     <div className="space-y-3">
@@ -1775,17 +1953,16 @@ function MedicationPlanList({
         );
         const isExpanded = expandedPlanId === plan.id;
         const isEditing = editingPlanId === plan.id;
-        const summaryLabel = stats?.availabilityLabel ?? "План лекарства настроен";
-        const lastAdministrationLabel = stats?.lastAdministration
-          ? `Дали в ${formatClockTime(stats.lastAdministration.administeredAt)}`
-          : "Ещё не давали";
+        const todayCountLabel = plan.maxDosesPerDay
+          ? `Сегодня ${stats?.todayCount ?? 0} из ${plan.maxDosesPerDay}`
+          : `Сегодня ${stats?.todayCount ?? 0}`;
         const nextDoseLabel = stats?.blockedByDailyLimit
-          ? "На сегодня лимит уже достигнут"
+          ? "Следующий приём: лимит на сегодня достигнут"
           : stats?.nextAllowedAt
             ? stats.nextAllowedAt <= new Date()
-              ? "Следующую дозу уже можно"
-              : `Следующая после ${formatClockTime(stats.nextAllowedAt)}`
-            : "Первую дозу можно дать сразу";
+              ? "Следующий приём: можно сейчас"
+              : `Следующий приём: ${formatClockTime(stats.nextAllowedAt)}`
+            : "Следующий приём: можно сейчас";
         const nextDoseToneClass = stats?.blockedByDailyLimit
           ? "soft-pill-danger"
           : stats?.nextAllowedAt
@@ -1793,34 +1970,50 @@ function MedicationPlanList({
               ? "soft-pill-success"
               : "soft-pill-warning"
             : "soft-pill-info";
+        const togglePlanActions = () => {
+          if (
+            actionMenuPlanId === plan.id ||
+            expandedPlanId === plan.id ||
+            editingPlanId === plan.id
+          ) {
+            collapsePlan(plan.id);
+            return;
+          }
+          setActionMenuPlanId(plan.id);
+        };
 
         return (
           <div key={plan.id} className="soft-card rounded-[24px] px-4 py-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div
+              className="flex cursor-pointer flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+              onClick={togglePlanActions}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  togglePlanActions();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-expanded={actionMenuPlanId === plan.id || isExpanded || isEditing}
+            >
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-start justify-between gap-3">
                   <p className="text-base font-semibold text-foreground">
                     {medicine?.medicineName ?? "Лекарство"}
                   </p>
-                  <span className="soft-pill-info rounded-full px-2.5 py-1 text-xs">
-                    {plan.doseAmount}
-                  </span>
-                  <span className="soft-pill rounded-full px-2.5 py-1 text-xs">
-                    {plan.maxDosesPerDay
-                      ? `Сегодня ${stats?.todayCount ?? 0}/${plan.maxDosesPerDay}`
-                      : `Сегодня ${stats?.todayCount ?? 0}`}
-                  </span>
-                  <span className="soft-pill rounded-full px-2.5 py-1 text-xs">
-                    {plan.minIntervalHours} мин
+                  <span className="soft-pill rounded-full px-2.5 py-1 text-[11px] sm:hidden">
+                    {actionMenuPlanId === plan.id || isExpanded || isEditing ? "Скрыть" : "Открыть"}
                   </span>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted">
-                  <p>{lastAdministrationLabel}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="soft-pill rounded-full px-2.5 py-1 text-xs">
+                    {todayCountLabel}
+                  </span>
                   <p className={`${nextDoseToneClass} rounded-full px-2.5 py-1 text-xs`}>
                     {nextDoseLabel}
                   </p>
                 </div>
-                <p className="mt-2 text-sm text-muted">{summaryLabel}</p>
                 {isMedicineUnavailable && (
                   <p className="mt-2 text-sm text-[color:var(--color-danger)]">
                     Эта упаковка сейчас недоступна для приёма.
@@ -1828,28 +2021,42 @@ function MedicationPlanList({
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="hidden flex-wrap gap-2 sm:flex">
                 {onTakeDose && "createdAt" in plan && (
                   <button
                     type="button"
-                    onClick={() => onTakeDose(plan as EpisodeMedicationPlan)}
-                    disabled={isSubmittingAdministration || !!stats?.isBlocked || isMedicineUnavailable}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onTakeDose(plan as EpisodeMedicationPlan);
+                    }}
+                    disabled={
+                      isSubmittingAdministration || !!stats?.isBlocked || isMedicineUnavailable
+                    }
                     className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
                   >
-                      {isSubmittingAdministration
-                        ? "Отмечаем…"
-                        : isMedicineUnavailable
-                          ? "Недоступно"
-                          : stats?.isBlocked
-                            ? "Пока рано"
-                            : "Дать препарат"}
+                    {isSubmittingAdministration
+                      ? "Отмечаем…"
+                      : isMedicineUnavailable
+                        ? "Недоступно"
+                        : stats?.isBlocked
+                          ? "Пока рано"
+                          : "Дать препарат"}
                   </button>
                 )}
                 <button
                   type="button"
-                  onClick={() =>
-                    setActionMenuPlanId((current) => (current === plan.id ? null : plan.id))
-                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (
+                      actionMenuPlanId === plan.id ||
+                      expandedPlanId === plan.id ||
+                      editingPlanId === plan.id
+                    ) {
+                      collapsePlan(plan.id);
+                      return;
+                    }
+                    setActionMenuPlanId(plan.id);
+                  }}
                   className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
                 >
                   Ещё
@@ -1857,33 +2064,57 @@ function MedicationPlanList({
               </div>
             </div>
 
+            {onTakeDose && "createdAt" in plan && (
+              <div className="mt-3 sm:hidden">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onTakeDose(plan as EpisodeMedicationPlan);
+                  }}
+                  disabled={
+                    isSubmittingAdministration || !!stats?.isBlocked || isMedicineUnavailable
+                  }
+                  className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                >
+                  {isSubmittingAdministration
+                    ? "Отмечаем…"
+                    : isMedicineUnavailable
+                      ? "Недоступно"
+                      : stats?.isBlocked
+                        ? "Пока рано"
+                        : "Дать препарат"}
+                </button>
+              </div>
+            )}
+
             {actionMenuPlanId === plan.id && (
-              <div className="mt-3 flex flex-wrap gap-2 border-t border-border/70 pt-3">
+              <div className="mt-3 grid gap-2 border-t border-border/70 pt-3 sm:flex sm:flex-wrap">
                 <button
                   type="button"
                   onClick={() => {
                     setExpandedPlanId((current) => (current === plan.id ? null : plan.id));
                     setActionMenuPlanId(null);
                   }}
-                  className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                  className="soft-button-secondary w-full rounded-2xl px-4 py-3 text-sm sm:w-auto sm:py-2.5"
                 >
                   {isExpanded ? "Скрыть детали" : "Подробнее"}
                 </button>
                 {"createdAt" in plan && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const shouldFinish = window.confirm(
-                            `Завершить план для «${medicine?.medicineName ?? "лекарства"}»? Он исчезнет из активного эпизода.`
-                          );
-                          if (!shouldFinish) {
-                            return;
-                          }
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const shouldFinish = window.confirm(
+                        `Завершить план для «${medicine?.medicineName ?? "лекарства"}»? Он исчезнет из активного эпизода.`
+                      );
+                      if (!shouldFinish) {
+                        return;
+                      }
                       onDelete(plan.id);
                       setActionMenuPlanId(null);
                     }}
                     disabled={isDeleting}
-                    className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                    className="soft-button-secondary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:w-auto sm:py-2.5"
                   >
                     {isDeleting ? "Завершаем…" : "Завершить план"}
                   </button>
@@ -1902,7 +2133,7 @@ function MedicationPlanList({
                       setEditingPlanId(plan.id);
                       setActionMenuPlanId(null);
                     }}
-                    className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                    className="soft-button-secondary w-full rounded-2xl px-4 py-3 text-sm sm:w-auto sm:py-2.5"
                   >
                     Изменить план
                   </button>
@@ -1920,7 +2151,7 @@ function MedicationPlanList({
                     setActionMenuPlanId(null);
                   }}
                   disabled={isDeleting}
-                  className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                  className="soft-button-secondary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:w-auto sm:py-2.5"
                 >
                   {isDeleting ? "Удаляем…" : "Удалить план"}
                 </button>
@@ -1932,12 +2163,13 @@ function MedicationPlanList({
                 {isEditing ? (
                   <MedicationPlanComposer
                     key={plan.id}
+                    childId={childId}
                     medicines={editableMedicines}
                     latestWeight={latestWeight}
                     initialValue={{
                       householdMedicineId: plan.householdMedicineId,
                       doseAmount: plan.doseAmount,
-                      minIntervalHours: plan.minIntervalHours,
+                      minIntervalMinutes: plan.minIntervalMinutes,
                       maxDosesPerDay: plan.maxDosesPerDay,
                       weightKg: plan.weightKg,
                       doseMgPerKg: plan.doseMgPerKg,
@@ -1953,12 +2185,15 @@ function MedicationPlanList({
                   />
                 ) : (
                   <div className="space-y-2 text-sm text-muted">
+                    {plan.doseAmount && <p>Разовая доза: {plan.doseAmount}</p>}
                     <p>
                       {medicine?.medicineForm ?? "Форма не указана"}
-                      {medicine?.medicineConcentration ? ` · ${medicine.medicineConcentration}` : ""}
+                      {medicine?.medicineConcentration
+                        ? ` · ${medicine.medicineConcentration}`
+                        : ""}
                     </p>
                     <p>
-                      Интервал: каждые {plan.minIntervalHours} мин
+                      Интервал: {formatIntervalForDisplay(plan.minIntervalMinutes, intervalUnit)}
                       {plan.maxDosesPerDay ? ` · до ${plan.maxDosesPerDay} раз в сутки` : ""}
                     </p>
                     {stats && (
@@ -1969,7 +2204,11 @@ function MedicationPlanList({
                             ? formatDateTime(stats.lastAdministration.administeredAt)
                             : "ещё не отмечен"}
                         </p>
-                        {plan.maxDosesPerDay && <p>Сегодня: {stats.todayCount} из {plan.maxDosesPerDay}</p>}
+                        {plan.maxDosesPerDay && (
+                          <p>
+                            Сегодня: {stats.todayCount} из {plan.maxDosesPerDay}
+                          </p>
+                        )}
                       </>
                     )}
                     {weightHint && <p>{weightHint}</p>}

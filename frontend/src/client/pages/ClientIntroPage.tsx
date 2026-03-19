@@ -10,7 +10,8 @@ import { useAppStore } from "@shared/store/useAppStore";
 export function ClientIntroPage() {
   const navigate = useNavigate();
   const markWorkspaceIntroSeen = useAppStore((s) => s.markWorkspaceIntroSeen);
-  const { isResolving, startRoute, hasFamily, hasChildren, hasActiveEpisode } = useClientStartRoute();
+  const { isResolving, startRoute, hasFamily, hasChildren, hasActiveEpisode } =
+    useClientStartRoute();
 
   const handleContinue = () => {
     markWorkspaceIntroSeen();
@@ -60,7 +61,9 @@ export function ClientIntroPage() {
           <div>
             <p className="text-sm font-medium text-foreground">Следующий маршрут</p>
             <p className="mt-1 text-sm leading-6 text-muted">
-              {isResolving ? "Подбираем лучший стартовый экран…" : `Откроем ${labelForRoute(startRoute)}.`}
+              {isResolving
+                ? "Подбираем лучший стартовый экран…"
+                : `Откроем ${labelForRoute(startRoute)}.`}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -99,15 +102,13 @@ function SetupStep({
   tone: "ready" | "next" | "idle";
 }) {
   const toneClassName =
-    tone === "ready"
-      ? "soft-pill-success"
-      : tone === "next"
-        ? "soft-pill-primary"
-        : "soft-pill";
+    tone === "ready" ? "soft-pill-success" : tone === "next" ? "soft-pill-primary" : "soft-pill";
 
   return (
     <div className="soft-card rounded-[24px] px-4 py-4 sm:px-5">
-      <span className={`${toneClassName} inline-flex rounded-full px-3 py-1 text-xs`}>{status}</span>
+      <span className={`${toneClassName} inline-flex rounded-full px-3 py-1 text-xs`}>
+        {status}
+      </span>
       <h2 className="mt-4 text-lg font-semibold text-foreground">{title}</h2>
       <p className="mt-2 text-sm leading-7 text-muted">{description}</p>
     </div>

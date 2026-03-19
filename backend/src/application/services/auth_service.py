@@ -7,6 +7,7 @@ from src.application.dto.auth import (
     AuthenticatedAccount,
     AuthResponseDto,
     AuthStateResponseDto,
+    ChangePasswordDto,
     LoginDto,
     RefreshDto,
     RegisterDto,
@@ -149,3 +150,22 @@ class AuthService(BaseAuthService):
 
     async def logout(self, account_id: UUID) -> None:
         await self._session_repo.delete_by_account_id(account_id)
+
+    async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None:
+            raise UnauthorizedError()
+        if not verify_password(dto.current_password, account.password_hash):
+            raise ValidationError("Текущий пароль указан неверно")
+        if dto.current_password == dto.new_password:
+            raise ValidationError("Новый пароль должен отличаться от текущего")
+        await self._account_repo.update(
+            Account(
+                id=account.id,
+                email=account.email,
+                password_hash=hash_password(dto.new_password),
+                family_id=account.family_id,
+                push_before_reminder_minutes=account.push_before_reminder_minutes,
+                created_at=account.created_at,
+            )
+        )

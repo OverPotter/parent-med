@@ -11,7 +11,7 @@ interface RawEpisodeMedicationPlan {
   episode_id: string;
   household_medicine_id: string;
   dose_amount: string;
-  min_interval_hours: number;
+  min_interval_minutes: number;
   max_doses_per_day: number | null;
   weight_kg: number | null;
   dose_mg_per_kg: number | null;
@@ -32,7 +32,7 @@ export async function createEpisodeMedicationPlan(body: {
   episode_id: string;
   household_medicine_id: string;
   dose_amount: string;
-  min_interval_hours: number;
+  min_interval_minutes: number;
   max_doses_per_day?: number | null;
   weight_kg?: number | null;
   dose_mg_per_kg?: number | null;
@@ -47,7 +47,7 @@ export async function updateEpisodeMedicationPlan(
   body: {
     household_medicine_id?: string;
     dose_amount?: string;
-    min_interval_hours?: number;
+    min_interval_minutes?: number;
     max_doses_per_day?: number | null;
     weight_kg?: number | null;
     dose_mg_per_kg?: number | null;

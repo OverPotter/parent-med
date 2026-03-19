@@ -117,7 +117,7 @@ interface RawEpisodeMedicationPlan {
   episode_id: string;
   household_medicine_id: string;
   dose_amount: string;
-  min_interval_hours: number;
+  min_interval_minutes: number;
   max_doses_per_day: number | null;
   weight_kg: number | null;
   dose_mg_per_kg: number | null;
@@ -244,7 +244,7 @@ export function toEpisodeMedicationPlan(r: RawEpisodeMedicationPlan): EpisodeMed
     episodeId: r.episode_id,
     householdMedicineId: r.household_medicine_id,
     doseAmount: r.dose_amount,
-    minIntervalHours: r.min_interval_hours,
+    minIntervalMinutes: r.min_interval_minutes,
     maxDosesPerDay: r.max_doses_per_day ?? null,
     weightKg: r.weight_kg ?? null,
     doseMgPerKg: r.dose_mg_per_kg ?? null,

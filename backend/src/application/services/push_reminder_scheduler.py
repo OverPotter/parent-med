@@ -48,6 +48,28 @@ except ImportError:  # pragma: no cover - зависит от окружения
     Vapid01 = None  # type: ignore[assignment]
 
 
+def _format_due_body(child_name: str, medicine_name: str, dose_amount: str) -> str:
+    dose_text = dose_amount.strip()
+    if dose_text:
+        return f"{child_name}: сейчас можно дать {medicine_name} {dose_text}."
+    return f"{child_name}: сейчас пора дать {medicine_name}."
+
+
+def _format_before_body(
+    child_name: str,
+    medicine_name: str,
+    dose_amount: str,
+    reminder_before_minutes: int,
+) -> str:
+    dose_text = dose_amount.strip()
+    if dose_text:
+        return (
+            f"{child_name}: через {reminder_before_minutes} мин можно дать "
+            f"{medicine_name} {dose_text}."
+        )
+    return f"{child_name}: через {reminder_before_minutes} мин можно будет дать {medicine_name}."
+
+
 class PushNotificationScheduler:
     """Серверный фоновой poller для web push."""
 
@@ -158,7 +180,7 @@ class PushNotificationScheduler:
                     continue
 
                 next_allowed_at = last_administration.administered_at + timedelta(
-                    minutes=plan.min_interval_hours
+                    minutes=plan.min_interval_minutes
                 )
 
                 subscriptions = await subscription_repo.get_by_account_id(account.id)
@@ -168,7 +190,7 @@ class PushNotificationScheduler:
                 preferred_before_minutes = account.push_before_reminder_minutes or DEFAULT_REMINDER_BEFORE_MINUTES
                 reminder_before_minutes = min(
                     preferred_before_minutes,
-                    max(plan.min_interval_hours - 1, 0),
+                    max(plan.min_interval_minutes - 1, 0),
                 )
                 if reminder_before_minutes > 0:
                     remind_at = next_allowed_at - timedelta(minutes=reminder_before_minutes)
@@ -178,9 +200,11 @@ class PushNotificationScheduler:
                     ):
                         payload = {
                             "title": f"{medicine.medicine_name} скоро можно дать",
-                            "body": (
-                                f"{child.name}: через {reminder_before_minutes} мин можно дать "
-                                f"{plan.dose_amount}."
+                            "body": _format_before_body(
+                                child.name,
+                                medicine.medicine_name,
+                                plan.dose_amount,
+                                reminder_before_minutes,
                             ),
                             "url": f"/children/{child.id}/illness",
                             "tag": f"plan-before-{plan.id}-{int(next_allowed_at.timestamp())}",
@@ -201,7 +225,11 @@ class PushNotificationScheduler:
                 if now >= next_allowed_at and plan.last_due_notification_for_at != next_allowed_at:
                     payload = {
                         "title": f"Можно дать {medicine.medicine_name}",
-                        "body": f"{child.name}: сейчас можно дать {plan.dose_amount}.",
+                        "body": _format_due_body(
+                            child.name,
+                            medicine.medicine_name,
+                            plan.dose_amount,
+                        ),
                         "url": f"/children/{child.id}/illness",
                         "tag": f"plan-due-{plan.id}-{int(next_allowed_at.timestamp())}",
                         "data": {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { logout } from "@shared/api/auth";
+import { changePassword, logout } from "@shared/api/auth";
 import {
   deletePushSubscription,
   fetchPushNotificationConfig,
@@ -8,6 +8,7 @@ import {
   updatePushNotificationPreferences,
   upsertPushSubscription,
 } from "@shared/api/pushNotifications";
+import { DisclosureHeader } from "@shared/components/DisclosureHeader";
 import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
 import {
@@ -25,10 +26,18 @@ export function AccountPage() {
   const accountEmail = useAppStore((s) => s.accountEmail);
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
+  const medicationIntervalUnit = useAppStore((s) => s.medicationIntervalUnit);
+  const setMedicationIntervalUnit = useAppStore((s) => s.setMedicationIntervalUnit);
   const clearSession = useAppStore((s) => s.clearSession);
   const [pushStatus, setPushStatus] = useState<"checking" | "enabled" | "disabled">("checking");
   const [pushError, setPushError] = useState<string | null>(null);
   const [isPushPending, setIsPushPending] = useState(false);
+  const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
   const pushSupportIssue = getPushSupportIssue();
   const isPushEnabled = pushStatus === "enabled";
@@ -103,9 +112,24 @@ export function AccountPage() {
     };
   }, []);
 
-  const handleChangePassword = () => {
-    window.alert("Смена пароля появится позже, когда будет готов backend API.");
-  };
+  const changePasswordMutation = useMutation({
+    mutationFn: (payload: { current_password: string; new_password: string }) =>
+      changePassword(payload),
+    onSuccess: () => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordError(null);
+      setPasswordSuccess("Пароль обновлён.");
+    },
+    onError: (error) => {
+      setPasswordSuccess(null);
+      setPasswordError(
+        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
+          (error instanceof Error ? error.message : "Не удалось сменить пароль.")
+      );
+    },
+  });
 
   const handleEnablePush = async () => {
     if (pushSupportIssue) {
@@ -145,7 +169,9 @@ export function AccountPage() {
       setPushStatus("enabled");
     } catch (error) {
       setPushError(
-        error instanceof Error ? error.message : "Не удалось включить уведомления на этом устройстве."
+        error instanceof Error
+          ? error.message
+          : "Не удалось включить уведомления на этом устройстве."
       );
     } finally {
       setIsPushPending(false);
@@ -183,7 +209,31 @@ export function AccountPage() {
   const handleReminderMinutesChange = (value: string) => {
     setSelectedReminderMinutes(value);
     setPushError(null);
-    void updatePushPreferencesMutation.mutate(parseInt(value, 10));
+    updatePushPreferencesMutation.mutate(parseInt(value, 10));
+  };
+
+  const handleSubmitPasswordChange = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordSuccess(null);
+      setPasswordError("Заполни все поля пароля.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordSuccess(null);
+      setPasswordError("Новый пароль и подтверждение не совпадают.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordSuccess(null);
+      setPasswordError("Новый пароль должен быть не короче 6 символов.");
+      return;
+    }
+    setPasswordError(null);
+    setPasswordSuccess(null);
+    changePasswordMutation.mutate({
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
   };
 
   return (
@@ -209,13 +259,6 @@ export function AccountPage() {
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={handleChangePassword}
-            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-          >
-            Сменить пароль
-          </button>
-          <button
-            type="button"
             onClick={toggleTheme}
             className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
           >
@@ -228,6 +271,109 @@ export function AccountPage() {
           >
             Выйти из аккаунта
           </button>
+        </div>
+      </Surface>
+
+      <Surface className="p-5 sm:p-6">
+        <DisclosureHeader
+          isOpen={isPasswordFormOpen}
+          onToggle={() => setIsPasswordFormOpen((current) => !current)}
+        >
+          <>
+            <p className="text-sm font-medium text-foreground">Сменить пароль</p>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              Открывается только когда нужно, чтобы не перегружать настройки.
+            </p>
+          </>
+        </DisclosureHeader>
+        {isPasswordFormOpen && (
+          <>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <label className="block">
+                <span className="block text-sm text-muted">Текущий пароль</span>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(event) => {
+                    setCurrentPassword(event.target.value);
+                    setPasswordError(null);
+                    setPasswordSuccess(null);
+                  }}
+                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                />
+              </label>
+              <label className="block">
+                <span className="block text-sm text-muted">Новый пароль</span>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => {
+                    setNewPassword(event.target.value);
+                    setPasswordError(null);
+                    setPasswordSuccess(null);
+                  }}
+                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                />
+              </label>
+              <label className="block">
+                <span className="block text-sm text-muted">Повтори новый пароль</span>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => {
+                    setConfirmPassword(event.target.value);
+                    setPasswordError(null);
+                    setPasswordSuccess(null);
+                  }}
+                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                />
+              </label>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSubmitPasswordChange}
+                disabled={changePasswordMutation.isPending}
+                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+              >
+                {changePasswordMutation.isPending ? "Сохраняем…" : "Обновить пароль"}
+              </button>
+              {passwordSuccess && (
+                <p className="text-sm text-[color:var(--color-success)]">{passwordSuccess}</p>
+              )}
+            </div>
+            {passwordError && (
+              <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
+                {passwordError}
+              </div>
+            )}
+          </>
+        )}
+      </Surface>
+
+      <Surface className="p-5 sm:p-6">
+        <p className="text-sm font-medium text-foreground">Планы лекарства</p>
+        <p className="mt-3 text-sm leading-7 text-muted">
+          Как показывать и вводить интервал в guided-планах: в часах или в минутах.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {(
+            [
+              { value: "hours", label: "Часы" },
+              { value: "minutes", label: "Минуты" },
+            ] as const
+          ).map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setMedicationIntervalUnit(option.value)}
+              className={`${
+                medicationIntervalUnit === option.value ? "soft-tab-active" : "soft-tab"
+              } rounded-2xl px-4 py-2.5 text-sm`}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
       </Surface>
 
@@ -265,11 +411,11 @@ export function AccountPage() {
                 : "Подключаем…"
               : isPushConfigLoading
                 ? "Проверяем сервер…"
-              : pushStatus === "checking"
-                ? "Проверяем…"
-              : isPushEnabled
-                ? "Выключить уведомления"
-                : "Включить уведомления"}
+                : pushStatus === "checking"
+                  ? "Проверяем…"
+                  : isPushEnabled
+                    ? "Выключить уведомления"
+                    : "Включить уведомления"}
           </button>
         </div>
         <div className="mt-5 border-t border-border/70 pt-4">
@@ -294,14 +440,6 @@ export function AccountPage() {
             ))}
           </div>
         </div>
-      </Surface>
-
-      <Surface className="p-5 sm:p-6">
-        <p className="text-sm font-medium text-foreground">Безопасность</p>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          Кнопка смены пароля уже показана в интерфейсе, но пока работает как заглушка. Когда
-          появится API, здесь можно будет подключить полноценную форму.
-        </p>
       </Surface>
     </div>
   );

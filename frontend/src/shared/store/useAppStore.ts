@@ -7,6 +7,7 @@ import { persist } from "zustand/middleware";
 
 type Theme = "light" | "dark";
 type Role = "client" | "admin";
+export type MedicationIntervalUnit = "hours" | "minutes";
 
 interface AppState {
   hydrated: boolean;
@@ -16,6 +17,8 @@ interface AppState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  medicationIntervalUnit: MedicationIntervalUnit;
+  setMedicationIntervalUnit: (unit: MedicationIntervalUnit) => void;
   /** Роль пользователя (MVP: по умолчанию client). */
   role: Role;
   setRole: (role: Role) => void;
@@ -59,6 +62,8 @@ export const useAppStore = create<AppState>()(
           return { theme: next };
         });
       },
+      medicationIntervalUnit: "hours",
+      setMedicationIntervalUnit: (unit) => set({ medicationIntervalUnit: unit }),
       role: "client",
       setRole: (role) => set({ role }),
       authToken: null,
@@ -102,6 +107,7 @@ export const useAppStore = create<AppState>()(
       name: "parent-med-app",
       partialize: (s) => ({
         theme: s.theme,
+        medicationIntervalUnit: s.medicationIntervalUnit,
         role: s.role,
         hasSeenWorkspaceIntro: s.hasSeenWorkspaceIntro,
         authToken: s.authToken,

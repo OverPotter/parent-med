@@ -13,7 +13,7 @@ export function TopNav({ links }: { links: LayoutNavLink[] }) {
 
   return (
     <nav className="hidden md:flex md:justify-center">
-      <div className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/66 p-1.5 backdrop-blur-xl">
+      <div className="soft-nav-shell inline-flex items-center gap-1.5 rounded-full p-1.5">
         {links.map(({ to, label }) => (
           <NavLink
             key={to}

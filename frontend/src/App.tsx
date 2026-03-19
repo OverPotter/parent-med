@@ -5,10 +5,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
-import {
-  fetchPushNotificationConfig,
-  upsertPushSubscription,
-} from "@shared/api/pushNotifications";
+import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { setBearerToken, setRefreshHandler } from "@shared/api/client";
 import { useAppStore } from "@shared/store/useAppStore";

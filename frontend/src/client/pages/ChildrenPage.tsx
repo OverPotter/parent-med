@@ -197,15 +197,14 @@ export function ChildrenPage() {
             {children.map((child, index) => {
               const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
               const episodes = historyQueries[index]?.data ?? [];
-              const reminder =
-                activeEpisode
-                  ? getEpisodeMedicationReminder(
-                      medicationPlanQueries[index]?.data ?? [],
-                      administrationQueries[index]?.data ?? [],
-                      householdMedicines,
-                      new Date(now)
-                    )
-                  : null;
+              const reminder = activeEpisode
+                ? getEpisodeMedicationReminder(
+                    medicationPlanQueries[index]?.data ?? [],
+                    administrationQueries[index]?.data ?? [],
+                    householdMedicines,
+                    new Date(now)
+                  )
+                : null;
 
               return (
                 <ChildCard
@@ -243,7 +242,9 @@ export function ChildrenPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-foreground">Нужно добавить ещё ребёнка?</p>
-                  <p className="mt-1 text-sm text-muted">Кнопка перенесена вниз, чтобы не мешать списку.</p>
+                  <p className="mt-1 text-sm text-muted">
+                    Кнопка перенесена вниз, чтобы не мешать списку.
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -388,19 +389,38 @@ function ChildCard({
 }) {
   const [draftName, setDraftName] = useState(child.name);
   const [draftBirthDate, setDraftBirthDate] = useState(child.birthDate ?? "");
+  const primaryActionLabel = hasActiveEpisode ? "Открыть" : "Начать";
 
   return (
     <li>
-      <RowSurface className={hasActiveEpisode ? "soft-card-status-danger" : "soft-card-status-success"}>
+      <RowSurface
+        className={hasActiveEpisode ? "soft-card-status-danger" : "soft-card-status-success"}
+      >
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
-              {hasActiveEpisode && (
-                <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
-                  Идёт наблюдение
-                </span>
-              )}
+          <div
+            className="min-w-0 cursor-pointer"
+            onClick={onStartEpisode}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onStartEpisode();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
+                {hasActiveEpisode && (
+                  <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
+                    Идёт наблюдение
+                  </span>
+                )}
+              </div>
+              <span className="soft-pill rounded-full px-3 py-1 text-xs sm:hidden">
+                {primaryActionLabel}
+              </span>
             </div>
             <p className="mt-3 text-sm leading-7 text-muted">
               {child.ageLabel ? `${child.ageLabel} • ` : ""}

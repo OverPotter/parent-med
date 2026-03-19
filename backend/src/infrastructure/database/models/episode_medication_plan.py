@@ -44,7 +44,7 @@ class EpisodeMedicationPlanModel(Base):
         nullable=False,
     )
     dose_amount: Mapped[str] = mapped_column(String(64), nullable=False)
-    min_interval_hours: Mapped[int] = mapped_column(Integer, nullable=False)
+    min_interval_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     max_doses_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
     dose_mg_per_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
