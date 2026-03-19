@@ -26,7 +26,7 @@ class LoginDto(BaseModel):
 class RefreshDto(BaseModel):
     """Обновление access token по refresh token."""
 
-    refresh_token: str = Field(..., description="Refresh token")
+    refresh_token: str | None = Field(None, description="Refresh token")
 
 
 class AccountResponseDto(ResponseBase):

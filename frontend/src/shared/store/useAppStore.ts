@@ -43,7 +43,7 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       hydrated: false,
       setHydrated: (value) => set({ hydrated: value }),
-      theme: "light",
+      theme: "dark",
       setTheme: (theme) => {
         set({ theme });
         document.documentElement.setAttribute("data-theme", theme);

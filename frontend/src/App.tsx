@@ -16,6 +16,8 @@ import { FamilyPage } from "@client/pages/FamilyPage";
 import { ChildrenPage } from "@client/pages/ChildrenPage";
 import { MedicineCabinetPage } from "@client/pages/MedicineCabinetPage";
 import { ChildIllnessPage } from "@client/pages/ChildIllnessPage";
+import { ActiveIllnessesPage } from "@client/pages/ActiveIllnessesPage";
+import { IllnessHistoryPage } from "@client/pages/IllnessHistoryPage";
 import { AdminLayout } from "@admin/layout/AdminLayout";
 import { AdminHomePage } from "@admin/pages/AdminHomePage";
 
@@ -28,9 +30,33 @@ function ThemeSync() {
   return null;
 }
 
+function DisplayModeSync() {
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(display-mode: standalone)");
+
+    const applyDisplayMode = () => {
+      const isStandalone =
+        mediaQuery.matches ||
+        Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
+      document.documentElement.setAttribute(
+        "data-display-mode",
+        isStandalone ? "standalone" : "browser"
+      );
+    };
+
+    applyDisplayMode();
+    mediaQuery.addEventListener("change", applyDisplayMode);
+
+    return () => mediaQuery.removeEventListener("change", applyDisplayMode);
+  }, []);
+
+  return null;
+}
+
 function AuthSync() {
   const queryClient = useQueryClient();
   const authToken = useAppStore((s) => s.authToken);
+  const accountId = useAppStore((s) => s.accountId);
   const refreshToken = useAppStore((s) => s.refreshToken);
   const setSession = useAppStore((s) => s.setSession);
   const setAuthState = useAppStore((s) => s.setAuthState);
@@ -41,10 +67,6 @@ function AuthSync() {
   }, [authToken]);
 
   useEffect(() => {
-    if (!refreshToken) {
-      setRefreshHandler(null);
-      return;
-    }
     setRefreshHandler(async () => {
       const nextSession = await refreshSession(refreshToken);
       setSession(nextSession);
@@ -55,9 +77,9 @@ function AuthSync() {
   }, [refreshToken, setSession]);
 
   const { data, error } = useQuery({
-    queryKey: ["auth", "me", authToken],
+    queryKey: ["auth", "me", authToken, accountId],
     queryFn: fetchMe,
-    enabled: !!authToken,
+    enabled: true,
     retry: false,
     staleTime: 0,
   });
@@ -90,6 +112,7 @@ function AuthSync() {
 export default function App() {
   const role = useAppStore((s) => s.role);
   const authToken = useAppStore((s) => s.authToken);
+  const accountId = useAppStore((s) => s.accountId);
   const hydrated = useAppStore((s) => s.hydrated);
 
   if (!hydrated) {
@@ -99,9 +122,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <ThemeSync />
+      <DisplayModeSync />
       <AuthSync />
       <Routes>
-        {!authToken ? (
+        {!(authToken || accountId) ? (
           <>
             <Route path="/" element={<AuthPage />} />
             <Route path="/auth" element={<Navigate to="/" replace />} />
@@ -122,6 +146,8 @@ export default function App() {
               <Route index element={<ClientHomePage />} />
               <Route path="family" element={<FamilyPage />} />
               <Route path="children" element={<ChildrenPage />} />
+              <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
+              <Route path="illnesses/history" element={<IllnessHistoryPage />} />
               <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
               <Route path="children/:childId/illness" element={<ChildIllnessPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

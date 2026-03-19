@@ -38,7 +38,10 @@ function toAuthResponse(raw: RawAuthResponse): AuthSessionResponse {
   };
 }
 
-function toAuthState(raw: { account: RawAccount; family: { id: string; name: string } }): AuthStateResponse {
+function toAuthState(raw: {
+  account: RawAccount;
+  family: { id: string; name: string };
+}): AuthStateResponse {
   return {
     account: toAccount(raw.account),
     family: toFamily(raw.family),
@@ -49,7 +52,7 @@ export async function register(payload: {
   email: string;
   password: string;
 }): Promise<AuthSessionResponse> {
-  const res = await apiClient.post<RawAuthResponse>("/auth/register", payload);
+  const res = await apiClient.post<RawAuthResponse>("/auth/signup", payload);
   return toAuthResponse(res.data);
 }
 
@@ -57,19 +60,27 @@ export async function login(payload: {
   email: string;
   password: string;
 }): Promise<AuthSessionResponse> {
-  const res = await apiClient.post<RawAuthResponse>("/auth/login", payload);
+  const res = await apiClient.post<RawAuthResponse>("/auth/signin", payload);
   return toAuthResponse(res.data);
 }
 
-export async function refreshSession(refreshToken: string): Promise<AuthSessionResponse> {
-  const res = await apiClient.post<RawAuthResponse>("/auth/refresh", {
-    refresh_token: refreshToken,
-  });
+export async function refreshSession(refreshToken?: string | null): Promise<AuthSessionResponse> {
+  const res = await apiClient.post<RawAuthResponse>(
+    "/auth/refresh",
+    refreshToken
+      ? {
+          refresh_token: refreshToken,
+        }
+      : undefined
+  );
   return toAuthResponse(res.data);
 }
 
 export async function fetchMe(): Promise<AuthStateResponse> {
-  const res = await apiClient.get<{ account: RawAccount; family: { id: string; name: string } }>("/auth/me");
+  const res = await apiClient.get<{
+    account: RawAccount;
+    family: { id: string; name: string };
+  }>("/auth/me");
   return toAuthState(res.data);
 }
 
