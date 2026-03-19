@@ -13,4 +13,5 @@ class Account:
     email: str
     password_hash: str
     family_id: UUID
+    push_before_reminder_minutes: int
     created_at: datetime

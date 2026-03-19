@@ -5,20 +5,25 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
 import {
   createChild,
   deleteChild,
   fetchChildrenByFamilyId,
   updateChild,
 } from "@shared/api/children";
+import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
+import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import {
   fetchActiveIllnessEpisodeByChildId,
   fetchIllnessEpisodesByChildId,
 } from "@shared/api/illnessEpisodes";
 import { DateField } from "@shared/components/DateField";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
+import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child } from "@shared/types/api";
+import { getEpisodeMedicationReminder } from "../utils/medicationPlans";
 import { formatDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
 
@@ -29,6 +34,7 @@ export function ChildrenPage() {
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormResetKey, setCreateFormResetKey] = useState(0);
+  const now = useNow();
 
   const {
     data: children = [],
@@ -37,6 +43,12 @@ export function ChildrenPage() {
   } = useQuery({
     queryKey: ["children", currentFamilyId],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
+    enabled: !!currentFamilyId,
+  });
+
+  const { data: householdMedicines = [] } = useQuery({
+    queryKey: ["household-medicines", currentFamilyId],
+    queryFn: fetchHouseholdMedicines,
     enabled: !!currentFamilyId,
   });
 
@@ -54,6 +66,28 @@ export function ChildrenPage() {
       queryFn: () => fetchIllnessEpisodesByChildId(child.id),
       enabled: !!child.id,
     })),
+  });
+
+  const medicationPlanQueries = useQueries({
+    queries: children.map((_, index) => {
+      const activeEpisodeId = activeEpisodeQueries[index]?.data?.id;
+      return {
+        queryKey: ["episode-medication-plans", activeEpisodeId],
+        queryFn: () => fetchEpisodeMedicationPlansByEpisodeId(activeEpisodeId!),
+        enabled: !!activeEpisodeId,
+      };
+    }),
+  });
+
+  const administrationQueries = useQueries({
+    queries: children.map((_, index) => {
+      const activeEpisodeId = activeEpisodeQueries[index]?.data?.id;
+      return {
+        queryKey: ["administration-events", activeEpisodeId],
+        queryFn: () => fetchAdministrationEventsByEpisodeId(activeEpisodeId!),
+        enabled: !!activeEpisodeId,
+      };
+    }),
   });
 
   const createMutation = useMutation({
@@ -163,6 +197,15 @@ export function ChildrenPage() {
             {children.map((child, index) => {
               const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
               const episodes = historyQueries[index]?.data ?? [];
+              const reminder =
+                activeEpisode
+                  ? getEpisodeMedicationReminder(
+                      medicationPlanQueries[index]?.data ?? [],
+                      administrationQueries[index]?.data ?? [],
+                      householdMedicines,
+                      new Date(now)
+                    )
+                  : null;
 
               return (
                 <ChildCard
@@ -171,6 +214,7 @@ export function ChildrenPage() {
                   isEditing={editingChildId === child.id}
                   activeEpisodeStartedAt={activeEpisode?.startedAt ?? null}
                   episodeCount={episodes.length}
+                  medicationReminder={reminder}
                   onEditToggle={() =>
                     setEditingChildId((current) => (current === child.id ? null : child.id))
                   }
@@ -318,6 +362,7 @@ function ChildCard({
   isEditing,
   activeEpisodeStartedAt,
   episodeCount,
+  medicationReminder,
   onEditToggle,
   onDelete,
   onSave,
@@ -331,6 +376,7 @@ function ChildCard({
   isEditing: boolean;
   activeEpisodeStartedAt: string | null;
   episodeCount: number;
+  medicationReminder: { tone: "success" | "warning" | "danger" | "muted"; text: string } | null;
   onEditToggle: () => void;
   onDelete: () => void;
   onSave: (name: string, birthDate?: string | null) => void;
@@ -345,14 +391,14 @@ function ChildCard({
 
   return (
     <li>
-      <RowSurface>
+      <RowSurface className={hasActiveEpisode ? "soft-card-status-danger" : "soft-card-status-success"}>
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
               {hasActiveEpisode && (
-                <span className="soft-pill-success rounded-full px-2.5 py-1 text-xs">
-                  Активная болезнь
+                <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
+                  Идёт наблюдение
                 </span>
               )}
             </div>
@@ -362,8 +408,24 @@ function ChildCard({
               Эпизодов: {episodeCount}
             </p>
             {hasActiveEpisode && activeEpisodeStartedAt && (
-              <p className="mt-1 text-sm text-[color:var(--color-success)]">
+              <p className="mt-1 text-sm text-[color:var(--color-danger)]">
                 С текущим эпизодом с {formatDate(activeEpisodeStartedAt)}
+              </p>
+            )}
+            {hasActiveEpisode && medicationReminder && (
+              <p
+                className={[
+                  "mt-2 text-sm",
+                  medicationReminder.tone === "success"
+                    ? "text-[color:var(--color-success)]"
+                    : medicationReminder.tone === "warning"
+                      ? "text-[color:var(--color-warning)]"
+                      : medicationReminder.tone === "danger"
+                        ? "text-[color:var(--color-danger)]"
+                        : "text-muted",
+                ].join(" ")}
+              >
+                {medicationReminder.text}
               </p>
             )}
           </div>
@@ -382,10 +444,10 @@ function ChildCard({
               className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
             >
               {hasActiveEpisode
-                ? "Смотреть активный"
+                ? "Открыть болезнь"
                 : isStartingEpisode
-                  ? "Создаём…"
-                  : "Новый эпизод"}
+                  ? "Открываем…"
+                  : "Начать наблюдение"}
             </button>
             <button
               type="button"

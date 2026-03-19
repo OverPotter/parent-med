@@ -1,5 +1,7 @@
 """Утилиты для auth-cookie."""
 
+from datetime import UTC, datetime, timedelta
+
 from fastapi import Response
 
 from src.application.dto.auth import AuthResponseDto
@@ -8,10 +10,12 @@ from src.core.config import settings
 
 def set_auth_cookies(response: Response, auth: AuthResponseDto) -> None:
     """Сохраняет access/refresh токены в HttpOnly cookies."""
+    now = datetime.now(UTC)
     response.set_cookie(
         key=settings.access_cookie_name,
         value=auth.access_token,
         max_age=settings.access_token_ttl_minutes * 60,
+        expires=now + timedelta(minutes=settings.access_token_ttl_minutes),
         httponly=True,
         secure=settings.auth_cookie_secure,
         samesite=settings.auth_cookie_samesite,
@@ -21,6 +25,7 @@ def set_auth_cookies(response: Response, auth: AuthResponseDto) -> None:
         key=settings.refresh_cookie_name,
         value=auth.refresh_token,
         max_age=settings.refresh_token_ttl_days * 24 * 60 * 60,
+        expires=now + timedelta(days=settings.refresh_token_ttl_days),
         httponly=True,
         secure=settings.auth_cookie_secure,
         samesite=settings.auth_cookie_samesite,

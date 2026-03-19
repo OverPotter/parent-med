@@ -11,6 +11,7 @@ import type {
   HouseholdMedicine,
   IllnessComment,
   IllnessEpisode,
+  EpisodeMedicationPlan,
   TemperatureEntry,
   AdministrationEvent,
 } from "./api";
@@ -80,6 +81,7 @@ interface RawIllnessEpisode {
   started_at: string;
   title: string | null;
   status: string;
+  medication_mode: string;
   note: string | null;
   closed_at: string | null;
 }
@@ -108,6 +110,19 @@ interface RawAdministrationEvent {
   amount: string;
   unit: string | null;
   reason: string | null;
+}
+
+interface RawEpisodeMedicationPlan {
+  id: string;
+  episode_id: string;
+  household_medicine_id: string;
+  dose_amount: string;
+  min_interval_hours: number;
+  max_doses_per_day: number | null;
+  weight_kg: number | null;
+  dose_mg_per_kg: number | null;
+  notes: string | null;
+  created_at: string;
 }
 
 export function toFamily(r: RawFamily): Family {
@@ -185,6 +200,7 @@ export function toIllnessEpisode(r: RawIllnessEpisode): IllnessEpisode {
     startedAt: r.started_at,
     title: r.title ?? null,
     status: r.status,
+    medicationMode: r.medication_mode,
     note: r.note ?? null,
     closedAt: r.closed_at ?? null,
   };
@@ -219,5 +235,20 @@ export function toAdministrationEvent(r: RawAdministrationEvent): Administration
     amount: r.amount,
     unit: r.unit ?? null,
     reason: r.reason ?? null,
+  };
+}
+
+export function toEpisodeMedicationPlan(r: RawEpisodeMedicationPlan): EpisodeMedicationPlan {
+  return {
+    id: r.id,
+    episodeId: r.episode_id,
+    householdMedicineId: r.household_medicine_id,
+    doseAmount: r.dose_amount,
+    minIntervalHours: r.min_interval_hours,
+    maxDosesPerDay: r.max_doses_per_day ?? null,
+    weightKg: r.weight_kg ?? null,
+    doseMgPerKg: r.dose_mg_per_kg ?? null,
+    notes: r.notes ?? null,
+    createdAt: r.created_at,
   };
 }

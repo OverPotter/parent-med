@@ -12,12 +12,14 @@ from src.api.routers import (
     administration_events,
     auth,
     children,
+    episode_medication_plans,
     families,
     household_medicines,
     illness_comments,
     illness_episodes,
     medicine_catalog,
     parents,
+    push_notifications,
     temperature_entries,
     weight_entries,
 )
@@ -84,6 +86,16 @@ def create_app() -> FastAPI:
     )
     app.include_router(
         administration_events.router,
+        prefix="/api/v1",
+        dependencies=protected_dependencies,
+    )
+    app.include_router(
+        episode_medication_plans.router,
+        prefix="/api/v1",
+        dependencies=protected_dependencies,
+    )
+    app.include_router(
+        push_notifications.router,
         prefix="/api/v1",
         dependencies=protected_dependencies,
     )

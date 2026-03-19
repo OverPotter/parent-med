@@ -77,6 +77,7 @@ class AuthService(BaseAuthService):
             email=email,
             password_hash=hash_password(dto.password),
             family_id=created_family.id,
+            push_before_reminder_minutes=10,
             created_at=datetime.now(UTC),
         )
         created_account = await self._account_repo.add(account)
@@ -93,7 +94,6 @@ class AuthService(BaseAuthService):
         family = await self._family_repo.get_by_id(account.family_id)
         if family is None:
             raise ForbiddenError("У аккаунта не найдена семья", code="FAMILY_NOT_LINKED")
-        await self._session_repo.delete_by_account_id(account.id)
         return await self._create_auth_response(account, family)
 
     async def login(self, dto: LoginDto) -> AuthResponseDto:

@@ -22,6 +22,7 @@ class SqlAccountRepository(AccountRepository):
             email=model.email,
             password_hash=model.password_hash,
             family_id=model.family_id,
+            push_before_reminder_minutes=model.push_before_reminder_minutes,
             created_at=model.created_at,
         )
 
@@ -31,6 +32,7 @@ class SqlAccountRepository(AccountRepository):
             email=entity.email,
             password_hash=entity.password_hash,
             family_id=entity.family_id,
+            push_before_reminder_minutes=entity.push_before_reminder_minutes,
             created_at=entity.created_at,
         )
 
@@ -46,12 +48,32 @@ class SqlAccountRepository(AccountRepository):
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
 
+    async def get_by_family_id(self, family_id: UUID) -> Account | None:
+        result = await self._session.execute(
+            select(AccountModel).where(AccountModel.family_id == family_id)
+        )
+        row = result.scalars().one_or_none()
+        return self._to_entity(row) if row else None
+
     async def add(self, entity: Account) -> Account:
         model = self._to_model(entity)
         self._session.add(model)
         await self._session.flush()
         await self._session.refresh(model)
         return self._to_entity(model)
+
+    async def update(self, entity: Account) -> Account:
+        result = await self._session.execute(select(AccountModel).where(AccountModel.id == entity.id))
+        row = result.scalars().one_or_none()
+        if not row:
+            raise ValueError(f"Account {entity.id} not found")
+        row.email = entity.email
+        row.password_hash = entity.password_hash
+        row.family_id = entity.family_id
+        row.push_before_reminder_minutes = entity.push_before_reminder_minutes
+        await self._session.flush()
+        await self._session.refresh(row)
+        return self._to_entity(row)
 
     async def delete(self, id: UUID) -> bool:
         result = await self._session.execute(select(AccountModel).where(AccountModel.id == id))

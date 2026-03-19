@@ -21,8 +21,18 @@ class AccountRepository(BaseRepository[Account]):
         ...
 
     @abstractmethod
+    async def get_by_family_id(self, family_id: UUID) -> Account | None:
+        """Получить аккаунт по family_id."""
+        ...
+
+    @abstractmethod
     async def add(self, entity: Account) -> Account:
         """Создать аккаунт."""
+        ...
+
+    @abstractmethod
+    async def update(self, entity: Account) -> Account:
+        """Обновить аккаунт."""
         ...
 
     @abstractmethod

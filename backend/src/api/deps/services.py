@@ -7,12 +7,14 @@ from src.api.deps.repositories import (
     get_account_session_repo,
     get_administration_repo,
     get_child_repo,
+    get_episode_medication_plan_repo,
     get_family_repo,
     get_household_medicine_repo,
     get_illness_comment_repo,
     get_illness_episode_repo,
     get_medicine_catalog_repo,
     get_parent_repo,
+    get_push_subscription_repo,
     get_temperature_entry_repo,
     get_weight_entry_repo,
 )
@@ -20,12 +22,16 @@ from src.application.services.administration_service import AdministrationServic
 from src.application.services.auth_service import AuthService
 from src.application.services.base_auth_service import BaseAuthService
 from src.application.services.child_service import ChildService
+from src.application.services.episode_medication_plan_service import (
+    EpisodeMedicationPlanService,
+)
 from src.application.services.family_service import FamilyService
 from src.application.services.household_medicine_service import HouseholdMedicineService
 from src.application.services.illness_comment_service import IllnessCommentService
 from src.application.services.illness_episode_service import IllnessEpisodeService
 from src.application.services.medicine_catalog_service import MedicineCatalogService
 from src.application.services.parent_service import ParentService
+from src.application.services.push_notification_service import PushNotificationService
 from src.application.services.temperature_entry_service import TemperatureEntryService
 from src.application.services.weight_entry_service import WeightEntryService
 
@@ -55,11 +61,30 @@ def get_child_service(
     return ChildService(child_repo=child_repo, family_repo=family_repo)
 
 
+def get_episode_medication_plan_service(
+    plan_repo=Depends(get_episode_medication_plan_repo),
+    episode_repo=Depends(get_illness_episode_repo),
+    household_repo=Depends(get_household_medicine_repo),
+) -> EpisodeMedicationPlanService:
+    return EpisodeMedicationPlanService(
+        plan_repo=plan_repo,
+        episode_repo=episode_repo,
+        household_repo=household_repo,
+    )
+
+
 def get_parent_service(
     parent_repo=Depends(get_parent_repo),
     family_repo=Depends(get_family_repo),
 ) -> ParentService:
     return ParentService(parent_repo=parent_repo, family_repo=family_repo)
+
+
+def get_push_notification_service(
+    subscription_repo=Depends(get_push_subscription_repo),
+    account_repo=Depends(get_account_repo),
+) -> PushNotificationService:
+    return PushNotificationService(subscription_repo=subscription_repo, account_repo=account_repo)
 
 
 def get_weight_entry_service(

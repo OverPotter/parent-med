@@ -32,6 +32,7 @@ class IllnessEpisodeService:
             started_at=entity.started_at,
             title=entity.title,
             status=entity.status,
+            medication_mode=entity.medication_mode,
             note=entity.note,
             closed_at=entity.closed_at,
         )
@@ -55,6 +56,8 @@ class IllnessEpisodeService:
     async def create(self, dto: IllnessEpisodeCreateDto) -> IllnessEpisodeResponseDto:
         if await self._child_repo.get_by_id(dto.child_id) is None:
             raise NotFoundError("Ребёнок не найден", resource="child")
+        if dto.medication_mode not in {"manual", "guided"}:
+            raise ValidationError("Неизвестный режим лекарств")
         active = await self._repo.get_active_by_child_id(dto.child_id)
         if active:
             raise ValidationError(
@@ -67,6 +70,7 @@ class IllnessEpisodeService:
             started_at=dto.started_at,
             title=dto.title.strip() if dto.title else None,
             status="active",
+            medication_mode=dto.medication_mode,
             note=dto.note,
             closed_at=None,
             deleted_at=None,
@@ -85,6 +89,9 @@ class IllnessEpisodeService:
             None if "title" in fields_set else entity.title
         )
         status = dto.status if "status" in fields_set else entity.status
+        medication_mode = (
+            dto.medication_mode if "medication_mode" in fields_set else entity.medication_mode
+        )
         note = dto.note if "note" in fields_set else entity.note
         closed_at = dto.closed_at if "closed_at" in fields_set else entity.closed_at
 
@@ -94,6 +101,8 @@ class IllnessEpisodeService:
             raise ValidationError("Дата закрытия не может быть раньше даты начала эпизода")
         if status not in {"active", "closed"}:
             raise ValidationError("Неизвестный статус эпизода болезни")
+        if medication_mode not in {"manual", "guided"}:
+            raise ValidationError("Неизвестный режим лекарств")
 
         if status == "closed" and "closed_at" not in fields_set and closed_at is None:
             closed_at = datetime.now(UTC)
@@ -106,6 +115,7 @@ class IllnessEpisodeService:
             started_at=started_at,
             title=title,
             status=status,
+            medication_mode=medication_mode,
             note=note,
             closed_at=closed_at,
             deleted_at=entity.deleted_at,

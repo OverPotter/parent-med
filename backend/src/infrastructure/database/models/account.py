@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,9 +26,15 @@ class AccountModel(Base):
         nullable=False,
         unique=True,
     )
+    push_before_reminder_minutes: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=10, server_default="10"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
     family: Mapped["FamilyModel"] = relationship("FamilyModel", back_populates="account")
     sessions: Mapped[list] = relationship("AccountSessionModel", back_populates="account")
+    push_subscriptions: Mapped[list] = relationship(
+        "PushSubscriptionModel", back_populates="account"
+    )

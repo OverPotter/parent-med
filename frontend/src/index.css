@@ -136,6 +136,34 @@ p {
     backdrop-filter: blur(18px);
   }
 
+  .soft-card-status-success {
+    border-color: color-mix(in srgb, var(--color-success) 18%, var(--color-border));
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-success-soft) 42%, transparent),
+        transparent 44%
+      ),
+      var(--color-surface);
+    box-shadow:
+      0 18px 38px -28px color-mix(in srgb, var(--color-success) 24%, transparent),
+      0 4px 10px -12px rgb(var(--color-shadow) / 0.1);
+  }
+
+  .soft-card-status-danger {
+    border-color: color-mix(in srgb, var(--color-danger) 16%, var(--color-border));
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-danger-soft) 36%, transparent),
+        transparent 44%
+      ),
+      var(--color-surface);
+    box-shadow:
+      0 18px 38px -28px color-mix(in srgb, var(--color-danger) 24%, transparent),
+      0 4px 10px -12px rgb(var(--color-shadow) / 0.12);
+  }
+
   .soft-panel-muted {
     border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
     background:

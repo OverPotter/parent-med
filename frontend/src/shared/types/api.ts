@@ -86,6 +86,7 @@ export interface IllnessEpisode {
   startedAt: string;
   title: string | null;
   status: string;
+  medicationMode: string;
   note: string | null;
   closedAt: string | null;
 }
@@ -114,6 +115,29 @@ export interface AdministrationEvent {
   amount: string;
   unit: string | null;
   reason: string | null;
+}
+
+export interface EpisodeMedicationPlan {
+  id: string;
+  episodeId: string;
+  householdMedicineId: string;
+  doseAmount: string;
+  minIntervalHours: number;
+  maxDosesPerDay: number | null;
+  weightKg: number | null;
+  doseMgPerKg: number | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface PushNotificationConfig {
+  enabled: boolean;
+  vapidPublicKey: string | null;
+}
+
+export interface PushNotificationPreferences {
+  beforeReminderMinutes: number;
+  dueReminderEnabled: boolean;
 }
 
 /** Ответ API с ошибкой (detail + code). */

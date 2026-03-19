@@ -11,15 +11,15 @@ import { useAppStore } from "@shared/store/useAppStore";
 
 const desktopNavLinks = [
   { to: "/home", label: "Главная" },
-  { to: "/children", label: "Дети", mobileLabel: "Дети" },
   { to: "/illnesses/active", label: "Активные болезни", mobileLabel: "Болезни" },
+  { to: "/children", label: "Дети", mobileLabel: "Дети" },
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
   { to: "/more", label: "Ещё", mobileLabel: "Ещё" },
 ];
 
 const mobileNavLinks = [
-  { to: "/children", label: "Дети", mobileLabel: "Дети" },
   { to: "/illnesses/active", label: "Активные болезни", mobileLabel: "Болезни" },
+  { to: "/children", label: "Дети", mobileLabel: "Дети" },
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
   { to: "/more", label: "Ещё", mobileLabel: "Ещё" },
 ];
