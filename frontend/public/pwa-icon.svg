@@ -1,19 +1,60 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
-  <rect width="1024" height="1024" rx="240" fill="#0F766E"/>
-  <rect x="112" y="112" width="800" height="800" rx="208" fill="url(#panel)"/>
-  <path
-    d="M512 286c-46-58-111-86-179-86-107 0-193 82-193 193 0 197 224 313 342 431 11 11 29 11 40 0 118-118 342-234 342-431 0-111-86-193-193-193-68 0-133 28-179 86Z"
-    fill="#F8FAFC"
-    fill-opacity=".94"
+  <rect width="1024" height="1024" rx="240" fill="#214843" />
+  <rect x="112" y="112" width="800" height="800" rx="208" fill="url(#panel)" />
+  <rect
+    x="160"
+    y="160"
+    width="704"
+    height="704"
+    rx="180"
+    fill="url(#surface)"
+    fill-opacity=".9"
   />
+
   <path
-    d="M512 338c-32 0-58 26-58 58v52h-52c-32 0-58 26-58 58s26 58 58 58h52v52c0 32 26 58 58 58s58-26 58-58v-52h52c32 0 58-26 58-58s-26-58-58-58h-52v-52c0-32-26-58-58-58Z"
-    fill="#14B8A6"
+    d="M254 626C315 626 353 601 393 544C431 489 468 393 551 393C612 393 652 441 687 490C724 543 760 586 818 586"
+    stroke="url(#trail)"
+    stroke-width="74"
+    stroke-linecap="round"
   />
+
+  <circle cx="254" cy="626" r="72" fill="#F4FBFA" />
+  <circle cx="551" cy="393" r="88" fill="#F4FBFA" />
+  <circle cx="818" cy="586" r="72" fill="#F4FBFA" />
+
+  <circle cx="254" cy="626" r="30" fill="#4A7A74" />
+  <circle cx="551" cy="393" r="36" fill="#4A7A74" />
+  <circle cx="818" cy="586" r="30" fill="#4A7A74" />
+
+  <path
+    d="M350 282C389 247 445 226 507 226C622 226 718 295 766 401"
+    stroke="#D8ECE8"
+    stroke-opacity=".5"
+    stroke-width="38"
+    stroke-linecap="round"
+  />
+
   <defs>
-    <linearGradient id="panel" x1="176" y1="144" x2="864" y2="896" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#115E59"/>
-      <stop offset="1" stop-color="#0B3B39"/>
+    <linearGradient id="panel" x1="164" y1="144" x2="860" y2="892" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#183934" />
+      <stop offset="1" stop-color="#122B28" />
+    </linearGradient>
+    <linearGradient
+      id="surface"
+      x1="188"
+      y1="176"
+      x2="836"
+      y2="848"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop stop-color="#264E49" stop-opacity=".95" />
+      <stop offset=".55" stop-color="#214742" stop-opacity=".88" />
+      <stop offset="1" stop-color="#183733" stop-opacity=".96" />
+    </linearGradient>
+    <linearGradient id="trail" x1="254" y1="640" x2="818" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9DD7CF" />
+      <stop offset=".52" stop-color="#D7F1ED" />
+      <stop offset="1" stop-color="#87C7BE" />
     </linearGradient>
   </defs>
 </svg>

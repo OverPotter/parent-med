@@ -9,6 +9,7 @@ import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
 import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import { fetchIllnessEpisodesByChildId } from "@shared/api/illnessEpisodes";
+import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -78,12 +79,10 @@ export function ActiveIllnessesPage() {
 
   return (
     <div className="space-y-7">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Активные болезни</h1>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Только текущие эпизоды без архивной информации.
-        </p>
-      </div>
+      <PageIntro
+        title="Активные болезни"
+        subtitle="Только текущие эпизоды, где важны ближайшие действия и лекарства, а не архив."
+      />
 
       {(isLoading || isActiveEpisodesLoading) && <p className="text-muted">Загрузка…</p>}
 

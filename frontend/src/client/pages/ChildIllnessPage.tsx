@@ -50,16 +50,6 @@ import {
 } from "../utils/medicationPlans";
 import { formatDate, formatDateTime } from "@shared/utils/date";
 
-const EPISODE_STATUS_LABELS: Record<string, string> = {
-  active: "Активный",
-  closed: "Закрыт",
-};
-
-const EPISODE_STATUS_STYLES: Record<string, string> = {
-  active: "soft-pill-success",
-  closed: "soft-pill",
-};
-
 export function ChildIllnessPage() {
   const { childId } = useParams<{ childId: string }>();
   const [searchParams] = useSearchParams();
@@ -209,84 +199,69 @@ export function ChildIllnessPage() {
         ← К списку детей
       </Link>
 
-      <section className="soft-panel soft-hero relative overflow-hidden rounded-[28px]">
-        <div className="relative p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs tracking-[0.12em] text-muted">Журнал болезни</p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                {child.name}
-              </h1>
-              <p className="mt-2 text-sm text-muted">
-                {historyOnlyView
-                  ? "Просмотр истории"
-                  : activeEpisode
-                    ? "Есть активный эпизод"
-                    : createMode
-                      ? "Подготовка нового эпизода"
-                      : "Без активного эпизода"}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsChildSummaryExpanded((current) => !current)}
-              className="soft-button-secondary rounded-2xl px-3 py-2 text-sm"
+      {((!activeEpisode && !createMode) || historyOnlyView) && (
+        <section className="soft-panel soft-hero relative overflow-hidden rounded-[28px]">
+          <div className="relative p-4 sm:p-5">
+            <DisclosureHeader
+              isOpen={isChildSummaryExpanded}
+              onToggle={() => setIsChildSummaryExpanded((current) => !current)}
+              desktopClosedLabel="Данные"
+              desktopOpenLabel="Скрыть"
+              className="gap-4"
             >
-              {isChildSummaryExpanded ? "Скрыть данные" : "Показать данные"}
-            </button>
-          </div>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                  {child.name}
+                </h1>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                    {historyOnlyView ? "История" : createMode ? "Новый эпизод" : "Без эпизода"}
+                  </span>
+                  {child.ageLabel && (
+                    <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                      {child.ageLabel}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </DisclosureHeader>
 
-          {isChildSummaryExpanded && (
-            <>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-                {historyOnlyView
-                  ? "История завершённых эпизодов ребёнка. Открывай один эпизод и работай с ним без визуального шума."
-                  : activeEpisode
-                    ? "Текущий экран болезни: фиксируй температуру, приёмы лекарств и заметки по состоянию."
-                    : createMode
-                      ? "Подготовь эпизод болезни и активируй его, когда будешь уверен, что нужно начать журнал."
-                      : "Сейчас активного эпизода нет. Когда болезнь начнётся, здесь появится рабочий экран эпизода."}
-              </p>
-
-              <div className="mt-5 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2 xl:grid-cols-4">
-                <SnapshotItem label="Возраст" value={child.ageLabel || "Не указан"} />
-                <SnapshotItem
-                  label="Дата рождения"
-                  value={child.birthDate ? formatDate(child.birthDate) : "Не указана"}
-                />
-                <SnapshotItem label="Всего эпизодов" value={String(episodes.length)} />
-                <SnapshotItem
-                  label="Состояние"
-                  value={
-                    historyOnlyView
-                      ? "Просмотр истории"
-                      : activeEpisode
-                        ? "Есть активный эпизод"
+            {isChildSummaryExpanded && (
+              <>
+                <div className="mt-4 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <SnapshotItem label="Возраст" value={child.ageLabel || "Не указан"} />
+                  <SnapshotItem
+                    label="Дата рождения"
+                    value={child.birthDate ? formatDate(child.birthDate) : "Не указана"}
+                  />
+                  <SnapshotItem label="Всего эпизодов" value={String(episodes.length)} />
+                  <SnapshotItem
+                    label="Состояние"
+                    value={
+                      historyOnlyView
+                        ? "Просмотр истории"
                         : createMode
                           ? "Подготовка нового эпизода"
                           : "Без активного эпизода"
-                  }
-                />
-              </div>
-
-              {!currentFamilyId && (
-                <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
-                  Семья не выбрана. Сначала открой страницу «Семья».
+                    }
+                  />
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      </section>
+
+                {!currentFamilyId && (
+                  <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
+                    Семья не выбрана. Сначала открой страницу «Семья».
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       {activeEpisode && !historyOnlyView && (
-        <section className="space-y-3">
-          <SectionTitle
-            title="Активный эпизод"
-            subtitle="Главный рабочий блок: температура, приёмы и закрытие текущего состояния."
-          />
+        <section>
           <EpisodeBlock
+            childName={child.name}
             childId={child.id}
             episode={activeEpisode}
             onClose={() => closeEpisodeMutation.mutate(activeEpisode.id)}
@@ -553,12 +528,14 @@ function HistoryEpisodeCard({
 }
 
 function EpisodeBlock({
+  childName,
   childId,
   episode,
   onClose,
   familyId,
   latestWeight,
 }: {
+  childName: string;
   childId: string;
   episode: IllnessEpisode;
   onClose: () => void;
@@ -570,7 +547,6 @@ function EpisodeBlock({
   const isActive = episode.status === "active";
   const [commentText, setCommentText] = useState("");
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
-  const [isEpisodeActionsOpen, setIsEpisodeActionsOpen] = useState(false);
   const [isManualComposerExpanded, setIsManualComposerExpanded] = useState(
     episode.medicationMode !== "guided"
   );
@@ -620,11 +596,12 @@ function EpisodeBlock({
   });
 
   const addAdminMutation = useMutation({
-    mutationFn: (payload: { household_medicine_id: string; amount: string }) =>
+    mutationFn: (payload: { household_medicine_id: string; amount: string; reason?: string }) =>
       createAdministrationEvent({
         episode_id: episode.id,
         household_medicine_id: payload.household_medicine_id,
         amount: payload.amount,
+        reason: payload.reason,
       }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] }),
@@ -704,60 +681,44 @@ function EpisodeBlock({
 
   return (
     <div className="soft-panel rounded-[30px]">
-      <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-6 sm:px-6 sm:py-7">
+      <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-4 sm:px-6 sm:py-5">
         {isActive ? (
-          <DisclosureHeader
-            isOpen={isEpisodeActionsOpen}
-            onToggle={() => setIsEpisodeActionsOpen((current) => !current)}
-            desktopClosedLabel="Ещё"
-            desktopOpenLabel="Скрыть"
-            className="gap-4"
-          >
-            <>
-              <p className="text-[11px] tracking-[0.1em] text-muted">Наблюдение</p>
-              <h3 className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-end gap-3">
+                <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                  {childName}
+                </p>
+                <p className="pb-0.5 text-xs text-muted">С {formatDate(episode.startedAt)}</p>
+              </div>
+              <h3 className="text-base font-medium tracking-tight text-muted sm:text-lg">
                 {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
               </h3>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs ${
-                    EPISODE_STATUS_STYLES[episode.status] ?? EPISODE_STATUS_STYLES.closed
-                  }`}
-                >
-                  {EPISODE_STATUS_LABELS[episode.status] ?? episode.status}
-                </span>
-                <p className="text-xs text-muted">С {formatDate(episode.startedAt)}</p>
-              </div>
-            </>
-          </DisclosureHeader>
-        ) : (
-          <div>
-            <p className="text-[11px] tracking-[0.1em] text-muted">Наблюдение</p>
-            <h3 className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
-            </h3>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs ${
-                  EPISODE_STATUS_STYLES[episode.status] ?? EPISODE_STATUS_STYLES.closed
-                }`}
-              >
-                {EPISODE_STATUS_LABELS[episode.status] ?? episode.status}
-              </span>
-              <p className="text-xs text-muted">С {formatDate(episode.startedAt)}</p>
             </div>
-          </div>
-        )}
-
-        {isActive && isEpisodeActionsOpen && (
-          <div className="mt-4 flex justify-end">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                if (!window.confirm("Закрыть текущий эпизод?")) {
+                  return;
+                }
+                onClose();
+              }}
               className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto"
             >
               Закрыть эпизод
             </button>
+          </div>
+        ) : (
+          <div>
+            <div className="flex flex-wrap items-end gap-3">
+              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {childName}
+              </p>
+              <p className="pb-0.5 text-xs text-muted">С {formatDate(episode.startedAt)}</p>
+            </div>
+            <h3 className="text-base font-medium tracking-tight text-muted sm:text-lg">
+              {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
+            </h3>
           </div>
         )}
       </div>
@@ -802,6 +763,7 @@ function EpisodeBlock({
                 addAdminMutation.mutate({
                   household_medicine_id: plan.householdMedicineId,
                   amount: plan.doseAmount,
+                  reason: "Дали по плану",
                 })
               }
             />
@@ -930,21 +892,20 @@ function EpisodeBlock({
         </section>
 
         <section className="soft-panel-muted rounded-[24px] px-4 py-5 sm:px-5 sm:py-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+          <DisclosureHeader
+            isOpen={isTimelineExpanded}
+            onToggle={() => {
+              setIsTimelineExpanded((current) => !current);
+            }}
+            desktopClosedLabel={`Показать ленту (${timelineItems.length})`}
+            desktopOpenLabel="Скрыть ленту"
+            disabled={timelineItems.length === 0}
+          >
+            <>
               <h4 className="text-base font-semibold text-foreground">Лента эпизода</h4>
               <p className="mt-1 text-sm text-muted">Последние записи по времени.</p>
-            </div>
-            {timelineItems.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsTimelineExpanded((current) => !current)}
-                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-              >
-                {isTimelineExpanded ? "Скрыть ленту" : `Показать ленту (${timelineItems.length})`}
-              </button>
-            )}
-          </div>
+            </>
+          </DisclosureHeader>
 
           <div className="mt-4">
             {timelineItems.length > 0 ? (
@@ -1005,7 +966,6 @@ function EpisodeActivationCard({
 }) {
   const [startedAt, setStartedAt] = useState(() => new Date().toISOString().slice(0, 10));
   const [title, setTitle] = useState("");
-  const [medicationMode, setMedicationMode] = useState<"manual" | "guided">("manual");
   const [composerMode, setComposerMode] = useState<"temperature" | "administration" | "comment">(
     "temperature"
   );
@@ -1013,6 +973,7 @@ function EpisodeActivationCard({
   const [adminMedicineId, setAdminMedicineId] = useState("");
   const [adminAmount, setAdminAmount] = useState("");
   const [commentText, setCommentText] = useState("");
+  const [isActivationPlansExpanded, setIsActivationPlansExpanded] = useState(true);
   const [medicationPlans, setMedicationPlans] = useState<DraftMedicationPlan[]>([]);
   const [temperatures, setTemperatures] = useState<Array<{ id: string; valueCelsius: number }>>([]);
   const [administrations, setAdministrations] = useState<
@@ -1063,40 +1024,21 @@ function EpisodeActivationCard({
           />
         </label>
         <section className="border-t border-border pt-6">
-          <div>
-            <h4 className="text-base font-semibold text-foreground">Как вести лекарства</h4>
-            <p className="mt-1 text-sm text-muted">
-              Можно оставить привычный свободный журнал или включить дополнительный режим с планом
-              доз.
-            </p>
-          </div>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <MedicationModeCard
-              title="Свободный журнал"
-              description="Как сейчас: родители сами вносят температуры, приёмы и комментарии без дополнительных подсказок."
-              active={medicationMode === "manual"}
-              onClick={() => setMedicationMode("manual")}
-            />
-            <MedicationModeCard
-              title="С подсказками по лекарствам"
-              description="Дополнительно создаются планы доз: видно последнюю дачу, следующее окно и дневной лимит."
-              active={medicationMode === "guided"}
-              onClick={() => setMedicationMode("guided")}
-            />
-          </div>
-        </section>
-
-        {medicationMode === "guided" && (
-          <section className="border-t border-border pt-6">
-            <div>
+          <DisclosureHeader
+            isOpen={isActivationPlansExpanded}
+            onToggle={() => setIsActivationPlansExpanded((current) => !current)}
+          >
+            <>
               <h4 className="text-base font-semibold text-foreground">Планы лекарства</h4>
               <p className="mt-1 text-sm text-muted">
-                Это дополнительный слой. Обычный ручной журнал ниже всё равно останется доступен.
+                Здесь можно сразу настроить интервалы и будущие приёмы. Ручной журнал ниже тоже
+                останется доступен.
               </p>
-            </div>
+            </>
+          </DisclosureHeader>
 
-            {usableMedicines.length === 0 ? (
+          {isActivationPlansExpanded &&
+            (usableMedicines.length === 0 ? (
               <div className="soft-note-info mt-4 rounded-2xl px-4 py-3 text-sm">
                 В аптечке нет доступных упаковок для планов лекарства.
               </div>
@@ -1138,9 +1080,8 @@ function EpisodeActivationCard({
                   </div>
                 )}
               </>
-            )}
-          </section>
-        )}
+            ))}
+        </section>
         <section className="border-t border-border pt-6">
           <div>
             <h4 className="text-base font-semibold text-foreground">Подготовить записи</h4>
@@ -1303,7 +1244,7 @@ function EpisodeActivationCard({
               onActivate({
                 started_at: startedAt,
                 title: title.trim() ? title.trim() : null,
-                medication_mode: medicationMode,
+                medication_mode: "guided",
                 note: null,
                 temperatures: temperatures.map((item) => ({ value_celsius: item.valueCelsius })),
                 administrations: administrations.map((item) => ({
@@ -1361,6 +1302,43 @@ function ComposerToggle({
     >
       {label}
     </button>
+  );
+}
+
+function InlineHint({ text }: { text: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const showTouchHint = () => {
+    setIsOpen(true);
+    window.setTimeout(() => {
+      setIsOpen(false);
+    }, 1400);
+  };
+
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        title={text}
+        aria-label={text}
+        onMouseEnter={() => setIsOpen(true)}
+        onMouseLeave={() => setIsOpen(false)}
+        onFocus={() => setIsOpen(true)}
+        onBlur={() => setIsOpen(false)}
+        onTouchStart={(event) => {
+          event.preventDefault();
+          showTouchHint();
+        }}
+        className="soft-pill-warning inline-flex h-5 w-5 items-center justify-center rounded-full px-0 text-[11px] font-semibold leading-none"
+      >
+        !
+      </button>
+      {isOpen && (
+        <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-56 -translate-x-1/2 rounded-2xl border border-border/80 bg-[color:var(--color-surface-soft)] px-3 py-2 text-xs font-normal leading-5 text-foreground shadow-lg shadow-black/10">
+          {text}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -1475,32 +1453,6 @@ type DraftMedicationPlan = MedicationPlanPayload & {
   id: string;
 };
 
-function MedicationModeCard({
-  title,
-  description,
-  active,
-  onClick,
-}: {
-  title: string;
-  description: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "text-left rounded-[24px] p-4 transition-colors",
-        active ? "soft-panel soft-hero" : "soft-panel-muted",
-      ].join(" ")}
-    >
-      <p className="text-sm font-semibold text-foreground">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
-    </button>
-  );
-}
-
 function intervalMinutesToInputValue(intervalMinutes: number, unit: "hours" | "minutes") {
   if (unit === "minutes") {
     return String(intervalMinutes);
@@ -1563,20 +1515,24 @@ function GuidedMedicationSection({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <DisclosureHeader
+        isOpen={isComposerOpen}
+        onToggle={() => {
+          if (usableMedicines.length === 0) {
+            return;
+          }
+          setIsComposerOpen((current) => !current);
+        }}
+        desktopClosedLabel="Добавить план"
+        desktopOpenLabel="Скрыть форму"
+        mobileClosedLabel="Добавить"
+        mobileOpenLabel="Скрыть"
+        disabled={usableMedicines.length === 0}
+      >
         <div>
           <h4 className="text-base font-semibold text-foreground">Лекарства с подсказками</h4>
         </div>
-        {usableMedicines.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setIsComposerOpen((current) => !current)}
-            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-          >
-            {isComposerOpen ? "Скрыть форму" : "Добавить план"}
-          </button>
-        )}
-      </div>
+      </DisclosureHeader>
 
       {plans.length > 0 ? (
         <MedicationPlanList
@@ -1773,7 +1729,10 @@ function MedicationPlanComposer({
         </label>
 
         <label className="block">
-          <span className="block text-sm text-muted">Вес ребёнка, кг</span>
+          <span className="flex items-center gap-2 text-sm text-muted">
+            Вес ребёнка, кг
+            <InlineHint text="Нужно только для расчёта по весу. Если разовая доза уже известна, это поле можно не заполнять." />
+          </span>
           <input
             type="number"
             min="0"
@@ -1811,7 +1770,10 @@ function MedicationPlanComposer({
         </label>
 
         <label className="block">
-          <span className="block text-sm text-muted">Расчёт, мг/кг</span>
+          <span className="flex items-center gap-2 text-sm text-muted">
+            Расчёт, мг/кг
+            <InlineHint text="Используй это поле, если дозировку знают как мг на кг веса. Это только подсказка и не заменяет вручную указанную разовую дозу." />
+          </span>
           <input
             type="number"
             min="0"
@@ -2332,15 +2294,14 @@ function buildEpisodeTimeline(
 
   const administrationItems = administrations.map((entry) => {
     const medicine = medicines.find((item) => item.id === entry.householdMedicineId);
+    const reason = entry.reason?.trim();
 
     return {
       id: `admin-${entry.id}`,
       at: entry.administeredAt,
       kind: "administration" as const,
       title: medicine?.medicineName ?? "Приём лекарства",
-      description: entry.reason?.trim()
-        ? `Доза: ${entry.amount}\nКомментарий: ${entry.reason.trim()}`
-        : `Доза: ${entry.amount}`,
+      description: reason ? `Доза: ${entry.amount}\n${reason}` : `Доза: ${entry.amount}`,
     };
   });
 

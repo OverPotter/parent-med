@@ -1,3 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
-  <path d="M16 4v24M8 12l8-8 8 8M8 20l8-8 8 8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="8" fill="#214843" />
+  <rect x="3.5" y="3.5" width="25" height="25" rx="6.5" fill="#234B46" />
+  <path
+    d="M7.5 20C9 20 10 19.4 11 18.1C12 16.8 13.1 13.2 16 13.2C18.2 13.2 19.5 14.8 20.7 16.2C22 17.7 23.2 18.8 24.8 18.8"
+    stroke="#EAF8F5"
+    stroke-width="2.4"
+    stroke-linecap="round"
+  />
+  <circle cx="7.5" cy="20" r="2.2" fill="#EAF8F5" />
+  <circle cx="16" cy="13.2" r="2.7" fill="#EAF8F5" />
+  <circle cx="24.8" cy="18.8" r="2.2" fill="#EAF8F5" />
 </svg>

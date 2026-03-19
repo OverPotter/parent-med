@@ -12,6 +12,7 @@ import {
 } from "@shared/api/householdMedicines";
 import { searchMedicineCatalog } from "@shared/api/medicineCatalog";
 import { DateField } from "@shared/components/DateField";
+import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import type { HouseholdMedicine, MedicineCatalogItem } from "@shared/types/api";
 import { formatDate } from "@shared/utils/date";
@@ -67,12 +68,11 @@ export function MedicineCabinetPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Аптечка</h1>
-      <p className="mt-2 text-sm text-muted">
-        Здесь хранятся реальные упаковки дома: срок годности, дата вскрытия и срок использования
-        после вскрытия.
-      </p>
-      <div className="soft-panel-muted mt-4 inline-flex flex-wrap gap-2 rounded-full p-2">
+      <PageIntro
+        title="Аптечка"
+        subtitle="Реальные упаковки дома: срок годности, дата вскрытия и можно ли использовать препарат сейчас."
+      />
+      <div className="soft-nav-shell inline-flex flex-wrap gap-2 rounded-[24px] p-2">
         <button
           type="button"
           onClick={() => setView("add")}

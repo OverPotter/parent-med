@@ -11,6 +11,7 @@ type DisclosureHeaderProps = {
   className?: string;
   contentClassName?: string;
   desktopButtonClassName?: string;
+  disabled?: boolean;
 };
 
 export function DisclosureHeader({
@@ -24,35 +25,43 @@ export function DisclosureHeader({
   className = "",
   contentClassName = "",
   desktopButtonClassName = "soft-button-secondary",
+  disabled = false,
 }: DisclosureHeaderProps) {
   return (
     <div className={`flex flex-wrap items-start justify-between gap-3 ${className}`.trim()}>
       <div
-        className={`min-w-0 cursor-pointer ${contentClassName}`.trim()}
-        onClick={onToggle}
+        className={`min-w-0 ${disabled ? "" : "cursor-pointer"} ${contentClassName}`.trim()}
+        onClick={disabled ? undefined : onToggle}
         onKeyDown={(event) => {
+          if (disabled) {
+            return;
+          }
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             onToggle();
           }
         }}
-        role="button"
-        tabIndex={0}
-        aria-expanded={isOpen}
+        role={disabled ? undefined : "button"}
+        tabIndex={disabled ? undefined : 0}
+        aria-expanded={disabled ? undefined : isOpen}
       >
         {children}
       </div>
 
-      <span className="soft-pill rounded-full px-3 py-1 text-xs sm:hidden">
-        {isOpen ? mobileOpenLabel : mobileClosedLabel}
-      </span>
-      <button
-        type="button"
-        onClick={onToggle}
-        className={`hidden rounded-2xl px-4 py-2.5 text-sm sm:inline-flex ${desktopButtonClassName}`.trim()}
-      >
-        {isOpen ? desktopOpenLabel : desktopClosedLabel}
-      </button>
+      {!disabled && (
+        <>
+          <span className="soft-pill rounded-full px-3 py-1 text-xs sm:hidden">
+            {isOpen ? mobileOpenLabel : mobileClosedLabel}
+          </span>
+          <button
+            type="button"
+            onClick={onToggle}
+            className={`hidden rounded-2xl px-4 py-2.5 text-sm sm:inline-flex ${desktopButtonClassName}`.trim()}
+          >
+            {isOpen ? desktopOpenLabel : desktopClosedLabel}
+          </button>
+        </>
+      )}
     </div>
   );
 }

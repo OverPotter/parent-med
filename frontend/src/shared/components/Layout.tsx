@@ -39,56 +39,61 @@ export function Layout({
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <header className="min-w-0 px-2 pt-2 sm:px-4 sm:pt-3">
         <div className="mx-auto max-w-5xl">
-          <div className="px-2 py-3 md:hidden">
-            <Link to="/" className="inline-flex items-center gap-2.5">
-              <img src="/pwa-icon.svg" alt="" className="h-8 w-8 rounded-2xl" />
-              <span className="text-sm font-semibold tracking-[0.04em] text-primary">
-                Parent Med
-              </span>
-            </Link>
+          <div className="md:hidden">
+            <div className="soft-nav-shell rounded-[26px] px-3 py-3">
+              <Link to="/" className="inline-flex items-center gap-2.5">
+                <img src="/pwa-icon.svg" alt="" className="h-8 w-8 rounded-2xl" />
+                <span className="text-sm font-semibold tracking-[0.04em] text-primary">
+                  Parent Med
+                </span>
+              </Link>
+            </div>
           </div>
 
-          <div className="hidden md:block md:px-2 md:py-2">
-            <div className="flex items-center justify-between gap-5">
-              <Link to="/" className="min-w-0">
-                <p className="truncate text-lg font-semibold tracking-[0.03em] text-primary">
-                  Parent Med
-                </p>
-              </Link>
+          <div className="hidden md:block md:py-2">
+            <div className="soft-nav-shell rounded-[28px] px-4 py-3">
+              <div className="flex items-center justify-between gap-5">
+                <Link to="/" className="inline-flex min-w-0 items-center gap-3">
+                  <img src="/pwa-icon.svg" alt="" className="h-9 w-9 rounded-2xl" />
+                  <p className="truncate text-lg font-semibold tracking-[0.03em] text-primary">
+                    Parent Med
+                  </p>
+                </Link>
 
-              <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-                {showCurrentFamily && currentFamilyName && (
-                  <span className="soft-pill max-w-[12rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                    {currentFamilyName}
-                  </span>
-                )}
-                {accountEmail && (
-                  <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                    {accountEmail}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
-                  onClick={toggleTheme}
-                  aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
-                >
-                  {theme === "light" ? "Ночь" : "День"}
-                </button>
-                {accountEmail && (
+                <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                  {showCurrentFamily && currentFamilyName && (
+                    <span className="soft-pill max-w-[12rem] truncate rounded-full px-3.5 py-1.5 text-xs">
+                      {currentFamilyName}
+                    </span>
+                  )}
+                  {accountEmail && (
+                    <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
+                      {accountEmail}
+                    </span>
+                  )}
                   <button
                     type="button"
-                    onClick={handleLogout}
                     className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
+                    onClick={toggleTheme}
+                    aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
                   >
-                    Выйти
+                    {theme === "light" ? "Ночь" : "День"}
                   </button>
-                )}
+                  {accountEmail && (
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
+                    >
+                      Выйти
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
             {navLinks.length > 0 && (
-              <div className="mt-3">
+              <div className="mt-3 px-2">
                 <TopNav links={navLinks} />
               </div>
             )}

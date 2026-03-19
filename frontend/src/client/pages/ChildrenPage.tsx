@@ -19,6 +19,7 @@ import {
   fetchIllnessEpisodesByChildId,
 } from "@shared/api/illnessEpisodes";
 import { DateField } from "@shared/components/DateField";
+import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -135,24 +136,22 @@ export function ChildrenPage() {
 
   return (
     <div className="min-w-0 space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Дети</h1>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            Профили детей, история и переход в текущую болезнь.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setIsCreateFormOpen((current) => !current)}
-          className={[
-            "soft-button-primary rounded-2xl px-4 py-2.5 text-sm",
-            children.length > 0 ? "hidden sm:inline-flex" : "inline-flex",
-          ].join(" ")}
-        >
-          {isCreateFormOpen ? "Скрыть форму" : "Добавить ребёнка"}
-        </button>
-      </div>
+      <PageIntro
+        title="Дети"
+        subtitle="Профили детей, быстрый вход в текущее наблюдение и история болезней без лишнего шума."
+        action={
+          <button
+            type="button"
+            onClick={() => setIsCreateFormOpen((current) => !current)}
+            className={[
+              "soft-button-primary rounded-2xl px-4 py-2.5 text-sm",
+              children.length > 0 ? "hidden sm:inline-flex" : "inline-flex",
+            ].join(" ")}
+          >
+            {isCreateFormOpen ? "Скрыть форму" : "Добавить ребёнка"}
+          </button>
+        }
+      />
 
       {isCreateFormOpen && (
         <AddChildForm

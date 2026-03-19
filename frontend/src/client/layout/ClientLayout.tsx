@@ -11,17 +11,37 @@ import { useAppStore } from "@shared/store/useAppStore";
 
 const desktopNavLinks = [
   { to: "/home", label: "Главная" },
-  { to: "/illnesses/active", label: "Активные болезни", mobileLabel: "Болезни" },
-  { to: "/children", label: "Дети", mobileLabel: "Дети" },
+  {
+    to: "/illnesses/active",
+    label: "Активные болезни",
+    mobileLabel: "Болезни",
+    activePaths: ["/illnesses/active", "/children/:childId/illness"],
+  },
+  { to: "/children", label: "Дети", mobileLabel: "Дети", activePaths: ["/children"] },
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
-  { to: "/more", label: "Ещё", mobileLabel: "Ещё" },
+  {
+    to: "/more",
+    label: "Ещё",
+    mobileLabel: "Ещё",
+    activePaths: ["/more", "/account", "/about", "/family", "/illnesses/history"],
+  },
 ];
 
 const mobileNavLinks = [
-  { to: "/illnesses/active", label: "Активные болезни", mobileLabel: "Болезни" },
-  { to: "/children", label: "Дети", mobileLabel: "Дети" },
+  {
+    to: "/illnesses/active",
+    label: "Активные болезни",
+    mobileLabel: "Болезни",
+    activePaths: ["/illnesses/active", "/children/:childId/illness"],
+  },
+  { to: "/children", label: "Дети", mobileLabel: "Дети", activePaths: ["/children"] },
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
-  { to: "/more", label: "Ещё", mobileLabel: "Ещё" },
+  {
+    to: "/more",
+    label: "Ещё",
+    mobileLabel: "Ещё",
+    activePaths: ["/more", "/account", "/about", "/family", "/illnesses/history"],
+  },
 ];
 
 export function ClientLayout() {

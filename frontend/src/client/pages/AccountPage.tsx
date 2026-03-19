@@ -9,6 +9,7 @@ import {
   upsertPushSubscription,
 } from "@shared/api/pushNotifications";
 import { DisclosureHeader } from "@shared/components/DisclosureHeader";
+import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
 import {
@@ -238,13 +239,10 @@ export function AccountPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Аккаунт</h1>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Личные настройки и действия, которые не должны мешать ежедневной работе с детьми и
-          записями.
-        </p>
-      </div>
+      <PageIntro
+        title="Аккаунт"
+        subtitle="Личные настройки, уведомления и служебные действия без перегруза ежедневного потока."
+      />
 
       <Surface className="p-5 sm:p-6">
         <p className="text-sm font-medium text-foreground">Профиль</p>
