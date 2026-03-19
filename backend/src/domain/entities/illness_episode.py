@@ -12,6 +12,8 @@ class IllnessEpisode:
     id: UUID
     child_id: UUID
     started_at: date
+    title: str | None
     status: str  # active, closed
     note: str | None
     closed_at: datetime | None
+    deleted_at: datetime | None

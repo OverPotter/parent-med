@@ -5,6 +5,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.deps.auth import get_current_account
 from src.api.routers import (
@@ -13,12 +14,14 @@ from src.api.routers import (
     children,
     families,
     household_medicines,
+    illness_comments,
     illness_episodes,
     medicine_catalog,
     parents,
     temperature_entries,
     weight_entries,
 )
+from src.core.config import settings
 from src.core.exception_handlers import app_exception_handler
 from src.core.exceptions import AppException
 from src.core.lifespan import lifespan_context
@@ -39,6 +42,13 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     app.add_exception_handler(AppException, app_exception_handler)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     protected_dependencies = [Depends(get_current_account)]
 
@@ -59,6 +69,11 @@ def create_app() -> FastAPI:
     )
     app.include_router(
         illness_episodes.router,
+        prefix="/api/v1",
+        dependencies=protected_dependencies,
+    )
+    app.include_router(
+        illness_comments.router,
         prefix="/api/v1",
         dependencies=protected_dependencies,
     )

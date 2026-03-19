@@ -30,3 +30,4 @@ class ChildResponseDto(ResponseBase):
     family_id: UUID
     name: str
     birth_date: date | None
+    age_label: str | None

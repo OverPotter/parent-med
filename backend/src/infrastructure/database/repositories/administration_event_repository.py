@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.administration_event import AdministrationEvent
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
-from src.infrastructure.database.models.administration_event import AdministrationEventModel
+from src.infrastructure.database.models.illness_episode_event import IllnessEpisodeEventModel
 
 
 class SqlAdministrationEventRepository(AdministrationEventRepository):
@@ -16,23 +16,24 @@ class SqlAdministrationEventRepository(AdministrationEventRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    def _to_entity(self, m: AdministrationEventModel) -> AdministrationEvent:
+    def _to_entity(self, m: IllnessEpisodeEventModel) -> AdministrationEvent:
         return AdministrationEvent(
             id=m.id,
             episode_id=m.episode_id,
             household_medicine_id=m.household_medicine_id,
-            administered_at=m.administered_at,
-            amount=m.amount,
+            administered_at=m.occurred_at,
+            amount=m.amount or "",
             unit=m.unit,
             reason=m.reason,
         )
 
-    def _to_model(self, e: AdministrationEvent) -> AdministrationEventModel:
-        return AdministrationEventModel(
+    def _to_model(self, e: AdministrationEvent) -> IllnessEpisodeEventModel:
+        return IllnessEpisodeEventModel(
             id=e.id,
             episode_id=e.episode_id,
+            event_type="administration",
             household_medicine_id=e.household_medicine_id,
-            administered_at=e.administered_at,
+            occurred_at=e.administered_at,
             amount=e.amount,
             unit=e.unit,
             reason=e.reason,
@@ -40,16 +41,22 @@ class SqlAdministrationEventRepository(AdministrationEventRepository):
 
     async def get_by_id(self, id: UUID) -> AdministrationEvent | None:
         result = await self._session.execute(
-            select(AdministrationEventModel).where(AdministrationEventModel.id == id)
+            select(IllnessEpisodeEventModel).where(
+                IllnessEpisodeEventModel.id == id,
+                IllnessEpisodeEventModel.event_type == "administration",
+            )
         )
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
 
     async def get_by_episode_id(self, episode_id: UUID) -> list[AdministrationEvent]:
         result = await self._session.execute(
-            select(AdministrationEventModel)
-            .where(AdministrationEventModel.episode_id == episode_id)
-            .order_by(AdministrationEventModel.administered_at.desc())
+            select(IllnessEpisodeEventModel)
+            .where(
+                IllnessEpisodeEventModel.episode_id == episode_id,
+                IllnessEpisodeEventModel.event_type == "administration",
+            )
+            .order_by(IllnessEpisodeEventModel.occurred_at.desc())
         )
         return [self._to_entity(r) for r in result.scalars().all()]
 
@@ -62,7 +69,10 @@ class SqlAdministrationEventRepository(AdministrationEventRepository):
 
     async def delete(self, id: UUID) -> bool:
         result = await self._session.execute(
-            select(AdministrationEventModel).where(AdministrationEventModel.id == id)
+            select(IllnessEpisodeEventModel).where(
+                IllnessEpisodeEventModel.id == id,
+                IllnessEpisodeEventModel.event_type == "administration",
+            )
         )
         row = result.scalars().one_or_none()
         if row:

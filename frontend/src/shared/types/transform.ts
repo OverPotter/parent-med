@@ -9,6 +9,7 @@ import type {
   WeightEntry,
   MedicineCatalogItem,
   HouseholdMedicine,
+  IllnessComment,
   IllnessEpisode,
   TemperatureEntry,
   AdministrationEvent,
@@ -24,6 +25,7 @@ interface RawChild {
   family_id: string;
   name: string;
   birth_date: string | null;
+  age_label: string | null;
 }
 
 interface RawParent {
@@ -76,9 +78,17 @@ interface RawIllnessEpisode {
   id: string;
   child_id: string;
   started_at: string;
+  title: string | null;
   status: string;
   note: string | null;
   closed_at: string | null;
+}
+
+interface RawIllnessComment {
+  id: string;
+  episode_id: string;
+  created_at: string;
+  text: string;
 }
 
 interface RawTemperatureEntry {
@@ -119,6 +129,7 @@ export function toChild(r: RawChild): Child {
     familyId: r.family_id,
     name: r.name,
     birthDate: r.birth_date ?? null,
+    ageLabel: r.age_label ?? null,
   };
 }
 
@@ -172,9 +183,19 @@ export function toIllnessEpisode(r: RawIllnessEpisode): IllnessEpisode {
     id: r.id,
     childId: r.child_id,
     startedAt: r.started_at,
+    title: r.title ?? null,
     status: r.status,
     note: r.note ?? null,
     closedAt: r.closed_at ?? null,
+  };
+}
+
+export function toIllnessComment(r: RawIllnessComment): IllnessComment {
+  return {
+    id: r.id,
+    episodeId: r.episode_id,
+    createdAt: r.created_at,
+    text: r.text,
   };
 }
 

@@ -10,6 +10,7 @@ interface RawIllnessEpisode {
   id: string;
   child_id: string;
   started_at: string;
+  title: string | null;
   status: string;
   note: string | null;
   closed_at: string | null;
@@ -39,6 +40,7 @@ export async function fetchIllnessEpisode(id: string): Promise<IllnessEpisode> {
 export async function createIllnessEpisode(body: {
   child_id: string;
   started_at: string;
+  title?: string | null;
   note?: string | null;
 }): Promise<IllnessEpisode> {
   const res = await apiClient.post<RawIllnessEpisode>("/illness-episodes", body);
@@ -47,7 +49,13 @@ export async function createIllnessEpisode(body: {
 
 export async function updateIllnessEpisode(
   id: string,
-  body: { status?: string; note?: string | null; closed_at?: string | null }
+  body: {
+    started_at?: string;
+    title?: string | null;
+    status?: string;
+    note?: string | null;
+    closed_at?: string | null;
+  }
 ): Promise<IllnessEpisode> {
   const res = await apiClient.patch<RawIllnessEpisode>(`/illness-episodes/${id}`, body);
   return toIllnessEpisode(res.data);

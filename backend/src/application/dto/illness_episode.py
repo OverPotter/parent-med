@@ -13,12 +13,15 @@ class IllnessEpisodeCreateDto(BaseModel):
 
     child_id: UUID = Field(..., description="ID ребёнка")
     started_at: date = Field(..., description="Дата начала")
+    title: str | None = Field(None, description="Короткое название эпизода")
     note: str | None = Field(None, description="Общая заметка")
 
 
 class IllnessEpisodeUpdateDto(BaseModel):
     """Обновление эпизода (закрытие, заметка)."""
 
+    started_at: date | None = Field(None, description="Дата начала")
+    title: str | None = Field(None, description="Короткое название эпизода")
     status: str | None = Field(None, description="Статус: active, closed")
     note: str | None = Field(None, description="Общая заметка")
     closed_at: datetime | None = Field(None, description="Дата закрытия")
@@ -30,6 +33,7 @@ class IllnessEpisodeResponseDto(ResponseBase):
     id: UUID
     child_id: UUID
     started_at: date
+    title: str | None
     status: str
     note: str | None
     closed_at: datetime | None

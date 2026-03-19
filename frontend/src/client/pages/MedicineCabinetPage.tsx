@@ -11,8 +11,10 @@ import {
   updateHouseholdMedicine,
 } from "@shared/api/householdMedicines";
 import { searchMedicineCatalog } from "@shared/api/medicineCatalog";
+import { DateField } from "@shared/components/DateField";
 import type { HouseholdMedicine, MedicineCatalogItem } from "@shared/types/api";
 import { formatDate } from "@shared/utils/date";
+import { normalizeIsoDateInput } from "@shared/utils/dateInput";
 import { useAppStore } from "@shared/store/useAppStore";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -150,6 +152,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
   const [newMedicineConcentration, setNewMedicineConcentration] = useState("");
   const [newMedicineDescription, setNewMedicineDescription] = useState("");
   const [newMedicineDosage, setNewMedicineDosage] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
   const isExpired = isExpiredDate(expiryDate);
@@ -165,6 +168,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
     mutationFn: createHouseholdMedicine,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] });
+      setFormError(null);
       setCatalogItem(null);
       setExpiryDate("");
       setOpenedAt("");
@@ -185,6 +189,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
     setOpenedAt("");
     setOpenedShelfDays("");
     setComment("");
+    setFormError(null);
   };
 
   const handleAddFromCatalog = (item: MedicineCatalogItem) => {
@@ -197,26 +202,52 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
   };
 
   const handleCreateNewAndAdd = () => {
-    if (!newMedicineName.trim() || !expiryDate) return;
+    const normalizedExpiryDate = normalizeIsoDateInput(expiryDate);
+    const normalizedOpenedAt = normalizeIsoDateInput(openedAt);
+
+    if (!newMedicineName.trim()) return;
+    if (!normalizedExpiryDate) {
+      setFormError("Укажите корректный срок годности через календарь.");
+      return;
+    }
+    if (openedAt && !normalizedOpenedAt) {
+      setFormError("Укажите корректную дату вскрытия через календарь.");
+      return;
+    }
+
+    setFormError(null);
     createHouseholdMutation.mutate({
       medicine_name: newMedicineName.trim(),
       medicine_form: newMedicineForm,
       medicine_concentration: newMedicineConcentration.trim() || null,
       medicine_description: newMedicineDescription.trim() || null,
       medicine_dosage: newMedicineDosage.trim() || null,
-      expiry_date: expiryDate,
-      opened_at: openedAt || null,
+      expiry_date: normalizedExpiryDate,
+      opened_at: normalizedOpenedAt,
       opened_shelf_days: openedShelfDays ? Number(openedShelfDays) : null,
       comment: comment.trim() || null,
     });
   };
 
   const handleAddSelected = () => {
-    if (!catalogItem || !expiryDate) return;
+    const normalizedExpiryDate = normalizeIsoDateInput(expiryDate);
+    const normalizedOpenedAt = normalizeIsoDateInput(openedAt);
+
+    if (!catalogItem) return;
+    if (!normalizedExpiryDate) {
+      setFormError("Укажите корректный срок годности через календарь.");
+      return;
+    }
+    if (openedAt && !normalizedOpenedAt) {
+      setFormError("Укажите корректную дату вскрытия через календарь.");
+      return;
+    }
+
+    setFormError(null);
     createHouseholdMutation.mutate({
       catalog_item_id: catalogItem.id,
-      expiry_date: expiryDate,
-      opened_at: openedAt || null,
+      expiry_date: normalizedExpiryDate,
+      opened_at: normalizedOpenedAt,
       opened_shelf_days: openedShelfDays ? Number(openedShelfDays) : null,
       comment: comment.trim() || null,
     });
@@ -232,7 +263,10 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
           <input
             type="text"
             value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
+            onChange={(e) => {
+              setSearchName(e.target.value);
+              setFormError(null);
+            }}
             className="mt-1 w-full max-w-xs rounded-lg border border-border bg-background px-3 py-2 text-foreground min-w-0"
             placeholder="Название препарата"
           />
@@ -252,7 +286,9 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   {item.name} ({item.form}
                   {item.concentration ? `, ${item.concentration}` : ""})
                 </p>
-                {item.dosage && <p className="mt-1 text-xs text-muted">Как применять: {item.dosage}</p>}
+                {item.dosage && (
+                  <p className="mt-1 text-xs text-muted">Как применять: {item.dosage}</p>
+                )}
                 {item.description && (
                   <p className="mt-1 line-clamp-2 text-xs text-muted">{item.description}</p>
                 )}
@@ -307,13 +343,19 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
           <input
             type="text"
             value={newMedicineName}
-            onChange={(e) => setNewMedicineName(e.target.value)}
+            onChange={(e) => {
+              setNewMedicineName(e.target.value);
+              setFormError(null);
+            }}
             placeholder="Название нового препарата"
             className="rounded-lg border border-border bg-background px-3 py-2 text-foreground min-w-0 flex-1 max-w-xs"
           />
           <select
             value={newMedicineForm}
-            onChange={(e) => setNewMedicineForm(e.target.value)}
+            onChange={(e) => {
+              setNewMedicineForm(e.target.value);
+              setFormError(null);
+            }}
             className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
           >
             <option value="таблетки">таблетки</option>
@@ -325,7 +367,10 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
           <input
             type="text"
             value={newMedicineConcentration}
-            onChange={(e) => setNewMedicineConcentration(e.target.value)}
+            onChange={(e) => {
+              setNewMedicineConcentration(e.target.value);
+              setFormError(null);
+            }}
             placeholder="Концентрация"
             className="rounded-lg border border-border bg-background px-3 py-2 text-foreground min-w-0 flex-1 max-w-xs"
           />
@@ -340,7 +385,10 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 <span className="block text-sm text-muted">Описание</span>
                 <textarea
                   value={newMedicineDescription}
-                  onChange={(e) => setNewMedicineDescription(e.target.value)}
+                  onChange={(e) => {
+                    setNewMedicineDescription(e.target.value);
+                    setFormError(null);
+                  }}
                   className="mt-1 min-h-20 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
                   placeholder="Для чего препарат и в каких случаях нужен"
                 />
@@ -349,7 +397,10 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 <span className="block text-sm text-muted">Как применять</span>
                 <textarea
                   value={newMedicineDosage}
-                  onChange={(e) => setNewMedicineDosage(e.target.value)}
+                  onChange={(e) => {
+                    setNewMedicineDosage(e.target.value);
+                    setFormError(null);
+                  }}
                   className="mt-1 min-h-20 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
                   placeholder="Например: по 5 мл 3 раза в день после еды"
                 />
@@ -360,20 +411,24 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
               <span className="block text-sm text-muted">Срок годности</span>
-              <input
-                type="date"
+              <DateField
                 value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                onChange={(nextValue) => {
+                  setExpiryDate(nextValue);
+                  setFormError(null);
+                }}
+                className="mt-1"
               />
             </label>
             <label className="block">
               <span className="block text-sm text-muted">Дата вскрытия</span>
-              <input
-                type="date"
+              <DateField
                 value={openedAt}
-                onChange={(e) => setOpenedAt(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                onChange={(nextValue) => {
+                  setOpenedAt(nextValue);
+                  setFormError(null);
+                }}
+                className="mt-1"
               />
             </label>
             <label className="block">
@@ -383,7 +438,10 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 min="1"
                 max="3650"
                 value={openedShelfDays}
-                onChange={(e) => setOpenedShelfDays(e.target.value)}
+                onChange={(e) => {
+                  setOpenedShelfDays(e.target.value);
+                  setFormError(null);
+                }}
                 className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
                 placeholder={
                   catalogItem?.defaultOpenedShelfDays
@@ -392,7 +450,8 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 }
               />
               <span className="mt-1 block text-xs text-muted">
-                Если у препарата есть срок после вскрытия в справочнике, он подставится автоматически.
+                Если у препарата есть срок после вскрытия в справочнике, он подставится
+                автоматически.
               </span>
             </label>
           </div>
@@ -404,19 +463,35 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
           )}
           {hasUnknownAfterOpening && (
             <p className="rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm text-sky-800">
-              Дата вскрытия указана, но срок после вскрытия не задан. Препарат сохранится, но
-              оценка после вскрытия будет считаться неизвестной.
+              Дата вскрытия указана, но срок после вскрытия не задан. Препарат сохранится, но оценка
+              после вскрытия будет считаться неизвестной.
             </p>
           )}
           <label className="block">
             <span className="block text-sm text-muted">Комментарий</span>
             <textarea
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={(e) => {
+                setComment(e.target.value);
+                setFormError(null);
+              }}
               className="mt-1 min-h-20 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
               placeholder="Например: только ночью после еды"
             />
           </label>
+          {(formError ||
+            (createHouseholdMutation.error as { response?: { data?: { detail?: string } } })
+              ?.response?.data?.detail) && (
+            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700">
+              {formError ??
+                (
+                  createHouseholdMutation.error as {
+                    response?: { data?: { detail?: string } };
+                  }
+                ).response?.data?.detail ??
+                "Не удалось добавить препарат."}
+            </p>
+          )}
           <div className="flex gap-2">
             {catalogItem ? (
               <button
@@ -431,7 +506,9 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
               <button
                 type="button"
                 onClick={handleCreateNewAndAdd}
-                disabled={!newMedicineName.trim() || !expiryDate || createHouseholdMutation.isPending}
+                disabled={
+                  !newMedicineName.trim() || !expiryDate || createHouseholdMutation.isPending
+                }
                 className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
               >
                 Добавить свой препарат в аптечку
@@ -451,6 +528,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setNewMedicineConcentration("");
                 setNewMedicineDescription("");
                 setNewMedicineDosage("");
+                setFormError(null);
               }}
               className="rounded-lg border border-border px-4 py-2 hover:bg-muted/30"
             >
@@ -484,7 +562,9 @@ function MedicineItemCard({
   const [medicineConcentration, setMedicineConcentration] = useState(
     medicine.medicineConcentration ?? ""
   );
-  const [medicineDescription, setMedicineDescription] = useState(medicine.medicineDescription ?? "");
+  const [medicineDescription, setMedicineDescription] = useState(
+    medicine.medicineDescription ?? ""
+  );
   const [medicineDosage, setMedicineDosage] = useState(medicine.medicineDosage ?? "");
   const isExpired = isExpiredDate(expiryDate);
   const hasUnknownAfterOpening = hasUnknownOpenedShelfLife(openedAt, openedShelfDays);
@@ -539,7 +619,8 @@ function MedicineItemCard({
             <p className="mt-1 text-sm text-muted">Описание: {medicine.medicineDescription}</p>
           )}
           <p className="mt-2 text-sm text-muted">
-            Срок годности: {formatDate(medicine.expiryDate)} · Осталось: {medicine.expiresInDays} дн.
+            Срок годности: {formatDate(medicine.expiryDate)} · Осталось: {medicine.expiresInDays}{" "}
+            дн.
           </p>
           {medicine.openedAt && (
             <p className="text-sm text-muted">
@@ -552,10 +633,10 @@ function MedicineItemCard({
                 : ""}
             </p>
           )}
-          <p className={`text-sm ${intakeMessage.className}`}>
-            {intakeMessage.text}
-          </p>
-          {medicine.comment && <p className="text-sm text-muted">Комментарий: {medicine.comment}</p>}
+          <p className={`text-sm ${intakeMessage.className}`}>{intakeMessage.text}</p>
+          {medicine.comment && (
+            <p className="text-sm text-muted">Комментарий: {medicine.comment}</p>
+          )}
         </div>
         <div className="flex gap-2">
           <button
@@ -626,21 +707,11 @@ function MedicineItemCard({
           )}
           <label className="block">
             <span className="block text-sm text-muted">Срок годности</span>
-            <input
-              type="date"
-              value={expiryDate}
-              onChange={(e) => setExpiryDate(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-            />
+            <DateField value={expiryDate} onChange={setExpiryDate} className="mt-1" />
           </label>
           <label className="block">
             <span className="block text-sm text-muted">Дата вскрытия</span>
-            <input
-              type="date"
-              value={openedAt}
-              onChange={(e) => setOpenedAt(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-            />
+            <DateField value={openedAt} onChange={setOpenedAt} className="mt-1" />
           </label>
           <label className="block">
             <span className="block text-sm text-muted">Срок после вскрытия, дней</span>
@@ -655,8 +726,8 @@ function MedicineItemCard({
           </label>
           {isExpired && (
             <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 sm:col-span-2">
-              Срок годности уже истёк. Препарат останется в аптечке для учёта, но использовать его
-              в приёмах нельзя.
+              Срок годности уже истёк. Препарат останется в аптечке для учёта, но использовать его в
+              приёмах нельзя.
             </p>
           )}
           {hasUnknownAfterOpening && (
@@ -678,7 +749,8 @@ function MedicineItemCard({
               type="button"
               onClick={() => updateMutation.mutate()}
               disabled={
-                updateMutation.isPending || (isOwnMedicine && (!medicineName.trim() || !medicineForm.trim()))
+                updateMutation.isPending ||
+                (isOwnMedicine && (!medicineName.trim() || !medicineForm.trim()))
               }
               className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
             >

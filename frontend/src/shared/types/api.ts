@@ -38,6 +38,7 @@ export interface Child {
   familyId: string;
   name: string;
   birthDate: string | null;
+  ageLabel: string | null;
 }
 
 export interface WeightEntry {
@@ -83,9 +84,17 @@ export interface IllnessEpisode {
   id: string;
   childId: string;
   startedAt: string;
+  title: string | null;
   status: string;
   note: string | null;
   closedAt: string | null;
+}
+
+export interface IllnessComment {
+  id: string;
+  episodeId: string;
+  createdAt: string;
+  text: string;
 }
 
 export interface TemperatureEntry {

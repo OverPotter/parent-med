@@ -54,6 +54,8 @@ pnpm-lock.yaml
 # Build output
 frontend/dist/
 frontend/build/
+frontend/dev-dist/
+frontend/*.tsbuildinfo
 
 # ========== IDE ==========
 .idea/

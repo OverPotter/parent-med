@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.temperature_entry import TemperatureEntry
 from src.domain.repositories.temperature_entry_repository import TemperatureEntryRepository
-from src.infrastructure.database.models.temperature_entry import TemperatureEntryModel
+from src.infrastructure.database.models.illness_episode_event import IllnessEpisodeEventModel
 
 
 class SqlTemperatureEntryRepository(TemperatureEntryRepository):
@@ -16,38 +16,45 @@ class SqlTemperatureEntryRepository(TemperatureEntryRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    def _to_entity(self, m: TemperatureEntryModel) -> TemperatureEntry:
+    def _to_entity(self, m: IllnessEpisodeEventModel) -> TemperatureEntry:
         return TemperatureEntry(
             id=m.id,
             episode_id=m.episode_id,
-            value_celsius=m.value_celsius,
-            measured_at=m.measured_at,
+            value_celsius=m.value_celsius or 0,
+            measured_at=m.occurred_at,
             method=m.method,
             comment=m.comment,
         )
 
-    def _to_model(self, e: TemperatureEntry) -> TemperatureEntryModel:
-        return TemperatureEntryModel(
+    def _to_model(self, e: TemperatureEntry) -> IllnessEpisodeEventModel:
+        return IllnessEpisodeEventModel(
             id=e.id,
             episode_id=e.episode_id,
+            event_type="temperature",
+            occurred_at=e.measured_at,
             value_celsius=e.value_celsius,
-            measured_at=e.measured_at,
             method=e.method,
             comment=e.comment,
         )
 
     async def get_by_id(self, id: UUID) -> TemperatureEntry | None:
         result = await self._session.execute(
-            select(TemperatureEntryModel).where(TemperatureEntryModel.id == id)
+            select(IllnessEpisodeEventModel).where(
+                IllnessEpisodeEventModel.id == id,
+                IllnessEpisodeEventModel.event_type == "temperature",
+            )
         )
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
 
     async def get_by_episode_id(self, episode_id: UUID) -> list[TemperatureEntry]:
         result = await self._session.execute(
-            select(TemperatureEntryModel)
-            .where(TemperatureEntryModel.episode_id == episode_id)
-            .order_by(TemperatureEntryModel.measured_at.desc())
+            select(IllnessEpisodeEventModel)
+            .where(
+                IllnessEpisodeEventModel.episode_id == episode_id,
+                IllnessEpisodeEventModel.event_type == "temperature",
+            )
+            .order_by(IllnessEpisodeEventModel.occurred_at.desc())
         )
         return [self._to_entity(r) for r in result.scalars().all()]
 
@@ -60,7 +67,10 @@ class SqlTemperatureEntryRepository(TemperatureEntryRepository):
 
     async def delete(self, id: UUID) -> bool:
         result = await self._session.execute(
-            select(TemperatureEntryModel).where(TemperatureEntryModel.id == id)
+            select(IllnessEpisodeEventModel).where(
+                IllnessEpisodeEventModel.id == id,
+                IllnessEpisodeEventModel.event_type == "temperature",
+            )
         )
         row = result.scalars().one_or_none()
         if row:
