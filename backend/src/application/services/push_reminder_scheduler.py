@@ -15,9 +15,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from src.application.services.safety_engine import calculate_household_medicine_status
 from src.core.config import settings
-from src.domain.entities.episode_medication_plan import EpisodeMedicationPlan
-from src.domain.entities.push_subscription import PushSubscription
 from src.domain.entities.household_medicine import HouseholdMedicine
+from src.domain.entities.push_subscription import PushSubscription
+from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
+from src.infrastructure.database.models.household_medicine_notification_delivery import (
+    HouseholdMedicineNotificationDeliveryModel,
+)
 from src.infrastructure.database.repositories.account_repository import SqlAccountRepository
 from src.infrastructure.database.repositories.administration_event_repository import (
     SqlAdministrationEventRepository,
@@ -35,10 +38,6 @@ from src.infrastructure.database.repositories.illness_episode_repository import 
 from src.infrastructure.database.repositories.push_subscription_repository import (
     SqlPushSubscriptionRepository,
 )
-from src.infrastructure.database.models.household_medicine_notification_delivery import (
-    HouseholdMedicineNotificationDeliveryModel,
-)
-from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
 
 logger = logging.getLogger(__name__)
 DEFAULT_REMINDER_BEFORE_MINUTES = 10
@@ -378,10 +377,7 @@ class PushNotificationScheduler:
                         await plan_repo.update_notification_marks(updated)
 
                 overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
-                if (
-                    now >= overdue_at
-                    and plan.last_overdue_notification_for_at != next_allowed_at
-                ):
+                if now >= overdue_at and plan.last_overdue_notification_for_at != next_allowed_at:
                     payload = {
                         "title": "Приём не отмечен",
                         "body": _format_overdue_body(
@@ -424,9 +420,7 @@ class PushNotificationScheduler:
         subscription_repo: SqlPushSubscriptionRepository,
         now: datetime,
     ) -> None:
-        result = await session.execute(
-            select(HouseholdMedicineModel.family_id).distinct()
-        )
+        result = await session.execute(select(HouseholdMedicineModel.family_id).distinct())
         family_ids = [family_id for family_id in result.scalars().all() if family_id is not None]
         today = now.astimezone(self._timezone).date()
 
@@ -598,7 +592,9 @@ class PushNotificationScheduler:
                 sent = True
             except WebPushException as exc:  # pragma: no branch - статусы зависят от клиента
                 response = getattr(exc, "response", None)
-                status_code = getattr(response, "status_code", None) or getattr(response, "status", None)
+                status_code = getattr(response, "status_code", None) or getattr(
+                    response, "status", None
+                )
                 if status_code in {404, 410}:
                     logger.info("Removing stale push subscription: %s", subscription.endpoint)
                     await subscription_repo.delete(subscription.id)

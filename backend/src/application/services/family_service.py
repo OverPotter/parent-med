@@ -174,9 +174,11 @@ class FamilyService:
                 email=target.email,
                 password_hash=target.password_hash,
                 family_id=target.family_id,
-                display_name=((dto.display_name or "").strip() or target.login)
-                if "display_name" in dto.model_fields_set
-                else target.display_name,
+                display_name=(
+                    ((dto.display_name or "").strip() or target.login)
+                    if "display_name" in dto.model_fields_set
+                    else target.display_name
+                ),
                 relationship_label=(
                     (dto.relationship_label or "").strip() or None
                     if "relationship_label" in dto.model_fields_set

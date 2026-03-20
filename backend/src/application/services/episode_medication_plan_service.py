@@ -201,8 +201,10 @@ class EpisodeMedicationPlanService:
         dose_mg_per_kg = (
             dto.dose_mg_per_kg if "dose_mg_per_kg" in fields_set else entity.dose_mg_per_kg
         )
-        notes = dto.notes.strip() if "notes" in fields_set and dto.notes else (
-            None if "notes" in fields_set else entity.notes
+        notes = (
+            dto.notes.strip()
+            if "notes" in fields_set and dto.notes
+            else (None if "notes" in fields_set else entity.notes)
         )
         if not household_medicine_id and not custom_medicine_name:
             raise ValidationError("Выбери лекарство из аптечки или введи название вручную")

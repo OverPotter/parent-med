@@ -5,9 +5,9 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from src.application.services.push_reminder_scheduler import PushNotificationScheduler
 from src.core.config import settings
 from src.core.logging import setup_logging
-from src.application.services.push_reminder_scheduler import PushNotificationScheduler
 
 # Движок и фабрика сессий создаются при импорте после загрузки моделей
 _engine = None

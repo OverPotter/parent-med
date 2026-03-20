@@ -123,7 +123,9 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
 
     async def get_for_push_notifications(self) -> list[EpisodeMedicationPlan]:
         result = await self._session.execute(
-            select(EpisodeMedicationPlanModel).order_by(EpisodeMedicationPlanModel.created_at.desc())
+            select(EpisodeMedicationPlanModel).order_by(
+                EpisodeMedicationPlanModel.created_at.desc()
+            )
         )
         return [self._to_entity(row) for row in result.scalars().all()]
 

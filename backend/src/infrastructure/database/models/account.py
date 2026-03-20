@@ -36,24 +36,19 @@ class AccountModel(Base):
         Integer, nullable=False, default=10, server_default="10"
     )
     cabinet_notify_30_days: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False, default=True, server_default="true"
+        Boolean, nullable=False, default=True, server_default="true"
     )
     cabinet_notify_15_days: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False, default=True, server_default="true"
+        Boolean, nullable=False, default=True, server_default="true"
     )
     cabinet_notify_7_days: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False, default=True, server_default="true"
+        Boolean, nullable=False, default=True, server_default="true"
     )
     cabinet_notify_3_days: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False, default=True, server_default="true"
+        Boolean, nullable=False, default=True, server_default="true"
     )
     cabinet_notify_1_day: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False, default=True, server_default="true"
+        Boolean, nullable=False, default=True, server_default="true"
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

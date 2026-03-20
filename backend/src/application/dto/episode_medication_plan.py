@@ -22,9 +22,7 @@ class EpisodeMedicationPlanCreateDto(BaseModel):
         None, ge=1, le=24, description="Максимум приёмов за сутки"
     )
     weight_kg: float | None = Field(None, ge=0.1, le=200, description="Вес ребёнка на момент плана")
-    dose_mg_per_kg: float | None = Field(
-        None, ge=0.1, le=100, description="Расчётная доза в мг/кг"
-    )
+    dose_mg_per_kg: float | None = Field(None, ge=0.1, le=100, description="Расчётная доза в мг/кг")
     notes: str | None = Field(None, description="Комментарий к схеме")
 
 
@@ -37,11 +35,11 @@ class EpisodeMedicationPlanUpdateDto(BaseModel):
     min_interval_minutes: int | None = Field(
         None, ge=1, le=1440, description="Минимальный интервал в минутах"
     )
-    max_doses_per_day: int | None = Field(None, ge=1, le=24, description="Максимум приёмов за сутки")
-    weight_kg: float | None = Field(None, ge=0.1, le=200, description="Вес ребёнка на момент плана")
-    dose_mg_per_kg: float | None = Field(
-        None, ge=0.1, le=100, description="Расчётная доза в мг/кг"
+    max_doses_per_day: int | None = Field(
+        None, ge=1, le=24, description="Максимум приёмов за сутки"
     )
+    weight_kg: float | None = Field(None, ge=0.1, le=200, description="Вес ребёнка на момент плана")
+    dose_mg_per_kg: float | None = Field(None, ge=0.1, le=100, description="Расчётная доза в мг/кг")
     notes: str | None = Field(None, description="Комментарий к схеме")
 
 

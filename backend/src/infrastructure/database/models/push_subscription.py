@@ -34,4 +34,6 @@ class PushSubscriptionModel(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
-    account: Mapped["AccountModel"] = relationship("AccountModel", back_populates="push_subscriptions")
+    account: Mapped["AccountModel"] = relationship(
+        "AccountModel", back_populates="push_subscriptions"
+    )

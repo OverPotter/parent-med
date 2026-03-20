@@ -48,4 +48,5 @@ class Settings(BaseSettings):
             return None
         return self.web_push_private_key.replace("\\n", "\n")
 
+
 settings = Settings()

@@ -89,8 +89,7 @@ class IllnessEpisodeService:
         active = await self._repo.get_active_by_child_id(dto.child_id)
         if active:
             raise ValidationError(
-                "У ребёнка уже есть активный эпизод. "
-                "Закройте его перед созданием нового."
+                "У ребёнка уже есть активный эпизод. " "Закройте его перед созданием нового."
             )
         entity = IllnessEpisode(
             id=uuid4(),
@@ -116,8 +115,10 @@ class IllnessEpisodeService:
         fields_set = dto.model_fields_set
 
         started_at = dto.started_at if "started_at" in fields_set else entity.started_at
-        title = dto.title.strip() if "title" in fields_set and dto.title else (
-            None if "title" in fields_set else entity.title
+        title = (
+            dto.title.strip()
+            if "title" in fields_set and dto.title
+            else (None if "title" in fields_set else entity.title)
         )
         status = dto.status if "status" in fields_set else entity.status
         medication_mode = (
