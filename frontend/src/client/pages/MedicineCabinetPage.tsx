@@ -14,6 +14,7 @@ import { searchMedicineCatalog } from "@shared/api/medicineCatalog";
 import { DateField } from "@shared/components/DateField";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface, Surface } from "@shared/components/Surface";
+import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import type { HouseholdMedicine, MedicineCatalogItem } from "@shared/types/api";
 import { formatDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
@@ -32,6 +33,7 @@ export function MedicineCabinetPage() {
   const [view, setView] = useState<"cabinet" | "add">("cabinet");
   const [cabinetSearch, setCabinetSearch] = useState("");
   const accountId = useAppStore((s) => s.accountId);
+  const liveQueryOptions = useLiveQueryOptions(10000);
 
   const {
     data: medicines = [],
@@ -41,6 +43,7 @@ export function MedicineCabinetPage() {
     queryKey: ["household-medicines", accountId],
     queryFn: fetchHouseholdMedicines,
     enabled: !!accountId,
+    ...liveQueryOptions,
   });
 
   const deleteMutation = useMutation({

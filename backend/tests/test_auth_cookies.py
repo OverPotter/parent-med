@@ -14,6 +14,8 @@ def make_auth_response() -> AuthResponseDto:
             id="00000000-0000-0000-0000-000000000001",
             email="test@example.com",
             family_id="00000000-0000-0000-0000-000000000002",
+            display_name="Мама",
+            family_role="owner",
         ),
         family=FamilyResponseDto(
             id="00000000-0000-0000-0000-000000000002",

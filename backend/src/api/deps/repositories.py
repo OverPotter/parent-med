@@ -11,6 +11,7 @@ from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.episode_medication_plan_repository import (
     EpisodeMedicationPlanRepository,
 )
+from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.illness_comment_repository import IllnessCommentRepository
@@ -30,6 +31,9 @@ from src.infrastructure.database.repositories.administration_event_repository im
 from src.infrastructure.database.repositories.child_repository import SqlChildRepository
 from src.infrastructure.database.repositories.episode_medication_plan_repository import (
     SqlEpisodeMedicationPlanRepository,
+)
+from src.infrastructure.database.repositories.family_invite_repository import (
+    SqlFamilyInviteRepository,
 )
 from src.infrastructure.database.repositories.family_repository import SqlFamilyRepository
 from src.infrastructure.database.repositories.household_medicine_repository import (
@@ -68,6 +72,12 @@ def get_account_session_repo(
 
 def get_family_repo(session: AsyncSession = Depends(get_db_session)) -> FamilyRepository:
     return SqlFamilyRepository(session)
+
+
+def get_family_invite_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> FamilyInviteRepository:
+    return SqlFamilyInviteRepository(session)
 
 
 def get_child_repo(session: AsyncSession = Depends(get_db_session)) -> ChildRepository:

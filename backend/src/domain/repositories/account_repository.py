@@ -22,7 +22,12 @@ class AccountRepository(BaseRepository[Account]):
 
     @abstractmethod
     async def get_by_family_id(self, family_id: UUID) -> Account | None:
-        """Получить аккаунт по family_id."""
+        """Получить основной аккаунт семьи."""
+        ...
+
+    @abstractmethod
+    async def list_by_family_id(self, family_id: UUID) -> list[Account]:
+        """Получить все аккаунты семьи."""
         ...
 
     @abstractmethod

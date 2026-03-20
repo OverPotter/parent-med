@@ -3,29 +3,21 @@
  */
 
 import { apiClient } from "./client";
-import type { Account, AuthSessionResponse, AuthStateResponse } from "@shared/types/api";
-import { toFamily } from "@shared/types/transform";
-
-interface RawAccount {
-  id: string;
-  email: string;
-  family_id: string;
-}
+import type { AuthSessionResponse, AuthStateResponse } from "@shared/types/api";
+import { toAccount, toFamily } from "@shared/types/transform";
 
 interface RawAuthResponse {
   token_type: string;
   access_token: string;
   refresh_token: string;
-  account: RawAccount;
-  family: { id: string; name: string };
-}
-
-function toAccount(raw: RawAccount): Account {
-  return {
-    id: raw.id,
-    email: raw.email,
-    familyId: raw.family_id,
+  account: {
+    id: string;
+    email: string;
+    family_id: string;
+    display_name: string;
+    family_role: string;
   };
+  family: { id: string; name: string };
 }
 
 function toAuthResponse(raw: RawAuthResponse): AuthSessionResponse {
@@ -39,7 +31,13 @@ function toAuthResponse(raw: RawAuthResponse): AuthSessionResponse {
 }
 
 function toAuthState(raw: {
-  account: RawAccount;
+  account: {
+    id: string;
+    email: string;
+    family_id: string;
+    display_name: string;
+    family_role: string;
+  };
   family: { id: string; name: string };
 }): AuthStateResponse {
   return {
@@ -51,6 +49,8 @@ function toAuthState(raw: {
 export async function register(payload: {
   email: string;
   password: string;
+  display_name?: string;
+  invite_token?: string;
 }): Promise<AuthSessionResponse> {
   const res = await apiClient.post<RawAuthResponse>("/auth/signup", payload);
   return toAuthResponse(res.data);
@@ -78,7 +78,13 @@ export async function refreshSession(refreshToken?: string | null): Promise<Auth
 
 export async function fetchMe(): Promise<AuthStateResponse> {
   const res = await apiClient.get<{
-    account: RawAccount;
+    account: {
+      id: string;
+      email: string;
+      family_id: string;
+      display_name: string;
+      family_role: string;
+    };
     family: { id: string; name: string };
   }>("/auth/me");
   return toAuthState(res.data);

@@ -26,17 +26,19 @@ interface AppState {
   refreshToken: string | null;
   accountId: string | null;
   accountEmail: string | null;
+  accountDisplayName: string | null;
+  accountFamilyRole: string | null;
   /** ID выбранной семьи для контекста (MVP: один пользователь — одна семья). */
   currentFamilyId: string | null;
   currentFamilyName: string | null;
   setSession: (session: {
     accessToken: string;
     refreshToken: string;
-    account: { id: string; email: string };
+    account: { id: string; email: string; displayName: string; familyRole: string };
     family: { id: string; name: string };
   }) => void;
   setAuthState: (state: {
-    account: { id: string; email: string };
+    account: { id: string; email: string; displayName: string; familyRole: string };
     family: { id: string; name: string };
   }) => void;
   clearSession: () => void;
@@ -70,6 +72,8 @@ export const useAppStore = create<AppState>()(
       refreshToken: null,
       accountId: null,
       accountEmail: null,
+      accountDisplayName: null,
+      accountFamilyRole: null,
       currentFamilyId: null,
       currentFamilyName: null,
       setSession: (session) =>
@@ -78,6 +82,8 @@ export const useAppStore = create<AppState>()(
           refreshToken: session.refreshToken,
           accountId: session.account.id,
           accountEmail: session.account.email,
+          accountDisplayName: session.account.displayName,
+          accountFamilyRole: session.account.familyRole,
           currentFamilyId: session.family.id,
           currentFamilyName: session.family.name,
         }),
@@ -85,6 +91,8 @@ export const useAppStore = create<AppState>()(
         set({
           accountId: state.account.id,
           accountEmail: state.account.email,
+          accountDisplayName: state.account.displayName,
+          accountFamilyRole: state.account.familyRole,
           currentFamilyId: state.family.id,
           currentFamilyName: state.family.name,
         }),
@@ -94,6 +102,8 @@ export const useAppStore = create<AppState>()(
           refreshToken: null,
           accountId: null,
           accountEmail: null,
+          accountDisplayName: null,
+          accountFamilyRole: null,
           currentFamilyId: null,
           currentFamilyName: null,
         }),
@@ -114,6 +124,8 @@ export const useAppStore = create<AppState>()(
         refreshToken: s.refreshToken,
         accountId: s.accountId,
         accountEmail: s.accountEmail,
+        accountDisplayName: s.accountDisplayName,
+        accountFamilyRole: s.accountFamilyRole,
         currentFamilyId: s.currentFamilyId,
         currentFamilyName: s.currentFamilyName,
       }),

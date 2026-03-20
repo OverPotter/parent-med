@@ -11,6 +11,8 @@ export interface Account {
   id: string;
   email: string;
   familyId: string;
+  displayName: string;
+  familyRole: string;
 }
 
 export interface AuthSessionResponse {
@@ -24,6 +26,24 @@ export interface AuthSessionResponse {
 export interface AuthStateResponse {
   account: Account;
   family: Family;
+}
+
+export interface FamilyMember extends Account {}
+
+export interface FamilyInvite {
+  token: string;
+  familyId: string;
+  familyName: string;
+  familyRole: string;
+  invitePath: string;
+  expiresAt: string;
+}
+
+export interface FamilyInvitePreview {
+  familyId: string;
+  familyName: string;
+  familyRole: string;
+  expiresAt: string;
 }
 
 export interface Parent {
@@ -113,6 +133,8 @@ export interface AdministrationEvent {
   householdMedicineId: string | null;
   customMedicineName: string | null;
   administeredAt: string;
+  administeredByAccountId: string | null;
+  administeredByNameSnapshot: string | null;
   amount: string;
   unit: string | null;
   reason: string | null;

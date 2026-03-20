@@ -4,6 +4,10 @@
 
 import type {
   Family,
+  Account,
+  FamilyMember,
+  FamilyInvite,
+  FamilyInvitePreview,
   Parent,
   Child,
   WeightEntry,
@@ -19,6 +23,14 @@ import type {
 interface RawFamily {
   id: string;
   name: string;
+}
+
+interface RawAccount {
+  id: string;
+  email: string;
+  family_id: string;
+  display_name: string;
+  family_role: string;
 }
 
 interface RawChild {
@@ -108,9 +120,27 @@ interface RawAdministrationEvent {
   household_medicine_id: string | null;
   custom_medicine_name: string | null;
   administered_at: string;
+  administered_by_account_id: string | null;
+  administered_by_name_snapshot: string | null;
   amount: string;
   unit: string | null;
   reason: string | null;
+}
+
+interface RawFamilyInvite {
+  token: string;
+  family_id: string;
+  family_name: string;
+  family_role: string;
+  invite_path: string;
+  expires_at: string;
+}
+
+interface RawFamilyInvitePreview {
+  family_id: string;
+  family_name: string;
+  family_role: string;
+  expires_at: string;
 }
 
 interface RawEpisodeMedicationPlan {
@@ -129,6 +159,20 @@ interface RawEpisodeMedicationPlan {
 
 export function toFamily(r: RawFamily): Family {
   return { id: r.id, name: r.name };
+}
+
+export function toAccount(r: RawAccount): Account {
+  return {
+    id: r.id,
+    email: r.email,
+    familyId: r.family_id,
+    displayName: r.display_name,
+    familyRole: r.family_role,
+  };
+}
+
+export function toFamilyMember(r: RawAccount): FamilyMember {
+  return toAccount(r);
 }
 
 export function toParent(r: RawParent): Parent {
@@ -235,9 +279,31 @@ export function toAdministrationEvent(r: RawAdministrationEvent): Administration
     householdMedicineId: r.household_medicine_id ?? null,
     customMedicineName: r.custom_medicine_name ?? null,
     administeredAt: r.administered_at,
+    administeredByAccountId: r.administered_by_account_id ?? null,
+    administeredByNameSnapshot: r.administered_by_name_snapshot ?? null,
     amount: r.amount,
     unit: r.unit ?? null,
     reason: r.reason ?? null,
+  };
+}
+
+export function toFamilyInvite(r: RawFamilyInvite): FamilyInvite {
+  return {
+    token: r.token,
+    familyId: r.family_id,
+    familyName: r.family_name,
+    familyRole: r.family_role,
+    invitePath: r.invite_path,
+    expiresAt: r.expires_at,
+  };
+}
+
+export function toFamilyInvitePreview(r: RawFamilyInvitePreview): FamilyInvitePreview {
+  return {
+    familyId: r.family_id,
+    familyName: r.family_name,
+    familyRole: r.family_role,
+    expiresAt: r.expires_at,
   };
 }
 

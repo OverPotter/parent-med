@@ -24,3 +24,9 @@ class FamilyResponseDto(ResponseBase):
 
     id: UUID
     name: str
+
+
+class FamilyMemberUpdateDto(BaseModel):
+    """Обновление участника семьи."""
+
+    family_role: str = Field(..., description="Роль аккаунта в семье: owner или adult")

@@ -42,6 +42,7 @@ from src.infrastructure.database.models.household_medicine import HouseholdMedic
 
 logger = logging.getLogger(__name__)
 DEFAULT_REMINDER_BEFORE_MINUTES = 10
+OVERDUE_REMINDER_AFTER_MINUTES = 2
 MEDICINE_CABINET_REMINDER_OFFSETS = (7, 3, 1)
 
 try:
@@ -59,20 +60,32 @@ except ImportError:  # pragma: no cover - зависит от окружения
 def _format_due_body(child_name: str, medicine_name: str, dose_amount: str) -> str:
     dose_text = dose_amount.strip()
     if dose_text:
-        return f"{child_name}: сейчас можно дать {medicine_name} {dose_text}."
-    return f"{child_name}: сейчас пора дать {medicine_name}."
+        return (
+            f"Ребёнок: {child_name}\n"
+            f"Лекарство: {medicine_name}\n"
+            f"Доза: {dose_text}\n"
+            "Откройте наблюдение и отметьте приём."
+        )
+    return (
+        f"Ребёнок: {child_name}\n"
+        f"Лекарство: {medicine_name}\n"
+        "Сейчас пора дать препарат и отметить приём."
+    )
 
 
 def _format_overdue_body(child_name: str, medicine_name: str, dose_amount: str) -> str:
     dose_text = dose_amount.strip()
     if dose_text:
         return (
-            f"{child_name}: уже 2 минуты можно дать {medicine_name} {dose_text}. "
-            "Если уже дали, просто отметьте приём."
+            f"Ребёнок: {child_name}\n"
+            f"Лекарство: {medicine_name}\n"
+            f"Доза: {dose_text}\n"
+            "Приём ещё не отмечен. Если уже дали препарат, просто отметьте приём."
         )
     return (
-        f"{child_name}: уже 2 минуты пора дать {medicine_name}. "
-        "Если уже дали, просто отметьте приём."
+        f"Ребёнок: {child_name}\n"
+        f"Лекарство: {medicine_name}\n"
+        "Приём ещё не отмечен. Если уже дали препарат, просто отметьте приём."
     )
 
 
@@ -85,10 +98,16 @@ def _format_before_body(
     dose_text = dose_amount.strip()
     if dose_text:
         return (
-            f"{child_name}: через {reminder_before_minutes} мин можно дать "
-            f"{medicine_name} {dose_text}."
+            f"Через {reminder_before_minutes} мин можно дать препарат.\n"
+            f"Ребёнок: {child_name}\n"
+            f"Лекарство: {medicine_name}\n"
+            f"Доза: {dose_text}"
         )
-    return f"{child_name}: через {reminder_before_minutes} мин можно будет дать {medicine_name}."
+    return (
+        f"Через {reminder_before_minutes} мин можно дать препарат.\n"
+        f"Ребёнок: {child_name}\n"
+        f"Лекарство: {medicine_name}"
+    )
 
 
 def _normalize_medicine_name(value: str | None) -> str:
@@ -122,10 +141,12 @@ def _build_cabinet_payload(
     label = "срок после вскрытия" if is_opened_limit else "срок годности"
     day_text = _format_days_label(days_before)
     return {
-        "title": f"{medicine.medicine_name} скоро нельзя будет принимать",
+        "title": "Аптечка",
         "body": (
-            f"Через {day_text} истечёт {label}. "
-            f"Проверь аптечку до {target_date.strftime('%d.%m.%Y')}."
+            f"Лекарство: {medicine.medicine_name}\n"
+            f"Что истечёт: {label}\n"
+            f"Когда: через {day_text}, до {target_date.strftime('%d.%m.%Y')}\n"
+            "Проверьте упаковку в аптечке."
         ),
         "url": "/medicine-cabinet",
         "tag": f"cabinet-{medicine.id}-{target_date.isoformat()}-{days_before}",
@@ -145,10 +166,12 @@ def _build_cabinet_expired_payload(
 ) -> dict[str, Any]:
     label = "срок после вскрытия" if is_opened_limit else "срок годности"
     return {
-        "title": f"{medicine.medicine_name} больше нельзя принимать",
+        "title": "Аптечка",
         "body": (
-            f"Истёк {label} {target_date.strftime('%d.%m.%Y')}. "
-            "Проверь упаковку в аптечке."
+            f"Лекарство: {medicine.medicine_name}\n"
+            f"Истёк: {label}\n"
+            f"Дата: {target_date.strftime('%d.%m.%Y')}\n"
+            "Проверьте упаковку и при необходимости спишите препарат."
         ),
         "url": "/medicine-cabinet",
         "tag": f"cabinet-expired-{medicine.id}-{target_date.isoformat()}",
@@ -307,14 +330,14 @@ class PushNotificationScheduler:
                         and plan.last_before_notification_for_at != next_allowed_at
                     ):
                         payload = {
-                            "title": f"{medicine_name} скоро можно дать",
+                            "title": "Скоро можно дать",
                             "body": _format_before_body(
                                 child.name,
                                 medicine_name,
                                 plan.dose_amount,
                                 reminder_before_minutes,
                             ),
-                            "url": f"/children/{child.id}/illness",
+                            "url": "/illnesses/active",
                             "tag": f"plan-before-{plan.id}-{int(next_allowed_at.timestamp())}",
                             "data": {
                                 "childId": str(child.id),
@@ -332,13 +355,13 @@ class PushNotificationScheduler:
 
                 if now >= next_allowed_at and plan.last_due_notification_for_at != next_allowed_at:
                     payload = {
-                        "title": f"Можно дать {medicine_name}",
+                        "title": "Пора дать",
                         "body": _format_due_body(
                             child.name,
                             medicine_name,
                             plan.dose_amount,
                         ),
-                        "url": f"/children/{child.id}/illness",
+                        "url": "/illnesses/active",
                         "tag": f"plan-due-{plan.id}-{int(next_allowed_at.timestamp())}",
                         "data": {
                             "childId": str(child.id),
@@ -354,19 +377,19 @@ class PushNotificationScheduler:
                         updated = replace(plan, last_due_notification_for_at=next_allowed_at)
                         await plan_repo.update_notification_marks(updated)
 
-                overdue_at = next_allowed_at + timedelta(minutes=2)
+                overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
                 if (
                     now >= overdue_at
                     and plan.last_overdue_notification_for_at != next_allowed_at
                 ):
                     payload = {
-                        "title": f"{medicine_name} всё ещё не отмечен",
+                        "title": "Приём не отмечен",
                         "body": _format_overdue_body(
                             child.name,
                             medicine_name,
                             plan.dose_amount,
                         ),
-                        "url": f"/children/{child.id}/illness",
+                        "url": "/illnesses/active",
                         "tag": f"plan-overdue-{plan.id}-{int(next_allowed_at.timestamp())}",
                         "data": {
                             "childId": str(child.id),

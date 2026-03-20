@@ -41,6 +41,8 @@ class AdministrationService:
             household_medicine_id=entity.household_medicine_id,
             custom_medicine_name=entity.custom_medicine_name,
             administered_at=entity.administered_at,
+            administered_by_account_id=entity.administered_by_account_id,
+            administered_by_name_snapshot=entity.administered_by_name_snapshot,
             amount=entity.amount,
             unit=entity.unit,
             reason=entity.reason,
@@ -104,6 +106,8 @@ class AdministrationService:
         self,
         dto: AdministrationEventCreateDto,
         current_family_id: UUID,
+        administered_by_account_id: UUID,
+        administered_by_name_snapshot: str,
     ) -> AdministrationEventResponseDto:
         episode = await self._get_episode_for_account(dto.episode_id, current_family_id)
         if episode.status != "active":
@@ -125,6 +129,8 @@ class AdministrationService:
             household_medicine_id=dto.household_medicine_id,
             custom_medicine_name=(dto.custom_medicine_name or "").strip() or None,
             administered_at=administered_at,
+            administered_by_account_id=administered_by_account_id,
+            administered_by_name_snapshot=administered_by_name_snapshot.strip() or None,
             amount=dto.amount,
             unit=dto.unit,
             reason=dto.reason,

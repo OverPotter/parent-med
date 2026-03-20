@@ -8,6 +8,7 @@ from src.api.deps.repositories import (
     get_administration_repo,
     get_child_repo,
     get_episode_medication_plan_repo,
+    get_family_invite_repo,
     get_family_repo,
     get_household_medicine_repo,
     get_illness_comment_repo,
@@ -25,6 +26,7 @@ from src.application.services.child_service import ChildService
 from src.application.services.episode_medication_plan_service import (
     EpisodeMedicationPlanService,
 )
+from src.application.services.family_invite_service import FamilyInviteService
 from src.application.services.family_service import FamilyService
 from src.application.services.household_medicine_service import HouseholdMedicineService
 from src.application.services.illness_comment_service import IllnessCommentService
@@ -40,18 +42,39 @@ def get_auth_service(
     account_repo=Depends(get_account_repo),
     session_repo=Depends(get_account_session_repo),
     family_repo=Depends(get_family_repo),
+    family_invite_repo=Depends(get_family_invite_repo),
+    child_repo=Depends(get_child_repo),
+    household_repo=Depends(get_household_medicine_repo),
+    parent_repo=Depends(get_parent_repo),
 ) -> BaseAuthService:
     return AuthService(
         account_repo=account_repo,
         session_repo=session_repo,
         family_repo=family_repo,
+        family_invite_repo=family_invite_repo,
+        child_repo=child_repo,
+        household_repo=household_repo,
+        parent_repo=parent_repo,
     )
 
 
 def get_family_service(
     family_repo=Depends(get_family_repo),
+    account_repo=Depends(get_account_repo),
+    session_repo=Depends(get_account_session_repo),
 ) -> FamilyService:
-    return FamilyService(family_repo=family_repo)
+    return FamilyService(
+        family_repo=family_repo,
+        account_repo=account_repo,
+        session_repo=session_repo,
+    )
+
+
+def get_family_invite_service(
+    family_repo=Depends(get_family_repo),
+    invite_repo=Depends(get_family_invite_repo),
+) -> FamilyInviteService:
+    return FamilyInviteService(family_repo=family_repo, invite_repo=invite_repo)
 
 
 def get_child_service(
@@ -76,10 +99,10 @@ def get_episode_medication_plan_service(
 
 
 def get_parent_service(
-    parent_repo=Depends(get_parent_repo),
+    account_repo=Depends(get_account_repo),
     family_repo=Depends(get_family_repo),
 ) -> ParentService:
-    return ParentService(parent_repo=parent_repo, family_repo=family_repo)
+    return ParentService(account_repo=account_repo, family_repo=family_repo)
 
 
 def get_push_notification_service(

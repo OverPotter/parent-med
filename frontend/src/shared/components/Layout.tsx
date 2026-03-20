@@ -22,7 +22,8 @@ export function Layout({
   mobileNavLinks = [],
   showCurrentFamily = false,
 }: LayoutProps) {
-  const { theme, toggleTheme, currentFamilyName, accountEmail, clearSession } = useAppStore();
+  const { theme, toggleTheme, currentFamilyName, accountEmail, accountDisplayName, clearSession } =
+    useAppStore();
   const hasMobileNav = mobileNavLinks.length > 0;
 
   const handleLogout = async () => {
@@ -67,9 +68,16 @@ export function Layout({
                     </span>
                   )}
                   {accountEmail && (
-                    <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                      {accountEmail}
-                    </span>
+                    <>
+                      {accountDisplayName && (
+                        <span className="soft-pill max-w-[12rem] truncate rounded-full px-3.5 py-1.5 text-xs">
+                          {accountDisplayName}
+                        </span>
+                      )}
+                      <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
+                        {accountEmail}
+                      </span>
+                    </>
                   )}
                   <button
                     type="button"

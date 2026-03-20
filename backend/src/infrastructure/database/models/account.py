@@ -24,7 +24,10 @@ class AccountModel(Base):
         UUID(as_uuid=True),
         ForeignKey("families.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True,
+    )
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    family_role: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="owner", server_default="owner"
     )
     push_before_reminder_minutes: Mapped[int] = mapped_column(
         Integer, nullable=False, default=10, server_default="10"
@@ -53,7 +56,7 @@ class AccountModel(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    family: Mapped["FamilyModel"] = relationship("FamilyModel", back_populates="account")
+    family: Mapped["FamilyModel"] = relationship("FamilyModel", back_populates="accounts")
     sessions: Mapped[list] = relationship("AccountSessionModel", back_populates="account")
     push_subscriptions: Mapped[list] = relationship(
         "PushSubscriptionModel", back_populates="account"

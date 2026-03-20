@@ -15,6 +15,7 @@ export function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const setSession = useAppStore((s) => s.setSession);
 
@@ -30,7 +31,8 @@ export function AuthPage() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: (payload: { email: string; password: string }) => register(payload),
+    mutationFn: (payload: { email: string; password: string; display_name?: string }) =>
+      register(payload),
     onSuccess: (data) => {
       setSession(data);
       setError(null);
@@ -56,7 +58,11 @@ export function AuthPage() {
       return;
     }
     setError(null);
-    registerMutation.mutate({ email: trimmedEmail, password });
+    registerMutation.mutate({
+      email: trimmedEmail,
+      password,
+      display_name: displayName.trim() || undefined,
+    });
   };
 
   const isPending = loginMutation.isPending || registerMutation.isPending;
@@ -74,15 +80,15 @@ export function AuthPage() {
             Семейный кабинет для детей, лекарств и истории болезни.
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-muted sm:text-lg">
-            Один аккаунт соответствует одной семье. Внутри семьи можно вести родителей, детей,
-            домашнюю аптечку, эпизоды болезни и журнал приёма лекарств.
+            У каждого взрослого свой личный аккаунт. Внутри семьи остаются общими дети, домашняя
+            аптечка, эпизоды болезни и журнал приёма лекарств.
           </p>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             <div className="soft-card rounded-[24px] p-4">
               <h2 className="text-sm font-medium text-foreground">О семье</h2>
               <p className="mt-2 text-sm leading-6 text-muted">
-                Название семьи, родители и общий контекст аккаунта.
+                Название семьи, участники и общий контекст для родителей и опекунов.
               </p>
             </div>
             <div className="soft-card rounded-[24px] p-4">
@@ -103,8 +109,8 @@ export function AuthPage() {
         <Surface className="overflow-hidden p-6 sm:p-8">
           <h2 className="text-2xl font-semibold text-foreground">Начать работу</h2>
           <p className="mt-2 text-sm text-muted">
-            Зарегистрируйте аккаунт или войдите в уже созданный профиль. Семья создастся
-            автоматически внутри аккаунта.
+            Зарегистрируйте свой аккаунт или войдите в уже созданный. Семья создастся автоматически,
+            а второго взрослого можно будет пригласить позже.
           </p>
 
           <div className="soft-panel-muted mt-6 flex rounded-[20px] p-1.5">
@@ -150,6 +156,19 @@ export function AuthPage() {
                 placeholder="Минимум 6 символов"
               />
             </label>
+
+            {mode === "register" && (
+              <label className="block">
+                <span className="block text-sm text-muted">Как показывать вас в семье</span>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                  placeholder="Например: Мама Аня"
+                />
+              </label>
+            )}
 
             {mode === "register" && (
               <label className="block">

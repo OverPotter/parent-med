@@ -32,6 +32,7 @@ import {
 import { createWeightEntry, fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { DateField } from "@shared/components/DateField";
 import { DisclosureHeader } from "@shared/components/DisclosureHeader";
+import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
 import type {
@@ -48,6 +49,7 @@ import {
   buildWeightDoseHint,
   formatRelativeDateTime,
   formatIntervalForDisplay,
+  getAdministrationActorLabel,
   getPrioritizedMedicationPlanItems,
 } from "../utils/medicationPlans";
 import { formatDate, formatDateTime } from "@shared/utils/date";
@@ -70,35 +72,41 @@ export function ChildIllnessPage() {
   const quickTimelineMode = focusMode === "timeline";
   const initialManualComposerExpanded = quickComposeMode !== null;
   const initialComposerMode = quickComposeMode ?? "temperature";
+  const liveQueryOptions = useLiveQueryOptions(3000);
 
   const { data: child, isLoading: childLoading } = useQuery({
     queryKey: ["child", childId],
     queryFn: () => fetchChild(childId!),
     enabled: !!childId,
+    ...liveQueryOptions,
   });
 
   const { data: latestWeight = null } = useQuery({
     queryKey: ["weight-entry-latest", childId],
     queryFn: () => fetchLatestWeightEntryByChildId(childId!),
     enabled: !!childId,
+    ...liveQueryOptions,
   });
 
   const { data: episodes = [] } = useQuery({
     queryKey: ["illness-episodes", childId],
     queryFn: () => fetchIllnessEpisodesByChildId(childId!),
     enabled: !!childId,
+    ...liveQueryOptions,
   });
 
   const { data: activeEpisode } = useQuery({
     queryKey: ["illness-episode-active", childId],
     queryFn: () => fetchActiveIllnessEpisodeByChildId(childId!),
     enabled: !!childId,
+    ...liveQueryOptions,
   });
 
   const { data: familyMedicines = [] } = useQuery({
     queryKey: ["household-medicines", currentFamilyId],
     queryFn: fetchHouseholdMedicines,
     enabled: !!currentFamilyId,
+    ...liveQueryOptions,
   });
 
   const closeEpisodeMutation = useMutation({
@@ -424,22 +432,26 @@ function HistoryEpisodeCard({
   onToggle: () => void;
 }) {
   const queryClient = useQueryClient();
+  const liveQueryOptions = useLiveQueryOptions(10000);
   const { data: temperatureEntries = [] } = useQuery({
     queryKey: ["temperature-entries", episode.id],
     queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
     enabled: isOpen,
+    ...liveQueryOptions,
   });
 
   const { data: administrations = [] } = useQuery({
     queryKey: ["administration-events", episode.id],
     queryFn: () => fetchAdministrationEventsByEpisodeId(episode.id),
     enabled: isOpen,
+    ...liveQueryOptions,
   });
 
   const { data: comments = [] } = useQuery({
     queryKey: ["illness-comments", episode.id],
     queryFn: () => fetchIllnessCommentsByEpisodeId(episode.id),
     enabled: isOpen,
+    ...liveQueryOptions,
   });
 
   const deleteEpisodeMutation = useMutation({
@@ -574,6 +586,7 @@ function EpisodeBlock({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
+  const liveQueryOptions = useLiveQueryOptions(3000);
   const isActive = episode.status === "active";
   const [commentText, setCommentText] = useState("");
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
@@ -588,30 +601,35 @@ function EpisodeBlock({
     queryKey: ["temperature-entries", episode.id],
     queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
     enabled: !!episode.id,
+    ...liveQueryOptions,
   });
 
   const { data: administrations = [] } = useQuery({
     queryKey: ["administration-events", episode.id],
     queryFn: () => fetchAdministrationEventsByEpisodeId(episode.id),
     enabled: !!episode.id,
+    ...liveQueryOptions,
   });
 
   const { data: comments = [] } = useQuery({
     queryKey: ["illness-comments", episode.id],
     queryFn: () => fetchIllnessCommentsByEpisodeId(episode.id),
     enabled: !!episode.id,
+    ...liveQueryOptions,
   });
 
   const { data: medicationPlans = [] } = useQuery({
     queryKey: ["episode-medication-plans", episode.id],
     queryFn: () => fetchEpisodeMedicationPlansByEpisodeId(episode.id),
     enabled: !!episode.id,
+    ...liveQueryOptions,
   });
 
   const { data: householdMedicines = [] } = useQuery({
     queryKey: ["household-medicines", accountId],
     queryFn: fetchHouseholdMedicines,
     enabled: !!familyId && !!accountId,
+    ...liveQueryOptions,
   });
 
   const usableHouseholdMedicines = householdMedicines.filter(
@@ -2463,7 +2481,12 @@ function MedicationPlanList({
                         <p>
                           Последний приём:{" "}
                           {stats.lastAdministration
-                            ? formatDateTime(stats.lastAdministration.administeredAt)
+                            ? [
+                                formatDateTime(stats.lastAdministration.administeredAt),
+                                getAdministrationActorLabel(stats.lastAdministration),
+                              ]
+                                .filter(Boolean)
+                                .join(" • ")
                             : "ещё не отмечен"}
                         </p>
                         {plan.maxDosesPerDay && (
@@ -2576,13 +2599,22 @@ function buildEpisodeTimeline(
       ? medicines.find((item) => item.id === entry.householdMedicineId)
       : null;
     const reason = entry.reason?.trim();
+    const actorLabel = getAdministrationActorLabel(entry);
+    const descriptionLines = [`Доза: ${entry.amount}`];
+
+    if (actorLabel) {
+      descriptionLines.push(actorLabel);
+    }
+    if (reason) {
+      descriptionLines.push(reason);
+    }
 
     return {
       id: `admin-${entry.id}`,
       at: entry.administeredAt,
       kind: "administration" as const,
       title: entry.customMedicineName ?? medicine?.medicineName ?? "Приём лекарства",
-      description: reason ? `Доза: ${entry.amount}\n${reason}` : `Доза: ${entry.amount}`,
+      description: descriptionLines.join("\n"),
     };
   });
 

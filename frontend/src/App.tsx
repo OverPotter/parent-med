@@ -23,6 +23,7 @@ import { ClientHomePage } from "@client/pages/ClientHomePage";
 import { ClientIntroPage } from "@client/pages/ClientIntroPage";
 import { ClientStartPage } from "@client/pages/ClientStartPage";
 import { FamilyPage } from "@client/pages/FamilyPage";
+import { JoinFamilyPage } from "@client/pages/JoinFamilyPage";
 import { ChildrenPage } from "@client/pages/ChildrenPage";
 import { MedicineCabinetPage } from "@client/pages/MedicineCabinetPage";
 import { ChildIllnessPage } from "@client/pages/ChildIllnessPage";
@@ -176,6 +177,7 @@ export default function App() {
         {!(authToken || accountId) ? (
           <>
             <Route path="/" element={<AuthPage />} />
+            <Route path="/join-family" element={<JoinFamilyPage />} />
             <Route path="/auth" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
@@ -195,6 +197,7 @@ export default function App() {
               <Route path="home" element={<ClientHomePage />} />
               <Route path="intro" element={<ClientIntroPage />} />
               <Route path="family" element={<FamilyPage />} />
+              <Route path="join-family" element={<JoinFamilyPage />} />
               <Route path="children" element={<ChildrenPage />} />
               <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
               <Route path="illnesses/history" element={<IllnessHistoryPage />} />

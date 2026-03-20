@@ -43,7 +43,12 @@ async def create_administration_event(
     service: AdministrationService = Depends(get_administration_service),
 ) -> AdministrationEventResponseDto:
     """Зафиксировать приём лекарства (проверка срока годности и вскрытия через Safety Engine)."""
-    return await service.create(dto, current_account.family_id)
+    return await service.create(
+        dto,
+        current_account.family_id,
+        current_account.id,
+        current_account.display_name,
+    )
 
 
 @router.delete("/{event_id}", status_code=204)

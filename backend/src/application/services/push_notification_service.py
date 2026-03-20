@@ -14,8 +14,8 @@ from src.application.dto.push_notification import (
 from src.core.config import settings
 from src.core.exceptions import NotFoundError, ValidationError
 from src.domain.entities.account import Account
-from src.domain.repositories.account_repository import AccountRepository
 from src.domain.entities.push_subscription import PushSubscription
+from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.push_subscription_repository import PushSubscriptionRepository
 
 
@@ -79,6 +79,8 @@ class PushNotificationService:
                 email=account.email,
                 password_hash=account.password_hash,
                 family_id=account.family_id,
+                display_name=account.display_name,
+                family_role=account.family_role,
                 push_before_reminder_minutes=before_reminder_minutes,
                 cabinet_notify_10_days=(
                     dto.cabinet_notify_10_days

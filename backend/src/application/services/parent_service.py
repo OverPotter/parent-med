@@ -1,41 +1,41 @@
-"""Сервис родителей."""
+"""Совместимый сервис legacy-родителей."""
 
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from src.application.dto.parent import ParentCreateDto, ParentResponseDto, ParentUpdateDto
-from src.core.exceptions import ForbiddenError, NotFoundError
-from src.domain.entities.parent import Parent
+from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
+from src.domain.entities.account import Account
+from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.family_repository import FamilyRepository
-from src.domain.repositories.parent_repository import ParentRepository
 
 
 class ParentService:
-    """Сервис CRUD для родителей внутри семьи."""
+    """Совместимый слой для старого /parents API поверх аккаунтов семьи."""
 
     def __init__(
         self,
-        parent_repo: ParentRepository,
+        account_repo: AccountRepository,
         family_repo: FamilyRepository,
     ) -> None:
-        self._repo = parent_repo
+        self._account_repo = account_repo
         self._family_repo = family_repo
 
-    def _to_response(self, entity: Parent) -> ParentResponseDto:
+    def _to_response(self, entity: Account) -> ParentResponseDto:
         return ParentResponseDto(
             id=entity.id,
             family_id=entity.family_id,
-            name=entity.name,
-            role=entity.role,
+            name=entity.display_name,
+            role=entity.family_role,
         )
 
     async def get_by_id(self, id: UUID) -> ParentResponseDto:
-        entity = await self._repo.get_by_id(id)
+        entity = await self._account_repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Родитель не найден", resource="parent")
         return self._to_response(entity)
 
     async def get_by_id_for_account(self, id: UUID, current_family_id: UUID) -> ParentResponseDto:
-        entity = await self._repo.get_by_id(id)
+        entity = await self._account_repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Родитель не найден", resource="parent")
         if entity.family_id != current_family_id:
@@ -45,7 +45,7 @@ class ParentService:
     async def get_by_family_id(self, family_id: UUID) -> list[ParentResponseDto]:
         if await self._family_repo.get_by_id(family_id) is None:
             raise NotFoundError("Семья не найдена", resource="family")
-        entities = await self._repo.get_by_family_id(family_id)
+        entities = await self._account_repo.list_by_family_id(family_id)
         return [self._to_response(entity) for entity in entities]
 
     async def get_by_family_id_for_account(
@@ -58,38 +58,27 @@ class ParentService:
         return await self.get_by_family_id(family_id)
 
     async def create(self, dto: ParentCreateDto) -> ParentResponseDto:
-        if await self._family_repo.get_by_id(dto.family_id) is None:
-            raise NotFoundError("Семья не найдена", resource="family")
-        entity = Parent(
-            id=uuid4(),
-            family_id=dto.family_id,
-            name=dto.name,
-            role=dto.role,
+        raise ValidationError(
+            "Legacy /parents API больше не используется. "
+            "Создавайте участников через приглашения в семью.",
+            code="PARENTS_API_DEPRECATED",
+            status_code=409,
         )
-        created = await self._repo.add(entity)
-        return self._to_response(created)
 
     async def create_for_account(
         self,
         dto: ParentCreateDto,
         current_family_id: UUID,
     ) -> ParentResponseDto:
-        if dto.family_id != current_family_id:
-            raise ForbiddenError("Нет доступа к чужой семье")
         return await self.create(dto)
 
     async def update(self, id: UUID, dto: ParentUpdateDto) -> ParentResponseDto:
-        entity = await self._repo.get_by_id(id)
-        if not entity:
-            raise NotFoundError("Родитель не найден", resource="parent")
-        updated = Parent(
-            id=entity.id,
-            family_id=entity.family_id,
-            name=dto.name if dto.name is not None else entity.name,
-            role=dto.role if dto.role is not None else entity.role,
+        raise ValidationError(
+            "Legacy /parents API больше не используется. "
+            "Обновляйте семейные аккаунты через /families/me/members.",
+            code="PARENTS_API_DEPRECATED",
+            status_code=409,
         )
-        saved = await self._repo.update(updated)
-        return self._to_response(saved)
 
     async def update_for_account(
         self,
@@ -97,22 +86,15 @@ class ParentService:
         dto: ParentUpdateDto,
         current_family_id: UUID,
     ) -> ParentResponseDto:
-        entity = await self._repo.get_by_id(id)
-        if not entity:
-            raise NotFoundError("Родитель не найден", resource="parent")
-        if entity.family_id != current_family_id:
-            raise ForbiddenError("Нет доступа к чужой семье")
         return await self.update(id, dto)
 
     async def delete(self, id: UUID) -> None:
-        if await self._repo.get_by_id(id) is None:
-            raise NotFoundError("Родитель не найден", resource="parent")
-        await self._repo.delete(id)
+        raise ValidationError(
+            "Legacy /parents API больше не используется. "
+            "Удаляйте участников через /families/me/members.",
+            code="PARENTS_API_DEPRECATED",
+            status_code=409,
+        )
 
     async def delete_for_account(self, id: UUID, current_family_id: UUID) -> None:
-        entity = await self._repo.get_by_id(id)
-        if entity is None:
-            raise NotFoundError("Родитель не найден", resource="parent")
-        if entity.family_id != current_family_id:
-            raise ForbiddenError("Нет доступа к чужой семье")
-        await self._repo.delete(id)
+        await self.delete(id)

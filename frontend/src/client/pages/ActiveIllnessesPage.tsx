@@ -14,6 +14,7 @@ import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import { fetchIllnessEpisodesByChildId } from "@shared/api/illnessEpisodes";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
+import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
 import type {
@@ -34,17 +35,20 @@ export function ActiveIllnessesPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const now = useNow();
   const currentTime = new Date(now);
+  const liveQueryOptions = useLiveQueryOptions(3000);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["children", currentFamilyId],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
     enabled: !!currentFamilyId,
+    ...liveQueryOptions,
   });
 
   const { data: householdMedicines = [] } = useQuery({
     queryKey: ["household-medicines", currentFamilyId],
     queryFn: fetchHouseholdMedicines,
     enabled: !!currentFamilyId,
+    ...liveQueryOptions,
   });
 
   const episodeQueries = useQueries({
@@ -52,6 +56,7 @@ export function ActiveIllnessesPage() {
       queryKey: ["illness-episodes", child.id],
       queryFn: () => fetchIllnessEpisodesByChildId(child.id),
       enabled: !!child.id,
+      ...liveQueryOptions,
     })),
   });
 
@@ -71,6 +76,7 @@ export function ActiveIllnessesPage() {
       queryKey: ["episode-medication-plans", episode!.id],
       queryFn: () => fetchEpisodeMedicationPlansByEpisodeId(episode!.id),
       enabled: !!episode?.id,
+      ...liveQueryOptions,
     })),
   });
 
@@ -79,6 +85,7 @@ export function ActiveIllnessesPage() {
       queryKey: ["administration-events", episode!.id],
       queryFn: () => fetchAdministrationEventsByEpisodeId(episode!.id),
       enabled: !!episode?.id,
+      ...liveQueryOptions,
     })),
   });
 

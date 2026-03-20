@@ -14,6 +14,8 @@ class RegisterDto(BaseModel):
 
     email: str = Field(..., description="Email аккаунта")
     password: str = Field(..., min_length=6, description="Пароль")
+    display_name: str | None = Field(None, description="Как показывать пользователя в семье")
+    invite_token: str | None = Field(None, description="Токен приглашения в существующую семью")
 
 
 class LoginDto(BaseModel):
@@ -42,6 +44,8 @@ class AccountResponseDto(ResponseBase):
     id: UUID
     email: str
     family_id: UUID
+    display_name: str
+    family_role: str
 
 
 @dataclass
@@ -51,6 +55,8 @@ class AuthenticatedAccount:
     id: UUID
     email: str
     family_id: UUID
+    display_name: str
+    family_role: str
 
 
 class AuthStateResponseDto(ResponseBase):

@@ -12,6 +12,8 @@ interface RawAdministrationEvent {
   household_medicine_id: string | null;
   custom_medicine_name: string | null;
   administered_at: string;
+  administered_by_account_id: string | null;
+  administered_by_name_snapshot: string | null;
   amount: string;
   unit: string | null;
   reason: string | null;

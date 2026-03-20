@@ -6,6 +6,7 @@ from src.infrastructure.database.models.administration_event import Administrati
 from src.infrastructure.database.models.child import ChildModel
 from src.infrastructure.database.models.episode_medication_plan import EpisodeMedicationPlanModel
 from src.infrastructure.database.models.family import FamilyModel
+from src.infrastructure.database.models.family_invite import FamilyInviteModel
 from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
 from src.infrastructure.database.models.household_medicine_notification_delivery import (
     HouseholdMedicineNotificationDeliveryModel,
@@ -22,6 +23,7 @@ __all__ = [
     "AccountModel",
     "AccountSessionModel",
     "FamilyModel",
+    "FamilyInviteModel",
     "ChildModel",
     "EpisodeMedicationPlanModel",
     "WeightEntryModel",

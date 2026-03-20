@@ -185,6 +185,11 @@ export function getEpisodeMedicationLead(
   return getPrioritizedMedicationPlanItems(plans, administrations, medicines, now)[0] ?? null;
 }
 
+export function getAdministrationActorLabel(administration: AdministrationEvent) {
+  const actor = administration.administeredByNameSnapshot?.trim();
+  return actor ? `Дал(а): ${actor}` : null;
+}
+
 export function formatRelativeDateTime(date: Date, now = new Date()) {
   const diffMs = date.getTime() - now.getTime();
   const totalSeconds = Math.max(0, Math.ceil(diffMs / 1000));

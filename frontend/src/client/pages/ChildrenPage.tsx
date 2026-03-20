@@ -21,6 +21,7 @@ import {
 import { DateField } from "@shared/components/DateField";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
+import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child } from "@shared/types/api";
@@ -36,6 +37,7 @@ export function ChildrenPage() {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormResetKey, setCreateFormResetKey] = useState(0);
   const now = useNow();
+  const liveQueryOptions = useLiveQueryOptions(10000);
 
   const {
     data: children = [],
@@ -45,12 +47,14 @@ export function ChildrenPage() {
     queryKey: ["children", currentFamilyId],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
     enabled: !!currentFamilyId,
+    ...liveQueryOptions,
   });
 
   const { data: householdMedicines = [] } = useQuery({
     queryKey: ["household-medicines", currentFamilyId],
     queryFn: fetchHouseholdMedicines,
     enabled: !!currentFamilyId,
+    ...liveQueryOptions,
   });
 
   const activeEpisodeQueries = useQueries({
@@ -58,6 +62,7 @@ export function ChildrenPage() {
       queryKey: ["illness-episode-active", child.id],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
       enabled: !!child.id,
+      ...liveQueryOptions,
     })),
   });
 
@@ -66,6 +71,7 @@ export function ChildrenPage() {
       queryKey: ["illness-episodes", child.id],
       queryFn: () => fetchIllnessEpisodesByChildId(child.id),
       enabled: !!child.id,
+      ...liveQueryOptions,
     })),
   });
 
@@ -76,6 +82,7 @@ export function ChildrenPage() {
         queryKey: ["episode-medication-plans", activeEpisodeId],
         queryFn: () => fetchEpisodeMedicationPlansByEpisodeId(activeEpisodeId!),
         enabled: !!activeEpisodeId,
+        ...liveQueryOptions,
       };
     }),
   });
@@ -87,6 +94,7 @@ export function ChildrenPage() {
         queryKey: ["administration-events", activeEpisodeId],
         queryFn: () => fetchAdministrationEventsByEpisodeId(activeEpisodeId!),
         enabled: !!activeEpisodeId,
+        ...liveQueryOptions,
       };
     }),
   });

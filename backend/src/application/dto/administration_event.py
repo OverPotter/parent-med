@@ -28,6 +28,8 @@ class AdministrationEventResponseDto(ResponseBase):
     household_medicine_id: UUID | None
     custom_medicine_name: str | None
     administered_at: datetime
+    administered_by_account_id: UUID | None
+    administered_by_name_snapshot: str | None
     amount: str
     unit: str | None
     reason: str | None
