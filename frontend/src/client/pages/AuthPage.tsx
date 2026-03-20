@@ -1,18 +1,21 @@
 /**
- * Публичная стартовая страница: о сервисе, регистрация и вход.
+ * Экран авторизации: вход и регистрация без лендингового контента.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { login, register } from "@shared/api/auth";
 import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
 import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
+import { Link, useSearchParams } from "react-router-dom";
 
 type Mode = "login" | "register";
 
 export function AuthPage() {
-  const [mode, setMode] = useState<Mode>("register");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedMode = searchParams.get("mode");
+  const [mode, setMode] = useState<Mode>(requestedMode === "login" ? "login" : "register");
   const [loginValue, setLoginValue] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,6 +27,10 @@ export function AuthPage() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setSession = useAppStore((s) => s.setSession);
+
+  useEffect(() => {
+    setMode(requestedMode === "login" ? "login" : "register");
+  }, [requestedMode]);
 
   const loginMutation = useMutation({
     mutationFn: (payload: { login: string; password: string; remember_me: boolean }) =>
@@ -88,53 +95,47 @@ export function AuthPage() {
   const passwordsMismatch =
     mode === "register" && passwordConfirm.length > 0 && password !== passwordConfirm;
   const isRegisterMode = mode === "register";
+  const pageTitle = isRegisterMode ? "Создать аккаунт" : "Войти в аккаунт";
+  const pageDescription = isRegisterMode
+    ? "Для beta достаточно логина и пароля. Остальные данные можно добавить позже в профиле семьи."
+    : "Войдите под своим логином, чтобы попасть в общую семейную базу детей, аптечки и болезней.";
+  const switchMode = (nextMode: Mode) => {
+    setMode(nextMode);
+    setSearchParams(nextMode === "register" ? { mode: "register" } : { mode: "login" });
+    setError(null);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto grid min-h-screen max-w-6xl gap-8 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[1fr_0.92fr] lg:items-start">
-        <section className="min-w-0">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link to="/" className="inline-flex items-center gap-3">
+            <img src="/pwa-icon.svg" alt="" className="h-10 w-10 rounded-2xl" />
+            <div>
+              <p className="text-sm font-semibold tracking-[0.06em] text-primary">Parent Med</p>
+              <p className="text-xs text-muted">Вернуться к описанию сервиса</p>
+            </div>
+          </Link>
+          <Link to="/" className="soft-button-secondary rounded-full px-4 py-2 text-sm">
+            На главную
+          </Link>
+        </div>
+
+        <div className="mx-auto mt-8 max-w-2xl text-center">
           <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs uppercase tracking-[0.18em]">
-            Parent Med
+            Авторизация
           </span>
-          <h1 className="mt-5 max-w-2xl text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
-            Семейный кабинет для детей, лекарств и истории болезни.
+          <h1 className="mt-4 text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
+            {pageTitle}
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-muted sm:text-base">
-            У каждого взрослого свой личный аккаунт. Внутри семьи остаются общими дети, домашняя
-            аптечка, эпизоды болезни и журнал приёма лекарств.
-          </p>
+          <p className="mt-3 text-sm leading-7 text-muted sm:text-base">{pageDescription}</p>
+        </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <div className="soft-card rounded-[24px] p-4">
-              <h2 className="text-sm font-medium text-foreground">О семье</h2>
-              <p className="mt-2 text-sm leading-5 text-muted">
-                Общий контекст для родителей и опекунов.
-              </p>
-            </div>
-            <div className="soft-card rounded-[24px] p-4">
-              <h2 className="text-sm font-medium text-foreground">О детях</h2>
-              <p className="mt-2 text-sm leading-5 text-muted">Профили детей, вес и наблюдение.</p>
-            </div>
-            <div className="soft-card rounded-[24px] p-4">
-              <h2 className="text-sm font-medium text-foreground">О лекарствах</h2>
-              <p className="mt-2 text-sm leading-5 text-muted">
-                Аптечка, напоминания и история приёмов.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <Surface className="overflow-hidden p-5 sm:p-6">
-          <h2 className="text-xl font-semibold text-foreground">Начать работу</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            Зарегистрируйте свой аккаунт или войдите в уже созданный. Семья создастся автоматически,
-            а второго взрослого можно будет пригласить позже.
-          </p>
-
-          <div className="soft-panel-muted mt-5 flex rounded-[18px] p-1">
+        <Surface className="mx-auto mt-8 max-w-[34rem] overflow-hidden p-5 sm:p-6">
+          <div className="soft-panel-muted flex rounded-[18px] p-1">
             <button
               type="button"
-              onClick={() => setMode("login")}
+              onClick={() => switchMode("login")}
               className={`flex-1 rounded-2xl px-3 py-2.5 text-sm transition-colors ${
                 mode === "login" ? "soft-tab-active" : "soft-tab"
               }`}
@@ -143,7 +144,7 @@ export function AuthPage() {
             </button>
             <button
               type="button"
-              onClick={() => setMode("register")}
+              onClick={() => switchMode("register")}
               className={`flex-1 rounded-2xl px-3 py-2.5 text-sm transition-colors ${
                 mode === "register" ? "soft-tab-active" : "soft-tab"
               }`}
@@ -158,7 +159,7 @@ export function AuthPage() {
                 <div>
                   <p className="text-sm font-medium text-foreground">Обязательные поля</p>
                   <p className="mt-1 text-xs leading-5 text-muted">
-                    Для входа и быстрой регистрации нужен только логин и пароль.
+                    Сначала только логин и пароль. Остальное можно заполнить уже после входа.
                   </p>
                 </div>
                 <button
@@ -171,18 +172,16 @@ export function AuthPage() {
               </div>
 
               <div className="mt-4 grid gap-3">
-                <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
-                  <label className="block">
-                    <span className="mb-2 block text-sm text-muted">Логин</span>
-                    <input
-                      type="text"
-                      value={loginValue}
-                      onChange={(e) => setLoginValue(e.target.value)}
-                      className="soft-input w-full rounded-2xl px-4 py-3"
-                      placeholder="Например: mama_anya"
-                    />
-                  </label>
-                </div>
+                <label className="block">
+                  <span className="mb-2 block text-sm text-muted">Логин</span>
+                  <input
+                    type="text"
+                    value={loginValue}
+                    onChange={(e) => setLoginValue(e.target.value)}
+                    className="soft-input w-full rounded-2xl px-4 py-3"
+                    placeholder="Например: mama_anya"
+                  />
+                </label>
 
                 <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
                   <AuthPasswordField
@@ -210,10 +209,10 @@ export function AuthPage() {
             {isRegisterMode && (
               <details className="soft-panel-muted rounded-[24px] p-4">
                 <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
-                  Дополнительные поля
+                  Дополнительные поля профиля
                 </summary>
                 <p className="mt-2 text-xs leading-5 text-muted">
-                  Можно оставить пустым и вернуться к этому позже.
+                  Они не мешают началу работы. Если оставить пусто, сервис подставит логин как имя.
                 </p>
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm text-muted">Email</span>
@@ -229,16 +228,17 @@ export function AuthPage() {
                   </span>
                 </label>
                 <label className="mt-4 block">
-                  <span className="mb-2 block text-sm text-muted">Как показывать вас в семье</span>
+                  <span className="mb-2 block text-sm text-muted">Имя в семье</span>
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     className="soft-input w-full rounded-2xl px-4 py-3"
-                    placeholder="Например: Мама Аня"
+                    placeholder="Например: Аня"
                   />
                   <span className="mt-2 block text-xs text-muted">
-                    Если пусто, используем логин.
+                    Так имя будет показано в семье и в истории действий. Если пусто, используем
+                    логин.
                   </span>
                 </label>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -249,8 +249,11 @@ export function AuthPage() {
                       value={relationshipLabel}
                       onChange={(e) => setRelationshipLabel(e.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
-                      placeholder="Например: мама, папа, няня"
+                      placeholder="Например: мама"
                     />
+                    <span className="mt-2 block text-xs text-muted">
+                      Короткая подпись рядом с именем: мама, папа, няня.
+                    </span>
                   </label>
                   <label className="block">
                     <span className="mb-2 block text-sm text-muted">Телефон</span>
@@ -290,6 +293,11 @@ export function AuthPage() {
                   ? "Регистрируем…"
                   : "Создать аккаунт"}
             </button>
+
+            <p className="text-center text-xs leading-6 text-muted">
+              Если вас уже пригласили в семью, откройте ссылку приглашения из сообщения. Она сама
+              приведёт в нужный flow.
+            </p>
           </form>
         </Surface>
       </div>

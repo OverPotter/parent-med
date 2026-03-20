@@ -322,16 +322,17 @@ export function JoinFamilyPage() {
                   </span>
                 </label>
                 <label className="mt-4 block">
-                  <span className="mb-2 block text-sm text-muted">Как вас показывать в семье</span>
+                  <span className="mb-2 block text-sm text-muted">Имя в семье</span>
                   <input
                     type="text"
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
                     className="soft-input w-full rounded-2xl px-4 py-3"
-                    placeholder="Например: Папа Дима"
+                    placeholder="Например: Дима"
                   />
                   <span className="mt-2 block text-xs text-muted">
-                    Если пусто, используем логин.
+                    Так имя будет показано в семье и в истории действий. Если пусто, используем
+                    логин.
                   </span>
                 </label>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -342,8 +343,11 @@ export function JoinFamilyPage() {
                       value={relationshipLabel}
                       onChange={(event) => setRelationshipLabel(event.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
-                      placeholder="Например: папа, няня"
+                      placeholder="Например: папа"
                     />
+                    <span className="mt-2 block text-xs text-muted">
+                      Короткая подпись рядом с именем: мама, папа, няня.
+                    </span>
                   </label>
                   <label className="block">
                     <span className="mb-2 block text-sm text-muted">Телефон</span>

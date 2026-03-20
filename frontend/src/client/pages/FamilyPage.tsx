@@ -462,17 +462,17 @@ function MemberCard({
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
               className="soft-input w-full rounded-2xl px-4 py-3"
-              placeholder="Например: Няня Оля"
+              placeholder="Например: Оля"
             />
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm text-muted">Кто это</span>
+            <span className="mb-2 block text-sm text-muted">Кто это в семье</span>
             <input
               type="text"
               value={relationshipLabel}
               onChange={(event) => setRelationshipLabel(event.target.value)}
               className="soft-input w-full rounded-2xl px-4 py-3"
-              placeholder="Например: мама, папа, няня"
+              placeholder="Например: няня"
             />
           </label>
           <label className="block">
