@@ -5,7 +5,12 @@
 import axios, { type AxiosError } from "axios";
 import { useAppStore } from "@shared/store/useAppStore";
 
-const baseURL = "/api/v1";
+/**
+ * VITE_API_URL — только origin бэкенда (https://api.example.com).
+ * Пусто → относительный /api/v1 и прокси Vite на localhost:8000.
+ */
+const apiOrigin = (import.meta.env.VITE_API_URL ?? "").trim().replace(/\/+$/, "");
+const baseURL = apiOrigin ? `${apiOrigin}/api/v1` : "/api/v1";
 
 export const apiClient = axios.create({
   baseURL,

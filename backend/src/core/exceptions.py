@@ -2,7 +2,7 @@
 
 
 class AppException(Exception):
-    """Базовое исключение приложения (стиль Tennly)."""
+    """Базовое исключение приложения с кодом и HTTP-статусом."""
 
     def __init__(self, message: str, code: str = "ERROR", status_code: int = 500):
         self.message = message

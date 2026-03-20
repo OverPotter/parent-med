@@ -1,4 +1,4 @@
-# Правила для Cursor (стиль Tennly)
+# Правила для Cursor (Parent Med)
 
 Краткий справочник по архитектуре и стандартам монорепозитория: Backend (FastAPI) + Frontend (React PWA). **Строго следовать этим правилам**, не придумывать свои.
 
@@ -26,7 +26,7 @@
 | Приложение | `application/` | `services/` (файл на домен), `dto/` (Create/Update/Response DTO, Pydantic, `Field(..., description="...")` на русском), `requests/` (Request-модели эндпоинтов). |
 | Домен | `domain/` | `entities/` (файл на сущность, без ORM), `repositories/` (абстракции от `BaseRepository[T]` + доменные методы). |
 | Инфраструктура | `infrastructure/` | `database/models/` (SQLAlchemy, Mapped, одна модель на файл, докстринги на русском), `database/repositories/` (реализации с `_to_entity`/`_to_model`). |
-| Ядро | `core/` | config (pydantic-settings из .env), exceptions (`TennlyException` + наследники с `code` и `status_code`), exception_handlers, logging, lifespan. |
+| Ядро | `core/` | config (pydantic-settings из .env), exceptions (`AppException` и наследники с `code` и `status_code`), exception_handlers, logging, lifespan. |
 
 ### Поток данных
 
@@ -80,4 +80,4 @@
 
 ---
 
-При запросах «сделай фичу X» или «добавь эндпоинт Y» выдавать код в этом стиле: те же папки и слои, русские докстринги и комментарии, `Field(..., description="...")` на русском, декораторы и deps как в Tennly.
+При запросах «сделай фичу X» или «добавь эндпоинт Y» выдавать код в этом стиле: те же папки и слои, русские докстринги и комментарии, `Field(..., description="...")` на русском, те же декораторы и deps.

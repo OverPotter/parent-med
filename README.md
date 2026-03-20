@@ -38,7 +38,7 @@
 
 ## Docker
 
-В корне проекта: `docker-compose.yml` (PostgreSQL, backend, frontend). Стиль как в Tennly: образы собираются из `backend/docker/Dockerfile` и `frontend/docker/Dockerfile`, entrypoint бэкенда — `backend/docker/entrypoint.sh` (ожидание PostgreSQL, миграции, uvicorn).
+В корне проекта: `docker-compose.yml` (PostgreSQL, backend, frontend). Образы собираются из `backend/docker/Dockerfile` и `frontend/docker/Dockerfile`, entrypoint бэкенда — `backend/docker/entrypoint.sh` (ожидание PostgreSQL, миграции, uvicorn).
 
 ```bash
 # Сборка и запуск
