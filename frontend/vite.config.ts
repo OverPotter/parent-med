@@ -1,7 +1,13 @@
+import fs from "fs";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+
+const devCertDir = path.resolve(__dirname, "./dev-certs");
+const devKeyPath = path.join(devCertDir, "local-dev-key.pem");
+const devCertPath = path.join(devCertDir, "local-dev-cert.pem");
+const hasDevHttpsCert = fs.existsSync(devKeyPath) && fs.existsSync(devCertPath);
 
 /** Конфигурация Vite: алиасы, PWA (manifest + service worker). */
 export default defineConfig({
@@ -68,6 +74,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: ["sw-custom.js"],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         navigateFallback: "/index.html",
@@ -111,6 +118,12 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
     strictPort: true,
+    https: hasDevHttpsCert
+      ? {
+          key: fs.readFileSync(devKeyPath),
+          cert: fs.readFileSync(devCertPath),
+        }
+      : undefined,
     proxy: {
       "/api": {
         target: "http://localhost:8000",
@@ -122,5 +135,11 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 4173,
     strictPort: true,
+    https: hasDevHttpsCert
+      ? {
+          key: fs.readFileSync(devKeyPath),
+          cert: fs.readFileSync(devCertPath),
+        }
+      : undefined,
   },
 });

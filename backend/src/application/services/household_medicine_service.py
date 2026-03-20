@@ -11,6 +11,10 @@ from src.application.dto.household_medicine import (
 from src.application.services.safety_engine import calculate_household_medicine_status
 from src.core.exceptions import NotFoundError, ValidationError
 from src.domain.entities.household_medicine import HouseholdMedicine
+from src.domain.repositories.administration_event_repository import AdministrationEventRepository
+from src.domain.repositories.episode_medication_plan_repository import (
+    EpisodeMedicationPlanRepository,
+)
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.medicine_catalog_repository import MedicineCatalogRepository
@@ -24,10 +28,14 @@ class HouseholdMedicineService:
         household_repo: HouseholdMedicineRepository,
         family_repo: FamilyRepository,
         catalog_repo: MedicineCatalogRepository,
+        administration_repo: AdministrationEventRepository,
+        plan_repo: EpisodeMedicationPlanRepository,
     ) -> None:
         self._repo = household_repo
         self._family_repo = family_repo
         self._catalog_repo = catalog_repo
+        self._administration_repo = administration_repo
+        self._plan_repo = plan_repo
 
     async def _to_response(self, entity: HouseholdMedicine) -> HouseholdMedicineResponseDto:
         status = calculate_household_medicine_status(entity)
@@ -213,4 +221,13 @@ class HouseholdMedicineService:
         entity = await self._repo.get_by_id(id)
         if entity is None or entity.family_id != family_id:
             raise NotFoundError("Упаковка не найдена", resource="household_medicine")
+        fallback_medicine_name = entity.medicine_name.strip()
+        await self._administration_repo.clear_household_medicine_references(
+            id,
+            fallback_medicine_name,
+        )
+        await self._plan_repo.clear_household_medicine_references(
+            id,
+            fallback_medicine_name,
+        )
         await self._repo.delete(id)

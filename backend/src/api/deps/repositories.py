@@ -8,12 +8,17 @@ from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
 from src.domain.repositories.child_repository import ChildRepository
+from src.domain.repositories.episode_medication_plan_repository import (
+    EpisodeMedicationPlanRepository,
+)
+from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.illness_comment_repository import IllnessCommentRepository
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 from src.domain.repositories.medicine_catalog_repository import MedicineCatalogRepository
 from src.domain.repositories.parent_repository import ParentRepository
+from src.domain.repositories.push_subscription_repository import PushSubscriptionRepository
 from src.domain.repositories.temperature_entry_repository import TemperatureEntryRepository
 from src.domain.repositories.weight_entry_repository import WeightEntryRepository
 from src.infrastructure.database.repositories.account_repository import SqlAccountRepository
@@ -24,6 +29,12 @@ from src.infrastructure.database.repositories.administration_event_repository im
     SqlAdministrationEventRepository,
 )
 from src.infrastructure.database.repositories.child_repository import SqlChildRepository
+from src.infrastructure.database.repositories.episode_medication_plan_repository import (
+    SqlEpisodeMedicationPlanRepository,
+)
+from src.infrastructure.database.repositories.family_invite_repository import (
+    SqlFamilyInviteRepository,
+)
 from src.infrastructure.database.repositories.family_repository import SqlFamilyRepository
 from src.infrastructure.database.repositories.household_medicine_repository import (
     SqlHouseholdMedicineRepository,
@@ -38,6 +49,9 @@ from src.infrastructure.database.repositories.medicine_catalog_repository import
     SqlMedicineCatalogRepository,
 )
 from src.infrastructure.database.repositories.parent_repository import SqlParentRepository
+from src.infrastructure.database.repositories.push_subscription_repository import (
+    SqlPushSubscriptionRepository,
+)
 from src.infrastructure.database.repositories.temperature_entry_repository import (
     SqlTemperatureEntryRepository,
 )
@@ -60,12 +74,30 @@ def get_family_repo(session: AsyncSession = Depends(get_db_session)) -> FamilyRe
     return SqlFamilyRepository(session)
 
 
+def get_family_invite_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> FamilyInviteRepository:
+    return SqlFamilyInviteRepository(session)
+
+
 def get_child_repo(session: AsyncSession = Depends(get_db_session)) -> ChildRepository:
     return SqlChildRepository(session)
 
 
+def get_episode_medication_plan_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> EpisodeMedicationPlanRepository:
+    return SqlEpisodeMedicationPlanRepository(session)
+
+
 def get_parent_repo(session: AsyncSession = Depends(get_db_session)) -> ParentRepository:
     return SqlParentRepository(session)
+
+
+def get_push_subscription_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> PushSubscriptionRepository:
+    return SqlPushSubscriptionRepository(session)
 
 
 def get_weight_entry_repo(

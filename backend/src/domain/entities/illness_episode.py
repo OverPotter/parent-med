@@ -14,6 +14,7 @@ class IllnessEpisode:
     started_at: date
     title: str | None
     status: str  # active, closed
+    medication_mode: str  # manual, guided
     note: str | None
     closed_at: datetime | None
     deleted_at: datetime | None

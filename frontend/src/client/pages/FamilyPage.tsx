@@ -1,373 +1,509 @@
-/**
- * Семья: одна семья на приложение, редактирование названия и CRUD родителей.
- */
-
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFamily, fetchFamilies, updateFamily } from "@shared/api/families";
 import {
-  createParent,
-  deleteParent,
-  fetchParentsByFamilyId,
-  updateParent,
-} from "@shared/api/parents";
+  deleteFamilyMember,
+  fetchFamilies,
+  fetchMyFamilyMembers,
+  updateFamilyMemberProfile,
+  updateFamilyMemberRole,
+  updateMyFamily,
+} from "@shared/api/families";
+import { createFamilyInvite } from "@shared/api/familyInvites";
+import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
-import type { Parent } from "@shared/types/api";
+import type { FamilyMember } from "@shared/types/api";
+
+function roleLabel(role: string): string {
+  return role === "owner" ? "Владелец" : "Участник";
+}
 
 export function FamilyPage() {
   const [familyName, setFamilyName] = useState("");
-  const [newParentName, setNewParentName] = useState("");
-  const [newParentRole, setNewParentRole] = useState("");
-  const [editingParentId, setEditingParentId] = useState<string | null>(null);
-  const [editingParentName, setEditingParentName] = useState("");
-  const [editingParentRole, setEditingParentRole] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const currentFamilyName = useAppStore((s) => s.currentFamilyName);
+  const currentAccountId = useAppStore((s) => s.accountId);
+  const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const queryClient = useQueryClient();
 
   const {
     data: families = [],
-    isLoading: familyLoading,
+    isLoading: isFamilyLoading,
     error: familyError,
   } = useQuery({
     queryKey: ["families", accountId],
     queryFn: fetchFamilies,
-    enabled: !!accountId,
+    enabled: Boolean(accountId),
+  });
+
+  const {
+    data: members = [],
+    isLoading: isMembersLoading,
+    error: membersError,
+  } = useQuery({
+    queryKey: ["family-members", currentFamilyId],
+    queryFn: fetchMyFamilyMembers,
+    enabled: Boolean(currentFamilyId),
   });
 
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
+  const ownersCount = useMemo(
+    () => members.filter((member) => member.familyRole === "owner").length,
+    [members]
+  );
 
   useEffect(() => {
     if (family) {
       setFamilyName(family.name);
-      setCurrentFamily(family);
-    } else {
-      setFamilyName("");
+      if (family.id !== currentFamilyId || family.name !== currentFamilyName) {
+        setCurrentFamily(family);
+      }
+      return;
     }
-  }, [family, setCurrentFamily]);
-
-  const {
-    data: parents = [],
-    isLoading: parentsLoading,
-    error: parentsError,
-  } = useQuery({
-    queryKey: ["parents", family?.id],
-    queryFn: () => fetchParentsByFamilyId(family!.id),
-    enabled: !!family?.id,
-  });
-
-  const createFamilyMutation = useMutation({
-    mutationFn: (name: string) => createFamily(name),
-    onSuccess: (createdFamily) => {
-      setCurrentFamily(createdFamily);
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["families", accountId] });
-    },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Ошибка создания семьи");
-    },
-  });
+    setFamilyName("");
+  }, [currentFamilyId, currentFamilyName, family, setCurrentFamily]);
 
   const updateFamilyMutation = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => updateFamily(id, name),
+    mutationFn: (name: string) => updateMyFamily(name),
     onSuccess: (updatedFamily) => {
       setCurrentFamily(updatedFamily);
       setError(null);
       queryClient.invalidateQueries({ queryKey: ["families", accountId] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Ошибка обновления семьи");
+      setError(err.response?.data?.detail ?? "Не удалось обновить название семьи.");
     },
   });
 
-  const createParentMutation = useMutation({
-    mutationFn: (payload: { family_id: string; name: string; role: string }) =>
-      createParent(payload),
+  const createInviteMutation = useMutation({
+    mutationFn: () => createFamilyInvite({ family_role: "adult" }),
     onSuccess: () => {
-      setNewParentName("");
-      setNewParentRole("");
+      setInviteCopied(false);
       setError(null);
-      queryClient.invalidateQueries({ queryKey: ["parents", family?.id] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Ошибка создания родителя");
+      setError(err.response?.data?.detail ?? "Не удалось создать ссылку приглашения.");
     },
   });
 
-  const updateParentMutation = useMutation({
-    mutationFn: ({ id, name, role }: { id: string; name: string; role: string }) =>
-      updateParent(id, { name, role }),
-    onSuccess: () => {
-      setEditingParentId(null);
-      setEditingParentName("");
-      setEditingParentRole("");
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["parents", family?.id] });
-    },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Ошибка обновления родителя");
-    },
-  });
-
-  const deleteParentMutation = useMutation({
-    mutationFn: deleteParent,
+  const updateMemberRoleMutation = useMutation({
+    mutationFn: ({
+      memberAccountId,
+      familyRole,
+    }: {
+      memberAccountId: string;
+      familyRole: string;
+    }) => updateFamilyMemberRole(memberAccountId, familyRole),
     onSuccess: () => {
       setError(null);
-      queryClient.invalidateQueries({ queryKey: ["parents", family?.id] });
+      queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Ошибка удаления родителя");
+      setError(err.response?.data?.detail ?? "Не удалось обновить роль участника.");
     },
   });
 
-  const handleFamilySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const deleteMemberMutation = useMutation({
+    mutationFn: (memberAccountId: string) => deleteFamilyMember(memberAccountId),
+    onSuccess: () => {
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
+    },
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
+      setError(err.response?.data?.detail ?? "Не удалось удалить участника из семьи.");
+    },
+  });
+
+  const updateMemberProfileMutation = useMutation({
+    mutationFn: ({
+      memberAccountId,
+      displayName,
+      relationshipLabel,
+      phone,
+    }: {
+      memberAccountId: string;
+      displayName?: string;
+      relationshipLabel?: string | null;
+      phone?: string | null;
+    }) =>
+      updateFamilyMemberProfile(memberAccountId, {
+        display_name: displayName,
+        relationship_label: relationshipLabel,
+        phone,
+      }),
+    onSuccess: () => {
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
+    },
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
+      setError(err.response?.data?.detail ?? "Не удалось обновить профиль участника.");
+    },
+  });
+
+  const latestInviteUrl = createInviteMutation.data
+    ? `${window.location.origin}${createInviteMutation.data.invitePath}`
+    : "";
+
+  const handleFamilySubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     const trimmedName = familyName.trim();
-    if (!trimmedName) {
+    if (!trimmedName || !family || trimmedName === family.name) {
       return;
     }
-    if (family) {
-      updateFamilyMutation.mutate({ id: family.id, name: trimmedName });
-      return;
-    }
-    createFamilyMutation.mutate(trimmedName);
+    updateFamilyMutation.mutate(trimmedName);
   };
 
-  const handleParentCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!family) {
+  const handleCopyInvite = async () => {
+    if (!latestInviteUrl) {
       return;
     }
-    const trimmedName = newParentName.trim();
-    const trimmedRole = newParentRole.trim();
-    if (!trimmedName || !trimmedRole) {
-      return;
-    }
-    createParentMutation.mutate({
-      family_id: family.id,
-      name: trimmedName,
-      role: trimmedRole,
-    });
+    await navigator.clipboard.writeText(latestInviteUrl);
+    setInviteCopied(true);
   };
 
-  const handleParentEditStart = (parent: Parent) => {
-    setEditingParentId(parent.id);
-    setEditingParentName(parent.name);
-    setEditingParentRole(parent.role);
-    setError(null);
-  };
-
-  const handleParentSave = (parentId: string) => {
-    const trimmedName = editingParentName.trim();
-    const trimmedRole = editingParentRole.trim();
-    if (!trimmedName || !trimmedRole) {
-      return;
-    }
-    updateParentMutation.mutate({
-      id: parentId,
-      name: trimmedName,
-      role: trimmedRole,
-    });
-  };
+  const canManageFamily = currentAccountRole === "owner";
 
   return (
-    <div className="min-w-0">
-      <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Семья</h1>
-      <p className="mt-2 text-muted">
-        Пока без регистрации в приложении доступна одна семья с названием и списком родителей.
-      </p>
-
-      {error && (
-        <p className="mt-3 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
-          {error}
+    <div className="min-w-0 space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Семья</h1>
+        <p className="mt-2 text-muted">
+          Одна общая семейная база, но у каждого взрослого свой личный аккаунт, история входов и
+          подпись в событиях.
         </p>
-      )}
+      </div>
+
+      {error && <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{error}</p>}
       {familyError && (
-        <p className="mt-3 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
-          {(familyError as { message?: string }).message ?? "Ошибка загрузки семьи"}
+        <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+          {(familyError as { message?: string }).message ?? "Не удалось загрузить семью."}
+        </p>
+      )}
+      {membersError && (
+        <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+          {(membersError as { message?: string }).message ?? "Не удалось загрузить участников."}
         </p>
       )}
 
-      <section className="mt-6 rounded-xl border border-border bg-background p-4">
-        <h2 className="text-lg font-medium text-foreground">
-          {family ? "Название семьи" : "Создать семью"}
-        </h2>
-        <form onSubmit={handleFamilySubmit} className="mt-3 flex flex-wrap items-end gap-3">
+      <Surface className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-medium text-foreground">Название семьи</h2>
+            <p className="mt-1 text-sm text-muted">
+              Это общее имя семьи, которое увидят все приглашённые участники.
+            </p>
+          </div>
+          {family && (
+            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+              ID: {family.id.slice(0, 8)}
+            </span>
+          )}
+        </div>
+
+        <form onSubmit={handleFamilySubmit} className="mt-4 flex flex-wrap items-end gap-3">
           <label className="min-w-0 flex-1">
             <span className="block text-sm text-muted">Название</span>
             <input
               type="text"
               value={familyName}
-              onChange={(e) => setFamilyName(e.target.value)}
-              className="mt-1 w-full max-w-md rounded-lg border border-border bg-background px-3 py-2 text-foreground min-w-0"
+              onChange={(event) => setFamilyName(event.target.value)}
+              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
               placeholder="Например: Семья Ивановых"
             />
           </label>
           <button
             type="submit"
             disabled={
-              familyLoading ||
-              createFamilyMutation.isPending ||
+              !family ||
+              isFamilyLoading ||
               updateFamilyMutation.isPending ||
-              !familyName.trim()
+              !familyName.trim() ||
+              familyName.trim() === family.name
             }
-            className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
+            className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
           >
-            {family
-              ? updateFamilyMutation.isPending
-                ? "Сохраняем…"
-                : "Сохранить"
-              : createFamilyMutation.isPending
-                ? "Создаём…"
-                : "Создать"}
+            {updateFamilyMutation.isPending ? "Сохраняем…" : "Сохранить"}
           </button>
         </form>
-      </section>
+      </Surface>
 
-      <section className="mt-6 rounded-xl border border-border bg-background p-4">
+      <Surface className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-medium text-foreground">Родители</h2>
-          {family && <span className="text-sm text-muted">{parents.length} шт.</span>}
+          <div>
+            <h2 className="text-lg font-medium text-foreground">Участники семьи</h2>
+            <p className="mt-1 text-sm text-muted">
+              Владельцы могут приглашать новых взрослых, менять роли и отзывать доступ.
+            </p>
+          </div>
+          <span className="soft-pill rounded-full px-3 py-1 text-xs">{members.length} чел.</span>
         </div>
 
-        {!family && (
-          <p className="mt-3 text-sm text-muted">
-            Сначала создайте семью, затем добавьте родителей.
-          </p>
-        )}
-        {family && (
-          <>
-            <form onSubmit={handleParentCreate} className="mt-4 flex flex-wrap items-end gap-3">
-              <label className="min-w-0 flex-1">
-                <span className="block text-sm text-muted">Имя</span>
-                <input
-                  type="text"
-                  value={newParentName}
-                  onChange={(e) => setNewParentName(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-                  placeholder="Например: Анна"
-                />
-              </label>
-              <label className="min-w-0 flex-1">
-                <span className="block text-sm text-muted">Роль</span>
-                <input
-                  type="text"
-                  value={newParentRole}
-                  onChange={(e) => setNewParentRole(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-                  placeholder="Например: мама"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={
-                  createParentMutation.isPending || !newParentName.trim() || !newParentRole.trim()
+        {isMembersLoading ? (
+          <p className="mt-4 text-sm text-muted">Загружаем участников…</p>
+        ) : members.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">У семьи пока нет подключённых участников.</p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {members.map((member) => (
+              <MemberCard
+                key={member.id}
+                member={member}
+                isCurrent={member.id === currentAccountId}
+                isOwner={canManageFamily}
+                canEditProfile={canManageFamily || member.id === currentAccountId}
+                ownersCount={ownersCount}
+                isPending={
+                  updateMemberRoleMutation.isPending ||
+                  updateMemberProfileMutation.isPending ||
+                  deleteMemberMutation.isPending
                 }
-                className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
-              >
-                {createParentMutation.isPending ? "Добавляем…" : "Добавить"}
-              </button>
-            </form>
+                onPromote={() =>
+                  updateMemberRoleMutation.mutate({
+                    memberAccountId: member.id,
+                    familyRole: "owner",
+                  })
+                }
+                onDemote={() =>
+                  updateMemberRoleMutation.mutate({
+                    memberAccountId: member.id,
+                    familyRole: "adult",
+                  })
+                }
+                onDelete={() => deleteMemberMutation.mutate(member.id)}
+                onSaveProfile={(payload) =>
+                  updateMemberProfileMutation.mutate({
+                    memberAccountId: member.id,
+                    displayName: payload.displayName,
+                    relationshipLabel: payload.relationshipLabel,
+                    phone: payload.phone,
+                  })
+                }
+              />
+            ))}
+          </div>
+        )}
+      </Surface>
 
-            {parentsError && (
-              <p className="mt-3 text-sm text-red-600 dark:text-red-400">
-                {(parentsError as { message?: string }).message ?? "Ошибка загрузки родителей"}
-              </p>
-            )}
-            {parentsLoading && <p className="mt-3 text-sm text-muted">Загрузка…</p>}
-            {!parentsLoading && parents.length === 0 && (
-              <p className="mt-3 text-sm text-muted">Пока нет родителей. Добавьте первого выше.</p>
-            )}
-            {parents.length > 0 && (
-              <ul className="mt-4 space-y-3">
-                {parents.map((parent) => {
-                  const isEditing = editingParentId === parent.id;
-                  const isSaving =
-                    updateParentMutation.isPending &&
-                    updateParentMutation.variables?.id === parent.id;
+      <Surface className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-medium text-foreground">Приглашение в семью</h2>
+            <p className="mt-1 text-sm text-muted">
+              Новому взрослому отправляется личная ссылка. Он войдёт в ту же семейную базу, но под
+              своим аккаунтом.
+            </p>
+          </div>
+          <span className="soft-pill rounded-full px-3 py-1 text-xs">Только для owner</span>
+        </div>
 
-                  return (
-                    <li
-                      key={parent.id}
-                      className="rounded-xl border border-border bg-background/60 p-4"
-                    >
-                      {isEditing ? (
-                        <div className="flex flex-wrap items-end gap-3">
-                          <label className="min-w-0 flex-1">
-                            <span className="block text-sm text-muted">Имя</span>
-                            <input
-                              type="text"
-                              value={editingParentName}
-                              onChange={(e) => setEditingParentName(e.target.value)}
-                              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-                            />
-                          </label>
-                          <label className="min-w-0 flex-1">
-                            <span className="block text-sm text-muted">Роль</span>
-                            <input
-                              type="text"
-                              value={editingParentRole}
-                              onChange={(e) => setEditingParentRole(e.target.value)}
-                              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => handleParentSave(parent.id)}
-                            disabled={
-                              isSaving || !editingParentName.trim() || !editingParentRole.trim()
-                            }
-                            className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-focus disabled:opacity-50"
-                          >
-                            {isSaving ? "Сохраняем…" : "Сохранить"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingParentId(null);
-                              setEditingParentName("");
-                              setEditingParentRole("");
-                            }}
-                            className="rounded-lg border border-border px-4 py-2 hover:bg-muted/30"
-                          >
-                            Отмена
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-foreground">{parent.name}</p>
-                            <p className="mt-1 text-sm text-muted">{parent.role}</p>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleParentEditStart(parent)}
-                              className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted/30"
-                            >
-                              Редактировать
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => deleteParentMutation.mutate(parent.id)}
-                              disabled={deleteParentMutation.isPending}
-                              className="rounded-lg border border-red-500/50 px-3 py-1.5 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
-                            >
-                              Удалить
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+        {!canManageFamily ? (
+          <p className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
+            Приглашать новых участников может только владелец семьи.
+          </p>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => createInviteMutation.mutate()}
+              disabled={createInviteMutation.isPending}
+              className="soft-button-primary mt-4 rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+            >
+              {createInviteMutation.isPending ? "Создаём ссылку…" : "Создать ссылку-приглашение"}
+            </button>
+
+            {createInviteMutation.data && (
+              <div className="soft-panel mt-4 rounded-[24px] p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-muted">Новая ссылка</p>
+                <p className="mt-2 break-all text-sm text-foreground">{latestInviteUrl}</p>
+                <p className="mt-2 text-sm text-muted">
+                  Действует до{" "}
+                  {new Date(createInviteMutation.data.expiresAt).toLocaleString("ru-RU")}.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyInvite}
+                    className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                  >
+                    {inviteCopied ? "Ссылка скопирована" : "Скопировать ссылку"}
+                  </button>
+                </div>
+              </div>
             )}
           </>
         )}
-      </section>
+      </Surface>
+    </div>
+  );
+}
+
+interface MemberCardProps {
+  member: FamilyMember;
+  isCurrent: boolean;
+  isOwner: boolean;
+  canEditProfile: boolean;
+  ownersCount: number;
+  isPending: boolean;
+  onPromote: () => void;
+  onDemote: () => void;
+  onDelete: () => void;
+  onSaveProfile: (payload: {
+    displayName?: string;
+    relationshipLabel?: string | null;
+    phone?: string | null;
+  }) => void;
+}
+
+function MemberCard({
+  member,
+  isCurrent,
+  isOwner,
+  canEditProfile,
+  ownersCount,
+  isPending,
+  onPromote,
+  onDemote,
+  onDelete,
+  onSaveProfile,
+}: MemberCardProps) {
+  const canDemote = member.familyRole === "owner" && ownersCount > 1 && !isCurrent;
+  const canPromote = member.familyRole !== "owner" && !isCurrent;
+  const canDelete = !isCurrent;
+  const [isEditing, setIsEditing] = useState(false);
+  const [displayName, setDisplayName] = useState(member.displayName || "");
+  const [relationshipLabel, setRelationshipLabel] = useState(member.relationshipLabel || "");
+  const [phone, setPhone] = useState(member.phone || "");
+
+  useEffect(() => {
+    setDisplayName(member.displayName || "");
+    setRelationshipLabel(member.relationshipLabel || "");
+    setPhone(member.phone || "");
+  }, [member.displayName, member.relationshipLabel, member.phone]);
+
+  return (
+    <div className="soft-panel rounded-[24px] p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium text-foreground">
+              {member.displayName || member.login || "Без имени"}
+            </p>
+            {member.relationshipLabel && (
+              <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
+                {member.relationshipLabel}
+              </span>
+            )}
+            <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
+              {roleLabel(member.familyRole)}
+            </span>
+            {isCurrent && (
+              <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">Это вы</span>
+            )}
+          </div>
+          <p className="mt-2 text-sm text-muted">@{member.login}</p>
+          <p className="mt-1 text-sm text-muted">{member.email || "Email не указан"}</p>
+          <p className="mt-1 text-sm text-muted">{member.phone || "Телефон не указан"}</p>
+        </div>
+
+        {(isOwner || canEditProfile) && (
+          <div className="flex flex-wrap gap-2">
+            {canEditProfile && (
+              <button
+                type="button"
+                onClick={() => setIsEditing((current) => !current)}
+                className="soft-button-secondary rounded-2xl px-3 py-2 text-xs"
+              >
+                {isEditing ? "Скрыть профиль" : "Редактировать профиль"}
+              </button>
+            )}
+            {canPromote && (
+              <button
+                type="button"
+                onClick={onPromote}
+                disabled={isPending}
+                className="soft-button-secondary rounded-2xl px-3 py-2 text-xs disabled:opacity-50"
+              >
+                Сделать owner
+              </button>
+            )}
+            {canDemote && (
+              <button
+                type="button"
+                onClick={onDemote}
+                disabled={isPending}
+                className="soft-button-secondary rounded-2xl px-3 py-2 text-xs disabled:opacity-50"
+              >
+                Сделать adult
+              </button>
+            )}
+            {canDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                disabled={isPending}
+                className="soft-button-secondary rounded-2xl px-3 py-2 text-xs disabled:opacity-50"
+              >
+                Удалить из семьи
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {isEditing && (
+        <div className="mt-4 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-sm text-muted">Имя в семье</span>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              className="soft-input w-full rounded-2xl px-4 py-3"
+              placeholder="Например: Оля"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm text-muted">Кто это в семье</span>
+            <input
+              type="text"
+              value={relationshipLabel}
+              onChange={(event) => setRelationshipLabel(event.target.value)}
+              className="soft-input w-full rounded-2xl px-4 py-3"
+              placeholder="Например: няня"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm text-muted">Телефон</span>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              className="soft-input w-full rounded-2xl px-4 py-3"
+              placeholder="+375 ..."
+            />
+          </label>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => {
+                onSaveProfile({
+                  displayName: displayName.trim() || member.login,
+                  relationshipLabel: relationshipLabel.trim() || null,
+                  phone: phone.trim() || null,
+                });
+                setIsEditing(false);
+              }}
+              disabled={isPending || !displayName.trim()}
+              className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+            >
+              {isPending ? "Сохраняем…" : "Сохранить профиль"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

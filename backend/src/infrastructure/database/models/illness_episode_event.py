@@ -33,6 +33,12 @@ class IllnessEpisodeEventModel(Base):
         ForeignKey("household_medicines.id", ondelete="RESTRICT"),
         nullable=True,
     )
+    administered_by_account_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    administered_by_name_snapshot: Mapped[str | None] = mapped_column(String(255), nullable=True)
     amount: Mapped[str | None] = mapped_column(String(64), nullable=True)
     unit: Mapped[str | None] = mapped_column(String(32), nullable=True)
     reason: Mapped[str | None] = mapped_column(String(256), nullable=True)

@@ -44,5 +44,10 @@ class HouseholdMedicineModel(Base):
         "MedicineCatalogItemModel", back_populates="household_medicines"
     )
     administration_events: Mapped[list] = relationship(
-        "AdministrationEventModel", back_populates="household_medicine"
+        "AdministrationEventModel",
+        back_populates="household_medicine",
+        passive_deletes=True,
+    )
+    medication_plans: Mapped[list] = relationship(
+        "EpisodeMedicationPlanModel", back_populates="household_medicine"
     )

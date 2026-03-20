@@ -2,11 +2,12 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.household_medicine import HouseholdMedicine
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
+from src.infrastructure.database.models.administration_event import AdministrationEventModel
 from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
 
 
@@ -91,6 +92,13 @@ class SqlHouseholdMedicineRepository(HouseholdMedicineRepository):
         )
         row = result.scalars().one_or_none()
         if row:
+            # Legacy table is no longer used by the app, but old rows can still
+            # block cabinet-item deletion through RESTRICT + ORM synchronization.
+            await self._session.execute(
+                delete(AdministrationEventModel).where(
+                    AdministrationEventModel.household_medicine_id == id
+                )
+            )
             await self._session.delete(row)
             await self._session.flush()
             return True

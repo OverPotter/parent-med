@@ -2,13 +2,14 @@
 
 from fastapi import APIRouter, Depends, Request, Response
 
-from src.api.utils.auth_cookies import clear_auth_cookies, set_auth_cookies
 from src.api.deps import get_auth_service
 from src.api.deps.auth import get_current_account
+from src.api.utils.auth_cookies import clear_auth_cookies, set_auth_cookies
 from src.application.dto.auth import (
     AuthenticatedAccount,
     AuthResponseDto,
     AuthStateResponseDto,
+    ChangePasswordDto,
     LoginDto,
     RefreshDto,
     RegisterDto,
@@ -40,7 +41,7 @@ async def signin(
     dto: LoginDto,
     service: BaseAuthService = Depends(get_auth_service),
 ) -> AuthResponseDto:
-    """Войти по email и паролю."""
+    """Войти по логину и паролю."""
     auth = await service.signin(dto)
     set_auth_cookies(response, auth)
     return auth
@@ -82,3 +83,13 @@ async def logout(
     """Закрыть refresh-сессии текущего аккаунта."""
     await service.logout(current_account.id)
     clear_auth_cookies(response)
+
+
+@router.patch("/password", status_code=204)
+async def change_password(
+    dto: ChangePasswordDto,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: BaseAuthService = Depends(get_auth_service),
+) -> None:
+    """Сменить пароль текущего аккаунта."""
+    await service.change_password(current_account.id, dto)

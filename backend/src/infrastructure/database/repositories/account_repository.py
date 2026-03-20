@@ -19,23 +19,50 @@ class SqlAccountRepository(AccountRepository):
     def _to_entity(self, model: AccountModel) -> Account:
         return Account(
             id=model.id,
+            login=model.login,
             email=model.email,
             password_hash=model.password_hash,
             family_id=model.family_id,
+            display_name=model.display_name,
+            relationship_label=model.relationship_label,
+            phone=model.phone,
+            family_role=model.family_role,
+            push_before_reminder_minutes=model.push_before_reminder_minutes,
+            cabinet_notify_10_days=model.cabinet_notify_15_days,
+            cabinet_notify_7_days=model.cabinet_notify_7_days,
+            cabinet_notify_3_days=model.cabinet_notify_3_days,
+            cabinet_notify_1_day=model.cabinet_notify_1_day,
             created_at=model.created_at,
         )
 
     def _to_model(self, entity: Account) -> AccountModel:
         return AccountModel(
             id=entity.id,
+            login=entity.login,
             email=entity.email,
             password_hash=entity.password_hash,
             family_id=entity.family_id,
+            display_name=entity.display_name,
+            relationship_label=entity.relationship_label,
+            phone=entity.phone,
+            family_role=entity.family_role,
+            push_before_reminder_minutes=entity.push_before_reminder_minutes,
+            cabinet_notify_15_days=entity.cabinet_notify_10_days,
+            cabinet_notify_7_days=entity.cabinet_notify_7_days,
+            cabinet_notify_3_days=entity.cabinet_notify_3_days,
+            cabinet_notify_1_day=entity.cabinet_notify_1_day,
             created_at=entity.created_at,
         )
 
     async def get_by_id(self, id: UUID) -> Account | None:
         result = await self._session.execute(select(AccountModel).where(AccountModel.id == id))
+        row = result.scalars().one_or_none()
+        return self._to_entity(row) if row else None
+
+    async def get_by_login(self, login: str) -> Account | None:
+        result = await self._session.execute(
+            select(AccountModel).where(AccountModel.login == login)
+        )
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
 
@@ -46,12 +73,54 @@ class SqlAccountRepository(AccountRepository):
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
 
+    async def get_by_family_id(self, family_id: UUID) -> Account | None:
+        result = await self._session.execute(
+            select(AccountModel)
+            .where(AccountModel.family_id == family_id)
+            .order_by(AccountModel.created_at.asc())
+            .limit(1)
+        )
+        row = result.scalars().one_or_none()
+        return self._to_entity(row) if row else None
+
+    async def list_by_family_id(self, family_id: UUID) -> list[Account]:
+        result = await self._session.execute(
+            select(AccountModel)
+            .where(AccountModel.family_id == family_id)
+            .order_by(AccountModel.created_at.asc())
+        )
+        return [self._to_entity(row) for row in result.scalars().all()]
+
     async def add(self, entity: Account) -> Account:
         model = self._to_model(entity)
         self._session.add(model)
         await self._session.flush()
         await self._session.refresh(model)
         return self._to_entity(model)
+
+    async def update(self, entity: Account) -> Account:
+        result = await self._session.execute(
+            select(AccountModel).where(AccountModel.id == entity.id)
+        )
+        row = result.scalars().one_or_none()
+        if not row:
+            raise ValueError(f"Account {entity.id} not found")
+        row.login = entity.login
+        row.email = entity.email
+        row.password_hash = entity.password_hash
+        row.family_id = entity.family_id
+        row.display_name = entity.display_name
+        row.relationship_label = entity.relationship_label
+        row.phone = entity.phone
+        row.family_role = entity.family_role
+        row.push_before_reminder_minutes = entity.push_before_reminder_minutes
+        row.cabinet_notify_15_days = entity.cabinet_notify_10_days
+        row.cabinet_notify_7_days = entity.cabinet_notify_7_days
+        row.cabinet_notify_3_days = entity.cabinet_notify_3_days
+        row.cabinet_notify_1_day = entity.cabinet_notify_1_day
+        await self._session.flush()
+        await self._session.refresh(row)
+        return self._to_entity(row)
 
     async def delete(self, id: UUID) -> bool:
         result = await self._session.execute(select(AccountModel).where(AccountModel.id == id))

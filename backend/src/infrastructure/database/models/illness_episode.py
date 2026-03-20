@@ -24,6 +24,7 @@ class IllnessEpisodeModel(Base):
     started_at: Mapped[date] = mapped_column(Date, nullable=False)
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    medication_mode: Mapped[str] = mapped_column(String(32), nullable=False, default="manual")
     note: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -34,4 +35,7 @@ class IllnessEpisodeModel(Base):
     )
     administration_events: Mapped[list] = relationship(
         "AdministrationEventModel", back_populates="episode"
+    )
+    medication_plans: Mapped[list] = relationship(
+        "EpisodeMedicationPlanModel", back_populates="episode"
     )

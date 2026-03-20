@@ -13,6 +13,7 @@ from src.domain.entities.household_medicine import HouseholdMedicine
 from src.domain.enums.household_medicine_status import HouseholdMedicineStatus
 
 _EXPIRING_SOON_DAYS = 30
+_EXPIRING_AFTER_OPENING_DAYS = 30
 
 
 class HouseholdMedicineStatusInfo(TypedDict):
@@ -67,7 +68,10 @@ def calculate_household_medicine_status(
             "effective_opened_shelf_days": effective_opened_shelf_days,
         }
 
-    if opened_expires_in_days is not None and opened_expires_in_days <= 7:
+    if (
+        opened_expires_in_days is not None
+        and opened_expires_in_days <= _EXPIRING_AFTER_OPENING_DAYS
+    ):
         return {
             "status": HouseholdMedicineStatus.EXPIRING_AFTER_OPENING,
             "status_label": HouseholdMedicineStatus.EXPIRING_AFTER_OPENING.label,

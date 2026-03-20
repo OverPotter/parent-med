@@ -12,15 +12,29 @@ from src.application.dto.family import FamilyResponseDto
 class RegisterDto(BaseModel):
     """Регистрация аккаунта с созданием семьи."""
 
-    email: str = Field(..., description="Email аккаунта")
+    login: str = Field(..., min_length=3, description="Логин аккаунта")
+    email: str | None = Field(None, description="Email аккаунта для связи")
     password: str = Field(..., min_length=6, description="Пароль")
+    display_name: str | None = Field(None, description="Как показывать пользователя в семье")
+    relationship_label: str | None = Field(None, description="Кем пользователь является в семье")
+    phone: str | None = Field(None, description="Контактный телефон")
+    remember_me: bool = Field(False, description="Оставаться в системе на этом устройстве")
+    invite_token: str | None = Field(None, description="Токен приглашения в существующую семью")
 
 
 class LoginDto(BaseModel):
-    """Вход по email и паролю."""
+    """Вход по login и паролю."""
 
-    email: str = Field(..., description="Email аккаунта")
+    login: str = Field(..., min_length=3, description="Логин аккаунта")
     password: str = Field(..., min_length=6, description="Пароль")
+    remember_me: bool = Field(False, description="Оставаться в системе на этом устройстве")
+
+
+class ChangePasswordDto(BaseModel):
+    """Смена пароля авторизованного аккаунта."""
+
+    current_password: str = Field(..., min_length=6, description="Текущий пароль")
+    new_password: str = Field(..., min_length=6, description="Новый пароль")
 
 
 class RefreshDto(BaseModel):
@@ -33,8 +47,13 @@ class AccountResponseDto(ResponseBase):
     """Ответ: аккаунт."""
 
     id: UUID
-    email: str
+    login: str
+    email: str | None
     family_id: UUID
+    display_name: str
+    relationship_label: str | None = None
+    phone: str | None = None
+    family_role: str
 
 
 @dataclass
@@ -42,8 +61,13 @@ class AuthenticatedAccount:
     """Текущий авторизованный аккаунт."""
 
     id: UUID
-    email: str
+    login: str
+    email: str | None
     family_id: UUID
+    display_name: str
+    family_role: str
+    relationship_label: str | None = None
+    phone: str | None = None
 
 
 class AuthStateResponseDto(ResponseBase):
@@ -59,3 +83,4 @@ class AuthResponseDto(AuthStateResponseDto):
     token_type: str = "bearer"
     access_token: str
     refresh_token: str
+    remember_me: bool = False

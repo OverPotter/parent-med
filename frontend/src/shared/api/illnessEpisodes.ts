@@ -12,6 +12,7 @@ interface RawIllnessEpisode {
   started_at: string;
   title: string | null;
   status: string;
+  medication_mode: string;
   note: string | null;
   closed_at: string | null;
 }
@@ -41,6 +42,7 @@ export async function createIllnessEpisode(body: {
   child_id: string;
   started_at: string;
   title?: string | null;
+  medication_mode?: string;
   note?: string | null;
 }): Promise<IllnessEpisode> {
   const res = await apiClient.post<RawIllnessEpisode>("/illness-episodes", body);
@@ -53,6 +55,7 @@ export async function updateIllnessEpisode(
     started_at?: string;
     title?: string | null;
     status?: string;
+    medication_mode?: string;
     note?: string | null;
     closed_at?: string | null;
   }

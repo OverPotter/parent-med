@@ -12,8 +12,11 @@ def make_auth_response() -> AuthResponseDto:
         refresh_token="refresh-token",
         account=AccountResponseDto(
             id="00000000-0000-0000-0000-000000000001",
-            email="test@example.com",
+            login="mama_anya",
+            email=None,
             family_id="00000000-0000-0000-0000-000000000002",
+            display_name="Мама",
+            family_role="owner",
         ),
         family=FamilyResponseDto(
             id="00000000-0000-0000-0000-000000000002",
@@ -30,6 +33,20 @@ def test_set_auth_cookies_writes_both_tokens() -> None:
     headers = response.headers.getlist("set-cookie")
     assert any(settings.access_cookie_name in header for header in headers)
     assert any(settings.refresh_cookie_name in header for header in headers)
+
+
+def test_set_auth_cookies_uses_long_refresh_for_remember_me() -> None:
+    response = Response()
+    auth = make_auth_response()
+    auth.remember_me = True
+
+    set_auth_cookies(response, auth)
+
+    headers = response.headers.getlist("set-cookie")
+    refresh_header = next(
+        header for header in headers if header.startswith(f"{settings.refresh_cookie_name}=")
+    )
+    assert f"Max-Age={settings.refresh_token_ttl_days_remember_me * 24 * 60 * 60}" in refresh_header
 
 
 def test_clear_auth_cookies_deletes_both_tokens() -> None:

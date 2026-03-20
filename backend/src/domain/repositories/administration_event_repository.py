@@ -29,3 +29,12 @@ class AdministrationEventRepository(BaseRepository[AdministrationEvent]):
     async def delete(self, id: UUID) -> bool:
         """Удалить запись приёма."""
         ...
+
+    @abstractmethod
+    async def clear_household_medicine_references(
+        self,
+        household_medicine_id: UUID,
+        fallback_medicine_name: str,
+    ) -> None:
+        """Убрать ссылку на упаковку из истории при удалении из аптечки."""
+        ...

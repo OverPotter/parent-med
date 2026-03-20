@@ -14,6 +14,7 @@ class IllnessEpisodeCreateDto(BaseModel):
     child_id: UUID = Field(..., description="ID ребёнка")
     started_at: date = Field(..., description="Дата начала")
     title: str | None = Field(None, description="Короткое название эпизода")
+    medication_mode: str = Field("manual", description="Режим лекарств: manual или guided")
     note: str | None = Field(None, description="Общая заметка")
 
 
@@ -23,6 +24,7 @@ class IllnessEpisodeUpdateDto(BaseModel):
     started_at: date | None = Field(None, description="Дата начала")
     title: str | None = Field(None, description="Короткое название эпизода")
     status: str | None = Field(None, description="Статус: active, closed")
+    medication_mode: str | None = Field(None, description="Режим лекарств: manual или guided")
     note: str | None = Field(None, description="Общая заметка")
     closed_at: datetime | None = Field(None, description="Дата закрытия")
 
@@ -35,5 +37,6 @@ class IllnessEpisodeResponseDto(ResponseBase):
     started_at: date
     title: str | None
     status: str
+    medication_mode: str
     note: str | None
     closed_at: datetime | None

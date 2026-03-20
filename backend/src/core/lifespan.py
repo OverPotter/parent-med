@@ -7,10 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from src.core.config import settings
 from src.core.logging import setup_logging
+from src.application.services.push_reminder_scheduler import PushNotificationScheduler
 
 # Движок и фабрика сессий создаются при импорте после загрузки моделей
 _engine = None
 _async_session_factory: async_sessionmaker[AsyncSession] | None = None
+_push_scheduler: PushNotificationScheduler | None = None
 
 
 def get_engine():
@@ -45,7 +47,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 @asynccontextmanager
 async def lifespan_context():
     """Контекст жизни приложения: логирование, БД."""
-    global _engine, _async_session_factory
+    global _engine, _async_session_factory, _push_scheduler
     setup_logging(debug=settings.debug)
 
     # Импорт моделей для регистрации в Base.metadata (Alembic, миграции)
@@ -61,9 +63,14 @@ async def lifespan_context():
         expire_on_commit=False,
         autoflush=False,
     )
+    _push_scheduler = PushNotificationScheduler(_async_session_factory)
+    _push_scheduler.start()
 
     yield
 
+    if _push_scheduler is not None:
+        await _push_scheduler.stop()
+        _push_scheduler = None
     await _engine.dispose()
     _engine = None
     _async_session_factory = None

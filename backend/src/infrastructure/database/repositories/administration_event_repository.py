@@ -21,7 +21,10 @@ class SqlAdministrationEventRepository(AdministrationEventRepository):
             id=m.id,
             episode_id=m.episode_id,
             household_medicine_id=m.household_medicine_id,
+            custom_medicine_name=m.comment,
             administered_at=m.occurred_at,
+            administered_by_account_id=m.administered_by_account_id,
+            administered_by_name_snapshot=m.administered_by_name_snapshot,
             amount=m.amount or "",
             unit=m.unit,
             reason=m.reason,
@@ -34,9 +37,12 @@ class SqlAdministrationEventRepository(AdministrationEventRepository):
             event_type="administration",
             household_medicine_id=e.household_medicine_id,
             occurred_at=e.administered_at,
+            administered_by_account_id=e.administered_by_account_id,
+            administered_by_name_snapshot=e.administered_by_name_snapshot,
             amount=e.amount,
             unit=e.unit,
             reason=e.reason,
+            comment=e.custom_medicine_name,
         )
 
     async def get_by_id(self, id: UUID) -> AdministrationEvent | None:
@@ -80,3 +86,22 @@ class SqlAdministrationEventRepository(AdministrationEventRepository):
             await self._session.flush()
             return True
         return False
+
+    async def clear_household_medicine_references(
+        self,
+        household_medicine_id: UUID,
+        fallback_medicine_name: str,
+    ) -> None:
+        result = await self._session.execute(
+            select(IllnessEpisodeEventModel).where(
+                IllnessEpisodeEventModel.event_type == "administration",
+                IllnessEpisodeEventModel.household_medicine_id == household_medicine_id,
+            )
+        )
+        rows = result.scalars().all()
+        for row in rows:
+            row.household_medicine_id = None
+            if not (row.comment or "").strip():
+                row.comment = fallback_medicine_name
+        if rows:
+            await self._session.flush()

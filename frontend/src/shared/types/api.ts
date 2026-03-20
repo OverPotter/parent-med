@@ -9,8 +9,13 @@ export interface Family {
 
 export interface Account {
   id: string;
-  email: string;
+  login: string;
+  email: string | null;
   familyId: string;
+  displayName: string;
+  relationshipLabel: string | null;
+  phone: string | null;
+  familyRole: string;
 }
 
 export interface AuthSessionResponse {
@@ -26,6 +31,24 @@ export interface AuthStateResponse {
   family: Family;
 }
 
+export interface FamilyMember extends Account {}
+
+export interface FamilyInvite {
+  token: string;
+  familyId: string;
+  familyName: string;
+  familyRole: string;
+  invitePath: string;
+  expiresAt: string;
+}
+
+export interface FamilyInvitePreview {
+  familyId: string;
+  familyName: string;
+  familyRole: string;
+  expiresAt: string;
+}
+
 export interface Parent {
   id: string;
   familyId: string;
@@ -39,6 +62,12 @@ export interface Child {
   name: string;
   birthDate: string | null;
   ageLabel: string | null;
+  institutionName: string | null;
+  institutionPhone: string | null;
+  doctorName: string | null;
+  doctorPhone: string | null;
+  allergies: string | null;
+  notes: string | null;
 }
 
 export interface WeightEntry {
@@ -86,6 +115,7 @@ export interface IllnessEpisode {
   startedAt: string;
   title: string | null;
   status: string;
+  medicationMode: string;
   note: string | null;
   closedAt: string | null;
 }
@@ -109,11 +139,41 @@ export interface TemperatureEntry {
 export interface AdministrationEvent {
   id: string;
   episodeId: string;
-  householdMedicineId: string;
+  householdMedicineId: string | null;
+  customMedicineName: string | null;
   administeredAt: string;
+  administeredByAccountId: string | null;
+  administeredByNameSnapshot: string | null;
   amount: string;
   unit: string | null;
   reason: string | null;
+}
+
+export interface EpisodeMedicationPlan {
+  id: string;
+  episodeId: string;
+  householdMedicineId: string | null;
+  customMedicineName: string | null;
+  doseAmount: string;
+  minIntervalMinutes: number;
+  maxDosesPerDay: number | null;
+  weightKg: number | null;
+  doseMgPerKg: number | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface PushNotificationConfig {
+  enabled: boolean;
+  vapidPublicKey: string | null;
+}
+
+export interface PushNotificationPreferences {
+  beforeReminderMinutes: number;
+  dueReminderEnabled: boolean;
+  cabinetNotify10Days: boolean;
+  cabinetNotify7Days: boolean;
+  cabinetNotify3Days: boolean;
 }
 
 /** Ответ API с ошибкой (detail + code). */

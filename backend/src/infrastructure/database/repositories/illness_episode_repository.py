@@ -24,6 +24,7 @@ class SqlIllnessEpisodeRepository(IllnessEpisodeRepository):
             started_at=m.started_at,
             title=m.title,
             status=m.status,
+            medication_mode=m.medication_mode,
             note=m.note,
             closed_at=m.closed_at,
             deleted_at=m.deleted_at,
@@ -36,6 +37,7 @@ class SqlIllnessEpisodeRepository(IllnessEpisodeRepository):
             started_at=e.started_at,
             title=e.title,
             status=e.status,
+            medication_mode=e.medication_mode,
             note=e.note,
             closed_at=e.closed_at,
             deleted_at=e.deleted_at,
@@ -92,6 +94,7 @@ class SqlIllnessEpisodeRepository(IllnessEpisodeRepository):
         row.started_at = entity.started_at
         row.title = entity.title
         row.status = entity.status
+        row.medication_mode = entity.medication_mode
         row.note = entity.note
         row.closed_at = entity.closed_at
         row.deleted_at = entity.deleted_at

@@ -46,7 +46,7 @@ export function IllnessHistoryPage() {
   if (!currentFamilyId) {
     return (
       <Surface className="p-5">
-        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">История болезней</h1>
+        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">История</h1>
         <p className="mt-2 text-muted">Сначала выбери семью в разделе «Семья».</p>
       </Surface>
     );
@@ -70,14 +70,14 @@ export function IllnessHistoryPage() {
   return (
     <div className="space-y-7">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">История болезней</h1>
-        <p className="mt-2 text-sm leading-6 text-muted">Завершённые эпизоды по детям.</p>
+        <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">История</h1>
+        <p className="mt-2 text-sm leading-6 text-muted">Завершённые наблюдения по детям.</p>
       </div>
 
       {(isLoading || isEpisodesLoading) && <p className="text-muted">Загрузка…</p>}
 
       {!isLoading && !isEpisodesLoading && childHistory.length === 0 && (
-        <EmptyState>Завершённой истории болезней пока нет.</EmptyState>
+        <EmptyState>Завершённых наблюдений пока нет.</EmptyState>
       )}
 
       {!isLoading && !isEpisodesLoading && childHistory.length > 0 && (
@@ -125,8 +125,8 @@ function HistoryCard({
                 : "История пуста"}
             </p>
             {hasActiveEpisode && (
-              <p className="mt-1 text-sm text-[color:var(--color-success)]">
-                Сейчас есть активный эпизод, в архив не входит
+              <p className="soft-text-success mt-1 text-sm">
+                Сейчас идёт активное наблюдение, в архив не входит
               </p>
             )}
             {lastEpisode?.closedAt && (

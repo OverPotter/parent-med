@@ -5,8 +5,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from src.api.deps import get_current_account, get_family_service
-from src.application.dto.auth import AuthenticatedAccount
-from src.application.dto.family import FamilyCreateDto, FamilyResponseDto, FamilyUpdateDto
+from src.application.dto.auth import AccountResponseDto, AuthenticatedAccount
+from src.application.dto.family import (
+    FamilyCreateDto,
+    FamilyMemberProfileUpdateDto,
+    FamilyMemberUpdateDto,
+    FamilyResponseDto,
+    FamilyUpdateDto,
+)
 from src.application.services.family_service import FamilyService
 from src.core.exceptions import ValidationError
 
@@ -29,6 +35,64 @@ async def get_my_family(
 ) -> FamilyResponseDto:
     """Получить семью текущего аккаунта."""
     return await service.get_by_id(account.family_id)
+
+
+@router.get("/me/members", response_model=list[AccountResponseDto])
+async def get_my_family_members(
+    account: AuthenticatedAccount = Depends(get_current_account),
+    service: FamilyService = Depends(get_family_service),
+) -> list[AccountResponseDto]:
+    """Получить список аккаунтов внутри текущей семьи."""
+    return await service.list_members_for_account(account.family_id)
+
+
+@router.patch("/me/members/{member_account_id}", response_model=AccountResponseDto)
+async def update_family_member(
+    member_account_id: UUID,
+    dto: FamilyMemberUpdateDto,
+    account: AuthenticatedAccount = Depends(get_current_account),
+    service: FamilyService = Depends(get_family_service),
+) -> AccountResponseDto:
+    """Обновить роль участника текущей семьи."""
+    return await service.update_member_for_account(
+        member_account_id=member_account_id,
+        dto=dto,
+        current_account_id=account.id,
+        current_family_id=account.family_id,
+        current_family_role=account.family_role,
+    )
+
+
+@router.patch("/me/members/{member_account_id}/profile", response_model=AccountResponseDto)
+async def update_family_member_profile(
+    member_account_id: UUID,
+    dto: FamilyMemberProfileUpdateDto,
+    account: AuthenticatedAccount = Depends(get_current_account),
+    service: FamilyService = Depends(get_family_service),
+) -> AccountResponseDto:
+    """Обновить профиль участника текущей семьи."""
+    return await service.update_member_profile_for_account(
+        member_account_id=member_account_id,
+        dto=dto,
+        current_account_id=account.id,
+        current_family_id=account.family_id,
+        current_family_role=account.family_role,
+    )
+
+
+@router.delete("/me/members/{member_account_id}", status_code=204)
+async def delete_family_member(
+    member_account_id: UUID,
+    account: AuthenticatedAccount = Depends(get_current_account),
+    service: FamilyService = Depends(get_family_service),
+) -> None:
+    """Удалить участника из текущей семьи."""
+    await service.delete_member_for_account(
+        member_account_id=member_account_id,
+        current_account_id=account.id,
+        current_family_id=account.family_id,
+        current_family_role=account.family_role,
+    )
 
 
 @router.get("/{family_id}", response_model=FamilyResponseDto)

@@ -9,13 +9,39 @@ import { fetchFamilies } from "@shared/api/families";
 import { Layout } from "@shared/components/Layout";
 import { useAppStore } from "@shared/store/useAppStore";
 
-const clientNavLinks = [
-  { to: "/", label: "Главная" },
-  { to: "/children", label: "Дети" },
-  { to: "/illnesses/active", label: "Активные болезни" },
-  { to: "/illnesses/history", label: "История болезней" },
-  { to: "/family", label: "Семья" },
-  { to: "/medicine-cabinet", label: "Аптечка" },
+const desktopNavLinks = [
+  { to: "/home", label: "Главная" },
+  {
+    to: "/illnesses/active",
+    label: "Активные болезни",
+    mobileLabel: "Болезни",
+    activePaths: ["/illnesses/active", "/children/:childId/illness"],
+  },
+  { to: "/children", label: "Дети", mobileLabel: "Дети", activePaths: ["/children"] },
+  { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
+  {
+    to: "/more",
+    label: "Ещё",
+    mobileLabel: "Ещё",
+    activePaths: ["/more", "/account", "/about", "/family", "/illnesses/history"],
+  },
+];
+
+const mobileNavLinks = [
+  {
+    to: "/illnesses/active",
+    label: "Активные болезни",
+    mobileLabel: "Болезни",
+    activePaths: ["/illnesses/active", "/children/:childId/illness"],
+  },
+  { to: "/children", label: "Дети", mobileLabel: "Дети", activePaths: ["/children"] },
+  { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
+  {
+    to: "/more",
+    label: "Ещё",
+    mobileLabel: "Ещё",
+    activePaths: ["/more", "/account", "/about", "/family", "/illnesses/history"],
+  },
 ];
 
 export function ClientLayout() {
@@ -51,7 +77,7 @@ export function ClientLayout() {
   }, [currentFamilyId, currentFamilyName, families, isSuccess, setCurrentFamily]);
 
   return (
-    <Layout navLinks={clientNavLinks} showCurrentFamily>
+    <Layout navLinks={desktopNavLinks} mobileNavLinks={mobileNavLinks} showCurrentFamily>
       <Outlet />
     </Layout>
   );

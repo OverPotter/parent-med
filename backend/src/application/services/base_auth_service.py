@@ -8,6 +8,7 @@ from src.application.dto.auth import (
     AuthenticatedAccount,
     AuthResponseDto,
     AuthStateResponseDto,
+    ChangePasswordDto,
     LoginDto,
     RefreshDto,
     RegisterDto,
@@ -17,6 +18,7 @@ from src.domain.entities.account import Account
 from src.domain.entities.family import Family
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
+from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.domain.repositories.family_repository import FamilyRepository
 
 
@@ -28,16 +30,23 @@ class BaseAuthService(ABC):
         account_repo: AccountRepository,
         session_repo: AccountSessionRepository,
         family_repo: FamilyRepository,
+        family_invite_repo: FamilyInviteRepository,
     ) -> None:
         self._account_repo = account_repo
         self._session_repo = session_repo
         self._family_repo = family_repo
+        self._family_invite_repo = family_invite_repo
 
     def _account_to_response(self, entity: Account) -> AccountResponseDto:
         return AccountResponseDto(
             id=entity.id,
+            login=entity.login,
             email=entity.email,
             family_id=entity.family_id,
+            display_name=entity.display_name,
+            relationship_label=entity.relationship_label,
+            phone=entity.phone,
+            family_role=entity.family_role,
         )
 
     def _family_to_response(self, entity: Family) -> FamilyResponseDto:
@@ -66,3 +75,11 @@ class BaseAuthService(ABC):
     @abstractmethod
     async def logout(self, account_id: UUID) -> None:
         """Закрыть активные сессии аккаунта."""
+
+    @abstractmethod
+    async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
+        """Сменить пароль текущего аккаунта."""
+
+    @abstractmethod
+    async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:
+        """Принять приглашение в другую семью для существующего аккаунта."""
