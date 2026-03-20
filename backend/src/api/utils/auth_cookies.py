@@ -11,6 +11,11 @@ from src.core.config import settings
 def set_auth_cookies(response: Response, auth: AuthResponseDto) -> None:
     """Сохраняет access/refresh токены в HttpOnly cookies."""
     now = datetime.now(UTC)
+    refresh_ttl_days = (
+        settings.refresh_token_ttl_days_remember_me
+        if auth.remember_me
+        else settings.refresh_token_ttl_days
+    )
     response.set_cookie(
         key=settings.access_cookie_name,
         value=auth.access_token,
@@ -24,8 +29,8 @@ def set_auth_cookies(response: Response, auth: AuthResponseDto) -> None:
     response.set_cookie(
         key=settings.refresh_cookie_name,
         value=auth.refresh_token,
-        max_age=settings.refresh_token_ttl_days * 24 * 60 * 60,
-        expires=now + timedelta(days=settings.refresh_token_ttl_days),
+        max_age=refresh_ttl_days * 24 * 60 * 60,
+        expires=now + timedelta(days=refresh_ttl_days),
         httponly=True,
         secure=settings.auth_cookie_secure,
         samesite=settings.auth_cookie_samesite,

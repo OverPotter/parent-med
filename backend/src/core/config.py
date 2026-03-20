@@ -19,8 +19,9 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/parent_med"
     jwt_secret: str = "dev-jwt-secret-change-me"
     jwt_issuer: str = "parent-med"
-    access_token_ttl_minutes: int = 60 * 24 * 7
-    refresh_token_ttl_days: int = 180
+    access_token_ttl_minutes: int = 30
+    refresh_token_ttl_days: int = 7
+    refresh_token_ttl_days_remember_me: int = 60
     cors_allowed_origins: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",

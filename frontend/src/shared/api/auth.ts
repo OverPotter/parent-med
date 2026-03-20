@@ -12,9 +12,12 @@ interface RawAuthResponse {
   refresh_token: string;
   account: {
     id: string;
-    email: string;
+    login: string;
+    email: string | null;
     family_id: string;
     display_name: string;
+    relationship_label: string | null;
+    phone: string | null;
     family_role: string;
   };
   family: { id: string; name: string };
@@ -33,9 +36,12 @@ function toAuthResponse(raw: RawAuthResponse): AuthSessionResponse {
 function toAuthState(raw: {
   account: {
     id: string;
-    email: string;
+    login: string;
+    email: string | null;
     family_id: string;
     display_name: string;
+    relationship_label: string | null;
+    phone: string | null;
     family_role: string;
   };
   family: { id: string; name: string };
@@ -47,9 +53,13 @@ function toAuthState(raw: {
 }
 
 export async function register(payload: {
-  email: string;
+  login: string;
+  email?: string;
   password: string;
   display_name?: string;
+  relationship_label?: string;
+  phone?: string;
+  remember_me?: boolean;
   invite_token?: string;
 }): Promise<AuthSessionResponse> {
   const res = await apiClient.post<RawAuthResponse>("/auth/signup", payload);
@@ -57,8 +67,9 @@ export async function register(payload: {
 }
 
 export async function login(payload: {
-  email: string;
+  login: string;
   password: string;
+  remember_me?: boolean;
 }): Promise<AuthSessionResponse> {
   const res = await apiClient.post<RawAuthResponse>("/auth/signin", payload);
   return toAuthResponse(res.data);
@@ -80,9 +91,12 @@ export async function fetchMe(): Promise<AuthStateResponse> {
   const res = await apiClient.get<{
     account: {
       id: string;
-      email: string;
+      login: string;
+      email: string | null;
       family_id: string;
       display_name: string;
+      relationship_label: string | null;
+      phone: string | null;
       family_role: string;
     };
     family: { id: string; name: string };

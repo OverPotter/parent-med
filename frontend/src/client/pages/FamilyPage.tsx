@@ -4,6 +4,7 @@ import {
   deleteFamilyMember,
   fetchFamilies,
   fetchMyFamilyMembers,
+  updateFamilyMemberProfile,
   updateFamilyMemberRole,
   updateMyFamily,
 } from "@shared/api/families";
@@ -113,6 +114,32 @@ export function FamilyPage() {
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
       setError(err.response?.data?.detail ?? "Не удалось удалить участника из семьи.");
+    },
+  });
+
+  const updateMemberProfileMutation = useMutation({
+    mutationFn: ({
+      memberAccountId,
+      displayName,
+      relationshipLabel,
+      phone,
+    }: {
+      memberAccountId: string;
+      displayName?: string;
+      relationshipLabel?: string | null;
+      phone?: string | null;
+    }) =>
+      updateFamilyMemberProfile(memberAccountId, {
+        display_name: displayName,
+        relationship_label: relationshipLabel,
+        phone,
+      }),
+    onSuccess: () => {
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
+    },
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
+      setError(err.response?.data?.detail ?? "Не удалось обновить профиль участника.");
     },
   });
 
@@ -226,8 +253,13 @@ export function FamilyPage() {
                 member={member}
                 isCurrent={member.id === currentAccountId}
                 isOwner={canManageFamily}
+                canEditProfile={canManageFamily || member.id === currentAccountId}
                 ownersCount={ownersCount}
-                isPending={updateMemberRoleMutation.isPending || deleteMemberMutation.isPending}
+                isPending={
+                  updateMemberRoleMutation.isPending ||
+                  updateMemberProfileMutation.isPending ||
+                  deleteMemberMutation.isPending
+                }
                 onPromote={() =>
                   updateMemberRoleMutation.mutate({
                     memberAccountId: member.id,
@@ -241,6 +273,14 @@ export function FamilyPage() {
                   })
                 }
                 onDelete={() => deleteMemberMutation.mutate(member.id)}
+                onSaveProfile={(payload) =>
+                  updateMemberProfileMutation.mutate({
+                    memberAccountId: member.id,
+                    displayName: payload.displayName,
+                    relationshipLabel: payload.relationshipLabel,
+                    phone: payload.phone,
+                  })
+                }
               />
             ))}
           </div>
@@ -304,26 +344,44 @@ interface MemberCardProps {
   member: FamilyMember;
   isCurrent: boolean;
   isOwner: boolean;
+  canEditProfile: boolean;
   ownersCount: number;
   isPending: boolean;
   onPromote: () => void;
   onDemote: () => void;
   onDelete: () => void;
+  onSaveProfile: (payload: {
+    displayName?: string;
+    relationshipLabel?: string | null;
+    phone?: string | null;
+  }) => void;
 }
 
 function MemberCard({
   member,
   isCurrent,
   isOwner,
+  canEditProfile,
   ownersCount,
   isPending,
   onPromote,
   onDemote,
   onDelete,
+  onSaveProfile,
 }: MemberCardProps) {
   const canDemote = member.familyRole === "owner" && ownersCount > 1 && !isCurrent;
   const canPromote = member.familyRole !== "owner" && !isCurrent;
   const canDelete = !isCurrent;
+  const [isEditing, setIsEditing] = useState(false);
+  const [displayName, setDisplayName] = useState(member.displayName || "");
+  const [relationshipLabel, setRelationshipLabel] = useState(member.relationshipLabel || "");
+  const [phone, setPhone] = useState(member.phone || "");
+
+  useEffect(() => {
+    setDisplayName(member.displayName || "");
+    setRelationshipLabel(member.relationshipLabel || "");
+    setPhone(member.phone || "");
+  }, [member.displayName, member.relationshipLabel, member.phone]);
 
   return (
     <div className="soft-panel rounded-[24px] p-4">
@@ -331,8 +389,13 @@ function MemberCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium text-foreground">
-              {member.displayName || "Без имени"}
+              {member.displayName || member.login || "Без имени"}
             </p>
+            {member.relationshipLabel && (
+              <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
+                {member.relationshipLabel}
+              </span>
+            )}
             <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
               {roleLabel(member.familyRole)}
             </span>
@@ -340,11 +403,22 @@ function MemberCard({
               <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">Это вы</span>
             )}
           </div>
-          <p className="mt-2 text-sm text-muted">{member.email}</p>
+          <p className="mt-2 text-sm text-muted">@{member.login}</p>
+          <p className="mt-1 text-sm text-muted">{member.email || "Email не указан"}</p>
+          <p className="mt-1 text-sm text-muted">{member.phone || "Телефон не указан"}</p>
         </div>
 
-        {isOwner && (
+        {(isOwner || canEditProfile) && (
           <div className="flex flex-wrap gap-2">
+            {canEditProfile && (
+              <button
+                type="button"
+                onClick={() => setIsEditing((current) => !current)}
+                className="soft-button-secondary rounded-2xl px-3 py-2 text-xs"
+              >
+                {isEditing ? "Скрыть профиль" : "Редактировать профиль"}
+              </button>
+            )}
             {canPromote && (
               <button
                 type="button"
@@ -378,6 +452,58 @@ function MemberCard({
           </div>
         )}
       </div>
+
+      {isEditing && (
+        <div className="mt-4 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-sm text-muted">Имя в семье</span>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              className="soft-input w-full rounded-2xl px-4 py-3"
+              placeholder="Например: Няня Оля"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm text-muted">Кто это</span>
+            <input
+              type="text"
+              value={relationshipLabel}
+              onChange={(event) => setRelationshipLabel(event.target.value)}
+              className="soft-input w-full rounded-2xl px-4 py-3"
+              placeholder="Например: мама, папа, няня"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm text-muted">Телефон</span>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              className="soft-input w-full rounded-2xl px-4 py-3"
+              placeholder="+375 ..."
+            />
+          </label>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => {
+                onSaveProfile({
+                  displayName: displayName.trim() || member.login,
+                  relationshipLabel: relationshipLabel.trim() || null,
+                  phone: phone.trim() || null,
+                });
+                setIsEditing(false);
+              }}
+              disabled={isPending || !displayName.trim()}
+              className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+            >
+              {isPending ? "Сохраняем…" : "Сохранить профиль"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

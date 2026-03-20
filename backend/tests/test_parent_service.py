@@ -32,6 +32,7 @@ class StubAccountRepository:
 def build_account(*, family_id, display_name: str, family_role: str) -> Account:  # noqa: ANN001
     return Account(
         id=uuid4(),
+        login=display_name.lower(),
         email=f"{display_name.lower()}@example.com",
         password_hash="hash",
         family_id=family_id,

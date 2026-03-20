@@ -14,6 +14,12 @@ class ChildCreateDto(BaseModel):
     family_id: UUID = Field(..., description="ID семьи")
     name: str = Field(..., description="Имя ребёнка")
     birth_date: date | None = Field(None, description="Дата рождения")
+    institution_name: str | None = Field(None, description="Сад, школа или другая организация")
+    institution_phone: str | None = Field(None, description="Телефон организации")
+    doctor_name: str | None = Field(None, description="Имя врача")
+    doctor_phone: str | None = Field(None, description="Телефон врача")
+    allergies: str | None = Field(None, description="Аллергии")
+    notes: str | None = Field(None, description="Заметки")
 
 
 class ChildUpdateDto(BaseModel):
@@ -21,6 +27,12 @@ class ChildUpdateDto(BaseModel):
 
     name: str | None = Field(None, description="Имя ребёнка")
     birth_date: date | None = Field(None, description="Дата рождения")
+    institution_name: str | None = Field(None, description="Сад, школа или другая организация")
+    institution_phone: str | None = Field(None, description="Телефон организации")
+    doctor_name: str | None = Field(None, description="Имя врача")
+    doctor_phone: str | None = Field(None, description="Телефон врача")
+    allergies: str | None = Field(None, description="Аллергии")
+    notes: str | None = Field(None, description="Заметки")
 
 
 class ChildResponseDto(ResponseBase):
@@ -31,3 +43,9 @@ class ChildResponseDto(ResponseBase):
     name: str
     birth_date: date | None
     age_label: str | None
+    institution_name: str | None = None
+    institution_phone: str | None = None
+    doctor_name: str | None = None
+    doctor_phone: str | None = None
+    allergies: str | None = None
+    notes: str | None = None

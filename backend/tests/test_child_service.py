@@ -66,3 +66,30 @@ async def test_create_rejects_future_birth_date() -> None:
                 birth_date=date(2099, 1, 1),
             )
         )
+
+
+@pytest.mark.asyncio
+async def test_create_keeps_profile_fields() -> None:
+    repo = StubChildRepository()
+    service = ChildService(
+        child_repo=repo,
+        family_repo=StubFamilyRepository(),
+    )
+
+    result = await service.create(
+        ChildCreateDto(
+            family_id=uuid4(),
+            name="Миша",
+            institution_name="Детский сад №7",
+            institution_phone="+375291112233",
+            doctor_name="Иванова",
+            doctor_phone="+375291234567",
+            allergies="Пенициллин",
+            notes="Забирать до 18:00",
+        )
+    )
+
+    assert repo.created is not None
+    assert repo.created.institution_name == "Детский сад №7"
+    assert repo.created.doctor_phone == "+375291234567"
+    assert result.allergies == "Пенициллин"

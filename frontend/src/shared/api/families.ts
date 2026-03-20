@@ -35,9 +35,12 @@ export async function fetchMyFamilyMembers(): Promise<FamilyMember[]> {
   const res = await apiClient.get<
     Array<{
       id: string;
-      email: string;
+      login: string;
+      email: string | null;
       family_id: string;
       display_name: string;
+      relationship_label: string | null;
+      phone: string | null;
       family_role: string;
     }>
   >("/families/me/members");
@@ -50,11 +53,35 @@ export async function updateFamilyMemberRole(
 ): Promise<FamilyMember> {
   const res = await apiClient.patch<{
     id: string;
-    email: string;
+    login: string;
+    email: string | null;
     family_id: string;
     display_name: string;
+    relationship_label: string | null;
+    phone: string | null;
     family_role: string;
   }>(`/families/me/members/${memberAccountId}`, { family_role: familyRole });
+  return toFamilyMember(res.data);
+}
+
+export async function updateFamilyMemberProfile(
+  memberAccountId: string,
+  payload: {
+    display_name?: string;
+    relationship_label?: string | null;
+    phone?: string | null;
+  }
+): Promise<FamilyMember> {
+  const res = await apiClient.patch<{
+    id: string;
+    login: string;
+    email: string | null;
+    family_id: string;
+    display_name: string;
+    relationship_label: string | null;
+    phone: string | null;
+    family_role: string;
+  }>(`/families/me/members/${memberAccountId}/profile`, payload);
   return toFamilyMember(res.data);
 }
 

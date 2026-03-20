@@ -19,10 +19,13 @@ class SqlAccountRepository(AccountRepository):
     def _to_entity(self, model: AccountModel) -> Account:
         return Account(
             id=model.id,
+            login=model.login,
             email=model.email,
             password_hash=model.password_hash,
             family_id=model.family_id,
             display_name=model.display_name,
+            relationship_label=model.relationship_label,
+            phone=model.phone,
             family_role=model.family_role,
             push_before_reminder_minutes=model.push_before_reminder_minutes,
             cabinet_notify_10_days=model.cabinet_notify_15_days,
@@ -35,10 +38,13 @@ class SqlAccountRepository(AccountRepository):
     def _to_model(self, entity: Account) -> AccountModel:
         return AccountModel(
             id=entity.id,
+            login=entity.login,
             email=entity.email,
             password_hash=entity.password_hash,
             family_id=entity.family_id,
             display_name=entity.display_name,
+            relationship_label=entity.relationship_label,
+            phone=entity.phone,
             family_role=entity.family_role,
             push_before_reminder_minutes=entity.push_before_reminder_minutes,
             cabinet_notify_15_days=entity.cabinet_notify_10_days,
@@ -50,6 +56,13 @@ class SqlAccountRepository(AccountRepository):
 
     async def get_by_id(self, id: UUID) -> Account | None:
         result = await self._session.execute(select(AccountModel).where(AccountModel.id == id))
+        row = result.scalars().one_or_none()
+        return self._to_entity(row) if row else None
+
+    async def get_by_login(self, login: str) -> Account | None:
+        result = await self._session.execute(
+            select(AccountModel).where(AccountModel.login == login)
+        )
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
 
@@ -92,10 +105,13 @@ class SqlAccountRepository(AccountRepository):
         row = result.scalars().one_or_none()
         if not row:
             raise ValueError(f"Account {entity.id} not found")
+        row.login = entity.login
         row.email = entity.email
         row.password_hash = entity.password_hash
         row.family_id = entity.family_id
         row.display_name = entity.display_name
+        row.relationship_label = entity.relationship_label
+        row.phone = entity.phone
         row.family_role = entity.family_role
         row.push_before_reminder_minutes = entity.push_before_reminder_minutes
         row.cabinet_notify_15_days = entity.cabinet_notify_10_days

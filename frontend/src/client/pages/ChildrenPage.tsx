@@ -18,16 +18,26 @@ import {
   fetchActiveIllnessEpisodeByChildId,
   fetchIllnessEpisodesByChildId,
 } from "@shared/api/illnessEpisodes";
+import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { DateField } from "@shared/components/DateField";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
-import type { Child } from "@shared/types/api";
+import type { Child, WeightEntry } from "@shared/types/api";
 import { getEpisodeMedicationReminder } from "../utils/medicationPlans";
 import { formatDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
+
+type ChildProfileDetails = {
+  institutionName?: string | null;
+  institutionPhone?: string | null;
+  doctorName?: string | null;
+  doctorPhone?: string | null;
+  allergies?: string | null;
+  notes?: string | null;
+};
 
 export function ChildrenPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
@@ -75,6 +85,15 @@ export function ChildrenPage() {
     })),
   });
 
+  const latestWeightQueries = useQueries({
+    queries: children.map((child) => ({
+      queryKey: ["weight-entry-latest", child.id],
+      queryFn: () => fetchLatestWeightEntryByChildId(child.id),
+      enabled: !!child.id,
+      ...liveQueryOptions,
+    })),
+  });
+
   const medicationPlanQueries = useQueries({
     queries: children.map((_, index) => {
       const activeEpisodeId = activeEpisodeQueries[index]?.data?.id;
@@ -100,8 +119,15 @@ export function ChildrenPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: ({ name, birthDate }: { name: string; birthDate?: string | null }) =>
-      createChild(currentFamilyId!, name, birthDate),
+    mutationFn: ({
+      name,
+      birthDate,
+      details,
+    }: {
+      name: string;
+      birthDate?: string | null;
+      details?: ChildProfileDetails;
+    }) => createChild(currentFamilyId!, name, birthDate, details),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
       setCreateFormResetKey((current) => current + 1);
@@ -114,11 +140,13 @@ export function ChildrenPage() {
       id,
       name,
       birthDate,
+      details,
     }: {
       id: string;
       name: string;
       birthDate?: string | null;
-    }) => updateChild(id, name, birthDate),
+      details?: ChildProfileDetails;
+    }) => updateChild(id, name, birthDate, details),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
       queryClient.invalidateQueries({ queryKey: ["child", variables.id] });
@@ -164,7 +192,9 @@ export function ChildrenPage() {
 
       {isCreateFormOpen && (
         <AddChildForm
-          onSubmit={(name, birthDate) => createMutation.mutate({ name, birthDate })}
+          onSubmit={(name, birthDate, details) =>
+            createMutation.mutate({ name, birthDate, details })
+          }
           isPending={createMutation.isPending}
           resetKey={createFormResetKey}
           errorMessage={
@@ -221,13 +251,14 @@ export function ChildrenPage() {
                   isEditing={editingChildId === child.id}
                   activeEpisodeStartedAt={activeEpisode?.startedAt ?? null}
                   episodeCount={episodes.length}
+                  latestWeightEntry={latestWeightQueries[index]?.data ?? null}
                   medicationReminder={reminder}
                   onEditToggle={() =>
                     setEditingChildId((current) => (current === child.id ? null : child.id))
                   }
                   onDelete={() => deleteMutation.mutate(child.id)}
-                  onSave={(name, birthDate) =>
-                    updateMutation.mutate({ id: child.id, name, birthDate })
+                  onSave={(name, birthDate, details) =>
+                    updateMutation.mutate({ id: child.id, name, birthDate, details })
                   }
                   onStartEpisode={() => {
                     if (activeEpisode) {
@@ -277,7 +308,7 @@ function AddChildForm({
   errorMessage,
   onCancel,
 }: {
-  onSubmit: (name: string, birthDate?: string | null) => void;
+  onSubmit: (name: string, birthDate?: string | null, details?: ChildProfileDetails) => void;
   isPending: boolean;
   resetKey: number;
   errorMessage: string | null;
@@ -285,11 +316,23 @@ function AddChildForm({
 }) {
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [institutionName, setInstitutionName] = useState("");
+  const [institutionPhone, setInstitutionPhone] = useState("");
+  const [doctorName, setDoctorName] = useState("");
+  const [doctorPhone, setDoctorPhone] = useState("");
+  const [allergies, setAllergies] = useState("");
+  const [notes, setNotes] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     setName("");
     setBirthDate("");
+    setInstitutionName("");
+    setInstitutionPhone("");
+    setDoctorName("");
+    setDoctorPhone("");
+    setAllergies("");
+    setNotes("");
     setValidationError(null);
   }, [resetKey]);
 
@@ -304,7 +347,14 @@ function AddChildForm({
     }
 
     setValidationError(null);
-    onSubmit(name.trim(), normalizedBirthDate ?? undefined);
+    onSubmit(name.trim(), normalizedBirthDate ?? undefined, {
+      institutionName: institutionName.trim() || null,
+      institutionPhone: institutionPhone.trim() || null,
+      doctorName: doctorName.trim() || null,
+      doctorPhone: doctorPhone.trim() || null,
+      allergies: allergies.trim() || null,
+      notes: notes.trim() || null,
+    });
   };
 
   return (
@@ -356,6 +406,23 @@ function AddChildForm({
             {isPending ? "Добавляем…" : "Добавить"}
           </button>
         </div>
+        <details className="soft-panel-muted rounded-[22px] p-4">
+          <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
+            Медицинские и контактные данные
+          </summary>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <InputField label="Сад / школа" value={institutionName} onChange={setInstitutionName} />
+            <InputField
+              label="Телефон организации"
+              value={institutionPhone}
+              onChange={setInstitutionPhone}
+            />
+            <InputField label="Врач" value={doctorName} onChange={setDoctorName} />
+            <InputField label="Телефон врача" value={doctorPhone} onChange={setDoctorPhone} />
+            <TextField label="Аллергии" value={allergies} onChange={setAllergies} />
+            <TextField label="Заметки" value={notes} onChange={setNotes} />
+          </div>
+        </details>
         {(validationError || errorMessage) && (
           <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
             {validationError ?? errorMessage}
@@ -371,6 +438,7 @@ function ChildCard({
   isEditing,
   activeEpisodeStartedAt,
   episodeCount,
+  latestWeightEntry,
   medicationReminder,
   onEditToggle,
   onDelete,
@@ -385,10 +453,11 @@ function ChildCard({
   isEditing: boolean;
   activeEpisodeStartedAt: string | null;
   episodeCount: number;
+  latestWeightEntry: WeightEntry | null;
   medicationReminder: { tone: "success" | "warning" | "danger" | "muted"; text: string } | null;
   onEditToggle: () => void;
   onDelete: () => void;
-  onSave: (name: string, birthDate?: string | null) => void;
+  onSave: (name: string, birthDate?: string | null, details?: ChildProfileDetails) => void;
   onStartEpisode: () => void;
   isSaving: boolean;
   isDeleting: boolean;
@@ -397,7 +466,25 @@ function ChildCard({
 }) {
   const [draftName, setDraftName] = useState(child.name);
   const [draftBirthDate, setDraftBirthDate] = useState(child.birthDate ?? "");
+  const [institutionName, setInstitutionName] = useState(child.institutionName ?? "");
+  const [institutionPhone, setInstitutionPhone] = useState(child.institutionPhone ?? "");
+  const [doctorName, setDoctorName] = useState(child.doctorName ?? "");
+  const [doctorPhone, setDoctorPhone] = useState(child.doctorPhone ?? "");
+  const [allergies, setAllergies] = useState(child.allergies ?? "");
+  const [notes, setNotes] = useState(child.notes ?? "");
   const primaryActionLabel = hasActiveEpisode ? "Открыть" : "Начать";
+  const latestWeightLabel = latestWeightEntry ? formatWeightValue(latestWeightEntry.valueKg) : null;
+
+  useEffect(() => {
+    setDraftName(child.name);
+    setDraftBirthDate(child.birthDate ?? "");
+    setInstitutionName(child.institutionName ?? "");
+    setInstitutionPhone(child.institutionPhone ?? "");
+    setDoctorName(child.doctorName ?? "");
+    setDoctorPhone(child.doctorPhone ?? "");
+    setAllergies(child.allergies ?? "");
+    setNotes(child.notes ?? "");
+  }, [child]);
 
   return (
     <li>
@@ -433,8 +520,35 @@ function ChildCard({
             <p className="mt-3 text-sm leading-7 text-muted">
               {child.ageLabel ? `${child.ageLabel} • ` : ""}
               {child.birthDate ? `Рожд. ${formatDate(child.birthDate)} • ` : ""}
+              {latestWeightLabel ? `Вес ${latestWeightLabel} • ` : ""}
               Случаев в истории: {episodeCount}
             </p>
+            {(child.institutionName || child.doctorName || child.allergies) && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {child.institutionName && (
+                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                    {child.institutionName}
+                  </span>
+                )}
+                {child.doctorName && (
+                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                    Врач: {child.doctorName}
+                  </span>
+                )}
+                {child.allergies && (
+                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                    Аллергии: {child.allergies}
+                  </span>
+                )}
+              </div>
+            )}
+            {(child.institutionPhone || child.doctorPhone || child.notes) && (
+              <div className="mt-2 space-y-1 text-sm text-muted">
+                {child.institutionPhone && <p>Организация: {child.institutionPhone}</p>}
+                {child.doctorPhone && <p>Врач: {child.doctorPhone}</p>}
+                {child.notes && <p>{child.notes}</p>}
+              </div>
+            )}
             {hasActiveEpisode && activeEpisodeStartedAt && (
               <p className="soft-text-danger mt-1 text-sm">
                 Наблюдение с {formatDate(activeEpisodeStartedAt)}
@@ -509,12 +623,37 @@ function ChildCard({
             </label>
             <button
               type="button"
-              onClick={() => onSave(draftName.trim(), draftBirthDate || null)}
+              onClick={() =>
+                onSave(draftName.trim(), draftBirthDate || null, {
+                  institutionName: institutionName.trim() || null,
+                  institutionPhone: institutionPhone.trim() || null,
+                  doctorName: doctorName.trim() || null,
+                  doctorPhone: doctorPhone.trim() || null,
+                  allergies: allergies.trim() || null,
+                  notes: notes.trim() || null,
+                })
+              }
               disabled={isSaving || !draftName.trim()}
               className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
             >
               {isSaving ? "Сохраняем…" : "Сохранить"}
             </button>
+            <div className="sm:col-span-3 grid gap-3 sm:grid-cols-2">
+              <InputField
+                label="Сад / школа"
+                value={institutionName}
+                onChange={setInstitutionName}
+              />
+              <InputField
+                label="Телефон организации"
+                value={institutionPhone}
+                onChange={setInstitutionPhone}
+              />
+              <InputField label="Врач" value={doctorName} onChange={setDoctorName} />
+              <InputField label="Телефон врача" value={doctorPhone} onChange={setDoctorPhone} />
+              <TextField label="Аллергии" value={allergies} onChange={setAllergies} />
+              <TextField label="Заметки" value={notes} onChange={setNotes} />
+            </div>
             <div className="sm:col-span-3 flex justify-start pt-1">
               <button
                 type="button"
@@ -537,5 +676,56 @@ function ChildCard({
         )}
       </RowSurface>
     </li>
+  );
+}
+
+function formatWeightValue(valueKg: number): string {
+  return `${new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
+    maximumFractionDigits: 1,
+  }).format(valueKg)} кг`;
+}
+
+function InputField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm text-muted">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="soft-input w-full rounded-2xl px-4 py-3"
+      />
+    </label>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm text-muted">{label}</span>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        rows={3}
+        className="soft-input w-full rounded-2xl px-4 py-3"
+      />
+    </label>
   );
 }

@@ -22,6 +22,12 @@ class SqlChildRepository(ChildRepository):
             family_id=m.family_id,
             name=m.name,
             birth_date=m.birth_date,
+            institution_name=m.institution_name,
+            institution_phone=m.institution_phone,
+            doctor_name=m.doctor_name,
+            doctor_phone=m.doctor_phone,
+            allergies=m.allergies,
+            notes=m.notes,
         )
 
     def _to_model(self, e: Child) -> ChildModel:
@@ -30,6 +36,12 @@ class SqlChildRepository(ChildRepository):
             family_id=e.family_id,
             name=e.name,
             birth_date=e.birth_date,
+            institution_name=e.institution_name,
+            institution_phone=e.institution_phone,
+            doctor_name=e.doctor_name,
+            doctor_phone=e.doctor_phone,
+            allergies=e.allergies,
+            notes=e.notes,
         )
 
     async def get_by_id(self, id: UUID) -> Child | None:
@@ -57,6 +69,12 @@ class SqlChildRepository(ChildRepository):
             raise ValueError(f"Child {entity.id} not found")
         row.name = entity.name
         row.birth_date = entity.birth_date
+        row.institution_name = entity.institution_name
+        row.institution_phone = entity.institution_phone
+        row.doctor_name = entity.doctor_name
+        row.doctor_phone = entity.doctor_phone
+        row.allergies = entity.allergies
+        row.notes = entity.notes
         await self._session.flush()
         await self._session.refresh(row)
         return self._to_entity(row)

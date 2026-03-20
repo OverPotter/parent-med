@@ -33,7 +33,6 @@ from src.domain.repositories.household_medicine_repository import HouseholdMedic
 from src.domain.repositories.parent_repository import ParentRepository
 
 _DEFAULT_FAMILY_NAME = "Моя семья"
-_DEFAULT_ACCOUNT_DISPLAY_NAME = "Родитель"
 
 
 class AuthService(BaseAuthService):
@@ -59,15 +58,26 @@ class AuthService(BaseAuthService):
         self._household_repo = household_repo
         self._parent_repo = parent_repo
 
-    async def _create_auth_response(self, account: Account, family: Family) -> AuthResponseDto:
+    async def _create_auth_response(
+        self,
+        account: Account,
+        family: Family,
+        remember_me: bool,
+    ) -> AuthResponseDto:
         now = datetime.now(UTC)
         session_id = uuid4()
-        refresh_expires_at = now + timedelta(days=settings.refresh_token_ttl_days)
+        refresh_ttl_days = (
+            settings.refresh_token_ttl_days_remember_me
+            if remember_me
+            else settings.refresh_token_ttl_days
+        )
+        refresh_expires_at = now + timedelta(days=refresh_ttl_days)
         refresh_token = create_refresh_token(
             account_id=account.id,
             family_id=account.family_id,
             session_id=session_id,
             expires_at=refresh_expires_at,
+            remember_me=remember_me,
         )
         session = AccountSession(
             id=session_id,
@@ -80,20 +90,28 @@ class AuthService(BaseAuthService):
         return AuthResponseDto(
             access_token=create_access_token(
                 account_id=account.id,
-                email=account.email,
+                login=account.login,
                 family_id=account.family_id,
             ),
             refresh_token=refresh_token,
             account=self._account_to_response(account),
             family=self._family_to_response(family),
+            remember_me=remember_me,
         )
 
     async def signup(self, dto: RegisterDto) -> AuthResponseDto:
-        email = dto.email.strip().lower()
-        if await self._account_repo.get_by_email(email) is not None:
+        login = dto.login.strip()
+        if await self._account_repo.get_by_login(login) is not None:
+            raise ValidationError(
+                "Аккаунт с таким логином уже существует",
+                code="ACCOUNT_ALREADY_EXISTS",
+                status_code=409,
+            )
+        email = dto.email.strip().lower() if dto.email else None
+        if email and await self._account_repo.get_by_email(email) is not None:
             raise ValidationError(
                 "Аккаунт с таким email уже существует",
-                code="ACCOUNT_ALREADY_EXISTS",
+                code="ACCOUNT_EMAIL_ALREADY_EXISTS",
                 status_code=409,
             )
         family_role = "owner"
@@ -128,10 +146,13 @@ class AuthService(BaseAuthService):
             created_family = await self._family_repo.add(family)
         account = Account(
             id=uuid4(),
+            login=login,
             email=email,
             password_hash=hash_password(dto.password),
             family_id=created_family.id,
-            display_name=(dto.display_name or "").strip() or _DEFAULT_ACCOUNT_DISPLAY_NAME,
+            display_name=(dto.display_name or "").strip() or login,
+            relationship_label=(dto.relationship_label or "").strip() or None,
+            phone=(dto.phone or "").strip() or None,
             family_role=family_role,
             push_before_reminder_minutes=10,
             cabinet_notify_10_days=True,
@@ -145,20 +166,24 @@ class AuthService(BaseAuthService):
             invite.accepted_at = datetime.now(UTC)
             invite.accepted_by_account_id = created_account.id
             await self._family_invite_repo.update(invite)
-        return await self._create_auth_response(created_account, created_family)
+        return await self._create_auth_response(
+            created_account,
+            created_family,
+            remember_me=dto.remember_me,
+        )
 
     async def register(self, dto: RegisterDto) -> AuthResponseDto:
         return await self.signup(dto)
 
     async def signin(self, dto: LoginDto) -> AuthResponseDto:
-        email = dto.email.strip().lower()
-        account = await self._account_repo.get_by_email(email)
+        login = dto.login.strip()
+        account = await self._account_repo.get_by_login(login)
         if not account or not verify_password(dto.password, account.password_hash):
-            raise UnauthorizedError("Неверный email или пароль", code="INVALID_CREDENTIALS")
+            raise UnauthorizedError("Неверный логин или пароль", code="INVALID_CREDENTIALS")
         family = await self._family_repo.get_by_id(account.family_id)
         if family is None:
             raise ForbiddenError("У аккаунта не найдена семья", code="FAMILY_NOT_LINKED")
-        return await self._create_auth_response(account, family)
+        return await self._create_auth_response(account, family, remember_me=dto.remember_me)
 
     async def login(self, dto: LoginDto) -> AuthResponseDto:
         return await self.signin(dto)
@@ -172,9 +197,12 @@ class AuthService(BaseAuthService):
             raise UnauthorizedError()
         return AuthenticatedAccount(
             id=account.id,
+            login=account.login,
             email=account.email,
             family_id=family_id,
             display_name=account.display_name,
+            relationship_label=account.relationship_label,
+            phone=account.phone,
             family_role=account.family_role,
         )
 
@@ -211,7 +239,8 @@ class AuthService(BaseAuthService):
             raise ForbiddenError("У аккаунта не найдена семья", code="FAMILY_NOT_LINKED")
 
         await self._session_repo.delete(session.id)
-        return await self._create_auth_response(account, family)
+        remember_me = bool(int(payload.get("rm", 0)))
+        return await self._create_auth_response(account, family, remember_me=remember_me)
 
     async def logout(self, account_id: UUID) -> None:
         await self._session_repo.delete_by_account_id(account_id)
@@ -227,10 +256,13 @@ class AuthService(BaseAuthService):
         await self._account_repo.update(
             Account(
                 id=account.id,
+                login=account.login,
                 email=account.email,
                 password_hash=hash_password(dto.new_password),
                 family_id=account.family_id,
                 display_name=account.display_name,
+                relationship_label=account.relationship_label,
+                phone=account.phone,
                 family_role=account.family_role,
                 push_before_reminder_minutes=account.push_before_reminder_minutes,
                 cabinet_notify_10_days=account.cabinet_notify_10_days,
@@ -272,10 +304,13 @@ class AuthService(BaseAuthService):
         updated_account = await self._account_repo.update(
             Account(
                 id=account.id,
+                login=account.login,
                 email=account.email,
                 password_hash=account.password_hash,
                 family_id=invite.family_id,
                 display_name=account.display_name,
+                relationship_label=account.relationship_label,
+                phone=account.phone,
                 family_role=invite.family_role,
                 push_before_reminder_minutes=account.push_before_reminder_minutes,
                 cabinet_notify_10_days=account.cabinet_notify_10_days,
@@ -300,7 +335,7 @@ class AuthService(BaseAuthService):
         )
         await self._session_repo.delete_by_account_id(updated_account.id)
         await self._family_repo.delete(old_family_id)
-        return await self._create_auth_response(updated_account, family)
+        return await self._create_auth_response(updated_account, family, remember_me=False)
 
     async def _ensure_can_leave_current_family(self, account: Account) -> None:
         family_accounts = await self._account_repo.list_by_family_id(account.family_id)

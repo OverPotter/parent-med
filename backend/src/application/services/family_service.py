@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from src.application.dto.auth import AccountResponseDto
 from src.application.dto.family import (
     FamilyCreateDto,
+    FamilyMemberProfileUpdateDto,
     FamilyMemberUpdateDto,
     FamilyResponseDto,
     FamilyUpdateDto,
@@ -36,9 +37,12 @@ class FamilyService:
     def _to_member_response(self, entity: Account) -> AccountResponseDto:
         return AccountResponseDto(
             id=entity.id,
+            login=entity.login,
             email=entity.email,
             family_id=entity.family_id,
             display_name=entity.display_name,
+            relationship_label=entity.relationship_label,
+            phone=entity.phone,
             family_role=entity.family_role,
         )
 
@@ -101,10 +105,13 @@ class FamilyService:
         updated = await self._account_repo.update(
             Account(
                 id=target.id,
+                login=target.login,
                 email=target.email,
                 password_hash=target.password_hash,
                 family_id=target.family_id,
                 display_name=target.display_name,
+                relationship_label=target.relationship_label,
+                phone=target.phone,
                 family_role=dto.family_role,
                 push_before_reminder_minutes=target.push_before_reminder_minutes,
                 cabinet_notify_10_days=target.cabinet_notify_10_days,
@@ -145,6 +152,51 @@ class FamilyService:
 
         await self._session_repo.delete_by_account_id(target.id)
         await self._account_repo.delete(target.id)
+
+    async def update_member_profile_for_account(
+        self,
+        member_account_id: UUID,
+        dto: FamilyMemberProfileUpdateDto,
+        current_account_id: UUID,
+        current_family_id: UUID,
+        current_family_role: str,
+    ) -> AccountResponseDto:
+        target = await self._account_repo.get_by_id(member_account_id)
+        if not target or target.family_id != current_family_id:
+            raise NotFoundError("Участник семьи не найден", resource="account")
+        if current_family_role != "owner" and current_account_id != member_account_id:
+            raise ForbiddenError("Можно редактировать только свой профиль в семье")
+
+        updated = await self._account_repo.update(
+            Account(
+                id=target.id,
+                login=target.login,
+                email=target.email,
+                password_hash=target.password_hash,
+                family_id=target.family_id,
+                display_name=((dto.display_name or "").strip() or target.login)
+                if "display_name" in dto.model_fields_set
+                else target.display_name,
+                relationship_label=(
+                    (dto.relationship_label or "").strip() or None
+                    if "relationship_label" in dto.model_fields_set
+                    else target.relationship_label
+                ),
+                phone=(
+                    (dto.phone or "").strip() or None
+                    if "phone" in dto.model_fields_set
+                    else target.phone
+                ),
+                family_role=target.family_role,
+                push_before_reminder_minutes=target.push_before_reminder_minutes,
+                cabinet_notify_10_days=target.cabinet_notify_10_days,
+                cabinet_notify_7_days=target.cabinet_notify_7_days,
+                cabinet_notify_3_days=target.cabinet_notify_3_days,
+                cabinet_notify_1_day=target.cabinet_notify_1_day,
+                created_at=target.created_at,
+            )
+        )
+        return self._to_member_response(updated)
 
     async def update(self, id: UUID, dto: FamilyUpdateDto) -> FamilyResponseDto:
         entity = await self._repo.get_by_id(id)

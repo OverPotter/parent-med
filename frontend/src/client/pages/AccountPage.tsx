@@ -24,6 +24,7 @@ import {
 
 export function AccountPage() {
   const queryClient = useQueryClient();
+  const accountLogin = useAppStore((s) => s.accountLogin);
   const accountEmail = useAppStore((s) => s.accountEmail);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
@@ -260,9 +261,13 @@ export function AccountPage() {
 
       <Surface className="p-5 sm:p-6">
         <p className="text-sm font-medium text-foreground">Профиль</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <InfoCard label="Имя в семье" value={accountDisplayName || "Не указано"} />
-          <InfoCard label="Email" value={accountEmail || "Не удалось получить email"} />
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <InfoCard
+            label="Имя в семье"
+            value={accountDisplayName || accountLogin || "Не указано"}
+          />
+          <InfoCard label="Логин" value={accountLogin ? `@${accountLogin}` : "Не указан"} />
+          <InfoCard label="Email" value={accountEmail || "Не указан"} />
           <InfoCard
             label="Роль в семье"
             value={accountFamilyRole === "owner" ? "Владелец" : "Участник"}

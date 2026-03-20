@@ -10,7 +10,8 @@ class Account:
     """Аккаунт с логином, хешем пароля и привязкой к семье."""
 
     id: UUID
-    email: str
+    login: str
+    email: str | None
     password_hash: str
     family_id: UUID
     display_name: str
@@ -21,3 +22,5 @@ class Account:
     cabinet_notify_3_days: bool
     cabinet_notify_1_day: bool
     created_at: datetime
+    relationship_label: str | None = None
+    phone: str | None = None

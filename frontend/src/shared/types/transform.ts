@@ -27,9 +27,12 @@ interface RawFamily {
 
 interface RawAccount {
   id: string;
-  email: string;
+  login: string;
+  email: string | null;
   family_id: string;
   display_name: string;
+  relationship_label: string | null;
+  phone: string | null;
   family_role: string;
 }
 
@@ -39,6 +42,12 @@ interface RawChild {
   name: string;
   birth_date: string | null;
   age_label: string | null;
+  institution_name: string | null;
+  institution_phone: string | null;
+  doctor_name: string | null;
+  doctor_phone: string | null;
+  allergies: string | null;
+  notes: string | null;
 }
 
 interface RawParent {
@@ -164,9 +173,12 @@ export function toFamily(r: RawFamily): Family {
 export function toAccount(r: RawAccount): Account {
   return {
     id: r.id,
+    login: r.login,
     email: r.email,
     familyId: r.family_id,
     displayName: r.display_name,
+    relationshipLabel: r.relationship_label ?? null,
+    phone: r.phone ?? null,
     familyRole: r.family_role,
   };
 }
@@ -191,6 +203,12 @@ export function toChild(r: RawChild): Child {
     name: r.name,
     birthDate: r.birth_date ?? null,
     ageLabel: r.age_label ?? null,
+    institutionName: r.institution_name ?? null,
+    institutionPhone: r.institution_phone ?? null,
+    doctorName: r.doctor_name ?? null,
+    doctorPhone: r.doctor_phone ?? null,
+    allergies: r.allergies ?? null,
+    notes: r.notes ?? null,
   };
 }
 

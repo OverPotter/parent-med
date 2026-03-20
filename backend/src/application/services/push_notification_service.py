@@ -76,10 +76,13 @@ class PushNotificationService:
         updated = await self._account_repo.update(
             Account(
                 id=account.id,
+                login=account.login,
                 email=account.email,
                 password_hash=account.password_hash,
                 family_id=account.family_id,
                 display_name=account.display_name,
+                relationship_label=account.relationship_label,
+                phone=account.phone,
                 family_role=account.family_role,
                 push_before_reminder_minutes=before_reminder_minutes,
                 cabinet_notify_10_days=(

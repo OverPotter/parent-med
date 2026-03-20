@@ -8,6 +8,7 @@ from src.api.deps import get_current_account, get_family_service
 from src.application.dto.auth import AccountResponseDto, AuthenticatedAccount
 from src.application.dto.family import (
     FamilyCreateDto,
+    FamilyMemberProfileUpdateDto,
     FamilyMemberUpdateDto,
     FamilyResponseDto,
     FamilyUpdateDto,
@@ -54,6 +55,23 @@ async def update_family_member(
 ) -> AccountResponseDto:
     """Обновить роль участника текущей семьи."""
     return await service.update_member_for_account(
+        member_account_id=member_account_id,
+        dto=dto,
+        current_account_id=account.id,
+        current_family_id=account.family_id,
+        current_family_role=account.family_role,
+    )
+
+
+@router.patch("/me/members/{member_account_id}/profile", response_model=AccountResponseDto)
+async def update_family_member_profile(
+    member_account_id: UUID,
+    dto: FamilyMemberProfileUpdateDto,
+    account: AuthenticatedAccount = Depends(get_current_account),
+    service: FamilyService = Depends(get_family_service),
+) -> AccountResponseDto:
+    """Обновить профиль участника текущей семьи."""
+    return await service.update_member_profile_for_account(
         member_account_id=member_account_id,
         dto=dto,
         current_account_id=account.id,

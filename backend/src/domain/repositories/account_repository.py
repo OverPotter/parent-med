@@ -16,6 +16,11 @@ class AccountRepository(BaseRepository[Account]):
         ...
 
     @abstractmethod
+    async def get_by_login(self, login: str) -> Account | None:
+        """Получить аккаунт по login."""
+        ...
+
+    @abstractmethod
     async def get_by_email(self, email: str) -> Account | None:
         """Получить аккаунт по email."""
         ...

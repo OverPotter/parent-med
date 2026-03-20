@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.application.dto.family import FamilyMemberUpdateDto
+from src.application.dto.family import FamilyMemberProfileUpdateDto, FamilyMemberUpdateDto
 from src.application.services.family_service import FamilyService
 from src.core.exceptions import ValidationError
 from src.domain.entities.account import Account
@@ -66,6 +66,7 @@ async def test_list_members_for_account_returns_owner_first() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
+        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -80,6 +81,7 @@ async def test_list_members_for_account_returns_owner_first() -> None:
     )
     adult = Account(
         id=uuid4(),
+        login="papa",
         email="dad@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -109,6 +111,7 @@ async def test_delete_member_rejects_last_owner() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
+        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -142,6 +145,7 @@ async def test_delete_member_revokes_sessions() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
+        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -156,6 +160,7 @@ async def test_delete_member_revokes_sessions() -> None:
     )
     adult = Account(
         id=uuid4(),
+        login="papa",
         email="dad@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -185,3 +190,44 @@ async def test_delete_member_revokes_sessions() -> None:
 
     assert session_repo.deleted_account_ids == [adult.id]
     assert all(account.id != adult.id for account in account_repo.accounts)
+
+
+@pytest.mark.asyncio
+async def test_member_can_update_own_profile() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    adult = Account(
+        id=uuid4(),
+        login="papa",
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="adult",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([adult]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    updated = await service.update_member_profile_for_account(
+        member_account_id=adult.id,
+        dto=FamilyMemberProfileUpdateDto(
+            display_name="Папа Антон",
+            relationship_label="папа",
+            phone="+375291234567",
+        ),
+        current_account_id=adult.id,
+        current_family_id=family.id,
+        current_family_role="adult",
+    )
+
+    assert updated.display_name == "Папа Антон"
+    assert updated.relationship_label == "папа"
+    assert updated.phone == "+375291234567"

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from uuid import uuid4
 
-from sqlalchemy import Date, ForeignKey, String
+from sqlalchemy import Date, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,6 +23,12 @@ class ChildModel(Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    institution_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    institution_phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    doctor_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    doctor_phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    allergies: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     family: Mapped["FamilyModel"] = relationship("FamilyModel", back_populates="children")
     weight_entries: Mapped[list] = relationship(

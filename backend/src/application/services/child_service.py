@@ -71,6 +71,12 @@ class ChildService:
             name=entity.name,
             birth_date=entity.birth_date,
             age_label=self._format_age_label(entity.birth_date),
+            institution_name=entity.institution_name,
+            institution_phone=entity.institution_phone,
+            doctor_name=entity.doctor_name,
+            doctor_phone=entity.doctor_phone,
+            allergies=entity.allergies,
+            notes=entity.notes,
         )
 
     async def get_by_id(self, id: UUID) -> ChildResponseDto:
@@ -111,6 +117,12 @@ class ChildService:
             family_id=dto.family_id,
             name=dto.name,
             birth_date=dto.birth_date,
+            institution_name=(dto.institution_name or "").strip() or None,
+            institution_phone=(dto.institution_phone or "").strip() or None,
+            doctor_name=(dto.doctor_name or "").strip() or None,
+            doctor_phone=(dto.doctor_phone or "").strip() or None,
+            allergies=(dto.allergies or "").strip() or None,
+            notes=(dto.notes or "").strip() or None,
         )
         created = await self._repo.add(entity)
         return self._to_response(created)
@@ -128,10 +140,42 @@ class ChildService:
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Ребёнок не найден", resource="child")
-        name = dto.name if dto.name is not None else entity.name
-        birth_date = dto.birth_date if dto.birth_date is not None else entity.birth_date
+        fields_set = dto.model_fields_set
+        name = dto.name if "name" in fields_set and dto.name is not None else entity.name
+        birth_date = dto.birth_date if "birth_date" in fields_set else entity.birth_date
         self._validate_birth_date(birth_date)
-        entity = Child(id=entity.id, family_id=entity.family_id, name=name, birth_date=birth_date)
+        entity = Child(
+            id=entity.id,
+            family_id=entity.family_id,
+            name=name,
+            birth_date=birth_date,
+            institution_name=(
+                (dto.institution_name or "").strip() or None
+                if "institution_name" in fields_set
+                else entity.institution_name
+            ),
+            institution_phone=(
+                (dto.institution_phone or "").strip() or None
+                if "institution_phone" in fields_set
+                else entity.institution_phone
+            ),
+            doctor_name=(
+                (dto.doctor_name or "").strip() or None
+                if "doctor_name" in fields_set
+                else entity.doctor_name
+            ),
+            doctor_phone=(
+                (dto.doctor_phone or "").strip() or None
+                if "doctor_phone" in fields_set
+                else entity.doctor_phone
+            ),
+            allergies=(
+                (dto.allergies or "").strip() or None
+                if "allergies" in fields_set
+                else entity.allergies
+            ),
+            notes=((dto.notes or "").strip() or None if "notes" in fields_set else entity.notes),
+        )
         updated = await self._repo.update(entity)
         return self._to_response(updated)
 

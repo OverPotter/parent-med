@@ -9,9 +9,12 @@ export interface Family {
 
 export interface Account {
   id: string;
-  email: string;
+  login: string;
+  email: string | null;
   familyId: string;
   displayName: string;
+  relationshipLabel: string | null;
+  phone: string | null;
   familyRole: string;
 }
 
@@ -59,6 +62,12 @@ export interface Child {
   name: string;
   birthDate: string | null;
   ageLabel: string | null;
+  institutionName: string | null;
+  institutionPhone: string | null;
+  doctorName: string | null;
+  doctorPhone: string | null;
+  allergies: string | null;
+  notes: string | null;
 }
 
 export interface WeightEntry {
