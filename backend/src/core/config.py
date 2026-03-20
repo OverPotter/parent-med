@@ -3,7 +3,7 @@
 import json
 from typing import Annotated, Any
 
-from pydantic import BeforeValidator, field_validator
+from pydantic import BeforeValidator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_settings.sources.types import NoDecode
 
