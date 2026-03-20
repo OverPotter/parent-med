@@ -3,7 +3,7 @@
 import json
 from typing import Annotated, Any
 
-from pydantic import BeforeValidator
+from pydantic import BeforeValidator, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_settings.sources.types import NoDecode
 
@@ -60,7 +60,6 @@ class Settings(BaseSettings):
     app_name: str = "Parent Med API"
     debug: bool = False
 
-    # БД
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/parent_med"
     jwt_secret: str = "dev-jwt-secret-change-me"
     jwt_issuer: str = "parent-med"
@@ -77,6 +76,18 @@ class Settings(BaseSettings):
     web_push_public_key: str | None = None
     web_push_private_key: str | None = None
     web_push_subject: str = "mailto:dev@example.com"
+
+    @classmethod
+    @field_validator("database_url", mode="before")
+    def normalize_database_url_for_asyncpg(cls, v: Any) -> Any:
+        if not isinstance(v, str):
+            return v
+        s = v.strip()
+        if s.startswith("postgres://"):
+            return "postgresql+asyncpg://" + s.removeprefix("postgres://")
+        if s.startswith("postgresql://") and not s.startswith("postgresql+asyncpg://"):
+            return "postgresql+asyncpg://" + s.removeprefix("postgresql://")
+        return v
 
     @property
     def web_push_enabled(self) -> bool:
