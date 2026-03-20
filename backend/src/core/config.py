@@ -1,6 +1,51 @@
 """Конфигурация приложения из переменных окружения (.env)."""
 
+import json
+from typing import Annotated, Any
+
+from pydantic import BeforeValidator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings.sources.types import NoDecode
+
+_DEFAULT_CORS_ORIGINS: list[str] = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+
+def _parse_cors_allowed_origins(v: Any) -> list[str]:
+    """Из env: JSON-массив или список URL через запятую (удобно для Railway)."""
+    if v is None:
+        return list(_DEFAULT_CORS_ORIGINS)
+    if isinstance(v, list):
+        return [str(x) for x in v]
+    if isinstance(v, str):
+        s = v.strip()
+        if not s:
+            return list(_DEFAULT_CORS_ORIGINS)
+        if s.startswith("["):
+            try:
+                data = json.loads(s)
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    "CORS_ALLOWED_ORIGINS: невалидный JSON. "
+                    'Пример: ["https://app.example.com"] '
+                    "или без JSON: https://a.com,https://b.com"
+                ) from e
+            if not isinstance(data, list):
+                raise ValueError("CORS_ALLOWED_ORIGINS: JSON должен быть массивом строк")
+            return [str(x) for x in data]
+        return [x.strip() for x in s.split(",") if x.strip()]
+    return v
+
+
+CorsAllowedOrigins = Annotated[
+    list[str],
+    NoDecode,
+    BeforeValidator(_parse_cors_allowed_origins),
+]
 
 
 class Settings(BaseSettings):
@@ -22,12 +67,7 @@ class Settings(BaseSettings):
     access_token_ttl_minutes: int = 30
     refresh_token_ttl_days: int = 7
     refresh_token_ttl_days_remember_me: int = 60
-    cors_allowed_origins: list[str] = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ]
+    cors_allowed_origins: CorsAllowedOrigins = list(_DEFAULT_CORS_ORIGINS)
     access_cookie_name: str = "parent_med_access_token"
     refresh_cookie_name: str = "parent_med_refresh_token"
     auth_cookie_secure: bool = False
