@@ -1,0 +1,9 @@
+# Railway: сервис с корнем = каталог backend/
+# Зависимости через uv (как в docker/Dockerfile).
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pip install --no-cache-dir uv && uv sync --no-dev"
+
+[deploy]
+startCommand = "sh -c 'uv run alembic upgrade head && uv run uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}'"
