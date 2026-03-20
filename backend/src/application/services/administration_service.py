@@ -8,9 +8,13 @@ from src.application.dto.administration_event import (
     AdministrationEventResponseDto,
 )
 from src.application.services.safety_engine import check_household_medicine_for_administration
-from src.core.exceptions import NotFoundError, ValidationError
+from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.administration_event import AdministrationEvent
+from src.domain.entities.child import Child
+from src.domain.entities.household_medicine import HouseholdMedicine
+from src.domain.entities.illness_episode import IllnessEpisode
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
+from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 
@@ -23,10 +27,12 @@ class AdministrationService:
         administration_repo: AdministrationEventRepository,
         household_repo: HouseholdMedicineRepository,
         episode_repo: IllnessEpisodeRepository,
+        child_repo: ChildRepository,
     ) -> None:
         self._repo = administration_repo
         self._household_repo = household_repo
         self._episode_repo = episode_repo
+        self._child_repo = child_repo
 
     def _to_response(self, entity: AdministrationEvent) -> AdministrationEventResponseDto:
         return AdministrationEventResponseDto(
@@ -40,34 +46,77 @@ class AdministrationService:
             reason=entity.reason,
         )
 
-    async def get_by_id(self, id: UUID) -> AdministrationEventResponseDto:
+    async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
+        child = await self._child_repo.get_by_id(child_id)
+        if not child:
+            raise NotFoundError("Ребёнок не найден", resource="child")
+        if child.family_id != current_family_id:
+            raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
+        return child
+
+    async def _get_episode_for_account(
+        self,
+        episode_id: UUID,
+        current_family_id: UUID,
+    ) -> IllnessEpisode:
+        episode = await self._episode_repo.get_by_id(episode_id)
+        if not episode:
+            raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
+        await self._require_child_access(episode.child_id, current_family_id)
+        return episode
+
+    async def _get_household_for_account(
+        self,
+        household_medicine_id: UUID,
+        current_family_id: UUID,
+    ) -> HouseholdMedicine:
+        household = await self._household_repo.get_by_id(household_medicine_id)
+        if not household:
+            raise NotFoundError("Упаковка не найдена", resource="household_medicine")
+        if household.family_id != current_family_id:
+            raise ForbiddenError("Нет доступа к упаковке из другой семьи")
+        return household
+
+    async def _get_event_for_account(
+        self,
+        id: UUID,
+        current_family_id: UUID,
+    ) -> AdministrationEvent:
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Запись приёма не найдена", resource="administration_event")
-        return self._to_response(entity)
+        await self._get_episode_for_account(entity.episode_id, current_family_id)
+        return entity
 
-    async def get_by_episode_id(self, episode_id: UUID) -> list[AdministrationEventResponseDto]:
-        if await self._episode_repo.get_by_id(episode_id) is None:
-            raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
+    async def get_by_id(self, id: UUID, current_family_id: UUID) -> AdministrationEventResponseDto:
+        return self._to_response(await self._get_event_for_account(id, current_family_id))
+
+    async def get_by_episode_id(
+        self,
+        episode_id: UUID,
+        current_family_id: UUID,
+    ) -> list[AdministrationEventResponseDto]:
+        await self._get_episode_for_account(episode_id, current_family_id)
         entities = await self._repo.get_by_episode_id(episode_id)
         return [self._to_response(e) for e in entities]
 
-    async def create(self, dto: AdministrationEventCreateDto) -> AdministrationEventResponseDto:
-        episode = await self._episode_repo.get_by_id(dto.episode_id)
-        if not episode:
-            raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
+    async def create(
+        self,
+        dto: AdministrationEventCreateDto,
+        current_family_id: UUID,
+    ) -> AdministrationEventResponseDto:
+        episode = await self._get_episode_for_account(dto.episode_id, current_family_id)
         if episode.status != "active":
-            raise NotFoundError(
-                "Эпизод закрыт, приёмы добавлять нельзя", resource="illness_episode"
-            )
+            raise ValidationError("Эпизод закрыт, приёмы добавлять нельзя")
         if not dto.household_medicine_id and not (dto.custom_medicine_name or "").strip():
             raise ValidationError("Укажи препарат из аптечки или введи название вручную")
 
         household = None
         if dto.household_medicine_id:
-            household = await self._household_repo.get_by_id(dto.household_medicine_id)
-            if not household:
-                raise NotFoundError("Упаковка не найдена", resource="household_medicine")
+            household = await self._get_household_for_account(
+                dto.household_medicine_id,
+                current_family_id,
+            )
             check_household_medicine_for_administration(household)
         administered_at = dto.administered_at or datetime.now(UTC)
         entity = AdministrationEvent(
@@ -83,7 +132,6 @@ class AdministrationService:
         created = await self._repo.add(entity)
         return self._to_response(created)
 
-    async def delete(self, id: UUID) -> None:
-        if await self._repo.get_by_id(id) is None:
-            raise NotFoundError("Запись приёма не найдена", resource="administration_event")
+    async def delete(self, id: UUID, current_family_id: UUID) -> None:
+        await self._get_event_for_account(id, current_family_id)
         await self._repo.delete(id)

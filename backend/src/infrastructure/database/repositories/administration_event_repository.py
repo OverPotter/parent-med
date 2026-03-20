@@ -82,3 +82,22 @@ class SqlAdministrationEventRepository(AdministrationEventRepository):
             await self._session.flush()
             return True
         return False
+
+    async def clear_household_medicine_references(
+        self,
+        household_medicine_id: UUID,
+        fallback_medicine_name: str,
+    ) -> None:
+        result = await self._session.execute(
+            select(IllnessEpisodeEventModel).where(
+                IllnessEpisodeEventModel.event_type == "administration",
+                IllnessEpisodeEventModel.household_medicine_id == household_medicine_id,
+            )
+        )
+        rows = result.scalars().all()
+        for row in rows:
+            row.household_medicine_id = None
+            if not (row.comment or "").strip():
+                row.comment = fallback_medicine_name
+        if rows:
+            await self._session.flush()

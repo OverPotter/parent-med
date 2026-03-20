@@ -127,7 +127,10 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
         )
         return [self._to_entity(row) for row in result.scalars().all()]
 
-    async def update_notification_marks(self, entity: EpisodeMedicationPlan) -> EpisodeMedicationPlan:
+    async def update_notification_marks(
+        self,
+        entity: EpisodeMedicationPlan,
+    ) -> EpisodeMedicationPlan:
         result = await self._session.execute(
             select(EpisodeMedicationPlanModel).where(EpisodeMedicationPlanModel.id == entity.id)
         )
@@ -151,3 +154,21 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             await self._session.flush()
             return True
         return False
+
+    async def clear_household_medicine_references(
+        self,
+        household_medicine_id: UUID,
+        fallback_medicine_name: str,
+    ) -> None:
+        result = await self._session.execute(
+            select(EpisodeMedicationPlanModel).where(
+                EpisodeMedicationPlanModel.household_medicine_id == household_medicine_id
+            )
+        )
+        rows = result.scalars().all()
+        for row in rows:
+            row.household_medicine_id = None
+            if not (row.custom_medicine_name or "").strip():
+                row.custom_medicine_name = fallback_medicine_name
+        if rows:
+            await self._session.flush()

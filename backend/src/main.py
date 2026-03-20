@@ -97,7 +97,6 @@ def create_app() -> FastAPI:
     app.include_router(
         push_notifications.router,
         prefix="/api/v1",
-        dependencies=protected_dependencies,
     )
 
     @app.get("/health")

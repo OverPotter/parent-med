@@ -8,7 +8,8 @@ from src.application.dto.illness_episode import (
     IllnessEpisodeResponseDto,
     IllnessEpisodeUpdateDto,
 )
-from src.core.exceptions import NotFoundError, ValidationError
+from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
+from src.domain.entities.child import Child
 from src.domain.entities.illness_episode import IllnessEpisode
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
@@ -37,25 +38,52 @@ class IllnessEpisodeService:
             closed_at=entity.closed_at,
         )
 
-    async def get_by_id(self, id: UUID) -> IllnessEpisodeResponseDto:
+    async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
+        child = await self._child_repo.get_by_id(child_id)
+        if not child:
+            raise NotFoundError("Ребёнок не найден", resource="child")
+        if child.family_id != current_family_id:
+            raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
+        return child
+
+    async def _get_episode_for_account(
+        self,
+        id: UUID,
+        current_family_id: UUID,
+    ) -> IllnessEpisode:
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
-        return self._to_response(entity)
+        await self._require_child_access(entity.child_id, current_family_id)
+        return entity
 
-    async def get_by_child_id(self, child_id: UUID) -> list[IllnessEpisodeResponseDto]:
-        if await self._child_repo.get_by_id(child_id) is None:
-            raise NotFoundError("Ребёнок не найден", resource="child")
+    async def get_by_id(self, id: UUID, current_family_id: UUID) -> IllnessEpisodeResponseDto:
+        return self._to_response(await self._get_episode_for_account(id, current_family_id))
+
+    async def get_by_child_id(
+        self,
+        child_id: UUID,
+        current_family_id: UUID,
+    ) -> list[IllnessEpisodeResponseDto]:
+        await self._require_child_access(child_id, current_family_id)
         entities = await self._repo.get_by_child_id(child_id)
         return [self._to_response(e) for e in entities]
 
-    async def get_active_for_child(self, child_id: UUID) -> IllnessEpisodeResponseDto | None:
+    async def get_active_for_child(
+        self,
+        child_id: UUID,
+        current_family_id: UUID,
+    ) -> IllnessEpisodeResponseDto | None:
+        await self._require_child_access(child_id, current_family_id)
         entity = await self._repo.get_active_by_child_id(child_id)
         return self._to_response(entity) if entity else None
 
-    async def create(self, dto: IllnessEpisodeCreateDto) -> IllnessEpisodeResponseDto:
-        if await self._child_repo.get_by_id(dto.child_id) is None:
-            raise NotFoundError("Ребёнок не найден", resource="child")
+    async def create(
+        self,
+        dto: IllnessEpisodeCreateDto,
+        current_family_id: UUID,
+    ) -> IllnessEpisodeResponseDto:
+        await self._require_child_access(dto.child_id, current_family_id)
         if dto.medication_mode not in {"manual", "guided"}:
             raise ValidationError("Неизвестный режим лекарств")
         active = await self._repo.get_active_by_child_id(dto.child_id)
@@ -78,10 +106,13 @@ class IllnessEpisodeService:
         created = await self._repo.add(entity)
         return self._to_response(created)
 
-    async def update(self, id: UUID, dto: IllnessEpisodeUpdateDto) -> IllnessEpisodeResponseDto:
-        entity = await self._repo.get_by_id(id)
-        if not entity:
-            raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
+    async def update(
+        self,
+        id: UUID,
+        dto: IllnessEpisodeUpdateDto,
+        current_family_id: UUID,
+    ) -> IllnessEpisodeResponseDto:
+        entity = await self._get_episode_for_account(id, current_family_id)
         fields_set = dto.model_fields_set
 
         started_at = dto.started_at if "started_at" in fields_set else entity.started_at
@@ -123,7 +154,6 @@ class IllnessEpisodeService:
         updated = await self._repo.update(entity)
         return self._to_response(updated)
 
-    async def delete(self, id: UUID) -> None:
-        if await self._repo.get_by_id(id) is None:
-            raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
+    async def delete(self, id: UUID, current_family_id: UUID) -> None:
+        await self._get_episode_for_account(id, current_family_id)
         await self._repo.delete(id)

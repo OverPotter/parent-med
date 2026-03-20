@@ -48,6 +48,18 @@ class EpisodeMedicationPlanRepository(BaseRepository[EpisodeMedicationPlan]):
         ...
 
     @abstractmethod
-    async def update_notification_marks(self, entity: EpisodeMedicationPlan) -> EpisodeMedicationPlan:
+    async def update_notification_marks(
+        self,
+        entity: EpisodeMedicationPlan,
+    ) -> EpisodeMedicationPlan:
         """Обновить метки уже отправленных уведомлений."""
+        ...
+
+    @abstractmethod
+    async def clear_household_medicine_references(
+        self,
+        household_medicine_id: UUID,
+        fallback_medicine_name: str,
+    ) -> None:
+        """Сделать планы manual-ссылками при удалении упаковки из аптечки."""
         ...

@@ -10,6 +10,7 @@ from src.application.dto.medicine_catalog import (
     MedicineCatalogResponseDto,
 )
 from src.application.services.medicine_catalog_service import MedicineCatalogService
+from src.core.exceptions import ForbiddenError
 
 router = APIRouter(prefix="/medicine-catalog", tags=["medicine-catalog"])
 
@@ -39,7 +40,7 @@ async def create_catalog_item(
     service: MedicineCatalogService = Depends(get_medicine_catalog_service),
 ) -> MedicineCatalogResponseDto:
     """Добавить препарат в справочник."""
-    return await service.create(dto)
+    raise ForbiddenError("Изменение общего справочника недоступно через публичный API")
 
 
 @router.delete("/{item_id}", status_code=204)
@@ -48,4 +49,4 @@ async def delete_catalog_item(
     service: MedicineCatalogService = Depends(get_medicine_catalog_service),
 ) -> None:
     """Удалить препарат из справочника."""
-    await service.delete(item_id)
+    raise ForbiddenError("Изменение общего справочника недоступно через публичный API")

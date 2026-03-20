@@ -65,11 +65,13 @@ def get_episode_medication_plan_service(
     plan_repo=Depends(get_episode_medication_plan_repo),
     episode_repo=Depends(get_illness_episode_repo),
     household_repo=Depends(get_household_medicine_repo),
+    child_repo=Depends(get_child_repo),
 ) -> EpisodeMedicationPlanService:
     return EpisodeMedicationPlanService(
         plan_repo=plan_repo,
         episode_repo=episode_repo,
         household_repo=household_repo,
+        child_repo=child_repo,
     )
 
 
@@ -104,11 +106,15 @@ def get_household_medicine_service(
     household_repo=Depends(get_household_medicine_repo),
     family_repo=Depends(get_family_repo),
     catalog_repo=Depends(get_medicine_catalog_repo),
+    administration_repo=Depends(get_administration_repo),
+    plan_repo=Depends(get_episode_medication_plan_repo),
 ) -> HouseholdMedicineService:
     return HouseholdMedicineService(
         household_repo=household_repo,
         family_repo=family_repo,
         catalog_repo=catalog_repo,
+        administration_repo=administration_repo,
+        plan_repo=plan_repo,
     )
 
 
@@ -122,17 +128,24 @@ def get_illness_episode_service(
 def get_illness_comment_service(
     comment_repo=Depends(get_illness_comment_repo),
     episode_repo=Depends(get_illness_episode_repo),
+    child_repo=Depends(get_child_repo),
 ) -> IllnessCommentService:
-    return IllnessCommentService(comment_repo=comment_repo, episode_repo=episode_repo)
+    return IllnessCommentService(
+        comment_repo=comment_repo,
+        episode_repo=episode_repo,
+        child_repo=child_repo,
+    )
 
 
 def get_temperature_entry_service(
     temperature_repo=Depends(get_temperature_entry_repo),
     episode_repo=Depends(get_illness_episode_repo),
+    child_repo=Depends(get_child_repo),
 ) -> TemperatureEntryService:
     return TemperatureEntryService(
         temperature_repo=temperature_repo,
         episode_repo=episode_repo,
+        child_repo=child_repo,
     )
 
 
@@ -140,9 +153,11 @@ def get_administration_service(
     administration_repo=Depends(get_administration_repo),
     household_repo=Depends(get_household_medicine_repo),
     episode_repo=Depends(get_illness_episode_repo),
+    child_repo=Depends(get_child_repo),
 ) -> AdministrationService:
     return AdministrationService(
         administration_repo=administration_repo,
         household_repo=household_repo,
         episode_repo=episode_repo,
+        child_repo=child_repo,
     )
