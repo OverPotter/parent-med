@@ -17,6 +17,7 @@ import {
 
 import { ClientLayout } from "@client/layout/ClientLayout";
 import { AccountPage } from "@client/pages/AccountPage";
+import { LandingPage } from "@client/pages/LandingPage";
 import { AuthPage } from "@client/pages/AuthPage";
 import { AboutPage } from "@client/pages/AboutPage";
 import { ClientHomePage } from "@client/pages/ClientHomePage";
@@ -176,9 +177,9 @@ export default function App() {
       <Routes>
         {!(authToken || accountId) ? (
           <>
-            <Route path="/" element={<AuthPage />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/join-family" element={<JoinFamilyPage />} />
-            <Route path="/auth" element={<Navigate to="/" replace />} />
+            <Route path="/auth" element={<AuthPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
         ) : role === "admin" ? (
