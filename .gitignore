@@ -55,6 +55,8 @@ pnpm-lock.yaml
 frontend/dist/
 frontend/build/
 frontend/dev-dist/
+# TypeScript incremental / project references (tsc -b)
+frontend/tsconfig.tsbuildinfo
 frontend/*.tsbuildinfo
 
 # ========== IDE ==========
