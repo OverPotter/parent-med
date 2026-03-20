@@ -6,10 +6,17 @@ import axios, { type AxiosError } from "axios";
 import { useAppStore } from "@shared/store/useAppStore";
 
 /**
- * VITE_API_URL — только origin бэкенда (https://api.example.com).
- * Пусто → относительный /api/v1 и прокси Vite на localhost:8000.
+ * VITE_API_URL — origin бэкенда. Обязательно с https:// (или http://).
+ * Без схемы axios считает строку путём на текущем хосте → …/домен-бэка/api/v1/…
  */
-const apiOrigin = (import.meta.env.VITE_API_URL ?? "").trim().replace(/\/+$/, "");
+function normalizeApiOrigin(raw: string): string {
+  const s = raw.trim().replace(/\/+$/, "");
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  return `https://${s}`;
+}
+
+const apiOrigin = normalizeApiOrigin(import.meta.env.VITE_API_URL ?? "");
 const baseURL = apiOrigin ? `${apiOrigin}/api/v1` : "/api/v1";
 
 export const apiClient = axios.create({
