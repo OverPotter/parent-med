@@ -1,7 +1,5 @@
 import { Link } from "react-router-dom";
-import { logout } from "@shared/api/auth";
 import { RowSurface, Surface } from "@shared/components/Surface";
-import { useAppStore } from "@shared/store/useAppStore";
 
 const moreLinks = [
   {
@@ -12,7 +10,7 @@ const moreLinks = [
   {
     to: "/account",
     title: "Аккаунт",
-    description: "Email, тема, выход из приложения и управление профилем.",
+    description: "Email, имя в семье, напоминания и безопасность.",
   },
   {
     to: "/illnesses/history",
@@ -27,45 +25,15 @@ const moreLinks = [
 ];
 
 export function MorePage() {
-  const clearSession = useAppStore((s) => s.clearSession);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch {
-      // Локальный выход остаётся приоритетом.
-    } finally {
-      clearSession();
-    }
-  };
-
   return (
     <div className="min-w-0 space-y-7">
       <Surface className="soft-hero overflow-hidden">
         <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
-          <p className="app-kicker">Ещё</p>
-          <h1 className="app-title mt-2 text-2xl sm:text-3xl">Настройки и вторичные разделы</h1>
+          <h1 className="app-title text-2xl sm:text-3xl">Настройки и вторичные разделы</h1>
           <p className="app-subtitle mt-3 max-w-2xl text-sm">
-            Здесь собраны экраны, которые нужны реже: семья, аккаунт, архив и справка о продукте.
+            Все редко используемые экраны — семья, профиль, история и справка — теперь в одном
+            месте.
           </p>
-        </div>
-      </Surface>
-
-      <Surface className="p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-foreground">Быстрые действия</p>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              То, что на телефоне должно быть доступно без лишних переходов.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-          >
-            Выйти
-          </button>
         </div>
       </Surface>
 
