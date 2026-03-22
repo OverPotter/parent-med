@@ -10,7 +10,7 @@ const moreLinks = [
   {
     to: "/account",
     title: "Аккаунт",
-    description: "Email, тема, выход из приложения и управление профилем.",
+    description: "Email, имя в семье, напоминания и безопасность.",
   },
   {
     to: "/illnesses/history",
@@ -29,10 +29,10 @@ export function MorePage() {
     <div className="min-w-0 space-y-7">
       <Surface className="soft-hero overflow-hidden">
         <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
-          <p className="app-kicker">Ещё</p>
-          <h1 className="app-title mt-2 text-2xl sm:text-3xl">Настройки и вторичные разделы</h1>
+          <h1 className="app-title text-2xl sm:text-3xl">Настройки и вторичные разделы</h1>
           <p className="app-subtitle mt-3 max-w-2xl text-sm">
-            Здесь собраны экраны, которые нужны реже: семья, аккаунт, архив и справка о продукте.
+            Все редко используемые экраны — семья, профиль, история и справка — теперь в одном
+            месте.
           </p>
         </div>
       </Surface>
