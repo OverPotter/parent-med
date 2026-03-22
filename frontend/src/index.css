@@ -491,6 +491,65 @@ p {
     color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
   }
 
+  .soft-refresh-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-soft) 98%, var(--color-background)),
+      color-mix(in srgb, var(--color-background) 96%, black)
+    );
+    animation: soft-refresh-fade-in 180ms ease forwards;
+  }
+
+  .soft-refresh-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-surface-soft) 96%, transparent);
+    padding: 0.8rem 1rem;
+    box-shadow:
+      0 18px 36px -28px rgb(var(--color-shadow) / 0.22),
+      inset 0 1px 0 rgb(255 255 255 / 0.06);
+    color: var(--color-foreground);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .soft-refresh-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid color-mix(in srgb, var(--color-border) 84%, transparent);
+    border-top-color: color-mix(in srgb, var(--color-primary) 64%, transparent);
+    border-radius: 999px;
+    animation: soft-refresh-spin 0.75s linear infinite;
+  }
+
+  @keyframes soft-refresh-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes soft-refresh-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   .app-brand-text {
     font-family: var(--font-display);
     font-size: 1rem;
