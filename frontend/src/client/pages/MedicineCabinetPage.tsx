@@ -83,11 +83,11 @@ export function MedicineCabinetPage() {
         subtitle="Реальные упаковки дома: срок годности, дата вскрытия и можно ли использовать препарат сейчас."
         hideOnMobile
       />
-      <div className="soft-nav-shell inline-flex flex-wrap gap-2 rounded-[24px] p-2">
+      <div className="soft-nav-shell grid grid-cols-1 gap-2 rounded-[24px] p-2 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => setView("add")}
-          className={`rounded-full px-4 py-2 text-sm transition-colors ${
+          className={`w-full rounded-full px-4 py-2 text-sm transition-colors ${
             view === "add" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -96,7 +96,7 @@ export function MedicineCabinetPage() {
         <button
           type="button"
           onClick={() => setView("cabinet")}
-          className={`rounded-full px-4 py-2 text-sm transition-colors ${
+          className={`w-full rounded-full px-4 py-2 text-sm transition-colors ${
             view === "cabinet" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -409,7 +409,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
         )}
 
         {!catalogItem && (
-          <div className="flex flex-wrap gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <input
               type="text"
               value={newMedicineName}
@@ -418,7 +418,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setFormError(null);
               }}
               placeholder="Название нового препарата"
-              className="soft-input min-w-0 flex-1 max-w-xs rounded-2xl px-4 py-3"
+              className="soft-input rounded-2xl px-4 py-3"
             />
             <select
               value={newMedicineForm}
@@ -433,6 +433,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
               <option value="капли">капли</option>
               <option value="суспензия">суспензия</option>
               <option value="раствор">раствор</option>
+              <option value="суппозитории">суппозитории (свечи)</option>
             </select>
             <input
               type="text"
@@ -442,7 +443,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setFormError(null);
               }}
               placeholder="Концентрация"
-              className="soft-input min-w-0 flex-1 max-w-xs rounded-2xl px-4 py-3"
+              className="soft-input rounded-2xl px-4 py-3"
             />
           </div>
         )}
