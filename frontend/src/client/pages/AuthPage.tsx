@@ -157,7 +157,8 @@ export function AuthPage() {
                 <div>
                   <p className="text-sm font-medium text-foreground">Обязательные поля</p>
                   <p className="mt-1 text-xs leading-5 text-muted">
-                    Сначала только логин и пароль. Остальное можно заполнить уже после входа.
+                    Для начала нужен только логин для входа и пароль. Имя в семье можно задать ниже
+                    или заполнить позже.
                   </p>
                 </div>
                 <button
@@ -178,9 +179,12 @@ export function AuthPage() {
                     value={loginValue}
                     onChange={(e) => setLoginValue(e.target.value)}
                     className="soft-input w-full rounded-2xl px-4 py-3"
-                    placeholder="Например: mama_anya"
+                    placeholder="Придумайте логин для входа"
                     autoComplete="username"
                   />
+                  <span className="mt-2 block text-xs text-muted">
+                    Логин нужен только для входа. Это не имя, которое увидят в семье.
+                  </span>
                 </label>
 
                 <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
@@ -216,7 +220,7 @@ export function AuthPage() {
                   Дополнительные поля профиля
                 </summary>
                 <p className="mt-2 text-xs leading-5 text-muted">
-                  Они не мешают началу работы. Если оставить пусто, сервис подставит логин как имя.
+                  Они не мешают началу работы. Здесь можно указать, как вас показывать в семье.
                 </p>
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm text-muted">Email</span>
@@ -245,8 +249,8 @@ export function AuthPage() {
                     autoComplete="name"
                   />
                   <span className="mt-2 block text-xs text-muted">
-                    Так имя будет показано в семье и в истории действий. Если пусто, используем
-                    логин.
+                    Это имя увидят другие участники семьи и история действий. Если не заполнить,
+                    временно подставим логин.
                   </span>
                 </label>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">

@@ -2,7 +2,7 @@
  * Эпизоды болезни ребёнка: список, создание, журнал температуры и приёмы.
  */
 
-import { useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -748,6 +748,13 @@ function EpisodeBlock({
     comments,
     householdMedicines
   );
+
+  useEffect(() => {
+    if (usableHouseholdMedicines.length === 0 && adminMedicineMode === "cabinet") {
+      setAdminMedicineMode("manual");
+      setAdminMedicineId("");
+    }
+  }, [adminMedicineMode, usableHouseholdMedicines.length]);
   const manualComposerSection = (
     <div
       className={[
@@ -815,12 +822,13 @@ function EpisodeBlock({
               />
             )}
 
-            {composerMode === "administration" &&
-              (usableHouseholdMedicines.length === 0 ? (
-                <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
-                  В аптечке нет доступных упаковок для приёма. Просроченные скрыты автоматически.
-                </div>
-              ) : (
+            {composerMode === "administration" && (
+              <>
+                {usableHouseholdMedicines.length === 0 && (
+                  <div className="soft-note-info mb-3 rounded-2xl px-4 py-3 text-sm">
+                    В аптечке нет доступных упаковок. Лекарство можно записать вручную.
+                  </div>
+                )}
                 <AdministrationForm
                   medicines={usableHouseholdMedicines}
                   mode={adminMedicineMode}
@@ -846,14 +854,17 @@ function EpisodeBlock({
                         adminMedicineMode === "manual" ? adminCustomMedicineName.trim() : undefined,
                       amount: adminAmount.trim(),
                     });
-                    setAdminMedicineMode("cabinet");
+                    setAdminMedicineMode(
+                      usableHouseholdMedicines.length > 0 ? "cabinet" : "manual"
+                    );
                     setAdminMedicineId("");
                     setAdminCustomMedicineName("");
                     setAdminAmount("");
                   }}
                   isPending={addAdminMutation.isPending}
                 />
-              ))}
+              </>
+            )}
             {composerMode === "administration" && addAdminMutation.isError && (
               <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
                 {(addAdminMutation.error as { response?: { data?: { detail?: string } } }).response
@@ -1200,6 +1211,13 @@ function EpisodeActivationCard({
     medicines
   );
 
+  useEffect(() => {
+    if (usableMedicines.length === 0 && adminMedicineMode === "cabinet") {
+      setAdminMedicineMode("manual");
+      setAdminMedicineId("");
+    }
+  }, [adminMedicineMode, usableMedicines.length]);
+
   return (
     <div className="soft-panel rounded-[30px]">
       <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-6 sm:px-6 sm:py-7">
@@ -1332,12 +1350,13 @@ function EpisodeActivationCard({
               />
             )}
 
-            {composerMode === "administration" &&
-              (usableMedicines.length === 0 ? (
-                <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
-                  В аптечке нет доступных упаковок для приёма. Просроченные скрыты автоматически.
-                </div>
-              ) : (
+            {composerMode === "administration" && (
+              <>
+                {usableMedicines.length === 0 && (
+                  <div className="soft-note-info mb-3 rounded-2xl px-4 py-3 text-sm">
+                    В аптечке нет доступных упаковок. Лекарство можно записать вручную.
+                  </div>
+                )}
                 <AdministrationForm
                   medicines={usableMedicines}
                   mode={adminMedicineMode}
@@ -1367,14 +1386,15 @@ function EpisodeActivationCard({
                         amount: adminAmount.trim(),
                       },
                     ]);
-                    setAdminMedicineMode("cabinet");
+                    setAdminMedicineMode(usableMedicines.length > 0 ? "cabinet" : "manual");
                     setAdminMedicineId("");
                     setAdminCustomMedicineName("");
                     setAdminAmount("");
                   }}
                   isPending={false}
                 />
-              ))}
+              </>
+            )}
 
             {composerMode === "comment" && (
               <div className="soft-panel-muted grid gap-3 rounded-[24px] p-3">
@@ -1564,16 +1584,6 @@ function InlineHint({ text }: { text: string }) {
   );
 }
 
-function FormFieldCard({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return <div className={`soft-card rounded-[22px] p-4 ${className}`.trim()}>{children}</div>;
-}
-
 function TemperatureForm({
   value,
   onChange,
@@ -1612,6 +1622,65 @@ function TemperatureForm({
   );
 }
 
+function FormFieldCard({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={`rounded-[22px] border border-border/65 bg-background/82 p-4 ${className}`.trim()}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CabinetMedicinePicker({
+  medicines,
+  value,
+  onChange,
+  label = "Упаковка",
+}: {
+  medicines: HouseholdMedicine[];
+  value: string;
+  onChange: (value: string) => void;
+  label?: string;
+}) {
+  return (
+    <div className="block min-w-0">
+      <span className="block text-sm text-muted">{label}</span>
+      <div className="soft-choice-list mt-2">
+        {medicines.map((medicine) => {
+          const isActive = medicine.id === value;
+
+          return (
+            <button
+              key={medicine.id}
+              type="button"
+              onClick={() => onChange(medicine.id)}
+              aria-pressed={isActive}
+              className={[
+                "soft-choice-row text-left",
+                isActive ? "soft-choice-row-active" : "",
+              ].join(" ")}
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold text-foreground">
+                  {medicine.medicineName}
+                  {medicine.medicineConcentration ? ` · ${medicine.medicineConcentration}` : ""}
+                </span>
+                <span className="mt-1 block text-xs text-muted">
+                  {medicine.statusLabel} · до {formatDate(medicine.expiryDate)}
+                </span>
+              </span>
+              <span className="soft-choice-check" aria-hidden="true">
+                {isActive ? "Выбрано" : "Выбрать"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function AdministrationForm({
   medicines,
   mode,
@@ -1638,40 +1707,35 @@ function AdministrationForm({
   isPending: boolean;
 }) {
   return (
-    <div className="soft-panel rounded-[24px] p-4">
-      <div className="mb-3 flex flex-wrap gap-2">
-        <ComposerToggle
-          label="Из аптечки"
-          active={mode === "cabinet"}
-          onClick={() => onModeChange("cabinet")}
-        />
-        <ComposerToggle
-          label="Просто записать"
-          active={mode === "manual"}
-          onClick={() => onModeChange("manual")}
-        />
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-medium text-foreground">Как записать лекарство</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {medicines.length > 0 && (
+            <ComposerToggle
+              label="Из аптечки"
+              active={mode === "cabinet"}
+              onClick={() => onModeChange("cabinet")}
+            />
+          )}
+          <ComposerToggle
+            label="Просто записать"
+            active={mode === "manual"}
+            onClick={() => onModeChange("manual")}
+          />
+        </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_auto]">
-        <FormFieldCard className="min-w-0">
+
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_auto] md:items-end">
+        <label className="block min-w-0">
           {mode === "cabinet" ? (
-            <label className="block min-w-0">
-              <span className="block text-sm text-muted">Упаковка</span>
-              <select
-                value={selectedMedicineId}
-                onChange={(e) => onMedicineChange(e.target.value)}
-                className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-              >
-                <option value="">Выберите упаковку</option>
-                {medicines.map((medicine) => (
-                  <option key={medicine.id} value={medicine.id}>
-                    {medicine.medicineName} · {medicine.statusLabel} · до{" "}
-                    {formatDate(medicine.expiryDate)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <CabinetMedicinePicker
+              medicines={medicines}
+              value={selectedMedicineId}
+              onChange={onMedicineChange}
+            />
           ) : (
-            <label className="block min-w-0">
+            <>
               <span className="block text-sm text-muted">Название лекарства</span>
               <input
                 type="text"
@@ -1680,23 +1744,21 @@ function AdministrationForm({
                 placeholder="Например: Ибупрофен"
                 className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
               />
-            </label>
+            </>
           )}
-        </FormFieldCard>
+        </label>
 
-        <FormFieldCard>
-          <label className="block">
-            <span className="block text-sm text-muted">Доза</span>
-            <input
-              type="text"
-              value={amount}
-              onChange={(e) => onAmountChange(e.target.value)}
-              placeholder="Например: 5 мл, 1 таб., 200 мг"
-              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-            />
-            <p className="mt-2 text-xs text-muted">Можно указать мл, таб., мг, кап. и т.д.</p>
-          </label>
-        </FormFieldCard>
+        <label className="block">
+          <span className="block text-sm text-muted">Доза</span>
+          <input
+            type="text"
+            value={amount}
+            onChange={(e) => onAmountChange(e.target.value)}
+            placeholder="Например: 5 мл, 1 таб., 200 мг"
+            className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+          />
+          <p className="mt-2 text-xs text-muted">Можно указать мл, таб., мг, кап. и т.д.</p>
+        </label>
 
         <div className="flex items-end">
           <button
@@ -1962,23 +2024,12 @@ function MedicationPlanComposer({
       <div className="grid gap-3 xl:grid-cols-2">
         <FormFieldCard className="min-w-0">
           {planMode === "cabinet" ? (
-            <label className="block min-w-0">
-              <span className="block text-sm text-muted">Лекарство из аптечки</span>
-              <select
-                value={selectedMedicineId}
-                onChange={(event) => setSelectedMedicineId(event.target.value)}
-                className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-              >
-                <option value="">Выберите упаковку</option>
-                {medicines.map((medicine) => (
-                  <option key={medicine.id} value={medicine.id}>
-                    {medicine.medicineName}
-                    {medicine.medicineConcentration ? ` · ${medicine.medicineConcentration}` : ""}
-                    {` · до ${formatDate(medicine.expiryDate)}`}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <CabinetMedicinePicker
+              medicines={medicines}
+              value={selectedMedicineId}
+              onChange={setSelectedMedicineId}
+              label="Лекарство из аптечки"
+            />
           ) : (
             <label className="block min-w-0">
               <span className="block text-sm text-muted">Название лекарства</span>
@@ -2244,7 +2295,7 @@ function MedicationPlanList({
           ? `Сегодня ${stats?.todayCount ?? 0} из ${plan.maxDosesPerDay}`
           : `Сегодня ${stats?.todayCount ?? 0}`;
         const nextDoseLabel = stats?.blockedByDailyLimit
-          ? "Следующий приём: лимит на сегодня достигнут"
+          ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
           : stats?.nextAllowedAt
             ? stats.nextAllowedAt <= currentTime
               ? "Следующий приём: можно сейчас"

@@ -44,18 +44,37 @@ export function Layout({
           <div className="md:hidden">
             <div className="soft-nav-shell rounded-[26px] px-3 py-3">
               <div className="flex items-center justify-between gap-3">
-                <Link to="/" className="inline-flex min-w-0 items-center gap-2.5">
-                  <img src="/pwa-icon.svg" alt="" className="h-8 w-8 rounded-2xl" />
-                  <span className="app-brand-text truncate">Parent Med</span>
-                </Link>
+                <div className="min-w-0 flex-1">
+                  <Link to="/" className="inline-flex min-w-0 items-center gap-2.5">
+                    <img src="/pwa-icon.svg" alt="" className="h-8 w-8 rounded-2xl" />
+                    <span className="app-brand-text truncate">Parent Med</span>
+                  </Link>
+                </div>
                 <div className="flex shrink-0 items-center gap-2">
+                  {accountLogin && (
+                    <span className="soft-pill inline-flex max-w-[7.5rem] items-center truncate rounded-full px-3 py-1 text-[11px]">
+                      {accountLabel}
+                    </span>
+                  )}
                   <button
                     type="button"
-                    className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
+                    className="soft-theme-toggle"
                     onClick={toggleTheme}
                     aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
+                    title={theme === "light" ? "Тёмная тема" : "Светлая тема"}
                   >
-                    {theme === "light" ? "Ночь" : "День"}
+                    <span className="soft-theme-toggle__label">Тема</span>
+                    <span
+                      className={[
+                        "soft-theme-toggle__icon",
+                        theme === "light"
+                          ? "soft-theme-toggle__icon--moon"
+                          : "soft-theme-toggle__icon--sun",
+                      ].join(" ")}
+                      aria-hidden="true"
+                    >
+                      {theme === "light" ? "🌙" : "☀️"}
+                    </span>
                   </button>
                   {accountLogin && (
                     <button

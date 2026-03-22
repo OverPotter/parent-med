@@ -251,7 +251,7 @@ export function JoinFamilyPage() {
                 <div>
                   <p className="text-sm font-medium text-foreground">Обязательные поля</p>
                   <p className="mt-1 text-xs leading-5 text-muted">
-                    Для входа и быстрой регистрации нужен только логин и пароль.
+                    Для входа и быстрой регистрации нужен только логин для входа и пароль.
                   </p>
                 </div>
                 <button
@@ -273,9 +273,12 @@ export function JoinFamilyPage() {
                       value={loginValue}
                       onChange={(event) => setLoginValue(event.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
-                      placeholder="Например: papa_anton"
+                      placeholder="Придумайте логин для входа"
                       autoComplete="username"
                     />
+                    <span className="mt-2 block text-xs text-muted">
+                      Логин нужен только для входа. Имя в семье задаётся отдельно.
+                    </span>
                   </label>
                 </div>
 
@@ -312,7 +315,7 @@ export function JoinFamilyPage() {
                   Дополнительные поля
                 </summary>
                 <p className="mt-2 text-xs leading-5 text-muted">
-                  Имя в семье можно задать сразу или поменять позже.
+                  Здесь можно указать, как вас будут видеть в семье.
                 </p>
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm text-muted">Email</span>

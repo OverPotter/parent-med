@@ -350,6 +350,70 @@ p {
     background: var(--color-danger-soft);
   }
 
+  .soft-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.38rem;
+    min-height: 2.25rem;
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-surface-soft) 94%, transparent);
+    padding: 0.35rem 0.72rem 0.35rem 0.78rem;
+    box-shadow: 0 8px 16px -22px rgb(var(--color-shadow) / 0.12);
+    transition:
+      background 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      transform 180ms ease;
+  }
+
+  .soft-theme-toggle:hover {
+    background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-soft));
+    border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+  }
+
+  .soft-theme-toggle:active {
+    transform: scale(0.96);
+  }
+
+  .soft-theme-toggle:focus-visible {
+    outline: none;
+    border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--color-primary) 12%, transparent),
+      0 8px 16px -22px rgb(var(--color-shadow) / 0.12);
+  }
+
+  .soft-theme-toggle__label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-muted);
+  }
+
+  .soft-theme-toggle__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.94rem;
+    line-height: 1;
+    transition:
+      transform 220ms ease,
+      filter 220ms ease,
+      opacity 220ms ease;
+  }
+
+  .soft-theme-toggle__icon--moon {
+    transform: rotate(-12deg) scale(1);
+    filter: saturate(0.9);
+  }
+
+  .soft-theme-toggle__icon--sun {
+    transform: rotate(12deg) scale(1.06);
+    filter: saturate(1.05);
+  }
+
   .soft-tab {
     border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
     background: color-mix(in srgb, var(--color-surface) 86%, transparent);
@@ -370,6 +434,61 @@ p {
     background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface));
     color: color-mix(in srgb, var(--color-primary) 72%, var(--color-foreground));
     box-shadow: 0 8px 18px -24px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
+
+  .soft-choice-list {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .soft-choice-row {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--color-surface-soft) 94%, transparent);
+    padding: 0.8rem 0.9rem;
+    color: var(--color-foreground);
+    box-shadow: 0 8px 16px -22px rgb(var(--color-shadow) / 0.1);
+    transition:
+      background 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      color 160ms ease,
+      transform 160ms ease;
+  }
+
+  .soft-choice-row:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+    background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface-soft));
+  }
+
+  .soft-choice-row-active {
+    border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-border));
+    background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-soft));
+    box-shadow: 0 10px 22px -22px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  }
+
+  .soft-choice-check {
+    flex-shrink: 0;
+    border: 1px solid color-mix(in srgb, var(--color-border) 74%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+    padding: 0.28rem 0.65rem;
+    font-size: 0.73rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-muted);
+  }
+
+  .soft-choice-row-active .soft-choice-check {
+    border-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+    color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
   }
 
   .app-brand-text {
