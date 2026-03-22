@@ -3,10 +3,18 @@
  */
 
 import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { logout } from "@shared/api/auth";
 import { useAppStore } from "@shared/store/useAppStore";
 import { BottomTabBar } from "./BottomTabBar";
 import { TopNav, type LayoutNavLink } from "./TopNav";
+
+type ThemeIconStyle = CSSProperties & {
+  "--soft-theme-icon-from"?: string;
+  "--soft-theme-icon-to"?: string;
+  "--soft-theme-icon-scale"?: number;
+};
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -27,6 +35,19 @@ export function Layout({
   const accountLabel = accountDisplayName || accountLogin || "Пользователь";
   const hasMobileNav = mobileNavLinks.length > 0;
 
+  const spinTimeoutRef = useRef<number | null>(null);
+  const [isIconSpinning, setIsIconSpinning] = useState(false);
+  const initialRotation = theme === "light" ? -12 : 12;
+  const [iconSpin, setIconSpin] = useState({ from: initialRotation, to: initialRotation });
+
+  useEffect(() => {
+    return () => {
+      if (spinTimeoutRef.current !== null) {
+        window.clearTimeout(spinTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -35,6 +56,27 @@ export function Layout({
     } finally {
       clearSession();
     }
+  };
+
+  const iconStyle: ThemeIconStyle = {
+    "--soft-theme-icon-from": `${iconSpin.from}deg`,
+    "--soft-theme-icon-to": `${iconSpin.to}deg`,
+    "--soft-theme-icon-scale": theme === "light" ? 1 : 1.06,
+  };
+
+  const handleThemeToggle = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    const nextRotation = nextTheme === "light" ? -12 : 12;
+    setIconSpin((current) => ({ from: current.to, to: nextRotation }));
+    setIsIconSpinning(true);
+    if (spinTimeoutRef.current !== null) {
+      window.clearTimeout(spinTimeoutRef.current);
+    }
+    spinTimeoutRef.current = window.setTimeout(() => {
+      setIsIconSpinning(false);
+      spinTimeoutRef.current = null;
+    }, 420);
+    toggleTheme();
   };
 
   return (
@@ -59,7 +101,7 @@ export function Layout({
                   <button
                     type="button"
                     className="soft-theme-toggle"
-                    onClick={toggleTheme}
+                    onClick={handleThemeToggle}
                     aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
                     title={theme === "light" ? "Тёмная тема" : "Светлая тема"}
                   >
@@ -70,8 +112,12 @@ export function Layout({
                         theme === "light"
                           ? "soft-theme-toggle__icon--moon"
                           : "soft-theme-toggle__icon--sun",
-                      ].join(" ")}
+                        isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       aria-hidden="true"
+                      style={iconStyle}
                     >
                       {theme === "light" ? "🌙" : "☀️"}
                     </span>
