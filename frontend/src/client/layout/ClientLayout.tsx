@@ -17,7 +17,12 @@ const desktopNavLinks = [
     mobileLabel: "Болезни",
     activePaths: ["/illnesses/active", "/children/:childId/illness"],
   },
-  { to: "/children", label: "Дети", mobileLabel: "Дети", activePaths: ["/children"] },
+  {
+    to: "/children",
+    label: "Дети",
+    mobileLabel: "Дети",
+    activePaths: ["/children", "/children/:childId"],
+  },
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
   {
     to: "/more",
@@ -34,7 +39,12 @@ const mobileNavLinks = [
     mobileLabel: "Болезни",
     activePaths: ["/illnesses/active", "/children/:childId/illness"],
   },
-  { to: "/children", label: "Дети", mobileLabel: "Дети", activePaths: ["/children"] },
+  {
+    to: "/children",
+    label: "Дети",
+    mobileLabel: "Дети",
+    activePaths: ["/children", "/children/:childId"],
+  },
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
   {
     to: "/more",

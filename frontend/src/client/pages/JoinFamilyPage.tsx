@@ -148,13 +148,13 @@ export function JoinFamilyPage() {
   return (
     <div className="min-w-0 space-y-6">
       <div>
-        <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs uppercase tracking-[0.18em]">
+        <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs tracking-[0.04em]">
           Приглашение в семью
         </span>
-        <h1 className="mt-4 text-3xl font-semibold text-foreground sm:text-4xl">
+        <h1 className="app-title mt-4 text-3xl sm:text-[2.6rem]">
           Присоединиться к семейному кабинету
         </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted sm:text-base">
+        <p className="app-subtitle mt-3 max-w-2xl text-sm sm:text-base">
           У каждого взрослого свой личный аккаунт, но дети, аптечка и история болезни общие на
           уровне семьи.
         </p>
@@ -218,7 +218,7 @@ export function JoinFamilyPage() {
         </Surface>
       ) : (
         <Surface className="p-5 sm:p-6">
-          <h2 className="text-xl font-semibold text-foreground">Создать аккаунт или войти</h2>
+          <h2 className="app-card-title text-xl">Создать аккаунт или войти</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
             Новый аккаунт можно сразу привязать к семье по этой ссылке. Если аккаунт уже есть,
             войдите под ним, затем подтвердите присоединение.
@@ -251,7 +251,7 @@ export function JoinFamilyPage() {
                 <div>
                   <p className="text-sm font-medium text-foreground">Обязательные поля</p>
                   <p className="mt-1 text-xs leading-5 text-muted">
-                    Для входа и быстрой регистрации нужен только логин и пароль.
+                    Для входа и быстрой регистрации нужен только логин для входа и пароль.
                   </p>
                 </div>
                 <button
@@ -268,12 +268,17 @@ export function JoinFamilyPage() {
                   <label className="block">
                     <span className="mb-2 block text-sm text-muted">Логин</span>
                     <input
+                      name="username"
                       type="text"
                       value={loginValue}
                       onChange={(event) => setLoginValue(event.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
-                      placeholder="Например: papa_anton"
+                      placeholder="Придумайте логин для входа"
+                      autoComplete="username"
                     />
+                    <span className="mt-2 block text-xs text-muted">
+                      Логин нужен только для входа. Имя в семье задаётся отдельно.
+                    </span>
                   </label>
                 </div>
 
@@ -284,6 +289,8 @@ export function JoinFamilyPage() {
                     onChange={setPassword}
                     placeholder="Минимум 6 символов"
                     isVisible={isPasswordVisible}
+                    name="current-password"
+                    autoComplete={isRegisterMode ? "new-password" : "current-password"}
                   />
                   {isRegisterMode && (
                     <AuthPasswordField
@@ -292,6 +299,8 @@ export function JoinFamilyPage() {
                       onChange={setPasswordConfirm}
                       placeholder="Повторите пароль"
                       isVisible={isPasswordVisible}
+                      name="new-password-confirm"
+                      autoComplete="new-password"
                     />
                   )}
                 </div>
@@ -306,16 +315,18 @@ export function JoinFamilyPage() {
                   Дополнительные поля
                 </summary>
                 <p className="mt-2 text-xs leading-5 text-muted">
-                  Имя в семье можно задать сразу или поменять позже.
+                  Здесь можно указать, как вас будут видеть в семье.
                 </p>
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm text-muted">Email</span>
                   <input
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     className="soft-input w-full rounded-2xl px-4 py-3"
                     placeholder="you@example.com"
+                    autoComplete="email"
                   />
                   <span className="mt-2 block text-xs text-muted">
                     Для beta необязательно. Можно добавить позже в настройках.
@@ -324,11 +335,13 @@ export function JoinFamilyPage() {
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm text-muted">Имя в семье</span>
                   <input
+                    name="display-name"
                     type="text"
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
                     className="soft-input w-full rounded-2xl px-4 py-3"
                     placeholder="Например: Дима"
+                    autoComplete="name"
                   />
                   <span className="mt-2 block text-xs text-muted">
                     Так имя будет показано в семье и в истории действий. Если пусто, используем
@@ -339,11 +352,13 @@ export function JoinFamilyPage() {
                   <label className="block">
                     <span className="mb-2 block text-sm text-muted">Кто вы в семье</span>
                     <input
+                      name="relationship-label"
                       type="text"
                       value={relationshipLabel}
                       onChange={(event) => setRelationshipLabel(event.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
                       placeholder="Например: папа"
+                      autoComplete="organization-title"
                     />
                     <span className="mt-2 block text-xs text-muted">
                       Короткая подпись рядом с именем: мама, папа, няня.
@@ -352,11 +367,13 @@ export function JoinFamilyPage() {
                   <label className="block">
                     <span className="mb-2 block text-sm text-muted">Телефон</span>
                     <input
+                      name="tel"
                       type="tel"
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
                       placeholder="+375 ..."
+                      autoComplete="tel"
                     />
                   </label>
                 </div>

@@ -22,16 +22,9 @@ export function Layout({
   mobileNavLinks = [],
   showCurrentFamily = false,
 }: LayoutProps) {
-  const {
-    theme,
-    toggleTheme,
-    currentFamilyName,
-    accountLogin,
-    accountEmail,
-    accountDisplayName,
-    clearSession,
-  } = useAppStore();
-  const accountLabel = accountDisplayName || accountLogin;
+  const { theme, toggleTheme, currentFamilyName, accountLogin, accountDisplayName, clearSession } =
+    useAppStore();
+  const accountLabel = accountDisplayName || accountLogin || "Пользователь";
   const hasMobileNav = mobileNavLinks.length > 0;
 
   const handleLogout = async () => {
@@ -50,12 +43,50 @@ export function Layout({
         <div className="mx-auto max-w-5xl">
           <div className="md:hidden">
             <div className="soft-nav-shell rounded-[26px] px-3 py-3">
-              <Link to="/" className="inline-flex items-center gap-2.5">
-                <img src="/pwa-icon.svg" alt="" className="h-8 w-8 rounded-2xl" />
-                <span className="text-sm font-semibold tracking-[0.04em] text-primary">
-                  Parent Med
-                </span>
-              </Link>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <Link to="/" className="inline-flex min-w-0 items-center gap-2.5">
+                    <img src="/pwa-icon.svg" alt="" className="h-8 w-8 rounded-2xl" />
+                    <span className="app-brand-text truncate">Parent Med</span>
+                  </Link>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {accountLogin && (
+                    <span className="soft-pill inline-flex max-w-[7.5rem] items-center truncate rounded-full px-3 py-1 text-[11px]">
+                      {accountLabel}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="soft-theme-toggle"
+                    onClick={toggleTheme}
+                    aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
+                    title={theme === "light" ? "Тёмная тема" : "Светлая тема"}
+                  >
+                    <span className="soft-theme-toggle__label">Тема</span>
+                    <span
+                      className={[
+                        "soft-theme-toggle__icon",
+                        theme === "light"
+                          ? "soft-theme-toggle__icon--moon"
+                          : "soft-theme-toggle__icon--sun",
+                      ].join(" ")}
+                      aria-hidden="true"
+                    >
+                      {theme === "light" ? "🌙" : "☀️"}
+                    </span>
+                  </button>
+                  {accountLogin && (
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
+                    >
+                      Выйти
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -64,9 +95,7 @@ export function Layout({
               <div className="flex items-center justify-between gap-5">
                 <Link to="/" className="inline-flex min-w-0 items-center gap-3">
                   <img src="/pwa-icon.svg" alt="" className="h-9 w-9 rounded-2xl" />
-                  <p className="truncate text-lg font-semibold tracking-[0.03em] text-primary">
-                    Parent Med
-                  </p>
+                  <p className="app-brand-text truncate text-lg">Parent Med</p>
                 </Link>
 
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
@@ -76,21 +105,9 @@ export function Layout({
                     </span>
                   )}
                   {accountLogin && (
-                    <>
-                      {accountLabel && (
-                        <span className="soft-pill max-w-[12rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                          {accountLabel}
-                        </span>
-                      )}
-                      <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                        @{accountLogin}
-                      </span>
-                      {accountEmail && (
-                        <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                          {accountEmail}
-                        </span>
-                      )}
-                    </>
+                    <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
+                      {accountLabel}
+                    </span>
                   )}
                   <button
                     type="button"

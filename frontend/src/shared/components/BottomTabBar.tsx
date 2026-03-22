@@ -24,7 +24,7 @@ export function BottomTabBar({ links }: { links: LayoutNavLink[] }) {
                 end={to === "/"}
                 className={() =>
                   [
-                    "flex min-h-12 min-w-0 items-center justify-center overflow-hidden rounded-[18px] px-1 py-2 text-center text-[10px] font-medium leading-3.5 transition-colors",
+                    "flex min-h-12 min-w-0 items-center justify-center overflow-hidden rounded-[18px] px-1 py-2 text-center text-[10px] font-medium leading-3.5 tracking-[0.01em] transition-colors",
                     isActive ? "soft-tab-active" : "soft-tab",
                   ].join(" ")
                 }

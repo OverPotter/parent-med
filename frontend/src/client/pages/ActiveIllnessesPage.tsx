@@ -168,7 +168,6 @@ function ActiveIllnessCard({
     )
     .slice(0, 2);
   const hasUnavailableItems = prioritizedItems.some((item) => item.isUnavailable);
-  const hasDailyLimitItems = prioritizedItems.some((item) => item.stats.blockedByDailyLimit);
   const takeDoseMutation = useMutation({
     mutationFn: (plan: EpisodeMedicationPlan) => {
       if (!plan) {
@@ -192,7 +191,7 @@ function ActiveIllnessCard({
     <li>
       <RowSurface className="soft-card-status-danger rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4.5">
         <div className="space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-base font-semibold text-foreground sm:text-lg">{child.name}</h2>
@@ -212,16 +211,13 @@ function ActiveIllnessCard({
             </div>
             <Link
               to={`/children/${child.id}/illness`}
-              className="soft-pill-primary rounded-full px-3 py-1 text-[11px]"
+              className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-center text-sm md:w-auto"
             >
               Открыть
             </Link>
           </div>
 
-          {(availableNowItems.length > 0 ||
-            upcomingItems.length > 0 ||
-            hasUnavailableItems ||
-            hasDailyLimitItems) && (
+          {(availableNowItems.length > 0 || upcomingItems.length > 0 || hasUnavailableItems) && (
             <div className="space-y-3">
               {availableNowItems.length > 0 && (
                 <div className="soft-panel-muted rounded-[20px] px-3.5 py-3 sm:px-4 sm:py-3.5">
@@ -238,17 +234,19 @@ function ActiveIllnessCard({
                       return (
                         <div
                           key={item.plan.id}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-[color:var(--color-surface)]/75 px-3 py-2.5"
+                          className="grid gap-1.5 border-b border-border/45 pb-2 last:border-b-0 last:pb-0 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
                         >
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground">{itemName}</p>
-                            {itemDose && <p className="mt-0.5 text-xs text-muted">{itemDose}</p>}
+                            <p className="text-sm leading-5 text-foreground">
+                              <span className="font-medium">{itemName}</span>
+                              {itemDose && <span className="text-muted"> • {itemDose}</span>}
+                            </p>
                           </div>
                           <button
                             type="button"
                             onClick={() => takeDoseMutation.mutate(item.plan)}
                             disabled={takeDoseMutation.isPending}
-                            className="soft-button-primary rounded-2xl px-3 py-2 text-sm disabled:opacity-50"
+                            className="soft-button-primary w-full rounded-xl px-3 py-1.5 text-sm disabled:opacity-50 md:w-auto"
                           >
                             {takeDoseMutation.isPending ? "..." : "Дать"}
                           </button>
@@ -307,28 +305,19 @@ function ActiveIllnessCard({
                     </p>
                   </div>
                 )}
-
-              {availableNowItems.length === 0 &&
-                upcomingItems.length === 0 &&
-                !hasUnavailableItems &&
-                hasDailyLimitItems && (
-                  <div className="soft-panel-muted rounded-[20px] px-3.5 py-3 sm:px-4 sm:py-3.5">
-                    <p className="text-sm text-muted">На сегодня лимит уже достигнут.</p>
-                  </div>
-                )}
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap">
             <Link
               to={`/children/${child.id}/illness?focus=administration`}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-center text-sm"
             >
               Быстрая запись
             </Link>
             <Link
               to={`/children/${child.id}/illness?focus=timeline`}
-              className="soft-pill rounded-full px-3 py-2 text-xs text-muted"
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-center text-sm"
             >
               Лента
             </Link>
