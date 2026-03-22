@@ -25,10 +25,10 @@ export function ClientIntroPage() {
           <span className="soft-pill-primary inline-flex rounded-full px-3 py-1 text-xs">
             Первый вход
           </span>
-          <h1 className="mt-4 text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
+          <h1 className="app-title mt-4 text-2xl sm:text-3xl">
             Дальше приложение будет открываться сразу в работу
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+          <p className="app-subtitle mt-3 max-w-2xl text-sm">
             Этот экран нужен один раз: понять, что настроить сначала и куда идти дальше без лишних
             обзорных блоков.
           </p>
@@ -109,7 +109,7 @@ function SetupStep({
       <span className={`${toneClassName} inline-flex rounded-full px-3 py-1 text-xs`}>
         {status}
       </span>
-      <h2 className="mt-4 text-lg font-semibold text-foreground">{title}</h2>
+      <h2 className="app-card-title mt-4 text-lg">{title}</h2>
       <p className="mt-2 text-sm leading-7 text-muted">{description}</p>
     </div>
   );

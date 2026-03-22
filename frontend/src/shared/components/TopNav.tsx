@@ -29,7 +29,7 @@ export function TopNav({ links }: { links: LayoutNavLink[] }) {
               end={to === "/"}
               className={() =>
                 [
-                  "whitespace-nowrap rounded-[18px] px-4 py-2 text-sm transition-colors",
+                  "whitespace-nowrap rounded-[18px] px-4 py-2 text-sm font-medium transition-colors",
                   isActive ? "soft-tab-active" : "soft-tab",
                 ].join(" ")
               }

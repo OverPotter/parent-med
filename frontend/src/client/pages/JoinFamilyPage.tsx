@@ -148,13 +148,13 @@ export function JoinFamilyPage() {
   return (
     <div className="min-w-0 space-y-6">
       <div>
-        <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs uppercase tracking-[0.18em]">
+        <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs tracking-[0.04em]">
           Приглашение в семью
         </span>
-        <h1 className="mt-4 text-3xl font-semibold text-foreground sm:text-4xl">
+        <h1 className="app-title mt-4 text-3xl sm:text-[2.6rem]">
           Присоединиться к семейному кабинету
         </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted sm:text-base">
+        <p className="app-subtitle mt-3 max-w-2xl text-sm sm:text-base">
           У каждого взрослого свой личный аккаунт, но дети, аптечка и история болезни общие на
           уровне семьи.
         </p>
@@ -218,7 +218,7 @@ export function JoinFamilyPage() {
         </Surface>
       ) : (
         <Surface className="p-5 sm:p-6">
-          <h2 className="text-xl font-semibold text-foreground">Создать аккаунт или войти</h2>
+          <h2 className="app-card-title text-xl">Создать аккаунт или войти</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
             Новый аккаунт можно сразу привязать к семье по этой ссылке. Если аккаунт уже есть,
             войдите под ним, затем подтвердите присоединение.

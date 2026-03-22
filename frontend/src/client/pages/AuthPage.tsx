@@ -112,7 +112,7 @@ export function AuthPage() {
           <Link to="/" className="inline-flex items-center gap-3">
             <img src="/pwa-icon.svg" alt="" className="h-10 w-10 rounded-2xl" />
             <div>
-              <p className="text-sm font-semibold tracking-[0.06em] text-primary">Parent Med</p>
+              <p className="app-brand-text text-sm">Parent Med</p>
               <p className="text-xs text-muted">Вернуться к описанию сервиса</p>
             </div>
           </Link>
@@ -122,13 +122,11 @@ export function AuthPage() {
         </div>
 
         <div className="mx-auto mt-8 max-w-2xl text-center">
-          <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs uppercase tracking-[0.18em]">
+          <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs tracking-[0.04em]">
             Авторизация
           </span>
-          <h1 className="mt-4 text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
-            {pageTitle}
-          </h1>
-          <p className="mt-3 text-sm leading-7 text-muted sm:text-base">{pageDescription}</p>
+          <h1 className="app-title mt-4 text-3xl sm:text-[2.6rem]">{pageTitle}</h1>
+          <p className="app-subtitle mx-auto mt-3 text-sm sm:text-base">{pageDescription}</p>
         </div>
 
         <Surface className="mx-auto mt-8 max-w-[34rem] overflow-hidden p-5 sm:p-6">

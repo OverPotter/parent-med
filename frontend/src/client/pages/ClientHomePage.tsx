@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -27,6 +28,11 @@ const quickLinks = [
 
 export function ClientHomePage() {
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
+  const markWorkspaceIntroSeen = useAppStore((s) => s.markWorkspaceIntroSeen);
+
+  useEffect(() => {
+    markWorkspaceIntroSeen();
+  }, [markWorkspaceIntroSeen]);
 
   return (
     <div className="min-w-0 space-y-8">
@@ -34,15 +40,15 @@ export function ClientHomePage() {
         <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.2fr_0.8fr] lg:px-8 lg:py-9">
           <div className="min-w-0">
             <span className="soft-pill-primary inline-flex rounded-full px-3 py-1 text-xs">
-              Desktop Home
+              Первый вход
             </span>
-            <h1 className="mt-4 max-w-2xl text-3xl font-semibold leading-tight text-foreground">
+            <h1 className="app-title mt-4 max-w-2xl text-3xl">
               Семейный кабинет для детей, лекарств и истории болезни
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-8 text-muted">
-              На десктопе есть место для обзорной главной, поэтому здесь остаётся краткое описание
-              продукта и удобные входы в основные сценарии. На мобильном основной поток по-прежнему
-              ведёт сразу в рабочие разделы.
+            <p className="app-subtitle mt-4 max-w-2xl text-sm leading-8">
+              На десктопе есть место для короткого знакомства, поэтому здесь остаётся спокойное
+              объяснение основных кнопок и того, как устроены рабочие разделы. После первого
+              просмотра приложение больше не будет возвращать вас на этот экран автоматически.
             </p>
             {currentFamilyName && (
               <div className="mt-5">
@@ -72,7 +78,7 @@ export function ClientHomePage() {
 
       <section>
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Быстрые входы</h2>
+          <h2 className="app-card-title text-lg">Быстрые входы</h2>
           <p className="mt-1 text-sm leading-6 text-muted">
             Основные рабочие сценарии без лишних переходов по меню.
           </p>
@@ -87,7 +93,7 @@ export function ClientHomePage() {
                 <RowSurface className="h-full">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-base font-medium text-foreground">{item.title}</p>
+                      <p className="app-card-title text-base">{item.title}</p>
                       <p className="mt-2 text-sm leading-7 text-muted">{item.description}</p>
                     </div>
                     <span className="soft-pill-primary rounded-full px-3 py-1 text-xs">
@@ -104,8 +110,8 @@ export function ClientHomePage() {
       <Surface className="soft-hero overflow-hidden">
         <div className="flex flex-col gap-4 px-6 py-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div className="min-w-0">
-            <p className="text-sm font-medium tracking-[0.04em] text-primary">На телефон</p>
-            <h2 className="mt-2 text-2xl font-semibold leading-tight text-foreground">
+            <p className="app-kicker">На телефон</p>
+            <h2 className="app-title mt-2 text-2xl">
               Приложение можно установить на домашний экран
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
@@ -127,7 +133,7 @@ export function ClientHomePage() {
 function HighlightCard({ title, description }: { title: string; description: string }) {
   return (
     <div className="soft-card rounded-[24px] px-4 py-4 sm:px-5">
-      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+      <h2 className="app-card-title text-lg">{title}</h2>
       <p className="mt-3 text-sm leading-7 text-muted">{description}</p>
     </div>
   );

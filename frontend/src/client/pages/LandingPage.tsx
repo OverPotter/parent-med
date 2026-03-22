@@ -1,245 +1,288 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { RowSurface, Surface } from "@shared/components/Surface";
+import { useAppStore } from "@shared/store/useAppStore";
+
+type PhoneMode = "app" | "notification";
+
+const heroCards = [
+  {
+    title: "Что уже отмечено",
+    description: "Сразу видно, что уже добавили и кто обновил информацию.",
+  },
+  {
+    title: "Что дальше",
+    description: "Напоминание и нужное действие остаются рядом с текущим экраном.",
+  },
+  {
+    title: "Одна картина для семьи",
+    description: "Все смотрят на одно общее состояние, а не собирают его по сообщениям.",
+  },
+];
+
+const slides = [
+  {
+    label: "Напоминание",
+    title: "Напоминание приходит на телефон и ведёт сразу к нужному экрану",
+    description:
+      "Короткое уведомление помогает быстро вернуться туда, где нужно что-то обновить или проверить.",
+    src: "",
+    alt: "Экран телефона с push уведомлением",
+    phoneMode: "notification" as PhoneMode,
+  },
+  {
+    label: "Общая история",
+    title: "Все важные записи собираются в одном месте",
+    description:
+      "Отметки, комментарии и история не теряются между телефонами и не остаются только в чате.",
+    src: "/landing/illness-mobile.png",
+    alt: "Экран общего журнала",
+    phoneMode: "app" as PhoneMode,
+  },
+  {
+    label: "Профили семьи",
+    title: "Аптечка, записи и профили семьи остаются под рукой",
+    description:
+      "У семьи один общий контекст, но всё остаётся разложено по понятным и спокойным разделам.",
+    src: "/landing/children-mobile.png",
+    alt: "Экран профилей семьи",
+    phoneMode: "app" as PhoneMode,
+  },
+];
+
+const comparison = {
+  oldWay: [
+    "кто-то пишет в чат, что уже что-то сделал",
+    "время и детали быстро теряются",
+    "целую картину потом приходится собирать вручную",
+  ],
+  newWay: [
+    "важные отметки сразу попадают в общее пространство",
+    "видно время, детали и кто обновил запись",
+    "дальше проще понять, что уже сделано и что осталось",
+  ],
+};
 
 const workflow = [
   {
     step: "01",
-    title: "Создаёте семью",
-    description:
-      "Регистрация занимает минуту: логин и пароль обязательны, email можно добавить позже.",
+    title: "Создаёте аккаунт",
+    description: "Без длинного старта. Достаточно логина и пароля, остальное можно добавить позже.",
   },
   {
     step: "02",
-    title: "Добавляете ребёнка и аптечку",
-    description:
-      "Сохраняете профиль ребёнка, текущий вес, домашние препараты и сроки, чтобы всё было под рукой.",
+    title: "Добавляете семью и всё важное",
+    description: "Собираете аптечку, записи и напоминания в одном понятном пространстве.",
   },
   {
     step: "03",
-    title: "Ведёте болезнь вместе",
+    title: "Пользуетесь вместе",
     description:
-      "Если ребёнок заболел, родители видят одну историю и могут быстро понять, кто дал препарат и когда пора следующая доза.",
-  },
-];
-
-const highlights = [
-  {
-    title: "Общая аптечка",
-    description: "Препараты, сроки годности и актуальные планы приёма собраны в одном месте.",
-  },
-  {
-    title: "Активные наблюдения",
-    description: "Температура, комментарии и последнее действие видны сразу на любом устройстве.",
+      "Когда что-то меняется, все видят одну историю и быстрее ориентируются без лишних сообщений.",
   },
 ];
 
 export function LandingPage() {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const theme = useAppStore((s) => s.theme);
+  const toggleTheme = useAppStore((s) => s.toggleTheme);
+  const slide = slides[activeSlide]!;
+
+  const goPrev = () => setActiveSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+  const goNext = () => setActiveSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] bg-[radial-gradient(circle_at_top_left,rgba(176,218,195,0.35),transparent_45%),radial-gradient(circle_at_top_right,rgba(244,202,153,0.28),transparent_38%)]" />
+    <div className="landing-page relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div className="landing-page-glow pointer-events-none absolute inset-0 -z-10" />
 
-      <header className="px-4 pt-4 sm:px-6 sm:pt-6">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-[28px] border border-border/70 bg-[color:var(--color-surface-soft)]/85 px-4 py-3 shadow-soft backdrop-blur sm:px-5">
-          <Link to="/" className="inline-flex items-center gap-3">
-            <img src="/pwa-icon.svg" alt="" className="h-10 w-10 rounded-2xl" />
-            <p className="text-sm font-semibold tracking-[0.06em] text-primary">Parent Med</p>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link
-              to="/auth?mode=login"
-              className="soft-button-secondary rounded-full px-4 py-2 text-sm"
-            >
-              Войти
-            </Link>
-            <Link
-              to="/auth?mode=register"
-              className="soft-button-primary rounded-full px-4 py-2 text-sm"
-            >
-              Попробовать
-            </Link>
-          </div>
-        </div>
-      </header>
+      <main className="px-4 pb-10 pt-5 sm:px-6 sm:pb-14 sm:pt-6">
+        <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8 lg:space-y-10">
+          <section className="landing-hero-reset">
+            <div className="landing-hero-reset-inner">
+              <div className="landing-hero-reset-topline">
+                <Link to="/" className="landing-hero-reset-brandmark" aria-label="Parent Med">
+                  <img src="/pwa-icon.svg" alt="" className="landing-hero-reset-logo" />
+                  <span className="landing-hero-reset-brand">Parent Med</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="landing-secondary-button landing-theme-toggle rounded-full px-4 py-2 text-sm"
+                  aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
+                >
+                  {theme === "light" ? "Ночь" : "День"}
+                </button>
+              </div>
+              <h1 className="landing-hero-reset-title">
+                Одно общее место для семьи вместо чатов и заметок
+              </h1>
+              <p className="landing-hero-reset-lead">
+                Parent Med помогает держать рядом аптечку, важные записи и напоминания, чтобы дома
+                всё было понятнее, спокойнее и без потерь между сообщениями и заметками.
+              </p>
 
-      <main className="px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-8">
-        <div className="mx-auto max-w-6xl space-y-8 sm:space-y-10">
-          <Surface className="soft-hero overflow-hidden">
-            <div className="grid gap-8 px-5 py-6 sm:px-7 sm:py-8 lg:grid-cols-[1.02fr_0.98fr] lg:items-center lg:px-8 lg:py-9">
-              <div className="min-w-0 lg:pr-3">
-                <h1 className="soft-landing-title mt-4 max-w-[20ch] text-[1.56rem] sm:text-[1.82rem] lg:text-[2.35rem]">
-                  Одно место для лекарств, болезней, заметок и напоминаний
-                </h1>
-                <p className="soft-landing-lead mt-4 max-w-2xl text-sm leading-7 sm:text-base">
-                  У каждого взрослого свой вход, а все важные действия остаются в одном общем
-                  контексте без переписок и потери информации между устройствами.
-                </p>
-
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <Link
-                    to="/auth?mode=register"
-                    className="soft-button-primary rounded-2xl px-5 py-3 text-sm"
-                  >
-                    Попробовать бесплатно
-                  </Link>
-                </div>
-
-                <ul className="mt-7 space-y-4">
-                  {highlights.map((item, index) => (
-                    <li key={item.title} className="soft-landing-highlight-list flex gap-4">
-                      <span className="soft-landing-highlight-index">{`0${index + 1}`}</span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-foreground">
-                          {item.title}
-                        </span>
-                        <span className="mt-1 block text-sm leading-6 text-muted">
-                          {item.description}
-                        </span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+              <div className="landing-hero-reset-actions">
+                <Link
+                  to="/auth?mode=register"
+                  className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
+                >
+                  Создать аккаунт
+                </Link>
+                <Link
+                  to="/auth?mode=login"
+                  className="landing-secondary-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                >
+                  Уже есть аккаунт
+                </Link>
               </div>
 
-              <div className="soft-landing-visuals">
-                <div className="soft-landing-phone-grid">
-                  <PhoneFrame src="/landing/active-mobile.png" alt="Экран активных наблюдений">
-                    <PushBubble />
-                  </PhoneFrame>
-                  <PhoneFrame
-                    src="/landing/illness-mobile.png"
-                    alt="Экран приёма лекарства и ленты"
-                  />
+              <div className="landing-hero-reset-grid">
+                {heroCards.map((item) => (
+                  <div key={item.title} className="landing-hero-reset-card">
+                    <p className="landing-hero-reset-card-title">{item.title}</p>
+                    <p className="landing-hero-reset-card-text">{item.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="landing-section-shell overflow-hidden">
+            <div className="landing-section-header px-5 py-5 sm:px-8 sm:py-7">
+              <p className="landing-section-label">Как это выглядит внутри</p>
+              <h2 className="landing-section-title mt-2">
+                Три экрана, по которым сразу понятно, как работает Parent Med
+              </h2>
+            </div>
+
+            <div className="grid gap-6 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+              <div className="landing-slider-shell">
+                <PhoneFrame
+                  src={slide.src}
+                  alt={slide.alt}
+                  mode={slide.phoneMode}
+                  onClick={goNext}
+                  ariaLabel={`Показать следующий экран: ${slides[(activeSlide + 1) % slides.length]?.label}`}
+                  slideKey={`${activeSlide}-${slide.label}`}
+                >
+                  {activeSlide === 0 ? <PushBubble /> : null}
+                </PhoneFrame>
+              </div>
+
+              <div className="min-w-0">
+                <div className="landing-slider-label">{slide.label}</div>
+                <h3 className="landing-section-title mt-3 text-[1.7rem] sm:text-[2rem]">
+                  {slide.title}
+                </h3>
+                <p className="mt-4 max-w-xl text-sm leading-7 text-muted sm:text-base">
+                  {slide.description}
+                </p>
+
+                <div className="landing-slider-controls mt-6 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={goPrev}
+                    className="landing-secondary-button rounded-2xl px-4 py-3 text-sm"
+                  >
+                    Назад
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    className="landing-cta-button rounded-2xl px-4 py-3 text-sm"
+                  >
+                    Следующий экран
+                  </button>
+                </div>
+
+                <div className="landing-slider-dots mt-6">
+                  {slides.map((item, index) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => setActiveSlide(index)}
+                      className={[
+                        "landing-slider-dot",
+                        index === activeSlide ? "landing-slider-dot-active" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      aria-label={`Показать экран ${index + 1}`}
+                    >
+                      <span className="landing-slider-dot-index">{`0${index + 1}`}</span>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
-          </Surface>
+          </section>
+
+          <section className="landing-comparison grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+            <Surface className="landing-section-shell p-5 sm:p-6 lg:p-7">
+              <p className="landing-section-label">Почему не чат</p>
+              <h2 className="landing-section-title mt-2">
+                Записи нужны не только для памяти, но и для общего спокойствия дома
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
+                Чат помогает быстро написать сообщение, но не помогает быстро понять общую картину.
+                Когда всё собрано в одном месте, семье проще держать контекст под рукой.
+              </p>
+            </Surface>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Surface className="landing-comparison-card p-5 sm:p-6">
+                <p className="landing-comparison-title">Когда всё остаётся в чате</p>
+                <ul className="mt-4 space-y-3">
+                  {comparison.oldWay.map((point) => (
+                    <li key={point} className="landing-comparison-item">
+                      <span className="landing-comparison-dot" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Surface>
+
+              <Surface className="landing-comparison-card landing-comparison-card-primary p-5 sm:p-6">
+                <p className="landing-comparison-title">Когда всё собрано в Parent Med</p>
+                <ul className="mt-4 space-y-3">
+                  {comparison.newWay.map((point) => (
+                    <li key={point} className="landing-comparison-item">
+                      <span className="landing-comparison-dot" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Surface>
+            </div>
+          </section>
 
           <section id="how-it-works">
-            <Surface className="overflow-hidden">
-              <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
-                <p className="text-sm font-medium tracking-[0.04em] text-primary">
-                  Как это работает
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
-                  Вход в продукт быстрее, чем переписка в чате о лекарствах
+            <Surface className="landing-section-shell overflow-hidden">
+              <div className="landing-section-header px-5 py-5 sm:px-8 sm:py-7">
+                <p className="landing-section-label">Как это работает</p>
+                <h2 className="landing-section-title mt-2">
+                  Начать можно быстро и без долгого привыкания
                 </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-                  Главная задача первого экрана не в том, чтобы показать весь интерфейс, а чтобы
-                  быстро дать понять, что сервис делает и как в него попасть.
-                </p>
               </div>
+
               <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-3">
                 {workflow.map((item) => (
-                  <RowSurface key={item.step} className="soft-landing-step h-full">
+                  <RowSurface
+                    key={item.step}
+                    className="soft-landing-step landing-flow-card h-full"
+                  >
                     <div className="soft-landing-step-number">{item.step}</div>
-                    <h3 className="mt-3 text-lg font-semibold text-foreground">{item.title}</h3>
+                    <h3 className="app-card-title mt-3 text-lg">{item.title}</h3>
                     <p className="mt-3 text-sm leading-7 text-muted">{item.description}</p>
                   </RowSurface>
                 ))}
               </div>
             </Surface>
           </section>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Surface className="p-5 sm:p-6">
-              <p className="text-sm font-medium tracking-[0.04em] text-primary">Для семьи</p>
-              <h2 className="mt-2 text-2xl font-semibold leading-tight text-foreground">
-                Не общий аккаунт на всех, а нормальный совместный доступ
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-muted">
-                У каждого взрослого свой логин и пароль. Мама остаётся мамой, папа папой, а в
-                истории видно, кто именно дал препарат или добавил запись. Это безопаснее и
-                понятнее, чем один пароль на двоих.
-              </p>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <MiniCard title="Семья" text="Общие дети, общая аптечка, единая история болезни." />
-                <MiniCard
-                  title="Участники"
-                  text="Роли в семье, телефон, подпись в событиях и отдельные устройства."
-                />
-              </div>
-            </Surface>
-
-            <Surface className="p-5 sm:p-6">
-              <p className="text-sm font-medium tracking-[0.04em] text-primary">Напоминания</p>
-              <h2 className="mt-2 text-2xl font-semibold leading-tight text-foreground">
-                Короткие push и понятный следующий шаг
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-muted">
-                Уведомление не висит само по себе: оно возвращает в рабочий экран, где сразу видно
-                препарат, последнее действие и можно быстро отметить приём.
-              </p>
-              <div className="mt-5 space-y-3">
-                <MockRow
-                  title="Скоро можно дать"
-                  subtitle="Напоминание приходит заранее и без лишнего текста"
-                />
-                <MockRow
-                  title="Пора дать"
-                  subtitle="Открывает активные болезни, а не уводит в случайный экран"
-                />
-                <MockRow
-                  title="Приём не отмечен"
-                  subtitle="Через 2 минуты напомнит, если запись ещё не появилась"
-                />
-              </div>
-            </Surface>
-          </div>
-
-          <Surface className="soft-hero overflow-hidden">
-            <div className="flex flex-col gap-5 px-5 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0">
-                <p className="text-sm font-medium tracking-[0.04em] text-primary">Попробовать</p>
-                <h2 className="mt-2 text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
-                  Начать можно с логина и пароля. Email добавите позже.
-                </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-                  Для beta не нужен длинный onboarding. Зарегистрируйте первый аккаунт, создайте
-                  семью и пригласите второго взрослого уже внутри приложения.
-                </p>
-              </div>
-              <div className="flex shrink-0 flex-wrap gap-3">
-                <Link
-                  to="/auth?mode=register"
-                  className="soft-button-primary rounded-2xl px-5 py-3 text-sm"
-                >
-                  Создать аккаунт
-                </Link>
-                <Link
-                  to="/auth?mode=login"
-                  className="soft-button-secondary rounded-2xl px-5 py-3 text-sm"
-                >
-                  Уже есть аккаунт
-                </Link>
-              </div>
-            </div>
-          </Surface>
         </div>
       </main>
-    </div>
-  );
-}
-
-function MockRow({ title, subtitle, badge }: { title: string; subtitle: string; badge?: string }) {
-  return (
-    <div className="soft-landing-row rounded-[22px] border border-border/70 bg-[color:var(--color-surface-soft)]/75 px-4 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">{title}</p>
-          <p className="mt-1 text-sm leading-6 text-muted">{subtitle}</p>
-        </div>
-        {badge && <span className="soft-pill rounded-full px-3 py-1 text-[11px]">{badge}</span>}
-      </div>
-    </div>
-  );
-}
-
-function MiniCard({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="soft-card rounded-[24px] px-4 py-4">
-      <p className="text-sm font-semibold text-foreground">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-muted">{text}</p>
     </div>
   );
 }
@@ -249,30 +292,78 @@ function PhoneFrame({
   alt,
   className,
   children,
+  mode = "app",
+  onClick,
+  ariaLabel,
+  slideKey,
 }: {
   src: string;
   alt: string;
   className?: string;
   children?: ReactNode;
+  mode?: PhoneMode;
+  onClick?: () => void;
+  ariaLabel?: string;
+  slideKey?: string;
 }) {
   return (
-    <div className={["soft-phone-frame", className].filter(Boolean).join(" ")}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={["soft-phone-frame landing-phone-trigger", className].filter(Boolean).join(" ")}
+      aria-label={ariaLabel ?? alt}
+    >
       {children}
       <div className="soft-phone-screen">
-        <img src={src} alt={alt} className="h-full w-full object-cover" loading="lazy" />
+        <div key={slideKey} className="landing-phone-stage h-full w-full">
+          {mode === "notification" ? (
+            <NotificationPhoneScreen />
+          ) : (
+            <img src={src} alt={alt} className="h-full w-full object-cover" loading="lazy" />
+          )}
+        </div>
       </div>
-    </div>
+    </button>
   );
 }
 
 function PushBubble() {
   return (
     <div className="soft-phone-push">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-primary">Пора дать</p>
-      <p className="mt-1 text-sm font-semibold text-foreground">Миша · Нурофен · 5 мл</p>
+      <p className="landing-meta-label text-[11px] uppercase tracking-[0.16em]">Напоминание</p>
+      <p className="mt-1 text-sm font-semibold text-foreground">Проверьте важную запись</p>
       <p className="mt-1 text-xs leading-5 text-muted">
-        Откройте активные наблюдения и отметьте приём.
+        Откройте нужный экран и обновите информацию.
       </p>
+    </div>
+  );
+}
+
+function NotificationPhoneScreen() {
+  return (
+    <div className="landing-notification-screen">
+      <div className="landing-notification-time">
+        <p className="landing-notification-clock">21:14</p>
+        <p className="landing-notification-date">Сегодня, вечернее напоминание</p>
+      </div>
+
+      <div className="landing-notification-card">
+        <p className="landing-meta-label text-[11px] uppercase tracking-[0.16em]">
+          Push-уведомление
+        </p>
+        <p className="mt-2 text-sm font-semibold text-foreground">
+          Проверьте следующую важную запись
+        </p>
+        <p className="mt-2 text-xs leading-5 text-muted">
+          Откройте приложение и сразу перейдите к нужному экрану.
+        </p>
+      </div>
+
+      <div className="landing-notification-hint">
+        <span className="landing-notification-pill">Нажали на push</span>
+        <span className="landing-notification-arrow" />
+        <span className="landing-notification-pill">Открылся нужный экран</span>
+      </div>
     </div>
   );
 }

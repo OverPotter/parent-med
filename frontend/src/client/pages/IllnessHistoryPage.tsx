@@ -46,7 +46,7 @@ export function IllnessHistoryPage() {
   if (!currentFamilyId) {
     return (
       <Surface className="p-5">
-        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">История</h1>
+        <h1 className="app-title text-xl sm:text-2xl">История</h1>
         <p className="mt-2 text-muted">Сначала выбери семью в разделе «Семья».</p>
       </Surface>
     );
@@ -70,7 +70,7 @@ export function IllnessHistoryPage() {
   return (
     <div className="space-y-7">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">История</h1>
+        <h1 className="app-title text-2xl sm:text-3xl">История</h1>
         <p className="mt-2 text-sm leading-6 text-muted">Завершённые наблюдения по детям.</p>
       </div>
 
@@ -113,7 +113,7 @@ function HistoryCard({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
+              <h2 className="app-card-title text-lg">{child.name}</h2>
               <span className="soft-pill rounded-full px-2.5 py-1 text-xs">
                 {episodes.length} в архиве
               </span>
