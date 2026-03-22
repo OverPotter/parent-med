@@ -28,6 +28,15 @@ const STATUS_CARD_STYLES: Record<string, string> = {
   expired_after_opening: "soft-card-status-danger",
 };
 
+const MEDICINE_FORM_OPTIONS = [
+  { value: "таблетки", label: "Таблетки" },
+  { value: "сироп", label: "Сироп" },
+  { value: "капли", label: "Капли" },
+  { value: "суспензия", label: "Суспензия" },
+  { value: "раствор", label: "Раствор" },
+  { value: "суппозитории", label: "Суппозитории (свечи)" },
+];
+
 export function MedicineCabinetPage() {
   const queryClient = useQueryClient();
   const [view, setView] = useState<"cabinet" | "add">("cabinet");
@@ -409,7 +418,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
         )}
 
         {!catalogItem && (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3">
             <input
               type="text"
               value={newMedicineName}
@@ -420,21 +429,27 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
               placeholder="Название нового препарата"
               className="soft-input rounded-2xl px-4 py-3"
             />
-            <select
-              value={newMedicineForm}
-              onChange={(e) => {
-                setNewMedicineForm(e.target.value);
-                setFormError(null);
-              }}
-              className="soft-input rounded-2xl px-4 py-3"
-            >
-              <option value="таблетки">таблетки</option>
-              <option value="сироп">сироп</option>
-              <option value="капли">капли</option>
-              <option value="суспензия">суспензия</option>
-              <option value="раствор">раствор</option>
-              <option value="суппозитории">суппозитории (свечи)</option>
-            </select>
+            <div>
+              <span className="text-sm text-muted">Форма препарата</span>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {MEDICINE_FORM_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setNewMedicineForm(option.value);
+                      setFormError(null);
+                    }}
+                    className={`rounded-full px-4 py-2 text-sm transition-colors ${
+                      newMedicineForm === option.value ? "soft-tab-active" : "soft-tab"
+                    }`}
+                    aria-pressed={newMedicineForm === option.value}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <input
               type="text"
               value={newMedicineConcentration}
