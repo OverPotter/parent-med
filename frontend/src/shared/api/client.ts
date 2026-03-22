@@ -1,14 +1,10 @@
-/**
- * Единый axios-клиент: baseURL, Bearer token, обработка 401.
- */
+/** Axios: baseURL, Bearer, 401 → refresh / logout. */
 
 import axios, { type AxiosError } from "axios";
 import { useAppStore } from "@shared/store/useAppStore";
+import { appLog } from "@shared/utils/appLog";
 
-/**
- * VITE_API_URL — origin бэкенда. Обязательно с https:// (или http://).
- * Без схемы axios считает строку путём на текущем хосте → …/домен-бэка/api/v1/…
- */
+/** Origin API; без схемы — https:// префикс. */
 function normalizeApiOrigin(raw: string): string {
   const s = raw.trim().replace(/\/+$/, "");
   if (!s) return "";
@@ -25,7 +21,6 @@ export const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-/** Токен для авторизации (MVP: можно хранить в Zustand или localStorage). */
 let bearerToken: string | null = null;
 let refreshHandler: (() => Promise<string | null>) | null = null;
 let refreshPromise: Promise<string | null> | null = null;
@@ -43,6 +38,8 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const url = `${config.baseURL ?? ""}${config.url ?? ""}`;
+  appLog.dev(`→ ${config.method?.toUpperCase() ?? "GET"} ${url}`);
   return config;
 });
 
@@ -58,17 +55,32 @@ function shouldSkipRefresh(url?: string): boolean {
 }
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const cfg = response.config;
+    appLog.dev(`← ${response.status} ${cfg.baseURL ?? ""}${cfg.url ?? ""}`);
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as
       | (typeof error.config & { _retry?: boolean })
       | undefined;
-    if (
-      error.response?.status === 401 &&
+    const failedUrl = `${originalRequest?.baseURL ?? ""}${originalRequest?.url ?? ""}`;
+    const status = error.response?.status;
+    const willRetry =
+      status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
-      !shouldSkipRefresh(originalRequest.url)
-    ) {
+      !shouldSkipRefresh(originalRequest.url);
+
+    if (willRetry) {
+      appLog.dev(`401 → refresh ${failedUrl}`);
+    } else if (status !== undefined && status < 500) {
+      appLog.warn(`API ${status} ${failedUrl}`, error.response?.data ?? error.message);
+    } else {
+      appLog.error(`API ${status ?? "?"} ${failedUrl}`, error.response?.data ?? error.message);
+    }
+
+    if (willRetry) {
       originalRequest._retry = true;
       try {
         if (!refreshHandler) {
@@ -85,6 +97,7 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${nextToken}`;
         return apiClient(originalRequest);
       } catch {
+        appLog.warn("Сессия: refresh не удался, выход");
         setBearerToken(null);
         window.dispatchEvent(new CustomEvent("auth:logout"));
         return Promise.reject(error);

@@ -7,6 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { login, register } from "@shared/api/auth";
 import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
 import { Surface } from "@shared/components/Surface";
+import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
 import { useAppStore } from "@shared/store/useAppStore";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -38,9 +39,14 @@ export function AuthPage() {
     onSuccess: (data) => {
       setSession(data);
       setError(null);
+      trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "auth_page" });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
       setError(err.response?.data?.detail ?? "Ошибка входа");
+      trackEvent(AnalyticsEvents.AUTH_ERROR, {
+        mode: "login",
+        message: normalizeClientError(err),
+      });
     },
   });
 
@@ -57,9 +63,14 @@ export function AuthPage() {
     onSuccess: (data) => {
       setSession(data);
       setError(null);
+      trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "auth_page" });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
       setError(err.response?.data?.detail ?? "Ошибка регистрации");
+      trackEvent(AnalyticsEvents.AUTH_ERROR, {
+        mode: "register",
+        message: normalizeClientError(err),
+      });
     },
   });
 

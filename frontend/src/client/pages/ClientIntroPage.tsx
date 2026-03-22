@@ -4,6 +4,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { useClientStartRoute } from "@client/hooks/useClientStartRoute";
+import { AnalyticsEvents, trackEvent } from "@shared/analytics";
 import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
 
@@ -15,6 +16,7 @@ export function ClientIntroPage() {
 
   const handleContinue = () => {
     markWorkspaceIntroSeen();
+    trackEvent(AnalyticsEvents.WORKSPACE_INTRO_COMPLETED);
     navigate(startRoute, { replace: true });
   };
 

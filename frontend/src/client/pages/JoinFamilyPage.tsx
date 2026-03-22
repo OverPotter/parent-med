@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { login, register } from "@shared/api/auth";
 import { acceptFamilyInvite, fetchFamilyInvitePreview } from "@shared/api/familyInvites";
+import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
 import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
 import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -68,9 +69,15 @@ export function JoinFamilyPage() {
     onSuccess: (data) => {
       setSession(data);
       setError(null);
+      trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "join_family" });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
       setError(err.response?.data?.detail ?? "Не удалось войти в аккаунт.");
+      trackEvent(AnalyticsEvents.AUTH_ERROR, {
+        mode: "login",
+        entry: "join_family",
+        message: normalizeClientError(err),
+      });
     },
   });
 
@@ -88,11 +95,17 @@ export function JoinFamilyPage() {
     onSuccess: (data) => {
       setSession(data);
       setError(null);
+      trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "join_family" });
       queryClient.invalidateQueries({ queryKey: ["families"] });
       navigate("/family", { replace: true });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
       setError(err.response?.data?.detail ?? "Не удалось создать аккаунт по приглашению.");
+      trackEvent(AnalyticsEvents.AUTH_ERROR, {
+        mode: "register",
+        entry: "join_family",
+        message: normalizeClientError(err),
+      });
     },
   });
 
@@ -101,12 +114,17 @@ export function JoinFamilyPage() {
     onSuccess: (data) => {
       setSession(data);
       setError(null);
+      trackEvent(AnalyticsEvents.FAMILY_INVITE_ACCEPTED);
       queryClient.invalidateQueries({ queryKey: ["families"] });
       queryClient.invalidateQueries({ queryKey: ["family-members"] });
       navigate("/family", { replace: true });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
       setError(err.response?.data?.detail ?? "Не удалось принять приглашение.");
+      trackEvent(AnalyticsEvents.AUTH_ERROR, {
+        mode: "accept_invite",
+        message: normalizeClientError(err),
+      });
     },
   });
 

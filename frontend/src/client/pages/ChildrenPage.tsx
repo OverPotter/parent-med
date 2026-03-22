@@ -20,6 +20,7 @@ import {
 } from "@shared/api/illnessEpisodes";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { DateField } from "@shared/components/DateField";
+import { trackChildCreated } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
@@ -128,10 +129,11 @@ export function ChildrenPage() {
       birthDate?: string | null;
       details?: ChildProfileDetails;
     }) => createChild(currentFamilyId!, name, birthDate, details),
-    onSuccess: () => {
+    onSuccess: (child) => {
       queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
       setCreateFormResetKey((current) => current + 1);
       setIsCreateFormOpen(false);
+      void trackChildCreated(child.id);
     },
   });
 

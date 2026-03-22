@@ -1,6 +1,4 @@
-"""
-Точка входа: FastAPI-приложение с роутами, обработчиками и lifespan.
-"""
+"""FastAPI: роуты, CORS, lifespan."""
 
 from contextlib import asynccontextmanager
 
@@ -8,6 +6,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.deps.auth import get_current_account
+from src.api.middleware.http_logging import register_http_logging
 from src.api.routers import (
     administration_events,
     auth,
@@ -32,13 +31,11 @@ from src.core.lifespan import lifespan_context
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Обёртка lifespan для FastAPI."""
     async with lifespan_context():
         yield
 
 
 def create_app() -> FastAPI:
-    """Создаёт и возвращает экземпляр FastAPI."""
     app = FastAPI(
         title="Parent Med API",
         description="Умная аптечка и ведение болезни ребёнка (MVP)",
@@ -52,6 +49,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    register_http_logging(app)
 
     protected_dependencies = [Depends(get_current_account)]
 
@@ -103,7 +101,6 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     async def health() -> dict[str, str]:
-        """Проверка доступности API."""
         return {"status": "ok"}
 
     return app

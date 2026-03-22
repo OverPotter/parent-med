@@ -1,6 +1,4 @@
-/**
- * Точка роутинга: разветвление по роли (admin/client) в одном месте.
- */
+/** Роутинг: admin / client. */
 
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -33,8 +31,17 @@ import { IllnessHistoryPage } from "@client/pages/IllnessHistoryPage";
 import { MorePage } from "@client/pages/MorePage";
 import { AdminLayout } from "@admin/layout/AdminLayout";
 import { AdminHomePage } from "@admin/pages/AdminHomePage";
+import { HitKeepBridge } from "@shared/analytics";
+import { appLog } from "@shared/utils/appLog";
 
-/** При инициализации восстанавливаем data-theme из store. */
+function BootLog() {
+  useEffect(() => {
+    const api = import.meta.env.VITE_API_URL?.trim() || "прокси /api";
+    appLog.info(`Store гидратирован, API=${api}`);
+  }, []);
+  return null;
+}
+
 function ThemeSync() {
   const theme = useAppStore((s) => s.theme);
   useEffect(() => {
@@ -105,6 +112,7 @@ function AuthSync() {
 
   useEffect(() => {
     const handleLogout = () => {
+      appLog.warn("Сессия сброшена (401 / выход)");
       queryClient.clear();
       clearSession();
     };
@@ -143,8 +151,8 @@ function PushSubscriptionSync() {
           return;
         }
         await upsertPushSubscription(toPushSubscriptionPayload(subscription));
-      } catch {
-        // Silent sync: UI в аккаунте остаётся основным местом управления.
+      } catch (e) {
+        appLog.dev("Push: синхронизация подписки пропущена", e);
       }
     };
 
@@ -170,6 +178,8 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <BootLog />
+      <HitKeepBridge />
       <ThemeSync />
       <DisplayModeSync />
       <AuthSync />

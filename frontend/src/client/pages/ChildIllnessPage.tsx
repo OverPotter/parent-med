@@ -30,6 +30,11 @@ import {
   createTemperatureEntry,
 } from "@shared/api/temperatureEntries";
 import { createWeightEntry, fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
+import {
+  trackIllnessEpisodeStarted,
+  trackMedicationAdministered,
+  trackTemperatureLogged,
+} from "@shared/analytics";
 import { DateField } from "@shared/components/DateField";
 import { DisclosureHeader } from "@shared/components/DisclosureHeader";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
@@ -186,7 +191,8 @@ export function ChildIllnessPage() {
 
       return episode;
     },
-    onSuccess: () => {
+    onSuccess: (episode) => {
+      void trackIllnessEpisodeStarted(episode.id);
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
       navigate(`/children/${childId}/illness`);
@@ -640,6 +646,7 @@ function EpisodeBlock({
     mutationFn: (valueCelsius: number) =>
       createTemperatureEntry({ episode_id: episode.id, value_celsius: valueCelsius }),
     onSuccess: () => {
+      void trackTemperatureLogged(episode.id);
       queryClient.invalidateQueries({ queryKey: ["temperature-entries", episode.id] });
       if (quickComposeMode) {
         navigate("/illnesses/active");
@@ -662,6 +669,7 @@ function EpisodeBlock({
         reason: payload.reason,
       }),
     onSuccess: () => {
+      trackMedicationAdministered("episode_detail");
       queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
       if (quickComposeMode) {
         navigate("/illnesses/active");

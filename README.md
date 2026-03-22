@@ -1,55 +1,45 @@
 # Parent Med
 
-Монорепозиторий: умная аптечка и ведение болезни ребёнка (MVP). Правила и стиль — в [AGENT.md](./AGENT.md).
-
-## Состав
+Монорепозиторий: аптечка и ведение болезни ребёнка (MVP). Детали — [AGENT.md](./AGENT.md).
 
 | Часть | Путь | Стек |
 |-------|------|------|
-| **Backend** | [backend/](./backend) | FastAPI, Python 3.11+, uv, SQLAlchemy 2 (async), Alembic |
-| **Frontend** | [frontend/](./frontend) | Vite, React, TypeScript, PWA, Tailwind, Zustand, TanStack Query |
+| Backend | [backend/](./backend) | FastAPI, uv, SQLAlchemy async, Alembic |
+| Frontend | [frontend/](./frontend) | Vite, React, TS, PWA, Tailwind, Zustand, TanStack Query |
 
-## Makefile
+## Команды
 
-В корне: `make help` — список команд. Основное:
+`make help` — полный список. Часто нужное:
 
-- `make up` / `make up-d` — Docker (все сервисы)
-- `make down` / `make down-v` — остановка (с удалением volumes)
-- `make migrate` — миграции БД
-- `make format` — форматирование кода (backend: black + ruff, frontend: prettier)
-- `make lint` — проверка стиля
-- `make test` — тесты backend
-- `make dev-backend` / `make dev-frontend` — разработка без Docker
-- `make init` — копирование .env.example в .env
+- `make up` / `make up-d` — Docker: PostgreSQL, API :8000, фронт :3000, **HitKeep** :8080
+- `make down` / `make down-v` — остановка; `-v` сотрёт volumes
+- `make up-db` / `make up-api` — только БД или БД+backend (без контейнера фронта)
+- `make build-frontend` — пересборка фронта (`frontend/.env` подхватывается Makefile’ом для `VITE_*`)
+- `make migrate` — миграции; `make dev-backend` / `make dev-frontend` — без Docker
 
-## Запуск
+## Локально без Docker
 
-1. **Бэкенд**: PostgreSQL, миграции, API на порту 8000.
-   ```bash
-   cd backend && uv sync && cp .env.example .env && uv run alembic upgrade head && uv run python main.py
-   ```
-2. **Фронтенд**: dev-сервер с прокси к API (порт 5173).
-   ```bash
-   cd frontend && npm install && npm run dev
-   ```
+```bash
+cd backend && uv sync && cp .env.example .env && uv run alembic upgrade head && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+cd frontend && npm install && npm run dev
+```
 
-- Фронт: <http://localhost:5173>
-- API: <http://localhost:8000>, документация: <http://localhost:8000/docs>
+Фронт: http://localhost:5173 · API: http://localhost:8000 · `/docs`
 
 ## Docker
 
-В корне проекта: `docker-compose.yml` (PostgreSQL, backend, frontend). Образы собираются из `backend/docker/Dockerfile` и `frontend/docker/Dockerfile`, entrypoint бэкенда — `backend/docker/entrypoint.sh` (ожидание PostgreSQL, миграции, uvicorn).
+Один файл: [docker-compose.yml](./docker-compose.yml). Образы: `backend/docker/Dockerfile`, `frontend/docker/Dockerfile`, HitKeep: [docker/hitkeep/Dockerfile](./docker/hitkeep/Dockerfile) (обёртка над upstream с `chmod` на бинарник).
 
 ```bash
-# Сборка и запуск
 docker compose up -d --build
-
-# Фронт с прокси к API: http://localhost:3000
-# API напрямую: http://localhost:8000
 ```
 
-Перед первым запуском создайте `backend/.env` (можно скопировать из `backend/.env.example`). В compose в backend передаётся `DATABASE_URL` на контейнер `postgres`; при необходимости задайте там свои пароли.
+Перед запуском: `backend/.env` из `backend/.env.example`. Переопределения — `docker-compose.override.yml` (в .gitignore).
 
-Переопределения для локальной разработки — в `docker-compose.override.yml` (файл в .gitignore).
+Подробнее: [backend/README.md](./backend/README.md), [frontend/README.md](./frontend/README.md).
 
-Подробности — в [backend/README.md](./backend/README.md) и [frontend/README.md](./frontend/README.md).
+## HitKeep
+
+- Скрипт: `VITE_HITKEEP_SCRIPT_URL` (например `http://localhost:8080/hk.js`) — см. `frontend/.env.example`.
+- Дашборд: http://localhost:8080 · домен сайта в UI — hostname вида `что-то.зона`, не `localhost` без точки; удобно `parent-med.localhost`.
+- Прод (Railway и т.д.): отдельный сервис HitKeep, том на `/var/lib/hitkeep/data`, переменные `HITKEEP_PUBLIC_URL`, `HITKEEP_JWT_SECRET`, `HITKEEP_HTTP_ADDR=:$PORT`; фронт собирать с тем же `VITE_HITKEEP_SCRIPT_URL`.
