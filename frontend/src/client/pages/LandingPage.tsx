@@ -1,10 +1,7 @@
-import type { ReactNode } from "react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
-
-type PhoneMode = "app" | "notification";
 
 const heroCards = [
   {
@@ -23,31 +20,28 @@ const heroCards = [
 
 const slides = [
   {
-    label: "Напоминание",
-    title: "Напоминание приходит на телефон и ведёт сразу к нужному экрану",
+    label: "Журнал",
+    title: "Последние записи по ребенку собраны в одной ленте",
     description:
-      "Короткое уведомление помогает быстро вернуться туда, где нужно что-то обновить или проверить.",
-    src: "",
-    alt: "Экран телефона с push уведомлением",
-    phoneMode: "notification" as PhoneMode,
+      "Температура, лекарства и время внесения остаются рядом, поэтому состояние легко проверить с одного экрана.",
+    src: "/landing/img-7123.png",
+    alt: "Экран ленты наблюдения за ребенком",
   },
   {
-    label: "Общая история",
-    title: "Все важные записи собираются в одном месте",
+    label: "Статус",
+    title: "Сразу видно, что можно дать сейчас, а что уже отложено",
     description:
-      "Отметки, комментарии и история не теряются между телефонами и не остаются только в чате.",
-    src: "/landing/illness-mobile.png",
-    alt: "Экран общего журнала",
-    phoneMode: "app" as PhoneMode,
+      "Карточка ребенка показывает текущий статус без переписки и лишних уточнений между членами семьи.",
+    src: "/landing/img-7122.png",
+    alt: "Экран со статусом лекарства и кнопками быстрых действий",
   },
   {
-    label: "Профили семьи",
-    title: "Аптечка, записи и профили семьи остаются под рукой",
+    label: "Действие",
+    title: "Когда время пришло, нужное действие видно сразу",
     description:
-      "У семьи один общий контекст, но всё остаётся разложено по понятным и спокойным разделам.",
-    src: "/landing/children-mobile.png",
-    alt: "Экран профилей семьи",
-    phoneMode: "app" as PhoneMode,
+      "Экран помогает быстро понять, что препарат уже можно дать, и сразу отметить это в приложении.",
+    src: "/landing/img-7121.png",
+    alt: "Экран с доступным действием по лекарству",
   },
 ];
 
@@ -161,13 +155,10 @@ export function LandingPage() {
                 <PhoneFrame
                   src={slide.src}
                   alt={slide.alt}
-                  mode={slide.phoneMode}
                   onClick={goNext}
                   ariaLabel={`Показать следующий экран: ${slides[(activeSlide + 1) % slides.length]?.label}`}
                   slideKey={`${activeSlide}-${slide.label}`}
-                >
-                  {activeSlide === 0 ? <PushBubble /> : null}
-                </PhoneFrame>
+                />
               </div>
 
               <div className="min-w-0">
@@ -291,8 +282,6 @@ function PhoneFrame({
   src,
   alt,
   className,
-  children,
-  mode = "app",
   onClick,
   ariaLabel,
   slideKey,
@@ -300,8 +289,6 @@ function PhoneFrame({
   src: string;
   alt: string;
   className?: string;
-  children?: ReactNode;
-  mode?: PhoneMode;
   onClick?: () => void;
   ariaLabel?: string;
   slideKey?: string;
@@ -313,57 +300,11 @@ function PhoneFrame({
       className={["soft-phone-frame landing-phone-trigger", className].filter(Boolean).join(" ")}
       aria-label={ariaLabel ?? alt}
     >
-      {children}
       <div className="soft-phone-screen">
         <div key={slideKey} className="landing-phone-stage h-full w-full">
-          {mode === "notification" ? (
-            <NotificationPhoneScreen />
-          ) : (
-            <img src={src} alt={alt} className="h-full w-full object-cover" loading="lazy" />
-          )}
+          <img src={src} alt={alt} className="h-full w-full object-contain" loading="lazy" />
         </div>
       </div>
     </button>
-  );
-}
-
-function PushBubble() {
-  return (
-    <div className="soft-phone-push">
-      <p className="landing-meta-label text-[11px] uppercase tracking-[0.16em]">Напоминание</p>
-      <p className="mt-1 text-sm font-semibold text-foreground">Проверьте важную запись</p>
-      <p className="mt-1 text-xs leading-5 text-muted">
-        Откройте нужный экран и обновите информацию.
-      </p>
-    </div>
-  );
-}
-
-function NotificationPhoneScreen() {
-  return (
-    <div className="landing-notification-screen">
-      <div className="landing-notification-time">
-        <p className="landing-notification-clock">21:14</p>
-        <p className="landing-notification-date">Сегодня, вечернее напоминание</p>
-      </div>
-
-      <div className="landing-notification-card">
-        <p className="landing-meta-label text-[11px] uppercase tracking-[0.16em]">
-          Push-уведомление
-        </p>
-        <p className="mt-2 text-sm font-semibold text-foreground">
-          Проверьте следующую важную запись
-        </p>
-        <p className="mt-2 text-xs leading-5 text-muted">
-          Откройте приложение и сразу перейдите к нужному экрану.
-        </p>
-      </div>
-
-      <div className="landing-notification-hint">
-        <span className="landing-notification-pill">Нажали на push</span>
-        <span className="landing-notification-arrow" />
-        <span className="landing-notification-pill">Открылся нужный экран</span>
-      </div>
-    </div>
   );
 }
