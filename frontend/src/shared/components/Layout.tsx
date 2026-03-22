@@ -105,7 +105,6 @@ export function Layout({
                     aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
                     title={theme === "light" ? "Тёмная тема" : "Светлая тема"}
                   >
-                    <span className="soft-theme-toggle__label">Тема</span>
                     <span
                       className={[
                         "soft-theme-toggle__icon",
