@@ -268,11 +268,13 @@ export function JoinFamilyPage() {
                   <label className="block">
                     <span className="mb-2 block text-sm text-muted">Логин</span>
                     <input
+                      name="username"
                       type="text"
                       value={loginValue}
                       onChange={(event) => setLoginValue(event.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
                       placeholder="Например: papa_anton"
+                      autoComplete="username"
                     />
                   </label>
                 </div>
@@ -284,6 +286,8 @@ export function JoinFamilyPage() {
                     onChange={setPassword}
                     placeholder="Минимум 6 символов"
                     isVisible={isPasswordVisible}
+                    name="current-password"
+                    autoComplete={isRegisterMode ? "new-password" : "current-password"}
                   />
                   {isRegisterMode && (
                     <AuthPasswordField
@@ -292,6 +296,8 @@ export function JoinFamilyPage() {
                       onChange={setPasswordConfirm}
                       placeholder="Повторите пароль"
                       isVisible={isPasswordVisible}
+                      name="new-password-confirm"
+                      autoComplete="new-password"
                     />
                   )}
                 </div>
@@ -311,11 +317,13 @@ export function JoinFamilyPage() {
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm text-muted">Email</span>
                   <input
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     className="soft-input w-full rounded-2xl px-4 py-3"
                     placeholder="you@example.com"
+                    autoComplete="email"
                   />
                   <span className="mt-2 block text-xs text-muted">
                     Для beta необязательно. Можно добавить позже в настройках.
@@ -324,11 +332,13 @@ export function JoinFamilyPage() {
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm text-muted">Имя в семье</span>
                   <input
+                    name="display-name"
                     type="text"
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
                     className="soft-input w-full rounded-2xl px-4 py-3"
                     placeholder="Например: Дима"
+                    autoComplete="name"
                   />
                   <span className="mt-2 block text-xs text-muted">
                     Так имя будет показано в семье и в истории действий. Если пусто, используем
@@ -339,11 +349,13 @@ export function JoinFamilyPage() {
                   <label className="block">
                     <span className="mb-2 block text-sm text-muted">Кто вы в семье</span>
                     <input
+                      name="relationship-label"
                       type="text"
                       value={relationshipLabel}
                       onChange={(event) => setRelationshipLabel(event.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
                       placeholder="Например: папа"
+                      autoComplete="organization-title"
                     />
                     <span className="mt-2 block text-xs text-muted">
                       Короткая подпись рядом с именем: мама, папа, няня.
@@ -352,11 +364,13 @@ export function JoinFamilyPage() {
                   <label className="block">
                     <span className="mb-2 block text-sm text-muted">Телефон</span>
                     <input
+                      name="tel"
                       type="tel"
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
                       placeholder="+375 ..."
+                      autoComplete="tel"
                     />
                   </label>
                 </div>

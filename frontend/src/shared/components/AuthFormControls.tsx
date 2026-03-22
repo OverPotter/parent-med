@@ -4,6 +4,8 @@ interface PasswordFieldProps {
   onChange: (value: string) => void;
   placeholder: string;
   isVisible: boolean;
+  autoComplete?: string;
+  name?: string;
 }
 
 export function AuthPasswordField({
@@ -12,16 +14,20 @@ export function AuthPasswordField({
   onChange,
   placeholder,
   isVisible,
+  autoComplete,
+  name,
 }: PasswordFieldProps) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm text-muted">{label}</span>
       <input
+        name={name}
         type={isVisible ? "text" : "password"}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="soft-input w-full rounded-2xl px-4 py-3"
         placeholder={placeholder}
+        autoComplete={autoComplete}
       />
     </label>
   );

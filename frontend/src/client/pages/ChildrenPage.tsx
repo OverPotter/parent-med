@@ -6,12 +6,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
-import {
-  createChild,
-  deleteChild,
-  fetchChildrenByFamilyId,
-  updateChild,
-} from "@shared/api/children";
+import { createChild, fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
 import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import {
@@ -43,7 +38,6 @@ export function ChildrenPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [editingChildId, setEditingChildId] = useState<string | null>(null);
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormResetKey, setCreateFormResetKey] = useState(0);
   const now = useNow();
@@ -135,32 +129,6 @@ export function ChildrenPage() {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      name,
-      birthDate,
-      details,
-    }: {
-      id: string;
-      name: string;
-      birthDate?: string | null;
-      details?: ChildProfileDetails;
-    }) => updateChild(id, name, birthDate, details),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
-      queryClient.invalidateQueries({ queryKey: ["child", variables.id] });
-      setEditingChildId(null);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteChild,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
-    },
-  });
-
   if (!currentFamilyId) {
     return (
       <div>
@@ -248,18 +216,10 @@ export function ChildrenPage() {
                 <ChildCard
                   key={child.id}
                   child={child}
-                  isEditing={editingChildId === child.id}
                   activeEpisodeStartedAt={activeEpisode?.startedAt ?? null}
                   episodeCount={episodes.length}
                   latestWeightEntry={latestWeightQueries[index]?.data ?? null}
                   medicationReminder={reminder}
-                  onEditToggle={() =>
-                    setEditingChildId((current) => (current === child.id ? null : child.id))
-                  }
-                  onDelete={() => deleteMutation.mutate(child.id)}
-                  onSave={(name, birthDate, details) =>
-                    updateMutation.mutate({ id: child.id, name, birthDate, details })
-                  }
                   onStartEpisode={() => {
                     if (activeEpisode) {
                       navigate(`/children/${child.id}/illness`);
@@ -267,8 +227,6 @@ export function ChildrenPage() {
                     }
                     navigate(`/children/${child.id}/illness?mode=create`);
                   }}
-                  isSaving={updateMutation.isPending && editingChildId === child.id}
-                  isDeleting={deleteMutation.isPending}
                   isStartingEpisode={false}
                   hasActiveEpisode={!!activeEpisode}
                 />
@@ -435,57 +393,29 @@ function AddChildForm({
 
 function ChildCard({
   child,
-  isEditing,
   activeEpisodeStartedAt,
   episodeCount,
   latestWeightEntry,
   medicationReminder,
-  onEditToggle,
-  onDelete,
-  onSave,
   onStartEpisode,
-  isSaving,
-  isDeleting,
   isStartingEpisode,
   hasActiveEpisode,
 }: {
   child: Child;
-  isEditing: boolean;
   activeEpisodeStartedAt: string | null;
   episodeCount: number;
   latestWeightEntry: WeightEntry | null;
   medicationReminder: { tone: "success" | "warning" | "danger" | "muted"; text: string } | null;
-  onEditToggle: () => void;
-  onDelete: () => void;
-  onSave: (name: string, birthDate?: string | null, details?: ChildProfileDetails) => void;
   onStartEpisode: () => void;
-  isSaving: boolean;
-  isDeleting: boolean;
   isStartingEpisode: boolean;
   hasActiveEpisode: boolean;
 }) {
-  const [draftName, setDraftName] = useState(child.name);
-  const [draftBirthDate, setDraftBirthDate] = useState(child.birthDate ?? "");
-  const [institutionName, setInstitutionName] = useState(child.institutionName ?? "");
-  const [institutionPhone, setInstitutionPhone] = useState(child.institutionPhone ?? "");
-  const [doctorName, setDoctorName] = useState(child.doctorName ?? "");
-  const [doctorPhone, setDoctorPhone] = useState(child.doctorPhone ?? "");
-  const [allergies, setAllergies] = useState(child.allergies ?? "");
-  const [notes, setNotes] = useState(child.notes ?? "");
-  const primaryActionLabel = hasActiveEpisode ? "Открыть" : "Начать";
   const latestWeightLabel = latestWeightEntry ? formatWeightValue(latestWeightEntry.valueKg) : null;
-
-  useEffect(() => {
-    setDraftName(child.name);
-    setDraftBirthDate(child.birthDate ?? "");
-    setInstitutionName(child.institutionName ?? "");
-    setInstitutionPhone(child.institutionPhone ?? "");
-    setDoctorName(child.doctorName ?? "");
-    setDoctorPhone(child.doctorPhone ?? "");
-    setAllergies(child.allergies ?? "");
-    setNotes(child.notes ?? "");
-  }, [child]);
-
+  const summaryChips = [
+    child.ageLabel,
+    episodeCount > 0 ? `История: ${episodeCount}` : "История пустая",
+    latestWeightLabel ? `Вес ${latestWeightLabel}` : null,
+  ].filter(Boolean) as string[];
   return (
     <li>
       <RowSurface
@@ -506,174 +436,85 @@ function ChildCard({
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
+                <h2 className="app-card-title text-lg">{child.name}</h2>
                 {hasActiveEpisode && (
                   <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
                     Наблюдение
                   </span>
                 )}
               </div>
-              <span className="soft-pill rounded-full px-3 py-1 text-xs sm:hidden">
-                {primaryActionLabel}
-              </span>
             </div>
-            <p className="mt-3 text-sm leading-7 text-muted">
-              {child.ageLabel ? `${child.ageLabel} • ` : ""}
-              {child.birthDate ? `Рожд. ${formatDate(child.birthDate)} • ` : ""}
-              {latestWeightLabel ? `Вес ${latestWeightLabel} • ` : ""}
-              Случаев в истории: {episodeCount}
-            </p>
-            {(child.institutionName || child.doctorName || child.allergies) && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {child.institutionName && (
-                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                    {child.institutionName}
-                  </span>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {summaryChips.map((chip, index) => (
+                <span
+                  key={chip}
+                  className={[
+                    "soft-pill rounded-full px-3 py-1 text-xs",
+                    index === 2 ? "hidden sm:inline-flex" : "inline-flex",
+                  ].join(" ")}
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+            {(hasActiveEpisode || medicationReminder) && (
+              <div className="mt-4 space-y-2">
+                {hasActiveEpisode && activeEpisodeStartedAt && (
+                  <p className="soft-text-danger text-sm">
+                    Наблюдение идёт с {formatDate(activeEpisodeStartedAt)}
+                  </p>
                 )}
-                {child.doctorName && (
-                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                    Врач: {child.doctorName}
-                  </span>
-                )}
-                {child.allergies && (
-                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                    Аллергии: {child.allergies}
-                  </span>
+                {hasActiveEpisode && medicationReminder && (
+                  <p
+                    className={[
+                      "text-sm",
+                      medicationReminder.tone === "success"
+                        ? "soft-text-success"
+                        : medicationReminder.tone === "warning"
+                          ? "soft-text-warning"
+                          : medicationReminder.tone === "danger"
+                            ? "soft-text-danger"
+                            : "text-muted",
+                    ].join(" ")}
+                  >
+                    {medicationReminder.text}
+                  </p>
                 )}
               </div>
-            )}
-            {(child.institutionPhone || child.doctorPhone || child.notes) && (
-              <div className="mt-2 space-y-1 text-sm text-muted">
-                {child.institutionPhone && <p>Организация: {child.institutionPhone}</p>}
-                {child.doctorPhone && <p>Врач: {child.doctorPhone}</p>}
-                {child.notes && <p>{child.notes}</p>}
-              </div>
-            )}
-            {hasActiveEpisode && activeEpisodeStartedAt && (
-              <p className="soft-text-danger mt-1 text-sm">
-                Наблюдение с {formatDate(activeEpisodeStartedAt)}
-              </p>
-            )}
-            {hasActiveEpisode && medicationReminder && (
-              <p
-                className={[
-                  "mt-2 text-sm",
-                  medicationReminder.tone === "success"
-                    ? "soft-text-success"
-                    : medicationReminder.tone === "warning"
-                      ? "soft-text-warning"
-                      : medicationReminder.tone === "danger"
-                        ? "soft-text-danger"
-                        : "text-muted",
-                ].join(" ")}
-              >
-                {medicationReminder.text}
-              </p>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:justify-end">
-            <Link
-              to={`/children/${child.id}/illness?view=history`}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-            >
-              История
-            </Link>
+          <div className="grid w-full gap-2 md:w-auto md:flex md:flex-wrap md:justify-end">
             <button
               type="button"
               onClick={onStartEpisode}
               disabled={isStartingEpisode}
-              className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+              className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50 md:order-2 md:w-auto"
             >
               {hasActiveEpisode
-                ? "Открыть"
+                ? "Открыть наблюдение"
                 : isStartingEpisode
                   ? "Открываем…"
                   : "Начать наблюдение"}
             </button>
-            <button
-              type="button"
-              onClick={onEditToggle}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-            >
-              {isEditing ? "Закрыть" : "Редактировать"}
-            </button>
+
+            <div className="grid grid-cols-2 gap-2 md:contents">
+              <Link
+                to={`/children/${child.id}/illness?view=history`}
+                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-center text-sm"
+              >
+                История
+              </Link>
+              <Link
+                to={`/children/${child.id}`}
+                onClick={(event) => event.stopPropagation()}
+                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-center text-sm"
+              >
+                Инфо
+              </Link>
+            </div>
           </div>
         </div>
-
-        {isEditing && (
-          <div className="mt-5 grid gap-3 border-t border-border/70 pt-5 sm:grid-cols-[minmax(0,1fr)_220px_auto]">
-            <label className="block min-w-0">
-              <span className="block text-sm text-muted">Имя</span>
-              <input
-                type="text"
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
-              />
-            </label>
-            <label className="block">
-              <span className="block text-sm text-muted">Дата рождения</span>
-              <DateField
-                value={draftBirthDate}
-                onChange={setDraftBirthDate}
-                max={new Date().toISOString().slice(0, 10)}
-                className="mt-1 w-full"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() =>
-                onSave(draftName.trim(), draftBirthDate || null, {
-                  institutionName: institutionName.trim() || null,
-                  institutionPhone: institutionPhone.trim() || null,
-                  doctorName: doctorName.trim() || null,
-                  doctorPhone: doctorPhone.trim() || null,
-                  allergies: allergies.trim() || null,
-                  notes: notes.trim() || null,
-                })
-              }
-              disabled={isSaving || !draftName.trim()}
-              className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
-            >
-              {isSaving ? "Сохраняем…" : "Сохранить"}
-            </button>
-            <div className="sm:col-span-3 grid gap-3 sm:grid-cols-2">
-              <InputField
-                label="Сад / школа"
-                value={institutionName}
-                onChange={setInstitutionName}
-              />
-              <InputField
-                label="Телефон организации"
-                value={institutionPhone}
-                onChange={setInstitutionPhone}
-              />
-              <InputField label="Врач" value={doctorName} onChange={setDoctorName} />
-              <InputField label="Телефон врача" value={doctorPhone} onChange={setDoctorPhone} />
-              <TextField label="Аллергии" value={allergies} onChange={setAllergies} />
-              <TextField label="Заметки" value={notes} onChange={setNotes} />
-            </div>
-            <div className="sm:col-span-3 flex justify-start pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  const shouldDelete = window.confirm(
-                    `Точно удалить ребёнка «${child.name}»? Это действие нельзя отменить.`
-                  );
-                  if (!shouldDelete) {
-                    return;
-                  }
-                  onDelete();
-                }}
-                disabled={isDeleting}
-                className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-              >
-                {isDeleting ? "Удаляем…" : "Удалить ребёнка"}
-              </button>
-            </div>
-          </div>
-        )}
       </RowSurface>
     </li>
   );

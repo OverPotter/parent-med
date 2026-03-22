@@ -26,6 +26,7 @@ import { ClientStartPage } from "@client/pages/ClientStartPage";
 import { FamilyPage } from "@client/pages/FamilyPage";
 import { JoinFamilyPage } from "@client/pages/JoinFamilyPage";
 import { ChildrenPage } from "@client/pages/ChildrenPage";
+import { ChildProfilePage } from "@client/pages/ChildProfilePage";
 import { MedicineCabinetPage } from "@client/pages/MedicineCabinetPage";
 import { ChildIllnessPage } from "@client/pages/ChildIllnessPage";
 import { ActiveIllnessesPage } from "@client/pages/ActiveIllnessesPage";
@@ -200,6 +201,7 @@ export default function App() {
               <Route path="family" element={<FamilyPage />} />
               <Route path="join-family" element={<JoinFamilyPage />} />
               <Route path="children" element={<ChildrenPage />} />
+              <Route path="children/:childId" element={<ChildProfilePage />} />
               <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
               <Route path="illnesses/history" element={<IllnessHistoryPage />} />
               <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
