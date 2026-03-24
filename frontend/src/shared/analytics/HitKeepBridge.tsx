@@ -37,6 +37,8 @@ function HitKeepScriptLoader() {
     const script = document.createElement("script");
     script.id = SCRIPT_ID;
     script.async = true;
+    // HitKeep: как «Collect DNT» в UI — иначе при navigator.doNotTrack === "1" hk.js ставит пустой window.hk.event
+    script.setAttribute("data-collect-dnt", "true");
     script.src = url;
     script.onload = () => flushHitKeepQueue();
     document.head.appendChild(script);
