@@ -1,0 +1,22 @@
+"""Логи HTTP: метод, путь, статус, время."""
+
+import time
+
+from fastapi import FastAPI, Request
+
+from src.core.logging import get_logger
+
+logger = get_logger(__name__)
+
+
+def register_http_logging(app: FastAPI) -> None:
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        path = request.url.path
+        if path == "/health":
+            return await call_next(request)
+        start = time.perf_counter()
+        response = await call_next(request)
+        ms = (time.perf_counter() - start) * 1000
+        logger.info(f"HTTP | {request.method} {path} → {response.status_code} ({int(ms)} мс)")
+        return response

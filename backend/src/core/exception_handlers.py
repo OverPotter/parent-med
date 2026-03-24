@@ -1,18 +1,16 @@
-"""Глобальные обработчики исключений: доменные → HTTPException."""
-
-import logging
+"""AppException → JSON."""
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from src.core.exceptions import AppException
+from src.core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
-    """Преобразует AppException в JSON-ответ с нужным status_code."""
-    logger.warning("AppException: %s (code=%s)", exc.message, exc.code)
+    logger.warning(f"Ошибка API | message={exc.message} code={exc.code}")
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.message, "code": exc.code},

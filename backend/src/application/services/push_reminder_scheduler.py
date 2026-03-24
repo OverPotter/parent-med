@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
@@ -15,6 +14,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from src.application.services.safety_engine import calculate_household_medicine_status
 from src.core.config import settings
+from src.core.logging import get_logger
 from src.domain.entities.household_medicine import HouseholdMedicine
 from src.domain.entities.push_subscription import PushSubscription
 from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
@@ -39,7 +39,7 @@ from src.infrastructure.database.repositories.push_subscription_repository impor
     SqlPushSubscriptionRepository,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 DEFAULT_REMINDER_BEFORE_MINUTES = 10
 OVERDUE_REMINDER_AFTER_MINUTES = 2
 MEDICINE_CABINET_REMINDER_OFFSETS = (7, 3, 1)
@@ -212,9 +212,9 @@ class PushNotificationScheduler:
     def start(self) -> None:
         if not self.is_enabled:
             if not settings.web_push_enabled:
-                logger.info("Push scheduler disabled: VAPID keys are not configured.")
+                logger.info("push_scheduler_off | reason=no_vapid")
             elif webpush is None:
-                logger.info("Push scheduler disabled: pywebpush is not installed.")
+                logger.info("push_scheduler_off | reason=no_pywebpush")
             return
         if self._task is None:
             self._task = asyncio.create_task(self._run(), name="push-reminder-scheduler")
@@ -596,10 +596,14 @@ class PushNotificationScheduler:
                     response, "status", None
                 )
                 if status_code in {404, 410}:
-                    logger.info("Removing stale push subscription: %s", subscription.endpoint)
+                    logger.info(f"stale_push_subscription | endpoint={subscription.endpoint}")
                     await subscription_repo.delete(subscription.id)
                     continue
-                logger.warning("Push delivery failed for subscription %s: %s", subscription.id, exc)
+                logger.warning(
+                    f"push_delivery_failed | subscription_id={subscription.id} error={exc!s}"
+                )
             except Exception as exc:  # pragma: no cover - сеть/SSL/библиотека
-                logger.warning("Push delivery failed for subscription %s: %s", subscription.id, exc)
+                logger.warning(
+                    f"push_delivery_failed | subscription_id={subscription.id} error={exc!s}"
+                )
         return sent

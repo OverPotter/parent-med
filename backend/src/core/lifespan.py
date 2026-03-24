@@ -1,4 +1,4 @@
-"""Lifespan приложения: подключение к БД при старте, отключение при выходе."""
+"""Lifespan: БД, планировщик push."""
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -7,30 +7,28 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from src.application.services.push_reminder_scheduler import PushNotificationScheduler
 from src.core.config import settings
-from src.core.logging import setup_logging
+from src.core.logging import get_logger, setup_logging
 
-# Движок и фабрика сессий создаются при импорте после загрузки моделей
+logger = get_logger(__name__)
+
 _engine = None
 _async_session_factory: async_sessionmaker[AsyncSession] | None = None
 _push_scheduler: PushNotificationScheduler | None = None
 
 
 def get_engine():
-    """Возвращает глобальный async-движок (создаётся в lifespan)."""
     if _engine is None:
         raise RuntimeError("Engine not initialized. Use lifespan context.")
     return _engine
 
 
 def get_async_session_factory() -> async_sessionmaker[AsyncSession]:
-    """Возвращает фабрику сессий."""
     if _async_session_factory is None:
         raise RuntimeError("Session factory not initialized. Use lifespan context.")
     return _async_session_factory
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    """Генератор сессий для Depends."""
     if _async_session_factory is None:
         raise RuntimeError("Session factory not initialized.")
     async with _async_session_factory() as session:
@@ -46,11 +44,9 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 
 @asynccontextmanager
 async def lifespan_context():
-    """Контекст жизни приложения: логирование, БД."""
     global _engine, _async_session_factory, _push_scheduler
-    setup_logging(debug=settings.debug)
-
-    # Импорт моделей для регистрации в Base.metadata (Alembic, миграции)
+    setup_logging()
+    logger.info("Логирование настроено")
     from src.infrastructure.database import models  # noqa: F401
 
     _engine = create_async_engine(
@@ -65,9 +61,11 @@ async def lifespan_context():
     )
     _push_scheduler = PushNotificationScheduler(_async_session_factory)
     _push_scheduler.start()
+    logger.info("Старт: БД и планировщик push")
 
     yield
 
+    logger.info("Остановка: планировщик и пул БД")
     if _push_scheduler is not None:
         await _push_scheduler.stop()
         _push_scheduler = None

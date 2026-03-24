@@ -1,6 +1,4 @@
-/**
- * Глобальный стейт (Zustand): тема и auth для разветвления роутов.
- */
+/** Zustand: тема, auth, семья. */
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";

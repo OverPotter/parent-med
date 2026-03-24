@@ -13,6 +13,7 @@ import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
 import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import { fetchIllnessEpisodesByChildId, updateIllnessEpisode } from "@shared/api/illnessEpisodes";
+import { trackMedicationAdministered } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
@@ -186,6 +187,7 @@ function ActiveIllnessCard({
       });
     },
     onSuccess: () => {
+      trackMedicationAdministered("active_illnesses");
       queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
       queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
       setJustSaved(true);

@@ -1,4 +1,4 @@
-"""Роуты: регистрация и базовая авторизация."""
+"""Auth: регистрация, вход, refresh, me, выход."""
 
 from fastapi import APIRouter, Depends, Request, Response
 
@@ -17,6 +17,9 @@ from src.application.dto.auth import (
 from src.application.services.base_auth_service import BaseAuthService
 from src.core.config import settings
 from src.core.exceptions import UnauthorizedError
+from src.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -28,8 +31,8 @@ async def signup(
     dto: RegisterDto,
     service: BaseAuthService = Depends(get_auth_service),
 ) -> AuthResponseDto:
-    """Создать аккаунт, семью и сразу вернуть JWT-пару."""
     auth = await service.signup(dto)
+    logger.info(f"Регистрация | login={dto.login}")
     set_auth_cookies(response, auth)
     return auth
 
@@ -41,8 +44,8 @@ async def signin(
     dto: LoginDto,
     service: BaseAuthService = Depends(get_auth_service),
 ) -> AuthResponseDto:
-    """Войти по логину и паролю."""
     auth = await service.signin(dto)
+    logger.info(f"Вход | login={dto.login}")
     set_auth_cookies(response, auth)
     return auth
 
@@ -54,12 +57,12 @@ async def refresh(
     dto: RefreshDto | None = None,
     service: BaseAuthService = Depends(get_auth_service),
 ) -> AuthResponseDto:
-    """Обновить JWT-пару по refresh token."""
     refresh_token = (dto.refresh_token if dto is not None else None) or request.cookies.get(
         settings.refresh_cookie_name
     )
     if not refresh_token:
         raise UnauthorizedError(code="INVALID_REFRESH_TOKEN")
+    logger.debug("refresh_token")
     auth = await service.refresh(RefreshDto(refresh_token=refresh_token))
     set_auth_cookies(response, auth)
     return auth
@@ -70,7 +73,6 @@ async def me(
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: BaseAuthService = Depends(get_auth_service),
 ) -> AuthStateResponseDto:
-    """Вернуть текущий аккаунт и его семью."""
     return await service.get_me(current_account.id, current_account.family_id)
 
 
@@ -80,7 +82,7 @@ async def logout(
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: BaseAuthService = Depends(get_auth_service),
 ) -> None:
-    """Закрыть refresh-сессии текущего аккаунта."""
+    logger.info("Выход | account_id={}", current_account.id)
     await service.logout(current_account.id)
     clear_auth_cookies(response)
 
@@ -91,5 +93,5 @@ async def change_password(
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: BaseAuthService = Depends(get_auth_service),
 ) -> None:
-    """Сменить пароль текущего аккаунта."""
+    logger.info(f"Смена пароля | account_id={current_account.id}")
     await service.change_password(current_account.id, dto)
