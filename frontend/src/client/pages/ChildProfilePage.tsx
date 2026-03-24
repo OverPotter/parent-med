@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteChild, fetchChild, updateChild } from "@shared/api/children";
-import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
+import { createWeightEntry, fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { DateField } from "@shared/components/DateField";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
@@ -23,6 +23,7 @@ export function ChildProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const editFormRef = useRef<HTMLDivElement | null>(null);
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
@@ -42,12 +43,27 @@ export function ChildProfilePage() {
       name,
       birthDate,
       details,
+      weightKg,
     }: {
       id: string;
       name: string;
       birthDate?: string | null;
       details?: ChildProfileDetails;
-    }) => updateChild(id, name, birthDate, details),
+      weightKg?: number | null;
+    }) => {
+      const updates: Promise<unknown>[] = [updateChild(id, name, birthDate, details)];
+
+      if (weightKg !== null && weightKg !== undefined) {
+        updates.push(
+          createWeightEntry({
+            child_id: id,
+            value_kg: weightKg,
+          })
+        );
+      }
+
+      return Promise.all(updates);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["children"] });
       queryClient.invalidateQueries({ queryKey: ["child", variables.id] });
@@ -55,6 +71,14 @@ export function ChildProfilePage() {
       setIsEditing(false);
     },
   });
+
+  useEffect(() => {
+    if (!isEditing || !editFormRef.current) {
+      return;
+    }
+
+    editFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [isEditing]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteChild,
@@ -72,7 +96,7 @@ export function ChildProfilePage() {
     <div className="min-w-0 space-y-6">
       <PageIntro
         title={child.name}
-        subtitle="Профиль ребёнка с основными данными, контактами и заметками для семьи."
+        subtitle="Основные данные ребёнка, вес и семейные заметки в одном месте."
         eyebrow="Профиль ребёнка"
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
@@ -86,43 +110,65 @@ export function ChildProfilePage() {
               type="button"
               onClick={() => setIsEditing((current) => !current)}
               className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              aria-expanded={isEditing}
+              aria-controls="child-profile-edit-form"
             >
-              {isEditing ? "Закрыть" : "Редактировать"}
+              {isEditing ? "Свернуть форму" : "Редактировать профиль"}
             </button>
           </div>
         }
       />
 
+      {isEditing && (
+        <div ref={editFormRef}>
+          <EditChildProfileForm
+            child={child}
+            latestWeight={latestWeight}
+            onSave={(name, birthDate, details, weightKg) =>
+              updateMutation.mutate({ id: child.id, name, birthDate, details, weightKg })
+            }
+            onDelete={() => deleteMutation.mutate(child.id)}
+            isSaving={updateMutation.isPending}
+            isDeleting={deleteMutation.isPending}
+          />
+        </div>
+      )}
+
       <Surface className="p-5 sm:p-6">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <ProfileStat label="Возраст" value={child.ageLabel ?? "Не указан"} />
-          <ProfileStat
+        <div className="mb-4">
+          <h2 className="app-card-title text-lg">Основное</h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <InfoLine label="Возраст" value={child.ageLabel ?? "Не указан"} />
+          <InfoLine
             label="Дата рождения"
             value={child.birthDate ? formatDate(child.birthDate) : "Не указана"}
           />
-          <ProfileStat
+          <InfoLine
             label="Последний вес"
             value={latestWeight ? formatWeightValue(latestWeight.valueKg) : "Пока нет записи"}
           />
         </div>
-      </Surface>
-
-      <Surface className="p-5 sm:p-6">
-        <div className="mb-4">
-          <h2 className="app-card-title text-lg">Данные профиля</h2>
-          <p className="mt-1 text-sm text-muted">
-            Контакты, важные пометки и всё, что не нужно держать в списке детей.
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {child.institutionName && <InfoLine label="Сад / школа" value={child.institutionName} />}
-          {child.institutionPhone && (
-            <InfoLine label="Телефон организации" value={child.institutionPhone} />
-          )}
-          {child.doctorName && <InfoLine label="Врач" value={child.doctorName} />}
-          {child.doctorPhone && <InfoLine label="Телефон врача" value={child.doctorPhone} />}
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
           {child.allergies && <InfoLine label="Аллергии" value={child.allergies} />}
           {child.notes && <InfoLine label="Заметки" value={child.notes} fullWidth />}
+          {hasExtraContacts(child) && (
+            <details className="soft-panel-muted rounded-[18px] px-4 py-3 sm:col-span-2">
+              <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
+                Сад, врач и дополнительные контакты
+              </summary>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {child.institutionName && (
+                  <InfoLine label="Сад / школа" value={child.institutionName} />
+                )}
+                {child.institutionPhone && (
+                  <InfoLine label="Телефон организации" value={child.institutionPhone} />
+                )}
+                {child.doctorName && <InfoLine label="Врач" value={child.doctorName} />}
+                {child.doctorPhone && <InfoLine label="Телефон врача" value={child.doctorPhone} />}
+              </div>
+            </details>
+          )}
           {!hasProfileDetails(child, latestWeight) && (
             <div className="soft-panel-muted rounded-[18px] px-4 py-3 sm:col-span-2">
               <p className="text-sm text-muted">Дополнительные данные пока не заполнены.</p>
@@ -130,19 +176,6 @@ export function ChildProfilePage() {
           )}
         </div>
       </Surface>
-
-      {isEditing && (
-        <EditChildProfileForm
-          child={child}
-          latestWeight={latestWeight}
-          onSave={(name, birthDate, details) =>
-            updateMutation.mutate({ id: child.id, name, birthDate, details })
-          }
-          onDelete={() => deleteMutation.mutate(child.id)}
-          isSaving={updateMutation.isPending}
-          isDeleting={deleteMutation.isPending}
-        />
-      )}
     </div>
   );
 }
@@ -167,13 +200,19 @@ function EditChildProfileForm({
     notes: string | null;
   };
   latestWeight: WeightEntry | null;
-  onSave: (name: string, birthDate?: string | null, details?: ChildProfileDetails) => void;
+  onSave: (
+    name: string,
+    birthDate?: string | null,
+    details?: ChildProfileDetails,
+    weightKg?: number | null
+  ) => void;
   onDelete: () => void;
   isSaving: boolean;
   isDeleting: boolean;
 }) {
   const [draftName, setDraftName] = useState(child.name);
   const [draftBirthDate, setDraftBirthDate] = useState(child.birthDate ?? "");
+  const [draftWeight, setDraftWeight] = useState(latestWeight ? String(latestWeight.valueKg) : "");
   const [institutionName, setInstitutionName] = useState(child.institutionName ?? "");
   const [institutionPhone, setInstitutionPhone] = useState(child.institutionPhone ?? "");
   const [doctorName, setDoctorName] = useState(child.doctorName ?? "");
@@ -184,108 +223,157 @@ function EditChildProfileForm({
   useEffect(() => {
     setDraftName(child.name);
     setDraftBirthDate(child.birthDate ?? "");
+    setDraftWeight(latestWeight ? String(latestWeight.valueKg) : "");
     setInstitutionName(child.institutionName ?? "");
     setInstitutionPhone(child.institutionPhone ?? "");
     setDoctorName(child.doctorName ?? "");
     setDoctorPhone(child.doctorPhone ?? "");
     setAllergies(child.allergies ?? "");
     setNotes(child.notes ?? "");
-  }, [child]);
+  }, [child, latestWeight]);
+
+  const parsedWeight = parseDraftWeight(draftWeight);
+  const latestWeightValue = latestWeight?.valueKg ?? null;
+  const shouldSaveWeight =
+    parsedWeight !== null &&
+    (latestWeightValue === null || Math.abs(parsedWeight - latestWeightValue) >= 0.1);
 
   return (
-    <Surface className="p-5 sm:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="app-card-title text-lg">Редактирование профиля</h2>
-          <p className="mt-1 text-sm text-muted">
-            Вес меняется в журнале болезни. Здесь редактируются профильные данные.
-          </p>
+    <div id="child-profile-edit-form">
+      <Surface className="border-primary/35 p-5 ring-1 ring-primary/10 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="app-card-title text-lg">Редактирование профиля</h2>
+          </div>
+          {latestWeight && (
+            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+              Последний вес: {formatWeightValue(latestWeight.valueKg)}
+            </span>
+          )}
         </div>
-        {latestWeight && (
-          <span className="soft-pill rounded-full px-3 py-1 text-xs">
-            Последний вес: {formatWeightValue(latestWeight.valueKg)}
-          </span>
-        )}
-      </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px] xl:grid-cols-[minmax(0,1fr)_220px_220px]">
-        <label className="block min-w-0">
-          <span className="block text-sm text-muted">Имя</span>
-          <input
-            type="text"
-            value={draftName}
-            onChange={(e) => setDraftName(e.target.value)}
-            className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
-          />
-        </label>
-        <label className="block">
-          <span className="block text-sm text-muted">Дата рождения</span>
-          <DateField
-            value={draftBirthDate}
-            onChange={setDraftBirthDate}
-            max={new Date().toISOString().slice(0, 10)}
-            className="mt-1 w-full"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={() =>
-            onSave(draftName.trim(), draftBirthDate || null, {
-              institutionName: institutionName.trim() || null,
-              institutionPhone: institutionPhone.trim() || null,
-              doctorName: doctorName.trim() || null,
-              doctorPhone: doctorPhone.trim() || null,
-              allergies: allergies.trim() || null,
-              notes: notes.trim() || null,
-            })
-          }
-          disabled={isSaving || !draftName.trim()}
-          className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:col-span-2 xl:col-span-1 xl:self-end"
-        >
-          {isSaving ? "Сохраняем…" : "Сохранить"}
-        </button>
-        <div className="sm:col-span-2 xl:col-span-3 grid gap-3 sm:grid-cols-2">
-          <InputField label="Сад / школа" value={institutionName} onChange={setInstitutionName} />
-          <InputField
-            label="Телефон организации"
-            value={institutionPhone}
-            onChange={setInstitutionPhone}
-          />
-          <InputField label="Врач" value={doctorName} onChange={setDoctorName} />
-          <InputField label="Телефон врача" value={doctorPhone} onChange={setDoctorPhone} />
-          <TextField label="Аллергии" value={allergies} onChange={setAllergies} />
-          <TextField label="Заметки" value={notes} onChange={setNotes} />
-        </div>
-        <div className="sm:col-span-2 xl:col-span-3 flex justify-start pt-1">
-          <button
-            type="button"
-            onClick={() => {
-              const shouldDelete = window.confirm(
-                `Точно удалить ребёнка «${child.name}»? Это действие нельзя отменить.`
-              );
-              if (!shouldDelete) {
-                return;
+        <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px] xl:grid-cols-[minmax(0,1fr)_220px_220px]">
+          <label className="block min-w-0">
+            <span className="block text-sm text-muted">Имя</span>
+            <input
+              type="text"
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
+              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-sm text-muted">Дата рождения</span>
+            <DateField
+              value={draftBirthDate}
+              onChange={setDraftBirthDate}
+              max={new Date().toISOString().slice(0, 10)}
+              className="mt-1 w-full"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-sm text-muted">Вес, кг</span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={draftWeight}
+              onChange={(e) => setDraftWeight(e.target.value)}
+              placeholder="Например: 14.2"
+              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+            />
+            <p className="mt-2 text-xs text-muted">
+              {latestWeight
+                ? `Сейчас в профиле: ${formatWeightValue(latestWeight.valueKg)}`
+                : "Если заполнить вес, он сохранится как последняя запись."}
+            </p>
+          </label>
+          <div className="sm:col-span-2 xl:col-span-3 grid gap-3 sm:grid-cols-2">
+            <TextField label="Аллергии" value={allergies} onChange={setAllergies} />
+            <TextField label="Заметки" value={notes} onChange={setNotes} />
+          </div>
+          <details className="soft-panel-muted sm:col-span-2 xl:col-span-3 rounded-[22px] p-4">
+            <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
+              Сад, врач и дополнительные контакты
+            </summary>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <InputField
+                label="Сад / школа"
+                value={institutionName}
+                onChange={setInstitutionName}
+              />
+              <InputField
+                label="Телефон организации"
+                value={institutionPhone}
+                onChange={setInstitutionPhone}
+              />
+              <InputField label="Врач" value={doctorName} onChange={setDoctorName} />
+              <InputField label="Телефон врача" value={doctorPhone} onChange={setDoctorPhone} />
+            </div>
+          </details>
+          <div className="sm:col-span-2 xl:col-span-3 space-y-3 border-t border-border/70 pt-4">
+            <button
+              type="button"
+              onClick={() =>
+                onSave(
+                  draftName.trim(),
+                  draftBirthDate || null,
+                  {
+                    institutionName: institutionName.trim() || null,
+                    institutionPhone: institutionPhone.trim() || null,
+                    doctorName: doctorName.trim() || null,
+                    doctorPhone: doctorPhone.trim() || null,
+                    allergies: allergies.trim() || null,
+                    notes: notes.trim() || null,
+                  },
+                  shouldSaveWeight ? parsedWeight : null
+                )
               }
-              onDelete();
-            }}
-            disabled={isDeleting}
-            className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-          >
-            {isDeleting ? "Удаляем…" : "Удалить ребёнка"}
-          </button>
+              disabled={
+                isSaving ||
+                !draftName.trim() ||
+                (draftWeight.trim().length > 0 && parsedWeight === null)
+              }
+              className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+            >
+              {isSaving ? "Сохраняем…" : "Сохранить изменения"}
+            </button>
+          </div>
+          <div className="sm:col-span-2 xl:col-span-3 flex justify-start pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                const shouldDelete = window.confirm(
+                  `Точно удалить ребёнка «${child.name}»? Это действие нельзя отменить.`
+                );
+                if (!shouldDelete) {
+                  return;
+                }
+                onDelete();
+              }}
+              disabled={isDeleting}
+              className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+            >
+              {isDeleting ? "Удаляем…" : "Удалить ребёнка"}
+            </button>
+          </div>
         </div>
-      </div>
-    </Surface>
+      </Surface>
+    </div>
   );
 }
 
-function ProfileStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="soft-panel-muted rounded-[18px] px-4 py-3">
-      <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 text-sm leading-6 text-foreground">{value}</p>
-    </div>
-  );
+function parseDraftWeight(value: string): number | null {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsed = Number.parseFloat(value.replace(",", "."));
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return Number(parsed.toFixed(1));
 }
 
 function hasProfileDetails(
@@ -309,6 +397,17 @@ function hasProfileDetails(
     child.allergies ||
     child.notes ||
     latestWeight
+  );
+}
+
+function hasExtraContacts(child: {
+  institutionName: string | null;
+  institutionPhone: string | null;
+  doctorName: string | null;
+  doctorPhone: string | null;
+}) {
+  return Boolean(
+    child.institutionName || child.institutionPhone || child.doctorName || child.doctorPhone
   );
 }
 

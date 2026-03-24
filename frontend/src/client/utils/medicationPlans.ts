@@ -115,7 +115,7 @@ export function getEpisodeMedicationReminder(
   if (availableNow) {
     return {
       tone: "success" as const,
-      text: `Сейчас можно дать ${
+      text: `Сейчас можно отметить приём: ${
         availableNow.plan.customMedicineName ?? availableNow.medicine?.medicineName ?? "лекарство"
       }`,
     };
@@ -132,7 +132,7 @@ export function getEpisodeMedicationReminder(
   if (upcoming?.stats.nextAllowedAt) {
     return {
       tone: "warning" as const,
-      text: `Следующее лекарство: ${
+      text: `Следующий приём: ${
         upcoming.plan.customMedicineName ?? upcoming.medicine?.medicineName ?? "лекарство"
       } ${formatRelativeDateTime(upcoming.stats.nextAllowedAt, now)}`,
     };
@@ -141,7 +141,7 @@ export function getEpisodeMedicationReminder(
   if (items.some((item) => item.isUnavailable)) {
     return {
       tone: "danger" as const,
-      text: "Есть план лекарства, но упаковку нужно проверить",
+      text: "Есть напоминание, но упаковку нужно проверить",
     };
   }
 
@@ -154,7 +154,7 @@ export function getEpisodeMedicationReminder(
 
   return {
     tone: "muted" as const,
-    text: "Планы лекарства уже настроены",
+    text: "Напоминания уже настроены",
   };
 }
 

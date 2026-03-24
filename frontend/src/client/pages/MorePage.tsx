@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import { RowSurface, Surface } from "@shared/components/Surface";
+import { PageIntro } from "@shared/components/PageIntro";
+import { RowSurface } from "@shared/components/Surface";
 
 const moreLinks = [
   {
     to: "/family",
     title: "Семья",
-    description: "Название семьи и список родителей. Редкие настройки, не ежедневный сценарий.",
+    description: "Название семьи, участники и приглашения.",
   },
   {
     to: "/account",
@@ -26,18 +27,13 @@ const moreLinks = [
 
 export function MorePage() {
   return (
-    <div className="min-w-0 space-y-7">
-      <Surface className="soft-hero overflow-hidden">
-        <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
-          <h1 className="app-title text-2xl sm:text-3xl">Настройки и вторичные разделы</h1>
-          <p className="app-subtitle mt-3 max-w-2xl text-sm">
-            Все редко используемые экраны — семья, профиль, история и справка — теперь в одном
-            месте.
-          </p>
-        </div>
-      </Surface>
-
-      <ul className="grid gap-4">
+    <div className="min-w-0 space-y-6">
+      <PageIntro
+        title="Ещё"
+        subtitle="Семья, аккаунт, история и справка в одном месте."
+        hideOnMobile
+      />
+      <ul className="soft-panel rounded-[30px] p-3 sm:p-4 grid gap-3 sm:gap-4">
         {moreLinks.map((item) => (
           <li key={item.to}>
             <Link

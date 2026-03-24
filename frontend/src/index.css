@@ -207,6 +207,33 @@ p {
     box-shadow: 0 10px 22px -28px rgb(var(--color-shadow) / 0.1);
   }
 
+  .soft-section-shell {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-surface-glare-soft) 86%, transparent),
+        transparent 54%
+      ),
+      color-mix(in srgb, var(--color-surface-soft) 78%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.03),
+      0 10px 24px -30px rgb(var(--color-shadow) / 0.08);
+    backdrop-filter: blur(10px);
+  }
+
+  .soft-section-inner {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-surface-glare-soft) 74%, transparent),
+        transparent 58%
+      ),
+      color-mix(in srgb, var(--color-surface) 82%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.04),
+      0 10px 22px -30px rgb(var(--color-shadow) / 0.08);
+  }
+
   .soft-nav-shell {
     border: 1px solid color-mix(in srgb, var(--color-border) 62%, transparent);
     background:

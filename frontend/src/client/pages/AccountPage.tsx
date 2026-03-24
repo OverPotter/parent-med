@@ -241,10 +241,7 @@ export function AccountPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <PageIntro
-        title="Аккаунт"
-        subtitle="Личные настройки, уведомления и служебные действия без перегруза ежедневного потока."
-      />
+      <PageIntro title="Аккаунт" subtitle="Личные настройки, уведомления и безопасность." />
 
       <Surface className="p-5 sm:p-6">
         <p className="text-sm font-medium text-foreground">Профиль</p>
