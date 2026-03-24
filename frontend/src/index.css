@@ -12,27 +12,27 @@
   --font-display:
     "Varela Round", "Nunito Sans", "Onest", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial,
     sans-serif;
-  --color-primary: #476f6a;
-  --color-primary-focus: #6d8884;
-  --color-background: #d9e2e6;
-  --color-foreground: #203039;
-  --color-muted: #6d7b84;
-  --color-border: #c1cdd3;
-  --color-surface: rgba(238, 243, 245, 0.78);
-  --color-surface-soft: rgba(229, 235, 238, 0.86);
-  --color-surface-hero: rgba(71, 111, 106, 0.036);
+  --color-primary: #3e6f9f;
+  --color-primary-focus: #5b86b3;
+  --color-background: #c2d5e9;
+  --color-foreground: #21384d;
+  --color-muted: #5c738a;
+  --color-border: #93afc8;
+  --color-surface: rgba(212, 225, 238, 0.9);
+  --color-surface-soft: rgba(201, 217, 232, 0.92);
+  --color-surface-hero: rgba(91, 134, 179, 0.18);
   --color-shadow: 17 26 40;
   --color-page-highlight: rgba(255, 255, 255, 0.08);
-  --color-surface-glare: rgba(255, 255, 255, 0.032);
-  --color-surface-glare-soft: rgba(255, 255, 255, 0.02);
-  --color-danger: #be123c;
-  --color-danger-soft: rgba(244, 63, 94, 0.1);
-  --color-success: #047857;
-  --color-success-soft: rgba(16, 185, 129, 0.12);
-  --color-info: #0369a1;
-  --color-info-soft: rgba(14, 165, 233, 0.12);
-  --color-warning: #b45309;
-  --color-warning-soft: rgba(245, 158, 11, 0.12);
+  --color-surface-glare: rgba(255, 255, 255, 0.05);
+  --color-surface-glare-soft: rgba(255, 255, 255, 0.04);
+  --color-danger: #b45c6e;
+  --color-danger-soft: rgba(180, 92, 110, 0.14);
+  --color-success: #3e8b74;
+  --color-success-soft: rgba(62, 139, 116, 0.14);
+  --color-info: #4c7fb2;
+  --color-info-soft: rgba(76, 127, 178, 0.14);
+  --color-warning: #b6843d;
+  --color-warning-soft: rgba(182, 132, 61, 0.14);
 }
 
 [data-theme="dark"] {
@@ -78,11 +78,15 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at top left, var(--color-surface-hero), transparent 34%),
-    radial-gradient(circle at top right, var(--color-page-highlight), transparent 24%),
+    radial-gradient(circle at top left, var(--color-surface-hero), transparent 38%),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--color-primary) 12%, transparent),
+      transparent 30%
+    ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-background) 99%, white),
+      color-mix(in srgb, var(--color-background) 86%, white),
       var(--color-background)
     );
   color: var(--color-foreground);
@@ -138,8 +142,12 @@ p {
   .soft-panel {
     border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
     background:
-      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 34%),
-      color-mix(in srgb, var(--color-surface-soft) 96%, transparent);
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 10%, var(--color-surface-glare-soft)),
+        transparent 34%
+      ),
+      color-mix(in srgb, var(--color-surface-soft) 88%, var(--color-primary) 12%);
     box-shadow:
       0 18px 42px -34px rgb(var(--color-shadow) / 0.18),
       0 6px 14px -14px rgb(var(--color-shadow) / 0.1);
@@ -149,8 +157,12 @@ p {
   .soft-card {
     border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
     background:
-      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 38%),
-      color-mix(in srgb, var(--color-surface-soft) 94%, transparent);
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 10%, var(--color-surface-glare-soft)),
+        transparent 38%
+      ),
+      color-mix(in srgb, var(--color-surface-soft) 84%, var(--color-primary) 16%);
     box-shadow:
       0 14px 32px -28px rgb(var(--color-shadow) / 0.14),
       0 4px 10px -12px rgb(var(--color-shadow) / 0.08);
@@ -165,7 +177,7 @@ p {
         color-mix(in srgb, var(--color-success-soft) 54%, transparent),
         transparent 44%
       ),
-      var(--color-surface);
+      color-mix(in srgb, var(--color-surface) 82%, var(--color-primary) 18%);
     box-shadow:
       0 18px 38px -28px color-mix(in srgb, var(--color-success) 32%, transparent),
       0 4px 10px -12px rgb(var(--color-shadow) / 0.1);
@@ -179,7 +191,7 @@ p {
         color-mix(in srgb, var(--color-danger-soft) 48%, transparent),
         transparent 44%
       ),
-      var(--color-surface);
+      color-mix(in srgb, var(--color-surface) 82%, var(--color-primary) 18%);
     box-shadow:
       0 18px 38px -28px color-mix(in srgb, var(--color-danger) 32%, transparent),
       0 4px 10px -12px rgb(var(--color-shadow) / 0.12);
@@ -193,7 +205,7 @@ p {
         color-mix(in srgb, var(--color-warning-soft) 52%, transparent),
         transparent 44%
       ),
-      var(--color-surface);
+      color-mix(in srgb, var(--color-surface) 82%, var(--color-primary) 18%);
     box-shadow:
       0 18px 38px -28px color-mix(in srgb, var(--color-warning) 30%, transparent),
       0 4px 10px -12px rgb(var(--color-shadow) / 0.1);
@@ -202,8 +214,12 @@ p {
   .soft-panel-muted {
     border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
     background:
-      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 40%),
-      color-mix(in srgb, var(--color-surface-soft) 92%, transparent);
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-glare-soft)),
+        transparent 40%
+      ),
+      color-mix(in srgb, var(--color-surface-soft) 84%, var(--color-primary) 16%);
     box-shadow: 0 10px 22px -28px rgb(var(--color-shadow) / 0.1);
   }
 
@@ -211,10 +227,10 @@ p {
     background:
       linear-gradient(
         180deg,
-        color-mix(in srgb, var(--color-surface-glare-soft) 86%, transparent),
+        color-mix(in srgb, var(--color-primary) 5%, var(--color-surface-glare-soft)),
         transparent 54%
       ),
-      color-mix(in srgb, var(--color-surface-soft) 78%, transparent);
+      color-mix(in srgb, var(--color-surface-soft) 72%, var(--color-primary) 18%);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.03),
       0 10px 24px -30px rgb(var(--color-shadow) / 0.08);
@@ -225,10 +241,10 @@ p {
     background:
       linear-gradient(
         180deg,
-        color-mix(in srgb, var(--color-surface-glare-soft) 74%, transparent),
+        color-mix(in srgb, var(--color-primary) 4%, var(--color-surface-glare-soft)),
         transparent 58%
       ),
-      color-mix(in srgb, var(--color-surface) 82%, transparent);
+      color-mix(in srgb, var(--color-surface) 76%, var(--color-primary) 18%);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.04),
       0 10px 22px -30px rgb(var(--color-shadow) / 0.08);
@@ -237,8 +253,12 @@ p {
   .soft-nav-shell {
     border: 1px solid color-mix(in srgb, var(--color-border) 62%, transparent);
     background:
-      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 44%),
-      color-mix(in srgb, var(--color-surface-soft) 94%, transparent);
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 6%, var(--color-surface-glare-soft)),
+        transparent 44%
+      ),
+      color-mix(in srgb, var(--color-surface-soft) 84%, var(--color-primary) 16%);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.04),
       0 12px 24px -28px rgb(var(--color-shadow) / 0.12);
@@ -253,29 +273,34 @@ p {
         transparent 70%
       ),
       linear-gradient(180deg, var(--color-surface-glare-soft), transparent 42%),
-      var(--color-surface);
+      color-mix(in srgb, var(--color-surface) 78%, var(--color-primary) 22%);
   }
 
   .soft-hero {
     background:
-      linear-gradient(180deg, var(--color-surface-hero), transparent 68%), var(--color-surface);
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-hero)),
+        transparent 68%
+      ),
+      color-mix(in srgb, var(--color-surface) 74%, var(--color-primary) 26%);
   }
 
   .soft-empty {
     border: 1px dashed color-mix(in srgb, var(--color-border) 88%, transparent);
-    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+    background: color-mix(in srgb, var(--color-surface) 76%, var(--color-primary) 24%);
   }
 
   .soft-pill {
     border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
-    background: color-mix(in srgb, var(--color-surface-soft) 90%, transparent);
-    color: var(--color-muted);
+    background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface-soft));
+    color: color-mix(in srgb, var(--color-primary) 18%, var(--color-foreground));
   }
 
   .soft-pill-primary {
-    border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
-    background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-soft));
-    color: color-mix(in srgb, var(--color-primary) 70%, var(--color-foreground));
+    border: 1px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface-soft));
+    color: color-mix(in srgb, var(--color-primary) 82%, var(--color-foreground));
   }
 
   .soft-pill-success {
@@ -304,7 +329,7 @@ p {
 
   .soft-input {
     border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
-    background: color-mix(in srgb, var(--color-surface-soft) 95%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface-soft));
     color: var(--color-foreground);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.05),
@@ -330,7 +355,7 @@ p {
       color-mix(in srgb, var(--color-primary-focus) 24%, var(--color-surface)),
       color-mix(in srgb, var(--color-primary) 42%, var(--color-surface-soft))
     );
-    color: color-mix(in srgb, #d8e1dd 82%, var(--color-foreground));
+    color: #eff6ff;
     box-shadow: 0 8px 18px -20px color-mix(in srgb, var(--color-primary) 16%, transparent);
     transition:
       background 160ms ease,
@@ -384,10 +409,10 @@ p {
     gap: 0.2rem;
     min-height: 2.25rem;
     min-width: 3.5rem;
-    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 16%, var(--color-border));
     border-radius: 1.5rem;
-    background: color-mix(in srgb, var(--color-surface-soft) 90%, transparent);
-    color: var(--color-muted);
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface-soft));
+    color: color-mix(in srgb, var(--color-primary) 30%, var(--color-muted));
     padding: 0.35rem 0.75rem;
     box-shadow: none;
     transition:
@@ -666,24 +691,98 @@ p {
   }
 
   [data-theme="light"] .soft-button-primary {
-    border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 38%, transparent);
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-primary-focus) 28%, #f5f8f8),
-      color-mix(in srgb, var(--color-primary) 46%, #eef3f2)
+      color-mix(in srgb, var(--color-primary-focus) 52%, var(--color-surface)),
+      color-mix(in srgb, var(--color-primary) 74%, var(--color-surface-soft))
     );
-    color: #d4ded9;
+    color: #f7fbff;
     box-shadow:
-      0 10px 22px -22px color-mix(in srgb, var(--color-primary) 16%, transparent),
-      inset 0 1px 0 rgb(255 255 255 / 0.12);
+      0 14px 28px -20px color-mix(in srgb, var(--color-primary) 32%, transparent),
+      inset 0 1px 0 rgb(255 255 255 / 0.16);
   }
 
   [data-theme="light"] .soft-button-primary:hover {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-primary-focus) 32%, #f5f8f8),
-      color-mix(in srgb, var(--color-primary) 52%, #eef3f2)
+      color-mix(in srgb, var(--color-primary-focus) 60%, var(--color-surface)),
+      color-mix(in srgb, var(--color-primary) 80%, var(--color-surface-soft))
     );
+    border-color: color-mix(in srgb, var(--color-primary-focus) 44%, transparent);
+    box-shadow:
+      0 16px 30px -20px color-mix(in srgb, var(--color-primary) 36%, transparent),
+      inset 0 1px 0 rgb(255 255 255 / 0.18);
+  }
+
+  [data-theme="light"] .soft-button-secondary {
+    border-color: color-mix(in srgb, var(--color-border) 84%, transparent);
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.18),
+      transparent 24%
+    ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-glare-soft)),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--color-background) 72%, var(--color-primary) 28%);
+    color: color-mix(in srgb, var(--color-foreground) 92%, var(--color-primary) 8%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.16),
+      0 10px 20px -22px color-mix(in srgb, var(--color-primary) 14%, transparent);
+  }
+
+  [data-theme="light"] .soft-button-secondary:hover {
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.22),
+      transparent 24%
+    ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 10%, var(--color-surface-glare-soft)),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--color-background) 66%, var(--color-primary) 34%);
+    border-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-border));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      0 12px 22px -22px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  }
+
+  [data-theme="light"] .soft-button-danger {
+    border-color: color-mix(in srgb, var(--color-danger) 32%, transparent);
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.12),
+      transparent 24%
+    ),
+      color-mix(in srgb, var(--color-background) 78%, var(--color-danger) 22%);
+    color: color-mix(in srgb, var(--color-danger) 82%, var(--color-foreground));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      0 10px 20px -24px color-mix(in srgb, var(--color-danger) 18%, transparent);
+  }
+
+  [data-theme="light"] .soft-button-danger:hover {
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.16),
+      transparent 24%
+    ),
+      color-mix(in srgb, var(--color-background) 70%, var(--color-danger) 30%);
+    border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
+  }
+
+  [data-theme="light"] .soft-button-primary:focus-visible,
+  [data-theme="light"] .soft-button-secondary:focus-visible,
+  [data-theme="light"] .soft-button-danger:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--color-primary) 14%, transparent),
+      inset 0 1px 0 rgb(255 255 255 / 0.14);
   }
 
   [data-theme="light"] .soft-tab-active:hover {
@@ -750,25 +849,146 @@ p {
   }
 
   [data-theme="light"] .soft-panel {
+    border-color: color-mix(in srgb, var(--color-border) 72%, transparent);
+    background:
+      linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.18),
+        transparent 26%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 10%, var(--color-surface-glare-soft)),
+        transparent 54%
+      ),
+      color-mix(in srgb, var(--color-background) 74%, var(--color-primary) 26%);
     box-shadow:
-      0 16px 36px -34px rgb(var(--color-shadow) / 0.12),
-      0 6px 14px -18px rgb(var(--color-shadow) / 0.06);
+      inset 0 1px 0 rgb(255 255 255 / 0.16),
+      0 16px 36px -34px rgb(var(--color-shadow) / 0.14),
+      0 6px 14px -18px rgb(var(--color-shadow) / 0.08);
+    backdrop-filter: blur(14px);
   }
 
   [data-theme="light"] .soft-nav-shell {
     border-color: color-mix(in srgb, var(--color-border) 34%, transparent);
     background:
       linear-gradient(180deg, rgb(255 255 255 / 0.04), transparent 46%),
-      color-mix(in srgb, var(--color-surface-soft) 92%, transparent);
+      color-mix(in srgb, var(--color-background) 76%, var(--color-primary) 24%);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.08),
       0 10px 20px -28px rgb(var(--color-shadow) / 0.08);
   }
 
   [data-theme="light"] .soft-card {
+    border-color: color-mix(in srgb, var(--color-border) 72%, transparent);
+    background:
+      linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.14),
+        transparent 24%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-glare-soft)),
+        transparent 50%
+      ),
+      color-mix(in srgb, var(--color-background) 62%, var(--color-primary) 38%);
     box-shadow:
-      0 14px 28px -28px rgb(var(--color-shadow) / 0.1),
-      0 4px 10px -14px rgb(var(--color-shadow) / 0.05);
+      inset 0 1px 0 rgb(255 255 255 / 0.14),
+      0 14px 28px -28px rgb(var(--color-shadow) / 0.12),
+      0 4px 10px -14px rgb(var(--color-shadow) / 0.06);
+    backdrop-filter: blur(12px);
+  }
+
+  [data-theme="light"] .soft-panel-muted,
+  [data-theme="light"] .soft-section-shell,
+  [data-theme="light"] .soft-section-inner,
+  [data-theme="light"] .soft-empty,
+  [data-theme="light"] .soft-input {
+    border-color: color-mix(in srgb, var(--color-border) 70%, transparent);
+  }
+
+  [data-theme="light"] .soft-panel-muted {
+    background:
+      linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.12),
+        transparent 24%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 7%, var(--color-surface-glare-soft)),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--color-background) 68%, var(--color-primary) 32%);
+  }
+
+  [data-theme="light"] .soft-section-shell {
+    background:
+      linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.12),
+        transparent 26%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 6%, var(--color-surface-glare-soft)),
+        transparent 58%
+      ),
+      color-mix(in srgb, var(--color-background) 62%, var(--color-primary) 38%);
+  }
+
+  [data-theme="light"] .soft-section-inner {
+    background:
+      linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.1),
+        transparent 24%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 5%, var(--color-surface-glare-soft)),
+        transparent 58%
+      ),
+      color-mix(in srgb, var(--color-background) 54%, var(--color-primary) 46%);
+  }
+
+  [data-theme="light"] .soft-page-intro,
+  [data-theme="light"] .soft-hero {
+    border-color: color-mix(in srgb, var(--color-border) 68%, transparent);
+  }
+
+  [data-theme="light"] .soft-page-intro {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-surface-hero) 125%, transparent),
+        transparent 70%
+      ),
+      linear-gradient(180deg, rgb(255 255 255 / 0.1), transparent 42%),
+      color-mix(in srgb, var(--color-background) 92%, var(--color-primary) 8%);
+  }
+
+  [data-theme="light"] .soft-hero {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-hero)),
+        transparent 68%
+      ),
+      color-mix(in srgb, var(--color-background) 94%, var(--color-primary) 6%);
+  }
+
+  [data-theme="light"] .soft-empty {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.12), transparent 24%),
+      color-mix(in srgb, var(--color-background) 64%, var(--color-primary) 36%);
+  }
+
+  [data-theme="light"] .soft-input {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.08), transparent 24%),
+      color-mix(in srgb, var(--color-background) 72%, var(--color-primary) 28%);
   }
 
   .soft-landing-step {
