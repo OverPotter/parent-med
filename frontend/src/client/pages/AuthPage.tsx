@@ -123,7 +123,7 @@ export function AuthPage() {
           <Link to="/" className="inline-flex items-center gap-3">
             <img src="/pwa-icon.svg" alt="" className="h-10 w-10 rounded-2xl" />
             <div>
-              <p className="text-sm font-semibold tracking-[0.06em] text-primary">Parent Med</p>
+              <p className="app-brand-text text-sm">Parent Med</p>
               <p className="text-xs text-muted">Вернуться к описанию сервиса</p>
             </div>
           </Link>
@@ -133,13 +133,11 @@ export function AuthPage() {
         </div>
 
         <div className="mx-auto mt-8 max-w-2xl text-center">
-          <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs uppercase tracking-[0.18em]">
+          <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs tracking-[0.04em]">
             Авторизация
           </span>
-          <h1 className="mt-4 text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
-            {pageTitle}
-          </h1>
-          <p className="mt-3 text-sm leading-7 text-muted sm:text-base">{pageDescription}</p>
+          <h1 className="app-title mt-4 text-3xl sm:text-[2.6rem]">{pageTitle}</h1>
+          <p className="app-subtitle mx-auto mt-3 text-sm sm:text-base">{pageDescription}</p>
         </div>
 
         <Surface className="mx-auto mt-8 max-w-[34rem] overflow-hidden p-5 sm:p-6">
@@ -170,7 +168,8 @@ export function AuthPage() {
                 <div>
                   <p className="text-sm font-medium text-foreground">Обязательные поля</p>
                   <p className="mt-1 text-xs leading-5 text-muted">
-                    Сначала только логин и пароль. Остальное можно заполнить уже после входа.
+                    Для начала нужен только логин для входа и пароль. Имя в семье можно задать ниже
+                    или заполнить позже.
                   </p>
                 </div>
                 <button
@@ -186,12 +185,17 @@ export function AuthPage() {
                 <label className="block">
                   <span className="mb-2 block text-sm text-muted">Логин</span>
                   <input
+                    name="username"
                     type="text"
                     value={loginValue}
                     onChange={(e) => setLoginValue(e.target.value)}
                     className="soft-input w-full rounded-2xl px-4 py-3"
-                    placeholder="Например: mama_anya"
+                    placeholder="Придумайте логин для входа"
+                    autoComplete="username"
                   />
+                  <span className="mt-2 block text-xs text-muted">
+                    Логин нужен только для входа. Это не имя, которое увидят в семье.
+                  </span>
                 </label>
 
                 <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
@@ -201,6 +205,8 @@ export function AuthPage() {
                     onChange={setPassword}
                     placeholder="Минимум 6 символов"
                     isVisible={isPasswordVisible}
+                    name="current-password"
+                    autoComplete={isRegisterMode ? "new-password" : "current-password"}
                   />
                   {isRegisterMode && (
                     <AuthPasswordField
@@ -209,6 +215,8 @@ export function AuthPage() {
                       onChange={setPasswordConfirm}
                       placeholder="Повторите пароль"
                       isVisible={isPasswordVisible}
+                      name="new-password-confirm"
+                      autoComplete="new-password"
                     />
                   )}
                 </div>
@@ -223,16 +231,18 @@ export function AuthPage() {
                   Дополнительные поля профиля
                 </summary>
                 <p className="mt-2 text-xs leading-5 text-muted">
-                  Они не мешают началу работы. Если оставить пусто, сервис подставит логин как имя.
+                  Они не мешают началу работы. Здесь можно указать, как вас показывать в семье.
                 </p>
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm text-muted">Email</span>
                   <input
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="soft-input w-full rounded-2xl px-4 py-3"
                     placeholder="you@example.com"
+                    autoComplete="email"
                   />
                   <span className="mt-2 block text-xs text-muted">
                     Для beta необязательно. Пригодится позже для восстановления доступа.
@@ -241,26 +251,30 @@ export function AuthPage() {
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm text-muted">Имя в семье</span>
                   <input
+                    name="display-name"
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     className="soft-input w-full rounded-2xl px-4 py-3"
                     placeholder="Например: Аня"
+                    autoComplete="name"
                   />
                   <span className="mt-2 block text-xs text-muted">
-                    Так имя будет показано в семье и в истории действий. Если пусто, используем
-                    логин.
+                    Это имя увидят другие участники семьи и история действий. Если не заполнить,
+                    временно подставим логин.
                   </span>
                 </label>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <label className="block">
                     <span className="mb-2 block text-sm text-muted">Кто вы в семье</span>
                     <input
+                      name="relationship-label"
                       type="text"
                       value={relationshipLabel}
                       onChange={(e) => setRelationshipLabel(e.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
                       placeholder="Например: мама"
+                      autoComplete="organization-title"
                     />
                     <span className="mt-2 block text-xs text-muted">
                       Короткая подпись рядом с именем: мама, папа, няня.
@@ -269,11 +283,13 @@ export function AuthPage() {
                   <label className="block">
                     <span className="mb-2 block text-sm text-muted">Телефон</span>
                     <input
+                      name="tel"
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       className="soft-input w-full rounded-2xl px-4 py-3"
                       placeholder="+375 ..."
+                      autoComplete="tel"
                     />
                   </label>
                 </div>

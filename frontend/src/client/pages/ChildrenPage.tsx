@@ -5,15 +5,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
-import {
-  createChild,
-  deleteChild,
-  fetchChildrenByFamilyId,
-  updateChild,
-} from "@shared/api/children";
-import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
-import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
+import { createChild, fetchChildrenByFamilyId } from "@shared/api/children";
 import {
   fetchActiveIllnessEpisodeByChildId,
   fetchIllnessEpisodesByChildId,
@@ -24,10 +16,8 @@ import { trackChildCreated } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
-import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child, WeightEntry } from "@shared/types/api";
-import { getEpisodeMedicationReminder } from "../utils/medicationPlans";
 import { formatDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
 
@@ -44,10 +34,8 @@ export function ChildrenPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [editingChildId, setEditingChildId] = useState<string | null>(null);
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormResetKey, setCreateFormResetKey] = useState(0);
-  const now = useNow();
   const liveQueryOptions = useLiveQueryOptions(10000);
 
   const {
@@ -57,13 +45,6 @@ export function ChildrenPage() {
   } = useQuery({
     queryKey: ["children", currentFamilyId],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
-    enabled: !!currentFamilyId,
-    ...liveQueryOptions,
-  });
-
-  const { data: householdMedicines = [] } = useQuery({
-    queryKey: ["household-medicines", currentFamilyId],
-    queryFn: fetchHouseholdMedicines,
     enabled: !!currentFamilyId,
     ...liveQueryOptions,
   });
@@ -95,30 +76,6 @@ export function ChildrenPage() {
     })),
   });
 
-  const medicationPlanQueries = useQueries({
-    queries: children.map((_, index) => {
-      const activeEpisodeId = activeEpisodeQueries[index]?.data?.id;
-      return {
-        queryKey: ["episode-medication-plans", activeEpisodeId],
-        queryFn: () => fetchEpisodeMedicationPlansByEpisodeId(activeEpisodeId!),
-        enabled: !!activeEpisodeId,
-        ...liveQueryOptions,
-      };
-    }),
-  });
-
-  const administrationQueries = useQueries({
-    queries: children.map((_, index) => {
-      const activeEpisodeId = activeEpisodeQueries[index]?.data?.id;
-      return {
-        queryKey: ["administration-events", activeEpisodeId],
-        queryFn: () => fetchAdministrationEventsByEpisodeId(activeEpisodeId!),
-        enabled: !!activeEpisodeId,
-        ...liveQueryOptions,
-      };
-    }),
-  });
-
   const createMutation = useMutation({
     mutationFn: ({
       name,
@@ -134,32 +91,6 @@ export function ChildrenPage() {
       setCreateFormResetKey((current) => current + 1);
       setIsCreateFormOpen(false);
       void trackChildCreated(child.id);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      name,
-      birthDate,
-      details,
-    }: {
-      id: string;
-      name: string;
-      birthDate?: string | null;
-      details?: ChildProfileDetails;
-    }) => updateChild(id, name, birthDate, details),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
-      queryClient.invalidateQueries({ queryKey: ["child", variables.id] });
-      setEditingChildId(null);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteChild,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
     },
   });
 
@@ -237,40 +168,21 @@ export function ChildrenPage() {
             {children.map((child, index) => {
               const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
               const episodes = historyQueries[index]?.data ?? [];
-              const reminder = activeEpisode
-                ? getEpisodeMedicationReminder(
-                    medicationPlanQueries[index]?.data ?? [],
-                    administrationQueries[index]?.data ?? [],
-                    householdMedicines,
-                    new Date(now)
-                  )
-                : null;
 
               return (
                 <ChildCard
                   key={child.id}
                   child={child}
-                  isEditing={editingChildId === child.id}
                   activeEpisodeStartedAt={activeEpisode?.startedAt ?? null}
                   episodeCount={episodes.length}
                   latestWeightEntry={latestWeightQueries[index]?.data ?? null}
-                  medicationReminder={reminder}
-                  onEditToggle={() =>
-                    setEditingChildId((current) => (current === child.id ? null : child.id))
-                  }
-                  onDelete={() => deleteMutation.mutate(child.id)}
-                  onSave={(name, birthDate, details) =>
-                    updateMutation.mutate({ id: child.id, name, birthDate, details })
-                  }
                   onStartEpisode={() => {
                     if (activeEpisode) {
-                      navigate(`/children/${child.id}/illness`);
+                      navigate("/illnesses/active");
                       return;
                     }
                     navigate(`/children/${child.id}/illness?mode=create`);
                   }}
-                  isSaving={updateMutation.isPending && editingChildId === child.id}
-                  isDeleting={deleteMutation.isPending}
                   isStartingEpisode={false}
                   hasActiveEpisode={!!activeEpisode}
                 />
@@ -283,9 +195,7 @@ export function ChildrenPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-foreground">Нужно добавить ещё ребёнка?</p>
-                  <p className="mt-1 text-sm text-muted">
-                    Кнопка перенесена вниз, чтобы не мешать списку.
-                  </p>
+                  <p className="mt-1 text-sm text-muted">Добавьте профиль, когда будете готовы.</p>
                 </div>
                 <button
                   type="button"
@@ -437,245 +347,93 @@ function AddChildForm({
 
 function ChildCard({
   child,
-  isEditing,
   activeEpisodeStartedAt,
   episodeCount,
   latestWeightEntry,
-  medicationReminder,
-  onEditToggle,
-  onDelete,
-  onSave,
   onStartEpisode,
-  isSaving,
-  isDeleting,
   isStartingEpisode,
   hasActiveEpisode,
 }: {
   child: Child;
-  isEditing: boolean;
   activeEpisodeStartedAt: string | null;
   episodeCount: number;
   latestWeightEntry: WeightEntry | null;
-  medicationReminder: { tone: "success" | "warning" | "danger" | "muted"; text: string } | null;
-  onEditToggle: () => void;
-  onDelete: () => void;
-  onSave: (name: string, birthDate?: string | null, details?: ChildProfileDetails) => void;
   onStartEpisode: () => void;
-  isSaving: boolean;
-  isDeleting: boolean;
   isStartingEpisode: boolean;
   hasActiveEpisode: boolean;
 }) {
-  const [draftName, setDraftName] = useState(child.name);
-  const [draftBirthDate, setDraftBirthDate] = useState(child.birthDate ?? "");
-  const [institutionName, setInstitutionName] = useState(child.institutionName ?? "");
-  const [institutionPhone, setInstitutionPhone] = useState(child.institutionPhone ?? "");
-  const [doctorName, setDoctorName] = useState(child.doctorName ?? "");
-  const [doctorPhone, setDoctorPhone] = useState(child.doctorPhone ?? "");
-  const [allergies, setAllergies] = useState(child.allergies ?? "");
-  const [notes, setNotes] = useState(child.notes ?? "");
-  const primaryActionLabel = hasActiveEpisode ? "Открыть" : "Начать";
   const latestWeightLabel = latestWeightEntry ? formatWeightValue(latestWeightEntry.valueKg) : null;
-
-  useEffect(() => {
-    setDraftName(child.name);
-    setDraftBirthDate(child.birthDate ?? "");
-    setInstitutionName(child.institutionName ?? "");
-    setInstitutionPhone(child.institutionPhone ?? "");
-    setDoctorName(child.doctorName ?? "");
-    setDoctorPhone(child.doctorPhone ?? "");
-    setAllergies(child.allergies ?? "");
-    setNotes(child.notes ?? "");
-  }, [child]);
-
+  const primaryMeta = [
+    child.ageLabel,
+    latestWeightLabel ? `Вес ${latestWeightLabel}` : null,
+  ].filter(Boolean) as string[];
+  const historyLabel = episodeCount > 0 ? `${episodeCount} в истории` : "История пустая";
   return (
     <li>
       <RowSurface
         className={hasActiveEpisode ? "soft-card-status-danger" : "soft-card-status-success"}
       >
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-          <div
-            className="min-w-0 cursor-pointer"
-            onClick={onStartEpisode}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onStartEpisode();
-              }
-            }}
-            role="button"
-            tabIndex={0}
-          >
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-semibold text-foreground">{child.name}</h2>
+                <h2 className="app-card-title text-lg">{child.name}</h2>
                 {hasActiveEpisode && (
-                  <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
-                    Наблюдение
-                  </span>
+                  <>
+                    <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
+                      {activeEpisodeStartedAt
+                        ? `Наблюдение с ${formatDate(activeEpisodeStartedAt)}`
+                        : "Наблюдение"}
+                    </span>
+                  </>
                 )}
               </div>
-              <span className="soft-pill rounded-full px-3 py-1 text-xs sm:hidden">
-                {primaryActionLabel}
+              <span className="soft-pill hidden rounded-full px-3 py-1 text-xs sm:inline-flex">
+                {historyLabel}
               </span>
             </div>
-            <p className="mt-3 text-sm leading-7 text-muted">
-              {child.ageLabel ? `${child.ageLabel} • ` : ""}
-              {child.birthDate ? `Рожд. ${formatDate(child.birthDate)} • ` : ""}
-              {latestWeightLabel ? `Вес ${latestWeightLabel} • ` : ""}
-              Случаев в истории: {episodeCount}
-            </p>
-            {(child.institutionName || child.doctorName || child.allergies) && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {child.institutionName && (
-                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                    {child.institutionName}
-                  </span>
-                )}
-                {child.doctorName && (
-                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                    Врач: {child.doctorName}
-                  </span>
-                )}
-                {child.allergies && (
-                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                    Аллергии: {child.allergies}
-                  </span>
-                )}
-              </div>
-            )}
-            {(child.institutionPhone || child.doctorPhone || child.notes) && (
-              <div className="mt-2 space-y-1 text-sm text-muted">
-                {child.institutionPhone && <p>Организация: {child.institutionPhone}</p>}
-                {child.doctorPhone && <p>Врач: {child.doctorPhone}</p>}
-                {child.notes && <p>{child.notes}</p>}
-              </div>
-            )}
-            {hasActiveEpisode && activeEpisodeStartedAt && (
-              <p className="soft-text-danger mt-1 text-sm">
-                Наблюдение с {formatDate(activeEpisodeStartedAt)}
-              </p>
-            )}
-            {hasActiveEpisode && medicationReminder && (
-              <p
-                className={[
-                  "mt-2 text-sm",
-                  medicationReminder.tone === "success"
-                    ? "soft-text-success"
-                    : medicationReminder.tone === "warning"
-                      ? "soft-text-warning"
-                      : medicationReminder.tone === "danger"
-                        ? "soft-text-danger"
-                        : "text-muted",
-                ].join(" ")}
-              >
-                {medicationReminder.text}
-              </p>
-            )}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {primaryMeta.map((chip) => (
+                <span key={chip} className="soft-pill rounded-full px-3 py-1 text-xs">
+                  {chip}
+                </span>
+              ))}
+              <span className="soft-pill rounded-full px-3 py-1 text-xs sm:hidden">
+                {historyLabel}
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:justify-end">
-            <Link
-              to={`/children/${child.id}/illness?view=history`}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-            >
-              История
-            </Link>
+          <div className="grid w-full gap-2 sm:w-auto">
             <button
               type="button"
               onClick={onStartEpisode}
               disabled={isStartingEpisode}
-              className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+              className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:min-w-[220px]"
             >
               {hasActiveEpisode
-                ? "Открыть"
+                ? "К активным болезням"
                 : isStartingEpisode
                   ? "Открываем…"
                   : "Начать наблюдение"}
             </button>
-            <button
-              type="button"
-              onClick={onEditToggle}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-            >
-              {isEditing ? "Закрыть" : "Редактировать"}
-            </button>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                to={`/children/${child.id}/illness?view=history`}
+                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-center text-sm"
+              >
+                История
+              </Link>
+              <Link
+                to={`/children/${child.id}`}
+                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-center text-sm"
+              >
+                Профиль
+              </Link>
+            </div>
           </div>
         </div>
-
-        {isEditing && (
-          <div className="mt-5 grid gap-3 border-t border-border/70 pt-5 sm:grid-cols-[minmax(0,1fr)_220px_auto]">
-            <label className="block min-w-0">
-              <span className="block text-sm text-muted">Имя</span>
-              <input
-                type="text"
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
-              />
-            </label>
-            <label className="block">
-              <span className="block text-sm text-muted">Дата рождения</span>
-              <DateField
-                value={draftBirthDate}
-                onChange={setDraftBirthDate}
-                max={new Date().toISOString().slice(0, 10)}
-                className="mt-1 w-full"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() =>
-                onSave(draftName.trim(), draftBirthDate || null, {
-                  institutionName: institutionName.trim() || null,
-                  institutionPhone: institutionPhone.trim() || null,
-                  doctorName: doctorName.trim() || null,
-                  doctorPhone: doctorPhone.trim() || null,
-                  allergies: allergies.trim() || null,
-                  notes: notes.trim() || null,
-                })
-              }
-              disabled={isSaving || !draftName.trim()}
-              className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
-            >
-              {isSaving ? "Сохраняем…" : "Сохранить"}
-            </button>
-            <div className="sm:col-span-3 grid gap-3 sm:grid-cols-2">
-              <InputField
-                label="Сад / школа"
-                value={institutionName}
-                onChange={setInstitutionName}
-              />
-              <InputField
-                label="Телефон организации"
-                value={institutionPhone}
-                onChange={setInstitutionPhone}
-              />
-              <InputField label="Врач" value={doctorName} onChange={setDoctorName} />
-              <InputField label="Телефон врача" value={doctorPhone} onChange={setDoctorPhone} />
-              <TextField label="Аллергии" value={allergies} onChange={setAllergies} />
-              <TextField label="Заметки" value={notes} onChange={setNotes} />
-            </div>
-            <div className="sm:col-span-3 flex justify-start pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  const shouldDelete = window.confirm(
-                    `Точно удалить ребёнка «${child.name}»? Это действие нельзя отменить.`
-                  );
-                  if (!shouldDelete) {
-                    return;
-                  }
-                  onDelete();
-                }}
-                disabled={isDeleting}
-                className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-              >
-                {isDeleting ? "Удаляем…" : "Удалить ребёнка"}
-              </button>
-            </div>
-          </div>
-        )}
       </RowSurface>
     </li>
   );

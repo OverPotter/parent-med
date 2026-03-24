@@ -26,7 +26,15 @@ export function ClientStartPage() {
   }, [isResolving, startRoute, hasFamily, hasChildren, hasActiveEpisode]);
 
   if (isDesktop) {
-    return <Navigate to="/home" replace />;
+    if (!hasSeenWorkspaceIntro) {
+      return <Navigate to="/home" replace />;
+    }
+
+    if (isResolving) {
+      return <div className="py-8 text-sm text-muted">Открываем рабочий раздел…</div>;
+    }
+
+    return <Navigate to={startRoute} replace />;
   }
 
   if (!hasSeenWorkspaceIntro) {

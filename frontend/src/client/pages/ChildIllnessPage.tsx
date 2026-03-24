@@ -2,7 +2,7 @@
  * Эпизоды болезни ребёнка: список, создание, журнал температуры и приёмы.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -56,6 +56,7 @@ import {
   formatIntervalForDisplay,
   getAdministrationActorLabel,
   getPrioritizedMedicationPlanItems,
+  type MedicationPlanPriorityItem,
 } from "../utils/medicationPlans";
 import { formatDate, formatDateTime } from "@shared/utils/date";
 
@@ -66,7 +67,6 @@ export function ChildIllnessPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const queryClient = useQueryClient();
   const [openHistoryEpisodeId, setOpenHistoryEpisodeId] = useState<string | null>(null);
-  const [isChildSummaryExpanded, setIsChildSummaryExpanded] = useState(false);
   const historyOnlyView = searchParams.get("view") === "history";
   const createMode = searchParams.get("mode") === "create";
   const focusMode = searchParams.get("focus") ?? searchParams.get("compose");
@@ -75,7 +75,10 @@ export function ChildIllnessPage() {
       ? focusMode
       : null;
   const quickTimelineMode = focusMode === "timeline";
-  const initialManualComposerExpanded = quickComposeMode !== null;
+  const quickReminderMode = focusMode === "reminders";
+  const quickReminderCreateMode = focusMode === "reminder-create";
+  const quickReminderDetailMode = focusMode === "reminder-detail";
+  const reminderPlanId = searchParams.get("plan");
   const initialComposerMode = quickComposeMode ?? "temperature";
   const liveQueryOptions = useLiveQueryOptions(3000);
 
@@ -231,59 +234,40 @@ export function ChildIllnessPage() {
       </Link>
 
       {((!activeEpisode && !createMode) || historyOnlyView) && (
-        <section className="soft-panel soft-hero relative overflow-hidden rounded-[28px]">
+        <section
+          className={`soft-panel soft-hero relative overflow-hidden rounded-[28px] ${
+            historyOnlyView ? "hidden lg:block" : ""
+          }`}
+        >
           <div className="relative p-4 sm:p-5">
-            <DisclosureHeader
-              isOpen={isChildSummaryExpanded}
-              onToggle={() => setIsChildSummaryExpanded((current) => !current)}
-              desktopClosedLabel="Данные"
-              desktopOpenLabel="Скрыть"
-              className="gap-4"
-            >
-              <div className="min-w-0">
-                <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                  {child.name}
-                </h1>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                    {historyOnlyView ? "История" : createMode ? "Новое наблюдение" : "Пока пусто"}
-                  </span>
-                  {child.ageLabel && (
-                    <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                      {child.ageLabel}
-                    </span>
-                  )}
-                </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                {child.name}
+              </h1>
+              <p className="mt-3 text-sm text-muted lg:hidden">
+                {historyOnlyView
+                  ? "Завершённые наблюдения по ребёнку."
+                  : createMode
+                    ? "Заполните короткую карточку и начните наблюдение."
+                    : "Сейчас активного наблюдения нет."}
+              </p>
+            </div>
+
+            <div className="mt-4 hidden gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-4">
+              {child.ageLabel ? <SummaryCard label="Возраст" value={child.ageLabel} /> : null}
+              {child.birthDate ? (
+                <SummaryCard label="Дата рождения" value={formatDate(child.birthDate)} />
+              ) : null}
+              {latestWeight ? (
+                <SummaryCard label="Вес" value={formatWeightValue(latestWeight.valueKg)} />
+              ) : null}
+              <SummaryCard label="Эпизоды" value={String(episodes.length)} />
+            </div>
+
+            {!currentFamilyId && (
+              <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
+                Семья не выбрана. Сначала открой страницу «Семья».
               </div>
-            </DisclosureHeader>
-
-            {isChildSummaryExpanded && (
-              <>
-                <div className="mt-4 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <SnapshotItem label="Возраст" value={child.ageLabel || "Не указан"} />
-                  <SnapshotItem
-                    label="Дата рождения"
-                    value={child.birthDate ? formatDate(child.birthDate) : "Не указана"}
-                  />
-                  <SnapshotItem label="Всего эпизодов" value={String(episodes.length)} />
-                  <SnapshotItem
-                    label="Состояние"
-                    value={
-                      historyOnlyView
-                        ? "Просмотр истории"
-                        : createMode
-                          ? "Подготовка нового эпизода"
-                          : "Без активного эпизода"
-                    }
-                  />
-                </div>
-
-                {!currentFamilyId && (
-                  <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
-                    Семья не выбрана. Сначала открой страницу «Семья».
-                  </div>
-                )}
-              </>
             )}
           </div>
         </section>
@@ -298,10 +282,13 @@ export function ChildIllnessPage() {
             onClose={() => closeEpisodeMutation.mutate(activeEpisode.id)}
             familyId={currentFamilyId}
             latestWeight={latestWeight}
-            initialManualComposerExpanded={initialManualComposerExpanded}
             initialComposerMode={initialComposerMode}
             quickComposeMode={quickComposeMode}
             quickTimelineMode={quickTimelineMode}
+            quickReminderMode={quickReminderMode}
+            quickReminderCreateMode={quickReminderCreateMode}
+            quickReminderDetailMode={quickReminderDetailMode}
+            reminderPlanId={reminderPlanId}
           />
         </section>
       )}
@@ -310,13 +297,10 @@ export function ChildIllnessPage() {
         <section className="space-y-3">
           <SectionTitle
             title="Новое наблюдение"
-            subtitle="Пока ты только готовишь наблюдение. Оно появится в активных болезнях только после запуска."
+            subtitle="Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи."
           />
           <EpisodeActivationCard
             childName={child.name}
-            childId={child.id}
-            medicines={familyMedicines}
-            latestWeight={latestWeight}
             isPending={createEpisodeMutation.isPending}
             errorMessage={
               (
@@ -340,21 +324,19 @@ export function ChildIllnessPage() {
       {historyOnlyView && (
         <section className="space-y-3">
           <SectionTitle
-            title="История"
+            title={`История${child.name ? ` · ${child.name}` : ""}`}
             subtitle={
               openHistoryEpisodeId
-                ? "Открыта одна запись. Остальные скрыты, чтобы было проще читать и редактировать."
+                ? "Открыта одна запись."
                 : historyEpisodes.length > 0
-                  ? "Краткие карточки с описанием. При необходимости запись можно раскрыть и исправить."
-                  : "Когда появятся завершённые наблюдения, они будут показаны здесь."
+                  ? "Завершённые наблюдения по ребёнку."
+                  : "Завершённых наблюдений пока нет."
             }
           />
 
           {openHistoryEpisodeId && (
             <div className="soft-panel-muted flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-4 py-3">
-              <p className="text-sm text-muted">
-                Показана 1 запись из {historyEpisodes.length}. Остальные скрыты.
-              </p>
+              <p className="text-sm text-muted">Показана 1 запись из {historyEpisodes.length}.</p>
               <button
                 type="button"
                 onClick={() => setOpenHistoryEpisodeId(null)}
@@ -402,11 +384,11 @@ function InfoPill({ label }: { label: string }) {
   return <span className="soft-pill rounded-full px-3 py-1 text-sm">{label}</span>;
 }
 
-function SnapshotItem({ label, value }: { label: string; value: string }) {
+function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="soft-panel-muted rounded-[22px] px-4 py-3">
       <p className="text-xs tracking-[0.08em] text-muted">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-foreground">{value}</p>
+      <p className="mt-2 text-base font-semibold text-foreground">{value}</p>
     </div>
   );
 }
@@ -487,8 +469,8 @@ function HistoryEpisodeCard({
           <p className="text-xs tracking-[0.08em] text-muted">
             Эпизод {episodeNumber} · {formatEpisodePeriod(episode.startedAt, episode.closedAt)}
           </p>
-          <p className="mt-2 text-base font-medium text-foreground">
-            {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
+          <p className="mt-2 text-base font-medium text-[color:color-mix(in_srgb,var(--color-primary)_62%,var(--color-foreground))]">
+            {episode.title?.trim() || "Без названия"}
           </p>
           <p className="mt-1 text-sm text-muted">
             {episode.closedAt
@@ -496,7 +478,7 @@ function HistoryEpisodeCard({
               : "Дата закрытия не указана"}
           </p>
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
-            {episode.note?.trim() || "Описание не заполнено."}
+            {episode.note?.trim() || "Без описания"}
           </p>
         </>
       </DisclosureHeader>
@@ -507,7 +489,6 @@ function HistoryEpisodeCard({
             <div>
               <h3 className="text-sm font-semibold text-foreground">Описание</h3>
               <p className="mt-1 text-sm text-muted">
-                {formatEpisodePeriod(episode.startedAt, episode.closedAt)} ·{" "}
                 {formatEntrySummary(
                   temperatureEntries.length,
                   administrations.length,
@@ -518,7 +499,7 @@ function HistoryEpisodeCard({
 
             <div className="soft-panel-muted mt-4 rounded-[22px] px-4 py-4">
               <p className="text-sm leading-6 text-muted">
-                {episode.note?.trim() || "Описание не заполнено."}
+                {episode.note?.trim() || "Без описания"}
               </p>
             </div>
           </section>
@@ -532,7 +513,7 @@ function HistoryEpisodeCard({
               </div>
             ) : (
               <div className="soft-empty mt-4 rounded-[22px] px-4 py-6 text-sm text-muted">
-                Для этого наблюдения ещё нет температур и записей о лекарствах.
+                Для этого наблюдения ещё нет температур и отмеченных приёмов.
               </div>
             )}
           </section>
@@ -541,9 +522,7 @@ function HistoryEpisodeCard({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Действия</h3>
-                <p className="mt-1 text-sm text-muted">
-                  Удаление скрывает эту запись из истории, но не стирает её из базы.
-                </p>
+                <p className="mt-1 text-sm text-muted">Запись можно удалить из истории.</p>
               </div>
               <button
                 type="button"
@@ -573,10 +552,13 @@ function EpisodeBlock({
   onClose,
   familyId,
   latestWeight,
-  initialManualComposerExpanded,
   initialComposerMode,
   quickComposeMode,
   quickTimelineMode,
+  quickReminderMode,
+  quickReminderCreateMode,
+  quickReminderDetailMode,
+  reminderPlanId,
 }: {
   childName: string;
   childId: string;
@@ -584,10 +566,13 @@ function EpisodeBlock({
   onClose: () => void;
   familyId: string | null;
   latestWeight: WeightEntry | null;
-  initialManualComposerExpanded: boolean;
   initialComposerMode: "temperature" | "administration" | "comment";
   quickComposeMode: "temperature" | "administration" | "comment" | null;
   quickTimelineMode: boolean;
+  quickReminderMode: boolean;
+  quickReminderCreateMode: boolean;
+  quickReminderDetailMode: boolean;
+  reminderPlanId: string | null;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -595,13 +580,26 @@ function EpisodeBlock({
   const liveQueryOptions = useLiveQueryOptions(3000);
   const isActive = episode.status === "active";
   const [commentText, setCommentText] = useState("");
-  const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
-  const [isManualComposerExpanded, setIsManualComposerExpanded] = useState(
-    episode.medicationMode !== "guided" || initialManualComposerExpanded
-  );
-  const [composerMode, setComposerMode] = useState<"temperature" | "administration" | "comment">(
-    initialComposerMode
-  );
+  const [quickComposeSuccessMessage, setQuickComposeSuccessMessage] = useState<string | null>(null);
+  const composerMode = quickComposeMode ?? initialComposerMode;
+  const quickComposeMeta =
+    composerMode === "temperature"
+      ? {
+          title: "Запись температуры",
+          subtitle: "Сохраните новый замер.",
+          success: "Температура сохранена",
+        }
+      : composerMode === "administration"
+        ? {
+            title: "Запись приёма",
+            subtitle: "Сохраните приём.",
+            success: "Приём сохранён",
+          }
+        : {
+            title: "Заметка",
+            subtitle: "Добавьте заметку о состоянии.",
+            success: "Заметка сохранена",
+          };
 
   const { data: temperatureEntries = [] } = useQuery({
     queryKey: ["temperature-entries", episode.id],
@@ -638,10 +636,6 @@ function EpisodeBlock({
     ...liveQueryOptions,
   });
 
-  const usableHouseholdMedicines = householdMedicines.filter(
-    (medicine) => medicine.status !== "expired" && medicine.status !== "expired_after_opening"
-  );
-
   const addTempMutation = useMutation({
     mutationFn: (valueCelsius: number) =>
       createTemperatureEntry({ episode_id: episode.id, value_celsius: valueCelsius }),
@@ -649,7 +643,7 @@ function EpisodeBlock({
       void trackTemperatureLogged(episode.id);
       queryClient.invalidateQueries({ queryKey: ["temperature-entries", episode.id] });
       if (quickComposeMode) {
-        navigate("/illnesses/active");
+        setQuickComposeSuccessMessage(quickComposeMeta.success);
       }
     },
   });
@@ -672,7 +666,7 @@ function EpisodeBlock({
       trackMedicationAdministered("episode_detail");
       queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
       if (quickComposeMode) {
-        navigate("/illnesses/active");
+        setQuickComposeSuccessMessage(quickComposeMeta.success);
       }
     },
   });
@@ -699,8 +693,12 @@ function EpisodeBlock({
         dose_mg_per_kg: payload.dose_mg_per_kg ?? null,
         notes: payload.notes ?? null,
       }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      if (quickReminderCreateMode) {
+        navigate(`/children/${childId}/illness?focus=reminders`);
+      }
+    },
   });
 
   const deletePlanMutation = useMutation({
@@ -740,237 +738,240 @@ function EpisodeBlock({
       queryClient.invalidateQueries({ queryKey: ["illness-comments", episode.id] });
       setCommentText("");
       if (quickComposeMode) {
-        navigate("/illnesses/active");
+        setQuickComposeSuccessMessage(quickComposeMeta.success);
       }
     },
   });
 
   const [tempValue, setTempValue] = useState("");
-  const [adminMedicineMode, setAdminMedicineMode] = useState<"cabinet" | "manual">("cabinet");
-  const [adminMedicineId, setAdminMedicineId] = useState("");
   const [adminCustomMedicineName, setAdminCustomMedicineName] = useState("");
   const [adminAmount, setAdminAmount] = useState("");
+  const now = useNow();
   const timelineItems = buildEpisodeTimeline(
     temperatureEntries,
     administrations,
     comments,
     householdMedicines
   );
-  const manualComposerSection = (
-    <div
-      className={[
-        episode.medicationMode === "guided" && !quickComposeMode ? "mt-2" : "",
-        "soft-panel-muted rounded-[24px] px-4 py-5 sm:px-5 sm:py-6",
-      ].join(" ")}
-    >
-      {quickComposeMode ? (
-        <div>
-          <h4 className="text-base font-semibold text-foreground">Быстрая запись</h4>
-          <p className="mt-1 text-sm text-muted">
-            Добавь температуру, лекарство или комментарий без лишних блоков.
-          </p>
-        </div>
-      ) : (
-        <DisclosureHeader
-          isOpen={isManualComposerExpanded}
-          onToggle={() => setIsManualComposerExpanded((current) => !current)}
-        >
-          <>
-            <h4 className="text-base font-semibold text-foreground">
-              {episode.medicationMode === "guided" ? "Быстрая запись" : "Добавить запись"}
-            </h4>
-            <p className="mt-1 text-sm text-muted">
-              {episode.medicationMode === "guided"
-                ? "Отдельно можно добавить температуру, лекарство или комментарий."
-                : "Выбери тип записи и внеси одно новое действие."}
-            </p>
-          </>
-        </DisclosureHeader>
+  const reminderItems = getPrioritizedMedicationPlanItems(
+    medicationPlans,
+    administrations,
+    householdMedicines,
+    new Date(now)
+  );
+  const reminderLead = reminderItems[0] ?? null;
+  const selectedReminderItem = reminderPlanId
+    ? (reminderItems.find((item) => item.plan.id === reminderPlanId) ?? null)
+    : null;
+
+  useEffect(() => {
+    if (!quickComposeSuccessMessage) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      navigate("/illnesses/active");
+    }, 700);
+    return () => window.clearTimeout(timeoutId);
+  }, [navigate, quickComposeSuccessMessage]);
+  const composerContent = (
+    <div className="mt-4">
+      {composerMode === "temperature" && (
+        <TemperatureForm
+          value={tempValue}
+          onChange={setTempValue}
+          onSubmit={() => {
+            const parsed = parseFloat(tempValue);
+            if (Number.isNaN(parsed)) return;
+            addTempMutation.mutate(parsed);
+            setTempValue("");
+          }}
+          isPending={addTempMutation.isPending}
+        />
       )}
 
-      {(quickComposeMode || isManualComposerExpanded) && (
+      {composerMode === "administration" && (
         <>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <ComposerToggle
-              label="Температура"
-              active={composerMode === "temperature"}
-              onClick={() => setComposerMode("temperature")}
-            />
-            <ComposerToggle
-              label="Лекарство"
-              active={composerMode === "administration"}
-              onClick={() => setComposerMode("administration")}
-            />
-            <ComposerToggle
-              label="Комментарий"
-              active={composerMode === "comment"}
-              onClick={() => setComposerMode("comment")}
-            />
-          </div>
-
-          <div className="mt-4">
-            {composerMode === "temperature" && (
-              <TemperatureForm
-                value={tempValue}
-                onChange={setTempValue}
-                onSubmit={() => {
-                  const parsed = parseFloat(tempValue);
-                  if (Number.isNaN(parsed)) return;
-                  addTempMutation.mutate(parsed);
-                  setTempValue("");
-                }}
-                isPending={addTempMutation.isPending}
-              />
-            )}
-
-            {composerMode === "administration" &&
-              (usableHouseholdMedicines.length === 0 ? (
-                <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
-                  В аптечке нет доступных упаковок для приёма. Просроченные скрыты автоматически.
-                </div>
-              ) : (
-                <AdministrationForm
-                  medicines={usableHouseholdMedicines}
-                  mode={adminMedicineMode}
-                  selectedMedicineId={adminMedicineId}
-                  customMedicineName={adminCustomMedicineName}
-                  amount={adminAmount}
-                  onModeChange={setAdminMedicineMode}
-                  onMedicineChange={setAdminMedicineId}
-                  onCustomMedicineNameChange={setAdminCustomMedicineName}
-                  onAmountChange={setAdminAmount}
-                  onSubmit={() => {
-                    if (
-                      (adminMedicineMode === "cabinet" && !adminMedicineId) ||
-                      (adminMedicineMode === "manual" && !adminCustomMedicineName.trim()) ||
-                      !adminAmount.trim()
-                    ) {
-                      return;
-                    }
-                    addAdminMutation.mutate({
-                      household_medicine_id:
-                        adminMedicineMode === "cabinet" ? adminMedicineId : undefined,
-                      custom_medicine_name:
-                        adminMedicineMode === "manual" ? adminCustomMedicineName.trim() : undefined,
-                      amount: adminAmount.trim(),
-                    });
-                    setAdminMedicineMode("cabinet");
-                    setAdminMedicineId("");
-                    setAdminCustomMedicineName("");
-                    setAdminAmount("");
-                  }}
-                  isPending={addAdminMutation.isPending}
-                />
-              ))}
-            {composerMode === "administration" && addAdminMutation.isError && (
-              <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
-                {(addAdminMutation.error as { response?: { data?: { detail?: string } } }).response
-                  ?.data?.detail ?? "Ошибка записи. Проверь срок годности и срок после вскрытия."}
-              </p>
-            )}
-
-            {composerMode === "comment" && (
-              <div className="soft-panel-muted grid gap-3 rounded-[24px] p-3">
-                <textarea
-                  rows={3}
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Например: к вечеру стал бодрее, после сна снова поднялась температура."
-                  className="soft-input w-full rounded-2xl px-3 py-2"
-                />
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!commentText.trim()) return;
-                      addCommentMutation.mutate();
-                    }}
-                    disabled={addCommentMutation.isPending || !commentText.trim()}
-                    className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-                  >
-                    {addCommentMutation.isPending ? "Сохраняем…" : "Добавить комментарий"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <AdministrationForm
+            customMedicineName={adminCustomMedicineName}
+            amount={adminAmount}
+            onCustomMedicineNameChange={setAdminCustomMedicineName}
+            onAmountChange={setAdminAmount}
+            onSubmit={() => {
+              if (!adminCustomMedicineName.trim()) {
+                return;
+              }
+              addAdminMutation.mutate({
+                custom_medicine_name: adminCustomMedicineName.trim(),
+                amount: adminAmount.trim(),
+              });
+              setAdminCustomMedicineName("");
+              setAdminAmount("");
+            }}
+            isPending={addAdminMutation.isPending}
+          />
         </>
+      )}
+      {composerMode === "administration" && addAdminMutation.isError && (
+        <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
+          {(addAdminMutation.error as { response?: { data?: { detail?: string } } }).response?.data
+            ?.detail ?? "Ошибка записи. Проверь срок годности и срок после вскрытия."}
+        </p>
+      )}
+
+      {composerMode === "comment" && (
+        <div className="grid gap-3">
+          <textarea
+            rows={3}
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Например: к вечеру бодрее, после сна снова температура."
+            className="soft-input w-full rounded-2xl px-4 py-3"
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (!commentText.trim()) return;
+                addCommentMutation.mutate();
+              }}
+              disabled={addCommentMutation.isPending || !commentText.trim()}
+              className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+            >
+              {addCommentMutation.isPending ? "Сохраняем…" : "Добавить комментарий"}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
-  const timelineSection = (
-    <section className="soft-panel-muted rounded-[24px] px-4 py-5 sm:px-5 sm:py-6">
-      {quickTimelineMode ? (
-        <div>
-          <h4 className="text-base font-semibold text-foreground">Лента наблюдения</h4>
-          <p className="mt-1 text-sm text-muted">Последние записи по времени.</p>
-        </div>
-      ) : (
-        <DisclosureHeader
-          isOpen={isTimelineExpanded}
-          onToggle={() => {
-            setIsTimelineExpanded((current) => !current);
-          }}
-          desktopClosedLabel={`Показать ленту (${timelineItems.length})`}
-          desktopOpenLabel="Скрыть ленту"
-          disabled={timelineItems.length === 0}
-        >
-          <>
-            <h4 className="text-base font-semibold text-foreground">Лента наблюдения</h4>
-            <p className="mt-1 text-sm text-muted">Последние записи по времени.</p>
-          </>
-        </DisclosureHeader>
-      )}
+  const manualComposerSection = quickComposeMode ? (
+    <section>{composerContent}</section>
+  ) : (
+    <section className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_24%,transparent)] px-4 py-5 sm:px-5 sm:py-6">
+      <div className="min-w-0">
+        <h4 className="text-base font-semibold text-foreground">Быстрые записи</h4>
+        <p className="mt-1 text-sm text-muted">Температура, приёмы и заметки.</p>
+      </div>
 
-      <div className="mt-4">
-        {timelineItems.length > 0 ? (
-          quickTimelineMode || isTimelineExpanded ? (
-            <EpisodeTimelineList items={timelineItems} />
-          ) : (
-            <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
-              Лента свернута. Открой её, если нужно посмотреть предыдущие записи.
-            </div>
-          )
-        ) : (
-          <div className="soft-empty rounded-[22px] px-4 py-6 text-sm text-muted">
-            Записей пока нет.
-          </div>
-        )}
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <Link
+          to={`/children/${childId}/illness?focus=temperature`}
+          className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+        >
+          Записать температуру
+        </Link>
+        <Link
+          to={`/children/${childId}/illness?focus=administration`}
+          className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+        >
+          Записать приём
+        </Link>
+        <Link
+          to={`/children/${childId}/illness?focus=comment`}
+          className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+        >
+          Добавить заметку
+        </Link>
       </div>
     </section>
   );
+  const timelineSection = quickTimelineMode ? (
+    <section className="space-y-4">
+      {timelineItems.length > 0 ? (
+        <EpisodeTimelineList items={timelineItems} />
+      ) : (
+        <div className="soft-empty rounded-[22px] px-4 py-6 text-sm text-muted">
+          Пока записей нет.
+        </div>
+      )}
+    </section>
+  ) : (
+    <section className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_24%,transparent)] px-4 py-5 sm:px-5 sm:py-6">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+        <div className="min-w-0">
+          <h4 className="text-base font-semibold text-foreground">Лента наблюдения</h4>
+          <p className="mt-1 text-sm text-muted">Все записи по времени.</p>
+        </div>
+        <Link
+          to={`/children/${childId}/illness?focus=timeline`}
+          className="soft-button-secondary w-full self-start rounded-2xl px-4 py-2.5 text-center text-sm sm:w-auto"
+        >
+          Открыть
+        </Link>
+      </div>
+
+      {timelineItems.length > 0 ? (
+        <div className="mt-4">
+          <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+            Записей: {timelineItems.length}
+          </span>
+        </div>
+      ) : null}
+    </section>
+  );
+  const reminderOverviewSection =
+    episode.medicationMode === "guided" ? (
+      <section className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_22%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_28%,transparent)] px-4 py-5 sm:px-5 sm:py-6">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+          <div className="min-w-0">
+            <h4 className="text-base font-semibold text-foreground">Напоминания о приёме</h4>
+            <p className="mt-1 text-sm text-muted">Приёмы по интервалу и статус на сейчас.</p>
+          </div>
+          <Link
+            to={
+              medicationPlans.length > 0
+                ? `/children/${childId}/illness?focus=reminders`
+                : `/children/${childId}/illness?focus=reminder-create`
+            }
+            className="soft-button-secondary w-full self-start rounded-2xl px-4 py-2.5 text-center text-sm sm:w-auto"
+          >
+            {medicationPlans.length > 0 ? "Открыть" : "Добавить"}
+          </Link>
+        </div>
+
+        {reminderLead ? (
+          <div className="mt-4">
+            <span className="soft-pill-success rounded-full px-3 py-1.5 text-xs">
+              Активных напоминаний: {medicationPlans.length}
+            </span>
+          </div>
+        ) : null}
+      </section>
+    ) : null;
 
   if (quickComposeMode) {
     return (
       <div className="soft-panel rounded-[30px]">
-        <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-4 sm:px-6 sm:py-5">
+        <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-end gap-3">
-              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                {childName}
-              </p>
-              <p className="pb-0.5 text-xs text-muted">С {formatDate(episode.startedAt)}</p>
-            </div>
-            <h3 className="text-base font-medium tracking-tight text-muted sm:text-lg">
-              Быстрая запись
-            </h3>
+            <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+              {childName}
+              <span className="mx-2 text-muted">·</span>
+              <span className="text-muted">{quickComposeMeta.title}</span>
+            </p>
+            <p className="mt-1 text-sm text-muted">{quickComposeMeta.subtitle}</p>
           </div>
         </div>
 
         <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+          {quickComposeSuccessMessage && (
+            <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
+              {quickComposeSuccessMessage}
+            </div>
+          )}
           {manualComposerSection}
           <div className="flex flex-wrap gap-2">
             <Link
-              to={`/children/${childId}/illness`}
+              to="/illnesses/active"
               className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
-              Полное наблюдение
+              К активным болезням
             </Link>
             <Link
-              to="/illnesses/active"
-              className="soft-pill rounded-full px-3 py-2 text-xs text-muted"
+              to={`/children/${childId}/illness?focus=timeline`}
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
-              Назад
+              К ленте
             </Link>
           </div>
         </div>
@@ -981,17 +982,14 @@ function EpisodeBlock({
   if (quickTimelineMode) {
     return (
       <div className="soft-panel rounded-[30px]">
-        <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-4 sm:px-6 sm:py-5">
+        <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-end gap-3">
-              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                {childName}
-              </p>
-              <p className="pb-0.5 text-xs text-muted">С {formatDate(episode.startedAt)}</p>
-            </div>
-            <h3 className="text-base font-medium tracking-tight text-muted sm:text-lg">
-              Лента наблюдения
-            </h3>
+            <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+              {childName}
+              <span className="mx-2 text-muted">·</span>
+              <span className="text-muted">Лента наблюдения</span>
+            </p>
+            <p className="mt-1 text-sm text-muted">Все записи по времени.</p>
           </div>
         </div>
 
@@ -999,16 +997,267 @@ function EpisodeBlock({
           {timelineSection}
           <div className="flex flex-wrap gap-2">
             <Link
-              to={`/children/${childId}/illness`}
+              to="/illnesses/active"
               className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
-              Полное наблюдение
+              К активным болезням
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (quickReminderMode) {
+    return (
+      <div className="soft-panel rounded-[30px]">
+        <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
+          <div className="min-w-0">
+            <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+              {childName}
+              <span className="mx-2 text-muted">·</span>
+              <span className="text-muted">График приёма</span>
+            </p>
+            <p className="mt-1 text-sm text-muted">Активные напоминания по приёмам.</p>
+          </div>
+        </div>
+
+        <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+          {medicationPlans.length > 0 ? (
+            <MedicationPlanList
+              plans={medicationPlans}
+              medicines={householdMedicines}
+              administrations={administrations}
+              onOpen={(planId) =>
+                navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${planId}`)
+              }
+              onTakeDose={(plan) =>
+                addAdminMutation.mutate({
+                  household_medicine_id: plan.householdMedicineId,
+                  custom_medicine_name: plan.customMedicineName ?? undefined,
+                  amount: plan.doseAmount,
+                  reason: "Отмечено по напоминанию",
+                })
+              }
+              isSubmittingAdministration={addAdminMutation.isPending}
+            />
+          ) : (
+            <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
+              Напоминаний пока нет.
+            </div>
+          )}
+
+          {(
+            (createPlanMutation.error ?? updatePlanMutation.error) as {
+              response?: { data?: { detail?: string } };
+            }
+          )?.response?.data?.detail ? (
+            <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+              {
+                (
+                  (createPlanMutation.error ?? updatePlanMutation.error) as {
+                    response?: { data?: { detail?: string } };
+                  }
+                )?.response?.data?.detail
+              }
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/illnesses/active"
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+            >
+              К активным болезням
+            </Link>
+            <Link
+              to={`/children/${childId}/illness?focus=reminder-create`}
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+            >
+              Добавить напоминание
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (quickReminderDetailMode) {
+    if (!selectedReminderItem) {
+      return (
+        <div className="soft-panel rounded-[30px]">
+          <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+            <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
+              Напоминание не найдено.
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to={`/children/${childId}/illness?focus=reminders`}
+                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              >
+                К графику приёма
+              </Link>
+              <Link
+                to="/illnesses/active"
+                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              >
+                К активным болезням
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="soft-panel rounded-[30px]">
+        <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
+          <div className="min-w-0">
+            <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+              {childName}
+              <span className="mx-2 text-muted">·</span>
+              <span className="text-muted">Напоминание о приёме</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+          <MedicationPlanDetail
+            item={selectedReminderItem}
+            childId={childId}
+            latestWeight={latestWeight}
+            isSubmittingAdministration={addAdminMutation.isPending}
+            isUpdating={updatePlanMutation.isPending}
+            isDeleting={deletePlanMutation.isPending}
+            medicines={householdMedicines}
+            onTakeDose={(plan) =>
+              addAdminMutation.mutate({
+                household_medicine_id: plan.householdMedicineId,
+                custom_medicine_name: plan.customMedicineName ?? undefined,
+                amount: plan.doseAmount,
+                reason: "Отмечено по напоминанию",
+              })
+            }
+            onUpdate={(planId, payload) =>
+              updatePlanMutation.mutate({
+                id: planId,
+                payload: {
+                  household_medicine_id: payload.householdMedicineId,
+                  custom_medicine_name: payload.customMedicineName,
+                  dose_amount: payload.doseAmount,
+                  min_interval_minutes: payload.minIntervalMinutes,
+                  max_doses_per_day: payload.maxDosesPerDay,
+                  weight_kg: payload.weightKg,
+                  dose_mg_per_kg: payload.doseMgPerKg,
+                  notes: payload.notes,
+                },
+              })
+            }
+            onDelete={(planId) => {
+              deletePlanMutation.mutate(planId, {
+                onSuccess: () => navigate(`/children/${childId}/illness?focus=reminders`),
+              });
+            }}
+          />
+          {(
+            (updatePlanMutation.error ?? deletePlanMutation.error) as {
+              response?: { data?: { detail?: string } };
+            }
+          )?.response?.data?.detail ? (
+            <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+              {
+                (
+                  (updatePlanMutation.error ?? deletePlanMutation.error) as {
+                    response?: { data?: { detail?: string } };
+                  }
+                )?.response?.data?.detail
+              }
+            </div>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={`/children/${childId}/illness?focus=reminders`}
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+            >
+              К графику приёма
             </Link>
             <Link
               to="/illnesses/active"
-              className="soft-pill rounded-full px-3 py-2 text-xs text-muted"
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
-              Назад
+              К активным болезням
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (quickReminderCreateMode) {
+    return (
+      <div className="soft-panel rounded-[30px]">
+        <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
+          <div className="min-w-0">
+            <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+              {childName}
+              <span className="mx-2 text-muted">·</span>
+              <span className="text-muted">Новое напоминание</span>
+            </p>
+            <p className="mt-1 text-sm text-muted">Настройте интервал и сохраните.</p>
+          </div>
+        </div>
+
+        <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+          <MedicationPlanComposer
+            childId={childId}
+            medicines={householdMedicines.filter(
+              (medicine) =>
+                medicine.status !== "expired" && medicine.status !== "expired_after_opening"
+            )}
+            latestWeight={latestWeight}
+            onSubmit={(payload) =>
+              createPlanMutation.mutate({
+                household_medicine_id: payload.householdMedicineId,
+                custom_medicine_name: payload.customMedicineName,
+                dose_amount: payload.doseAmount,
+                min_interval_minutes: payload.minIntervalMinutes,
+                max_doses_per_day: payload.maxDosesPerDay,
+                weight_kg: payload.weightKg,
+                dose_mg_per_kg: payload.doseMgPerKg,
+                notes: payload.notes,
+              })
+            }
+            submitLabel="Сохранить напоминание"
+            isPending={createPlanMutation.isPending}
+            onCancel={() => navigate(`/children/${childId}/illness?focus=reminders`)}
+          />
+          {(
+            createPlanMutation.error as {
+              response?: { data?: { detail?: string } };
+            }
+          )?.response?.data?.detail ? (
+            <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+              {
+                (
+                  createPlanMutation.error as {
+                    response?: { data?: { detail?: string } };
+                  }
+                )?.response?.data?.detail
+              }
+            </div>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={`/children/${childId}/illness?focus=reminders`}
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+            >
+              К напоминаниям
+            </Link>
+            <Link
+              to="/illnesses/active"
+              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+            >
+              К активным болезням
             </Link>
           </div>
         </div>
@@ -1018,19 +1267,21 @@ function EpisodeBlock({
 
   return (
     <div className="soft-panel rounded-[30px]">
-      <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-4 sm:px-6 sm:py-5">
+      <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
         {isActive ? (
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-end gap-3">
-                <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                  {childName}
-                </p>
-                <p className="pb-0.5 text-xs text-muted">С {formatDate(episode.startedAt)}</p>
-              </div>
-              <h3 className="text-base font-medium tracking-tight text-muted sm:text-lg">
-                {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
-              </h3>
+              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {childName}
+              </p>
+              {episode.title?.trim() ? (
+                <h3 className="text-base font-medium tracking-tight text-muted sm:text-lg">
+                  {episode.title.trim()}
+                </h3>
+              ) : null}
+              <p className="mt-1 text-sm text-muted">
+                Быстрые записи, напоминания и лента наблюдения.
+              </p>
             </div>
             <button
               type="button"
@@ -1040,77 +1291,32 @@ function EpisodeBlock({
                 }
                 onClose();
               }}
-              className="soft-button-secondary hidden rounded-2xl px-4 py-2.5 text-sm sm:inline-flex"
+              className="soft-button-danger hidden rounded-2xl px-4 py-2.5 text-sm sm:inline-flex"
             >
               Закрыть наблюдение
             </button>
           </div>
         ) : (
           <div>
-            <div className="flex flex-wrap items-end gap-3">
-              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                {childName}
-              </p>
-              <p className="pb-0.5 text-xs text-muted">С {formatDate(episode.startedAt)}</p>
-            </div>
-            <h3 className="text-base font-medium tracking-tight text-muted sm:text-lg">
-              {episode.title?.trim() || `Начался ${formatDate(episode.startedAt)}`}
-            </h3>
+            <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              {childName}
+            </p>
+            {episode.title?.trim() ? (
+              <h3 className="text-base font-medium tracking-tight text-muted sm:text-lg">
+                {episode.title.trim()}
+              </h3>
+            ) : null}
+            <p className="mt-1 text-sm text-muted">
+              Быстрые записи, напоминания и лента наблюдения.
+            </p>
           </div>
         )}
       </div>
 
       <div className="space-y-7 px-5 py-5 sm:px-6 sm:py-6">
-        <section>
-          {episode.medicationMode === "guided" && (
-            <GuidedMedicationSection
-              childId={childId}
-              plans={medicationPlans}
-              medicines={householdMedicines}
-              administrations={administrations}
-              latestWeight={latestWeight}
-              isSubmittingAdministration={addAdminMutation.isPending}
-              isSubmittingPlan={createPlanMutation.isPending}
-              isUpdatingPlan={updatePlanMutation.isPending}
-              isDeletingPlan={deletePlanMutation.isPending}
-              planErrorMessage={
-                (
-                  (createPlanMutation.error ?? updatePlanMutation.error) as {
-                    response?: { data?: { detail?: string } };
-                  }
-                )?.response?.data?.detail ?? null
-              }
-              onCreatePlan={(payload) => createPlanMutation.mutate(payload)}
-              onUpdatePlan={(planId, payload) =>
-                updatePlanMutation.mutate({
-                  id: planId,
-                  payload: {
-                    household_medicine_id: payload.householdMedicineId,
-                    custom_medicine_name: payload.customMedicineName,
-                    dose_amount: payload.doseAmount,
-                    min_interval_minutes: payload.minIntervalMinutes,
-                    max_doses_per_day: payload.maxDosesPerDay,
-                    weight_kg: payload.weightKg,
-                    dose_mg_per_kg: payload.doseMgPerKg,
-                    notes: payload.notes,
-                  },
-                })
-              }
-              onDeletePlan={(planId) => deletePlanMutation.mutate(planId)}
-              onTakeDose={(plan) =>
-                addAdminMutation.mutate({
-                  household_medicine_id: plan.householdMedicineId,
-                  custom_medicine_name: plan.customMedicineName ?? undefined,
-                  amount: plan.doseAmount,
-                  reason: "Дали по плану",
-                })
-              }
-            />
-          )}
+        <section>{manualComposerSection}</section>
 
-          {manualComposerSection}
-        </section>
-
+        {reminderOverviewSection}
         {timelineSection}
 
         {isActive && (
@@ -1123,7 +1329,7 @@ function EpisodeBlock({
                 }
                 onClose();
               }}
-              className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-danger w-full rounded-2xl px-4 py-2.5 text-sm"
             >
               Закрыть наблюдение
             </button>
@@ -1136,18 +1342,12 @@ function EpisodeBlock({
 
 function EpisodeActivationCard({
   childName,
-  childId,
-  medicines,
-  latestWeight,
   isPending,
   errorMessage,
   onActivate,
   onCancel,
 }: {
   childName: string;
-  childId: string;
-  medicines: HouseholdMedicine[];
-  latestWeight: WeightEntry | null;
   isPending: boolean;
   errorMessage: string | null;
   onActivate: (payload: {
@@ -1177,44 +1377,15 @@ function EpisodeActivationCard({
 }) {
   const [startedAt, setStartedAt] = useState(() => new Date().toISOString().slice(0, 10));
   const [title, setTitle] = useState("");
-  const [composerMode, setComposerMode] = useState<"temperature" | "administration" | "comment">(
-    "temperature"
-  );
-  const [tempValue, setTempValue] = useState("");
-  const [adminMedicineMode, setAdminMedicineMode] = useState<"cabinet" | "manual">("cabinet");
-  const [adminMedicineId, setAdminMedicineId] = useState("");
-  const [adminCustomMedicineName, setAdminCustomMedicineName] = useState("");
-  const [adminAmount, setAdminAmount] = useState("");
-  const [commentText, setCommentText] = useState("");
-  const [isActivationPlansExpanded, setIsActivationPlansExpanded] = useState(false);
-  const [medicationPlans, setMedicationPlans] = useState<DraftMedicationPlan[]>([]);
-  const [temperatures, setTemperatures] = useState<Array<{ id: string; valueCelsius: number }>>([]);
-  const [administrations, setAdministrations] = useState<
-    Array<{
-      id: string;
-      householdMedicineId: string | null;
-      customMedicineName: string | null;
-      amount: string;
-    }>
-  >([]);
-  const [comments, setComments] = useState<Array<{ id: string; text: string }>>([]);
-  const usableMedicines = medicines.filter(
-    (medicine) => medicine.status !== "expired" && medicine.status !== "expired_after_opening"
-  );
-  const pendingItems = buildPendingActivationTimeline(
-    temperatures,
-    administrations,
-    comments,
-    medicines
-  );
 
   return (
     <div className="soft-panel rounded-[30px]">
-      <div className="soft-hero rounded-t-[30px] border-b border-border/70 px-5 py-6 sm:px-6 sm:py-7">
-        <p className="text-xs tracking-[0.1em] text-muted">Подготовка наблюдения</p>
+      <div className="soft-hero rounded-t-[30px] px-5 py-6 sm:px-6 sm:py-7">
+        <p className="text-xs tracking-[0.1em] text-muted">Старт наблюдения</p>
         <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{childName}</h3>
         <p className="mt-3 text-sm text-muted">
-          Пока наблюдение не запущено, оно не появляется в активных болезнях и ничего не сохраняет.
+          Создайте запись о болезни, а дальше просто отмечайте температуру, приёмы и важные
+          изменения.
         </p>
       </div>
 
@@ -1232,239 +1403,30 @@ function EpisodeActivationCard({
           />
         </label>
         <label className="block">
-          <span className="block text-sm text-muted">Название наблюдения</span>
+          <span className="block text-sm text-muted">Что случилось?</span>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Например: ОРВИ с температурой"
+            placeholder="Например: температура и кашель"
             className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
           />
+          <p className="mt-2 text-xs text-muted">
+            Необязательно. Нужен только короткий ориентир, чтобы потом быстрее найти запись.
+          </p>
         </label>
-        <section className="soft-panel-muted rounded-[24px] p-4 sm:p-5">
-          <DisclosureHeader
-            isOpen={isActivationPlansExpanded}
-            onToggle={() => setIsActivationPlansExpanded((current) => !current)}
-          >
-            <div>
-              <h4 className="text-base font-semibold text-foreground">Отслеживание по времени</h4>
-              <p className="mt-1 text-sm text-muted">
-                Если нужен интервал и напоминания, добавь схему здесь.
-              </p>
-              {!isActivationPlansExpanded && medicationPlans.length > 0 && (
-                <p className="mt-2 text-xs text-muted">Уже добавлено: {medicationPlans.length}</p>
-              )}
-            </div>
-          </DisclosureHeader>
-
-          {isActivationPlansExpanded && (
-            <>
-              <div className="mt-4">
-                <MedicationPlanComposer
-                  childId={childId}
-                  medicines={usableMedicines}
-                  latestWeight={latestWeight}
-                  onSubmit={(plan) => {
-                    setMedicationPlans((current) => [...current, { id: makeLocalId(), ...plan }]);
-                    setIsActivationPlansExpanded(false);
-                  }}
-                  submitLabel="Добавить план"
-                  isPending={false}
-                />
-              </div>
-
-              {medicationPlans.length > 0 && (
-                <div className="mt-4">
-                  <MedicationPlanList
-                    plans={medicationPlans}
-                    childId={childId}
-                    medicines={usableMedicines}
-                    latestWeight={latestWeight}
-                    onUpdate={(planId, payload) =>
-                      setMedicationPlans((current) =>
-                        current.map((plan) =>
-                          plan.id === planId ? { id: plan.id, ...payload } : plan
-                        )
-                      )
-                    }
-                    onDelete={(planId) =>
-                      setMedicationPlans((current) => current.filter((plan) => plan.id !== planId))
-                    }
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </section>
-        <section className="soft-card rounded-[24px] p-4 sm:p-5">
-          <div>
-            <h4 className="text-base font-semibold text-foreground">Быстрые записи</h4>
-            <p className="mt-1 text-sm text-muted">
-              Температура, лекарство или комментарий. Всё сохранится вместе с запуском.
-            </p>
-          </div>
-
+        <div className="soft-panel-muted rounded-[24px] p-4 sm:p-5">
+          <h4 className="text-base font-semibold text-foreground">Что будет дальше</h4>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Сразу после запуска откроется экран болезни. Там можно будет отдельно:
+          </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <ComposerToggle
-              label="Температура"
-              active={composerMode === "temperature"}
-              onClick={() => setComposerMode("temperature")}
-            />
-            <ComposerToggle
-              label="Лекарство"
-              active={composerMode === "administration"}
-              onClick={() => setComposerMode("administration")}
-            />
-            <ComposerToggle
-              label="Комментарий"
-              active={composerMode === "comment"}
-              onClick={() => setComposerMode("comment")}
-            />
+            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">Записать температуру</span>
+            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">Отметить приём</span>
+            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">Добавить комментарий</span>
+            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">Добавить напоминание</span>
           </div>
-
-          <div className="mt-4 border-t border-border/70 pt-4">
-            {composerMode === "temperature" && (
-              <TemperatureForm
-                value={tempValue}
-                onChange={setTempValue}
-                onSubmit={() => {
-                  const parsed = parseFloat(tempValue);
-                  if (Number.isNaN(parsed)) return;
-                  setTemperatures((current) => [
-                    ...current,
-                    { id: makeLocalId(), valueCelsius: parsed },
-                  ]);
-                  setTempValue("");
-                }}
-                isPending={false}
-              />
-            )}
-
-            {composerMode === "administration" &&
-              (usableMedicines.length === 0 ? (
-                <div className="soft-note-info rounded-2xl px-4 py-3 text-sm">
-                  В аптечке нет доступных упаковок для приёма. Просроченные скрыты автоматически.
-                </div>
-              ) : (
-                <AdministrationForm
-                  medicines={usableMedicines}
-                  mode={adminMedicineMode}
-                  selectedMedicineId={adminMedicineId}
-                  customMedicineName={adminCustomMedicineName}
-                  amount={adminAmount}
-                  onModeChange={setAdminMedicineMode}
-                  onMedicineChange={setAdminMedicineId}
-                  onCustomMedicineNameChange={setAdminCustomMedicineName}
-                  onAmountChange={setAdminAmount}
-                  onSubmit={() => {
-                    if (
-                      (adminMedicineMode === "cabinet" && !adminMedicineId) ||
-                      (adminMedicineMode === "manual" && !adminCustomMedicineName.trim()) ||
-                      !adminAmount.trim()
-                    ) {
-                      return;
-                    }
-                    setAdministrations((current) => [
-                      ...current,
-                      {
-                        id: makeLocalId(),
-                        householdMedicineId:
-                          adminMedicineMode === "cabinet" ? adminMedicineId : null,
-                        customMedicineName:
-                          adminMedicineMode === "manual" ? adminCustomMedicineName.trim() : null,
-                        amount: adminAmount.trim(),
-                      },
-                    ]);
-                    setAdminMedicineMode("cabinet");
-                    setAdminMedicineId("");
-                    setAdminCustomMedicineName("");
-                    setAdminAmount("");
-                  }}
-                  isPending={false}
-                />
-              ))}
-
-            {composerMode === "comment" && (
-              <div className="soft-panel-muted grid gap-3 rounded-[24px] p-3">
-                <textarea
-                  rows={3}
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Например: к вечеру стал бодрее, после сна снова поднялась температура."
-                  className="soft-input w-full rounded-2xl px-3 py-2"
-                />
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!commentText.trim()) return;
-                      setComments((current) => [
-                        ...current,
-                        { id: makeLocalId(), text: commentText.trim() },
-                      ]);
-                      setCommentText("");
-                    }}
-                    disabled={!commentText.trim()}
-                    className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-                  >
-                    Добавить комментарий
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {pendingItems.length > 0 && (
-          <section className="soft-panel-muted rounded-[24px] p-4 sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h4 className="text-base font-semibold text-foreground">Что будет сохранено</h4>
-                <p className="mt-1 text-sm text-muted">
-                  Этот набор сохранится сразу после запуска наблюдения.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-2">
-              {pendingItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-border bg-background px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <TimelineKindPill kind={item.kind} />
-                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                    </div>
-                    <p className="mt-2 text-sm text-muted">{item.description}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (item.kind === "temperature") {
-                        setTemperatures((current) =>
-                          current.filter((entry) => entry.id !== item.id)
-                        );
-                        return;
-                      }
-                      if (item.kind === "administration") {
-                        setAdministrations((current) =>
-                          current.filter((entry) => entry.id !== item.id)
-                        );
-                        return;
-                      }
-                      setComments((current) => current.filter((entry) => entry.id !== item.id));
-                    }}
-                    className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
-                  >
-                    Удалить
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -1474,23 +1436,10 @@ function EpisodeActivationCard({
                 title: title.trim() ? title.trim() : null,
                 medication_mode: "guided",
                 note: null,
-                temperatures: temperatures.map((item) => ({ value_celsius: item.valueCelsius })),
-                administrations: administrations.map((item) => ({
-                  household_medicine_id: item.householdMedicineId,
-                  custom_medicine_name: item.customMedicineName,
-                  amount: item.amount,
-                })),
-                comments: comments.map((item) => ({ text: item.text })),
-                medication_plans: medicationPlans.map((item) => ({
-                  household_medicine_id: item.householdMedicineId,
-                  custom_medicine_name: item.customMedicineName,
-                  dose_amount: item.doseAmount,
-                  min_interval_minutes: item.minIntervalMinutes,
-                  max_doses_per_day: item.maxDosesPerDay ?? null,
-                  weight_kg: item.weightKg ?? null,
-                  dose_mg_per_kg: item.doseMgPerKg ?? null,
-                  notes: item.notes ?? null,
-                })),
+                temperatures: [],
+                administrations: [],
+                comments: [],
+                medication_plans: [],
               })
             }
             disabled={isPending || !startedAt}
@@ -1509,29 +1458,6 @@ function EpisodeActivationCard({
         </div>
       </div>
     </div>
-  );
-}
-
-function ComposerToggle({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "rounded-2xl px-4 py-2.5 text-sm transition-colors",
-        active ? "soft-tab-active" : "soft-tab",
-      ].join(" ")}
-    >
-      {label}
-    </button>
   );
 }
 
@@ -1572,16 +1498,6 @@ function InlineHint({ text }: { text: string }) {
   );
 }
 
-function FormFieldCard({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return <div className={`soft-card rounded-[22px] p-4 ${className}`.trim()}>{children}</div>;
-}
-
 function TemperatureForm({
   value,
   onChange,
@@ -1594,133 +1510,263 @@ function TemperatureForm({
   isPending: boolean;
 }) {
   return (
-    <div className="soft-panel-muted rounded-[24px] p-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="block">
-          <span className="block text-sm text-muted">Температура</span>
-          <input
-            type="number"
-            step={0.1}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="36.6"
-            className="soft-input mt-1 w-24 rounded-2xl px-3 py-2"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={isPending || !value}
-          className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-        >
-          {isPending ? "Сохраняем…" : "Добавить"}
-        </button>
-      </div>
+    <div className="grid gap-4 sm:grid-cols-[minmax(0,168px)_auto] sm:items-end">
+      <label className="block max-w-[11rem]">
+        <span className="block text-sm text-muted">Температура</span>
+        <input
+          type="number"
+          step={0.1}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="36.6"
+          className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={isPending || !value}
+        className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:w-auto"
+      >
+        {isPending ? "Сохраняем…" : "Добавить"}
+      </button>
     </div>
   );
 }
 
-function AdministrationForm({
+function CabinetMedicinePicker({
   medicines,
-  mode,
-  selectedMedicineId,
+  value,
+  onChange,
+  label = "Упаковка",
+}: {
+  medicines: HouseholdMedicine[];
+  value: string;
+  onChange: (value: string) => void;
+  label?: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedMedicine = medicines.find((medicine) => medicine.id === value) ?? null;
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredMedicines = normalizedQuery
+    ? medicines.filter((medicine) =>
+        [
+          medicine.medicineName,
+          medicine.medicineConcentration ?? "",
+          medicine.medicineForm ?? "",
+          medicine.statusLabel,
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery)
+      )
+    : medicines;
+
+  const selectMedicine = (medicineId: string) => {
+    onChange(medicineId);
+    setIsOpen(false);
+    setQuery("");
+  };
+
+  useEffect(() => {
+    if (!value) {
+      return;
+    }
+    setIsOpen(false);
+    setQuery("");
+  }, [value]);
+
+  return (
+    <>
+      <div className="block min-w-0">
+        <span className="block text-sm text-muted">{label}</span>
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            aria-expanded={isOpen}
+            className="soft-button-secondary flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left"
+          >
+            <span className="min-w-0">
+              {selectedMedicine ? (
+                <>
+                  <span className="block truncate text-sm font-semibold text-foreground">
+                    {selectedMedicine.medicineName}
+                    {selectedMedicine.medicineConcentration
+                      ? ` · ${selectedMedicine.medicineConcentration}`
+                      : ""}
+                  </span>
+                  <span className="mt-1 block text-xs text-muted">
+                    {selectedMedicine.statusLabel} · до {formatDate(selectedMedicine.expiryDate)}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="block text-sm font-semibold text-foreground">
+                    Выбрать из аптечки
+                  </span>
+                  <span className="mt-1 block text-xs text-muted">
+                    {medicines.length} {formatMedicineCountLabel(medicines.length)}
+                  </span>
+                </>
+              )}
+            </span>
+            <span className="soft-choice-check" aria-hidden="true">
+              Выбрать
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-[140] flex items-end bg-black/28 p-3 sm:items-center sm:justify-center sm:p-6">
+          <button
+            type="button"
+            aria-label="Закрыть выбор лекарства"
+            onClick={() => setIsOpen(false)}
+            className="absolute inset-0"
+          />
+          <div className="soft-panel relative z-10 w-full max-w-xl rounded-[28px]">
+            <div className="soft-hero rounded-t-[28px] px-5 py-5 sm:px-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs tracking-[0.1em] text-muted">Аптечка</p>
+                  <h4 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+                    Выбрать препарат
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="soft-button-secondary rounded-2xl px-3 py-2 text-sm"
+                >
+                  Закрыть
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3 px-5 py-5 sm:px-6 sm:py-6">
+              {medicines.length > 6 && (
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Поиск по аптечке"
+                  className="soft-input w-full rounded-2xl px-4 py-3"
+                />
+              )}
+              <div className="soft-choice-list max-h-[min(55vh,28rem)] overflow-y-auto pr-1">
+                {filteredMedicines.map((medicine) => {
+                  const isActive = medicine.id === value;
+
+                  return (
+                    <button
+                      key={medicine.id}
+                      type="button"
+                      onClick={() => selectMedicine(medicine.id)}
+                      aria-pressed={isActive}
+                      className={[
+                        "soft-choice-row text-left",
+                        isActive ? "soft-choice-row-active" : "",
+                      ].join(" ")}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-foreground">
+                          {medicine.medicineName}
+                          {medicine.medicineConcentration
+                            ? ` · ${medicine.medicineConcentration}`
+                            : ""}
+                        </span>
+                        <span className="mt-1 block text-xs text-muted">
+                          {medicine.statusLabel} · до {formatDate(medicine.expiryDate)}
+                        </span>
+                      </span>
+                      <span className="soft-choice-check" aria-hidden="true">
+                        {isActive ? "Выбрано" : "Выбрать"}
+                      </span>
+                    </button>
+                  );
+                })}
+                {filteredMedicines.length === 0 && (
+                  <div className="rounded-2xl bg-[color:color-mix(in_srgb,var(--color-surface-soft)_92%,transparent)] px-4 py-3 text-sm text-muted">
+                    Ничего не найдено.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function formatMedicineCountLabel(count: number) {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+
+  if (mod10 === 1 && mod100 !== 11) {
+    return "препарат";
+  }
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return "препарата";
+  }
+  return "препаратов";
+}
+
+function AdministrationForm({
   customMedicineName,
   amount,
-  onModeChange,
-  onMedicineChange,
   onCustomMedicineNameChange,
   onAmountChange,
   onSubmit,
   isPending,
 }: {
-  medicines: HouseholdMedicine[];
-  mode: "cabinet" | "manual";
-  selectedMedicineId: string;
   customMedicineName: string;
   amount: string;
-  onModeChange: (value: "cabinet" | "manual") => void;
-  onMedicineChange: (value: string) => void;
   onCustomMedicineNameChange: (value: string) => void;
   onAmountChange: (value: string) => void;
   onSubmit: () => void;
   isPending: boolean;
 }) {
   return (
-    <div className="soft-panel rounded-[24px] p-4">
-      <div className="mb-3 flex flex-wrap gap-2">
-        <ComposerToggle
-          label="Из аптечки"
-          active={mode === "cabinet"}
-          onClick={() => onModeChange("cabinet")}
-        />
-        <ComposerToggle
-          label="Просто записать"
-          active={mode === "manual"}
-          onClick={() => onModeChange("manual")}
-        />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_auto]">
-        <FormFieldCard className="min-w-0">
-          {mode === "cabinet" ? (
-            <label className="block min-w-0">
-              <span className="block text-sm text-muted">Упаковка</span>
-              <select
-                value={selectedMedicineId}
-                onChange={(e) => onMedicineChange(e.target.value)}
-                className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-              >
-                <option value="">Выберите упаковку</option>
-                {medicines.map((medicine) => (
-                  <option key={medicine.id} value={medicine.id}>
-                    {medicine.medicineName} · {medicine.statusLabel} · до{" "}
-                    {formatDate(medicine.expiryDate)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <label className="block min-w-0">
-              <span className="block text-sm text-muted">Название лекарства</span>
-              <input
-                type="text"
-                value={customMedicineName}
-                onChange={(e) => onCustomMedicineNameChange(e.target.value)}
-                placeholder="Например: Ибупрофен"
-                className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-              />
-            </label>
-          )}
-        </FormFieldCard>
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)_auto] md:items-end">
+        <label className="block min-w-0">
+          <span className="block text-sm text-muted">Что дали</span>
+          <input
+            type="text"
+            value={customMedicineName}
+            onChange={(e) => onCustomMedicineNameChange(e.target.value)}
+            placeholder="Например: Уголь"
+            className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+          />
+        </label>
 
-        <FormFieldCard>
-          <label className="block">
-            <span className="block text-sm text-muted">Доза</span>
-            <input
-              type="text"
-              value={amount}
-              onChange={(e) => onAmountChange(e.target.value)}
-              placeholder="Например: 5 мл, 1 таб., 200 мг"
-              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-            />
-            <p className="mt-2 text-xs text-muted">Можно указать мл, таб., мг, кап. и т.д.</p>
-          </label>
-        </FormFieldCard>
+        <label className="block">
+          <span className="block text-sm text-muted">Доза, если нужно</span>
+          <input
+            type="text"
+            value={amount}
+            onChange={(e) => onAmountChange(e.target.value)}
+            placeholder="Например: 5 мл или 1 таб."
+            className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+          />
+        </label>
 
         <div className="flex items-end">
           <button
             type="button"
             onClick={onSubmit}
-            disabled={
-              isPending ||
-              (mode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim()) ||
-              !amount.trim()
-            }
-            className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+            disabled={isPending || !customMedicineName.trim()}
+            className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
           >
-            {isPending ? "Сохраняем…" : "Записать"}
+            {isPending ? "Сохраняем…" : "Отметить приём"}
           </button>
         </div>
       </div>
+      <p className="text-xs text-muted">Дозу можно не указывать для быстрой записи.</p>
     </div>
   );
 }
@@ -1734,10 +1780,6 @@ type MedicationPlanPayload = {
   weightKg: number | null;
   doseMgPerKg: number | null;
   notes: string | null;
-};
-
-type DraftMedicationPlan = MedicationPlanPayload & {
-  id: string;
 };
 
 function intervalMinutesToInputValue(intervalMinutes: number, unit: "hours" | "minutes") {
@@ -1754,123 +1796,6 @@ function parseIntervalInputToMinutes(value: string, unit: "hours" | "minutes"): 
     return null;
   }
   return unit === "minutes" ? Math.round(parsed) : Math.round(parsed * 60);
-}
-
-function GuidedMedicationSection({
-  childId,
-  plans,
-  medicines,
-  administrations,
-  latestWeight,
-  isSubmittingAdministration,
-  isSubmittingPlan,
-  isUpdatingPlan,
-  isDeletingPlan,
-  planErrorMessage,
-  onCreatePlan,
-  onUpdatePlan,
-  onDeletePlan,
-  onTakeDose,
-}: {
-  childId: string;
-  plans: EpisodeMedicationPlan[];
-  medicines: HouseholdMedicine[];
-  administrations: AdministrationEvent[];
-  latestWeight: WeightEntry | null;
-  isSubmittingAdministration: boolean;
-  isSubmittingPlan: boolean;
-  isUpdatingPlan: boolean;
-  isDeletingPlan: boolean;
-  planErrorMessage: string | null;
-  onCreatePlan: (payload: {
-    household_medicine_id?: string | null;
-    custom_medicine_name?: string | null;
-    dose_amount: string;
-    min_interval_minutes: number;
-    max_doses_per_day?: number | null;
-    weight_kg?: number | null;
-    dose_mg_per_kg?: number | null;
-    notes?: string | null;
-  }) => void;
-  onUpdatePlan: (planId: string, payload: MedicationPlanPayload) => void;
-  onDeletePlan: (planId: string) => void;
-  onTakeDose: (plan: EpisodeMedicationPlan) => void;
-}) {
-  const usableMedicines = medicines.filter(
-    (medicine) => medicine.status !== "expired" && medicine.status !== "expired_after_opening"
-  );
-  const [isComposerOpen, setIsComposerOpen] = useState(false);
-
-  return (
-    <div className="space-y-4">
-      <DisclosureHeader
-        isOpen={isComposerOpen}
-        onToggle={() => {
-          setIsComposerOpen((current) => !current);
-        }}
-        desktopClosedLabel="Добавить план"
-        desktopOpenLabel="Скрыть форму"
-        mobileClosedLabel="Добавить"
-        mobileOpenLabel="Скрыть"
-      >
-        <div>
-          <h4 className="text-base font-semibold text-foreground">Отслеживание по времени</h4>
-          {!isComposerOpen && plans.length > 0 && (
-            <p className="mt-1 text-xs text-muted">Добавлено: {plans.length}</p>
-          )}
-        </div>
-      </DisclosureHeader>
-
-      {isComposerOpen ? (
-        <MedicationPlanComposer
-          childId={childId}
-          medicines={usableMedicines}
-          latestWeight={latestWeight}
-          onSubmit={(plan) => {
-            onCreatePlan({
-              household_medicine_id: plan.householdMedicineId,
-              custom_medicine_name: plan.customMedicineName,
-              dose_amount: plan.doseAmount,
-              min_interval_minutes: plan.minIntervalMinutes,
-              max_doses_per_day: plan.maxDosesPerDay,
-              weight_kg: plan.weightKg,
-              dose_mg_per_kg: plan.doseMgPerKg,
-              notes: plan.notes,
-            });
-            setIsComposerOpen(false);
-          }}
-          submitLabel="Добавить план"
-          isPending={isSubmittingPlan}
-          onCancel={() => setIsComposerOpen(false)}
-        />
-      ) : null}
-
-      {plans.length > 0 ? (
-        <MedicationPlanList
-          plans={plans}
-          childId={childId}
-          medicines={medicines}
-          administrations={administrations}
-          latestWeight={latestWeight}
-          onUpdate={onUpdatePlan}
-          onDelete={onDeletePlan}
-          onTakeDose={onTakeDose}
-          isUpdating={isUpdatingPlan}
-          isDeleting={isDeletingPlan}
-          isSubmittingAdministration={isSubmittingAdministration}
-        />
-      ) : (
-        <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
-          Пока ничего не отслеживается по времени. Ниже можно добавить новый план, если нужно
-          напоминать о следующем приёме.
-        </div>
-      )}
-
-      {planErrorMessage && (
-        <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{planErrorMessage}</div>
-      )}
-    </div>
-  );
 }
 
 function MedicationPlanComposer({
@@ -1899,7 +1824,11 @@ function MedicationPlanComposer({
     : medicines.length > 0
       ? "cabinet"
       : "manual";
+  const hasAdvancedInitialValue = Boolean(
+    initialValue?.maxDosesPerDay || initialValue?.weightKg || initialValue?.doseMgPerKg
+  );
   const [planMode, setPlanMode] = useState<"cabinet" | "manual">(defaultPlanMode);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(hasAdvancedInitialValue);
   const [selectedMedicineId, setSelectedMedicineId] = useState(
     initialValue?.householdMedicineId ?? ""
   );
@@ -1954,54 +1883,53 @@ function MedicationPlanComposer({
   });
 
   return (
-    <div className="soft-panel rounded-[24px] p-4 sm:p-5">
-      <div className="mb-3 flex flex-wrap gap-2">
-        <ComposerToggle
-          label="Из аптечки"
-          active={planMode === "cabinet"}
-          onClick={() => setPlanMode("cabinet")}
-        />
-        <ComposerToggle
-          label="Просто ввести"
-          active={planMode === "manual"}
-          onClick={() => setPlanMode("manual")}
-        />
-      </div>
+    <div className="space-y-4">
       <div className="grid gap-3 xl:grid-cols-2">
-        <FormFieldCard className="min-w-0">
+        <div className="min-w-0">
           {planMode === "cabinet" ? (
-            <label className="block min-w-0">
-              <span className="block text-sm text-muted">Лекарство из аптечки</span>
-              <select
+            <div className="space-y-2">
+              <CabinetMedicinePicker
+                medicines={medicines}
                 value={selectedMedicineId}
-                onChange={(event) => setSelectedMedicineId(event.target.value)}
-                className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-              >
-                <option value="">Выберите упаковку</option>
-                {medicines.map((medicine) => (
-                  <option key={medicine.id} value={medicine.id}>
-                    {medicine.medicineName}
-                    {medicine.medicineConcentration ? ` · ${medicine.medicineConcentration}` : ""}
-                    {` · до ${formatDate(medicine.expiryDate)}`}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <label className="block min-w-0">
-              <span className="block text-sm text-muted">Название лекарства</span>
-              <input
-                type="text"
-                value={customMedicineName}
-                onChange={(event) => setCustomMedicineName(event.target.value)}
-                placeholder="Например: Ибуклин"
-                className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+                onChange={setSelectedMedicineId}
+                label="Лекарство"
               />
-            </label>
+              {medicines.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPlanMode("manual")}
+                  className="text-sm font-medium text-muted transition hover:text-foreground"
+                >
+                  Нет в аптечке? Вписать вручную
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="block min-w-0">
+                <span className="block text-sm text-muted">Лекарство</span>
+                <input
+                  type="text"
+                  value={customMedicineName}
+                  onChange={(event) => setCustomMedicineName(event.target.value)}
+                  placeholder="Например: Ибуклин"
+                  className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+                />
+              </label>
+              {medicines.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPlanMode("cabinet")}
+                  className="text-sm font-medium text-muted transition hover:text-foreground"
+                >
+                  Выбрать из аптечки
+                </button>
+              )}
+            </div>
           )}
-        </FormFieldCard>
+        </div>
 
-        <FormFieldCard>
+        <div>
           <label className="block">
             <span className="block text-sm text-muted">Разовая доза, если нужна</span>
             <input
@@ -2009,7 +1937,7 @@ function MedicationPlanComposer({
               value={doseAmount}
               onChange={(e) => setDoseAmount(e.target.value)}
               placeholder="Например: 10 мл или 1 таб."
-              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+              className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
             />
             {hasDoseUnitHint && (
               <p className="mt-2 text-xs text-muted">
@@ -2022,12 +1950,12 @@ function MedicationPlanComposer({
               </p>
             )}
           </label>
-        </FormFieldCard>
+        </div>
 
-        <FormFieldCard>
+        <div>
           <label className="block">
             <span className="block text-sm text-muted">
-              Минимальный интервал, {intervalUnit === "minutes" ? "минут" : "часов"}
+              Интервал напоминания, {intervalUnit === "minutes" ? "минут" : "часов"}
             </span>
             <input
               type="number"
@@ -2036,88 +1964,113 @@ function MedicationPlanComposer({
               step={intervalUnit === "minutes" ? "1" : "0.5"}
               value={minIntervalInput}
               onChange={(e) => setMinIntervalInput(e.target.value)}
-              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
+              className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
             />
           </label>
-        </FormFieldCard>
+        </div>
       </div>
 
-      <div className="mt-3 grid gap-3 xl:grid-cols-2">
-        <FormFieldCard>
-          <label className="block">
-            <span className="block text-sm text-muted">Максимум в сутки</span>
-            <input
-              type="number"
-              min="1"
-              max="24"
-              value={maxDosesPerDay}
-              onChange={(e) => setMaxDosesPerDay(e.target.value)}
-              placeholder="Необязательно"
-              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-            />
-          </label>
-        </FormFieldCard>
-
-        <FormFieldCard>
-          <label className="block">
-            <span className="flex items-center gap-2 text-sm text-muted">
-              Вес ребёнка, кг
-              <InlineHint text="Нужно только для расчёта по весу. Если разовая доза уже известна, это поле можно не заполнять." />
-            </span>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={weightKg}
-              onChange={(e) => setWeightKg(e.target.value)}
-              placeholder={latestWeight ? String(latestWeight.valueKg) : "Необязательно"}
-              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-            />
-            {latestWeight && (
-              <p className="mt-2 text-xs text-muted">
-                Последний вес: {latestWeight.valueKg} кг от {formatDate(latestWeight.measuredAt)}
+      <div className="mt-3">
+        <div className="border-t border-border/60 pt-4">
+          <DisclosureHeader
+            isOpen={isAdvancedOpen}
+            onToggle={() => setIsAdvancedOpen((current) => !current)}
+            desktopClosedLabel="Дополнительно"
+            desktopOpenLabel="Скрыть"
+            mobileClosedLabel="Доп."
+            mobileOpenLabel="Скрыть"
+          >
+            <div>
+              <h5 className="text-sm font-semibold text-foreground">Дополнительные настройки</h5>
+              <p className="mt-1 text-sm text-muted">
+                Нужны не всегда: суточный лимит и расчёт по весу можно заполнить позже.
               </p>
-            )}
-            {shouldOfferWeightSync && (
-              <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">
-                <p>В плане указан вес {parsedWeightKg} кг. Обновить его и в карточке ребёнка?</p>
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (parsedWeightKg === null) {
-                        return;
-                      }
-                      syncWeightMutation.mutate(parsedWeightKg);
-                    }}
-                    disabled={syncWeightMutation.isPending}
-                    className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-                  >
-                    {syncWeightMutation.isPending ? "Сохраняем вес…" : "Обновить вес ребёнка"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </label>
-        </FormFieldCard>
+            </div>
+          </DisclosureHeader>
 
-        <FormFieldCard>
-          <label className="block">
-            <span className="flex items-center gap-2 text-sm text-muted">
-              Расчёт, мг/кг
-              <InlineHint text="Используй это поле, если дозировку знают как мг на кг веса. Это только подсказка и не заменяет вручную указанную разовую дозу." />
-            </span>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={doseMgPerKg}
-              onChange={(e) => setDoseMgPerKg(e.target.value)}
-              placeholder="Необязательно"
-              className="soft-input mt-2 w-full rounded-2xl px-3 py-2"
-            />
-          </label>
-        </FormFieldCard>
+          {isAdvancedOpen && (
+            <div className="mt-4 grid gap-3 xl:grid-cols-2">
+              <div>
+                <label className="block">
+                  <span className="block text-sm text-muted">Максимум в сутки</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="24"
+                    value={maxDosesPerDay}
+                    onChange={(e) => setMaxDosesPerDay(e.target.value)}
+                    placeholder="Необязательно"
+                    className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+                  />
+                </label>
+              </div>
+
+              <div>
+                <label className="block">
+                  <span className="flex items-center gap-2 text-sm text-muted">
+                    Вес ребёнка, кг
+                    <InlineHint text="Нужно только для расчёта по весу. Если разовая доза уже известна, это поле можно не заполнять." />
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(e.target.value)}
+                    placeholder={latestWeight ? String(latestWeight.valueKg) : "Необязательно"}
+                    className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+                  />
+                  {latestWeight && (
+                    <p className="mt-2 text-xs text-muted">
+                      Последний вес: {latestWeight.valueKg} кг от{" "}
+                      {formatDate(latestWeight.measuredAt)}
+                    </p>
+                  )}
+                  {shouldOfferWeightSync && (
+                    <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">
+                      <p>
+                        В плане указан вес {parsedWeightKg} кг. Обновить его и в карточке ребёнка?
+                      </p>
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (parsedWeightKg === null) {
+                              return;
+                            }
+                            syncWeightMutation.mutate(parsedWeightKg);
+                          }}
+                          disabled={syncWeightMutation.isPending}
+                          className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                        >
+                          {syncWeightMutation.isPending ? "Сохраняем вес…" : "Обновить вес ребёнка"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </label>
+              </div>
+
+              <div className="xl:col-span-2">
+                <label className="block">
+                  <span className="flex items-center gap-2 text-sm text-muted">
+                    Расчёт, мг/кг
+                    <InlineHint text="Используй это поле, если дозировку знают как мг на кг веса. Это только подсказка и не заменяет вручную указанную разовую дозу." />
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={doseMgPerKg}
+                    onChange={(e) => setDoseMgPerKg(e.target.value)}
+                    placeholder="Необязательно"
+                    className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {weightHint && (
@@ -2186,35 +2139,21 @@ function MedicationPlanComposer({
 
 function MedicationPlanList({
   plans,
-  childId,
   medicines,
   administrations,
-  latestWeight,
-  onUpdate,
-  onDelete,
+  onOpen,
   onTakeDose,
-  isUpdating = false,
-  isDeleting = false,
   isSubmittingAdministration = false,
 }: {
-  plans: Array<DraftMedicationPlan | EpisodeMedicationPlan>;
-  childId: string;
+  plans: EpisodeMedicationPlan[];
   medicines: HouseholdMedicine[];
   administrations?: AdministrationEvent[];
-  latestWeight: WeightEntry | null;
-  onUpdate: (planId: string, payload: MedicationPlanPayload) => void;
-  onDelete: (planId: string) => void;
+  onOpen: (planId: string) => void;
   onTakeDose?: (plan: EpisodeMedicationPlan) => void;
-  isUpdating?: boolean;
-  isDeleting?: boolean;
   isSubmittingAdministration?: boolean;
 }) {
-  const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
-  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
-  const [actionMenuPlanId, setActionMenuPlanId] = useState<string | null>(null);
   const now = useNow();
   const currentTime = new Date(now);
-  const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const prioritizedPlans = administrations
     ? getPrioritizedMedicationPlanItems(plans, administrations, medicines, currentTime)
     : plans.map((plan) => ({
@@ -2224,294 +2163,321 @@ function MedicationPlanList({
         isUnavailable: false,
       }));
 
-  const collapsePlan = (planId: string) => {
-    setActionMenuPlanId((current) => (current === planId ? null : current));
-    setExpandedPlanId((current) => (current === planId ? null : current));
-    setEditingPlanId((current) => (current === planId ? null : current));
-  };
-
   return (
-    <div className="space-y-3">
+    <div className="grid gap-3">
       {prioritizedPlans.map(({ plan, medicine, stats, isUnavailable }) => {
         const planName = plan.customMedicineName ?? medicine?.medicineName ?? "Лекарство";
-        const weightHint = buildWeightDoseHint(medicine, plan.weightKg, plan.doseMgPerKg);
-        const editableMedicines = Array.from(
-          new Map(
-            medicines
-              .filter(
-                (item) =>
-                  item.id === plan.householdMedicineId ||
-                  (item.status !== "expired" && item.status !== "expired_after_opening")
-              )
-              .map((item) => [item.id, item])
-          ).values()
-        );
-        const isExpanded = expandedPlanId === plan.id;
-        const isEditing = editingPlanId === plan.id;
-        const todayCountLabel = plan.maxDosesPerDay
-          ? `Сегодня ${stats?.todayCount ?? 0} из ${plan.maxDosesPerDay}`
-          : `Сегодня ${stats?.todayCount ?? 0}`;
-        const nextDoseLabel = stats?.blockedByDailyLimit
-          ? "Следующий приём: лимит на сегодня достигнут"
-          : stats?.nextAllowedAt
-            ? stats.nextAllowedAt <= currentTime
-              ? "Следующий приём: можно сейчас"
-              : `Следующий приём: ${formatRelativeDateTime(stats.nextAllowedAt, currentTime)}`
-            : "Следующий приём: можно сейчас";
-        const nextDoseToneClass = stats?.blockedByDailyLimit
+        const nextDoseLabel = isUnavailable
+          ? "Упаковка сейчас недоступна"
+          : stats?.blockedByDailyLimit
+            ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
+            : stats?.nextAllowedAt
+              ? stats.nextAllowedAt <= currentTime
+                ? "Следующий приём: можно сейчас"
+                : `Следующий приём: ${formatRelativeDateTime(stats.nextAllowedAt, currentTime)}`
+              : "Следующий приём: можно сейчас";
+        const nextDoseToneClass = isUnavailable
           ? "soft-pill-danger"
-          : stats?.nextAllowedAt
-            ? stats.nextAllowedAt <= currentTime
-              ? "soft-pill-success"
-              : "soft-pill-warning"
-            : "soft-pill-info";
-        const togglePlanActions = () => {
-          if (
-            actionMenuPlanId === plan.id ||
-            expandedPlanId === plan.id ||
-            editingPlanId === plan.id
-          ) {
-            collapsePlan(plan.id);
-            return;
-          }
-          setActionMenuPlanId(plan.id);
-        };
+          : stats?.blockedByDailyLimit
+            ? "soft-pill-danger"
+            : stats?.nextAllowedAt
+              ? stats.nextAllowedAt <= currentTime
+                ? "soft-pill-success"
+                : "soft-pill-warning"
+              : "soft-pill-info";
 
         return (
-          <div key={plan.id} className="soft-card rounded-[24px] px-4 py-4">
-            <div
-              className="flex cursor-pointer flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
-              onClick={togglePlanActions}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  togglePlanActions();
-                }
-              }}
-              role="button"
-              tabIndex={0}
-              aria-expanded={actionMenuPlanId === plan.id || isExpanded || isEditing}
-            >
+          <article
+            key={plan.id}
+            className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_24%,transparent)] px-4 py-4"
+          >
+            <div className="flex flex-col gap-4">
               <div className="min-w-0">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <p className="text-base font-semibold text-foreground">{planName}</p>
-                  <span className="soft-pill rounded-full px-2.5 py-1 text-[11px] sm:hidden">
-                    {actionMenuPlanId === plan.id || isExpanded || isEditing ? "Скрыть" : "Открыть"}
+                  <span className={`${nextDoseToneClass} rounded-full px-2.5 py-1 text-[11px]`}>
+                    {stats?.nextAllowedAt &&
+                    stats.nextAllowedAt <= currentTime &&
+                    !stats.blockedByDailyLimit &&
+                    !isUnavailable
+                      ? "Сейчас"
+                      : isUnavailable
+                        ? "Недоступно"
+                        : stats?.blockedByDailyLimit
+                          ? "Лимит"
+                          : "По графику"}
                   </span>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="soft-pill rounded-full px-2.5 py-1 text-xs">
-                    {todayCountLabel}
-                  </span>
-                  <p className={`${nextDoseToneClass} rounded-full px-2.5 py-1 text-xs`}>
-                    {nextDoseLabel}
-                  </p>
+                <p className="mt-1 text-sm text-muted">{nextDoseLabel}</p>
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
+                  {plan.doseAmount ? <span>Доза: {plan.doseAmount}</span> : null}
+                  {plan.maxDosesPerDay ? (
+                    <span>
+                      Сегодня отмечено: {stats?.todayCount ?? 0} из {plan.maxDosesPerDay}
+                    </span>
+                  ) : (stats?.todayCount ?? 0) > 0 ? (
+                    <span>Сегодня отмечено: {stats?.todayCount ?? 0}</span>
+                  ) : null}
                 </div>
-                {isUnavailable && (
-                  <p className="soft-text-danger mt-2 text-sm">
-                    Эта упаковка сейчас недоступна для приёма.
-                  </p>
-                )}
               </div>
 
-              <div className="hidden flex-wrap gap-2 sm:flex">
-                {onTakeDose && "createdAt" in plan && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {onTakeDose && (
                   <button
                     type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onTakeDose(plan as EpisodeMedicationPlan);
-                    }}
+                    onClick={() => onTakeDose(plan)}
                     disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
-                    className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                    className={`rounded-2xl px-4 py-3 text-sm font-medium transition disabled:opacity-50 ${
+                      isUnavailable || stats?.isBlocked
+                        ? "soft-button-secondary text-muted"
+                        : "soft-button-primary"
+                    }`}
                   >
                     {isSubmittingAdministration
                       ? "Отмечаем…"
                       : isUnavailable
                         ? "Недоступно"
                         : stats?.isBlocked
-                          ? "Рано"
-                          : "Дать препарат"}
+                          ? "Пока рано"
+                          : "Отметить"}
                   </button>
                 )}
                 <button
                   type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    if (
-                      actionMenuPlanId === plan.id ||
-                      expandedPlanId === plan.id ||
-                      editingPlanId === plan.id
-                    ) {
-                      collapsePlan(plan.id);
-                      return;
-                    }
-                    setActionMenuPlanId(plan.id);
-                  }}
-                  className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                  onClick={() => onOpen(plan.id)}
+                  className="soft-button-secondary rounded-2xl px-4 py-3 text-sm"
                 >
-                  Ещё
+                  Открыть
                 </button>
               </div>
             </div>
-
-            {onTakeDose && "createdAt" in plan && (
-              <div className="mt-3 sm:hidden">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onTakeDose(plan as EpisodeMedicationPlan);
-                  }}
-                  disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
-                  className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
-                >
-                  {isSubmittingAdministration
-                    ? "Отмечаем…"
-                    : isUnavailable
-                      ? "Недоступно"
-                      : stats?.isBlocked
-                        ? "Рано"
-                        : "Дать препарат"}
-                </button>
-              </div>
-            )}
-
-            {actionMenuPlanId === plan.id && (
-              <div className="mt-3 grid gap-2 border-t border-border/70 pt-3 sm:flex sm:flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExpandedPlanId((current) => (current === plan.id ? null : plan.id));
-                    setActionMenuPlanId(null);
-                  }}
-                  className="soft-button-secondary w-full rounded-2xl px-4 py-3 text-sm sm:w-auto sm:py-2.5"
-                >
-                  {isExpanded ? "Скрыть детали" : "Подробнее"}
-                </button>
-                {"createdAt" in plan && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const shouldFinish = window.confirm(
-                        `Завершить план для «${planName}»? Он исчезнет из текущего наблюдения.`
-                      );
-                      if (!shouldFinish) {
-                        return;
-                      }
-                      onDelete(plan.id);
-                      setActionMenuPlanId(null);
-                    }}
-                    disabled={isDeleting}
-                    className="soft-button-secondary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:w-auto sm:py-2.5"
-                  >
-                    {isDeleting ? "Завершаем…" : "Завершить план"}
-                  </button>
-                )}
-                {"createdAt" in plan && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const shouldEdit = window.confirm(`Точно изменить план для «${planName}»?`);
-                      if (!shouldEdit) {
-                        return;
-                      }
-                      setExpandedPlanId(plan.id);
-                      setEditingPlanId(plan.id);
-                      setActionMenuPlanId(null);
-                    }}
-                    className="soft-button-secondary w-full rounded-2xl px-4 py-3 text-sm sm:w-auto sm:py-2.5"
-                  >
-                    Изменить план
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const shouldDelete = window.confirm(`Точно удалить план для «${planName}»?`);
-                    if (!shouldDelete) {
-                      return;
-                    }
-                    onDelete(plan.id);
-                    setActionMenuPlanId(null);
-                  }}
-                  disabled={isDeleting}
-                  className="soft-button-secondary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:w-auto sm:py-2.5"
-                >
-                  {isDeleting ? "Удаляем…" : "Удалить план"}
-                </button>
-              </div>
-            )}
-
-            {isExpanded && (
-              <div className="mt-4 border-t border-border/70 pt-4">
-                {isEditing ? (
-                  <MedicationPlanComposer
-                    key={plan.id}
-                    childId={childId}
-                    medicines={editableMedicines}
-                    latestWeight={latestWeight}
-                    initialValue={{
-                      householdMedicineId: plan.householdMedicineId,
-                      customMedicineName: plan.customMedicineName,
-                      doseAmount: plan.doseAmount,
-                      minIntervalMinutes: plan.minIntervalMinutes,
-                      maxDosesPerDay: plan.maxDosesPerDay,
-                      weightKg: plan.weightKg,
-                      doseMgPerKg: plan.doseMgPerKg,
-                      notes: plan.notes,
-                    }}
-                    onSubmit={(payload) => {
-                      onUpdate(plan.id, payload);
-                      setEditingPlanId(null);
-                    }}
-                    submitLabel="Сохранить план"
-                    isPending={isUpdating}
-                    onCancel={() => setEditingPlanId(null)}
-                  />
-                ) : (
-                  <div className="space-y-2 text-sm text-muted">
-                    {plan.doseAmount && <p>Разовая доза: {plan.doseAmount}</p>}
-                    {medicine && (
-                      <p>
-                        {medicine.medicineForm ?? "Форма не указана"}
-                        {medicine.medicineConcentration
-                          ? ` · ${medicine.medicineConcentration}`
-                          : ""}
-                      </p>
-                    )}
-                    <p>
-                      Интервал: {formatIntervalForDisplay(plan.minIntervalMinutes, intervalUnit)}
-                      {plan.maxDosesPerDay ? ` · до ${plan.maxDosesPerDay} раз в сутки` : ""}
-                    </p>
-                    {stats && (
-                      <>
-                        <p>
-                          Последний приём:{" "}
-                          {stats.lastAdministration
-                            ? [
-                                formatDateTime(stats.lastAdministration.administeredAt),
-                                getAdministrationActorLabel(stats.lastAdministration),
-                              ]
-                                .filter(Boolean)
-                                .join(" • ")
-                            : "ещё не отмечен"}
-                        </p>
-                        {plan.maxDosesPerDay && (
-                          <p>
-                            Сегодня: {stats.todayCount} из {plan.maxDosesPerDay}
-                          </p>
-                        )}
-                      </>
-                    )}
-                    {weightHint && <p>{weightHint}</p>}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          </article>
         );
       })}
+    </div>
+  );
+}
+
+function MedicationPlanDetail({
+  item,
+  childId,
+  medicines,
+  latestWeight,
+  onUpdate,
+  onDelete,
+  onTakeDose,
+  isSubmittingAdministration = false,
+  isUpdating = false,
+  isDeleting = false,
+}: {
+  item: MedicationPlanPriorityItem<EpisodeMedicationPlan>;
+  childId: string;
+  medicines: HouseholdMedicine[];
+  latestWeight: WeightEntry | null;
+  onUpdate: (planId: string, payload: MedicationPlanPayload) => void;
+  onDelete: (planId: string) => void;
+  onTakeDose?: (plan: EpisodeMedicationPlan) => void;
+  isSubmittingAdministration?: boolean;
+  isUpdating?: boolean;
+  isDeleting?: boolean;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
+  const { plan, medicine, stats, isUnavailable } = item;
+  const planName = plan.customMedicineName ?? medicine?.medicineName ?? "Лекарство";
+  const doseBadge = plan.doseAmount?.trim() ?? "";
+  const weightHint = buildWeightDoseHint(medicine, plan.weightKg, plan.doseMgPerKg);
+  const editableMedicines = Array.from(
+    new Map(
+      medicines
+        .filter(
+          (entry) =>
+            entry.id === plan.householdMedicineId ||
+            (entry.status !== "expired" && entry.status !== "expired_after_opening")
+        )
+        .map((entry) => [entry.id, entry])
+    ).values()
+  );
+
+  if (isEditing) {
+    return (
+      <section className="space-y-4">
+        <div>
+          <h4 className="text-base font-semibold text-foreground">{planName}</h4>
+          <p className="mt-1 text-sm text-muted">Измените интервал и параметры напоминания.</p>
+        </div>
+        <MedicationPlanComposer
+          key={plan.id}
+          childId={childId}
+          medicines={editableMedicines}
+          latestWeight={latestWeight}
+          initialValue={{
+            householdMedicineId: plan.householdMedicineId,
+            customMedicineName: plan.customMedicineName,
+            doseAmount: plan.doseAmount,
+            minIntervalMinutes: plan.minIntervalMinutes,
+            maxDosesPerDay: plan.maxDosesPerDay,
+            weightKg: plan.weightKg,
+            doseMgPerKg: plan.doseMgPerKg,
+            notes: plan.notes,
+          }}
+          onSubmit={(payload) => {
+            onUpdate(plan.id, payload);
+            setIsEditing(false);
+          }}
+          submitLabel="Сохранить напоминание"
+          isPending={isUpdating}
+          onCancel={() => setIsEditing(false)}
+        />
+      </section>
+    );
+  }
+
+  return (
+    <section className="space-y-5">
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h4 className="min-w-0 text-xl font-semibold tracking-tight text-foreground">
+              {planName}
+            </h4>
+            {doseBadge ? (
+              <span className="soft-note-info rounded-full px-2.5 py-1 text-xs font-medium">
+                {doseBadge}
+              </span>
+            ) : null}
+          </div>
+          <span
+            className={`rounded-full px-3 py-1 text-xs ${
+              isUnavailable
+                ? "soft-pill-danger"
+                : stats?.blockedByDailyLimit
+                  ? "soft-pill-danger"
+                  : stats?.isBlocked
+                    ? "soft-pill-warning"
+                    : "soft-pill-success"
+            }`}
+          >
+            {isUnavailable
+              ? "Недоступно"
+              : stats?.blockedByDailyLimit
+                ? "Лимит"
+                : stats?.isBlocked
+                  ? "По графику"
+                  : "Можно сейчас"}
+          </span>
+        </div>
+        <p className="text-sm leading-6 text-foreground/78">
+          {isUnavailable
+            ? "Упаковка недоступна для приёма."
+            : stats?.blockedByDailyLimit
+              ? "Лимит приёмов на сегодня уже достигнут."
+              : stats?.nextAllowedAt
+                ? stats.nextAllowedAt <= new Date()
+                  ? "Приём можно отметить сейчас."
+                  : `Следующий приём ${formatRelativeDateTime(stats.nextAllowedAt, new Date())}.`
+                : "Приём можно отметить сейчас."}
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        <section className="space-y-3">
+          <h5 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">Схема</h5>
+          <DetailRow
+            label="Интервал"
+            value={formatIntervalForDisplay(plan.minIntervalMinutes, intervalUnit)}
+          />
+          {plan.maxDosesPerDay ? (
+            <DetailRow label="Ограничение" value={`До ${plan.maxDosesPerDay} раз в сутки`} />
+          ) : null}
+          {medicine && (medicine.medicineForm || medicine.medicineConcentration) ? (
+            <DetailRow
+              label="Форма"
+              value={[medicine.medicineForm ?? null, medicine.medicineConcentration ?? null]
+                .filter(Boolean)
+                .join(" · ")}
+            />
+          ) : null}
+          {weightHint ? <DetailRow label="По весу" value={weightHint} /> : null}
+        </section>
+
+        <section className="space-y-3">
+          <h5 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">История</h5>
+          {stats?.lastAdministration ? (
+            <DetailRow
+              label="Последний приём"
+              value={[
+                formatDateTime(stats.lastAdministration.administeredAt),
+                getAdministrationActorLabel(stats.lastAdministration),
+              ]
+                .filter(Boolean)
+                .join(" • ")}
+            />
+          ) : null}
+          {(stats?.todayCount ?? 0) > 0 ? (
+            <DetailRow
+              label="Сегодня"
+              value={
+                plan.maxDosesPerDay
+                  ? `Отмечено ${stats?.todayCount ?? 0} из ${plan.maxDosesPerDay}`
+                  : `Отмечено ${stats?.todayCount ?? 0}`
+              }
+            />
+          ) : null}
+          {plan.notes?.trim() ? <DetailRow label="Заметка" value={plan.notes.trim()} /> : null}
+        </section>
+      </div>
+
+      <div className="space-y-2">
+        <div className="grid gap-2 sm:grid-cols-2">
+          {onTakeDose && (
+            <button
+              type="button"
+              onClick={() => onTakeDose(plan)}
+              disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
+              className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+            >
+              {isSubmittingAdministration
+                ? "Отмечаем…"
+                : isUnavailable
+                  ? "Недоступно"
+                  : stats?.isBlocked
+                    ? "Рано"
+                    : "Отметить приём"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+          >
+            Изменить
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const shouldDelete = window.confirm(`Удалить напоминание для «${planName}»?`);
+            if (!shouldDelete) {
+              return;
+            }
+            onDelete(plan.id);
+          }}
+          disabled={isDeleting}
+          className="soft-button-danger w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+        >
+          {isDeleting ? "Удаляем…" : "Удалить"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1 py-1 sm:grid-cols-[148px_minmax(0,1fr)] sm:items-start sm:gap-4">
+      <p className="text-xs font-medium tracking-[0.04em] text-muted">{label}</p>
+      <p className="text-sm font-medium leading-6 text-foreground sm:text-right">{value}</p>
     </div>
   );
 }
@@ -2576,6 +2542,13 @@ function formatEpisodePeriod(startedAt: string, closedAt: string | null) {
     : `с ${formatDate(startedAt)}`;
 }
 
+function formatWeightValue(valueKg: number): string {
+  return `${new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
+    maximumFractionDigits: 1,
+  }).format(valueKg)} кг`;
+}
+
 function formatEntrySummary(
   temperatureCount: number,
   administrationCount: number,
@@ -2608,7 +2581,12 @@ function buildEpisodeTimeline(
       : null;
     const reason = entry.reason?.trim();
     const actorLabel = getAdministrationActorLabel(entry);
-    const descriptionLines = [`Доза: ${entry.amount}`];
+    const doseLabel = entry.amount?.trim();
+    const descriptionLines: string[] = [];
+
+    if (doseLabel) {
+      descriptionLines.push(`Доза: ${doseLabel}`);
+    }
 
     if (actorLabel) {
       descriptionLines.push(actorLabel);
@@ -2639,52 +2617,6 @@ function buildEpisodeTimeline(
   );
 }
 
-function buildPendingActivationTimeline(
-  temperatures: Array<{ id: string; valueCelsius: number }>,
-  administrations: Array<{
-    id: string;
-    householdMedicineId: string | null;
-    customMedicineName: string | null;
-    amount: string;
-  }>,
-  comments: Array<{ id: string; text: string }>,
-  medicines: HouseholdMedicine[]
-): EpisodeTimelineItem[] {
-  const at = new Date().toISOString();
-
-  const temperatureItems = temperatures.map((entry) => ({
-    id: entry.id,
-    at,
-    kind: "temperature" as const,
-    title: `${entry.valueCelsius} °C`,
-    description: "Будет сохранено как начальный замер температуры",
-  }));
-
-  const administrationItems = administrations.map((entry) => {
-    const medicine = entry.householdMedicineId
-      ? medicines.find((item) => item.id === entry.householdMedicineId)
-      : null;
-
-    return {
-      id: entry.id,
-      at,
-      kind: "administration" as const,
-      title: entry.customMedicineName ?? medicine?.medicineName ?? "Приём лекарства",
-      description: `Доза: ${entry.amount}`,
-    };
-  });
-
-  const commentItems = comments.map((entry) => ({
-    id: entry.id,
-    at,
-    kind: "comment" as const,
-    title: "Комментарий",
-    description: entry.text,
-  }));
-
-  return [...temperatureItems, ...administrationItems, ...commentItems];
-}
-
 function parseNullableInteger(value: string) {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -2703,8 +2635,4 @@ function parseNullableNumber(value: string) {
 
   const parsed = parseFloat(trimmed);
   return Number.isNaN(parsed) ? null : parsed;
-}
-
-function makeLocalId() {
-  return Math.random().toString(36).slice(2, 10);
 }

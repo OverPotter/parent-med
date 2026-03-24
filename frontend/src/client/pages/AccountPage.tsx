@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { changePassword, logout } from "@shared/api/auth";
+import { changePassword } from "@shared/api/auth";
 import {
   deletePushSubscription,
   fetchPushNotificationConfig,
@@ -28,11 +28,8 @@ export function AccountPage() {
   const accountEmail = useAppStore((s) => s.accountEmail);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
-  const theme = useAppStore((s) => s.theme);
-  const toggleTheme = useAppStore((s) => s.toggleTheme);
   const medicationIntervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const setMedicationIntervalUnit = useAppStore((s) => s.setMedicationIntervalUnit);
-  const clearSession = useAppStore((s) => s.clearSession);
   const [pushStatus, setPushStatus] = useState<"checking" | "enabled" | "disabled">("checking");
   const [pushError, setPushError] = useState<string | null>(null);
   const [isPushPending, setIsPushPending] = useState(false);
@@ -204,16 +201,6 @@ export function AccountPage() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch {
-      // Локальный выход остаётся приоритетом.
-    } finally {
-      clearSession();
-    }
-  };
-
   const handleReminderMinutesChange = (value: string) => {
     setSelectedReminderMinutes(value);
     setPushError(null);
@@ -254,14 +241,11 @@ export function AccountPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <PageIntro
-        title="Аккаунт"
-        subtitle="Личные настройки, уведомления и служебные действия без перегруза ежедневного потока."
-      />
+      <PageIntro title="Аккаунт" subtitle="Личные настройки, уведомления и безопасность." />
 
       <Surface className="p-5 sm:p-6">
         <p className="text-sm font-medium text-foreground">Профиль</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <InfoCard
             label="Имя в семье"
             value={accountDisplayName || accountLogin || "Не указано"}
@@ -272,27 +256,6 @@ export function AccountPage() {
             label="Роль в семье"
             value={accountFamilyRole === "owner" ? "Владелец" : "Участник"}
           />
-          <InfoCard label="Тема" value={theme === "light" ? "Светлая" : "Тёмная"} />
-        </div>
-      </Surface>
-
-      <Surface className="p-5 sm:p-6">
-        <p className="text-sm font-medium text-foreground">Быстрые действия</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-          >
-            Переключить на {theme === "light" ? "тёмную" : "светлую"} тему
-          </button>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-          >
-            Выйти из аккаунта
-          </button>
         </div>
       </Surface>
 

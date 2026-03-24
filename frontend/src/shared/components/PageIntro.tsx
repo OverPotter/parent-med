@@ -39,7 +39,7 @@ export function PageIntro({
       >
         <div className="min-w-0">
           {eyebrow && (
-            <span className="soft-pill-primary inline-flex rounded-full px-3 py-1 text-[11px] tracking-[0.08em]">
+            <span className="soft-pill-primary inline-flex rounded-full px-3 py-1 text-[11px] tracking-[0.04em]">
               {eyebrow}
             </span>
           )}
@@ -47,8 +47,8 @@ export function PageIntro({
             className={joinClasses(
               eyebrow ? "mt-4" : "",
               compactOnMobile
-                ? "text-xl font-semibold text-foreground sm:text-3xl"
-                : "text-2xl font-semibold text-foreground sm:text-3xl"
+                ? "app-title text-xl sm:text-[2rem]"
+                : "app-title text-2xl sm:text-[2.15rem]"
             )}
           >
             {title}
@@ -56,7 +56,7 @@ export function PageIntro({
           {subtitle && (
             <p
               className={joinClasses(
-                "max-w-3xl text-sm text-muted",
+                "app-subtitle max-w-3xl text-sm",
                 compactOnMobile ? "mt-1 leading-6 sm:mt-2 sm:leading-7" : "mt-2 leading-7"
               )}
             >

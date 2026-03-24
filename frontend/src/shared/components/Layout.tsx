@@ -3,10 +3,18 @@
  */
 
 import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { logout } from "@shared/api/auth";
 import { useAppStore } from "@shared/store/useAppStore";
 import { BottomTabBar } from "./BottomTabBar";
 import { TopNav, type LayoutNavLink } from "./TopNav";
+
+type ThemeIconStyle = CSSProperties & {
+  "--soft-theme-icon-from"?: string;
+  "--soft-theme-icon-to"?: string;
+  "--soft-theme-icon-scale"?: number;
+};
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,17 +30,23 @@ export function Layout({
   mobileNavLinks = [],
   showCurrentFamily = false,
 }: LayoutProps) {
-  const {
-    theme,
-    toggleTheme,
-    currentFamilyName,
-    accountLogin,
-    accountEmail,
-    accountDisplayName,
-    clearSession,
-  } = useAppStore();
-  const accountLabel = accountDisplayName || accountLogin;
+  const { theme, toggleTheme, currentFamilyName, accountLogin, accountDisplayName, clearSession } =
+    useAppStore();
+  const accountLabel = accountDisplayName || accountLogin || "Пользователь";
   const hasMobileNav = mobileNavLinks.length > 0;
+
+  const spinTimeoutRef = useRef<number | null>(null);
+  const [isIconSpinning, setIsIconSpinning] = useState(false);
+  const initialRotation = theme === "light" ? -12 : 12;
+  const [iconSpin, setIconSpin] = useState({ from: initialRotation, to: initialRotation });
+
+  useEffect(() => {
+    return () => {
+      if (spinTimeoutRef.current !== null) {
+        window.clearTimeout(spinTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -44,18 +58,80 @@ export function Layout({
     }
   };
 
+  const iconStyle: ThemeIconStyle = {
+    "--soft-theme-icon-from": `${iconSpin.from}deg`,
+    "--soft-theme-icon-to": `${iconSpin.to}deg`,
+    "--soft-theme-icon-scale": theme === "light" ? 1 : 1.06,
+  };
+
+  const handleThemeToggle = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    const nextRotation = nextTheme === "light" ? -12 : 12;
+    setIconSpin((current) => ({ from: current.to, to: nextRotation }));
+    setIsIconSpinning(true);
+    if (spinTimeoutRef.current !== null) {
+      window.clearTimeout(spinTimeoutRef.current);
+    }
+    spinTimeoutRef.current = window.setTimeout(() => {
+      setIsIconSpinning(false);
+      spinTimeoutRef.current = null;
+    }, 420);
+    toggleTheme();
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <header className="min-w-0 px-2 pt-2 sm:px-4 sm:pt-3">
         <div className="mx-auto max-w-5xl">
           <div className="md:hidden">
             <div className="soft-nav-shell rounded-[26px] px-3 py-3">
-              <Link to="/" className="inline-flex items-center gap-2.5">
-                <img src="/pwa-icon.svg" alt="" className="h-8 w-8 rounded-2xl" />
-                <span className="text-sm font-semibold tracking-[0.04em] text-primary">
-                  Parent Med
-                </span>
-              </Link>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <Link to="/" className="inline-flex min-w-0 items-center gap-2.5">
+                    <img src="/pwa-icon.svg" alt="" className="h-8 w-8 rounded-2xl" />
+                    <span className="app-brand-text truncate">Parent Med</span>
+                  </Link>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {accountLogin && (
+                    <span className="soft-pill inline-flex max-w-[7.5rem] items-center truncate rounded-full px-3 py-1 text-[11px]">
+                      {accountLabel}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="soft-theme-toggle"
+                    onClick={handleThemeToggle}
+                    aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
+                    title={theme === "light" ? "Тёмная тема" : "Светлая тема"}
+                  >
+                    <span
+                      className={[
+                        "soft-theme-toggle__icon",
+                        theme === "light"
+                          ? "soft-theme-toggle__icon--moon"
+                          : "soft-theme-toggle__icon--sun",
+                        isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      aria-hidden="true"
+                      style={iconStyle}
+                    >
+                      {theme === "light" ? "🌙" : "☀️"}
+                    </span>
+                  </button>
+                  {accountLogin && (
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
+                    >
+                      Выйти
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -64,9 +140,7 @@ export function Layout({
               <div className="flex items-center justify-between gap-5">
                 <Link to="/" className="inline-flex min-w-0 items-center gap-3">
                   <img src="/pwa-icon.svg" alt="" className="h-9 w-9 rounded-2xl" />
-                  <p className="truncate text-lg font-semibold tracking-[0.03em] text-primary">
-                    Parent Med
-                  </p>
+                  <p className="app-brand-text truncate text-lg">Parent Med</p>
                 </Link>
 
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
@@ -76,21 +150,9 @@ export function Layout({
                     </span>
                   )}
                   {accountLogin && (
-                    <>
-                      {accountLabel && (
-                        <span className="soft-pill max-w-[12rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                          {accountLabel}
-                        </span>
-                      )}
-                      <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                        @{accountLogin}
-                      </span>
-                      {accountEmail && (
-                        <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                          {accountEmail}
-                        </span>
-                      )}
-                    </>
+                    <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
+                      {accountLabel}
+                    </span>
                   )}
                   <button
                     type="button"

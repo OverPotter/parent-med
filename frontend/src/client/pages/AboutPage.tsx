@@ -5,11 +5,9 @@ export function AboutPage() {
     <div className="min-w-0 space-y-6">
       <Surface className="soft-hero overflow-hidden">
         <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
-          <p className="text-sm font-medium tracking-[0.04em] text-primary">О приложении</p>
-          <h1 className="mt-2 text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
-            Parent Med
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+          <p className="app-kicker">О приложении</p>
+          <h1 className="app-title mt-2 text-2xl sm:text-3xl">Parent Med</h1>
+          <p className="app-subtitle mt-3 max-w-2xl text-sm">
             Семейный кабинет для детей, домашней аптечки и истории болезни. Это не ежедневный
             рабочий экран, поэтому описание вынесено сюда отдельно.
           </p>
@@ -33,11 +31,11 @@ export function AboutPage() {
 
       <Surface className="overflow-hidden">
         <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
-          <p className="text-sm font-medium tracking-[0.04em] text-primary">Установка на телефон</p>
-          <h2 className="mt-2 text-2xl font-semibold leading-tight text-foreground">
+          <p className="app-kicker">Установка на телефон</p>
+          <h2 className="app-title mt-2 text-2xl">
             Приложение можно установить как иконку на домашний экран
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+          <p className="app-subtitle mt-3 max-w-2xl text-sm">
             Parent Med уже настроен как PWA. Установка идёт через браузер без App Store и Google
             Play.
           </p>
@@ -79,7 +77,7 @@ export function AboutPage() {
 function FeatureCard({ title, description }: { title: string; description: string }) {
   return (
     <Surface className="p-5 sm:p-6">
-      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+      <h2 className="app-card-title text-lg">{title}</h2>
       <p className="mt-3 text-sm leading-7 text-muted">{description}</p>
     </Surface>
   );
@@ -88,7 +86,7 @@ function FeatureCard({ title, description }: { title: string; description: strin
 function InstallCard({ title, steps }: { title: string; steps: string[] }) {
   return (
     <div className="soft-card rounded-[24px] px-4 py-4 sm:px-5">
-      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+      <h3 className="app-card-title text-lg">{title}</h3>
       <ol className="mt-3 space-y-2 text-sm leading-7 text-muted">
         {steps.map((step, index) => (
           <li key={step}>

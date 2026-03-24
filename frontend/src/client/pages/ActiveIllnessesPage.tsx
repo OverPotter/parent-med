@@ -2,6 +2,7 @@
  * Активные болезни: текущие эпизоды по всем детям семьи.
  */
 
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,7 +12,7 @@ import {
 import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
 import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
-import { fetchIllnessEpisodesByChildId } from "@shared/api/illnessEpisodes";
+import { fetchIllnessEpisodesByChildId, updateIllnessEpisode } from "@shared/api/illnessEpisodes";
 import { trackMedicationAdministered } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
@@ -103,7 +104,7 @@ export function ActiveIllnessesPage() {
     <div className="space-y-7">
       <PageIntro
         title="Активные болезни"
-        subtitle="Только текущие наблюдения, где важны ближайшие действия и лекарства, а не архив."
+        subtitle="Только текущие наблюдения, где важны ближайшие действия, приёмы и комментарии."
         compactOnMobile
         hideOnMobile
       />
@@ -149,6 +150,7 @@ function ActiveIllnessCard({
   now: Date;
 }) {
   const queryClient = useQueryClient();
+  const [justSaved, setJustSaved] = useState(false);
   const prioritizedItems = getPrioritizedMedicationPlanItems(
     plans,
     administrations,
@@ -158,7 +160,6 @@ function ActiveIllnessCard({
   const availableNowItems = prioritizedItems.filter(
     (item) => !item.isUnavailable && !item.stats.isBlocked
   );
-  const visibleAvailableItems = availableNowItems.slice(0, 3);
   const upcomingItems = prioritizedItems
     .filter(
       (item) =>
@@ -169,172 +170,174 @@ function ActiveIllnessCard({
     )
     .slice(0, 2);
   const hasUnavailableItems = prioritizedItems.some((item) => item.isUnavailable);
-  const hasDailyLimitItems = prioritizedItems.some((item) => item.stats.blockedByDailyLimit);
+  const availableNowLead = availableNowItems[0] ?? null;
+  const availableNowOverflowCount = Math.max(0, availableNowItems.length - 1);
+  const upcomingLead = upcomingItems[0] ?? null;
   const takeDoseMutation = useMutation({
     mutationFn: (plan: EpisodeMedicationPlan) => {
       if (!plan) {
-        throw new Error("Нет доступного плана.");
+        throw new Error("Нет доступного напоминания.");
       }
       return createAdministrationEvent({
         episode_id: episode.id,
         household_medicine_id: plan.householdMedicineId,
         custom_medicine_name: plan.customMedicineName ?? undefined,
         amount: plan.doseAmount,
-        reason: "Дали по плану",
+        reason: "Отмечено по напоминанию",
       });
     },
     onSuccess: () => {
       trackMedicationAdministered("active_illnesses");
       queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
       queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      setJustSaved(true);
     },
   });
+
+  const closeEpisodeMutation = useMutation({
+    mutationFn: () => updateIllnessEpisode(episode.id, { status: "closed" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["illness-episodes", child.id] });
+    },
+  });
+
+  useEffect(() => {
+    if (!justSaved) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => setJustSaved(false), 1400);
+    return () => window.clearTimeout(timeoutId);
+  }, [justSaved]);
 
   return (
     <li>
       <RowSurface className="soft-card-status-danger rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4.5">
         <div className="space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-base font-semibold text-foreground sm:text-lg">{child.name}</h2>
-                <span className="soft-pill-danger rounded-full px-2 py-1 text-[11px]">
-                  Наблюдение
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-foreground sm:text-lg">{child.name}</h2>
+              <span className="soft-pill-danger rounded-full px-2 py-1 text-[11px]">
+                Наблюдение
+              </span>
+            </div>
+            <p className="mt-1 text-sm leading-6 text-muted">
+              {child.ageLabel ? `${child.ageLabel} • ` : ""}
+              Наблюдение с {formatDate(episode.startedAt)}
+            </p>
+            {episode.title && (
+              <p className="mt-1 line-clamp-1 text-sm leading-5 text-foreground/80">
+                {episode.title}
+              </p>
+            )}
+            {upcomingLead && !availableNowLead && (
+              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[color:color-mix(in_srgb,var(--color-warning)_24%,transparent)] bg-[color:color-mix(in_srgb,var(--color-warning-soft)_36%,transparent)] px-3 py-1.5 text-xs text-foreground">
+                <span className="soft-text-warning font-medium">По графику</span>
+                <span className="truncate">
+                  {getPlanDisplayName(upcomingLead)}
+                  {upcomingLead.stats.nextAllowedAt
+                    ? ` · ${formatRelativeDateTime(upcomingLead.stats.nextAllowedAt, now)}`
+                    : ""}
                 </span>
               </div>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                {child.ageLabel ? `${child.ageLabel} • ` : ""}
-                Наблюдение с {formatDate(episode.startedAt)}
-              </p>
-              {episode.title && (
-                <p className="mt-1 line-clamp-1 text-sm leading-5 text-foreground/80">
-                  {episode.title}
+            )}
+          </div>
+
+          {(availableNowItems.length > 0 || upcomingItems.length > 0 || hasUnavailableItems) && (
+            <div className={availableNowLead ? "pt-1" : "pt-0"}>
+              {availableNowLead ? (
+                <div className="space-y-3">
+                  <div className="rounded-[22px] bg-[color:color-mix(in_srgb,var(--color-success-soft)_58%,transparent)] px-3.5 py-3">
+                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                      <div className="min-w-0">
+                        <p className="flex flex-wrap items-center gap-2 text-sm leading-5 text-foreground">
+                          <span className="soft-pill-success rounded-full px-2.5 py-1 text-[11px]">
+                            Можно дать
+                          </span>
+                          <span className="font-medium">
+                            {getPlanDisplayName(availableNowLead)}
+                          </span>
+                          {getPlanDose(availableNowLead) && (
+                            <span className="text-muted"> • {getPlanDose(availableNowLead)}</span>
+                          )}
+                        </p>
+                        {availableNowOverflowCount > 0 && (
+                          <p className="mt-1 text-xs text-muted">
+                            Ещё доступно сейчас: {availableNowOverflowCount}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => takeDoseMutation.mutate(availableNowLead.plan)}
+                        disabled={takeDoseMutation.isPending}
+                        className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50 md:w-auto"
+                      >
+                        {takeDoseMutation.isPending ? "Сохраняем…" : "Записать приём"}
+                      </button>
+                    </div>
+                  </div>
+                  {justSaved && <p className="text-xs soft-text-success">Приём сохранён</p>}
+                </div>
+              ) : upcomingLead ? (
+                getPlanDose(upcomingLead) ? (
+                  <p className="text-xs text-muted">Доза: {getPlanDose(upcomingLead)}</p>
+                ) : null
+              ) : (
+                <p className="soft-text-danger text-sm">
+                  Есть напоминание, но упаковку нужно проверить.
                 </p>
               )}
             </div>
-            <Link
-              to={`/children/${child.id}/illness`}
-              className="soft-pill-primary rounded-full px-3 py-1 text-[11px]"
-            >
-              Открыть
-            </Link>
-          </div>
-
-          {(availableNowItems.length > 0 ||
-            upcomingItems.length > 0 ||
-            hasUnavailableItems ||
-            hasDailyLimitItems) && (
-            <div className="space-y-3">
-              {availableNowItems.length > 0 && (
-                <div className="soft-panel-muted rounded-[20px] px-3.5 py-3 sm:px-4 sm:py-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className="soft-pill-success rounded-full px-2 py-1 text-[11px]">
-                      Сейчас
-                    </span>
-                    <p className="text-sm font-semibold text-foreground sm:text-base">Можно дать</p>
-                  </div>
-                  <div className="mt-2 space-y-2">
-                    {visibleAvailableItems.map((item) => {
-                      const itemName = getPlanDisplayName(item);
-                      const itemDose = getPlanDose(item);
-                      return (
-                        <div
-                          key={item.plan.id}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-[color:var(--color-surface)]/75 px-3 py-2.5"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground">{itemName}</p>
-                            {itemDose && <p className="mt-0.5 text-xs text-muted">{itemDose}</p>}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => takeDoseMutation.mutate(item.plan)}
-                            disabled={takeDoseMutation.isPending}
-                            className="soft-button-primary rounded-2xl px-3 py-2 text-sm disabled:opacity-50"
-                          >
-                            {takeDoseMutation.isPending ? "..." : "Дать"}
-                          </button>
-                        </div>
-                      );
-                    })}
-                    {availableNowItems.length > visibleAvailableItems.length && (
-                      <span className="soft-pill inline-flex rounded-full px-2.5 py-1.5 text-[11px] text-muted">
-                        + ещё {availableNowItems.length - visibleAvailableItems.length}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {upcomingItems.length > 0 && (
-                <div className="space-y-3">
-                  {availableNowItems.length > 0 && (
-                    <div className="mx-1 h-px rounded-full bg-border/45" aria-hidden="true" />
-                  )}
-
-                  <div className="soft-panel-muted rounded-[20px] bg-[color:var(--color-surface)]/58 px-3.5 py-3 sm:px-4 sm:py-3.5">
-                    <span className="soft-pill rounded-full px-2 py-1 text-[11px] text-muted">
-                      Позже
-                    </span>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {upcomingItems.map((item) => {
-                        const itemName = getPlanDisplayName(item);
-                        const itemDose = getPlanDose(item);
-                        return (
-                          <div
-                            key={item.plan.id}
-                            className="soft-pill inline-flex flex-wrap items-center gap-1.5 rounded-full bg-background/55 px-3 py-2 text-xs text-muted"
-                          >
-                            <span className="font-medium text-foreground">{itemName}</span>
-                            {itemDose && <span>{itemDose}</span>}
-                            {item.stats.nextAllowedAt && (
-                              <span className="soft-pill-warning rounded-full px-2 py-0.5 text-[11px]">
-                                {formatRelativeDateTime(item.stats.nextAllowedAt, now)}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {availableNowItems.length === 0 &&
-                upcomingItems.length === 0 &&
-                hasUnavailableItems && (
-                  <div className="soft-panel-muted rounded-[20px] px-3.5 py-3 sm:px-4 sm:py-3.5">
-                    <p className="soft-text-danger text-sm">
-                      Есть план, но упаковку нужно проверить.
-                    </p>
-                  </div>
-                )}
-
-              {availableNowItems.length === 0 &&
-                upcomingItems.length === 0 &&
-                !hasUnavailableItems &&
-                hasDailyLimitItems && (
-                  <div className="soft-panel-muted rounded-[20px] px-3.5 py-3 sm:px-4 sm:py-3.5">
-                    <p className="text-sm text-muted">На сегодня лимит уже достигнут.</p>
-                  </div>
-                )}
-            </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="grid gap-2 pt-0 sm:grid-cols-2 xl:grid-cols-4">
             <Link
-              to={`/children/${child.id}/illness?focus=administration`}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              to={`/children/${child.id}/illness?focus=temperature`}
+              className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
             >
-              Быстрая запись
+              Записать температуру
+            </Link>
+            {!availableNowLead && (
+              <Link
+                to={`/children/${child.id}/illness?focus=administration`}
+                className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+              >
+                Записать приём
+              </Link>
+            )}
+            <Link
+              to={`/children/${child.id}/illness?focus=comment`}
+              className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+            >
+              Добавить заметку
             </Link>
             <Link
               to={`/children/${child.id}/illness?focus=timeline`}
-              className="soft-pill rounded-full px-3 py-2 text-xs text-muted"
+              className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
             >
               Лента
             </Link>
+            <Link
+              to={`/children/${child.id}/illness?focus=reminders`}
+              className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+            >
+              График приёма
+            </Link>
           </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!window.confirm("Закрыть текущее наблюдение?")) {
+                return;
+              }
+              closeEpisodeMutation.mutate();
+            }}
+            disabled={closeEpisodeMutation.isPending}
+            className="soft-button-danger w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+          >
+            {closeEpisodeMutation.isPending ? "Закрываем…" : "Закрыть наблюдение"}
+          </button>
         </div>
       </RowSurface>
     </li>

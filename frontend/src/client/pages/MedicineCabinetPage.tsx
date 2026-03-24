@@ -29,6 +29,15 @@ const STATUS_CARD_STYLES: Record<string, string> = {
   expired_after_opening: "soft-card-status-danger",
 };
 
+const MEDICINE_FORM_OPTIONS = [
+  { value: "таблетки", label: "Таблетки" },
+  { value: "сироп", label: "Сироп" },
+  { value: "капли", label: "Капли" },
+  { value: "суспензия", label: "Суспензия" },
+  { value: "раствор", label: "Раствор" },
+  { value: "суппозитории", label: "Суппозитории (свечи)" },
+];
+
 export function MedicineCabinetPage() {
   const queryClient = useQueryClient();
   const [view, setView] = useState<"cabinet" | "add">("cabinet");
@@ -61,6 +70,7 @@ export function MedicineCabinetPage() {
   };
 
   const normalizedCabinetSearch = cabinetSearch.trim().toLowerCase();
+  const isSearchMode = normalizedCabinetSearch.length > 0;
   const filteredMedicines = medicines.filter((medicine) => {
     if (!normalizedCabinetSearch) {
       return true;
@@ -84,11 +94,11 @@ export function MedicineCabinetPage() {
         subtitle="Реальные упаковки дома: срок годности, дата вскрытия и можно ли использовать препарат сейчас."
         hideOnMobile
       />
-      <div className="soft-nav-shell inline-flex flex-wrap gap-2 rounded-[24px] p-2">
+      <div className="soft-nav-shell grid grid-cols-1 gap-2 rounded-[24px] p-2 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => setView("add")}
-          className={`rounded-full px-4 py-2 text-sm transition-colors ${
+          className={`w-full rounded-full px-4 py-2 text-sm transition-colors ${
             view === "add" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -96,8 +106,11 @@ export function MedicineCabinetPage() {
         </button>
         <button
           type="button"
-          onClick={() => setView("cabinet")}
-          className={`rounded-full px-4 py-2 text-sm transition-colors ${
+          onClick={() => {
+            setView("cabinet");
+            setCabinetSearch("");
+          }}
+          className={`w-full rounded-full px-4 py-2 text-sm transition-colors ${
             view === "cabinet" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -121,14 +134,20 @@ export function MedicineCabinetPage() {
             </p>
           )}
           {medicines.length > 0 && (
-            <div className="mt-4">
-              <input
-                type="search"
-                value={cabinetSearch}
-                onChange={(event) => setCabinetSearch(event.target.value)}
-                placeholder="Поиск по аптечке"
-                className="soft-input w-full rounded-2xl px-4 py-3 text-sm"
-              />
+            <div className="mt-4 soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5 sm:py-5">
+              <label className="block">
+                <span className="block text-sm text-muted">Найти в аптечке</span>
+                <input
+                  type="search"
+                  value={cabinetSearch}
+                  onChange={(event) => setCabinetSearch(event.target.value)}
+                  placeholder="Название, форма или комментарий"
+                  className="soft-input mt-2 w-full rounded-2xl px-4 py-3 text-base sm:text-sm"
+                />
+              </label>
+              {isSearchMode && (
+                <p className="mt-2 text-xs text-muted">Найдено: {filteredMedicines.length}</p>
+              )}
             </div>
           )}
           {medicines.length > 0 && filteredMedicines.length === 0 && (
@@ -139,7 +158,12 @@ export function MedicineCabinetPage() {
           {medicines.length > 0 && (
             <ul className="mt-6 space-y-3">
               {filteredMedicines.map((m) => (
-                <MedicineItemCard key={m.id} medicine={m} onDelete={handleWriteOff} />
+                <MedicineItemCard
+                  key={m.id}
+                  medicine={m}
+                  onDelete={handleWriteOff}
+                  compact={isSearchMode}
+                />
               ))}
             </ul>
           )}
@@ -412,7 +436,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
         )}
 
         {!catalogItem && (
-          <div className="flex flex-wrap gap-3">
+          <div className="grid gap-3">
             <input
               type="text"
               value={newMedicineName}
@@ -421,22 +445,29 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setFormError(null);
               }}
               placeholder="Название нового препарата"
-              className="soft-input min-w-0 flex-1 max-w-xs rounded-2xl px-4 py-3"
-            />
-            <select
-              value={newMedicineForm}
-              onChange={(e) => {
-                setNewMedicineForm(e.target.value);
-                setFormError(null);
-              }}
               className="soft-input rounded-2xl px-4 py-3"
-            >
-              <option value="таблетки">таблетки</option>
-              <option value="сироп">сироп</option>
-              <option value="капли">капли</option>
-              <option value="суспензия">суспензия</option>
-              <option value="раствор">раствор</option>
-            </select>
+            />
+            <div>
+              <span className="text-sm text-muted">Форма препарата</span>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {MEDICINE_FORM_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setNewMedicineForm(option.value);
+                      setFormError(null);
+                    }}
+                    className={`rounded-full px-4 py-2 text-sm transition-colors ${
+                      newMedicineForm === option.value ? "soft-tab-active" : "soft-tab"
+                    }`}
+                    aria-pressed={newMedicineForm === option.value}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <input
               type="text"
               value={newMedicineConcentration}
@@ -445,7 +476,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setFormError(null);
               }}
               placeholder="Концентрация"
-              className="soft-input min-w-0 flex-1 max-w-xs rounded-2xl px-4 py-3"
+              className="soft-input rounded-2xl px-4 py-3"
             />
           </div>
         )}
@@ -618,9 +649,11 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
 function MedicineItemCard({
   medicine,
   onDelete,
+  compact = false,
 }: {
   medicine: HouseholdMedicine;
   onDelete: (id: string) => void;
+  compact?: boolean;
 }) {
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
@@ -658,6 +691,14 @@ function MedicineItemCard({
   };
 
   const toggleMobileCard = () => {
+    if (compact) {
+      if (isMobileActionsExpanded || isDetailsExpanded || isEditing) {
+        collapseMobileCard();
+        return;
+      }
+      setIsMobileActionsExpanded(true);
+      return;
+    }
     if (typeof window !== "undefined" && window.innerWidth >= 768) {
       setIsDetailsExpanded((value) => !value);
       setIsEditing(false);
@@ -709,6 +750,130 @@ function MedicineItemCard({
     },
   });
 
+  if (compact) {
+    return (
+      <li>
+        <RowSurface
+          className={`min-w-0 px-4 py-4 sm:px-5 sm:py-4 ${STATUS_CARD_STYLES[medicine.status] ?? ""}`}
+        >
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={toggleMobileCard}
+              className="block w-full text-left"
+              aria-expanded={isMobileActionsExpanded || isDetailsExpanded}
+            >
+              <div className="flex min-w-0 items-start gap-2">
+                <div className="group relative shrink-0">
+                  <button
+                    type="button"
+                    title={intakeMessage.text}
+                    aria-label={intakeMessage.text}
+                    onClick={(event) => event.stopPropagation()}
+                    onMouseEnter={() => {
+                      setStatusTooltipMode("hover");
+                      setIsStatusTooltipVisible(true);
+                    }}
+                    onMouseLeave={() => {
+                      setIsStatusTooltipVisible(false);
+                      setStatusTooltipMode("idle");
+                    }}
+                    onFocus={() => {
+                      setStatusTooltipMode("hover");
+                      setIsStatusTooltipVisible(true);
+                    }}
+                    onBlur={() => {
+                      setIsStatusTooltipVisible(false);
+                      setStatusTooltipMode("idle");
+                    }}
+                    onTouchStart={() => {
+                      setStatusTooltipMode("touch");
+                      setIsStatusTooltipVisible(true);
+                    }}
+                    onTouchEnd={(event) => {
+                      event.currentTarget.blur();
+                    }}
+                    onTouchCancel={() => {
+                      setIsStatusTooltipVisible(false);
+                      setStatusTooltipMode("idle");
+                    }}
+                    className={`${intakeMessage.className} h-7 min-w-7 shrink-0 px-2 font-semibold`}
+                  >
+                    {intakeMessage.icon}
+                  </button>
+                  <div
+                    className={[
+                      "pointer-events-none absolute left-0 top-full z-10 mt-2 w-max max-w-[12rem] rounded-2xl border border-border/80 bg-[color:var(--color-surface-soft)] px-3 py-2 text-xs leading-5 text-foreground shadow-lg backdrop-blur-xl",
+                      isStatusTooltipVisible ? "block" : "hidden",
+                    ].join(" ")}
+                  >
+                    {intakeMessage.text}
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <p className="min-w-0 break-words text-sm font-semibold text-foreground">
+                      {medicine.medicineName}
+                      {medicine.medicineConcentration ? `, ${medicine.medicineConcentration}` : ""}
+                    </p>
+                    <span className="text-xs text-muted">{statusDateText}</span>
+                  </div>
+                  {medicine.medicineForm &&
+                  medicine.medicineForm.trim().toLowerCase() !== "не указано" ? (
+                    <p className="mt-1 text-xs text-muted">{medicine.medicineForm}</p>
+                  ) : null}
+                </div>
+              </div>
+            </button>
+
+            {isMobileActionsExpanded && (
+              <div className="space-y-3 border-t border-border/60 pt-3">
+                {isDetailsExpanded && (
+                  <div className="space-y-1.5 text-sm text-muted">
+                    <p>Форма: {medicine.medicineForm}</p>
+                    {medicine.openedAt && (
+                      <p>
+                        Вскрыто: {formatDate(medicine.openedAt)}
+                        {medicine.effectiveOpenedShelfDays
+                          ? ` · После вскрытия: ${medicine.effectiveOpenedShelfDays} дн.`
+                          : " · Срок после вскрытия не указан"}
+                        {medicine.openedExpiresAt
+                          ? ` · Использовать до: ${formatDate(medicine.openedExpiresAt)}`
+                          : ""}
+                      </p>
+                    )}
+                    {medicine.medicineDosage && <p>Как применять: {medicine.medicineDosage}</p>}
+                    {medicine.medicineDescription && (
+                      <p>Описание: {medicine.medicineDescription}</p>
+                    )}
+                    {medicine.comment && <p>Комментарий: {medicine.comment}</p>}
+                  </div>
+                )}
+
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDetailsExpanded((value) => !value)}
+                    className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm"
+                  >
+                    {isDetailsExpanded ? "Скрыть" : "Подробнее"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(medicine.id)}
+                    className="soft-button-danger w-full rounded-2xl px-4 py-2.5 text-sm"
+                  >
+                    Списать
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </RowSurface>
+      </li>
+    );
+  }
+
   return (
     <li>
       <RowSurface className={`min-w-0 ${STATUS_CARD_STYLES[medicine.status] ?? ""}`}>
@@ -728,7 +893,7 @@ function MedicineItemCard({
                 tabIndex={0}
                 aria-expanded={isMobileActionsExpanded || isDetailsExpanded || isEditing}
               >
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 items-start gap-2">
                   <div className="group relative shrink-0">
                     <button
                       type="button"
@@ -775,15 +940,24 @@ function MedicineItemCard({
                       {intakeMessage.text}
                     </div>
                   </div>
-                  <p className="min-w-0 break-words font-medium text-foreground">
-                    {medicine.medicineName}
-                    {medicine.medicineConcentration ? `, ${medicine.medicineConcentration}` : ""}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 sm:items-center">
+                      <p className="min-w-0 break-words font-medium text-foreground">
+                        {medicine.medicineName}
+                        {medicine.medicineConcentration
+                          ? `, ${medicine.medicineConcentration}`
+                          : ""}
+                      </p>
+                      <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                        {statusDateText}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="soft-pill rounded-full px-3 py-1 text-xs">{statusDateText}</span>
-                </div>
-                {openedStatusHint && <p className="mt-2 text-xs text-muted">{openedStatusHint}</p>}
+                <div className="mt-2 flex flex-wrap items-center gap-2" />
+                {!compact && openedStatusHint && (
+                  <p className="mt-2 text-xs text-muted">{openedStatusHint}</p>
+                )}
               </div>
             </div>
 
@@ -808,8 +982,8 @@ function MedicineItemCard({
             )}
           </div>
           {isMobileActionsExpanded && (
-            <div className="w-full md:hidden">
-              <div className="flex flex-col gap-2">
+            <div className={compact ? "w-full" : "w-full md:hidden"}>
+              <div className={`grid gap-2 ${compact ? "grid-cols-2" : ""}`}>
                 <button
                   type="button"
                   onClick={() => setIsDetailsExpanded((value) => !value)}
@@ -817,13 +991,15 @@ function MedicineItemCard({
                 >
                   {isDetailsExpanded ? "Скрыть" : "Подробнее"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditing((value) => !value)}
-                  className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm"
-                >
-                  {isEditing ? "Закрыть" : "Новая упаковка"}
-                </button>
+                {!compact && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing((value) => !value)}
+                    className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm"
+                  >
+                    {isEditing ? "Закрыть" : "Новая упаковка"}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onDelete(medicine.id)}
@@ -834,29 +1010,33 @@ function MedicineItemCard({
               </div>
             </div>
           )}
-          <div className="hidden md:flex md:w-auto md:flex-row md:flex-wrap md:gap-2">
-            <button
-              type="button"
-              onClick={() => setIsDetailsExpanded((value) => !value)}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-            >
-              {isDetailsExpanded ? "Скрыть" : "Подробнее"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditing((value) => !value)}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
-            >
-              {isEditing ? "Закрыть" : "Новая упаковка"}
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(medicine.id)}
-              className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm"
-            >
-              Списать
-            </button>
-          </div>
+          {!compact && (
+            <div className="hidden md:flex md:w-auto md:flex-row md:flex-wrap md:gap-2">
+              <button
+                type="button"
+                onClick={() => setIsDetailsExpanded((value) => !value)}
+                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              >
+                {isDetailsExpanded ? "Скрыть" : "Подробнее"}
+              </button>
+              {!compact && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing((value) => !value)}
+                  className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                >
+                  {isEditing ? "Закрыть" : "Новая упаковка"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => onDelete(medicine.id)}
+                className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm"
+              >
+                Списать
+              </button>
+            </div>
+          )}
         </div>
 
         {isEditing && (

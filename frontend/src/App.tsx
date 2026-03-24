@@ -1,10 +1,10 @@
 /** Роутинг: admin / client. */
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { setBearerToken, setRefreshHandler } from "@shared/api/client";
 import { useAppStore } from "@shared/store/useAppStore";
 import {
@@ -24,6 +24,7 @@ import { ClientStartPage } from "@client/pages/ClientStartPage";
 import { FamilyPage } from "@client/pages/FamilyPage";
 import { JoinFamilyPage } from "@client/pages/JoinFamilyPage";
 import { ChildrenPage } from "@client/pages/ChildrenPage";
+import { ChildProfilePage } from "@client/pages/ChildProfilePage";
 import { MedicineCabinetPage } from "@client/pages/MedicineCabinetPage";
 import { ChildIllnessPage } from "@client/pages/ChildIllnessPage";
 import { ActiveIllnessesPage } from "@client/pages/ActiveIllnessesPage";
@@ -166,6 +167,168 @@ function PushSubscriptionSync() {
   return null;
 }
 
+function PullToRefreshSync() {
+  const queryClient = useQueryClient();
+  const location = useLocation();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const isRefreshingRef = useRef(false);
+  const refreshTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current !== null) {
+        window.clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("ontouchstart" in window)) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(pointer: coarse)");
+    if (!mediaQuery.matches) {
+      return;
+    }
+
+    let startY = 0;
+    let pullDistance = 0;
+    let canRefresh = false;
+    let scrollElement: Element | null = null;
+
+    const getScrollTop = () => {
+      if (scrollElement instanceof HTMLElement) {
+        return scrollElement.scrollTop;
+      }
+      return window.scrollY;
+    };
+
+    const refreshPageData = async () => {
+      if (isRefreshingRef.current) {
+        return;
+      }
+
+      isRefreshingRef.current = true;
+      setIsRefreshing(true);
+
+      try {
+        await queryClient.invalidateQueries();
+        await queryClient.refetchQueries({ type: "active" });
+      } finally {
+        refreshTimeoutRef.current = window.setTimeout(() => {
+          isRefreshingRef.current = false;
+          setIsRefreshing(false);
+          refreshTimeoutRef.current = null;
+        }, 420);
+      }
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      const touch = event.touches.item(0);
+      if (event.touches.length !== 1 || !touch) {
+        canRefresh = false;
+        return;
+      }
+
+      scrollElement = document.scrollingElement;
+      canRefresh = getScrollTop() <= 0;
+      startY = touch.clientY;
+      pullDistance = 0;
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      const touch = event.touches.item(0);
+      if (!canRefresh || event.touches.length !== 1 || !touch) {
+        return;
+      }
+
+      const currentY = touch.clientY;
+      pullDistance = currentY - startY;
+    };
+
+    const handleTouchEnd = () => {
+      if (canRefresh && pullDistance > 96) {
+        void refreshPageData();
+      }
+
+      canRefresh = false;
+      startY = 0;
+      pullDistance = 0;
+      scrollElement = null;
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [location.key, queryClient]);
+
+  if (!isRefreshing) {
+    return null;
+  }
+
+  return (
+    <div className="soft-refresh-overlay" aria-live="polite" aria-label="Обновляем страницу">
+      <div className="soft-refresh-indicator">
+        <span className="soft-refresh-spinner" aria-hidden="true" />
+        <span>Обновляем…</span>
+      </div>
+    </div>
+  );
+}
+
+function MobilePageResumeSync() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    let lastHiddenAt = Date.now();
+
+    const refreshActiveQueries = () => {
+      void queryClient.invalidateQueries();
+      void queryClient.refetchQueries({ type: "active" });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        lastHiddenAt = Date.now();
+        return;
+      }
+
+      if (Date.now() - lastHiddenAt > 1500) {
+        refreshActiveQueries();
+      }
+    };
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        refreshActiveQueries();
+      }
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", refreshActiveQueries);
+
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", refreshActiveQueries);
+    };
+  }, [queryClient]);
+
+  return null;
+}
+
 export default function App() {
   const role = useAppStore((s) => s.role);
   const authToken = useAppStore((s) => s.authToken);
@@ -184,6 +347,8 @@ export default function App() {
       <DisplayModeSync />
       <AuthSync />
       <PushSubscriptionSync />
+      <MobilePageResumeSync />
+      <PullToRefreshSync />
       <Routes>
         {!(authToken || accountId) ? (
           <>
@@ -210,6 +375,7 @@ export default function App() {
               <Route path="family" element={<FamilyPage />} />
               <Route path="join-family" element={<JoinFamilyPage />} />
               <Route path="children" element={<ChildrenPage />} />
+              <Route path="children/:childId" element={<ChildProfilePage />} />
               <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
               <Route path="illnesses/history" element={<IllnessHistoryPage />} />
               <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
