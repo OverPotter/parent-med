@@ -14,6 +14,7 @@ import { searchMedicineCatalog } from "@shared/api/medicineCatalog";
 import { DateField } from "@shared/components/DateField";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface, Surface } from "@shared/components/Surface";
+import { trackHouseholdMedicineAdded } from "@shared/analytics";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import type { HouseholdMedicine, MedicineCatalogItem } from "@shared/types/api";
 import { formatDate } from "@shared/utils/date";
@@ -259,7 +260,9 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
 
   const createHouseholdMutation = useMutation({
     mutationFn: createHouseholdMedicine,
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      const source = variables.catalog_item_id ? "catalog" : "manual";
+      trackHouseholdMedicineAdded(source);
       queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] });
       setFormError(null);
       setCatalogItem(null);

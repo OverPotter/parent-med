@@ -12,6 +12,8 @@ _DEFAULT_CORS_ORIGINS: list[str] = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://parent-med.localhost:5173",
+    "http://parent-med.localhost:3000",
 ]
 
 
@@ -59,6 +61,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Parent Med API"
     debug: bool = False
+    log_level: str = "INFO"
 
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/parent_med"
     jwt_secret: str = "dev-jwt-secret-change-me"

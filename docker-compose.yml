@@ -1,3 +1,8 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "25m"
+
 services:
   # ========== PostgreSQL ==========
   postgres:
@@ -19,6 +24,7 @@ services:
       retries: 5
     networks:
       - parent_med_network
+    logging: *default-logging
 
   # ========== Backend (FastAPI) ==========
   backend:
@@ -41,12 +47,17 @@ services:
       - backend_logs:/app/logs
     networks:
       - parent_med_network
+    logging: *default-logging
 
   # ========== Frontend (React + Vite) ==========
   frontend:
     build:
       context: ./frontend
       dockerfile: docker/Dockerfile
+      args:
+        VITE_HITKEEP_SCRIPT_URL: ${VITE_HITKEEP_SCRIPT_URL:-}
+        VITE_HITKEEP_USER_HASH_SALT: ${VITE_HITKEEP_USER_HASH_SALT:-}
+        VITE_API_URL: ${VITE_API_URL:-}
     container_name: parent_med_frontend
     ports:
       - "3000:80"
@@ -54,10 +65,30 @@ services:
       - backend
     networks:
       - parent_med_network
+    logging: *default-logging
+
+  hitkeep:
+    build:
+      context: ./docker/hitkeep
+      dockerfile: Dockerfile
+    image: parent_med_hitkeep:local
+    container_name: parent_med_hitkeep
+    ports:
+      - "8080:8080"
+    environment:
+      HITKEEP_JWT_SECRET: ${HITKEEP_JWT_SECRET:-local-dev-change-me-use-long-random-string}
+      HITKEEP_PUBLIC_URL: ${HITKEEP_PUBLIC_URL:-http://localhost:8080}
+      HITKEEP_HTTP_ADDR: ":8080"
+    volumes:
+      - hitkeep_data:/var/lib/hitkeep/data
+    networks:
+      - parent_med_network
+    logging: *default-logging
 
 volumes:
   postgres_data:
   backend_logs:
+  hitkeep_data:
 
 networks:
   parent_med_network:
