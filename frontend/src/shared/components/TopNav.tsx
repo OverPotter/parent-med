@@ -1,4 +1,5 @@
 import { NavLink, matchPath, useLocation } from "react-router-dom";
+import { renderNavIcon } from "./navIcons";
 
 export interface LayoutNavLink {
   to: string;
@@ -16,7 +17,10 @@ export function TopNav({ links }: { links: LayoutNavLink[] }) {
 
   return (
     <nav className="hidden md:flex md:justify-center">
-      <div className="soft-nav-shell inline-flex items-center gap-1.5 rounded-[24px] p-1.5">
+      <div
+        className="grid w-full max-w-[60rem] gap-2"
+        style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}
+      >
         {links.map(({ to, label, activePaths }) => {
           const isActive = (activePaths ?? [to]).some((path) =>
             matchPath({ path, end: path === to }, location.pathname)
@@ -29,11 +33,12 @@ export function TopNav({ links }: { links: LayoutNavLink[] }) {
               end={to === "/"}
               className={() =>
                 [
-                  "whitespace-nowrap rounded-[18px] px-4 py-2 text-sm font-medium transition-colors",
+                  "flex min-h-[3.2rem] items-center justify-center gap-2 rounded-[22px] px-4 py-2.5 text-center text-[0.95rem] font-extrabold tracking-[-0.03em] shadow-[0_10px_24px_-20px_rgba(15,23,42,0.22)] transition-colors",
                   isActive ? "soft-tab-active" : "soft-tab",
                 ].join(" ")
               }
             >
+              <span className="inline-flex shrink-0">{renderNavIcon(to)}</span>
               {label}
             </NavLink>
           );

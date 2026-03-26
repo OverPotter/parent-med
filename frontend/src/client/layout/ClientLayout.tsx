@@ -13,7 +13,7 @@ const desktopNavLinks = [
   { to: "/home", label: "Главная" },
   {
     to: "/illnesses/active",
-    label: "Активные болезни",
+    label: "Болезни",
     mobileLabel: "Болезни",
     activePaths: ["/illnesses/active", "/children/:childId/illness"],
   },
@@ -33,6 +33,11 @@ const desktopNavLinks = [
 ];
 
 const mobileNavLinks = [
+  {
+    to: "/home",
+    label: "Главная",
+    mobileLabel: "Главная",
+  },
   {
     to: "/illnesses/active",
     label: "Активные болезни",

@@ -92,13 +92,14 @@ export function MedicineCabinetPage() {
       <PageIntro
         title="Аптечка"
         subtitle="Реальные упаковки дома: срок годности, дата вскрытия и можно ли использовать препарат сейчас."
-        hideOnMobile
+        compactOnMobile
       />
-      <div className="soft-nav-shell grid grid-cols-1 gap-2 rounded-[24px] p-2 sm:grid-cols-2">
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => setView("add")}
-          className={`w-full rounded-full px-4 py-2 text-sm transition-colors ${
+          className={`w-full rounded-[22px] px-4 py-2.5 text-sm transition-colors ${
             view === "add" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -110,7 +111,7 @@ export function MedicineCabinetPage() {
             setView("cabinet");
             setCabinetSearch("");
           }}
-          className={`w-full rounded-full px-4 py-2 text-sm transition-colors ${
+          className={`w-full rounded-[22px] px-4 py-2.5 text-sm transition-colors ${
             view === "cabinet" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -350,9 +351,9 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
   };
 
   return (
-    <Surface className="mt-4 p-5 sm:p-6">
+    <Surface className="mt-4 p-4 sm:p-6">
       <div className="space-y-4">
-        <h2 className="text-lg font-medium text-foreground">Добавить упаковку</h2>
+        <h2 className="app-card-title text-lg">Добавить упаковку</h2>
 
         <div className="flex flex-wrap gap-4">
           <label className="min-w-0 flex-1">
@@ -364,7 +365,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setSearchName(e.target.value);
                 setFormError(null);
               }}
-              className="soft-input mt-1 w-full max-w-xs rounded-2xl px-4 py-3 min-w-0"
+              className="soft-input mt-1 w-full rounded-2xl px-4 py-3 min-w-0 sm:max-w-xs"
               placeholder="Название препарата"
             />
           </label>
@@ -596,13 +597,13 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   "Не удалось добавить препарат."}
               </p>
             )}
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               {catalogItem ? (
                 <button
                   type="button"
                   onClick={handleAddSelected}
                   disabled={!expiryDate || createHouseholdMutation.isPending}
-                  className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                  className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50 sm:w-auto"
                 >
                   Добавить в аптечку
                 </button>
@@ -613,7 +614,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   disabled={
                     !newMedicineName.trim() || !expiryDate || createHouseholdMutation.isPending
                   }
-                  className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                  className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50 sm:w-auto"
                 >
                   Добавить свой препарат в аптечку
                 </button>
@@ -634,7 +635,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   setNewMedicineDosage("");
                   setFormError(null);
                 }}
-                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto"
               >
                 Сбросить
               </button>

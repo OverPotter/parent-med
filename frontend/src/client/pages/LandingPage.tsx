@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { RowSurface, Surface } from "@shared/components/Surface";
+import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
 import { useAppStore } from "@shared/store/useAppStore";
 
 const heroCards = [
@@ -89,6 +90,9 @@ export function LandingPage() {
   return (
     <div className="landing-page relative min-h-screen overflow-hidden bg-background text-foreground">
       <div className="landing-page-glow pointer-events-none absolute inset-0 -z-10" />
+      <V3BackgroundDoodles className="landing-doodle-layer" />
+      <div className="landing-v3-decor landing-v3-decor-a" aria-hidden="true" />
+      <div className="landing-v3-decor landing-v3-decor-b" aria-hidden="true" />
 
       <main className="px-4 pb-10 pt-5 sm:px-6 sm:pb-14 sm:pt-6">
         <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8 lg:space-y-10">

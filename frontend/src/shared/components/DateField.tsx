@@ -267,7 +267,7 @@ export function DateField({
                 >
                   ←
                 </button>
-                <p className="text-sm font-semibold text-foreground">{monthLabel}</p>
+                <p className="app-card-title text-sm">{monthLabel}</p>
                 <button
                   type="button"
                   onClick={() =>

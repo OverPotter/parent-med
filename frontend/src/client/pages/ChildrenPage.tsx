@@ -97,30 +97,30 @@ export function ChildrenPage() {
   if (!currentFamilyId) {
     return (
       <div>
-        <h1 className="text-xl font-semibold text-foreground">Дети</h1>
+        <h1 className="app-title text-[1.9rem]">Дети</h1>
         <p className="mt-2 text-muted">Сначала выбери семью на странице «Семья».</p>
       </div>
     );
   }
 
   return (
-    <div className="min-w-0 space-y-8">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
         title="Дети"
         subtitle="Профили детей, быстрый вход в текущее наблюдение и архив прошлых записей без лишнего шума."
+        compactOnMobile
         action={
           <button
             type="button"
             onClick={() => setIsCreateFormOpen((current) => !current)}
             className={[
-              "soft-button-primary rounded-2xl px-4 py-2.5 text-sm",
+              "soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto",
               children.length > 0 ? "hidden sm:inline-flex" : "inline-flex",
             ].join(" ")}
           >
             {isCreateFormOpen ? "Скрыть форму" : "Добавить ребёнка"}
           </button>
         }
-        hideOnMobile
       />
 
       {isCreateFormOpen && (
@@ -154,7 +154,7 @@ export function ChildrenPage() {
             <button
               type="button"
               onClick={() => setIsCreateFormOpen(true)}
-              className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto"
             >
               Добавить первого ребёнка
             </button>
@@ -194,7 +194,7 @@ export function ChildrenPage() {
             <Surface className="soft-panel-muted p-4 sm:hidden">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Нужно добавить ещё ребёнка?</p>
+                  <p className="app-card-title text-base">Нужно добавить ещё ребёнка?</p>
                   <p className="mt-1 text-sm text-muted">Добавьте профиль, когда будете готовы.</p>
                 </div>
                 <button
@@ -272,15 +272,15 @@ function AddChildForm({
   return (
     <Surface className="p-5 sm:p-6">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Новый ребёнок</h2>
+            <h2 className="app-card-title text-lg">Новый ребёнок</h2>
             <p className="mt-1 text-sm text-muted">Форма открывается только когда она нужна.</p>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+            className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto"
           >
             Отмена
           </button>
@@ -313,7 +313,7 @@ function AddChildForm({
           <button
             type="submit"
             disabled={isPending || !name.trim()}
-            className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:self-end"
+            className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:w-auto sm:self-end"
           >
             {isPending ? "Добавляем…" : "Добавить"}
           </button>

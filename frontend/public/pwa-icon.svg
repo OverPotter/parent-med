@@ -1,60 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
-  <rect width="1024" height="1024" rx="240" fill="#214843" />
-  <rect x="112" y="112" width="800" height="800" rx="208" fill="url(#panel)" />
-  <rect
-    x="160"
-    y="160"
-    width="704"
-    height="704"
-    rx="180"
-    fill="url(#surface)"
-    fill-opacity=".9"
+  <rect x="120" y="120" width="784" height="784" rx="236" fill="url(#panel)" />
+  <rect x="120.5" y="120.5" width="783" height="783" rx="235.5" stroke="rgba(255,255,255,0.18)" />
+
+  <ellipse cx="512" cy="338" rx="252" ry="126" fill="#FFFFFF" fill-opacity=".14" />
+
+  <circle cx="404" cy="410" r="92" fill="#FBF7FF" fill-opacity=".92" />
+  <circle cx="620" cy="410" r="92" fill="#FBF7FF" fill-opacity=".92" />
+
+  <ellipse cx="512" cy="574" rx="250" ry="168" fill="#FFF9FF" />
+  <ellipse cx="512" cy="602" rx="186" ry="110" fill="#F8F1FF" />
+
+  <path
+    d="M441 598h64l24-56 28 102 24-58h50"
+    stroke="#7C3AED"
+    stroke-width="20"
+    stroke-linecap="round"
+    stroke-linejoin="round"
   />
 
   <path
-    d="M254 626C315 626 353 601 393 544C431 489 468 393 551 393C612 393 652 441 687 490C724 543 760 586 818 586"
-    stroke="url(#trail)"
-    stroke-width="74"
+    d="M656 558c0-12.7 10.3-23 23-23 9.5 0 16.7 5.7 21.8 13.5 5.1-7.8 12.3-13.5 21.8-13.5 12.7 0 23 10.3 23 23 0 26.4-29.3 42.7-44.8 54.8-15.5-12.1-44.8-28.4-44.8-54.8Z"
+    stroke="#F472B6"
+    stroke-width="10"
+    stroke-linejoin="round"
+  />
+
+  <path
+    d="M344 248c26-18 56-28 90-28"
+    stroke="#8B5CF6"
+    stroke-opacity=".12"
+    stroke-width="20"
     stroke-linecap="round"
   />
-
-  <circle cx="254" cy="626" r="72" fill="#F4FBFA" />
-  <circle cx="551" cy="393" r="88" fill="#F4FBFA" />
-  <circle cx="818" cy="586" r="72" fill="#F4FBFA" />
-
-  <circle cx="254" cy="626" r="30" fill="#4A7A74" />
-  <circle cx="551" cy="393" r="36" fill="#4A7A74" />
-  <circle cx="818" cy="586" r="30" fill="#4A7A74" />
-
   <path
-    d="M350 282C389 247 445 226 507 226C622 226 718 295 766 401"
-    stroke="#D8ECE8"
-    stroke-opacity=".5"
-    stroke-width="38"
+    d="M680 778c34 0 66 14 88 38"
+    stroke="#8B5CF6"
+    stroke-opacity=".12"
+    stroke-width="20"
     stroke-linecap="round"
   />
 
   <defs>
-    <linearGradient id="panel" x1="164" y1="144" x2="860" y2="892" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#183934" />
-      <stop offset="1" stop-color="#122B28" />
-    </linearGradient>
-    <linearGradient
-      id="surface"
-      x1="188"
-      y1="176"
-      x2="836"
-      y2="848"
-      gradientUnits="userSpaceOnUse"
-    >
-      <stop stop-color="#264E49" stop-opacity=".95" />
-      <stop offset=".55" stop-color="#214742" stop-opacity=".88" />
-      <stop offset="1" stop-color="#183733" stop-opacity=".96" />
-    </linearGradient>
-    <linearGradient id="trail" x1="254" y1="640" x2="818" y2="392" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#9DD7CF" />
-      <stop offset=".52" stop-color="#D7F1ED" />
-      <stop offset="1" stop-color="#87C7BE" />
+    <linearGradient id="panel" x1="196" y1="160" x2="842" y2="864" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C86DDB" />
+      <stop offset=".34" stop-color="#AB6BE7" />
+      <stop offset=".72" stop-color="#8B5CF6" />
+      <stop offset="1" stop-color="#7C3AED" />
     </linearGradient>
   </defs>
 </svg>

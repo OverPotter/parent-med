@@ -241,9 +241,7 @@ export function ChildIllnessPage() {
         >
           <div className="relative p-4 sm:p-5">
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                {child.name}
-              </h1>
+              <h1 className="app-title text-[2rem] sm:text-[2.5rem]">{child.name}</h1>
               <p className="mt-3 text-sm text-muted lg:hidden">
                 {historyOnlyView
                   ? "Завершённые наблюдения по ребёнку."
@@ -388,7 +386,7 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="soft-panel-muted rounded-[22px] px-4 py-3">
       <p className="text-xs tracking-[0.08em] text-muted">{label}</p>
-      <p className="mt-2 text-base font-semibold text-foreground">{value}</p>
+      <p className="mt-2 text-base font-semibold tracking-[-0.02em] text-foreground">{value}</p>
     </div>
   );
 }
@@ -396,7 +394,7 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div>
-      <h2 className="text-lg font-semibold text-foreground sm:text-xl">{title}</h2>
+      <h2 className="app-card-title text-[1.08rem] sm:text-xl">{title}</h2>
       <p className="mt-1 text-sm leading-6 text-muted">{subtitle}</p>
     </div>
   );

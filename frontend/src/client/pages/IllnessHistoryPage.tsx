@@ -9,6 +9,7 @@ import {
   fetchActiveIllnessEpisodeByChildId,
   fetchIllnessEpisodesByChildId,
 } from "@shared/api/illnessEpisodes";
+import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child, IllnessEpisode } from "@shared/types/api";
@@ -69,10 +70,11 @@ export function IllnessHistoryPage() {
 
   return (
     <div className="space-y-7">
-      <div>
-        <h1 className="app-title text-2xl sm:text-3xl">История</h1>
-        <p className="mt-2 text-sm leading-6 text-muted">Завершённые наблюдения по детям.</p>
-      </div>
+      <PageIntro
+        title="История"
+        subtitle="Завершённые наблюдения по детям без активных эпизодов и текущего шума."
+        hideOnMobile
+      />
 
       {(isLoading || isEpisodesLoading) && <p className="text-muted">Загрузка…</p>}
 
@@ -113,8 +115,8 @@ function HistoryCard({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="app-card-title text-lg">{child.name}</h2>
-              <span className="soft-pill rounded-full px-2.5 py-1 text-xs">
+              <h2 className="app-card-title text-[1.08rem]">{child.name}</h2>
+              <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
                 {episodes.length} в архиве
               </span>
             </div>

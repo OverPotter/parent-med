@@ -241,10 +241,14 @@ export function AccountPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <PageIntro title="Аккаунт" subtitle="Личные настройки, уведомления и безопасность." />
+      <PageIntro
+        title="Аккаунт"
+        subtitle="Личные настройки, уведомления и безопасность."
+        compactOnMobile
+      />
 
       <Surface className="p-5 sm:p-6">
-        <p className="text-sm font-medium text-foreground">Профиль</p>
+        <p className="app-card-title text-[1.05rem]">Профиль</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <InfoCard
             label="Имя в семье"
@@ -265,7 +269,7 @@ export function AccountPage() {
           onToggle={() => setIsPasswordFormOpen((current) => !current)}
         >
           <>
-            <p className="text-sm font-medium text-foreground">Сменить пароль</p>
+            <p className="app-card-title text-[1.02rem]">Сменить пароль</p>
             <p className="mt-2 text-sm leading-6 text-muted">
               Открывается только когда нужно, чтобы не перегружать настройки.
             </p>
@@ -335,7 +339,7 @@ export function AccountPage() {
       </Surface>
 
       <Surface className="p-5 sm:p-6">
-        <p className="text-sm font-medium text-foreground">Планы лекарства</p>
+        <p className="app-card-title text-[1.02rem]">Планы лекарства</p>
         <p className="mt-3 text-sm leading-7 text-muted">
           Как показывать и вводить интервал в планах по времени: в часах или в минутах.
         </p>
@@ -361,7 +365,7 @@ export function AccountPage() {
       </Surface>
 
       <Surface className="p-5 sm:p-6">
-        <p className="text-sm font-medium text-foreground">Уведомления</p>
+        <p className="app-card-title text-[1.02rem]">Уведомления</p>
         <p className="mt-3 text-sm leading-7 text-muted">
           Одно уведомление приходит всегда, когда препарат уже можно дать. Дополнительно можно
           выбрать раннее напоминание заранее.
@@ -402,7 +406,7 @@ export function AccountPage() {
           </button>
         </div>
         <div className="mt-5 border-t border-border/70 pt-4">
-          <p className="text-sm font-medium text-foreground">Раннее напоминание</p>
+          <p className="app-card-title text-base">Раннее напоминание</p>
           <p className="mt-2 text-sm leading-6 text-muted">
             Дополнительное уведомление заранее. Основное уведомление в момент следующей дозы
             остаётся всегда.
@@ -424,7 +428,7 @@ export function AccountPage() {
           </div>
         </div>
         <div className="mt-5 border-t border-border/70 pt-4">
-          <p className="text-sm font-medium text-foreground">Напоминания по аптечке</p>
+          <p className="app-card-title text-base">Напоминания по аптечке</p>
           <p className="mt-2 text-sm leading-6 text-muted">
             Отдельные push-напоминания по сроку годности или сроку после вскрытия. Напоминание за 1
             день приходит всегда.
@@ -468,9 +472,9 @@ export function AccountPage() {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="soft-card rounded-[24px] px-4 py-4 sm:px-5">
-      <p className="text-xs tracking-[0.08em] text-muted">{label}</p>
-      <p className="mt-3 text-base font-medium text-foreground">{value}</p>
+    <div className="soft-card rounded-[28px] px-4 py-4 sm:px-5">
+      <p className="text-xs font-semibold tracking-[0.08em] text-muted">{label}</p>
+      <p className="mt-3 text-base font-semibold tracking-[-0.02em] text-foreground">{value}</p>
     </div>
   );
 }
