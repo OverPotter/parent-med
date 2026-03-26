@@ -121,7 +121,7 @@ export function ClientHomePage() {
           <div className="flex shrink-0">
             <Link
               to="/about"
-              className="soft-button-primary inline-flex w-full items-center justify-center rounded-2xl px-4 py-2.5 text-sm sm:w-auto"
+              className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
             >
               Как установить
             </Link>

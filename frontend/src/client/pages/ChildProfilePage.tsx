@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteChild, fetchChild, updateChild } from "@shared/api/children";
 import { createWeightEntry, fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { DateField } from "@shared/components/DateField";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import type { WeightEntry } from "@shared/types/api";
@@ -23,6 +24,7 @@ export function ChildProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const editFormRef = useRef<HTMLDivElement | null>(null);
 
   const { data: child, isLoading } = useQuery({
@@ -94,6 +96,16 @@ export function ChildProfilePage() {
 
   return (
     <div className="min-w-0 space-y-6">
+      <ConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        title={`Удалить ребёнка · ${child.name}`}
+        description="Профиль ребёнка будет удалён без возможности восстановления. Используй это только если карточка создана ошибочно."
+        confirmLabel={deleteMutation.isPending ? "Удаляем…" : "Удалить ребёнка"}
+        confirmTone="danger"
+        isPending={deleteMutation.isPending}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={() => deleteMutation.mutate(child.id, { onSuccess: () => setIsDeleteConfirmOpen(false) })}
+      />
       <PageIntro
         title={child.name}
         subtitle="Основные данные ребёнка, вес и семейные заметки в одном месте."
@@ -102,14 +114,14 @@ export function ChildProfilePage() {
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
             <Link
               to={`/children/${child.id}/illness?view=history`}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-center text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               История
             </Link>
             <button
               type="button"
               onClick={() => setIsEditing((current) => !current)}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
               aria-expanded={isEditing}
               aria-controls="child-profile-edit-form"
             >
@@ -127,7 +139,7 @@ export function ChildProfilePage() {
             onSave={(name, birthDate, details, weightKg) =>
               updateMutation.mutate({ id: child.id, name, birthDate, details, weightKg })
             }
-            onDelete={() => deleteMutation.mutate(child.id)}
+            onRequestDeleteConfirm={() => setIsDeleteConfirmOpen(true)}
             isSaving={updateMutation.isPending}
             isDeleting={deleteMutation.isPending}
           />
@@ -153,7 +165,7 @@ export function ChildProfilePage() {
           {child.allergies && <InfoLine label="Аллергии" value={child.allergies} />}
           {child.notes && <InfoLine label="Заметки" value={child.notes} fullWidth />}
           {hasExtraContacts(child) && (
-            <details className="soft-panel-muted rounded-[24px] px-4 py-3 sm:col-span-2">
+            <details className="soft-panel-muted rounded-[24px] px-4 py-4 sm:col-span-2">
               <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
                 Сад, врач и дополнительные контакты
               </summary>
@@ -170,7 +182,7 @@ export function ChildProfilePage() {
             </details>
           )}
           {!hasProfileDetails(child, latestWeight) && (
-            <div className="soft-panel-muted rounded-[24px] px-4 py-3 sm:col-span-2">
+            <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:col-span-2">
               <p className="text-sm text-muted">Дополнительные данные пока не заполнены.</p>
             </div>
           )}
@@ -184,7 +196,7 @@ function EditChildProfileForm({
   child,
   latestWeight,
   onSave,
-  onDelete,
+  onRequestDeleteConfirm,
   isSaving,
   isDeleting,
 }: {
@@ -206,7 +218,7 @@ function EditChildProfileForm({
     details?: ChildProfileDetails,
     weightKg?: number | null
   ) => void;
-  onDelete: () => void;
+  onRequestDeleteConfirm: () => void;
   isSaving: boolean;
   isDeleting: boolean;
 }) {
@@ -240,10 +252,13 @@ function EditChildProfileForm({
 
   return (
     <div id="child-profile-edit-form">
-      <Surface className="border-primary/35 p-5 ring-1 ring-primary/10 sm:p-6">
-        <div className="flex items-center justify-between gap-3">
+      <Surface className="soft-hero border-primary/25 p-5 ring-1 ring-primary/10 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="app-card-title text-[1.08rem]">Редактирование профиля</h2>
+            <p className="mt-1 text-sm text-muted">
+              Те же мягкие поля и ритм, что и на экране входа.
+            </p>
           </div>
           {latestWeight && (
             <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
@@ -252,27 +267,28 @@ function EditChildProfileForm({
           )}
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px] xl:grid-cols-[minmax(0,1fr)_220px_220px]">
-          <label className="block min-w-0">
-            <span className="block text-sm text-muted">Имя</span>
+        <div className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px] xl:grid-cols-[minmax(0,1fr)_220px_220px]">
+          <label className="block min-w-0 space-y-1.5">
+            <span className="soft-field-label">Имя</span>
             <input
               type="text"
               value={draftName}
               onChange={(e) => setDraftName(e.target.value)}
-              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+              className="soft-input w-full px-4"
+              placeholder="Как зовут ребёнка"
             />
           </label>
-          <label className="block">
-            <span className="block text-sm text-muted">Дата рождения</span>
+          <label className="block space-y-1.5">
+            <span className="soft-field-label">Дата рождения</span>
             <DateField
               value={draftBirthDate}
               onChange={setDraftBirthDate}
               max={new Date().toISOString().slice(0, 10)}
-              className="mt-1 w-full"
+              className="w-full"
             />
           </label>
-          <label className="block">
-            <span className="block text-sm text-muted">Вес, кг</span>
+          <label className="block space-y-1.5">
+            <span className="soft-field-label">Вес, кг</span>
             <input
               type="number"
               min="0"
@@ -280,9 +296,9 @@ function EditChildProfileForm({
               value={draftWeight}
               onChange={(e) => setDraftWeight(e.target.value)}
               placeholder="Например: 14.2"
-              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+              className="soft-input w-full px-4"
             />
-            <p className="mt-2 text-xs text-muted">
+            <p className="soft-field-hint">
               {latestWeight
                 ? `Сейчас в профиле: ${formatWeightValue(latestWeight.valueKg)}`
                 : "Если заполнить вес, он сохранится как последняя запись."}
@@ -292,8 +308,8 @@ function EditChildProfileForm({
             <TextField label="Аллергии" value={allergies} onChange={setAllergies} />
             <TextField label="Заметки" value={notes} onChange={setNotes} />
           </div>
-          <details className="soft-panel-muted sm:col-span-2 xl:col-span-3 rounded-[22px] p-4">
-            <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
+          <details className="soft-panel sm:col-span-2 xl:col-span-3 rounded-[26px] p-4 sm:p-5">
+            <summary className="cursor-pointer list-none text-sm font-medium tracking-[-0.02em] text-foreground">
               Сад, врач и дополнительные контакты
             </summary>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -311,7 +327,7 @@ function EditChildProfileForm({
               <InputField label="Телефон врача" value={doctorPhone} onChange={setDoctorPhone} />
             </div>
           </details>
-          <div className="sm:col-span-2 xl:col-span-3 space-y-3 border-t border-border/70 pt-4">
+          <div className="sm:col-span-2 xl:col-span-3 flex flex-wrap items-center gap-3 border-t border-border/70 pt-4">
             <button
               type="button"
               onClick={() =>
@@ -334,25 +350,15 @@ function EditChildProfileForm({
                 !draftName.trim() ||
                 (draftWeight.trim().length > 0 && parsedWeight === null)
               }
-              className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+              className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
             >
               {isSaving ? "Сохраняем…" : "Сохранить изменения"}
             </button>
-          </div>
-          <div className="sm:col-span-2 xl:col-span-3 flex justify-start pt-1">
             <button
               type="button"
-              onClick={() => {
-                const shouldDelete = window.confirm(
-                  `Точно удалить ребёнка «${child.name}»? Это действие нельзя отменить.`
-                );
-                if (!shouldDelete) {
-                  return;
-                }
-                onDelete();
-              }}
+              onClick={onRequestDeleteConfirm}
               disabled={isDeleting}
-              className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+              className="soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:text-[0.92rem]"
             >
               {isDeleting ? "Удаляем…" : "Удалить ребёнка"}
             </button>
@@ -428,13 +434,13 @@ function InputField({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm text-muted">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="soft-field-label">{label}</span>
       <input
         type="text"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="soft-input w-full rounded-2xl px-4 py-3"
+        className="soft-input w-full px-4"
       />
     </label>
   );
@@ -450,13 +456,13 @@ function TextField({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm text-muted">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="soft-field-label">{label}</span>
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
         rows={3}
-        className="soft-input w-full rounded-2xl px-4 py-3"
+        className="soft-input w-full px-4"
       />
     </label>
   );

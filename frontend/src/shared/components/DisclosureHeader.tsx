@@ -59,7 +59,7 @@ export function DisclosureHeader({
               event.stopPropagation();
               onToggle();
             }}
-            className={`hidden rounded-2xl px-4 py-2.5 text-sm sm:inline-flex ${desktopButtonClassName}`.trim()}
+            className={`hidden min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:inline-flex sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem] ${desktopButtonClassName}`.trim()}
           >
             {isOpen ? desktopOpenLabel : desktopClosedLabel}
           </button>

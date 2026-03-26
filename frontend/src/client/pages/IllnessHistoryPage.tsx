@@ -140,7 +140,7 @@ function HistoryCard({
 
           <Link
             to={`/children/${child.id}/illness?view=history`}
-            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+            className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
           >
             История
           </Link>

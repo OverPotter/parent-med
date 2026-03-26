@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="dark">
+<html lang="ru" data-theme="light" style="background:#ebe4ff">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -11,14 +11,51 @@
       href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@500;600;700;800&family=Onest:wght@400;500;600;700;800&display=swap"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#ebe4ff" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Parent Med" />
+    <script>
+      (() => {
+        const defaultTheme = "light";
+        const lightBg = "#ebe4ff";
+        const darkBg = "#1e1b2e";
+        const storageKey = "parent-med-app";
+        let theme = defaultTheme;
+
+        try {
+          const raw = localStorage.getItem(storageKey);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.state?.theme === "dark" || parsed?.state?.theme === "light") {
+              theme = parsed.state.theme;
+            }
+          }
+        } catch {
+          theme = defaultTheme;
+        }
+
+        const bg = theme === "dark" ? darkBg : lightBg;
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.style.background = bg;
+        document.documentElement.style.colorScheme = theme;
+        document.addEventListener(
+          "DOMContentLoaded",
+          () => {
+            document.body.style.background = bg;
+          },
+          { once: true }
+        );
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeMeta) {
+          themeMeta.setAttribute("content", bg);
+        }
+      })();
+    </script>
     <title>Parent Med — умная аптечка</title>
   </head>
-  <body>
+  <body style="margin:0;background:#ebe4ff">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

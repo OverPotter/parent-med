@@ -16,10 +16,12 @@ export function BottomTabBar({ links }: { links: LayoutNavLink[] }) {
           className="grid gap-1.5"
           style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}
         >
-          {links.map(({ to, label, mobileLabel, activePaths }) => {
-            const isActive = (activePaths ?? [to]).some((path) =>
-              matchPath({ path, end: path === to }, location.pathname)
-            );
+          {links.map(({ to, label, mobileLabel, activePaths, exactActivePaths }) => {
+            const exactMatches = exactActivePaths ?? [to];
+            const prefixMatches = activePaths ?? [];
+            const isActive =
+              exactMatches.some((path) => matchPath({ path, end: true }, location.pathname)) ||
+              prefixMatches.some((path) => matchPath({ path, end: false }, location.pathname));
 
             return (
               <NavLink

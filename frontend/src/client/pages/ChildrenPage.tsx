@@ -114,7 +114,7 @@ export function ChildrenPage() {
             type="button"
             onClick={() => setIsCreateFormOpen((current) => !current)}
             className={[
-              "soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto",
+              "soft-button-primary inline-flex items-center justify-center min-h-[2.95rem] w-full px-4 text-[0.88rem] tracking-[-0.03em] sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]",
               children.length > 0 ? "hidden sm:inline-flex" : "inline-flex",
             ].join(" ")}
           >
@@ -143,9 +143,7 @@ export function ChildrenPage() {
 
       {isLoading && <p className="text-muted">Загрузка…</p>}
       {error && (
-        <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
-          {(error as { message?: string }).message ?? "Ошибка загрузки"}
-        </p>
+        <p className="soft-note-danger">{(error as { message?: string }).message ?? "Ошибка загрузки"}</p>
       )}
       {!isLoading && !error && children.length === 0 && !isCreateFormOpen && (
         <EmptyState className="text-foreground">
@@ -154,7 +152,7 @@ export function ChildrenPage() {
             <button
               type="button"
               onClick={() => setIsCreateFormOpen(true)}
-              className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto"
+              className="soft-button-primary inline-flex items-center justify-center min-h-[2.95rem] w-full px-4 text-[0.88rem] tracking-[-0.03em] sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
             >
               Добавить первого ребёнка
             </button>
@@ -194,13 +192,13 @@ export function ChildrenPage() {
             <Surface className="soft-panel-muted p-4 sm:hidden">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="app-card-title text-base">Нужно добавить ещё ребёнка?</p>
+                  <p className="app-card-title text-[1.02rem]">Нужно добавить ещё ребёнка?</p>
                   <p className="mt-1 text-sm text-muted">Добавьте профиль, когда будете готовы.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsCreateFormOpen(true)}
-                  className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                  className="soft-button-secondary inline-flex items-center justify-center min-h-[2.8rem] px-3.5 text-[0.84rem] tracking-[-0.025em]"
                 >
                   Добавить
                 </button>
@@ -274,20 +272,20 @@ function AddChildForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="app-card-title text-lg">Новый ребёнок</h2>
+            <h2 className="app-card-title text-[1.1rem] sm:text-[1.18rem]">Новый ребёнок</h2>
             <p className="mt-1 text-sm text-muted">Форма открывается только когда она нужна.</p>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto"
+            className="soft-button-secondary min-h-[3rem] w-full px-4 text-[0.9rem] sm:min-h-[3.2rem] sm:w-auto sm:text-[0.94rem]"
           >
             Отмена
           </button>
         </div>
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
           <label className="min-w-0 flex-1">
-            <span className="block text-sm text-muted">Имя</span>
+            <span className="soft-field-label">Имя</span>
             <input
               type="text"
               value={name}
@@ -295,11 +293,11 @@ function AddChildForm({
                 setName(e.target.value);
                 setValidationError(null);
               }}
-              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+              className="soft-input w-full px-4"
             />
           </label>
           <label className="block">
-            <span className="block text-sm text-muted">Дата рождения</span>
+            <span className="soft-field-label">Дата рождения</span>
             <DateField
               value={birthDate}
               onChange={(nextValue) => {
@@ -313,7 +311,7 @@ function AddChildForm({
           <button
             type="submit"
             disabled={isPending || !name.trim()}
-            className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:w-auto sm:self-end"
+            className="soft-button-primary inline-flex items-center justify-center min-h-[3rem] w-full px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:w-auto sm:self-end sm:px-5 sm:text-[0.93rem]"
           >
             {isPending ? "Добавляем…" : "Добавить"}
           </button>
@@ -336,9 +334,7 @@ function AddChildForm({
           </div>
         </details>
         {(validationError || errorMessage) && (
-          <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
-            {validationError ?? errorMessage}
-          </p>
+          <p className="soft-note-danger">{validationError ?? errorMessage}</p>
         )}
       </form>
     </Surface>
@@ -377,7 +373,7 @@ function ChildCard({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="app-card-title text-lg">{child.name}</h2>
+                <h2 className="app-card-title text-[1.12rem] sm:text-[1.18rem]">{child.name}</h2>
                 {hasActiveEpisode && (
                   <>
                     <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
@@ -404,12 +400,12 @@ function ChildCard({
             </div>
           </div>
 
-          <div className="grid w-full gap-2 sm:w-auto">
+          <div className="grid w-full gap-2 sm:w-[12rem] sm:shrink-0">
             <button
               type="button"
               onClick={onStartEpisode}
               disabled={isStartingEpisode}
-              className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:min-w-[220px]"
+              className="soft-button-primary inline-flex w-full items-center justify-center min-h-[2.9rem] px-3.5 text-center text-[0.84rem] leading-[1.05] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               {hasActiveEpisode
                 ? "К активным болезням"
@@ -421,13 +417,13 @@ function ChildCard({
             <div className="grid grid-cols-2 gap-2">
               <Link
                 to={`/children/${child.id}/illness?view=history`}
-                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-center text-sm"
+                className="soft-button-secondary inline-flex min-h-[2.7rem] items-center justify-center px-3 text-center text-[0.8rem] leading-none tracking-[-0.025em] sm:min-h-[2.9rem] sm:px-3.5 sm:text-[0.85rem]"
               >
                 История
               </Link>
               <Link
                 to={`/children/${child.id}`}
-                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-center text-sm"
+                className="soft-button-secondary inline-flex min-h-[2.7rem] items-center justify-center px-3 text-center text-[0.8rem] leading-none tracking-[-0.025em] sm:min-h-[2.9rem] sm:px-3.5 sm:text-[0.85rem]"
               >
                 Профиль
               </Link>
@@ -457,12 +453,12 @@ function InputField({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm text-muted">{label}</span>
+      <span className="soft-field-label">{label}</span>
       <input
         type="text"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="soft-input w-full rounded-2xl px-4 py-3"
+        className="soft-input w-full px-4"
       />
     </label>
   );
@@ -479,12 +475,12 @@ function TextField({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm text-muted">{label}</span>
+      <span className="soft-field-label">{label}</span>
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
         rows={3}
-        className="soft-input w-full rounded-2xl px-4 py-3"
+        className="soft-input w-full px-4"
       />
     </label>
   );

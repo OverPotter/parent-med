@@ -6,6 +6,7 @@ export interface LayoutNavLink {
   label: string;
   mobileLabel?: string;
   activePaths?: string[];
+  exactActivePaths?: string[];
 }
 
 export function TopNav({ links }: { links: LayoutNavLink[] }) {
@@ -21,10 +22,12 @@ export function TopNav({ links }: { links: LayoutNavLink[] }) {
         className="grid w-full max-w-[60rem] gap-2"
         style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}
       >
-        {links.map(({ to, label, activePaths }) => {
-          const isActive = (activePaths ?? [to]).some((path) =>
-            matchPath({ path, end: path === to }, location.pathname)
-          );
+        {links.map(({ to, label, activePaths, exactActivePaths }) => {
+          const exactMatches = exactActivePaths ?? [to];
+          const prefixMatches = activePaths ?? [];
+          const isActive =
+            exactMatches.some((path) => matchPath({ path, end: true }, location.pathname)) ||
+            prefixMatches.some((path) => matchPath({ path, end: false }, location.pathname));
 
           return (
             <NavLink
@@ -33,7 +36,7 @@ export function TopNav({ links }: { links: LayoutNavLink[] }) {
               end={to === "/"}
               className={() =>
                 [
-                  "flex min-h-[3.2rem] items-center justify-center gap-2 rounded-[22px] px-4 py-2.5 text-center text-[0.95rem] font-extrabold tracking-[-0.03em] shadow-[0_10px_24px_-20px_rgba(15,23,42,0.22)] transition-colors",
+                  "flex min-h-[3.45rem] items-center justify-center gap-2.5 rounded-full px-4 py-3 text-center text-[0.98rem] font-extrabold tracking-[-0.04em] shadow-[0_14px_28px_-24px_rgba(15,23,42,0.22)] transition-colors",
                   isActive ? "soft-tab-active" : "soft-tab",
                 ].join(" ")
               }

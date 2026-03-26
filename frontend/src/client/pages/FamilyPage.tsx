@@ -174,20 +174,20 @@ export function FamilyPage() {
         subtitle="Одна общая семейная база, но у каждого взрослого свой личный аккаунт, история входов и подпись в событиях."
         compactOnMobile
         action={
-          <span className="soft-pill inline-flex w-fit rounded-full px-3.5 py-1.5 text-xs">
+          <span className="soft-pill inline-flex min-h-[2.45rem] w-fit items-center rounded-full px-3.5 py-1.5 text-[0.78rem] tracking-[-0.015em]">
             {members.length} участник{members.length === 1 ? "" : members.length < 5 ? "а" : "ов"}
           </span>
         }
       />
 
-      {error && <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{error}</p>}
+      {error && <p className="soft-note-danger">{error}</p>}
       {familyError && (
-        <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+        <p className="soft-note-danger">
           {(familyError as { message?: string }).message ?? "Не удалось загрузить семью."}
         </p>
       )}
       {membersError && (
-        <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+        <p className="soft-note-danger">
           {(membersError as { message?: string }).message ?? "Не удалось загрузить участников."}
         </p>
       )}
@@ -209,12 +209,12 @@ export function FamilyPage() {
 
         <form onSubmit={handleFamilySubmit} className="mt-4 flex flex-wrap items-end gap-3">
           <label className="min-w-0 flex-1">
-            <span className="block text-sm text-muted">Название</span>
+            <span className="soft-field-label">Название</span>
             <input
               type="text"
               value={familyName}
               onChange={(event) => setFamilyName(event.target.value)}
-              className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+              className="soft-input w-full px-4"
               placeholder="Например: Семья Ивановых"
             />
           </label>
@@ -227,7 +227,7 @@ export function FamilyPage() {
               !familyName.trim() ||
               familyName.trim() === family.name
             }
-            className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:w-auto"
+            className="soft-button-primary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
           >
             {updateFamilyMutation.isPending ? "Сохраняем…" : "Сохранить"}
           </button>
@@ -306,7 +306,7 @@ export function FamilyPage() {
         </div>
 
         {!canManageFamily ? (
-          <p className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
+          <p className="soft-note-warning mt-4">
             Приглашать новых участников может только владелец семьи.
           </p>
         ) : (
@@ -315,7 +315,7 @@ export function FamilyPage() {
               type="button"
               onClick={() => createInviteMutation.mutate()}
               disabled={createInviteMutation.isPending}
-              className="soft-button-primary mt-4 rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+              className="soft-button-primary mt-4 inline-flex min-h-[3rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5 sm:text-[0.93rem]"
             >
               {createInviteMutation.isPending ? "Создаём ссылку…" : "Создать ссылку-приглашение"}
             </button>
@@ -332,7 +332,7 @@ export function FamilyPage() {
                   <button
                     type="button"
                     onClick={handleCopyInvite}
-                    className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                    className="soft-button-secondary inline-flex min-h-[2.8rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em]"
                   >
                     {inviteCopied ? "Ссылка скопирована" : "Скопировать ссылку"}
                   </button>
@@ -419,12 +419,12 @@ function MemberCard({
         </div>
 
         {(isOwner || canEditProfile) && (
-          <div className="flex flex-wrap gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
             {canEditProfile && (
               <button
                 type="button"
                 onClick={() => setIsEditing((current) => !current)}
-                className="soft-button-secondary rounded-2xl px-3 py-2 text-xs"
+                className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
                 {isEditing ? "Скрыть профиль" : "Редактировать профиль"}
               </button>
@@ -434,7 +434,7 @@ function MemberCard({
                 type="button"
                 onClick={onPromote}
                 disabled={isPending}
-                className="soft-button-secondary rounded-2xl px-3 py-2 text-xs disabled:opacity-50"
+                className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
                 Сделать owner
               </button>
@@ -444,7 +444,7 @@ function MemberCard({
                 type="button"
                 onClick={onDemote}
                 disabled={isPending}
-                className="soft-button-secondary rounded-2xl px-3 py-2 text-xs disabled:opacity-50"
+                className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
                 Сделать adult
               </button>
@@ -454,7 +454,7 @@ function MemberCard({
                 type="button"
                 onClick={onDelete}
                 disabled={isPending}
-                className="soft-button-secondary rounded-2xl px-3 py-2 text-xs disabled:opacity-50"
+                className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
                 Удалить из семьи
               </button>
@@ -466,32 +466,32 @@ function MemberCard({
       {isEditing && (
         <div className="mt-4 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-2 block text-sm text-muted">Имя в семье</span>
+            <span className="soft-field-label">Имя в семье</span>
             <input
               type="text"
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
-              className="soft-input w-full rounded-2xl px-4 py-3"
+              className="soft-input w-full px-4"
               placeholder="Например: Оля"
             />
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm text-muted">Кто это в семье</span>
+            <span className="soft-field-label">Кто это в семье</span>
             <input
               type="text"
               value={relationshipLabel}
               onChange={(event) => setRelationshipLabel(event.target.value)}
-              className="soft-input w-full rounded-2xl px-4 py-3"
+              className="soft-input w-full px-4"
               placeholder="Например: няня"
             />
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm text-muted">Телефон</span>
+            <span className="soft-field-label">Телефон</span>
             <input
               type="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              className="soft-input w-full rounded-2xl px-4 py-3"
+              className="soft-input w-full px-4"
               placeholder="+375 ..."
             />
           </label>
@@ -507,7 +507,7 @@ function MemberCard({
                 setIsEditing(false);
               }}
               disabled={isPending || !displayName.trim()}
-              className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+              className="soft-button-primary inline-flex min-h-[3rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5 sm:text-[0.93rem]"
             >
               {isPending ? "Сохраняем…" : "Сохранить профиль"}
             </button>
