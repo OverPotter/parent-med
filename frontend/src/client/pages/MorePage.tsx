@@ -54,13 +54,13 @@ export function MorePage() {
               className="block transition-transform duration-200 hover:-translate-y-0.5"
             >
               <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="app-card-title text-[1.02rem]">{item.title}</p>
                     <p className="mt-1.5 text-sm leading-6 text-muted">{item.description}</p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="soft-pill-primary hidden rounded-full px-3.5 py-1.5 text-[11px] sm:inline-flex">
+                  <div className="flex shrink-0 items-center gap-2 self-center">
+                    <span className="soft-pill-primary hidden rounded-full px-3.5 py-1.5 text-[11px] md:inline-flex">
                       Открыть
                     </span>
                     <span className="soft-pill rounded-full px-2.5 py-2 text-[11px]">

@@ -129,23 +129,23 @@ export function Layout({
       <header className="min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
         <div className="relative z-[1] mx-auto max-w-5xl">
           <div className="md:hidden">
-            <div className="soft-nav-shell rounded-[30px] px-3.5 py-3.5">
+            <div className="soft-nav-shell app-mobile-header rounded-[30px] px-3.5 py-3.5">
               <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="app-mobile-header__row flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <Link to="/" className="inline-flex min-w-0 items-center gap-3">
-                      <img src="/pwa-icon.svg" alt="" className="h-10 w-10 rounded-[18px]" />
+                    <Link to="/" className="app-mobile-header__brand inline-flex min-w-0 items-center gap-3">
+                      <img src="/pwa-icon.svg" alt="" className="app-mobile-header__logo h-10 w-10 rounded-[18px]" />
                       <div className="min-w-0">
                         <span className="app-brand-text block truncate text-[1.04rem]">
                           Parent Med
                         </span>
-                        <span className="block truncate text-[11px] text-muted">
+                        <span className="hidden truncate text-[11px] text-muted sm:block">
                           Семейный кабинет здоровья
                         </span>
                       </div>
                     </Link>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="app-mobile-header__actions flex shrink-0 items-center gap-2">
                     <button
                       type="button"
                       className="soft-theme-toggle"
@@ -168,6 +168,7 @@ export function Layout({
                       >
                         {theme === "light" ? <MoonIcon /> : <SunIcon />}
                       </span>
+                      <span className="text-xs font-semibold">{themeToggleText}</span>
                     </button>
                     {accountLogin && (
                       <button

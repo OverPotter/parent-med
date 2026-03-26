@@ -15,20 +15,20 @@ const desktopNavLinks = [
     to: "/illnesses/active",
     label: "Болезни",
     mobileLabel: "Болезни",
-    activePaths: ["/illnesses/active", "/children/:childId/illness"],
+    exactActivePaths: ["/illnesses/active", "/children/:childId/illness"],
   },
   {
     to: "/children",
     label: "Дети",
     mobileLabel: "Дети",
-    activePaths: ["/children", "/children/:childId"],
+    exactActivePaths: ["/children", "/children/:childId"],
   },
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
   {
     to: "/more",
     label: "Ещё",
     mobileLabel: "Ещё",
-    activePaths: ["/more", "/account", "/about", "/family", "/illnesses/history"],
+    exactActivePaths: ["/more", "/account", "/about", "/family", "/illnesses/history"],
   },
 ];
 
@@ -42,20 +42,20 @@ const mobileNavLinks = [
     to: "/illnesses/active",
     label: "Активные болезни",
     mobileLabel: "Болезни",
-    activePaths: ["/illnesses/active", "/children/:childId/illness"],
+    exactActivePaths: ["/illnesses/active", "/children/:childId/illness"],
   },
   {
     to: "/children",
     label: "Дети",
     mobileLabel: "Дети",
-    activePaths: ["/children", "/children/:childId"],
+    exactActivePaths: ["/children", "/children/:childId"],
   },
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
   {
     to: "/more",
     label: "Ещё",
     mobileLabel: "Ещё",
-    activePaths: ["/more", "/account", "/about", "/family", "/illnesses/history"],
+    exactActivePaths: ["/more", "/account", "/about", "/family", "/illnesses/history"],
   },
 ];
 

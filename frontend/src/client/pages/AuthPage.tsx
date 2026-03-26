@@ -38,11 +38,41 @@ function MailIcon() {
   );
 }
 
-function LockIcon() {
+function EyeIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-none stroke-current">
-      <path d="M7.5 10.25V8.5a4.5 4.5 0 1 1 9 0v1.75" strokeWidth="1.8" strokeLinecap="round" />
-      <rect x="5" y="10.25" width="14" height="9.75" rx="2.5" strokeWidth="1.8" />
+      <path
+        d="M2.75 12s3.5-6 9.25-6 9.25 6 9.25 6-3.5 6-9.25 6S2.75 12 2.75 12Z"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.85" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-none stroke-current">
+      <path
+        d="M3.5 4.5 20.5 19.5"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10.6 5.2A10.4 10.4 0 0 1 12 5.1c5.75 0 9.25 6 9.25 6a17.7 17.7 0 0 1-3.48 4.08M6.96 8.08A17.16 17.16 0 0 0 2.75 12s3.5 6 9.25 6c1.5 0 2.85-.41 4.06-1.03"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.88 9.88A3 3 0 0 0 14.12 14.12"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -60,6 +90,32 @@ function CheckIcon() {
   );
 }
 
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-[1rem] w-[1rem] fill-none stroke-current">
+      <path
+        d="M14.5 3.5a7.9 7.9 0 1 0 6 13.05A8.7 8.7 0 0 1 14.5 3.5Z"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-[1rem] w-[1rem] fill-none stroke-current">
+      <circle cx="12" cy="12" r="4" strokeWidth="1.8" />
+      <path
+        d="M12 2.75v2.1M12 19.15v2.1M21.25 12h-2.1M4.85 12h-2.1M18.54 5.46l-1.49 1.49M6.95 17.05l-1.49 1.49M18.54 18.54l-1.49-1.49M6.95 6.95 5.46 5.46"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function AuthField({
   label,
   value,
@@ -70,6 +126,7 @@ function AuthField({
   name,
   hint,
   icon,
+  action,
 }: {
   label: string;
   value: string;
@@ -80,6 +137,7 @@ function AuthField({
   name?: string;
   hint?: string;
   icon?: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <label className="block">
@@ -94,7 +152,11 @@ function AuthField({
           placeholder={placeholder}
           autoComplete={autoComplete}
         />
-        {icon ? <FieldIcon className="auth-v3-input-icon">{icon}</FieldIcon> : null}
+        {action ? (
+          <div className="auth-v3-input-action">{action}</div>
+        ) : icon ? (
+          <FieldIcon className="auth-v3-input-icon">{icon}</FieldIcon>
+        ) : null}
       </div>
       {hint ? <span className="auth-v3-hint">{hint}</span> : null}
     </label>
@@ -115,6 +177,8 @@ export function AuthPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const theme = useAppStore((s) => s.theme);
+  const toggleTheme = useAppStore((s) => s.toggleTheme);
   const setSession = useAppStore((s) => s.setSession);
 
   useEffect(() => {
@@ -215,57 +279,47 @@ export function AuthPage() {
 
   return (
     <div className="auth-v3-page min-h-screen text-foreground">
-      <V3BackgroundDoodles className="auth-v3-doodle-layer" />
+      <V3BackgroundDoodles className="auth-v3-doodle-layer" dense />
       <div className="auth-v3-orb auth-v3-orb-left" aria-hidden="true" />
       <div className="auth-v3-orb auth-v3-orb-right" aria-hidden="true" />
       <div className="auth-v3-noise" aria-hidden="true" />
 
-      <div className="relative mx-auto flex min-h-screen max-w-6xl items-center px-4 py-6 sm:px-6 sm:py-10">
-        <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(22rem,30rem)] lg:items-center">
-          <section className="auth-v3-hero">
-            <div className="auth-v3-header">
-              <Link to="/" className="auth-v3-header-brand">
-                <img
-                  src="/pwa-icon.svg"
-                  alt=""
-                  className="h-11 w-11 rounded-[18px] shadow-[0_16px_32px_rgba(138,123,191,0.2)]"
-                />
-                <div>
-                  <p className="auth-v3-brand">Parent Med</p>
-                  <p className="auth-v3-caption">Система здоровья семьи</p>
-                </div>
-              </Link>
+      <div className="auth-v3-shell">
+        <section className="auth-v3-stage">
+          <div className="auth-v3-header">
+            <Link to="/" className="auth-v3-header-brand">
+              <img
+                src="/pwa-icon.svg"
+                alt=""
+                className="h-9 w-9 rounded-2xl shadow-[0_16px_32px_rgba(138,123,191,0.18)]"
+              />
+              <span className="auth-v3-header-brand-text">Parent Med</span>
+            </Link>
+            <div className="auth-v3-header-actions">
+              <button
+                type="button"
+                className="auth-v3-theme-button"
+                onClick={toggleTheme}
+                aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
+                title={theme === "light" ? "Тёмная тема" : "Светлая тема"}
+              >
+                <span aria-hidden="true">
+                  {theme === "light" ? <MoonIcon /> : <SunIcon />}
+                </span>
+                <span>{theme === "light" ? "Ночь" : "День"}</span>
+              </button>
               <Link to="/" className="auth-v3-ghost-button">
                 На главную
               </Link>
             </div>
+          </div>
 
-            <div className="mt-10 max-w-xl">
-              <h1 className="auth-v3-title">{pageTitle}</h1>
-              <p className="auth-v3-subtitle mt-4">{pageDescription}</p>
-            </div>
+          <div className="auth-v3-hero">
+            <h1 className="auth-v3-title">{pageTitle}</h1>
+            <p className="auth-v3-subtitle mt-4">{pageDescription}</p>
+          </div>
 
-            <div className="auth-v3-feature-grid mt-8 hidden lg:grid">
-              <article className="auth-v3-feature-card">
-                <p className="auth-v3-feature-kicker">Семейный доступ</p>
-                <h2 className="auth-v3-feature-title">
-                  Один доступ к детям, болезням и лекарствам
-                </h2>
-                <p className="auth-v3-feature-text">
-                  У входа и регистрации теперь единый спокойный сценарий в палитре V3.
-                </p>
-              </article>
-              <article className="auth-v3-feature-card auth-v3-feature-card-soft">
-                <p className="auth-v3-feature-kicker">Быстрый старт</p>
-                <p className="auth-v3-feature-text">
-                  Для начала достаточно логина и пароля. Остальные поля можно заполнить позже в
-                  профиле семьи.
-                </p>
-              </article>
-            </div>
-          </section>
-
-          <section className="auth-v3-panel">
+          <section className="auth-v3-panel auth-v3-panel-compact">
             <div
               className="auth-v3-toggle"
               role="tablist"
@@ -306,13 +360,6 @@ export function AuthPage() {
                         : "Войдите по логину и паролю, чтобы быстро вернуться к семейной базе."}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsPasswordVisible((current) => !current)}
-                    className="auth-v3-inline-button"
-                  >
-                    {isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
-                  </button>
                 </div>
 
                 <div className="mt-5 space-y-4">
@@ -340,7 +387,17 @@ export function AuthPage() {
                       type={isPasswordVisible ? "text" : "password"}
                       name="current-password"
                       autoComplete={isRegisterMode ? "new-password" : "current-password"}
-                      icon={<LockIcon />}
+                      action={
+                        <button
+                          type="button"
+                          className="auth-v3-input-toggle"
+                          onClick={() => setIsPasswordVisible((current) => !current)}
+                          aria-label={isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
+                          title={isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
+                        >
+                          {isPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
+                        </button>
+                      }
                     />
                     {isRegisterMode ? (
                       <AuthField
@@ -351,7 +408,17 @@ export function AuthPage() {
                         type={isPasswordVisible ? "text" : "password"}
                         name="new-password-confirm"
                         autoComplete="new-password"
-                        icon={<LockIcon />}
+                        action={
+                          <button
+                            type="button"
+                            className="auth-v3-input-toggle"
+                            onClick={() => setIsPasswordVisible((current) => !current)}
+                            aria-label={isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
+                            title={isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
+                          >
+                            {isPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
+                          </button>
+                        }
                       />
                     ) : null}
                   </div>
@@ -451,7 +518,7 @@ export function AuthPage() {
               </p>
             </form>
           </section>
-        </div>
+        </section>
       </div>
     </div>
   );

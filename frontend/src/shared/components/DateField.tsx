@@ -262,7 +262,7 @@ export function DateField({
                       (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1)
                     )
                   }
-                  className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
+                  className="soft-button-secondary min-h-0 px-3 py-2 text-sm"
                   aria-label="Предыдущий месяц"
                 >
                   ←
@@ -275,7 +275,7 @@ export function DateField({
                       (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1)
                     )
                   }
-                  className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
+                  className="soft-button-secondary min-h-0 px-3 py-2 text-sm"
                   aria-label="Следующий месяц"
                 >
                   →
@@ -284,13 +284,13 @@ export function DateField({
 
               <div className="grid grid-cols-[minmax(0,1fr)_104px] gap-2">
                 <label className="block">
-                  <span className="mb-1 block text-[11px] text-muted">Месяц</span>
+                  <span className="soft-field-label mb-1 text-[0.8rem]">Месяц</span>
                   <select
                     value={viewDate.getMonth()}
                     onChange={(event) =>
                       setViewDate(new Date(viewDate.getFullYear(), Number(event.target.value), 1))
                     }
-                    className="soft-input w-full rounded-2xl px-3 py-1.5 text-sm"
+                    className="soft-input min-h-[3rem] w-full px-3 text-sm"
                   >
                     {MONTH_LABELS.map((label, index) => (
                       <option key={label} value={index}>
@@ -301,13 +301,13 @@ export function DateField({
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-[11px] text-muted">Год</span>
+                  <span className="soft-field-label mb-1 text-[0.8rem]">Год</span>
                   <select
                     value={viewDate.getFullYear()}
                     onChange={(event) =>
                       setViewDate(new Date(Number(event.target.value), viewDate.getMonth(), 1))
                     }
-                    className="soft-input w-full rounded-2xl px-3 py-1.5 text-sm"
+                    className="soft-input min-h-[3rem] w-full px-3 text-sm"
                   >
                     {yearOptions.map((year) => (
                       <option key={year} value={year}>
@@ -372,7 +372,7 @@ export function DateField({
                     setIsOpen(false);
                   }
                 }}
-                className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
+                className="soft-button-secondary min-h-0 px-3.5 py-2 text-sm"
               >
                 Сегодня
               </button>
@@ -383,7 +383,7 @@ export function DateField({
                     onChange("");
                     setIsOpen(false);
                   }}
-                  className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
+                  className="soft-button-secondary min-h-0 px-3.5 py-2 text-sm"
                 >
                   Очистить
                 </button>
@@ -395,13 +395,13 @@ export function DateField({
       : null;
 
   return (
-    <div ref={rootRef} className={className}>
+    <div ref={rootRef} className={["w-full", className].filter(Boolean).join(" ")}>
       <button
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
         className={[
-          "soft-input flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left",
+          "soft-input flex min-h-[2.95rem] w-full items-center justify-between gap-3 px-4 text-left text-[0.92rem] tracking-[-0.02em] sm:min-h-[3.1rem]",
           disabled ? "cursor-not-allowed opacity-60" : "",
         ].join(" ")}
         aria-haspopup="dialog"

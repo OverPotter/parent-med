@@ -15,6 +15,7 @@ import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import { fetchIllnessEpisodesByChildId, updateIllnessEpisode } from "@shared/api/illnessEpisodes";
 import { trackMedicationAdministered } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
@@ -151,6 +152,7 @@ function ActiveIllnessCard({
 }) {
   const queryClient = useQueryClient();
   const [justSaved, setJustSaved] = useState(false);
+  const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
   const prioritizedItems = getPrioritizedMedicationPlanItems(
     plans,
     administrations,
@@ -198,6 +200,10 @@ function ActiveIllnessCard({
     mutationFn: () => updateIllnessEpisode(episode.id, { status: "closed" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", child.id] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-active", child.id] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] });
+      queryClient.invalidateQueries({ queryKey: ["children"] });
     },
   });
 
@@ -211,6 +217,16 @@ function ActiveIllnessCard({
 
   return (
     <li>
+      <ConfirmDialog
+        isOpen={isCloseConfirmOpen}
+        title={`Закрыть наблюдение · ${child.name}`}
+        description="Наблюдение уйдёт в историю. Новые записи температуры и приёма будут относиться уже к следующему эпизоду."
+        confirmLabel={closeEpisodeMutation.isPending ? "Закрываем…" : "Закрыть наблюдение"}
+        confirmTone="danger"
+        isPending={closeEpisodeMutation.isPending}
+        onCancel={() => setIsCloseConfirmOpen(false)}
+        onConfirm={() => closeEpisodeMutation.mutate(undefined, { onSuccess: () => setIsCloseConfirmOpen(false) })}
+      />
       <RowSurface className="soft-card-status-danger rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4.5">
         <div className="space-y-3">
           <div className="min-w-0">
@@ -270,7 +286,7 @@ function ActiveIllnessCard({
                         type="button"
                         onClick={() => takeDoseMutation.mutate(availableNowLead.plan)}
                         disabled={takeDoseMutation.isPending}
-                        className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50 md:w-auto"
+                        className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 md:w-auto md:min-h-[3.15rem] md:px-5 md:text-[0.93rem]"
                       >
                         {takeDoseMutation.isPending ? "Сохраняем…" : "Записать приём"}
                       </button>
@@ -289,33 +305,33 @@ function ActiveIllnessCard({
           <div className="grid gap-2 pt-0 sm:grid-cols-2 xl:grid-cols-4">
             <Link
               to={`/children/${child.id}/illness?focus=temperature`}
-              className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
             >
               Записать температуру
             </Link>
             {!availableNowLead && (
               <Link
                 to={`/children/${child.id}/illness?focus=administration`}
-                className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
               >
                 Записать приём
               </Link>
             )}
             <Link
               to={`/children/${child.id}/illness?focus=comment`}
-              className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
             >
               Добавить заметку
             </Link>
             <Link
               to={`/children/${child.id}/illness?focus=timeline`}
-              className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
             >
               Лента
             </Link>
             <Link
               to={`/children/${child.id}/illness?focus=reminders`}
-              className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
             >
               График приёма
             </Link>
@@ -323,14 +339,9 @@ function ActiveIllnessCard({
 
           <button
             type="button"
-            onClick={() => {
-              if (!window.confirm("Закрыть текущее наблюдение?")) {
-                return;
-              }
-              closeEpisodeMutation.mutate();
-            }}
+            onClick={() => setIsCloseConfirmOpen(true)}
             disabled={closeEpisodeMutation.isPending}
-            className="soft-button-danger w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+            className="soft-button-danger inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:text-[0.92rem]"
           >
             {closeEpisodeMutation.isPending ? "Закрываем…" : "Закрыть наблюдение"}
           </button>

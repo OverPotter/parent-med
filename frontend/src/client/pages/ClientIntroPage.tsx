@@ -73,7 +73,7 @@ export function ClientIntroPage() {
               type="button"
               onClick={handleContinue}
               disabled={isResolving}
-              className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+              className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
             >
               {isResolving ? "Подготавливаем…" : "Перейти к работе"}
             </button>
@@ -81,7 +81,7 @@ export function ClientIntroPage() {
               type="button"
               onClick={handleContinue}
               disabled={isResolving}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               Больше не показывать
             </button>

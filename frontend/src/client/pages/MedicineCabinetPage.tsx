@@ -12,6 +12,7 @@ import {
 } from "@shared/api/householdMedicines";
 import { searchMedicineCatalog } from "@shared/api/medicineCatalog";
 import { DateField } from "@shared/components/DateField";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { trackHouseholdMedicineAdded } from "@shared/analytics";
@@ -62,13 +63,6 @@ export function MedicineCabinetPage() {
       queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] }),
   });
 
-  const handleWriteOff = (id: string) => {
-    if (!window.confirm("Списать препарат из аптечки?")) {
-      return;
-    }
-    deleteMutation.mutate(id);
-  };
-
   const normalizedCabinetSearch = cabinetSearch.trim().toLowerCase();
   const isSearchMode = normalizedCabinetSearch.length > 0;
   const filteredMedicines = medicines.filter((medicine) => {
@@ -99,7 +93,7 @@ export function MedicineCabinetPage() {
         <button
           type="button"
           onClick={() => setView("add")}
-          className={`w-full rounded-[22px] px-4 py-2.5 text-sm transition-colors ${
+          className={`inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] transition-colors sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem] ${
             view === "add" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -111,7 +105,7 @@ export function MedicineCabinetPage() {
             setView("cabinet");
             setCabinetSearch("");
           }}
-          className={`w-full rounded-[22px] px-4 py-2.5 text-sm transition-colors ${
+          className={`inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] transition-colors sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem] ${
             view === "cabinet" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -125,7 +119,7 @@ export function MedicineCabinetPage() {
         <>
           {isLoading && <p className="mt-4 text-muted">Загрузка…</p>}
           {error && (
-            <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+            <p className="soft-note-danger">
               {(error as { message?: string }).message ?? "Ошибка загрузки"}
             </p>
           )}
@@ -137,13 +131,13 @@ export function MedicineCabinetPage() {
           {medicines.length > 0 && (
             <div className="mt-4 soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5 sm:py-5">
               <label className="block">
-                <span className="block text-sm text-muted">Найти в аптечке</span>
+                <span className="soft-field-label">Найти в аптечке</span>
                 <input
                   type="search"
                   value={cabinetSearch}
                   onChange={(event) => setCabinetSearch(event.target.value)}
                   placeholder="Название, форма или комментарий"
-                  className="soft-input mt-2 w-full rounded-2xl px-4 py-3 text-base sm:text-sm"
+                  className="soft-input mt-2 w-full px-4 text-base sm:text-sm"
                 />
               </label>
               {isSearchMode && (
@@ -162,7 +156,8 @@ export function MedicineCabinetPage() {
                 <MedicineItemCard
                   key={m.id}
                   medicine={m}
-                  onDelete={handleWriteOff}
+                  onDelete={(id) => deleteMutation.mutate(id)}
+                  isDeleting={deleteMutation.isPending}
                   compact={isSearchMode}
                 />
               ))}
@@ -356,8 +351,8 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
         <h2 className="app-card-title text-lg">Добавить упаковку</h2>
 
         <div className="flex flex-wrap gap-4">
-          <label className="min-w-0 flex-1">
-            <span className="block text-sm text-muted">Поиск по справочнику</span>
+          <label className="min-w-0 flex-1 space-y-1.5">
+            <span className="soft-field-label">Поиск по справочнику</span>
             <input
               type="text"
               value={searchName}
@@ -365,7 +360,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setSearchName(e.target.value);
                 setFormError(null);
               }}
-              className="soft-input mt-1 w-full rounded-2xl px-4 py-3 min-w-0 sm:max-w-xs"
+              className="soft-input w-full min-w-0 px-4 sm:max-w-xs"
               placeholder="Название препарата"
             />
           </label>
@@ -428,7 +423,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   setCatalogItem(null);
                   setSearchName("");
                 }}
-                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
               >
                 Сменить препарат
               </button>
@@ -438,18 +433,21 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
 
         {!catalogItem && (
           <div className="grid gap-3">
-            <input
-              type="text"
-              value={newMedicineName}
-              onChange={(e) => {
-                setNewMedicineName(e.target.value);
-                setFormError(null);
-              }}
-              placeholder="Название нового препарата"
-              className="soft-input rounded-2xl px-4 py-3"
-            />
+            <label className="block space-y-1.5">
+              <span className="soft-field-label">Название нового препарата</span>
+              <input
+                type="text"
+                value={newMedicineName}
+                onChange={(e) => {
+                  setNewMedicineName(e.target.value);
+                  setFormError(null);
+                }}
+                placeholder="Название нового препарата"
+                className="soft-input w-full px-4"
+              />
+            </label>
             <div>
-              <span className="text-sm text-muted">Форма препарата</span>
+              <span className="soft-field-label">Форма препарата</span>
               <div className="mt-2 flex flex-wrap gap-2">
                 {MEDICINE_FORM_OPTIONS.map((option) => (
                   <button
@@ -459,7 +457,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                       setNewMedicineForm(option.value);
                       setFormError(null);
                     }}
-                    className={`rounded-full px-4 py-2 text-sm transition-colors ${
+                    className={`inline-flex min-h-[2.75rem] items-center justify-center rounded-full px-3.5 text-[0.82rem] tracking-[-0.025em] transition-colors sm:min-h-[2.9rem] sm:px-4 sm:text-[0.87rem] ${
                       newMedicineForm === option.value ? "soft-tab-active" : "soft-tab"
                     }`}
                     aria-pressed={newMedicineForm === option.value}
@@ -469,16 +467,19 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 ))}
               </div>
             </div>
-            <input
-              type="text"
-              value={newMedicineConcentration}
-              onChange={(e) => {
-                setNewMedicineConcentration(e.target.value);
-                setFormError(null);
-              }}
-              placeholder="Концентрация"
-              className="soft-input rounded-2xl px-4 py-3"
-            />
+            <label className="block space-y-1.5">
+              <span className="soft-field-label">Концентрация</span>
+              <input
+                type="text"
+                value={newMedicineConcentration}
+                onChange={(e) => {
+                  setNewMedicineConcentration(e.target.value);
+                  setFormError(null);
+                }}
+                placeholder="Концентрация"
+                className="soft-input w-full px-4"
+              />
+            </label>
           </div>
         )}
 
@@ -486,27 +487,27 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
           <>
             {!catalogItem && (
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block sm:col-span-2">
-                  <span className="block text-sm text-muted">Описание</span>
+                <label className="block space-y-1.5 sm:col-span-2">
+                  <span className="soft-field-label">Описание</span>
                   <textarea
                     value={newMedicineDescription}
                     onChange={(e) => {
                       setNewMedicineDescription(e.target.value);
                       setFormError(null);
                     }}
-                    className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
+                    className="soft-input min-h-20 w-full px-4"
                     placeholder="Для чего препарат и в каких случаях нужен"
                   />
                 </label>
-                <label className="block sm:col-span-2">
-                  <span className="block text-sm text-muted">Как применять</span>
+                <label className="block space-y-1.5 sm:col-span-2">
+                  <span className="soft-field-label">Как применять</span>
                   <textarea
                     value={newMedicineDosage}
                     onChange={(e) => {
                       setNewMedicineDosage(e.target.value);
                       setFormError(null);
                     }}
-                    className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
+                    className="soft-input min-h-20 w-full px-4"
                     placeholder="Например: по 5 мл 3 раза в день после еды"
                   />
                 </label>
@@ -514,30 +515,30 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
             )}
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <span className="block text-sm text-muted">Срок годности</span>
+              <label className="block space-y-1.5">
+                <span className="soft-field-label">Срок годности</span>
                 <DateField
                   value={expiryDate}
                   onChange={(nextValue) => {
                     setExpiryDate(nextValue);
                     setFormError(null);
                   }}
-                  className="mt-1"
+                  className=""
                 />
               </label>
-              <label className="block">
-                <span className="block text-sm text-muted">Дата вскрытия</span>
+              <label className="block space-y-1.5">
+                <span className="soft-field-label">Дата вскрытия</span>
                 <DateField
                   value={openedAt}
                   onChange={(nextValue) => {
                     setOpenedAt(nextValue);
                     setFormError(null);
                   }}
-                  className="mt-1"
+                  className=""
                 />
               </label>
-              <label className="block">
-                <span className="block text-sm text-muted">Срок после вскрытия, дней</span>
+              <label className="block space-y-1.5">
+                <span className="soft-field-label">Срок после вскрытия, дней</span>
                 <input
                   type="number"
                   min="1"
@@ -547,7 +548,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                     setOpenedShelfDays(e.target.value);
                     setFormError(null);
                   }}
-                  className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                  className="soft-input w-full px-4"
                   placeholder={
                     catalogItem?.defaultOpenedShelfDays
                       ? String(catalogItem.defaultOpenedShelfDays)
@@ -572,15 +573,15 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 оценка после вскрытия будет считаться неизвестной.
               </p>
             )}
-            <label className="block">
-              <span className="block text-sm text-muted">Комментарий</span>
+            <label className="block space-y-1.5">
+              <span className="soft-field-label">Комментарий</span>
               <textarea
                 value={comment}
                 onChange={(e) => {
                   setComment(e.target.value);
                   setFormError(null);
                 }}
-                className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
+                className="soft-input min-h-20 w-full px-4"
                 placeholder="Например: только ночью после еды"
               />
             </label>
@@ -603,7 +604,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   type="button"
                   onClick={handleAddSelected}
                   disabled={!expiryDate || createHouseholdMutation.isPending}
-                  className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50 sm:w-auto"
+                  className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
                 >
                   Добавить в аптечку
                 </button>
@@ -614,7 +615,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   disabled={
                     !newMedicineName.trim() || !expiryDate || createHouseholdMutation.isPending
                   }
-                  className="soft-button-primary w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50 sm:w-auto"
+                  className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
                 >
                   Добавить свой препарат в аптечку
                 </button>
@@ -635,7 +636,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   setNewMedicineDosage("");
                   setFormError(null);
                 }}
-                className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm sm:w-auto"
+                className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
               >
                 Сбросить
               </button>
@@ -650,16 +651,19 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
 function MedicineItemCard({
   medicine,
   onDelete,
+  isDeleting = false,
   compact = false,
 }: {
   medicine: HouseholdMedicine;
   onDelete: (id: string) => void;
+  isDeleting?: boolean;
   compact?: boolean;
 }) {
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isMobileActionsExpanded, setIsMobileActionsExpanded] = useState(false);
   const [isStatusTooltipVisible, setIsStatusTooltipVisible] = useState(false);
   const [statusTooltipMode, setStatusTooltipMode] = useState<"idle" | "hover" | "touch">("idle");
@@ -754,6 +758,16 @@ function MedicineItemCard({
   if (compact) {
     return (
       <li>
+        <ConfirmDialog
+          isOpen={isDeleteConfirmOpen}
+          title={`Списать препарат · ${medicine.medicineName}`}
+          description="Карточка будет удалена из аптечки. Используй это для реально списанной или выброшенной упаковки."
+          confirmLabel={isDeleting ? "Списываем…" : "Списать"}
+          confirmTone="danger"
+          isPending={isDeleting}
+          onCancel={() => setIsDeleteConfirmOpen(false)}
+          onConfirm={() => onDelete(medicine.id)}
+        />
         <RowSurface
           className={`min-w-0 px-4 py-4 sm:px-5 sm:py-4 ${STATUS_CARD_STYLES[medicine.status] ?? ""}`}
         >
@@ -855,14 +869,14 @@ function MedicineItemCard({
                   <button
                     type="button"
                     onClick={() => setIsDetailsExpanded((value) => !value)}
-                    className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm"
+                    className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                   >
                     {isDetailsExpanded ? "Скрыть" : "Подробнее"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => onDelete(medicine.id)}
-                    className="soft-button-danger w-full rounded-2xl px-4 py-2.5 text-sm"
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    className="soft-button-danger inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                   >
                     Списать
                   </button>
@@ -877,6 +891,16 @@ function MedicineItemCard({
 
   return (
     <li>
+      <ConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        title={`Списать препарат · ${medicine.medicineName}`}
+        description="Карточка будет удалена из аптечки. Используй это для реально списанной или выброшенной упаковки."
+        confirmLabel={isDeleting ? "Списываем…" : "Списать"}
+        confirmTone="danger"
+        isPending={isDeleting}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={() => onDelete(medicine.id)}
+      />
       <RowSurface className={`min-w-0 ${STATUS_CARD_STYLES[medicine.status] ?? ""}`}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
@@ -988,7 +1012,7 @@ function MedicineItemCard({
                 <button
                   type="button"
                   onClick={() => setIsDetailsExpanded((value) => !value)}
-                  className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm"
+                  className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                 >
                   {isDetailsExpanded ? "Скрыть" : "Подробнее"}
                 </button>
@@ -996,15 +1020,15 @@ function MedicineItemCard({
                   <button
                     type="button"
                     onClick={() => setIsEditing((value) => !value)}
-                    className="soft-button-secondary w-full rounded-2xl px-4 py-2.5 text-sm"
+                    className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                   >
                     {isEditing ? "Закрыть" : "Новая упаковка"}
                   </button>
                 )}
                 <button
                   type="button"
-                  onClick={() => onDelete(medicine.id)}
-                  className="soft-button-danger w-full rounded-2xl px-4 py-2.5 text-sm"
+                  onClick={() => setIsDeleteConfirmOpen(true)}
+                  className="soft-button-danger inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                 >
                   Списать
                 </button>
@@ -1016,7 +1040,7 @@ function MedicineItemCard({
               <button
                 type="button"
                 onClick={() => setIsDetailsExpanded((value) => !value)}
-                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
               >
                 {isDetailsExpanded ? "Скрыть" : "Подробнее"}
               </button>
@@ -1024,15 +1048,15 @@ function MedicineItemCard({
                 <button
                   type="button"
                   onClick={() => setIsEditing((value) => !value)}
-                  className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                  className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                 >
                   {isEditing ? "Закрыть" : "Новая упаковка"}
                 </button>
               )}
               <button
                 type="button"
-                onClick={() => onDelete(medicine.id)}
-                className="soft-button-danger rounded-2xl px-4 py-2.5 text-sm"
+                onClick={() => setIsDeleteConfirmOpen(true)}
+                className="soft-button-danger inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
               >
                 Списать
               </button>
@@ -1048,68 +1072,68 @@ function MedicineItemCard({
             </p>
             {isOwnMedicine && (
               <>
-                <label className="block">
-                  <span className="block text-sm text-muted">Название препарата</span>
+                <label className="block space-y-1.5">
+                  <span className="soft-field-label">Название препарата</span>
                   <input
                     type="text"
                     value={medicineName}
                     onChange={(e) => setMedicineName(e.target.value)}
-                    className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                    className="soft-input w-full px-4"
                   />
                 </label>
-                <label className="block">
-                  <span className="block text-sm text-muted">Форма</span>
+                <label className="block space-y-1.5">
+                  <span className="soft-field-label">Форма</span>
                   <input
                     type="text"
                     value={medicineForm}
                     onChange={(e) => setMedicineForm(e.target.value)}
-                    className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                    className="soft-input w-full px-4"
                   />
                 </label>
-                <label className="block sm:col-span-2">
-                  <span className="block text-sm text-muted">Концентрация</span>
+                <label className="block space-y-1.5 sm:col-span-2">
+                  <span className="soft-field-label">Концентрация</span>
                   <input
                     type="text"
                     value={medicineConcentration}
                     onChange={(e) => setMedicineConcentration(e.target.value)}
-                    className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                    className="soft-input w-full px-4"
                   />
                 </label>
-                <label className="block sm:col-span-2">
-                  <span className="block text-sm text-muted">Описание</span>
+                <label className="block space-y-1.5 sm:col-span-2">
+                  <span className="soft-field-label">Описание</span>
                   <textarea
                     value={medicineDescription}
                     onChange={(e) => setMedicineDescription(e.target.value)}
-                    className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
+                    className="soft-input min-h-20 w-full px-4"
                   />
                 </label>
-                <label className="block sm:col-span-2">
-                  <span className="block text-sm text-muted">Как применять</span>
+                <label className="block space-y-1.5 sm:col-span-2">
+                  <span className="soft-field-label">Как применять</span>
                   <textarea
                     value={medicineDosage}
                     onChange={(e) => setMedicineDosage(e.target.value)}
-                    className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
+                    className="soft-input min-h-20 w-full px-4"
                   />
                 </label>
               </>
             )}
-            <label className="block">
-              <span className="block text-sm text-muted">Срок годности</span>
-              <DateField value={expiryDate} onChange={setExpiryDate} className="mt-1" />
+            <label className="block space-y-1.5">
+              <span className="soft-field-label">Срок годности</span>
+              <DateField value={expiryDate} onChange={setExpiryDate} className="" />
             </label>
-            <label className="block">
-              <span className="block text-sm text-muted">Дата вскрытия</span>
-              <DateField value={openedAt} onChange={setOpenedAt} className="mt-1" />
+            <label className="block space-y-1.5">
+              <span className="soft-field-label">Дата вскрытия</span>
+              <DateField value={openedAt} onChange={setOpenedAt} className="" />
             </label>
-            <label className="block">
-              <span className="block text-sm text-muted">Срок после вскрытия, дней</span>
+            <label className="block space-y-1.5">
+              <span className="soft-field-label">Срок после вскрытия, дней</span>
               <input
                 type="number"
                 min="1"
                 max="3650"
                 value={openedShelfDays}
                 onChange={(e) => setOpenedShelfDays(e.target.value)}
-                className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+                className="soft-input w-full px-4"
               />
             </label>
             {isExpired && (
@@ -1124,12 +1148,12 @@ function MedicineItemCard({
                 считаться неизвестным.
               </p>
             )}
-            <label className="block sm:col-span-2">
-              <span className="block text-sm text-muted">Комментарий</span>
+            <label className="block space-y-1.5 sm:col-span-2">
+              <span className="soft-field-label">Комментарий</span>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                className="soft-input mt-1 min-h-20 w-full rounded-2xl px-4 py-3"
+                className="soft-input min-h-20 w-full px-4"
               />
             </label>
             <div className="sm:col-span-2">
@@ -1140,7 +1164,7 @@ function MedicineItemCard({
                   updateMutation.isPending ||
                   (isOwnMedicine && (!medicineName.trim() || !medicineForm.trim()))
                 }
-                className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
               >
                 Сохранить
               </button>

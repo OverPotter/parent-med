@@ -36,6 +36,7 @@ import {
   trackTemperatureLogged,
 } from "@shared/analytics";
 import { DateField } from "@shared/components/DateField";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { DisclosureHeader } from "@shared/components/DisclosureHeader";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
@@ -122,6 +123,9 @@ export function ChildIllnessPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] });
+      queryClient.invalidateQueries({ queryKey: ["children"] });
     },
   });
   const createEpisodeMutation = useMutation({
@@ -198,7 +202,7 @@ export function ChildIllnessPage() {
       void trackIllnessEpisodeStarted(episode.id);
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
-      navigate(`/children/${childId}/illness`);
+      navigate("/illnesses/active");
     },
     onError: async (error) => {
       await Promise.all([
@@ -209,7 +213,7 @@ export function ChildIllnessPage() {
       const detail =
         (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "";
       if (detail.includes("активный эпизод")) {
-        navigate(`/children/${childId}/illness`);
+        navigate("/illnesses/active");
       }
     },
   });
@@ -419,6 +423,7 @@ function HistoryEpisodeCard({
 }) {
   const queryClient = useQueryClient();
   const liveQueryOptions = useLiveQueryOptions(10000);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const { data: temperatureEntries = [] } = useQuery({
     queryKey: ["temperature-entries", episode.id],
     queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
@@ -462,6 +467,20 @@ function HistoryEpisodeCard({
         isOpen ? "soft-panel soft-hero" : "soft-card"
       }`}
     >
+      <ConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        title={`Удалить эпизод ${episodeNumber}`}
+        description="Запись будет полностью удалена из истории ребёнка без возможности восстановления."
+        confirmLabel={deleteEpisodeMutation.isPending ? "Удаляем…" : "Удалить из истории"}
+        confirmTone="danger"
+        isPending={deleteEpisodeMutation.isPending}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={() =>
+          deleteEpisodeMutation.mutate(undefined, {
+            onSuccess: () => setIsDeleteConfirmOpen(false),
+          })
+        }
+      />
       <DisclosureHeader isOpen={isOpen} onToggle={onToggle}>
         <>
           <p className="text-xs tracking-[0.08em] text-muted">
@@ -524,14 +543,9 @@ function HistoryEpisodeCard({
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (!window.confirm("Удалить запись из истории?")) {
-                    return;
-                  }
-                  deleteEpisodeMutation.mutate();
-                }}
+                onClick={() => setIsDeleteConfirmOpen(true)}
                 disabled={deleteEpisodeMutation.isPending}
-                className="soft-button-danger rounded-2xl px-3 py-1.5 text-sm disabled:opacity-50"
+                className="soft-button-danger inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
               >
                 {deleteEpisodeMutation.isPending ? "Удаляем…" : "Удалить из истории"}
               </button>
@@ -576,6 +590,7 @@ function EpisodeBlock({
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
   const liveQueryOptions = useLiveQueryOptions(3000);
+  const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
   const isActive = episode.status === "active";
   const [commentText, setCommentText] = useState("");
   const [quickComposeSuccessMessage, setQuickComposeSuccessMessage] = useState<string | null>(null);
@@ -823,7 +838,7 @@ function EpisodeBlock({
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             placeholder="Например: к вечеру бодрее, после сна снова температура."
-            className="soft-input w-full rounded-2xl px-4 py-3"
+            className="soft-input w-full px-4"
           />
           <div className="flex flex-wrap gap-2">
             <button
@@ -833,7 +848,7 @@ function EpisodeBlock({
                 addCommentMutation.mutate();
               }}
               disabled={addCommentMutation.isPending || !commentText.trim()}
-              className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+              className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
             >
               {addCommentMutation.isPending ? "Сохраняем…" : "Добавить комментарий"}
             </button>
@@ -854,19 +869,19 @@ function EpisodeBlock({
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         <Link
           to={`/children/${childId}/illness?focus=temperature`}
-          className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+          className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
         >
           Записать температуру
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=administration`}
-          className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+          className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
         >
           Записать приём
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=comment`}
-          className="soft-button-secondary rounded-2xl px-4 py-3 text-center text-sm"
+          className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
         >
           Добавить заметку
         </Link>
@@ -892,7 +907,7 @@ function EpisodeBlock({
         </div>
         <Link
           to={`/children/${childId}/illness?focus=timeline`}
-          className="soft-button-secondary w-full self-start rounded-2xl px-4 py-2.5 text-center text-sm sm:w-auto"
+          className="soft-button-secondary inline-flex min-h-[2.85rem] w-full self-start items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
         >
           Открыть
         </Link>
@@ -921,7 +936,7 @@ function EpisodeBlock({
                 ? `/children/${childId}/illness?focus=reminders`
                 : `/children/${childId}/illness?focus=reminder-create`
             }
-            className="soft-button-secondary w-full self-start rounded-2xl px-4 py-2.5 text-center text-sm sm:w-auto"
+            className="soft-button-secondary inline-flex min-h-[2.85rem] w-full self-start items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
           >
             {medicationPlans.length > 0 ? "Открыть" : "Добавить"}
           </Link>
@@ -961,13 +976,13 @@ function EpisodeBlock({
           <div className="flex flex-wrap gap-2">
             <Link
               to="/illnesses/active"
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               К активным болезням
             </Link>
             <Link
               to={`/children/${childId}/illness?focus=timeline`}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               К ленте
             </Link>
@@ -996,7 +1011,7 @@ function EpisodeBlock({
           <div className="flex flex-wrap gap-2">
             <Link
               to="/illnesses/active"
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               К активным болезням
             </Link>
@@ -1064,13 +1079,13 @@ function EpisodeBlock({
           <div className="flex flex-wrap gap-2">
             <Link
               to="/illnesses/active"
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               К активным болезням
             </Link>
             <Link
               to={`/children/${childId}/illness?focus=reminder-create`}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               Добавить напоминание
             </Link>
@@ -1091,13 +1106,13 @@ function EpisodeBlock({
             <div className="flex flex-wrap gap-2">
               <Link
                 to={`/children/${childId}/illness?focus=reminders`}
-                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
               >
                 К графику приёма
               </Link>
               <Link
                 to="/illnesses/active"
-                className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
               >
                 К активным болезням
               </Link>
@@ -1247,13 +1262,13 @@ function EpisodeBlock({
           <div className="flex flex-wrap gap-2">
             <Link
               to={`/children/${childId}/illness?focus=reminders`}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               К напоминаниям
             </Link>
             <Link
               to="/illnesses/active"
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               К активным болезням
             </Link>
@@ -1265,6 +1280,18 @@ function EpisodeBlock({
 
   return (
     <div className="soft-panel rounded-[30px]">
+      <ConfirmDialog
+        isOpen={isCloseConfirmOpen}
+        title={`Закрыть наблюдение · ${childName}`}
+        description="Текущее наблюдение будет завершено и попадёт в историю. При необходимости новое наблюдение можно будет начать заново."
+        confirmLabel="Закрыть наблюдение"
+        confirmTone="danger"
+        onCancel={() => setIsCloseConfirmOpen(false)}
+        onConfirm={() => {
+          onClose();
+          setIsCloseConfirmOpen(false);
+        }}
+      />
       <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
         {isActive ? (
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -1283,13 +1310,8 @@ function EpisodeBlock({
             </div>
             <button
               type="button"
-              onClick={() => {
-                if (!window.confirm("Закрыть текущее наблюдение?")) {
-                  return;
-                }
-                onClose();
-              }}
-              className="soft-button-danger hidden rounded-2xl px-4 py-2.5 text-sm sm:inline-flex"
+              onClick={() => setIsCloseConfirmOpen(true)}
+              className="soft-button-danger hidden min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] sm:inline-flex"
             >
               Закрыть наблюдение
             </button>
@@ -1321,13 +1343,8 @@ function EpisodeBlock({
           <div className="sm:hidden">
             <button
               type="button"
-              onClick={() => {
-                if (!window.confirm("Закрыть текущее наблюдение?")) {
-                  return;
-                }
-                onClose();
-              }}
-              className="soft-button-danger w-full rounded-2xl px-4 py-2.5 text-sm"
+              onClick={() => setIsCloseConfirmOpen(true)}
+              className="soft-button-danger inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em]"
             >
               Закрыть наблюдение
             </button>
@@ -1391,23 +1408,23 @@ function EpisodeActivationCard({
         {errorMessage && (
           <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{errorMessage}</div>
         )}
-        <label className="block">
-          <span className="block text-sm text-muted">Дата начала</span>
+        <label className="block space-y-1.5">
+          <span className="soft-field-label">Дата начала</span>
           <DateField
             value={startedAt}
             onChange={setStartedAt}
             max={new Date().toISOString().slice(0, 10)}
-            className="mt-1"
+            className=""
           />
         </label>
-        <label className="block">
-          <span className="block text-sm text-muted">Что случилось?</span>
+        <label className="block space-y-1.5">
+          <span className="soft-field-label">Что случилось?</span>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Например: температура и кашель"
-            className="soft-input mt-1 w-full rounded-2xl px-4 py-3"
+            className="soft-input w-full px-4"
           />
           <p className="mt-2 text-xs text-muted">
             Необязательно. Нужен только короткий ориентир, чтобы потом быстрее найти запись.
@@ -1441,7 +1458,7 @@ function EpisodeActivationCard({
               })
             }
             disabled={isPending || !startedAt}
-            className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+            className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
           >
             {isPending ? "Запускаем…" : "Начать наблюдение"}
           </button>
@@ -1449,7 +1466,7 @@ function EpisodeActivationCard({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+            className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
           >
             Назад
           </button>
@@ -1509,22 +1526,22 @@ function TemperatureForm({
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-[minmax(0,168px)_auto] sm:items-end">
-      <label className="block max-w-[11rem]">
-        <span className="block text-sm text-muted">Температура</span>
+      <label className="block max-w-[11rem] space-y-1.5">
+        <span className="soft-field-label">Температура</span>
         <input
           type="number"
           step={0.1}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="36.6"
-          className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+          className="soft-input w-full px-4"
         />
       </label>
       <button
         type="button"
         onClick={onSubmit}
         disabled={isPending || !value}
-        className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:w-auto"
+        className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
       >
         {isPending ? "Сохраняем…" : "Добавить"}
       </button>
@@ -1578,13 +1595,13 @@ function CabinetMedicinePicker({
   return (
     <>
       <div className="block min-w-0">
-        <span className="block text-sm text-muted">{label}</span>
+        <span className="soft-field-label">{label}</span>
         <div className="mt-2">
           <button
             type="button"
             onClick={() => setIsOpen(true)}
             aria-expanded={isOpen}
-            className="soft-button-secondary flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left"
+            className="soft-button-secondary flex min-h-[2.95rem] w-full items-center justify-between gap-3 px-4 text-left text-[0.88rem] tracking-[-0.025em] sm:min-h-[3.1rem] sm:text-[0.92rem]"
           >
             <span className="min-w-0">
               {selectedMedicine ? (
@@ -1637,7 +1654,7 @@ function CabinetMedicinePicker({
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="soft-button-secondary rounded-2xl px-3 py-2 text-sm"
+                  className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                 >
                   Закрыть
                 </button>
@@ -1651,7 +1668,7 @@ function CabinetMedicinePicker({
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Поиск по аптечке"
-                  className="soft-input w-full rounded-2xl px-4 py-3"
+                  className="soft-input w-full px-4"
                 />
               )}
               <div className="soft-choice-list max-h-[min(55vh,28rem)] overflow-y-auto pr-1">
@@ -1731,25 +1748,25 @@ function AdministrationForm({
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)_auto] md:items-end">
-        <label className="block min-w-0">
-          <span className="block text-sm text-muted">Что дали</span>
+        <label className="block min-w-0 space-y-1.5">
+          <span className="soft-field-label">Что дали</span>
           <input
             type="text"
             value={customMedicineName}
             onChange={(e) => onCustomMedicineNameChange(e.target.value)}
             placeholder="Например: Уголь"
-            className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+            className="soft-input w-full px-4"
           />
         </label>
 
-        <label className="block">
-          <span className="block text-sm text-muted">Доза, если нужно</span>
+        <label className="block space-y-1.5">
+          <span className="soft-field-label">Доза, если нужно</span>
           <input
             type="text"
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
             placeholder="Например: 5 мл или 1 таб."
-            className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+            className="soft-input w-full px-4"
           />
         </label>
 
@@ -1758,7 +1775,7 @@ function AdministrationForm({
             type="button"
             onClick={onSubmit}
             disabled={isPending || !customMedicineName.trim()}
-            className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+            className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
           >
             {isPending ? "Сохраняем…" : "Отметить приём"}
           </button>
@@ -1904,14 +1921,14 @@ function MedicationPlanComposer({
             </div>
           ) : (
             <div className="space-y-2">
-              <label className="block min-w-0">
-                <span className="block text-sm text-muted">Лекарство</span>
+              <label className="block min-w-0 space-y-1.5">
+                <span className="soft-field-label">Лекарство</span>
                 <input
                   type="text"
                   value={customMedicineName}
                   onChange={(event) => setCustomMedicineName(event.target.value)}
                   placeholder="Например: Ибуклин"
-                  className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+                  className="soft-input w-full px-4"
                 />
               </label>
               {medicines.length > 0 && (
@@ -1928,14 +1945,14 @@ function MedicationPlanComposer({
         </div>
 
         <div>
-          <label className="block">
-            <span className="block text-sm text-muted">Разовая доза, если нужна</span>
+          <label className="block space-y-1.5">
+            <span className="soft-field-label">Разовая доза, если нужна</span>
             <input
               type="text"
               value={doseAmount}
               onChange={(e) => setDoseAmount(e.target.value)}
               placeholder="Например: 10 мл или 1 таб."
-              className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+              className="soft-input w-full px-4"
             />
             {hasDoseUnitHint && (
               <p className="mt-2 text-xs text-muted">
@@ -1951,8 +1968,8 @@ function MedicationPlanComposer({
         </div>
 
         <div>
-          <label className="block">
-            <span className="block text-sm text-muted">
+          <label className="block space-y-1.5">
+            <span className="soft-field-label">
               Интервал напоминания, {intervalUnit === "minutes" ? "минут" : "часов"}
             </span>
             <input
@@ -1962,7 +1979,7 @@ function MedicationPlanComposer({
               step={intervalUnit === "minutes" ? "1" : "0.5"}
               value={minIntervalInput}
               onChange={(e) => setMinIntervalInput(e.target.value)}
-              className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+              className="soft-input w-full px-4"
             />
           </label>
         </div>
@@ -1989,8 +2006,8 @@ function MedicationPlanComposer({
           {isAdvancedOpen && (
             <div className="mt-4 grid gap-3 xl:grid-cols-2">
               <div>
-                <label className="block">
-                  <span className="block text-sm text-muted">Максимум в сутки</span>
+                <label className="block space-y-1.5">
+                  <span className="soft-field-label">Максимум в сутки</span>
                   <input
                     type="number"
                     min="1"
@@ -1998,14 +2015,14 @@ function MedicationPlanComposer({
                     value={maxDosesPerDay}
                     onChange={(e) => setMaxDosesPerDay(e.target.value)}
                     placeholder="Необязательно"
-                    className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+                    className="soft-input w-full px-4"
                   />
                 </label>
               </div>
 
               <div>
-                <label className="block">
-                  <span className="flex items-center gap-2 text-sm text-muted">
+                <label className="block space-y-1.5">
+                  <span className="flex items-center gap-2 soft-field-label">
                     Вес ребёнка, кг
                     <InlineHint text="Нужно только для расчёта по весу. Если разовая доза уже известна, это поле можно не заполнять." />
                   </span>
@@ -2016,7 +2033,7 @@ function MedicationPlanComposer({
                     value={weightKg}
                     onChange={(e) => setWeightKg(e.target.value)}
                     placeholder={latestWeight ? String(latestWeight.valueKg) : "Необязательно"}
-                    className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+                    className="soft-input w-full px-4"
                   />
                   {latestWeight && (
                     <p className="mt-2 text-xs text-muted">
@@ -2039,7 +2056,7 @@ function MedicationPlanComposer({
                             syncWeightMutation.mutate(parsedWeightKg);
                           }}
                           disabled={syncWeightMutation.isPending}
-                          className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+                          className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
                         >
                           {syncWeightMutation.isPending ? "Сохраняем вес…" : "Обновить вес ребёнка"}
                         </button>
@@ -2050,8 +2067,8 @@ function MedicationPlanComposer({
               </div>
 
               <div className="xl:col-span-2">
-                <label className="block">
-                  <span className="flex items-center gap-2 text-sm text-muted">
+                <label className="block space-y-1.5">
+                  <span className="flex items-center gap-2 soft-field-label">
                     Расчёт, мг/кг
                     <InlineHint text="Используй это поле, если дозировку знают как мг на кг веса. Это только подсказка и не заменяет вручную указанную разовую дозу." />
                   </span>
@@ -2062,7 +2079,7 @@ function MedicationPlanComposer({
                     value={doseMgPerKg}
                     onChange={(e) => setDoseMgPerKg(e.target.value)}
                     placeholder="Необязательно"
-                    className="soft-input mt-2 w-full rounded-2xl px-4 py-3"
+                    className="soft-input w-full px-4"
                   />
                 </label>
               </div>
@@ -2116,7 +2133,7 @@ function MedicationPlanComposer({
             hasInvalidDose ||
             parsedIntervalMinutes === null
           }
-          className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+          className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
         >
           {isPending ? "Сохраняем…" : submitLabel}
         </button>
@@ -2125,7 +2142,7 @@ function MedicationPlanComposer({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+            className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
           >
             Отмена
           </button>
@@ -2225,7 +2242,7 @@ function MedicationPlanList({
                     type="button"
                     onClick={() => onTakeDose(plan)}
                     disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
-                    className={`rounded-2xl px-4 py-3 text-sm font-medium transition disabled:opacity-50 ${
+                    className={`inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] transition disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem] ${
                       isUnavailable || stats?.isBlocked
                         ? "soft-button-secondary text-muted"
                         : "soft-button-primary"
@@ -2243,7 +2260,7 @@ function MedicationPlanList({
                 <button
                   type="button"
                   onClick={() => onOpen(plan.id)}
-                  className="soft-button-secondary rounded-2xl px-4 py-3 text-sm"
+                  className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
                 >
                   Открыть
                 </button>
@@ -2280,6 +2297,7 @@ function MedicationPlanDetail({
   isDeleting?: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const { plan, medicine, stats, isUnavailable } = item;
   const planName = plan.customMedicineName ?? medicine?.medicineName ?? "Лекарство";
@@ -2333,6 +2351,16 @@ function MedicationPlanDetail({
 
   return (
     <section className="space-y-5">
+      <ConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        title={`Удалить напоминание · ${planName}`}
+        description="Напоминание будет удалено из текущего наблюдения. История уже отмеченных приёмов останется."
+        confirmLabel={isDeleting ? "Удаляем…" : "Удалить"}
+        confirmTone="danger"
+        isPending={isDeleting}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={() => onDelete(plan.id)}
+      />
       <div className="space-y-2">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -2433,7 +2461,7 @@ function MedicationPlanDetail({
               type="button"
               onClick={() => onTakeDose(plan)}
               disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
-              className="soft-button-primary rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+              className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
             >
               {isSubmittingAdministration
                 ? "Отмечаем…"
@@ -2447,22 +2475,16 @@ function MedicationPlanDetail({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+            className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
           >
             Изменить
           </button>
         </div>
         <button
           type="button"
-          onClick={() => {
-            const shouldDelete = window.confirm(`Удалить напоминание для «${planName}»?`);
-            if (!shouldDelete) {
-              return;
-            }
-            onDelete(plan.id);
-          }}
+          onClick={() => setIsDeleteConfirmOpen(true)}
           disabled={isDeleting}
-          className="soft-button-danger w-full rounded-2xl px-4 py-2.5 text-sm disabled:opacity-50"
+          className="soft-button-danger inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
         >
           {isDeleting ? "Удаляем…" : "Удалить"}
         </button>

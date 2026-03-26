@@ -63,15 +63,25 @@ export const useAppStore = create<AppState>()(
       setHydrated: (value) => set({ hydrated: value }),
       hasSeenWorkspaceIntro: false,
       markWorkspaceIntroSeen: () => set({ hasSeenWorkspaceIntro: true }),
-      theme: "dark",
+      theme: "light",
       setTheme: (theme) => {
         set({ theme });
         document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.style.colorScheme = theme;
+        const background = theme === "dark" ? "#1e1b2e" : "#ebe4ff";
+        document.documentElement.style.background = background;
+        document.body.style.background = background;
+        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
       },
       toggleTheme: () => {
         set((s) => {
           const next: Theme = s.theme === "light" ? "dark" : "light";
           document.documentElement.setAttribute("data-theme", next);
+          document.documentElement.style.colorScheme = next;
+          const background = next === "dark" ? "#1e1b2e" : "#ebe4ff";
+          document.documentElement.style.background = background;
+          document.body.style.background = background;
+          document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
           return { theme: next };
         });
       },
@@ -146,6 +156,16 @@ export const useAppStore = create<AppState>()(
         currentFamilyName: s.currentFamilyName,
       }),
       onRehydrateStorage: () => (state) => {
+        if (state?.theme) {
+          document.documentElement.setAttribute("data-theme", state.theme);
+          document.documentElement.style.colorScheme = state.theme;
+          const background = state.theme === "dark" ? "#1e1b2e" : "#ebe4ff";
+          document.documentElement.style.background = background;
+          document.body.style.background = background;
+          document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute("content", background);
+        }
         state?.setHydrated(true);
       },
     }
