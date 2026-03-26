@@ -1,18 +1,14 @@
+import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 
 export function AboutPage() {
   return (
     <div className="min-w-0 space-y-6">
-      <Surface className="soft-hero overflow-hidden">
-        <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
-          <p className="app-kicker">О приложении</p>
-          <h1 className="app-title mt-2 text-2xl sm:text-3xl">Parent Med</h1>
-          <p className="app-subtitle mt-3 max-w-2xl text-sm">
-            Семейный кабинет для детей, домашней аптечки и истории болезни. Это не ежедневный
-            рабочий экран, поэтому описание вынесено сюда отдельно.
-          </p>
-        </div>
-      </Surface>
+      <PageIntro
+        title="Parent Med"
+        subtitle="Семейный кабинет для детей, домашней аптечки и истории болезни. Это не ежедневный рабочий экран, поэтому описание вынесено сюда отдельно."
+        eyebrow="О приложении"
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <FeatureCard
@@ -32,7 +28,7 @@ export function AboutPage() {
       <Surface className="overflow-hidden">
         <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
           <p className="app-kicker">Установка на телефон</p>
-          <h2 className="app-title mt-2 text-2xl">
+          <h2 className="app-title mt-2 text-[1.7rem] sm:text-[2.15rem]">
             Приложение можно установить как иконку на домашний экран
           </h2>
           <p className="app-subtitle mt-3 max-w-2xl text-sm">
@@ -77,7 +73,7 @@ export function AboutPage() {
 function FeatureCard({ title, description }: { title: string; description: string }) {
   return (
     <Surface className="p-5 sm:p-6">
-      <h2 className="app-card-title text-lg">{title}</h2>
+      <h2 className="app-card-title text-[1.05rem]">{title}</h2>
       <p className="mt-3 text-sm leading-7 text-muted">{description}</p>
     </Surface>
   );
@@ -85,8 +81,8 @@ function FeatureCard({ title, description }: { title: string; description: strin
 
 function InstallCard({ title, steps }: { title: string; steps: string[] }) {
   return (
-    <div className="soft-card rounded-[24px] px-4 py-4 sm:px-5">
-      <h3 className="app-card-title text-lg">{title}</h3>
+    <div className="soft-card rounded-[30px] px-4 py-4 sm:px-5">
+      <h3 className="app-card-title text-[1.05rem]">{title}</h3>
       <ol className="mt-3 space-y-2 text-sm leading-7 text-muted">
         {steps.map((step, index) => (
           <li key={step}>

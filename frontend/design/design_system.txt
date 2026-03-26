@@ -1,0 +1,84 @@
+{
+  "variant": "V1_Blue",
+  "core_tokens": {
+    "font_family": "Plus Jakarta Sans",
+    "radius_global": "24px",
+    "card_blur": "30px"
+  },
+  "light_mode": {
+    "bg_surface": "#D1E9FF",
+    "card_surface": "rgba(255, 255, 255, 0.9)",
+    "primary_action": "#2563EB",
+    "text_primary": "#334155",
+    "input_fill": "#EBF5FF",
+    "pattern_opacity": 0.05
+  },
+  "dark_mode": {
+    "bg_surface_dark": "#0F172A",
+    "card_surface_dark": "rgba(30, 41, 59, 0.88)",
+    "primary_action_dark": "#3B82F6",
+    "primary_action_dark_glow": "0 8px 34px rgba(59, 130, 246, 0.15)",
+    "text_primary_dark": "#F8FAFC",
+    "input_fill_dark": "#0F172A"
+  },
+  "component_styles": {
+    "button_padding": "16px 24px",
+    "input_border": "1px solid rgba(0, 0, 0, 0.05)"
+  }
+}
+{
+  "variant": "V2_Green",
+  "core_tokens": {
+    "font_family": "Plus Jakarta Sans",
+    "radius_global": "24px",
+    "card_blur": "30px"
+  },
+  "light_mode": {
+    "bg_surface": "#DFF1E0",
+    "card_surface": "rgba(255, 255, 255, 0.9)",
+    "primary_action": "#48A07A",
+    "text_primary": "#334155",
+    "input_fill": "#E8F4EA",
+    "pattern_opacity": 0.05
+  },
+  "dark_mode": {
+    "bg_surface_dark": "#1B2621",
+    "card_surface_dark": "rgba(28, 43, 36, 0.88)",
+    "primary_action_dark": "#48A07A",
+    "primary_action_dark_glow": "0 8px 34px rgba(72, 160, 122, 0.15)",
+    "text_primary_dark": "#F8FAFC",
+    "input_fill_dark": "#0E1E18"
+  },
+  "component_styles": {
+    "button_padding": "16px 24px",
+    "input_border": "1px solid rgba(0, 0, 0, 0.05)"
+  }
+}
+{
+  "variant": "V3_Purple",
+  "core_tokens": {
+    "font_family": "Plus Jakarta Sans",
+    "radius_global": "24px",
+    "card_blur": "30px"
+  },
+  "light_mode": {
+    "bg_surface": "#EBE4FF",
+    "card_surface": "rgba(255, 255, 255, 0.9)",
+    "primary_action": "#8A7BBF",
+    "text_primary": "#334155",
+    "input_fill": "#F1EDFF",
+    "pattern_opacity": 0.05
+  },
+  "dark_mode": {
+    "bg_surface_dark": "#1E1B2E",
+    "card_surface_dark": "rgba(31, 27, 46, 0.88)",
+    "primary_action_dark": "#8A7BBF",
+    "primary_action_dark_glow": "0 8px 34px rgba(138, 123, 191, 0.15)",
+    "text_primary_dark": "#F8FAFC",
+    "input_fill_dark": "#141127"
+  },
+  "component_styles": {
+    "button_padding": "16px 24px",
+    "input_border": "1px solid rgba(0, 0, 0, 0.05)"
+  }
+}

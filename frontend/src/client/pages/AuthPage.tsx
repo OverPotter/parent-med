@@ -5,13 +5,101 @@
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { login, register } from "@shared/api/auth";
-import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
-import { Surface } from "@shared/components/Surface";
 import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
+import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
 import { useAppStore } from "@shared/store/useAppStore";
 import { Link, useSearchParams } from "react-router-dom";
 
 type Mode = "login" | "register";
+
+function joinClasses(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
+
+function FieldIcon({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <span
+      className={joinClasses(
+        "pointer-events-none absolute right-4 top-1/2 -translate-y-1/2",
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function MailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-none stroke-current">
+      <path d="M4 7.5h16v9A1.5 1.5 0 0 1 18.5 18h-13A1.5 1.5 0 0 1 4 16.5v-9Z" strokeWidth="1.8" />
+      <path d="m5 8 7 5 7-5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-none stroke-current">
+      <path d="M7.5 10.25V8.5a4.5 4.5 0 1 1 9 0v1.75" strokeWidth="1.8" strokeLinecap="round" />
+      <rect x="5" y="10.25" width="14" height="9.75" rx="2.5" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5 fill-none stroke-current">
+      <path
+        d="m4.5 10 3.2 3.2L15.5 5.8"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function AuthField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  autoComplete,
+  name,
+  hint,
+  icon,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  type?: string;
+  autoComplete?: string;
+  name?: string;
+  hint?: string;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="auth-v3-label">{label}</span>
+      <div className="relative">
+        <input
+          name={name}
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="auth-v3-input w-full"
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+        />
+        {icon ? <FieldIcon className="auth-v3-input-icon">{icon}</FieldIcon> : null}
+      </div>
+      {hint ? <span className="auth-v3-hint">{hint}</span> : null}
+    </label>
+  );
+}
 
 export function AuthPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -106,227 +194,264 @@ export function AuthPage() {
   const passwordsMismatch =
     mode === "register" && passwordConfirm.length > 0 && password !== passwordConfirm;
   const isRegisterMode = mode === "register";
-  const pageTitle = isRegisterMode ? "Создать аккаунт" : "Войти в аккаунт";
+  const pageTitle = isRegisterMode ? "Регистрация" : "Вход";
   const pageDescription = isRegisterMode
-    ? "Для beta достаточно логина и пароля. Остальные данные можно добавить позже в профиле семьи."
-    : "Войдите под своим логином, чтобы попасть в общую семейную базу детей, аптечки и болезней.";
+    ? "Создайте семейный доступ к данным ребёнка, аптечке и общим событиям по здоровью."
+    : "Быстрый доступ к данным ребёнка, аптечке и общим записям о здоровье.";
   const switchMode = (nextMode: Mode) => {
     setMode(nextMode);
     setSearchParams(nextMode === "register" ? { mode: "register" } : { mode: "login" });
     setError(null);
   };
 
+  const submitLabel =
+    mode === "login"
+      ? isPending
+        ? "Входим…"
+        : "Войти"
+      : isPending
+        ? "Регистрируем…"
+        : "Создать аккаунт";
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link to="/" className="inline-flex items-center gap-3">
-            <img src="/pwa-icon.svg" alt="" className="h-10 w-10 rounded-2xl" />
-            <div>
-              <p className="app-brand-text text-sm">Parent Med</p>
-              <p className="text-xs text-muted">Вернуться к описанию сервиса</p>
-            </div>
-          </Link>
-          <Link to="/" className="soft-button-secondary rounded-full px-4 py-2 text-sm">
-            На главную
-          </Link>
-        </div>
+    <div className="auth-v3-page min-h-screen text-foreground">
+      <V3BackgroundDoodles className="auth-v3-doodle-layer" />
+      <div className="auth-v3-orb auth-v3-orb-left" aria-hidden="true" />
+      <div className="auth-v3-orb auth-v3-orb-right" aria-hidden="true" />
+      <div className="auth-v3-noise" aria-hidden="true" />
 
-        <div className="mx-auto mt-8 max-w-2xl text-center">
-          <span className="soft-pill inline-flex rounded-full px-3 py-1 text-xs tracking-[0.04em]">
-            Авторизация
-          </span>
-          <h1 className="app-title mt-4 text-3xl sm:text-[2.6rem]">{pageTitle}</h1>
-          <p className="app-subtitle mx-auto mt-3 text-sm sm:text-base">{pageDescription}</p>
-        </div>
-
-        <Surface className="mx-auto mt-8 max-w-[34rem] overflow-hidden p-5 sm:p-6">
-          <div className="soft-panel-muted flex rounded-[18px] p-1">
-            <button
-              type="button"
-              onClick={() => switchMode("login")}
-              className={`flex-1 rounded-2xl px-3 py-2.5 text-sm transition-colors ${
-                mode === "login" ? "soft-tab-active" : "soft-tab"
-              }`}
-            >
-              Вход
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode("register")}
-              className={`flex-1 rounded-2xl px-3 py-2.5 text-sm transition-colors ${
-                mode === "register" ? "soft-tab-active" : "soft-tab"
-              }`}
-            >
-              Регистрация
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-            <div className="soft-panel rounded-[24px] p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="relative mx-auto flex min-h-screen max-w-6xl items-center px-4 py-6 sm:px-6 sm:py-10">
+        <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(22rem,30rem)] lg:items-center">
+          <section className="auth-v3-hero">
+            <div className="auth-v3-header">
+              <Link to="/" className="auth-v3-header-brand">
+                <img
+                  src="/pwa-icon.svg"
+                  alt=""
+                  className="h-11 w-11 rounded-[18px] shadow-[0_16px_32px_rgba(138,123,191,0.2)]"
+                />
                 <div>
-                  <p className="text-sm font-medium text-foreground">Обязательные поля</p>
-                  <p className="mt-1 text-xs leading-5 text-muted">
-                    Для начала нужен только логин для входа и пароль. Имя в семье можно задать ниже
-                    или заполнить позже.
-                  </p>
+                  <p className="auth-v3-brand">Parent Med</p>
+                  <p className="auth-v3-caption">Система здоровья семьи</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsPasswordVisible((current) => !current)}
-                  className="soft-button-secondary shrink-0 rounded-full px-3 py-1.5 text-xs"
-                >
-                  {isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
-                </button>
-              </div>
-
-              <div className="mt-4 grid gap-3">
-                <label className="block">
-                  <span className="mb-2 block text-sm text-muted">Логин</span>
-                  <input
-                    name="username"
-                    type="text"
-                    value={loginValue}
-                    onChange={(e) => setLoginValue(e.target.value)}
-                    className="soft-input w-full rounded-2xl px-4 py-3"
-                    placeholder="Придумайте логин для входа"
-                    autoComplete="username"
-                  />
-                  <span className="mt-2 block text-xs text-muted">
-                    Логин нужен только для входа. Это не имя, которое увидят в семье.
-                  </span>
-                </label>
-
-                <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
-                  <AuthPasswordField
-                    label="Пароль"
-                    value={password}
-                    onChange={setPassword}
-                    placeholder="Минимум 6 символов"
-                    isVisible={isPasswordVisible}
-                    name="current-password"
-                    autoComplete={isRegisterMode ? "new-password" : "current-password"}
-                  />
-                  {isRegisterMode && (
-                    <AuthPasswordField
-                      label="Повторите пароль"
-                      value={passwordConfirm}
-                      onChange={setPasswordConfirm}
-                      placeholder="Повторите пароль"
-                      isVisible={isPasswordVisible}
-                      name="new-password-confirm"
-                      autoComplete="new-password"
-                    />
-                  )}
-                </div>
-              </div>
+              </Link>
+              <Link to="/" className="auth-v3-ghost-button">
+                На главную
+              </Link>
             </div>
 
-            <RememberMeCard checked={rememberMe} onChange={setRememberMe} />
+            <div className="mt-10 max-w-xl">
+              <h1 className="auth-v3-title">{pageTitle}</h1>
+              <p className="auth-v3-subtitle mt-4">{pageDescription}</p>
+            </div>
 
-            {isRegisterMode && (
-              <details className="soft-panel-muted rounded-[24px] p-4">
-                <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
-                  Дополнительные поля профиля
-                </summary>
-                <p className="mt-2 text-xs leading-5 text-muted">
-                  Они не мешают началу работы. Здесь можно указать, как вас показывать в семье.
+            <div className="auth-v3-feature-grid mt-8 hidden lg:grid">
+              <article className="auth-v3-feature-card">
+                <p className="auth-v3-feature-kicker">Семейный доступ</p>
+                <h2 className="auth-v3-feature-title">
+                  Один доступ к детям, болезням и лекарствам
+                </h2>
+                <p className="auth-v3-feature-text">
+                  У входа и регистрации теперь единый спокойный сценарий в палитре V3.
                 </p>
-                <label className="mt-4 block">
-                  <span className="mb-2 block text-sm text-muted">Email</span>
-                  <input
-                    name="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="soft-input w-full rounded-2xl px-4 py-3"
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                  />
-                  <span className="mt-2 block text-xs text-muted">
-                    Для beta необязательно. Пригодится позже для восстановления доступа.
-                  </span>
-                </label>
-                <label className="mt-4 block">
-                  <span className="mb-2 block text-sm text-muted">Имя в семье</span>
-                  <input
-                    name="display-name"
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="soft-input w-full rounded-2xl px-4 py-3"
-                    placeholder="Например: Аня"
-                    autoComplete="name"
-                  />
-                  <span className="mt-2 block text-xs text-muted">
-                    Это имя увидят другие участники семьи и история действий. Если не заполнить,
-                    временно подставим логин.
-                  </span>
-                </label>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-2 block text-sm text-muted">Кто вы в семье</span>
-                    <input
-                      name="relationship-label"
-                      type="text"
-                      value={relationshipLabel}
-                      onChange={(e) => setRelationshipLabel(e.target.value)}
-                      className="soft-input w-full rounded-2xl px-4 py-3"
-                      placeholder="Например: мама"
-                      autoComplete="organization-title"
-                    />
-                    <span className="mt-2 block text-xs text-muted">
-                      Короткая подпись рядом с именем: мама, папа, няня.
-                    </span>
-                  </label>
-                  <label className="block">
-                    <span className="mb-2 block text-sm text-muted">Телефон</span>
-                    <input
-                      name="tel"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="soft-input w-full rounded-2xl px-4 py-3"
-                      placeholder="+375 ..."
-                      autoComplete="tel"
-                    />
-                  </label>
-                </div>
-              </details>
-            )}
+              </article>
+              <article className="auth-v3-feature-card auth-v3-feature-card-soft">
+                <p className="auth-v3-feature-kicker">Быстрый старт</p>
+                <p className="auth-v3-feature-text">
+                  Для начала достаточно логина и пароля. Остальные поля можно заполнить позже в
+                  профиле семьи.
+                </p>
+              </article>
+            </div>
+          </section>
 
-            {passwordsMismatch && (
-              <p className="soft-note-warning rounded-2xl p-3 text-sm">Пароли должны совпадать.</p>
-            )}
-
-            {error && <p className="soft-note-danger rounded-2xl p-3 text-sm">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={
-                isPending ||
-                !loginValue.trim() ||
-                password.length < 6 ||
-                (isRegisterMode && (!passwordConfirm || password !== passwordConfirm))
-              }
-              className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+          <section className="auth-v3-panel">
+            <div
+              className="auth-v3-toggle"
+              role="tablist"
+              aria-label="Переключение режима авторизации"
             >
-              {mode === "login"
-                ? isPending
-                  ? "Входим…"
-                  : "Войти"
-                : isPending
-                  ? "Регистрируем…"
-                  : "Создать аккаунт"}
-            </button>
+              <button
+                type="button"
+                onClick={() => switchMode("login")}
+                className={joinClasses(
+                  "auth-v3-toggle-button",
+                  mode === "login" && "auth-v3-toggle-button-active"
+                )}
+              >
+                Вход
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode("register")}
+                className={joinClasses(
+                  "auth-v3-toggle-button",
+                  mode === "register" && "auth-v3-toggle-button-active"
+                )}
+              >
+                Регистрация
+              </button>
+            </div>
 
-            <p className="text-center text-xs leading-6 text-muted">
-              Если вас уже пригласили в семью, откройте ссылку приглашения из сообщения. Она сама
-              приведёт в нужный flow.
-            </p>
-          </form>
-        </Surface>
+            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+              <div className="auth-v3-card">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="auth-v3-section-title">
+                      {mode === "login" ? "Вход" : "Регистрация"}
+                    </p>
+                    <p className="auth-v3-section-copy">
+                      {isRegisterMode
+                        ? "Создайте учётную запись семьи. Основные поля сверху, профильные данные можно раскрыть ниже."
+                        : "Войдите по логину и паролю, чтобы быстро вернуться к семейной базе."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsPasswordVisible((current) => !current)}
+                    className="auth-v3-inline-button"
+                  >
+                    {isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
+                  </button>
+                </div>
+
+                <div className="mt-5 space-y-4">
+                  <AuthField
+                    label={mode === "login" ? "Логин" : "Логин для входа"}
+                    value={loginValue}
+                    onChange={setLoginValue}
+                    placeholder={mode === "login" ? "Email или логин" : "Придумайте логин"}
+                    name="username"
+                    autoComplete="username"
+                    icon={<MailIcon />}
+                    hint={
+                      isRegisterMode
+                        ? "Логин используется только для входа. Отображаемое имя семьи можно задать отдельно."
+                        : undefined
+                    }
+                  />
+
+                  <div className={joinClasses("grid gap-4", isRegisterMode && "sm:grid-cols-2")}>
+                    <AuthField
+                      label="Пароль"
+                      value={password}
+                      onChange={setPassword}
+                      placeholder="Минимум 6 символов"
+                      type={isPasswordVisible ? "text" : "password"}
+                      name="current-password"
+                      autoComplete={isRegisterMode ? "new-password" : "current-password"}
+                      icon={<LockIcon />}
+                    />
+                    {isRegisterMode ? (
+                      <AuthField
+                        label="Повторите пароль"
+                        value={passwordConfirm}
+                        onChange={setPasswordConfirm}
+                        placeholder="Повторите пароль"
+                        type={isPasswordVisible ? "text" : "password"}
+                        name="new-password-confirm"
+                        autoComplete="new-password"
+                        icon={<LockIcon />}
+                      />
+                    ) : null}
+                  </div>
+
+                  <div className="auth-v3-row">
+                    <label className="auth-v3-checkbox">
+                      <span className="auth-v3-checkbox-box">
+                        <input
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(event) => setRememberMe(event.target.checked)}
+                          className="peer absolute inset-0 cursor-pointer opacity-0"
+                        />
+                        <span className="auth-v3-checkbox-mark">
+                          <CheckIcon />
+                        </span>
+                      </span>
+                      <span>Запомнить меня</span>
+                    </label>
+                    <button type="button" className="auth-v3-linkish">
+                      Забыли пароль?
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {isRegisterMode ? (
+                <details className="auth-v3-secondary-card">
+                  <summary className="auth-v3-summary">Дополнительные поля профиля</summary>
+                  <p className="auth-v3-section-copy mt-2">
+                    Эти данные необязательны на старте, но помогут корректно подписывать участников
+                    семьи.
+                  </p>
+                  <div className="mt-4 space-y-4">
+                    <AuthField
+                      label="Email"
+                      value={email}
+                      onChange={setEmail}
+                      placeholder="you@example.com"
+                      type="email"
+                      name="email"
+                      autoComplete="email"
+                    />
+                    <AuthField
+                      label="Имя в семье"
+                      value={displayName}
+                      onChange={setDisplayName}
+                      placeholder="Например: Аня"
+                      name="display-name"
+                      autoComplete="name"
+                    />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <AuthField
+                        label="Роль в семье"
+                        value={relationshipLabel}
+                        onChange={setRelationshipLabel}
+                        placeholder="Например: мама"
+                        name="relationship-label"
+                        autoComplete="organization-title"
+                      />
+                      <AuthField
+                        label="Телефон"
+                        value={phone}
+                        onChange={setPhone}
+                        placeholder="+375 ..."
+                        type="tel"
+                        name="tel"
+                        autoComplete="tel"
+                      />
+                    </div>
+                  </div>
+                </details>
+              ) : null}
+
+              {passwordsMismatch ? (
+                <p className="auth-v3-error auth-v3-error-warning">Пароли должны совпадать.</p>
+              ) : null}
+
+              {error ? <p className="auth-v3-error">{error}</p> : null}
+
+              <button
+                type="submit"
+                disabled={
+                  isPending ||
+                  !loginValue.trim() ||
+                  password.length < 6 ||
+                  (isRegisterMode && (!passwordConfirm || password !== passwordConfirm))
+                }
+                className="auth-v3-submit"
+              >
+                {submitLabel}
+              </button>
+
+              <p className="auth-v3-footer-note">
+                Если вас уже пригласили в семью, откройте ссылку приглашения из сообщения. Она сама
+                приведёт в нужный сценарий.
+              </p>
+            </form>
+          </section>
+        </div>
       </div>
     </div>
   );

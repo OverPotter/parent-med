@@ -94,7 +94,7 @@ export function ActiveIllnessesPage() {
   if (!currentFamilyId) {
     return (
       <Surface className="p-5">
-        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Активные болезни</h1>
+        <h1 className="app-title text-[1.9rem] sm:text-[2.2rem]">Активные болезни</h1>
         <p className="mt-2 text-muted">Сначала выбери семью в разделе «Семья».</p>
       </Surface>
     );
@@ -215,8 +215,8 @@ function ActiveIllnessCard({
         <div className="space-y-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold text-foreground sm:text-lg">{child.name}</h2>
-              <span className="soft-pill-danger rounded-full px-2 py-1 text-[11px]">
+              <h2 className="app-card-title text-[1.08rem]">{child.name}</h2>
+              <span className="soft-pill-danger rounded-full px-2.5 py-1 text-[11px]">
                 Наблюдение
               </span>
             </div>
@@ -278,11 +278,7 @@ function ActiveIllnessCard({
                   </div>
                   {justSaved && <p className="text-xs soft-text-success">Приём сохранён</p>}
                 </div>
-              ) : upcomingLead ? (
-                getPlanDose(upcomingLead) ? (
-                  <p className="text-xs text-muted">Доза: {getPlanDose(upcomingLead)}</p>
-                ) : null
-              ) : (
+              ) : upcomingLead ? null : (
                 <p className="soft-text-danger text-sm">
                   Есть напоминание, но упаковку нужно проверить.
                 </p>

@@ -9,6 +9,7 @@ import {
   updateMyFamily,
 } from "@shared/api/families";
 import { createFamilyInvite } from "@shared/api/familyInvites";
+import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { FamilyMember } from "@shared/types/api";
@@ -168,13 +169,16 @@ export function FamilyPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Семья</h1>
-        <p className="mt-2 text-muted">
-          Одна общая семейная база, но у каждого взрослого свой личный аккаунт, история входов и
-          подпись в событиях.
-        </p>
-      </div>
+      <PageIntro
+        title="Семья"
+        subtitle="Одна общая семейная база, но у каждого взрослого свой личный аккаунт, история входов и подпись в событиях."
+        compactOnMobile
+        action={
+          <span className="soft-pill inline-flex w-fit rounded-full px-3.5 py-1.5 text-xs">
+            {members.length} участник{members.length === 1 ? "" : members.length < 5 ? "а" : "ов"}
+          </span>
+        }
+      />
 
       {error && <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{error}</p>}
       {familyError && (
@@ -191,13 +195,13 @@ export function FamilyPage() {
       <Surface className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-medium text-foreground">Название семьи</h2>
-            <p className="mt-1 text-sm text-muted">
+            <h2 className="app-card-title text-[1.08rem]">Название семьи</h2>
+            <p className="mt-1.5 text-sm leading-6 text-muted">
               Это общее имя семьи, которое увидят все приглашённые участники.
             </p>
           </div>
           {family && (
-            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+            <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
               ID: {family.id.slice(0, 8)}
             </span>
           )}
@@ -223,7 +227,7 @@ export function FamilyPage() {
               !familyName.trim() ||
               familyName.trim() === family.name
             }
-            className="soft-button-primary rounded-2xl px-4 py-3 text-sm disabled:opacity-50"
+            className="soft-button-primary w-full rounded-2xl px-4 py-3 text-sm disabled:opacity-50 sm:w-auto"
           >
             {updateFamilyMutation.isPending ? "Сохраняем…" : "Сохранить"}
           </button>
@@ -233,12 +237,14 @@ export function FamilyPage() {
       <Surface className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-medium text-foreground">Участники семьи</h2>
-            <p className="mt-1 text-sm text-muted">
+            <h2 className="app-card-title text-[1.08rem]">Участники семьи</h2>
+            <p className="mt-1.5 text-sm leading-6 text-muted">
               Владельцы могут приглашать новых взрослых, менять роли и отзывать доступ.
             </p>
           </div>
-          <span className="soft-pill rounded-full px-3 py-1 text-xs">{members.length} чел.</span>
+          <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
+            {members.length} чел.
+          </span>
         </div>
 
         {isMembersLoading ? (
@@ -290,13 +296,13 @@ export function FamilyPage() {
       <Surface className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-medium text-foreground">Приглашение в семью</h2>
-            <p className="mt-1 text-sm text-muted">
+            <h2 className="app-card-title text-[1.08rem]">Приглашение в семью</h2>
+            <p className="mt-1.5 text-sm leading-6 text-muted">
               Новому взрослому отправляется личная ссылка. Он войдёт в ту же семейную базу, но под
               своим аккаунтом.
             </p>
           </div>
-          <span className="soft-pill rounded-full px-3 py-1 text-xs">Только для owner</span>
+          <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">Только для owner</span>
         </div>
 
         {!canManageFamily ? (
@@ -384,11 +390,11 @@ function MemberCard({
   }, [member.displayName, member.relationshipLabel, member.phone]);
 
   return (
-    <div className="soft-panel rounded-[24px] p-4">
+    <div className="soft-panel rounded-[30px] p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-medium text-foreground">
+            <p className="app-card-title text-base">
               {member.displayName || member.login || "Без имени"}
             </p>
             {member.relationshipLabel && (
@@ -396,7 +402,11 @@ function MemberCard({
                 {member.relationshipLabel}
               </span>
             )}
-            <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] ${
+                member.familyRole === "owner" ? "soft-pill-primary" : "soft-pill"
+              }`}
+            >
               {roleLabel(member.familyRole)}
             </span>
             {isCurrent && (

@@ -19,7 +19,9 @@ export function AuthPasswordField({
 }: PasswordFieldProps) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm text-muted">{label}</span>
+      <span className="mb-2 block text-[0.96rem] font-bold tracking-[-0.02em] text-foreground">
+        {label}
+      </span>
       <input
         name={name}
         type={isVisible ? "text" : "password"}
@@ -40,7 +42,7 @@ interface RememberMeCardProps {
 
 export function RememberMeCard({ checked, onChange }: RememberMeCardProps) {
   return (
-    <label className="soft-panel flex items-start gap-3 rounded-[22px] px-4 py-4">
+    <label className="soft-panel flex items-start gap-3 rounded-[28px] px-4 py-4">
       <span className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
         <input
           type="checkbox"
@@ -54,7 +56,9 @@ export function RememberMeCard({ checked, onChange }: RememberMeCardProps) {
         </span>
       </span>
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-foreground">Запомнить меня</span>
+        <span className="block text-[0.96rem] font-bold tracking-[-0.02em] text-foreground">
+          Запомнить меня
+        </span>
         <span className="mt-1 block text-xs leading-5 text-muted">
           На этом устройстве вход сохранится дольше, но пароль мы не храним.
         </span>

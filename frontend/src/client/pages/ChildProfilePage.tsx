@@ -136,7 +136,7 @@ export function ChildProfilePage() {
 
       <Surface className="p-5 sm:p-6">
         <div className="mb-4">
-          <h2 className="app-card-title text-lg">Основное</h2>
+          <h2 className="app-card-title text-[1.08rem]">Основное</h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <InfoLine label="Возраст" value={child.ageLabel ?? "Не указан"} />
@@ -153,7 +153,7 @@ export function ChildProfilePage() {
           {child.allergies && <InfoLine label="Аллергии" value={child.allergies} />}
           {child.notes && <InfoLine label="Заметки" value={child.notes} fullWidth />}
           {hasExtraContacts(child) && (
-            <details className="soft-panel-muted rounded-[18px] px-4 py-3 sm:col-span-2">
+            <details className="soft-panel-muted rounded-[24px] px-4 py-3 sm:col-span-2">
               <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
                 Сад, врач и дополнительные контакты
               </summary>
@@ -170,7 +170,7 @@ export function ChildProfilePage() {
             </details>
           )}
           {!hasProfileDetails(child, latestWeight) && (
-            <div className="soft-panel-muted rounded-[18px] px-4 py-3 sm:col-span-2">
+            <div className="soft-panel-muted rounded-[24px] px-4 py-3 sm:col-span-2">
               <p className="text-sm text-muted">Дополнительные данные пока не заполнены.</p>
             </div>
           )}
@@ -243,10 +243,10 @@ function EditChildProfileForm({
       <Surface className="border-primary/35 p-5 ring-1 ring-primary/10 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-lg">Редактирование профиля</h2>
+            <h2 className="app-card-title text-[1.08rem]">Редактирование профиля</h2>
           </div>
           {latestWeight && (
-            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+            <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
               Последний вес: {formatWeightValue(latestWeight.valueKg)}
             </span>
           )}

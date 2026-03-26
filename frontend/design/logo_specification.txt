@@ -1,0 +1,76 @@
+{
+  "variant": "V3_Modern_Purple",
+  "style_name": "Modern Purple / Clarity & Energy",
+  "core_identity": {
+    "font_family_primary": "Plus Jakarta Sans",
+    "font_source": "Google Fonts",
+    "radius_global": "24px",
+    "card_effects": {
+      "backdrop_blur": "30px",
+      "inner_border": "1px solid rgba(255, 255, 255, 0.10)"
+    }
+  }
+}
+{
+  "variant": "V3_Modern_Purple",
+  "light_mode_palette": {
+    "background": "#EBE4FF",
+    "primary_button": "#8B5CF6",
+    "headers": "#1E1B2E",
+    "body_text": "#4B5563",
+    "input_field_background": "#EBE5FF",
+    "ghost_pattern": {
+      "stroke_width": "1px",
+      "opacity": 0.05,
+      "color": "#8B5CF6"
+    }
+  }
+}
+{
+  "variant": "V3_Modern_Purple",
+  "dark_mode_palette": {
+    "background": "#120B21",
+    "card_surface": "rgba(31, 27, 46, 0.85)",
+    "primary_button": "#7C3AED",
+    "primary_button_glow": "0 8px 34px rgba(124, 58, 237, 0.15)",
+    "text_primary": "#F8FAFC",
+    "text_body": "#F8FAFC",
+    "input_field_background": "#120B21",
+    "ghost_pattern": {
+      "stroke_width": "1px",
+      "opacity": 0.08,
+      "color": "#8B5CF6"
+    }
+  }
+}
+{
+  "variant": "V3_Modern_Purple",
+  "component_dimensions": {
+    "primary_button": {
+      "height": "56px",
+      "text_size": "16px",
+      "text_weight": 600,
+      "text_align": "center"
+    },
+    "input_field": {
+      "height": "52px",
+      "corner_radius": "16px",
+      "icon_alignment": "left",
+      "icon_placement": "internal"
+    },
+    "typography_scale": {
+      "h1": {
+        "size": "32px",
+        "weight": 700
+      },
+      "body": {
+        "size": "16px",
+        "weight": 500
+      },
+      "label": {
+        "size": "14px",
+        "weight": 600
+      }
+    }
+  }
+}

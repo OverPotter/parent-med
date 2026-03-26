@@ -27,7 +27,7 @@ export function PageIntro({
       className={joinClasses(
         "soft-page-intro overflow-hidden",
         hideOnMobile && "hidden sm:block",
-        compactOnMobile ? "p-4 sm:p-6" : "p-5 sm:p-6",
+        compactOnMobile ? "p-4 sm:p-6" : "p-5 sm:p-7",
         className
       )}
     >
@@ -39,7 +39,7 @@ export function PageIntro({
       >
         <div className="min-w-0">
           {eyebrow && (
-            <span className="soft-pill-primary inline-flex rounded-full px-3 py-1 text-[11px] tracking-[0.04em]">
+            <span className="soft-pill-primary inline-flex rounded-full px-3.5 py-1.5 text-[11px] tracking-[0.04em]">
               {eyebrow}
             </span>
           )}
@@ -47,8 +47,8 @@ export function PageIntro({
             className={joinClasses(
               eyebrow ? "mt-4" : "",
               compactOnMobile
-                ? "app-title text-xl sm:text-[2rem]"
-                : "app-title text-2xl sm:text-[2.15rem]"
+                ? "app-title text-[1.45rem] sm:text-[2rem]"
+                : "app-title text-[1.7rem] sm:text-[2.25rem]"
             )}
           >
             {title}
@@ -57,14 +57,14 @@ export function PageIntro({
             <p
               className={joinClasses(
                 "app-subtitle max-w-3xl text-sm",
-                compactOnMobile ? "mt-1 leading-6 sm:mt-2 sm:leading-7" : "mt-2 leading-7"
+                compactOnMobile ? "mt-1.5 leading-6 sm:mt-2.5 sm:leading-7" : "mt-2.5 leading-7"
               )}
             >
               {subtitle}
             </p>
           )}
         </div>
-        {action && <div className="flex shrink-0">{action}</div>}
+        {action && <div className="flex w-full shrink-0 items-center sm:w-auto">{action}</div>}
       </div>
     </Surface>
   );
