@@ -2,7 +2,7 @@
  * Эпизоды болезни ребёнка: список, создание, журнал температуры и приёмы.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -82,6 +82,7 @@ export function ChildIllnessPage() {
   const reminderPlanId = searchParams.get("plan");
   const initialComposerMode = quickComposeMode ?? "temperature";
   const liveQueryOptions = useLiveQueryOptions(3000);
+  const createModeCardRef = useRef<HTMLDivElement | null>(null);
 
   const { data: child, isLoading: childLoading } = useQuery({
     queryKey: ["child", childId],
@@ -126,6 +127,7 @@ export function ChildIllnessPage() {
       queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] });
       queryClient.invalidateQueries({ queryKey: ["children"] });
+      navigate("/children");
     },
   });
   const createEpisodeMutation = useMutation({
@@ -218,6 +220,25 @@ export function ChildIllnessPage() {
     },
   });
 
+  useEffect(() => {
+    if (!createMode || activeEpisode || historyOnlyView) {
+      return;
+    }
+
+    const target = createModeCardRef.current;
+    if (!target) {
+      return;
+    }
+
+    const top = target.getBoundingClientRect().top + window.scrollY - 24;
+    window.requestAnimationFrame(() => {
+      window.scrollTo({
+        top: Math.max(0, top),
+        behavior: "smooth",
+      });
+    });
+  }, [activeEpisode, createMode, historyOnlyView]);
+
   if (!childId || childLoading || !child) {
     return (
       <div>
@@ -230,11 +251,13 @@ export function ChildIllnessPage() {
   const visibleHistoryEpisodes = openHistoryEpisodeId
     ? historyEpisodes.filter((episode) => episode.id === openHistoryEpisodeId)
     : historyEpisodes;
+  const backHref = activeEpisode && !historyOnlyView ? "/illnesses/active" : "/children";
+  const backLabel = activeEpisode && !historyOnlyView ? "← К наблюдениям" : "← К списку детей";
 
   return (
     <div className="min-w-0 space-y-7">
-      <Link to="/children" className="inline-flex text-sm text-primary hover:underline">
-        ← К списку детей
+      <Link to={backHref} className="inline-flex text-sm text-primary hover:underline">
+        {backLabel}
       </Link>
 
       {((!activeEpisode && !createMode) || historyOnlyView) && (
@@ -301,19 +324,21 @@ export function ChildIllnessPage() {
             title="Новое наблюдение"
             subtitle="Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи."
           />
-          <EpisodeActivationCard
-            childName={child.name}
-            isPending={createEpisodeMutation.isPending}
-            errorMessage={
-              (
-                createEpisodeMutation.error as {
-                  response?: { data?: { detail?: string } };
-                }
-              )?.response?.data?.detail ?? null
-            }
-            onActivate={(payload) => createEpisodeMutation.mutate(payload)}
-            onCancel={() => navigate("/children")}
-          />
+          <div ref={createModeCardRef}>
+            <EpisodeActivationCard
+              childName={child.name}
+              isPending={createEpisodeMutation.isPending}
+              errorMessage={
+                (
+                  createEpisodeMutation.error as {
+                    response?: { data?: { detail?: string } };
+                  }
+                )?.response?.data?.detail ?? null
+              }
+              onActivate={(payload) => createEpisodeMutation.mutate(payload)}
+              onCancel={() => navigate("/children")}
+            />
+          </div>
         </section>
       )}
 
@@ -938,7 +963,7 @@ function EpisodeBlock({
             }
             className="soft-button-secondary inline-flex min-h-[2.85rem] w-full self-start items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
           >
-            {medicationPlans.length > 0 ? "Открыть" : "Добавить"}
+            {medicationPlans.length > 0 ? "Напоминания" : "Добавить напоминание"}
           </Link>
         </div>
 
@@ -978,7 +1003,7 @@ function EpisodeBlock({
               to="/illnesses/active"
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              К активным болезням
+              К наблюдениям
             </Link>
             <Link
               to={`/children/${childId}/illness?focus=timeline`}
@@ -1013,7 +1038,7 @@ function EpisodeBlock({
               to="/illnesses/active"
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              К активным болезням
+              К наблюдениям
             </Link>
           </div>
         </div>
@@ -1029,7 +1054,7 @@ function EpisodeBlock({
             <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               {childName}
               <span className="mx-2 text-muted">·</span>
-              <span className="text-muted">График приёма</span>
+              <span className="text-muted">Напоминания</span>
             </p>
             <p className="mt-1 text-sm text-muted">Активные напоминания по приёмам.</p>
           </div>
@@ -1081,7 +1106,7 @@ function EpisodeBlock({
               to="/illnesses/active"
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              К активным болезням
+              К наблюдениям
             </Link>
             <Link
               to={`/children/${childId}/illness?focus=reminder-create`}
@@ -1108,13 +1133,13 @@ function EpisodeBlock({
                 to={`/children/${childId}/illness?focus=reminders`}
                 className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
               >
-                К графику приёма
+                К напоминаниям
               </Link>
               <Link
                 to="/illnesses/active"
                 className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
               >
-                К активным болезням
+                К наблюдениям
               </Link>
             </div>
           </div>
@@ -1192,13 +1217,13 @@ function EpisodeBlock({
               to={`/children/${childId}/illness?focus=reminders`}
               className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
-              К графику приёма
+              К напоминаниям
             </Link>
             <Link
               to="/illnesses/active"
               className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
-              К активным болезням
+              К наблюдениям
             </Link>
           </div>
         </div>
@@ -1270,7 +1295,7 @@ function EpisodeBlock({
               to="/illnesses/active"
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              К активным болезням
+              К наблюдениям
             </Link>
           </div>
         </div>

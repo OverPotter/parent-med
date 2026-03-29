@@ -9,6 +9,7 @@ import {
   updateMyFamily,
 } from "@shared/api/families";
 import { createFamilyInvite } from "@shared/api/familyInvites";
+import { DisclosureHeader } from "@shared/components/DisclosureHeader";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -20,6 +21,7 @@ function roleLabel(role: string): string {
 
 export function FamilyPage() {
   const [familyName, setFamilyName] = useState("");
+  const [isEditingFamilyName, setIsEditingFamilyName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
   const accountId = useAppStore((s) => s.accountId);
@@ -72,6 +74,7 @@ export function FamilyPage() {
     onSuccess: (updatedFamily) => {
       setCurrentFamily(updatedFamily);
       setError(null);
+      setIsEditingFamilyName(false);
       queryClient.invalidateQueries({ queryKey: ["families", accountId] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
@@ -173,6 +176,7 @@ export function FamilyPage() {
         title="Семья"
         subtitle="Одна общая семейная база, но у каждого взрослого свой личный аккаунт, история входов и подпись в событиях."
         compactOnMobile
+        hideOnMobile
         action={
           <span className="soft-pill inline-flex min-h-[2.45rem] w-fit items-center rounded-full px-3.5 py-1.5 text-[0.78rem] tracking-[-0.015em]">
             {members.length} участник{members.length === 1 ? "" : members.length < 5 ? "а" : "ов"}
@@ -207,31 +211,68 @@ export function FamilyPage() {
           )}
         </div>
 
-        <form onSubmit={handleFamilySubmit} className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="min-w-0 flex-1">
-            <span className="soft-field-label">Название</span>
-            <input
-              type="text"
-              value={familyName}
-              onChange={(event) => setFamilyName(event.target.value)}
-              className="soft-input w-full px-4"
-              placeholder="Например: Семья Ивановых"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={
-              !family ||
-              isFamilyLoading ||
-              updateFamilyMutation.isPending ||
-              !familyName.trim() ||
-              familyName.trim() === family.name
-            }
-            className="soft-button-primary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
+        <div className="mt-4 space-y-4">
+          <DisclosureHeader
+            isOpen={isEditingFamilyName}
+            onToggle={() => {
+              setFamilyName(family?.name ?? "");
+              setIsEditingFamilyName((current) => !current);
+            }}
+            desktopClosedLabel="Изменить"
+            desktopOpenLabel="Скрыть"
+            mobileClosedLabel="Изменить"
+            mobileOpenLabel="Скрыть"
+            contentClassName="space-y-1"
           >
-            {updateFamilyMutation.isPending ? "Сохраняем…" : "Сохранить"}
-          </button>
-        </form>
+            <>
+              <p className="soft-field-label">Текущее название</p>
+              <div className="soft-pill inline-flex min-h-[2.2rem] w-fit max-w-full items-center rounded-full px-3.5 py-1.5 text-xs text-foreground">
+                <span className="truncate">{family?.name || "Название пока не указано"}</span>
+              </div>
+            </>
+          </DisclosureHeader>
+
+          {isEditingFamilyName && (
+            <form onSubmit={handleFamilySubmit} className="flex flex-wrap items-end gap-3">
+              <label className="min-w-0 flex-1">
+                <span className="soft-field-label">Новое название</span>
+                <input
+                  type="text"
+                  value={familyName}
+                  onChange={(event) => setFamilyName(event.target.value)}
+                  className="soft-input w-full px-4"
+                  placeholder="Например: Семья Ивановых"
+                />
+              </label>
+              <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                <button
+                  type="submit"
+                  disabled={
+                    !family ||
+                    isFamilyLoading ||
+                    updateFamilyMutation.isPending ||
+                    !familyName.trim() ||
+                    familyName.trim() === family.name
+                  }
+                  className="soft-button-primary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
+                >
+                  {updateFamilyMutation.isPending ? "Сохраняем…" : "Сохранить"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFamilyName(family?.name ?? "");
+                    setIsEditingFamilyName(false);
+                  }}
+                  disabled={updateFamilyMutation.isPending}
+                  className="soft-button-secondary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.025em] sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
+                >
+                  Отмена
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </Surface>
 
       <Surface className="p-5 sm:p-6">

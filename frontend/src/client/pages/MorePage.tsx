@@ -18,11 +18,6 @@ const moreLinks = [
     title: "История",
     description: "Архив завершённых наблюдений по детям.",
   },
-  {
-    to: "/about",
-    title: "О приложении",
-    description: "Короткое описание сервиса и что в нём можно вести.",
-  },
 ];
 
 function ArrowRightIcon() {
@@ -43,8 +38,9 @@ export function MorePage() {
     <div className="min-w-0 space-y-6">
       <PageIntro
         title="Ещё"
-        subtitle="Семья, аккаунт, история и справка в одном месте."
+        subtitle="Семья, аккаунт и история в одном месте."
         compactOnMobile
+        hideOnMobile
       />
       <ul className="soft-panel rounded-[32px] p-3 sm:p-4 grid gap-3 sm:gap-4">
         {moreLinks.map((item) => (

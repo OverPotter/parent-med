@@ -28,30 +28,30 @@ export function ClientIntroPage() {
             Первый вход
           </span>
           <h1 className="app-title mt-4 text-2xl sm:text-3xl">
-            Дальше приложение будет открываться сразу в работу
+            Сначала покажем, с чего удобнее начать
           </h1>
           <p className="app-subtitle mt-3 max-w-2xl text-sm">
-            Этот экран нужен один раз: понять, что настроить сначала и куда идти дальше без лишних
-            обзорных блоков.
+            Этот экран нужен один раз: он помогает понять ближайший шаг и сразу перейти в нужный
+            раздел без лишнего обзора.
           </p>
         </div>
 
         <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-3">
           <SetupStep
             title="Семья"
-            description="Базовый контекст аккаунта. Без семьи нельзя перейти к рабочим записям."
+            description="Семья объединяет взрослых, детей, аптечку и общие записи."
             status={hasFamily ? "Готово" : "Следующий шаг"}
             tone={hasFamily ? "ready" : "next"}
           />
           <SetupStep
             title="Дети"
-            description="После добавления ребёнка появляется смысл вести болезни, температуру и приёмы."
+            description="После добавления ребёнка можно вести болезни, температуру и приёмы."
             status={hasChildren ? "Готово" : hasFamily ? "Нужно добавить" : "Ждёт семью"}
             tone={hasChildren ? "ready" : hasFamily ? "next" : "idle"}
           />
           <SetupStep
             title="Текущая работа"
-            description="Если уже есть активные эпизоды, приложение будет вести прямо к ним."
+            description="Если уже есть активные эпизоды, приложение откроет их в первую очередь."
             status={hasActiveEpisode ? "Есть активные болезни" : "Откроем самый полезный раздел"}
             tone={hasActiveEpisode ? "ready" : "idle"}
           />
@@ -75,7 +75,7 @@ export function ClientIntroPage() {
               disabled={isResolving}
               className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
             >
-              {isResolving ? "Подготавливаем…" : "Перейти к работе"}
+              {isResolving ? "Подготавливаем…" : "Продолжить"}
             </button>
             <button
               type="button"
@@ -83,7 +83,7 @@ export function ClientIntroPage() {
               disabled={isResolving}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              Больше не показывать
+              Не показывать снова
             </button>
           </div>
         </div>
@@ -122,7 +122,7 @@ function labelForRoute(route: string): string {
     case "/family":
       return "раздел «Семья»";
     case "/illnesses/active":
-      return "раздел «Активные болезни»";
+      return "раздел «Наблюдения»";
     case "/children":
     default:
       return "раздел «Дети»";

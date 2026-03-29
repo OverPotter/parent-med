@@ -1,91 +1,91 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { RowSurface, Surface } from "@shared/components/Surface";
-import { useAppStore } from "@shared/store/useAppStore";
 
-const quickLinks = [
+const actions = [
   {
     to: "/children",
-    title: "Дети",
-    description: "Профили детей, быстрый вход в текущую болезнь и запуск нового эпизода.",
+    title: "Добавить ребёнка",
+    description: "Если профиля ещё нет, начните отсюда.",
   },
   {
-    to: "/illnesses/active",
-    title: "Активные болезни",
-    description: "Только текущие эпизоды, когда нужен быстрый контроль без архивного шума.",
+    to: "/children",
+    title: "Начать наблюдение",
+    description: "Откройте ребёнка и запустите наблюдение из карточки.",
+  },
+  {
+    to: "/children",
+    title: "Посмотреть текущее",
+    description: "Откройте ребёнка или перейдите в наблюдения, если они уже активны.",
   },
   {
     to: "/medicine-cabinet",
-    title: "Аптечка",
-    description: "Упаковки дома, сроки годности, даты вскрытия и доступность к использованию.",
+    title: "Открыть аптечку",
+    description: "Проверить лекарства, сроки и даты вскрытия.",
+  },
+];
+
+const sections = [
+  {
+    title: "Дети",
+    description: "Профили детей, история и вход в текущее наблюдение.",
   },
   {
-    to: "/more",
+    title: "Наблюдения",
+    description: "Температура, приёмы, заметки и ближайшие действия.",
+  },
+  {
+    title: "Аптечка",
+    description: "Домашние препараты, упаковки и сроки годности.",
+  },
+  {
     title: "Ещё",
-    description: "Семья, аккаунт, история болезней и описание сервиса.",
+    description: "Семья, аккаунт и история завершённых наблюдений.",
+  },
+];
+
+const faq = [
+  {
+    title: "Где начать",
+    description:
+      "Сначала добавьте ребёнка, потом откройте наблюдение, когда нужно что-то фиксировать.",
+  },
+  {
+    title: "Где текущее состояние",
+    description: "В «Наблюдениях» видны только активные эпизоды и последние действия.",
+  },
+  {
+    title: "Где семейные настройки",
+    description: "Название семьи, участники и приглашения находятся в разделе «Ещё» → «Семья».",
   },
 ];
 
 export function ClientHomePage() {
-  const currentFamilyName = useAppStore((s) => s.currentFamilyName);
-  const markWorkspaceIntroSeen = useAppStore((s) => s.markWorkspaceIntroSeen);
-
-  useEffect(() => {
-    markWorkspaceIntroSeen();
-  }, [markWorkspaceIntroSeen]);
-
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <Surface className="soft-hero overflow-hidden">
-        <div className="grid gap-5 px-5 py-5 sm:gap-8 sm:px-6 sm:py-7 lg:grid-cols-[1.2fr_0.8fr] lg:px-8 lg:py-9">
-          <div className="min-w-0">
-            <span className="soft-pill-primary inline-flex rounded-full px-3 py-1 text-xs">
-              Первый вход
-            </span>
-            <h1 className="app-title mt-4 max-w-2xl text-[2rem] sm:text-[2.7rem]">
-              Семейный кабинет для детей, лекарств и истории болезни
-            </h1>
-            <p className="app-subtitle mt-3 max-w-2xl text-sm leading-7 sm:mt-4 sm:leading-8">
-              На десктопе есть место для короткого знакомства, поэтому здесь остаётся спокойное
-              объяснение основных кнопок и того, как устроены рабочие разделы. После первого
-              просмотра приложение больше не будет возвращать вас на этот экран автоматически.
-            </p>
-            {currentFamilyName && (
-              <div className="mt-5">
-                <span className="soft-pill inline-flex rounded-full px-3.5 py-1.5 text-xs">
-                  Текущая семья: {currentFamilyName}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <HighlightCard
-              title="О семье"
-              description="Контекст аккаунта, родители и общая структура домашнего кабинета."
-            />
-            <HighlightCard
-              title="О детях"
-              description="Переход от профиля ребёнка к эпизодам болезни, температуре и приёмам."
-            />
-            <HighlightCard
-              title="О лекарствах"
-              description="Аптечка с реальными упаковками, сроками и базовой safety-логикой."
-            />
-          </div>
+        <div className="hidden px-5 py-5 sm:px-6 sm:py-7 lg:block lg:px-8 lg:py-9">
+          <span className="soft-pill-primary inline-flex rounded-full px-3 py-1 text-xs">
+            Помощь
+          </span>
+          <h1 className="app-title mt-4 max-w-2xl text-[2rem] sm:text-[2.7rem]">
+            Быстрая навигация по Parent Med
+          </h1>
+          <p className="app-subtitle mt-3 max-w-2xl text-sm leading-7 sm:mt-4 sm:leading-8">
+            Если нужно быстро понять, куда нажать, начните с одного из частых действий ниже.
+          </p>
         </div>
       </Surface>
 
       <section>
         <div className="mb-4">
-          <h2 className="app-card-title text-lg">Быстрые входы</h2>
+          <h2 className="app-card-title text-lg">Частые действия</h2>
           <p className="mt-1 text-sm leading-6 text-muted">
-            Основные рабочие сценарии без лишних переходов по меню.
+            Самые полезные входы без лишнего поиска по меню.
           </p>
         </div>
         <ul className="grid gap-3 sm:gap-4 xl:grid-cols-2">
-          {quickLinks.map((item) => (
-            <li key={item.to}>
+          {actions.map((item) => (
+            <li key={item.title}>
               <Link
                 to={item.to}
                 className="block transition-transform duration-200 hover:-translate-y-0.5"
@@ -107,36 +107,85 @@ export function ClientHomePage() {
         </ul>
       </section>
 
-      <Surface className="soft-hero overflow-hidden">
-        <div className="flex flex-col gap-4 px-5 py-5 sm:px-6 sm:py-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <div className="min-w-0">
-            <h2 className="app-title mt-2 text-2xl">
-              Приложение можно установить на домашний экран
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-              Если основное использование будет с телефона, не обязательно каждый раз открывать его
-              через браузер. Parent Med уже настроен как PWA.
-            </p>
-          </div>
-          <div className="flex shrink-0">
-            <Link
-              to="/about"
-              className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
-            >
-              Как установить
-            </Link>
-          </div>
+      <section>
+        <div className="mb-4">
+          <h2 className="app-card-title text-lg">Что где лежит</h2>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            Коротко по основным разделам приложения.
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {sections.map((item) => (
+            <div key={item.title} className="soft-card rounded-[28px] px-4 py-4 sm:px-5">
+              <h3 className="app-card-title text-[1.02rem]">{item.title}</h3>
+              <p className="mt-2 text-sm leading-7 text-muted">{item.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-4">
+          <h2 className="app-card-title text-lg">Короткие ответы</h2>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-3">
+          {faq.map((item) => (
+            <Surface key={item.title} className="p-5 sm:p-6">
+              <h3 className="app-card-title text-[1.02rem]">{item.title}</h3>
+              <p className="mt-2 text-sm leading-7 text-muted">{item.description}</p>
+            </Surface>
+          ))}
+        </div>
+      </section>
+
+      <Surface className="overflow-hidden">
+        <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
+          <p className="app-kicker">Установка на телефон</p>
+          <h2 className="app-title mt-2 text-[1.7rem] sm:text-[2.15rem]">
+            Приложение можно добавить на домашний экран
+          </h2>
+          <p className="app-subtitle mt-3 max-w-2xl text-sm">
+            Parent Med уже настроен как PWA, поэтому установка идёт через браузер без App Store и
+            Google Play.
+          </p>
+        </div>
+
+        <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-2">
+          <InstallCard
+            title="iPhone / iPad"
+            steps={[
+              "Откройте приложение в Safari.",
+              "Нажмите «Поделиться».",
+              "Выберите «На экран Домой».",
+              "Подтвердите добавление.",
+            ]}
+          />
+          <InstallCard
+            title="Android"
+            steps={[
+              "Откройте приложение в Chrome.",
+              "Нажмите меню браузера.",
+              "Выберите «Установить приложение» или «Добавить на главный экран».",
+              "Подтвердите установку.",
+            ]}
+          />
         </div>
       </Surface>
     </div>
   );
 }
 
-function HighlightCard({ title, description }: { title: string; description: string }) {
+function InstallCard({ title, steps }: { title: string; steps: string[] }) {
   return (
     <div className="soft-card rounded-[30px] px-4 py-4 sm:px-5">
-      <h2 className="app-card-title text-[1.08rem]">{title}</h2>
-      <p className="mt-3 text-sm leading-7 text-muted">{description}</p>
+      <h3 className="app-card-title text-[1.05rem]">{title}</h3>
+      <ol className="mt-3 space-y-2 text-sm leading-7 text-muted">
+        {steps.map((step, index) => (
+          <li key={step}>
+            {index + 1}. {step}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

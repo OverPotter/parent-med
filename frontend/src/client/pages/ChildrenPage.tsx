@@ -109,6 +109,7 @@ export function ChildrenPage() {
         title="Дети"
         subtitle="Профили детей, быстрый вход в текущее наблюдение и архив прошлых записей без лишнего шума."
         compactOnMobile
+        hideOnMobile
         action={
           <button
             type="button"
@@ -143,7 +144,9 @@ export function ChildrenPage() {
 
       {isLoading && <p className="text-muted">Загрузка…</p>}
       {error && (
-        <p className="soft-note-danger">{(error as { message?: string }).message ?? "Ошибка загрузки"}</p>
+        <p className="soft-note-danger">
+          {(error as { message?: string }).message ?? "Ошибка загрузки"}
+        </p>
       )}
       {!isLoading && !error && children.length === 0 && !isCreateFormOpen && (
         <EmptyState className="text-foreground">

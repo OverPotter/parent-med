@@ -47,6 +47,14 @@ function ThemeSync() {
   const theme = useAppStore((s) => s.theme);
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.style.colorScheme = theme;
+    const background = theme === "dark" ? "#1e1b2e" : "#ebe4ff";
+    document.documentElement.style.background = background;
+    document.body.style.background = background;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
+    document
+      .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+      ?.setAttribute("content", theme === "dark" ? "black-translucent" : "default");
   }, [theme]);
   return null;
 }
@@ -70,6 +78,25 @@ function DisplayModeSync() {
 
     return () => mediaQuery.removeEventListener("change", applyDisplayMode);
   }, []);
+
+  return null;
+}
+
+function RouteScrollReset() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const isCreateObservationRoute =
+      location.pathname.startsWith("/children/") &&
+      location.pathname.endsWith("/illness") &&
+      new URLSearchParams(location.search).get("mode") === "create";
+
+    if (isCreateObservationRoute) {
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [location.pathname, location.search]);
 
   return null;
 }
@@ -345,6 +372,7 @@ export default function App() {
       <HitKeepBridge />
       <ThemeSync />
       <DisplayModeSync />
+      <RouteScrollReset />
       <AuthSync />
       <PushSubscriptionSync />
       <MobilePageResumeSync />
