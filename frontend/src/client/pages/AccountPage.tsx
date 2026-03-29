@@ -172,6 +172,7 @@ export function AccountPage() {
         "Сервер не принял подписку устройства."
       );
       setPushStatus("enabled");
+      window.dispatchEvent(new Event("push:subscription-changed"));
     } catch (error) {
       setPushError(
         error instanceof Error
@@ -194,6 +195,7 @@ export function AccountPage() {
       await unsubscribeFromPushNotifications();
       const remainingSubscription = await getExistingPushSubscription();
       setPushStatus(remainingSubscription ? "enabled" : "disabled");
+      window.dispatchEvent(new Event("push:subscription-changed"));
     } catch {
       setPushError("Не удалось отключить уведомления.");
     } finally {
@@ -245,6 +247,7 @@ export function AccountPage() {
         title="Аккаунт"
         subtitle="Личные настройки, уведомления и безопасность."
         compactOnMobile
+        hideOnMobile
       />
 
       <Surface className="p-5 sm:p-6">

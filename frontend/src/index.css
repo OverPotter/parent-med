@@ -1223,7 +1223,12 @@ p {
   [data-theme="light"] .soft-panel {
     border-color: color-mix(in srgb, var(--color-border) 78%, transparent);
     background:
-      linear-gradient(180deg, rgb(255 255 255 / 0.42), rgb(255 255 255 / 0.12) 24%, transparent 54%),
+      linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.42),
+        rgb(255 255 255 / 0.12) 24%,
+        transparent 54%
+      ),
       linear-gradient(
         180deg,
         color-mix(in srgb, var(--color-primary) 10%, var(--color-surface-glare-soft)),
@@ -3297,13 +3302,12 @@ p {
     [data-theme="light"] .soft-card,
     [data-theme="light"] .soft-page-intro,
     [data-theme="light"] .soft-hero {
-      background:
-        linear-gradient(
-          180deg,
-          rgb(255 255 255 / 0.56),
-          color-mix(in srgb, var(--color-primary) 6%, white) 30%,
-          color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-soft)) 100%
-        );
+      background: linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.56),
+        color-mix(in srgb, var(--color-primary) 6%, white) 30%,
+        color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-soft)) 100%
+      );
     }
 
     [data-theme="light"] .v3-doodle-layer {

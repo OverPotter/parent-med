@@ -104,12 +104,15 @@ export function ChildProfilePage() {
         confirmTone="danger"
         isPending={deleteMutation.isPending}
         onCancel={() => setIsDeleteConfirmOpen(false)}
-        onConfirm={() => deleteMutation.mutate(child.id, { onSuccess: () => setIsDeleteConfirmOpen(false) })}
+        onConfirm={() =>
+          deleteMutation.mutate(child.id, { onSuccess: () => setIsDeleteConfirmOpen(false) })
+        }
       />
       <PageIntro
         title={child.name}
         subtitle="Основные данные ребёнка, вес и семейные заметки в одном месте."
         eyebrow="Профиль ребёнка"
+        hideOnMobile
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
             <Link

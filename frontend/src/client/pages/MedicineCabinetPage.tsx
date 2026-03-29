@@ -87,6 +87,7 @@ export function MedicineCabinetPage() {
         title="Аптечка"
         subtitle="Реальные упаковки дома: срок годности, дата вскрытия и можно ли использовать препарат сейчас."
         compactOnMobile
+        hideOnMobile
       />
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

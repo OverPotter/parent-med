@@ -8,6 +8,7 @@ export function AboutPage() {
         title="Parent Med"
         subtitle="Семейный кабинет для детей, домашней аптечки и истории болезни. Это не ежедневный рабочий экран, поэтому описание вынесено сюда отдельно."
         eyebrow="О приложении"
+        hideOnMobile
       />
 
       <div className="grid gap-4 sm:grid-cols-3">

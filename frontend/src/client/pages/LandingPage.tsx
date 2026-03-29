@@ -115,14 +115,14 @@ export function LandingPage() {
                   {theme === "light" ? "Ночь" : "День"}
                 </button>
               </div>
-              <p className="landing-section-label mt-6 justify-center">Семейный трекер здоровья ребёнка</p>
-              <h1 className="landing-hero-reset-title">
-                Всё важное о ребёнке в одном месте
-              </h1>
+              <p className="landing-section-label mt-6 justify-center">
+                Семейный трекер здоровья ребёнка
+              </p>
+              <h1 className="landing-hero-reset-title">Всё важное о ребёнке в одном месте</h1>
               <p className="landing-hero-reset-lead">
-                Parent Med помогает семье вести наблюдение за ребёнком, держать под рукой
-                лекарства, домашнюю аптечку и важные записи в одном месте, чтобы не терять детали
-                между сообщениями, заметками и памятью.
+                Parent Med помогает семье вести наблюдение за ребёнком, держать под рукой лекарства,
+                домашнюю аптечку и важные записи в одном месте, чтобы не терять детали между
+                сообщениями, заметками и памятью.
               </p>
 
               <div className="landing-hero-reset-actions">
@@ -165,15 +165,21 @@ export function LandingPage() {
                 <ul className="mt-6 space-y-3">
                   <li className="landing-comparison-item">
                     <span className="landing-comparison-dot" />
-                    <span>Текущее наблюдение помогает быстро понять, что можно сделать сейчас.</span>
+                    <span>
+                      Текущее наблюдение помогает быстро понять, что можно сделать сейчас.
+                    </span>
                   </li>
                   <li className="landing-comparison-item">
                     <span className="landing-comparison-dot" />
-                    <span>История записей собирает температуру, лекарства и заметки в одной ленте.</span>
+                    <span>
+                      История записей собирает температуру, лекарства и заметки в одной ленте.
+                    </span>
                   </li>
                   <li className="landing-comparison-item">
                     <span className="landing-comparison-dot" />
-                    <span>Профиль ребёнка даёт быстрый вход в работу без лишнего архивного шума.</span>
+                    <span>
+                      Профиль ребёнка даёт быстрый вход в работу без лишнего архивного шума.
+                    </span>
                   </li>
                 </ul>
               </div>

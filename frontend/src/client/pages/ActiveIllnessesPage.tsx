@@ -1,9 +1,9 @@
 /**
- * Активные болезни: текущие эпизоды по всем детям семьи.
+ * Активные наблюдения: текущие эпизоды по всем детям семьи.
  */
 
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createAdministrationEvent,
@@ -95,7 +95,7 @@ export function ActiveIllnessesPage() {
   if (!currentFamilyId) {
     return (
       <Surface className="p-5">
-        <h1 className="app-title text-[1.9rem] sm:text-[2.2rem]">Активные болезни</h1>
+        <h1 className="app-title text-[1.9rem] sm:text-[2.2rem]">Активные наблюдения</h1>
         <p className="mt-2 text-muted">Сначала выбери семью в разделе «Семья».</p>
       </Surface>
     );
@@ -104,7 +104,7 @@ export function ActiveIllnessesPage() {
   return (
     <div className="space-y-7">
       <PageIntro
-        title="Активные болезни"
+        title="Активные наблюдения"
         subtitle="Только текущие наблюдения, где важны ближайшие действия, приёмы и комментарии."
         compactOnMobile
         hideOnMobile
@@ -150,6 +150,7 @@ function ActiveIllnessCard({
   administrations: AdministrationEvent[];
   now: Date;
 }) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [justSaved, setJustSaved] = useState(false);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
@@ -204,6 +205,7 @@ function ActiveIllnessCard({
       queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] });
       queryClient.invalidateQueries({ queryKey: ["children"] });
+      navigate("/children");
     },
   });
 
@@ -225,7 +227,10 @@ function ActiveIllnessCard({
         confirmTone="danger"
         isPending={closeEpisodeMutation.isPending}
         onCancel={() => setIsCloseConfirmOpen(false)}
-        onConfirm={() => closeEpisodeMutation.mutate(undefined, { onSuccess: () => setIsCloseConfirmOpen(false) })}
+        onConfirm={() => {
+          setIsCloseConfirmOpen(false);
+          closeEpisodeMutation.mutate();
+        }}
       />
       <RowSurface className="soft-card-status-danger rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4.5">
         <div className="space-y-3">
@@ -333,7 +338,7 @@ function ActiveIllnessCard({
               to={`/children/${child.id}/illness?focus=reminders`}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
             >
-              График приёма
+              {plans.length > 0 ? "Напоминания" : "Добавить напоминание"}
             </Link>
           </div>
 

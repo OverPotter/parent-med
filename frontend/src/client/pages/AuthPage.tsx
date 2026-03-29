@@ -55,12 +55,7 @@ function EyeIcon() {
 function EyeOffIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-none stroke-current">
-      <path
-        d="M3.5 4.5 20.5 19.5"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M3.5 4.5 20.5 19.5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       <path
         d="M10.6 5.2A10.4 10.4 0 0 1 12 5.1c5.75 0 9.25 6 9.25 6a17.7 17.7 0 0 1-3.48 4.08M6.96 8.08A17.16 17.16 0 0 0 2.75 12s3.5 6 9.25 6c1.5 0 2.85-.41 4.06-1.03"
         strokeWidth="1.8"
@@ -92,7 +87,11 @@ function CheckIcon() {
 
 function MoonIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-[1rem] w-[1rem] fill-none stroke-current">
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-[1rem] w-[1rem] fill-none stroke-current"
+    >
       <path
         d="M14.5 3.5a7.9 7.9 0 1 0 6 13.05A8.7 8.7 0 0 1 14.5 3.5Z"
         strokeWidth="1.8"
@@ -105,7 +104,11 @@ function MoonIcon() {
 
 function SunIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-[1rem] w-[1rem] fill-none stroke-current">
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-[1rem] w-[1rem] fill-none stroke-current"
+    >
       <circle cx="12" cy="12" r="4" strokeWidth="1.8" />
       <path
         d="M12 2.75v2.1M12 19.15v2.1M21.25 12h-2.1M4.85 12h-2.1M18.54 5.46l-1.49 1.49M6.95 17.05l-1.49 1.49M18.54 18.54l-1.49-1.49M6.95 6.95 5.46 5.46"
@@ -303,9 +306,7 @@ export function AuthPage() {
                 aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
                 title={theme === "light" ? "Тёмная тема" : "Светлая тема"}
               >
-                <span aria-hidden="true">
-                  {theme === "light" ? <MoonIcon /> : <SunIcon />}
-                </span>
+                <span aria-hidden="true">{theme === "light" ? <MoonIcon /> : <SunIcon />}</span>
                 <span>{theme === "light" ? "Ночь" : "День"}</span>
               </button>
               <Link to="/" className="auth-v3-ghost-button">

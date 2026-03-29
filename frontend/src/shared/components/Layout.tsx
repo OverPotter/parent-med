@@ -133,8 +133,15 @@ export function Layout({
               <div className="flex flex-col gap-3">
                 <div className="app-mobile-header__row flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <Link to="/" className="app-mobile-header__brand inline-flex min-w-0 items-center gap-3">
-                      <img src="/pwa-icon.svg" alt="" className="app-mobile-header__logo h-10 w-10 rounded-[18px]" />
+                    <Link
+                      to="/"
+                      className="app-mobile-header__brand inline-flex min-w-0 items-center gap-3"
+                    >
+                      <img
+                        src="/pwa-icon.svg"
+                        alt=""
+                        className="app-mobile-header__logo h-10 w-10 rounded-[18px]"
+                      />
                       <div className="min-w-0">
                         <span className="app-brand-text block truncate text-[1.04rem]">
                           Parent Med

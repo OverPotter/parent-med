@@ -171,6 +171,7 @@ export function JoinFamilyPage() {
         subtitle="У каждого взрослого свой личный аккаунт, но дети, аптечка и история болезни общие на уровне семьи."
         eyebrow="Приглашение в семью"
         compactOnMobile
+        hideOnMobile
       />
 
       <Surface className="p-5 sm:p-6">
@@ -211,9 +212,7 @@ export function JoinFamilyPage() {
                 После подтверждения аккаунт войдёт в семью{" "}
                 <span className="font-medium text-foreground">{invitePreview.familyName}</span>.
               </p>
-              {error && (
-                <p className="soft-note-danger mt-4">{error}</p>
-              )}
+              {error && <p className="soft-note-danger mt-4">{error}</p>}
               <button
                 type="button"
                 onClick={() => acceptInviteMutation.mutate()}
@@ -384,9 +383,7 @@ export function JoinFamilyPage() {
               </details>
             )}
 
-            {passwordsMismatch && (
-              <p className="soft-note-warning">Пароли должны совпадать.</p>
-            )}
+            {passwordsMismatch && <p className="soft-note-warning">Пароли должны совпадать.</p>}
             {error && <p className="soft-note-danger">{error}</p>}
 
             <button
