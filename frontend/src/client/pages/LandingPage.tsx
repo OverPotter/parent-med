@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
@@ -6,86 +6,89 @@ import { useAppStore } from "@shared/store/useAppStore";
 
 const heroCards = [
   {
-    title: "Что уже отмечено",
-    description: "Сразу видно, что уже добавили и кто обновил информацию.",
-  },
-  {
-    title: "Что дальше",
-    description: "Напоминание и нужное действие остаются рядом с текущим экраном.",
-  },
-  {
-    title: "Одна картина для семьи",
-    description: "Все смотрят на одно общее состояние, а не собирают его по сообщениям.",
-  },
-];
-
-const slides = [
-  {
-    label: "Журнал",
-    title: "Последние записи по ребенку собраны в одной ленте",
+    title: "Ничего не теряется",
     description:
-      "Температура, лекарства и время внесения остаются рядом, поэтому состояние легко проверить с одного экрана.",
-    src: "/landing/img-7123.png",
-    alt: "Экран ленты наблюдения за ребенком",
+      "Записи, лекарства и важные действия остаются в одном месте, а не распадаются по сообщениям и заметкам.",
   },
   {
-    label: "Статус",
-    title: "Сразу видно, что можно дать сейчас, а что уже отложено",
-    description:
-      "Карточка ребенка показывает текущий статус без переписки и лишних уточнений между членами семьи.",
-    src: "/landing/img-7122.png",
-    alt: "Экран со статусом лекарства и кнопками быстрых действий",
+    title: "Все видят одно и то же",
+    description: "Одна общая картина помогает семье быстрее договориться и ничего не упустить.",
   },
   {
-    label: "Действие",
-    title: "Когда время пришло, нужное действие видно сразу",
-    description:
-      "Экран помогает быстро понять, что препарат уже можно дать, и сразу отметить это в приложении.",
-    src: "/landing/img-7121.png",
-    alt: "Экран с доступным действием по лекарству",
+    title: "Видно, что уже сделали",
+    description: "Легко проверить последние записи, время событий и кто обновил информацию.",
+  },
+  {
+    title: "Понятно, что дальше",
+    description: "Следующие шаги и важные действия остаются рядом, когда они действительно нужны.",
   },
 ];
 
 const comparison = {
   oldWay: [
-    "кто-то пишет в чат, что уже что-то сделал",
-    "время и детали быстро теряются",
-    "целую картину потом приходится собирать вручную",
+    "важная запись быстро уходит вверх",
+    "приходится переспросить, кто и что уже сделал",
+    "общую картину приходится собирать вручную",
   ],
   newWay: [
-    "важные отметки сразу попадают в общее пространство",
-    "видно время, детали и кто обновил запись",
-    "дальше проще понять, что уже сделано и что осталось",
+    "последние записи всегда под рукой",
+    "сразу видно, что уже сделали и кто это отметил",
+    "вся семья смотрит на одну и ту же картину",
   ],
 };
 
 const workflow = [
   {
     step: "01",
-    title: "Создаёте аккаунт",
-    description: "Без длинного старта. Достаточно логина и пароля, остальное можно добавить позже.",
+    title: "Добавляете ребёнка и начинаете запись",
+    description:
+      "Создаёте профиль ребёнка и открываете наблюдение, когда нужно зафиксировать состояние, лекарства и важные изменения.",
   },
   {
     step: "02",
-    title: "Добавляете семью и всё важное",
-    description: "Собираете аптечку, записи и напоминания в одном понятном пространстве.",
+    title: "Фиксируете всё в одной истории",
+    description:
+      "Температура, приёмы, комментарии и напоминания собираются в одной ленте, а не теряются между сообщениями.",
   },
   {
     step: "03",
-    title: "Пользуетесь вместе",
+    title: "Семья видит, что происходит дальше",
     description:
-      "Когда что-то меняется, все видят одну историю и быстрее ориентируются без лишних сообщений.",
+      "Все взрослые видят текущий статус, последние действия и быстрее понимают, что уже сделали и что ещё нужно.",
   },
 ];
 
 export function LandingPage() {
-  const [activeSlide, setActiveSlide] = useState(0);
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
-  const slide = slides[activeSlide]!;
+  const [activePreview, setActivePreview] = useState<{ src: string; alt: string } | null>(null);
 
-  const goPrev = () => setActiveSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-  const goNext = () => setActiveSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+  useEffect(() => {
+    if (activePreview) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+
+    document.body.style.overflow = "";
+    return undefined;
+  }, [activePreview]);
+
+  useEffect(() => {
+    if (!activePreview) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActivePreview(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activePreview]);
 
   return (
     <div className="landing-page relative min-h-screen overflow-hidden bg-background text-foreground">
@@ -100,7 +103,7 @@ export function LandingPage() {
             <div className="landing-hero-reset-inner">
               <div className="landing-hero-reset-topline">
                 <Link to="/" className="landing-hero-reset-brandmark" aria-label="Parent Med">
-                  <img src="/pwa-icon.svg" alt="" className="landing-hero-reset-logo" />
+                  <img src="/pwa-icon.png" alt="" className="landing-hero-reset-logo" />
                   <span className="landing-hero-reset-brand">Parent Med</span>
                 </Link>
                 <button
@@ -112,12 +115,14 @@ export function LandingPage() {
                   {theme === "light" ? "Ночь" : "День"}
                 </button>
               </div>
+              <p className="landing-section-label mt-6 justify-center">Семейный трекер здоровья ребёнка</p>
               <h1 className="landing-hero-reset-title">
-                Одно общее место для семьи вместо чатов и заметок
+                Всё важное о ребёнке в одном месте
               </h1>
               <p className="landing-hero-reset-lead">
-                Parent Med помогает держать рядом аптечку, важные записи и напоминания, чтобы дома
-                всё было понятнее, спокойнее и без потерь между сообщениями и заметками.
+                Parent Med помогает семье вести наблюдение за ребёнком, держать под рукой
+                лекарства, домашнюю аптечку и важные записи в одном месте, чтобы не терять детали
+                между сообщениями, заметками и памятью.
               </p>
 
               <div className="landing-hero-reset-actions">
@@ -147,88 +152,70 @@ export function LandingPage() {
           </section>
 
           <section className="landing-section-shell overflow-hidden">
-            <div className="landing-section-header px-5 py-5 sm:px-8 sm:py-7">
-              <p className="landing-section-label">Как это выглядит внутри</p>
-              <h2 className="landing-section-title mt-2">
-                Три экрана, по которым сразу понятно, как работает Parent Med
-              </h2>
-            </div>
-
-            <div className="grid gap-6 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
-              <div className="landing-slider-shell">
-                <PhoneFrame
-                  src={slide.src}
-                  alt={slide.alt}
-                  onClick={goNext}
-                  ariaLabel={`Показать следующий экран: ${slides[(activeSlide + 1) % slides.length]?.label}`}
-                  slideKey={`${activeSlide}-${slide.label}`}
-                />
+            <div className="grid gap-6 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+              <div className="min-w-0">
+                <p className="landing-section-label">Как выглядит продукт</p>
+                <h2 className="landing-section-title mt-2">
+                  Три экрана, по которым сразу понятен рабочий сценарий
+                </h2>
+                <p className="mt-4 max-w-xl text-sm leading-7 text-muted sm:text-base">
+                  Parent Med показывает не отдельные разрозненные записи, а целый рабочий сценарий:
+                  текущее наблюдение, историю записей и быстрый вход в профиль ребёнка.
+                </p>
+                <ul className="mt-6 space-y-3">
+                  <li className="landing-comparison-item">
+                    <span className="landing-comparison-dot" />
+                    <span>Текущее наблюдение помогает быстро понять, что можно сделать сейчас.</span>
+                  </li>
+                  <li className="landing-comparison-item">
+                    <span className="landing-comparison-dot" />
+                    <span>История записей собирает температуру, лекарства и заметки в одной ленте.</span>
+                  </li>
+                  <li className="landing-comparison-item">
+                    <span className="landing-comparison-dot" />
+                    <span>Профиль ребёнка даёт быстрый вход в работу без лишнего архивного шума.</span>
+                  </li>
+                </ul>
               </div>
 
-              <div className="min-w-0">
-                <div className="landing-slider-label">{slide.label}</div>
-                <h3 className="landing-section-title mt-3 text-[1.7rem] sm:text-[2rem]">
-                  {slide.title}
-                </h3>
-                <p className="mt-4 max-w-xl text-sm leading-7 text-muted sm:text-base">
-                  {slide.description}
-                </p>
-
-                <div className="landing-slider-controls mt-6 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={goPrev}
-                    className="landing-secondary-button rounded-2xl px-4 py-3 text-sm"
-                  >
-                    Назад
-                  </button>
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    className="landing-cta-button rounded-2xl px-4 py-3 text-sm"
-                  >
-                    Следующий экран
-                  </button>
-                </div>
-
-                <div className="landing-slider-dots mt-6">
-                  {slides.map((item, index) => (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => setActiveSlide(index)}
-                      className={[
-                        "landing-slider-dot",
-                        index === activeSlide ? "landing-slider-dot-active" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                      aria-label={`Показать экран ${index + 1}`}
-                    >
-                      <span className="landing-slider-dot-index">{`0${index + 1}`}</span>
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="landing-phone-gallery" aria-label="Скриншоты Parent Med">
+                <ScreenshotCard
+                  src="/landing/IMG_7138.PNG"
+                  alt="Экран текущего наблюдения по ребёнку"
+                  className="landing-screenshot-card landing-phone-gallery-item landing-phone-gallery-item-primary"
+                  onPreview={setActivePreview}
+                />
+                <ScreenshotCard
+                  src="/landing/IMG_7140.PNG"
+                  alt="Экран ленты событий по ребёнку"
+                  className="landing-screenshot-card landing-phone-gallery-item"
+                  onPreview={setActivePreview}
+                />
+                <ScreenshotCard
+                  src="/landing/IMG_7141.PNG"
+                  alt="Экран списка детей"
+                  className="landing-screenshot-card landing-phone-gallery-item"
+                  onPreview={setActivePreview}
+                />
               </div>
             </div>
           </section>
 
           <section className="landing-comparison grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
             <Surface className="landing-section-shell p-5 sm:p-6 lg:p-7">
-              <p className="landing-section-label">Почему не чат</p>
+              <p className="landing-section-label">Вместо переписки</p>
               <h2 className="landing-section-title mt-2">
-                Записи нужны не только для памяти, но и для общего спокойствия дома
+                Когда важное не приходится искать по чату
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
-                Чат помогает быстро написать сообщение, но не помогает быстро понять общую картину.
-                Когда всё собрано в одном месте, семье проще держать контекст под рукой.
+                Чат помогает быстро написать сообщение, но плохо помогает понять, что уже сделали,
+                что происходит сейчас и что нужно дальше.
               </p>
             </Surface>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Surface className="landing-comparison-card p-5 sm:p-6">
-                <p className="landing-comparison-title">Когда всё остаётся в чате</p>
+                <p className="landing-comparison-title">Когда всё остаётся в переписке</p>
                 <ul className="mt-4 space-y-3">
                   {comparison.oldWay.map((point) => (
                     <li key={point} className="landing-comparison-item">
@@ -256,10 +243,17 @@ export function LandingPage() {
           <section id="how-it-works">
             <Surface className="landing-section-shell overflow-hidden">
               <div className="landing-section-header px-5 py-5 sm:px-8 sm:py-7">
-                <p className="landing-section-label">Как это работает</p>
+                <p className="landing-section-label">Рабочий сценарий</p>
                 <h2 className="landing-section-title mt-2">
-                  Начать можно быстро и без долгого привыкания
+                  Не просто записи, а понятный сценарий для всей семьи
                 </h2>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
+                  Parent Med нужен не для хранения отдельных заметок, а для того, чтобы вся семья
+                  быстрее понимала состояние ребёнка и следующие действия.
+                </p>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+                  Помимо записей и наблюдения, в Parent Med под рукой остаётся и домашняя аптечка.
+                </p>
               </div>
 
               <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-3">
@@ -276,39 +270,148 @@ export function LandingPage() {
               </div>
             </Surface>
           </section>
+
+          <section className="landing-section-shell overflow-hidden">
+            <div className="landing-section-header px-5 py-5 sm:px-8 sm:py-7">
+              <p className="landing-section-label">Установка на телефон</p>
+              <h2 className="landing-section-title mt-2">
+                Parent Med можно добавить на домашний экран
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
+                Приложение уже работает как PWA, поэтому устанавливается через браузер без App Store
+                и Google Play.
+              </p>
+            </div>
+
+            <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-2">
+              <InstallStepsCard
+                title="iPhone / iPad"
+                steps={[
+                  "Откройте Parent Med в Safari.",
+                  "Нажмите «Поделиться».",
+                  "Выберите «На экран Домой».",
+                  "Подтвердите добавление.",
+                ]}
+              />
+              <InstallStepsCard
+                title="Android"
+                steps={[
+                  "Откройте Parent Med в Chrome.",
+                  "Нажмите меню браузера.",
+                  "Выберите «Установить приложение» или «Добавить на главный экран».",
+                  "Подтвердите установку.",
+                ]}
+              />
+            </div>
+
+            <div className="landing-install-cta border-t border-border/60 px-5 py-5 sm:px-8 sm:py-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    Сначала зарегистрируйтесь, потом установите приложение на телефон.
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-muted">
+                    Так иконка на домашнем экране сразу откроет ваш семейный кабинет.
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
+                  <Link
+                    to="/auth?mode=register"
+                    className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
+                  >
+                    Создать аккаунт
+                  </Link>
+                  <Link
+                    to="/auth?mode=login"
+                    className="landing-secondary-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                  >
+                    Войти
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </main>
+
+      {activePreview ? (
+        <div
+          className="landing-preview fixed inset-0 z-[180] flex items-center justify-center p-4 sm:p-6"
+          onClick={() => setActivePreview(null)}
+        >
+          <button
+            type="button"
+            aria-label="Закрыть увеличенный просмотр"
+            className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_58%,transparent)] backdrop-blur-sm"
+            onClick={() => setActivePreview(null)}
+          />
+          <div
+            className="landing-preview-dialog relative z-[181] w-full max-w-[26rem]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="landing-preview-close"
+              onClick={() => setActivePreview(null)}
+            >
+              Закрыть
+            </button>
+            <button
+              type="button"
+              className="landing-preview-frame"
+              aria-label={`Закрыть просмотр: ${activePreview.alt}`}
+              onClick={() => setActivePreview(null)}
+            >
+              <img
+                src={activePreview.src}
+                alt={activePreview.alt}
+                className="h-full w-full object-contain"
+              />
+            </button>
+            <p className="landing-preview-caption">{activePreview.alt}</p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function PhoneFrame({
+function ScreenshotCard({
   src,
   alt,
   className,
-  onClick,
-  ariaLabel,
-  slideKey,
+  onPreview,
 }: {
   src: string;
   alt: string;
   className?: string;
-  onClick?: () => void;
-  ariaLabel?: string;
-  slideKey?: string;
+  onPreview?: (preview: { src: string; alt: string }) => void;
 }) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className={["soft-phone-frame landing-phone-trigger", className].filter(Boolean).join(" ")}
-      aria-label={ariaLabel ?? alt}
+      className={["landing-phone-clickable", className].filter(Boolean).join(" ")}
+      onClick={() => onPreview?.({ src, alt })}
+      aria-label={`Открыть увеличенный просмотр: ${alt}`}
     >
-      <div className="soft-phone-screen">
-        <div key={slideKey} className="landing-phone-stage h-full w-full">
-          <img src={src} alt={alt} className="h-full w-full object-contain" loading="lazy" />
-        </div>
+      <div className="landing-phone-stage h-full w-full">
+        <img src={src} alt={alt} className="h-full w-full object-cover" loading="lazy" />
       </div>
     </button>
+  );
+}
+
+function InstallStepsCard({ title, steps }: { title: string; steps: string[] }) {
+  return (
+    <Surface className="landing-comparison-card p-5 sm:p-6">
+      <h3 className="landing-comparison-title">{title}</h3>
+      <ol className="mt-4 space-y-2 text-sm leading-7 text-muted">
+        {steps.map((step, index) => (
+          <li key={step}>
+            {index + 1}. {step}
+          </li>
+        ))}
+      </ol>
+    </Surface>
   );
 }
