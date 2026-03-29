@@ -74,12 +74,6 @@ export function ClientHomePage() {
             Если нужно быстро понять, куда нажать, начните с одного из частых действий ниже.
           </p>
         </div>
-        <div className="px-5 py-4 lg:hidden">
-          <p className="app-card-title text-[1.08rem]">Помощь</p>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            Быстрые входы и короткие подсказки по основным разделам.
-          </p>
-        </div>
       </Surface>
 
       <section>

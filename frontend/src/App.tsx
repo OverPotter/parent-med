@@ -82,6 +82,25 @@ function DisplayModeSync() {
   return null;
 }
 
+function RouteScrollReset() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const isCreateObservationRoute =
+      location.pathname.startsWith("/children/") &&
+      location.pathname.endsWith("/illness") &&
+      new URLSearchParams(location.search).get("mode") === "create";
+
+    if (isCreateObservationRoute) {
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+
 function AuthSync() {
   const queryClient = useQueryClient();
   const authToken = useAppStore((s) => s.authToken);
@@ -353,6 +372,7 @@ export default function App() {
       <HitKeepBridge />
       <ThemeSync />
       <DisplayModeSync />
+      <RouteScrollReset />
       <AuthSync />
       <PushSubscriptionSync />
       <MobilePageResumeSync />
