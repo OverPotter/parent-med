@@ -71,6 +71,8 @@ export function ChildIllnessPage() {
   const historyOnlyView = searchParams.get("view") === "history";
   const historyMode = searchParams.get("mode");
   const historyAnalyticsMode = historyOnlyView && historyMode === "analytics";
+  const historyEpisodeInsightsId = historyOnlyView ? searchParams.get("episodeId") : null;
+  const historyEpisodeInsightsMode = Boolean(historyEpisodeInsightsId);
   const createMode = searchParams.get("mode") === "create";
   const focusMode = searchParams.get("focus") ?? searchParams.get("compose");
   const quickComposeMode =
@@ -250,6 +252,9 @@ export function ChildIllnessPage() {
   }
 
   const historyEpisodes = episodes.filter((episode) => episode.status === "closed");
+  const focusedHistoryEpisode = historyEpisodeInsightsId
+    ? (historyEpisodes.find((episode) => episode.id === historyEpisodeInsightsId) ?? null)
+    : null;
   const visibleHistoryEpisodes = openHistoryEpisodeId
     ? historyEpisodes.filter((episode) => episode.id === openHistoryEpisodeId)
     : historyEpisodes;
@@ -357,11 +362,13 @@ export function ChildIllnessPage() {
             subtitle={
               historyAnalyticsMode
                 ? "Сводка по завершённым эпизодам."
-                : openHistoryEpisodeId
-                ? "Открыта одна запись."
-                : historyEpisodes.length > 0
-                  ? "Завершённые наблюдения по ребёнку."
-                  : "Завершённых наблюдений пока нет."
+                : historyEpisodeInsightsMode
+                  ? "Подробный разбор конкретного эпизода."
+                  : openHistoryEpisodeId
+                    ? "Открыта одна запись."
+                    : historyEpisodes.length > 0
+                      ? "Завершённые наблюдения по ребёнку."
+                      : "Завершённых наблюдений пока нет."
             }
           />
 
@@ -384,7 +391,17 @@ export function ChildIllnessPage() {
             </Link>
           </div>
 
-          {historyAnalyticsMode ? (
+          {historyEpisodeInsightsMode && focusedHistoryEpisode ? (
+            <HistoryEpisodeInsightsScreen
+              childId={child.id}
+              episode={focusedHistoryEpisode}
+              episodeNumber={
+                historyEpisodes.length -
+                historyEpisodes.findIndex((item) => item.id === focusedHistoryEpisode.id)
+              }
+              medicines={familyMedicines}
+            />
+          ) : historyAnalyticsMode ? (
             <HistoryInsightsPreview episodeCount={historyEpisodes.length} />
           ) : openHistoryEpisodeId ? (
             <div className="soft-panel-muted flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-4 py-3">
@@ -399,7 +416,7 @@ export function ChildIllnessPage() {
             </div>
           ) : null}
 
-          {!historyAnalyticsMode && historyEpisodes.length > 0 ? (
+          {!historyAnalyticsMode && !historyEpisodeInsightsMode && historyEpisodes.length > 0 ? (
             <ul className="grid gap-4">
               {visibleHistoryEpisodes.map((episode) => (
                 <HistoryEpisodeCard
@@ -421,7 +438,7 @@ export function ChildIllnessPage() {
                 />
               ))}
             </ul>
-          ) : !historyAnalyticsMode ? (
+          ) : !historyAnalyticsMode && !historyEpisodeInsightsMode ? (
             <div className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
               История пока пустая.
             </div>
@@ -445,11 +462,7 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function HistoryInsightsPreview({
-  episodeCount,
-}: {
-  episodeCount: number;
-}) {
+function HistoryInsightsPreview({ episodeCount }: { episodeCount: number }) {
   const periodOptions = [
     { key: "month", label: "Месяц", shortLabel: "1м" },
     { key: "quarter", label: "3 месяца", shortLabel: "3м" },
@@ -643,8 +656,8 @@ function HistoryInsightsPreview({
     selectedPeriod === "month"
       ? "На каких неделях за последние 30 дней были эпизоды."
       : selectedPeriod === "all"
-      ? "Как менялась частота болезней по годам."
-      : "Когда ребёнок болел чаще, а когда реже.";
+        ? "Как менялась частота болезней по годам."
+        : "Когда ребёнок болел чаще, а когда реже.";
   const chartTitle =
     selectedPeriod === "month"
       ? "Распределение по неделям"
@@ -655,17 +668,15 @@ function HistoryInsightsPreview({
     selectedPeriod === "month"
       ? "Сколько эпизодов пришлось на каждую неделю последних 30 дней."
       : selectedPeriod === "all"
-      ? "Каждая полоса показывает, сколько эпизодов было за год."
-      : "Каждая полоса показывает, сколько эпизодов пришлось на месяц.";
+        ? "Каждая полоса показывает, сколько эпизодов было за год."
+        : "Каждая полоса показывает, сколько эпизодов пришлось на месяц.";
   return (
     <div className="space-y-4">
       <div className="soft-panel rounded-[28px] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs tracking-[0.08em] text-muted">Демо-версия</p>
-            <h3 className="mt-2 app-card-title text-[1.08rem] sm:text-[1.18rem]">
-              Общая сводка
-            </h3>
+            <h3 className="mt-2 app-card-title text-[1.08rem] sm:text-[1.18rem]">Общая сводка</h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
               Частота болезней, динамика по месяцам и общая картина по завершённым эпизодам.
             </p>
@@ -696,10 +707,7 @@ function HistoryInsightsPreview({
       </div>
 
       <section className="space-y-3">
-        <SectionTitle
-          title="Частота"
-          subtitle="Как часто ребёнок болел за выбранный период."
-        />
+        <SectionTitle title="Частота" subtitle="Как часто ребёнок болел за выбранный период." />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {currentAnalytics.frequencyCards.map((item) => (
             <AnalyticsCard key={item.label} label={item.label} value={item.value} tone="default" />
@@ -708,18 +716,13 @@ function HistoryInsightsPreview({
       </section>
 
       <section className="space-y-3">
-        <SectionTitle
-          title={timelineTitle}
-          subtitle={timelineSubtitle}
-        />
+        <SectionTitle title={timelineTitle} subtitle={timelineSubtitle} />
 
         <div className="soft-panel rounded-[28px] p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h4 className="text-[0.98rem] font-semibold text-foreground">{chartTitle}</h4>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                {chartDescription}
-              </p>
+              <p className="mt-1 text-sm leading-6 text-muted">{chartDescription}</p>
             </div>
             <span className="soft-pill rounded-full px-3 py-1 text-xs">
               {periodOptions.find((item) => item.key === selectedPeriod)?.label}
@@ -787,11 +790,7 @@ function AnalyticsCard({
   tone: "default" | "accent" | "soft";
 }) {
   const toneClass =
-    tone === "accent"
-      ? "soft-panel"
-      : tone === "soft"
-        ? "soft-panel-muted"
-        : "soft-card";
+    tone === "accent" ? "soft-panel" : tone === "soft" ? "soft-panel-muted" : "soft-card";
 
   return (
     <div className={`${toneClass} rounded-[22px] px-4 py-4 sm:px-5`}>
@@ -803,11 +802,7 @@ function AnalyticsCard({
   );
 }
 
-function MiniHistoryBars({
-  items,
-}: {
-  items: Array<{ label: string; value: number }>;
-}) {
+function MiniHistoryBars({ items }: { items: Array<{ label: string; value: number }> }) {
   const rawMaxValue = Math.max(...items.map((item) => item.value), 1);
   const scaleMax = Math.max(3, rawMaxValue);
 
@@ -842,15 +837,7 @@ function MiniHistoryBars({
   );
 }
 
-function StatRow({
-  label,
-  value,
-  max,
-}: {
-  label: string;
-  value: number;
-  max: number;
-}) {
+function StatRow({ label, value, max }: { label: string; value: number; max: number }) {
   const width = Math.max(10, Math.round((value / Math.max(max, 1)) * 100));
 
   return (
@@ -896,7 +883,6 @@ function HistoryEpisodeCard({
   const queryClient = useQueryClient();
   const liveQueryOptions = useLiveQueryOptions(10000);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isEpisodeInsightsOpen, setIsEpisodeInsightsOpen] = useState(false);
   const { data: temperatureEntries = [] } = useQuery({
     queryKey: ["temperature-entries", episode.id],
     queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
@@ -933,7 +919,6 @@ function HistoryEpisodeCard({
     comments,
     medicines
   );
-
   return (
     <li
       className={`rounded-[28px] px-5 py-4 transition-colors sm:px-6 sm:py-5 ${
@@ -954,7 +939,18 @@ function HistoryEpisodeCard({
           })
         }
       />
-      <DisclosureHeader isOpen={isOpen} onToggle={onToggle}>
+      <DisclosureHeader
+        isOpen={isOpen}
+        onToggle={onToggle}
+        actions={
+          <Link
+            to={`/children/${childId}/illness?view=history&episodeId=${episode.id}`}
+            className="soft-button-secondary inline-flex min-h-[2.65rem] items-center justify-center px-3 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.9rem] sm:px-3.5 sm:text-[0.86rem]"
+          >
+            Разбор
+          </Link>
+        }
+      >
         <>
           <p className="text-xs tracking-[0.08em] text-muted">
             Эпизод {episodeNumber} · {formatEpisodePeriod(episode.startedAt, episode.closedAt)}
@@ -1011,32 +1007,6 @@ function HistoryEpisodeCard({
           <section className="border-t border-border pt-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-foreground">Разбор эпизода</h3>
-                <p className="mt-1 text-sm text-muted">
-                  Отдельный блок аналитики по конкретной записи.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsEpisodeInsightsOpen((current) => !current)}
-                className="soft-button-secondary inline-flex min-h-[2.9rem] items-center justify-center px-4 text-[0.88rem] leading-[1.05] tracking-[-0.03em] sm:min-h-[3.15rem] sm:px-5 sm:text-[0.95rem]"
-              >
-                {isEpisodeInsightsOpen ? "Скрыть разбор" : "Разбор эпизода"}
-              </button>
-            </div>
-
-            {isEpisodeInsightsOpen && (
-              <EpisodeInsightsPreview
-                temperatureCount={temperatureEntries.length}
-                administrationCount={administrations.length}
-                commentCount={comments.length}
-              />
-            )}
-          </section>
-
-          <section className="border-t border-border pt-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
                 <h3 className="text-sm font-semibold text-foreground">Действия</h3>
                 <p className="mt-1 text-sm text-muted">Запись можно удалить из истории.</p>
               </div>
@@ -1057,33 +1027,366 @@ function HistoryEpisodeCard({
 }
 
 function EpisodeInsightsPreview({
-  temperatureCount,
-  administrationCount,
-  commentCount,
+  episode,
+  temperatures,
+  administrations,
+  insights,
 }: {
-  temperatureCount: number;
-  administrationCount: number;
-  commentCount: number;
+  episode: IllnessEpisode;
+  temperatures: TemperatureEntry[];
+  administrations: AdministrationEvent[];
+  insights: ReturnType<typeof buildEpisodeInsights>;
 }) {
+  const summaryMetrics = [
+    { label: "Длилось", value: insights.durationLabel },
+    { label: "Пик температуры", value: insights.peakTemperatureLabel },
+    { label: "Последняя запись", value: insights.lastEventLabel },
+  ];
+  const summaryFacts = [
+    { label: "Замеров", value: String(temperatures.length) },
+    { label: "Приёмов", value: String(administrations.length) },
+    { label: "Режим", value: insights.medicationModeLabel },
+    { label: "Последний замер", value: insights.lastTemperatureLabel },
+  ];
+
   return (
-    <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.7fr)]">
-      <div className="soft-panel-muted rounded-[24px] px-4 py-4">
-        <p className="text-xs tracking-[0.08em] text-muted">Предпросмотр</p>
-        <h4 className="mt-2 text-sm font-semibold text-foreground">Здесь будет график эпизода</h4>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Температурная кривая, наложение приёмов лекарства и короткий summary по конкретной
-          болезни.
-        </p>
-        <div className="mt-4 h-36 rounded-[20px] border border-dashed border-border bg-[color:color-mix(in_srgb,var(--color-primary)_4%,transparent)]" />
+    <div className="mt-4 space-y-4">
+      <div className="soft-panel rounded-[24px] p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">Кратко об эпизоде</h4>
+            <p className="mt-1 text-[0.88rem] leading-6 text-muted sm:text-sm">
+              Самое важное по длительности, температуре и записям.
+            </p>
+          </div>
+          {insights.peakTemperatureAt && (
+            <span className="soft-pill rounded-full px-3 py-1 text-[0.72rem] sm:text-xs">
+              Пик {formatDateTime(insights.peakTemperatureAt)}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4">
+          <EpisodeMetricsRow items={summaryMetrics} />
+        </div>
+
+        <div className="soft-panel-muted mt-3 grid grid-cols-2 gap-x-4 gap-y-2 rounded-[20px] px-3 py-3 sm:grid-cols-4 sm:px-4">
+          {summaryFacts.map((item) => (
+            <div key={item.label} className="min-w-0">
+              <p className="text-[0.72rem] leading-5 text-muted sm:text-[0.82rem]">{item.label}</p>
+              <p className="truncate text-[0.9rem] font-medium leading-5 text-foreground sm:text-[0.95rem]">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="grid gap-3">
-        <SummaryCard label="Замеры" value={String(temperatureCount)} />
-        <SummaryCard label="Приёмы" value={String(administrationCount)} />
-        <SummaryCard label="Комментарии" value={String(commentCount)} />
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+        <div className="soft-panel rounded-[24px] p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">
+                Температура по эпизоду
+              </h4>
+              <p className="mt-1 text-[0.88rem] leading-6 text-muted sm:text-sm">
+                Замеры в порядке их добавления во время этого наблюдения.
+              </p>
+            </div>
+            {insights.peakTemperatureAt && (
+              <span className="soft-pill rounded-full px-3 py-1 text-[0.72rem] sm:text-xs">
+                Пик {formatDateTime(insights.peakTemperatureAt)}
+              </span>
+            )}
+          </div>
+
+          <div className="mt-4">
+            {temperatures.length > 0 ? (
+              <EpisodeTemperatureTrend items={temperatures} />
+            ) : (
+              <div className="soft-empty rounded-[20px] px-4 py-6 text-[0.9rem] text-muted sm:text-sm">
+                Для этого эпизода ещё нет замеров температуры.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="soft-panel-muted rounded-[24px] p-4 sm:p-5">
+          <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">Что было в эпизоде</h4>
+          <div className="mt-4 space-y-3">
+            <EpisodeFactRow
+              label="Препараты"
+              value={
+                insights.medicineNames.length > 0
+                  ? insights.medicineNames.join(", ")
+                  : "Без лекарств"
+              }
+            />
+            <EpisodeFactRow label="Всего событий" value={String(insights.totalEvents)} />
+            <EpisodeFactRow label="Начался" value={formatDate(episode.startedAt)} />
+            <EpisodeFactRow label="Первый замер" value={insights.firstTemperatureAtLabel} />
+            <EpisodeFactRow label="Последний приём" value={insights.lastAdministrationLabel} />
+          </div>
+        </div>
       </div>
     </div>
   );
+}
+
+function EpisodeMetricsRow({ items }: { items: Array<{ label: string; value: string }> }) {
+  return (
+    <div className="grid grid-cols-3 gap-2.5 sm:gap-3 xl:grid-cols-4">
+      {items.map((item) => (
+        <EpisodeMetricCard key={item.label} label={item.label} value={item.value} />
+      ))}
+    </div>
+  );
+}
+
+function HistoryEpisodeInsightsScreen({
+  childId,
+  episode,
+  episodeNumber,
+  medicines,
+}: {
+  childId: string;
+  episode: IllnessEpisode;
+  episodeNumber: number;
+  medicines: HouseholdMedicine[];
+}) {
+  const liveQueryOptions = useLiveQueryOptions(10000);
+  const { data: temperatures = [] } = useQuery({
+    queryKey: ["temperature-entries", episode.id],
+    queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
+    enabled: !!episode.id,
+    ...liveQueryOptions,
+  });
+  const { data: administrations = [] } = useQuery({
+    queryKey: ["administration-events", episode.id],
+    queryFn: () => fetchAdministrationEventsByEpisodeId(episode.id),
+    enabled: !!episode.id,
+    ...liveQueryOptions,
+  });
+  const { data: comments = [] } = useQuery({
+    queryKey: ["illness-comments", episode.id],
+    queryFn: () => fetchIllnessCommentsByEpisodeId(episode.id),
+    enabled: !!episode.id,
+    ...liveQueryOptions,
+  });
+  const insights = buildEpisodeInsights(
+    episode,
+    temperatures,
+    administrations,
+    comments,
+    medicines
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-[0.72rem] tracking-[0.05em] text-muted sm:text-xs">
+            Эпизод {episodeNumber} · {formatEpisodePeriod(episode.startedAt, episode.closedAt)}
+          </p>
+          <h3 className="app-card-title mt-2 text-[1.08rem] sm:text-[1.15rem]">Разбор эпизода</h3>
+        </div>
+        <Link
+          to={`/children/${childId}/illness?view=history`}
+          className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+        >
+          Ко всей истории
+        </Link>
+      </div>
+
+      <EpisodeInsightsPreview
+        episode={episode}
+        temperatures={temperatures}
+        administrations={administrations}
+        insights={insights}
+      />
+    </div>
+  );
+}
+
+function EpisodeMetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="soft-card rounded-[20px] px-3 py-3 sm:px-4 sm:py-4">
+      <p className="text-[0.72rem] leading-5 text-muted sm:text-[0.82rem]">{label}</p>
+      <p className="app-card-title mt-1.5 text-[0.92rem] sm:mt-2 sm:text-[0.98rem]">{value}</p>
+    </div>
+  );
+}
+
+function EpisodeFactRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-start sm:gap-3">
+      <p className="text-[0.82rem] text-muted sm:text-sm">{label}</p>
+      <p className="text-[0.9rem] leading-6 text-foreground sm:text-sm">{value}</p>
+    </div>
+  );
+}
+
+function EpisodeTemperatureTrend({ items }: { items: TemperatureEntry[] }) {
+  const sorted = [...items].sort((left, right) => left.measuredAt.localeCompare(right.measuredAt));
+  const minValue = Math.min(...sorted.map((item) => item.valueCelsius), 36);
+  const maxValue = Math.max(...sorted.map((item) => item.valueCelsius), 39);
+  const chartMin = Math.floor(minValue);
+  const chartMax = Math.max(chartMin + 1, Math.ceil(maxValue));
+  const width = 100;
+  const height = 44;
+  const leftPad = 5;
+  const rightPad = 5;
+  const topPad = 5;
+  const bottomPad = 6;
+  const step = sorted.length > 1 ? (width - leftPad - rightPad) / (sorted.length - 1) : 0;
+
+  const points = sorted.map((item, index) => {
+    const x = leftPad + step * index;
+    const ratio = (item.valueCelsius - chartMin) / Math.max(chartMax - chartMin, 1);
+    const y = height - bottomPad - ratio * (height - topPad - bottomPad);
+
+    return {
+      ...item,
+      x,
+      y,
+    };
+  });
+
+  const polylinePoints = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const tickLabels = (
+    sorted.length <= 3
+      ? sorted
+      : [sorted[0], sorted[Math.floor(sorted.length / 2)], sorted[sorted.length - 1]]
+  ).filter((item): item is TemperatureEntry => !!item);
+
+  return (
+    <div className="space-y-3">
+      <div className="soft-card rounded-[22px] px-3 py-3 sm:px-4">
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full overflow-visible sm:h-36">
+          <path
+            d={`M ${leftPad} ${height - bottomPad} H ${width - rightPad}`}
+            fill="none"
+            stroke="color-mix(in srgb, var(--color-border) 76%, transparent)"
+            strokeWidth="1"
+          />
+          <path
+            d={`M ${leftPad} ${height * 0.66} H ${width - rightPad}`}
+            fill="none"
+            stroke="color-mix(in srgb, var(--color-border) 52%, transparent)"
+            strokeWidth="1"
+            strokeDasharray="2 3"
+          />
+          <path
+            d={`M ${leftPad} ${height * 0.33} H ${width - rightPad}`}
+            fill="none"
+            stroke="color-mix(in srgb, var(--color-border) 52%, transparent)"
+            strokeWidth="1"
+            strokeDasharray="2 3"
+          />
+          <polyline
+            points={polylinePoints}
+            fill="none"
+            stroke="color-mix(in srgb, var(--color-primary) 82%, white 8%)"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {points.map((point) => (
+            <g key={point.id}>
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r="2.7"
+                fill="color-mix(in srgb, var(--color-primary) 92%, white 8%)"
+              />
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r="4.2"
+                fill="color-mix(in srgb, var(--color-primary) 18%, transparent)"
+              />
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(3.5rem,1fr))] gap-2">
+        {tickLabels.map((item) => (
+          <div key={item.id} className="text-center">
+            <p className="text-[11px] leading-4 text-muted">{formatDateTime(item.measuredAt)}</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{item.valueCelsius} °C</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function buildEpisodeInsights(
+  episode: IllnessEpisode,
+  temperatures: TemperatureEntry[],
+  administrations: AdministrationEvent[],
+  comments: IllnessComment[],
+  medicines: HouseholdMedicine[]
+) {
+  const sortedTemperatures = [...temperatures].sort((left, right) =>
+    left.measuredAt.localeCompare(right.measuredAt)
+  );
+  const sortedAdministrations = [...administrations].sort((left, right) =>
+    left.administeredAt.localeCompare(right.administeredAt)
+  );
+  const allEventDates = [
+    ...temperatures.map((item) => item.measuredAt),
+    ...administrations.map((item) => item.administeredAt),
+    ...comments.map((item) => item.createdAt),
+  ].sort((left, right) => right.localeCompare(left));
+
+  const peakTemperature = sortedTemperatures.reduce<TemperatureEntry | null>(
+    (current, item) => (!current || item.valueCelsius > current.valueCelsius ? item : current),
+    null
+  );
+  const lastTemperature = sortedTemperatures[sortedTemperatures.length - 1] ?? null;
+  const lastAdministration = sortedAdministrations[sortedAdministrations.length - 1] ?? null;
+  const medicineNames = Array.from(
+    new Set(
+      administrations
+        .map((item) => {
+          if (item.customMedicineName?.trim()) {
+            return item.customMedicineName.trim();
+          }
+          return medicines.find((medicine) => medicine.id === item.householdMedicineId)
+            ?.medicineName;
+        })
+        .filter((item): item is string => !!item)
+    )
+  );
+
+  return {
+    durationLabel: formatEpisodeDurationLabel(episode.startedAt, episode.closedAt),
+    peakTemperatureLabel: peakTemperature ? `${peakTemperature.valueCelsius} °C` : "Нет замеров",
+    peakTemperatureAt: peakTemperature?.measuredAt ?? null,
+    lastTemperatureLabel: lastTemperature ? `${lastTemperature.valueCelsius} °C` : "Нет замеров",
+    lastEventLabel: allEventDates[0] ? formatDateTime(allEventDates[0]) : "Нет записей",
+    medicationModeLabel: episode.medicationMode === "guided" ? "С напоминаниями" : "Вручную",
+    medicineNames,
+    totalEvents: temperatures.length + administrations.length + comments.length,
+    firstTemperatureAtLabel: sortedTemperatures[0]
+      ? formatDateTime(sortedTemperatures[0].measuredAt)
+      : "Нет замеров",
+    lastAdministrationLabel: lastAdministration
+      ? formatDateTime(lastAdministration.administeredAt)
+      : "Без приёмов",
+  };
+}
+
+function formatEpisodeDurationLabel(startedAt: string, closedAt: string | null) {
+  const start = new Date(startedAt);
+  const end = closedAt ? new Date(closedAt) : start;
+  const diffDays = Math.max(
+    1,
+    Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1
+  );
+  return `${diffDays} дн.`;
 }
 
 function EpisodeBlock({
