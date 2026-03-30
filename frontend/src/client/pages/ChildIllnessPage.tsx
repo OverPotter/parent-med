@@ -69,6 +69,8 @@ export function ChildIllnessPage() {
   const queryClient = useQueryClient();
   const [openHistoryEpisodeId, setOpenHistoryEpisodeId] = useState<string | null>(null);
   const historyOnlyView = searchParams.get("view") === "history";
+  const historyMode = searchParams.get("mode");
+  const historyAnalyticsMode = historyOnlyView && historyMode === "analytics";
   const createMode = searchParams.get("mode") === "create";
   const focusMode = searchParams.get("focus") ?? searchParams.get("compose");
   const quickComposeMode =
@@ -353,7 +355,9 @@ export function ChildIllnessPage() {
           <SectionTitle
             title={`История${child.name ? ` · ${child.name}` : ""}`}
             subtitle={
-              openHistoryEpisodeId
+              historyAnalyticsMode
+                ? "Сводка по завершённым эпизодам."
+                : openHistoryEpisodeId
                 ? "Открыта одна запись."
                 : historyEpisodes.length > 0
                   ? "Завершённые наблюдения по ребёнку."
@@ -361,7 +365,28 @@ export function ChildIllnessPage() {
             }
           />
 
-          {openHistoryEpisodeId && (
+          <div className="grid gap-2 sm:grid-cols-2 lg:max-w-[30rem]">
+            <Link
+              to={`/children/${child.id}/illness?view=history`}
+              className={`inline-flex min-h-[3rem] items-center justify-center rounded-[20px] px-4 text-center text-[0.92rem] leading-[1.1] tracking-[-0.025em] sm:min-h-[3.2rem] sm:px-5 sm:text-[0.98rem] ${
+                historyAnalyticsMode ? "soft-button-secondary" : "soft-button-primary"
+              }`}
+            >
+              Вся история
+            </Link>
+            <Link
+              to={`/children/${child.id}/illness?view=history&mode=analytics`}
+              className={`inline-flex min-h-[3rem] items-center justify-center rounded-[20px] px-4 text-center text-[0.92rem] leading-[1.1] tracking-[-0.025em] sm:min-h-[3.2rem] sm:px-5 sm:text-[0.98rem] ${
+                historyAnalyticsMode ? "soft-button-primary" : "soft-button-secondary"
+              }`}
+            >
+              Аналитика
+            </Link>
+          </div>
+
+          {historyAnalyticsMode ? (
+            <HistoryInsightsPreview episodeCount={historyEpisodes.length} />
+          ) : openHistoryEpisodeId ? (
             <div className="soft-panel-muted flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-4 py-3">
               <p className="text-sm text-muted">Показана 1 запись из {historyEpisodes.length}.</p>
               <button
@@ -372,9 +397,9 @@ export function ChildIllnessPage() {
                 Показать всю историю
               </button>
             </div>
-          )}
+          ) : null}
 
-          {historyEpisodes.length > 0 ? (
+          {!historyAnalyticsMode && historyEpisodes.length > 0 ? (
             <ul className="grid gap-4">
               {visibleHistoryEpisodes.map((episode) => (
                 <HistoryEpisodeCard
@@ -396,11 +421,11 @@ export function ChildIllnessPage() {
                 />
               ))}
             </ul>
-          ) : (
+          ) : !historyAnalyticsMode ? (
             <div className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
               История пока пустая.
             </div>
-          )}
+          ) : null}
         </section>
       )}
     </div>
@@ -416,6 +441,428 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
     <div className="soft-panel-muted rounded-[22px] px-4 py-3">
       <p className="text-xs tracking-[0.08em] text-muted">{label}</p>
       <p className="mt-2 text-base font-semibold tracking-[-0.02em] text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function HistoryInsightsPreview({
+  episodeCount,
+}: {
+  episodeCount: number;
+}) {
+  const periodOptions = [
+    { key: "month", label: "Месяц", shortLabel: "1м" },
+    { key: "quarter", label: "3 месяца", shortLabel: "3м" },
+    { key: "half_year", label: "6 месяцев", shortLabel: "6м" },
+    { key: "year", label: "Год", shortLabel: "1г" },
+    { key: "all", label: "Всё время", shortLabel: "всё" },
+  ] as const;
+  const [selectedPeriod, setSelectedPeriod] =
+    useState<(typeof periodOptions)[number]["key"]>("half_year");
+  const analyticsByPeriod = {
+    month: {
+      frequencyCards: [
+        { label: "Эпизодов за месяц", value: "1" },
+        { label: "Последний эпизод", value: "12 дней назад" },
+        { label: "Дней без болезни", value: "12" },
+        { label: "Период наблюдения", value: "30 дней" },
+      ],
+      severityCards: [
+        { label: "Средняя длительность", value: "3 дня" },
+        { label: "Самый долгий эпизод", value: "3 дня" },
+        { label: "Эпизодов с 38+", value: "1" },
+        { label: "Эпизодов с 39+", value: "0" },
+      ],
+      behaviorCards: [
+        { label: "Эпизодов с лекарствами", value: "1" },
+        { label: "Только наблюдение", value: "0" },
+        { label: "С напоминаниями", value: "1" },
+        { label: "Всего замеров", value: "4" },
+      ],
+      monthlySeries: [
+        { label: "1 нед.", value: 0 },
+        { label: "2 нед.", value: 0 },
+        { label: "3 нед.", value: 1 },
+        { label: "4 нед.", value: 0 },
+      ],
+      durationBuckets: [
+        { label: "1-2 дня", value: 0 },
+        { label: "3-5 дней", value: 1 },
+        { label: "6+ дней", value: 0 },
+      ],
+    },
+    quarter: {
+      frequencyCards: [
+        { label: "Эпизодов за 3 месяца", value: "2" },
+        { label: "Последний эпизод", value: "12 дней назад" },
+        { label: "Дней без болезни", value: "12" },
+        { label: "Самый активный месяц", value: "март" },
+      ],
+      severityCards: [
+        { label: "Средняя длительность", value: "3.5 дня" },
+        { label: "Самый долгий эпизод", value: "5 дней" },
+        { label: "Эпизодов с 38+", value: "2" },
+        { label: "Эпизодов с 39+", value: "0" },
+      ],
+      behaviorCards: [
+        { label: "Эпизодов с лекарствами", value: "2" },
+        { label: "Только наблюдение", value: "0" },
+        { label: "С напоминаниями", value: "1" },
+        { label: "Всего замеров", value: "9" },
+      ],
+      monthlySeries: [
+        { label: "Фев", value: 0 },
+        { label: "Мар", value: 1 },
+        { label: "Апр", value: 1 },
+      ],
+      durationBuckets: [
+        { label: "1-2 дня", value: 0 },
+        { label: "3-5 дней", value: 2 },
+        { label: "6+ дней", value: 0 },
+      ],
+    },
+    half_year: {
+      frequencyCards: [
+        { label: "Эпизодов за 6 месяцев", value: String(Math.max(episodeCount, 4)) },
+        { label: "Последний эпизод", value: "12 дней назад" },
+        { label: "Дней без болезни", value: "12" },
+        { label: "Самый активный месяц", value: "март" },
+      ],
+      severityCards: [
+        { label: "Средняя длительность", value: "4.2 дня" },
+        { label: "Самый долгий эпизод", value: "7 дней" },
+        { label: "Эпизодов с 38+", value: "4" },
+        { label: "Эпизодов с 39+", value: "1" },
+      ],
+      behaviorCards: [
+        { label: "Эпизодов с лекарствами", value: "5" },
+        { label: "Только наблюдение", value: "1" },
+        { label: "С напоминаниями", value: "3" },
+        { label: "Всего замеров", value: "18" },
+      ],
+      monthlySeries: [
+        { label: "Ноя", value: 1 },
+        { label: "Дек", value: 0 },
+        { label: "Янв", value: 2 },
+        { label: "Фев", value: 1 },
+        { label: "Мар", value: 3 },
+        { label: "Апр", value: 1 },
+      ],
+      durationBuckets: [
+        { label: "1-2 дня", value: 2 },
+        { label: "3-5 дней", value: 3 },
+        { label: "6+ дней", value: 1 },
+      ],
+    },
+    year: {
+      frequencyCards: [
+        { label: "Эпизодов за год", value: "8" },
+        { label: "Последний эпизод", value: "12 дней назад" },
+        { label: "Дней без болезни", value: "12" },
+        { label: "Самый активный месяц", value: "март" },
+      ],
+      severityCards: [
+        { label: "Средняя длительность", value: "4.6 дня" },
+        { label: "Самый долгий эпизод", value: "8 дней" },
+        { label: "Эпизодов с 38+", value: "6" },
+        { label: "Эпизодов с 39+", value: "2" },
+      ],
+      behaviorCards: [
+        { label: "Эпизодов с лекарствами", value: "7" },
+        { label: "Только наблюдение", value: "1" },
+        { label: "С напоминаниями", value: "4" },
+        { label: "Всего замеров", value: "29" },
+      ],
+      monthlySeries: [
+        { label: "Янв", value: 2 },
+        { label: "Фев", value: 1 },
+        { label: "Мар", value: 3 },
+        { label: "Апр", value: 1 },
+        { label: "Май", value: 0 },
+        { label: "Июн", value: 1 },
+        { label: "Июл", value: 0 },
+        { label: "Авг", value: 1 },
+        { label: "Сен", value: 0 },
+        { label: "Окт", value: 1 },
+        { label: "Ноя", value: 1 },
+        { label: "Дек", value: 0 },
+      ],
+      durationBuckets: [
+        { label: "1-2 дня", value: 2 },
+        { label: "3-5 дней", value: 4 },
+        { label: "6+ дней", value: 2 },
+      ],
+    },
+    all: {
+      frequencyCards: [
+        { label: "Эпизодов за всё время", value: String(Math.max(episodeCount, 11)) },
+        { label: "Последний эпизод", value: "12 дней назад" },
+        { label: "Дней без болезни", value: "12" },
+        { label: "Самый активный сезон", value: "весна" },
+      ],
+      severityCards: [
+        { label: "Средняя длительность", value: "4.4 дня" },
+        { label: "Самый долгий эпизод", value: "8 дней" },
+        { label: "Эпизодов с 38+", value: "8" },
+        { label: "Эпизодов с 39+", value: "2" },
+      ],
+      behaviorCards: [
+        { label: "Эпизодов с лекарствами", value: "9" },
+        { label: "Только наблюдение", value: "2" },
+        { label: "С напоминаниями", value: "5" },
+        { label: "Всего замеров", value: "36" },
+      ],
+      monthlySeries: [
+        { label: "2020", value: 1 },
+        { label: "2021", value: 2 },
+        { label: "2022", value: 1 },
+        { label: "2023", value: 3 },
+        { label: "2024", value: 2 },
+        { label: "2025", value: 2 },
+      ],
+      durationBuckets: [
+        { label: "1-2 дня", value: 3 },
+        { label: "3-5 дней", value: 6 },
+        { label: "6+ дней", value: 2 },
+      ],
+    },
+  } satisfies Record<
+    (typeof periodOptions)[number]["key"],
+    {
+      frequencyCards: Array<{ label: string; value: string }>;
+      severityCards: Array<{ label: string; value: string }>;
+      behaviorCards: Array<{ label: string; value: string }>;
+      monthlySeries: Array<{ label: string; value: number }>;
+      durationBuckets: Array<{ label: string; value: number }>;
+    }
+  >;
+  const currentAnalytics = analyticsByPeriod[selectedPeriod];
+  const timelineTitle =
+    selectedPeriod === "month" ? "За месяц" : selectedPeriod === "all" ? "По годам" : "По месяцам";
+  const timelineSubtitle =
+    selectedPeriod === "month"
+      ? "На каких неделях за последние 30 дней были эпизоды."
+      : selectedPeriod === "all"
+      ? "Как менялась частота болезней по годам."
+      : "Когда ребёнок болел чаще, а когда реже.";
+  const chartTitle =
+    selectedPeriod === "month"
+      ? "Распределение по неделям"
+      : selectedPeriod === "all"
+        ? "Динамика по годам"
+        : "Динамика по месяцам";
+  const chartDescription =
+    selectedPeriod === "month"
+      ? "Сколько эпизодов пришлось на каждую неделю последних 30 дней."
+      : selectedPeriod === "all"
+      ? "Каждая полоса показывает, сколько эпизодов было за год."
+      : "Каждая полоса показывает, сколько эпизодов пришлось на месяц.";
+  return (
+    <div className="space-y-4">
+      <div className="soft-panel rounded-[28px] p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs tracking-[0.08em] text-muted">Демо-версия</p>
+            <h3 className="mt-2 app-card-title text-[1.08rem] sm:text-[1.18rem]">
+              Общая сводка
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+              Частота болезней, динамика по месяцам и общая картина по завершённым эпизодам.
+            </p>
+          </div>
+          <span className="soft-pill-primary rounded-full px-3 py-1.5 text-xs">
+            {episodeCount} эп. в архиве
+          </span>
+        </div>
+
+        <div className="sticky top-2 z-10 -mx-1 mt-4 overflow-x-auto px-1 pb-1 sm:static sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
+          <div className="inline-flex min-w-full gap-2 sm:flex sm:min-w-0 sm:flex-wrap">
+            {periodOptions.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setSelectedPeriod(item.key)}
+                className={[
+                  selectedPeriod === item.key ? "soft-tab-active" : "soft-tab",
+                  "min-h-[2.65rem] shrink-0 rounded-full px-3 text-[0.9rem] tracking-[-0.025em] sm:min-h-[2.95rem] sm:px-4 sm:text-sm",
+                ].join(" ")}
+              >
+                <span className="sm:hidden">{item.shortLabel}</span>
+                <span className="hidden sm:inline">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <section className="space-y-3">
+        <SectionTitle
+          title="Частота"
+          subtitle="Как часто ребёнок болел за выбранный период."
+        />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {currentAnalytics.frequencyCards.map((item) => (
+            <AnalyticsCard key={item.label} label={item.label} value={item.value} tone="default" />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <SectionTitle
+          title={timelineTitle}
+          subtitle={timelineSubtitle}
+        />
+
+        <div className="soft-panel rounded-[28px] p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h4 className="text-[0.98rem] font-semibold text-foreground">{chartTitle}</h4>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                {chartDescription}
+              </p>
+            </div>
+            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+              {periodOptions.find((item) => item.key === selectedPeriod)?.label}
+            </span>
+          </div>
+          <div className="mt-5">
+            <MiniHistoryBars items={currentAnalytics.monthlySeries} />
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <SectionTitle
+          title="Как проходили эпизоды"
+          subtitle="Насколько короткими или затяжными они были."
+        />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {currentAnalytics.severityCards.map((item) => (
+            <AnalyticsCard key={item.label} label={item.label} value={item.value} tone="accent" />
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <div className="soft-panel rounded-[28px] p-4 sm:p-5">
+          <h4 className="text-[0.98rem] font-semibold text-foreground">Сколько обычно длилось</h4>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            Короткие, средние и более длительные эпизоды за выбранный период.
+          </p>
+          <div className="mt-5 space-y-3">
+            {currentAnalytics.durationBuckets.map((item) => (
+              <StatRow
+                key={item.label}
+                label={item.label}
+                value={item.value}
+                max={Math.max(...currentAnalytics.durationBuckets.map((bucket) => bucket.value), 1)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="soft-panel rounded-[28px] p-4 sm:p-5">
+          <h4 className="text-[0.98rem] font-semibold text-foreground">Что обычно делали</h4>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            Лекарства, напоминания и замеры за выбранный период.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {currentAnalytics.behaviorCards.map((item) => (
+              <AnalyticsCard key={item.label} label={item.label} value={item.value} tone="soft" />
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AnalyticsCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "default" | "accent" | "soft";
+}) {
+  const toneClass =
+    tone === "accent"
+      ? "soft-panel"
+      : tone === "soft"
+        ? "soft-panel-muted"
+        : "soft-card";
+
+  return (
+    <div className={`${toneClass} rounded-[22px] px-4 py-4 sm:px-5`}>
+      <p className="text-sm leading-5 text-muted">{label}</p>
+      <p className="mt-2 font-[var(--font-display)] text-[1.02rem] font-semibold leading-6 tracking-[-0.02em] text-foreground sm:text-[1.08rem]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function MiniHistoryBars({
+  items,
+}: {
+  items: Array<{ label: string; value: number }>;
+}) {
+  const rawMaxValue = Math.max(...items.map((item) => item.value), 1);
+  const scaleMax = Math.max(3, rawMaxValue);
+
+  return (
+    <div className="space-y-3">
+      {items.map((item) => {
+        const isEmpty = item.value === 0;
+        const width = isEmpty ? 0 : Math.max(10, Math.round((item.value / scaleMax) * 100));
+
+        return (
+          <div
+            key={item.label}
+            className="grid grid-cols-[3rem_minmax(0,1fr)_2rem] items-center gap-3 sm:grid-cols-[3.5rem_minmax(0,1fr)_2.5rem]"
+          >
+            <span className="text-sm font-medium text-foreground">{item.label}</span>
+            <div className="relative h-3 overflow-hidden rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_7%,white)]">
+              <div className="pointer-events-none absolute inset-0 rounded-full border border-[color:color-mix(in_srgb,var(--color-border)_78%,transparent)]" />
+              {isEmpty ? (
+                <div className="absolute left-1.5 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[color:color-mix(in_srgb,var(--color-border)_70%,transparent)]" />
+              ) : (
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,color-mix(in_srgb,var(--color-primary)_66%,white_22%)_0%,color-mix(in_srgb,var(--color-primary)_88%,black_4%)_100%)]"
+                  style={{ width: `${width}%` }}
+                />
+              )}
+            </div>
+            <span className="text-right text-sm font-medium text-muted">{item.value}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function StatRow({
+  label,
+  value,
+  max,
+}: {
+  label: string;
+  value: number;
+  max: number;
+}) {
+  const width = Math.max(10, Math.round((value / Math.max(max, 1)) * 100));
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_2rem] sm:items-center">
+      <span className="text-sm text-foreground">{label}</span>
+      <div className="h-2.5 overflow-hidden rounded-full border border-[color:color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_7%,white)]">
+        <div
+          className="h-full rounded-full bg-[linear-gradient(90deg,color-mix(in_srgb,var(--color-primary)_68%,white_20%)_0%,color-mix(in_srgb,var(--color-primary)_88%,black_4%)_100%)]"
+          style={{ width: `${width}%` }}
+        />
+      </div>
+      <span className="text-sm font-medium text-muted">{value}</span>
     </div>
   );
 }
@@ -449,6 +896,7 @@ function HistoryEpisodeCard({
   const queryClient = useQueryClient();
   const liveQueryOptions = useLiveQueryOptions(10000);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isEpisodeInsightsOpen, setIsEpisodeInsightsOpen] = useState(false);
   const { data: temperatureEntries = [] } = useQuery({
     queryKey: ["temperature-entries", episode.id],
     queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
@@ -563,6 +1011,32 @@ function HistoryEpisodeCard({
           <section className="border-t border-border pt-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
+                <h3 className="text-sm font-semibold text-foreground">Разбор эпизода</h3>
+                <p className="mt-1 text-sm text-muted">
+                  Отдельный блок аналитики по конкретной записи.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEpisodeInsightsOpen((current) => !current)}
+                className="soft-button-secondary inline-flex min-h-[2.9rem] items-center justify-center px-4 text-[0.88rem] leading-[1.05] tracking-[-0.03em] sm:min-h-[3.15rem] sm:px-5 sm:text-[0.95rem]"
+              >
+                {isEpisodeInsightsOpen ? "Скрыть разбор" : "Разбор эпизода"}
+              </button>
+            </div>
+
+            {isEpisodeInsightsOpen && (
+              <EpisodeInsightsPreview
+                temperatureCount={temperatureEntries.length}
+                administrationCount={administrations.length}
+                commentCount={comments.length}
+              />
+            )}
+          </section>
+
+          <section className="border-t border-border pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
                 <h3 className="text-sm font-semibold text-foreground">Действия</h3>
                 <p className="mt-1 text-sm text-muted">Запись можно удалить из истории.</p>
               </div>
@@ -579,6 +1053,36 @@ function HistoryEpisodeCard({
         </div>
       )}
     </li>
+  );
+}
+
+function EpisodeInsightsPreview({
+  temperatureCount,
+  administrationCount,
+  commentCount,
+}: {
+  temperatureCount: number;
+  administrationCount: number;
+  commentCount: number;
+}) {
+  return (
+    <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.7fr)]">
+      <div className="soft-panel-muted rounded-[24px] px-4 py-4">
+        <p className="text-xs tracking-[0.08em] text-muted">Предпросмотр</p>
+        <h4 className="mt-2 text-sm font-semibold text-foreground">Здесь будет график эпизода</h4>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Температурная кривая, наложение приёмов лекарства и короткий summary по конкретной
+          болезни.
+        </p>
+        <div className="mt-4 h-36 rounded-[20px] border border-dashed border-border bg-[color:color-mix(in_srgb,var(--color-primary)_4%,transparent)]" />
+      </div>
+
+      <div className="grid gap-3">
+        <SummaryCard label="Замеры" value={String(temperatureCount)} />
+        <SummaryCard label="Приёмы" value={String(administrationCount)} />
+        <SummaryCard label="Комментарии" value={String(commentCount)} />
+      </div>
+    </div>
   );
 }
 

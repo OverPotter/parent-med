@@ -403,7 +403,7 @@ function ChildCard({
             </div>
           </div>
 
-          <div className="grid w-full gap-2 sm:w-[12rem] sm:shrink-0">
+          <div className="grid w-full gap-2 sm:w-[14.5rem] sm:shrink-0 lg:w-[16rem]">
             <button
               type="button"
               onClick={onStartEpisode}
@@ -420,13 +420,13 @@ function ChildCard({
             <div className="grid grid-cols-2 gap-2">
               <Link
                 to={`/children/${child.id}/illness?view=history`}
-                className="soft-button-secondary inline-flex min-h-[2.7rem] items-center justify-center px-3 text-center text-[0.8rem] leading-none tracking-[-0.025em] sm:min-h-[2.9rem] sm:px-3.5 sm:text-[0.85rem]"
+                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] leading-[1.05] tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-4 sm:text-[0.92rem]"
               >
                 История
               </Link>
               <Link
                 to={`/children/${child.id}`}
-                className="soft-button-secondary inline-flex min-h-[2.7rem] items-center justify-center px-3 text-center text-[0.8rem] leading-none tracking-[-0.025em] sm:min-h-[2.9rem] sm:px-3.5 sm:text-[0.85rem]"
+                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] leading-[1.05] tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-4 sm:text-[0.92rem]"
               >
                 Профиль
               </Link>
