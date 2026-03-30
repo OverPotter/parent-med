@@ -4,6 +4,11 @@ import { RowSurface } from "@shared/components/Surface";
 
 const moreLinks = [
   {
+    to: "/home",
+    title: "Помощь",
+    description: "Как устроено приложение и где искать нужные разделы.",
+  },
+  {
     to: "/family",
     title: "Семья",
     description: "Название семьи, участники и приглашения.",
@@ -12,11 +17,6 @@ const moreLinks = [
     to: "/account",
     title: "Аккаунт",
     description: "Email, имя в семье, напоминания и безопасность.",
-  },
-  {
-    to: "/illnesses/history",
-    title: "История",
-    description: "Архив завершённых наблюдений по детям.",
   },
 ];
 
@@ -38,7 +38,7 @@ export function MorePage() {
     <div className="min-w-0 space-y-6">
       <PageIntro
         title="Ещё"
-        subtitle="Семья, аккаунт и история в одном месте."
+        subtitle="Помощь, семья, аккаунт и основные настройки."
         compactOnMobile
         hideOnMobile
       />

@@ -144,8 +144,17 @@ def get_household_medicine_service(
 def get_illness_episode_service(
     episode_repo=Depends(get_illness_episode_repo),
     child_repo=Depends(get_child_repo),
+    temperature_repo=Depends(get_temperature_entry_repo),
+    administration_repo=Depends(get_administration_repo),
+    comment_repo=Depends(get_illness_comment_repo),
 ) -> IllnessEpisodeService:
-    return IllnessEpisodeService(episode_repo=episode_repo, child_repo=child_repo)
+    return IllnessEpisodeService(
+        episode_repo=episode_repo,
+        child_repo=child_repo,
+        temperature_repo=temperature_repo,
+        administration_repo=administration_repo,
+        comment_repo=comment_repo,
+    )
 
 
 def get_illness_comment_service(

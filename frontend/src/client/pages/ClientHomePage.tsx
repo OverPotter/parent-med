@@ -1,156 +1,115 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { RowSurface, Surface } from "@shared/components/Surface";
+import { Surface } from "@shared/components/Surface";
 
-const actions = [
-  {
-    to: "/children",
-    title: "Добавить ребёнка",
-    description: "Если профиля ещё нет, начните отсюда.",
-  },
-  {
-    to: "/children",
-    title: "Начать наблюдение",
-    description: "Откройте ребёнка и запустите наблюдение из карточки.",
-  },
-  {
-    to: "/children",
-    title: "Посмотреть текущее",
-    description: "Откройте ребёнка или перейдите в наблюдения, если они уже активны.",
-  },
-  {
-    to: "/medicine-cabinet",
-    title: "Открыть аптечку",
-    description: "Проверить лекарства, сроки и даты вскрытия.",
-  },
-];
-
-const sections = [
+const guideSections = [
   {
     title: "Дети",
-    description: "Профили детей, история и вход в текущее наблюдение.",
+    description: "Профили детей, история по каждому ребёнку и вход в текущее наблюдение.",
+    items: [
+      {
+        title: "Добавить ребёнка",
+        description: "Если профиля ещё нет, начните здесь.",
+      },
+      {
+        title: "Открыть историю",
+        description: "Зайдите в ребёнка и откройте его завершённые эпизоды.",
+      },
+    ],
+    action: { to: "/children", label: "Открыть детей" },
   },
   {
     title: "Наблюдения",
-    description: "Температура, приёмы, заметки и ближайшие действия.",
+    description: "Текущее состояние ребёнка: температура, лекарства, комментарии и reminders.",
+    items: [
+      {
+        title: "Начать наблюдение",
+        description: "Откройте карточку ребёнка и запустите новое наблюдение.",
+      },
+      {
+        title: "Добавлять записи",
+        description: "Внутри наблюдения можно фиксировать температуру, приёмы и заметки.",
+      },
+      {
+        title: "Проверить напоминания",
+        description: "Если у эпизода guided-режим, здесь же видны ближайшие действия и планы.",
+      },
+    ],
+    action: { to: "/illnesses/active", label: "Открыть наблюдения" },
   },
   {
     title: "Аптечка",
-    description: "Домашние препараты, упаковки и сроки годности.",
+    description: "Домашние препараты, упаковки, сроки годности и даты вскрытия.",
+    items: [
+      {
+        title: "Добавить упаковку",
+        description: "Сначала найдите препарат в каталоге или заполните вручную.",
+      },
+      {
+        title: "Следить за сроками",
+        description: "На карточках видно, что скоро истекает и что уже нельзя использовать.",
+      },
+      {
+        title: "Использовать в наблюдении",
+        description: "Препараты из аптечки можно выбирать прямо в эпизоде болезни.",
+      },
+    ],
+    action: { to: "/medicine-cabinet", label: "Открыть аптечку" },
   },
-  {
-    title: "Ещё",
-    description: "Семья, аккаунт и история завершённых наблюдений.",
-  },
-];
+] as const;
 
-const faq = [
+const analyticsTips = [
   {
-    title: "Где начать",
+    title: "Где искать аналитику",
     description:
-      "Сначала добавьте ребёнка, потом откройте наблюдение, когда нужно что-то фиксировать.",
+      "Откройте ребёнка, затем его историю. Там есть общая сводка и разбор каждого эпизода.",
   },
   {
-    title: "Где текущее состояние",
-    description: "В «Наблюдениях» видны только активные эпизоды и последние действия.",
+    title: "Что показывает сводка",
+    description:
+      "Она помогает понять, как часто ребёнок болел, как менялась частота и насколько длинными были эпизоды.",
   },
   {
-    title: "Где семейные настройки",
-    description: "Название семьи, участники и приглашения находятся в разделе «Ещё» → «Семья».",
+    title: "Что показывает разбор",
+    description:
+      "Внутри эпизода видны температура, ключевые события, лекарства и краткая картина по записи.",
   },
-];
+] as const;
 
 export function ClientHomePage() {
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
-      <Surface className="soft-hero overflow-hidden">
-        <div className="hidden px-5 py-5 sm:px-6 sm:py-7 lg:block lg:px-8 lg:py-9">
-          <span className="soft-pill-primary inline-flex rounded-full px-3 py-1 text-xs">
-            Помощь
-          </span>
-          <h1 className="app-title mt-4 max-w-2xl text-[2rem] sm:text-[2.7rem]">
-            Быстрая навигация по Parent Med
-          </h1>
-          <p className="app-subtitle mt-3 max-w-2xl text-sm leading-7 sm:mt-4 sm:leading-8">
-            Если нужно быстро понять, куда нажать, начните с одного из частых действий ниже.
-          </p>
-        </div>
-      </Surface>
+      {guideSections.map((section) => (
+        <HelpSection
+          key={section.title}
+          title={section.title}
+          description={section.description}
+          action={section.action}
+        >
+          <div className="grid gap-3 lg:grid-cols-3">
+            {section.items.map((item) => (
+              <InfoCard key={item.title} title={item.title} description={item.description} />
+            ))}
+          </div>
+        </HelpSection>
+      ))}
 
-      <section>
-        <div className="mb-4">
-          <h2 className="app-card-title text-lg">Частые действия</h2>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            Самые полезные входы без лишнего поиска по меню.
-          </p>
-        </div>
-        <ul className="grid gap-3 sm:gap-4 xl:grid-cols-2">
-          {actions.map((item) => (
-            <li key={item.title}>
-              <Link
-                to={item.to}
-                className="block transition-transform duration-200 hover:-translate-y-0.5"
-              >
-                <RowSurface className="h-full rounded-[26px] sm:rounded-[30px]">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="app-card-title text-base">{item.title}</p>
-                      <p className="mt-2 text-sm leading-7 text-muted">{item.description}</p>
-                    </div>
-                    <span className="soft-pill-primary inline-flex w-fit rounded-full px-3.5 py-1.5 text-xs">
-                      Открыть
-                    </span>
-                  </div>
-                </RowSurface>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <div className="mb-4">
-          <h2 className="app-card-title text-lg">Что где лежит</h2>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            Коротко по основным разделам приложения.
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {sections.map((item) => (
-            <div key={item.title} className="soft-card rounded-[28px] px-4 py-4 sm:px-5">
-              <h3 className="app-card-title text-[1.02rem]">{item.title}</h3>
-              <p className="mt-2 text-sm leading-7 text-muted">{item.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <div className="mb-4">
-          <h2 className="app-card-title text-lg">Короткие ответы</h2>
-        </div>
+      <HelpSection
+        title="Как пользоваться аналитикой"
+        description="Аналитика живёт внутри истории ребёнка и помогает быстро понять общую картину и детали каждого эпизода."
+      >
         <div className="grid gap-3 lg:grid-cols-3">
-          {faq.map((item) => (
-            <Surface key={item.title} className="p-5 sm:p-6">
-              <h3 className="app-card-title text-[1.02rem]">{item.title}</h3>
-              <p className="mt-2 text-sm leading-7 text-muted">{item.description}</p>
-            </Surface>
+          {analyticsTips.map((item) => (
+            <InfoCard key={item.title} title={item.title} description={item.description} />
           ))}
         </div>
-      </section>
+      </HelpSection>
 
-      <Surface className="overflow-hidden">
-        <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
-          <p className="app-kicker">Установка на телефон</p>
-          <h2 className="app-title mt-2 text-[1.7rem] sm:text-[2.15rem]">
-            Приложение можно добавить на домашний экран
-          </h2>
-          <p className="app-subtitle mt-3 max-w-2xl text-sm">
-            Parent Med уже настроен как PWA, поэтому установка идёт через браузер без App Store и
-            Google Play.
-          </p>
-        </div>
-
-        <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-2">
+      <HelpSection
+        title="Установка на телефон"
+        description="Parent Med уже настроен как PWA, поэтому приложение можно добавить на домашний экран прямо из браузера."
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
           <InstallCard
             title="iPhone / iPad"
             steps={[
@@ -170,14 +129,59 @@ export function ClientHomePage() {
             ]}
           />
         </div>
-      </Surface>
+      </HelpSection>
+    </div>
+  );
+}
+
+function HelpSection({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string;
+  description: string;
+  action?: { to: string; label: string };
+  children: ReactNode;
+}) {
+  return (
+    <Surface className="overflow-hidden p-0">
+      <section>
+        <div className="border-b border-border/70 px-5 py-5 sm:px-6 sm:py-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="app-card-title text-lg sm:text-[1.1rem]">{title}</h2>
+              <p className="mt-1.5 max-w-3xl text-sm leading-6 text-muted">{description}</p>
+            </div>
+            {action ? (
+              <Link
+                to={action.to}
+                className="soft-button-secondary inline-flex min-h-[2.7rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em]"
+              >
+                {action.label}
+              </Link>
+            ) : null}
+          </div>
+        </div>
+        <div className="px-5 py-5 sm:px-6 sm:py-6">{children}</div>
+      </section>
+    </Surface>
+  );
+}
+
+function InfoCard({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5 sm:py-5">
+      <h3 className="app-card-title text-[1.02rem]">{title}</h3>
+      <p className="mt-2 text-sm leading-7 text-muted">{description}</p>
     </div>
   );
 }
 
 function InstallCard({ title, steps }: { title: string; steps: string[] }) {
   return (
-    <div className="soft-card rounded-[30px] px-4 py-4 sm:px-5">
+    <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5 sm:py-5">
       <h3 className="app-card-title text-[1.05rem]">{title}</h3>
       <ol className="mt-3 space-y-2 text-sm leading-7 text-muted">
         {steps.map((step, index) => (

@@ -38,12 +38,11 @@ const childrenNavItem = {
 const baseDesktopNavLinks = [
   childrenNavItem,
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
-  { to: "/home", label: "Помощь", mobileLabel: "Помощь" },
   {
     to: "/more",
     label: "Ещё",
     mobileLabel: "Ещё",
-    exactActivePaths: ["/more", "/account", "/about", "/family", "/illnesses/history"],
+    exactActivePaths: ["/more", "/account", "/about", "/family", "/illnesses/history", "/home"],
   },
 ];
 
@@ -51,15 +50,10 @@ const baseMobileNavLinks = [
   childrenNavItem,
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
   {
-    to: "/home",
-    label: "Помощь",
-    mobileLabel: "Помощь",
-  },
-  {
     to: "/more",
     label: "Ещё",
     mobileLabel: "Ещё",
-    exactActivePaths: ["/more", "/account", "/about", "/family", "/illnesses/history"],
+    exactActivePaths: ["/more", "/account", "/about", "/family", "/illnesses/history", "/home"],
   },
 ];
 

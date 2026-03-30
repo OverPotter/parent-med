@@ -7,6 +7,10 @@ from fastapi import APIRouter, Depends
 from src.api.deps import get_illness_episode_service
 from src.api.deps.auth import get_current_account
 from src.application.dto.auth import AuthenticatedAccount
+from src.application.dto.illness_analytics import (
+    IllnessEpisodeInsightsDto,
+    IllnessHistorySummaryDto,
+)
 from src.application.dto.illness_episode import (
     IllnessEpisodeCreateDto,
     IllnessEpisodeResponseDto,
@@ -15,6 +19,27 @@ from src.application.dto.illness_episode import (
 from src.application.services.illness_episode_service import IllnessEpisodeService
 
 router = APIRouter(prefix="/illness-episodes", tags=["illness-episodes"])
+
+
+@router.get("/child/{child_id}/history-summary", response_model=IllnessHistorySummaryDto)
+async def get_history_summary(
+    child_id: UUID,
+    period: str = "half_year",
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: IllnessEpisodeService = Depends(get_illness_episode_service),
+) -> IllnessHistorySummaryDto:
+    """Сводка по истории завершённых эпизодов ребёнка за период."""
+    return await service.get_history_summary(child_id, current_account.family_id, period)
+
+
+@router.get("/{episode_id}/insights", response_model=IllnessEpisodeInsightsDto)
+async def get_episode_insights(
+    episode_id: UUID,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: IllnessEpisodeService = Depends(get_illness_episode_service),
+) -> IllnessEpisodeInsightsDto:
+    """Разбор конкретного эпизода болезни."""
+    return await service.get_episode_insights(episode_id, current_account.family_id)
 
 
 @router.get("/{episode_id}", response_model=IllnessEpisodeResponseDto)
