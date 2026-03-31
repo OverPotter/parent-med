@@ -1,6 +1,6 @@
 /** Роутинг: admin / client. */
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
@@ -12,28 +12,79 @@ import {
   isPushSupported,
   toPushSubscriptionPayload,
 } from "@shared/utils/pushNotifications";
-
-import { ClientLayout } from "@client/layout/ClientLayout";
-import { AccountPage } from "@client/pages/AccountPage";
-import { LandingPage } from "@client/pages/LandingPage";
-import { AuthPage } from "@client/pages/AuthPage";
-import { AboutPage } from "@client/pages/AboutPage";
-import { ClientHomePage } from "@client/pages/ClientHomePage";
-import { ClientIntroPage } from "@client/pages/ClientIntroPage";
-import { ClientStartPage } from "@client/pages/ClientStartPage";
-import { FamilyPage } from "@client/pages/FamilyPage";
-import { JoinFamilyPage } from "@client/pages/JoinFamilyPage";
-import { ChildrenPage } from "@client/pages/ChildrenPage";
-import { ChildProfilePage } from "@client/pages/ChildProfilePage";
-import { MedicineCabinetPage } from "@client/pages/MedicineCabinetPage";
-import { ChildIllnessPage } from "@client/pages/ChildIllnessPage";
-import { ActiveIllnessesPage } from "@client/pages/ActiveIllnessesPage";
-import { IllnessHistoryPage } from "@client/pages/IllnessHistoryPage";
-import { MorePage } from "@client/pages/MorePage";
-import { AdminLayout } from "@admin/layout/AdminLayout";
-import { AdminHomePage } from "@admin/pages/AdminHomePage";
 import { HitKeepBridge } from "@shared/analytics";
 import { appLog } from "@shared/utils/appLog";
+
+const ClientLayout = lazy(() =>
+  import("@client/layout/ClientLayout").then((module) => ({ default: module.ClientLayout }))
+);
+const AccountPage = lazy(() =>
+  import("@client/pages/AccountPage").then((module) => ({ default: module.AccountPage }))
+);
+const LandingPage = lazy(() =>
+  import("@client/pages/LandingPage").then((module) => ({ default: module.LandingPage }))
+);
+const AuthPage = lazy(() =>
+  import("@client/pages/AuthPage").then((module) => ({ default: module.AuthPage }))
+);
+const AboutPage = lazy(() =>
+  import("@client/pages/AboutPage").then((module) => ({ default: module.AboutPage }))
+);
+const ClientHomePage = lazy(() =>
+  import("@client/pages/ClientHomePage").then((module) => ({ default: module.ClientHomePage }))
+);
+const ClientIntroPage = lazy(() =>
+  import("@client/pages/ClientIntroPage").then((module) => ({ default: module.ClientIntroPage }))
+);
+const ClientStartPage = lazy(() =>
+  import("@client/pages/ClientStartPage").then((module) => ({ default: module.ClientStartPage }))
+);
+const FamilyPage = lazy(() =>
+  import("@client/pages/FamilyPage").then((module) => ({ default: module.FamilyPage }))
+);
+const JoinFamilyPage = lazy(() =>
+  import("@client/pages/JoinFamilyPage").then((module) => ({ default: module.JoinFamilyPage }))
+);
+const ChildrenPage = lazy(() =>
+  import("@client/pages/ChildrenPage").then((module) => ({ default: module.ChildrenPage }))
+);
+const ChildProfilePage = lazy(() =>
+  import("@client/pages/ChildProfilePage").then((module) => ({ default: module.ChildProfilePage }))
+);
+const MedicineCabinetPage = lazy(() =>
+  import("@client/pages/MedicineCabinetPage").then((module) => ({
+    default: module.MedicineCabinetPage,
+  }))
+);
+const PillboxPage = lazy(() =>
+  import("@client/pages/PillboxPage").then((module) => ({ default: module.PillboxPage }))
+);
+const ChildIllnessPage = lazy(() =>
+  import("@client/pages/ChildIllnessPage").then((module) => ({ default: module.ChildIllnessPage }))
+);
+const ActiveIllnessesPage = lazy(() =>
+  import("@client/pages/ActiveIllnessesPage").then((module) => ({
+    default: module.ActiveIllnessesPage,
+  }))
+);
+const IllnessHistoryPage = lazy(() =>
+  import("@client/pages/IllnessHistoryPage").then((module) => ({
+    default: module.IllnessHistoryPage,
+  }))
+);
+const MorePage = lazy(() =>
+  import("@client/pages/MorePage").then((module) => ({ default: module.MorePage }))
+);
+const AdminLayout = lazy(() =>
+  import("@admin/layout/AdminLayout").then((module) => ({ default: module.AdminLayout }))
+);
+const AdminHomePage = lazy(() =>
+  import("@admin/pages/AdminHomePage").then((module) => ({ default: module.AdminHomePage }))
+);
+
+function RouteFallback() {
+  return <div className="min-h-screen soft-app-bg" aria-hidden="true" />;
+}
 
 function BootLog() {
   useEffect(() => {
@@ -95,7 +146,34 @@ function RouteScrollReset() {
       return;
     }
 
-    window.scrollTo({ top: 0, behavior: "auto" });
+    const isMobileViewport = window.innerWidth < 768;
+    const isPrimaryMenuRoute = [
+      "/children",
+      "/pillbox",
+      "/medicine-cabinet",
+      "/home",
+      "/more",
+      "/illnesses/active",
+      "/illnesses/history",
+      "/family",
+      "/account",
+      "/about",
+    ].some((path) => location.pathname === path);
+
+    if (!isMobileViewport || !isPrimaryMenuRoute) {
+      window.scrollTo({ top: 0, behavior: "auto" });
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      const main = document.querySelector("main");
+      if (!(main instanceof HTMLElement)) {
+        window.scrollTo({ top: 0, behavior: "auto" });
+        return;
+      }
+      const mainTop = main.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: Math.max(0, mainTop - 8), behavior: "auto" });
+    });
   }, [location.pathname, location.search]);
 
   return null;
@@ -377,45 +455,48 @@ export default function App() {
       <PushSubscriptionSync />
       <MobilePageResumeSync />
       <PullToRefreshSync />
-      <Routes>
-        {!(authToken || accountId) ? (
-          <>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/join-family" element={<JoinFamilyPage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </>
-        ) : role === "admin" ? (
-          <>
-            <Route path="/" element={<AdminLayout />}>
-              <Route index element={<AdminHomePage />} />
-              <Route path="auth" element={<Navigate to="/" replace />} />
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          {!(authToken || accountId) ? (
+            <>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/join-family" element={<JoinFamilyPage />} />
+              <Route path="/auth" element={<AuthPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </>
-        ) : (
-          <>
-            <Route path="/" element={<ClientLayout />}>
-              <Route path="auth" element={<Navigate to="/" replace />} />
-              <Route index element={<ClientStartPage />} />
-              <Route path="home" element={<ClientHomePage />} />
-              <Route path="intro" element={<ClientIntroPage />} />
-              <Route path="family" element={<FamilyPage />} />
-              <Route path="join-family" element={<JoinFamilyPage />} />
-              <Route path="children" element={<ChildrenPage />} />
-              <Route path="children/:childId" element={<ChildProfilePage />} />
-              <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
-              <Route path="illnesses/history" element={<IllnessHistoryPage />} />
-              <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
-              <Route path="more" element={<MorePage />} />
-              <Route path="account" element={<AccountPage />} />
-              <Route path="about" element={<AboutPage />} />
-              <Route path="children/:childId/illness" element={<ChildIllnessPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </>
-        )}
-      </Routes>
+            </>
+          ) : role === "admin" ? (
+            <>
+              <Route path="/" element={<AdminLayout />}>
+                <Route index element={<AdminHomePage />} />
+                <Route path="auth" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </>
+          ) : (
+            <>
+              <Route path="/" element={<ClientLayout />}>
+                <Route path="auth" element={<Navigate to="/" replace />} />
+                <Route index element={<ClientStartPage />} />
+                <Route path="home" element={<ClientHomePage />} />
+                <Route path="intro" element={<ClientIntroPage />} />
+                <Route path="family" element={<FamilyPage />} />
+                <Route path="join-family" element={<JoinFamilyPage />} />
+                <Route path="children" element={<ChildrenPage />} />
+                <Route path="pillbox" element={<PillboxPage />} />
+                <Route path="children/:childId" element={<ChildProfilePage />} />
+                <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
+                <Route path="illnesses/history" element={<IllnessHistoryPage />} />
+                <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
+                <Route path="more" element={<MorePage />} />
+                <Route path="account" element={<AccountPage />} />
+                <Route path="about" element={<AboutPage />} />
+                <Route path="children/:childId/illness" element={<ChildIllnessPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </>
+          )}
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

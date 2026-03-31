@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 type DisclosureHeaderProps = {
+  actions?: ReactNode;
   children: ReactNode;
   isOpen: boolean;
   onToggle: () => void;
@@ -15,6 +16,7 @@ type DisclosureHeaderProps = {
 };
 
 export function DisclosureHeader({
+  actions,
   children,
   isOpen,
   onToggle,
@@ -48,22 +50,30 @@ export function DisclosureHeader({
     >
       <div className={`min-w-0 ${contentClassName}`.trim()}>{children}</div>
 
-      {!disabled && (
-        <>
-          <span className="soft-pill rounded-full px-3 py-1 text-xs sm:hidden">
-            {isOpen ? mobileOpenLabel : mobileClosedLabel}
-          </span>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggle();
-            }}
-            className={`hidden min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:inline-flex sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem] ${desktopButtonClassName}`.trim()}
-          >
-            {isOpen ? desktopOpenLabel : desktopClosedLabel}
-          </button>
-        </>
+      {(!disabled || actions) && (
+        <div
+          className="flex shrink-0 items-center gap-2"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {actions}
+          {!disabled && (
+            <>
+              <span className="soft-pill rounded-full px-3 py-1 text-xs sm:hidden">
+                {isOpen ? mobileOpenLabel : mobileClosedLabel}
+              </span>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggle();
+                }}
+                className={`hidden min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:inline-flex sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem] ${desktopButtonClassName}`.trim()}
+              >
+                {isOpen ? desktopOpenLabel : desktopClosedLabel}
+              </button>
+            </>
+          )}
+        </div>
       )}
     </div>
   );

@@ -120,6 +120,58 @@ export interface IllnessEpisode {
   closedAt: string | null;
 }
 
+export interface IllnessAnalyticsSeriesPoint {
+  label: string;
+  value: number;
+}
+
+export interface IllnessAnalyticsDurationBucket {
+  label: string;
+  value: number;
+}
+
+export interface IllnessHistorySummary {
+  period: string;
+  totalClosedEpisodes: number;
+  episodeCount: number;
+  lastEpisodeStartedAt: string | null;
+  daysSinceLastEpisode: number | null;
+  mostActivePeriodLabel: string | null;
+  averageDurationDays: number;
+  longestDurationDays: number;
+  episodesWithTemperature38Plus: number;
+  episodesWithTemperature39Plus: number;
+  episodesWithAdministrations: number;
+  observationOnlyEpisodes: number;
+  guidedEpisodes: number;
+  totalTemperatureEntries: number;
+  timeline: IllnessAnalyticsSeriesPoint[];
+  durationBuckets: IllnessAnalyticsDurationBucket[];
+}
+
+export interface EpisodeTemperaturePoint {
+  measuredAt: string;
+  valueCelsius: number;
+}
+
+export interface IllnessEpisodeInsights {
+  episodeId: string;
+  durationDays: number;
+  peakTemperatureCelsius: number | null;
+  peakTemperatureAt: string | null;
+  lastTemperatureCelsius: number | null;
+  lastEventAt: string | null;
+  temperatureCount: number;
+  administrationCount: number;
+  commentCount: number;
+  medicationMode: string;
+  medicineNames: string[];
+  totalEvents: number;
+  firstTemperatureAt: string | null;
+  lastAdministrationAt: string | null;
+  temperaturePoints: EpisodeTemperaturePoint[];
+}
+
 export interface IllnessComment {
   id: string;
   episodeId: string;

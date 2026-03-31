@@ -1,0 +1,426 @@
+{
+  "meta": {
+    "name": "SmartMed UI Unified Style Guide",
+    "version": "1.0",
+    "primary_variant": "V3_Clarity_Energy_Purple",
+    "purpose": [
+      "Design token source of truth",
+      "Component library contract",
+      "Responsive UI rules",
+      "Screen blueprint reference",
+      "Product/data structure hint for AI IDE agents"
+    ],
+    "usage_note": "Use this file as a single source of truth for generating UI and interaction patterns. Prioritize visual hierarchy, spacing rhythm, surface logic, and component consistency over generic form-building."
+  },
+
+  "theme_tokens": {
+    "design_system": "V3_Clarity_Energy_Purple",
+    "design_intent": {
+      "keywords": [
+        "premium health-tech",
+        "soft",
+        "airy",
+        "rounded",
+        "clean",
+        "calm",
+        "mobile-first",
+        "desktop-safe",
+        "card-based"
+      ],
+      "summary": "A soft premium lavender interface for a health-focused product. The UI must feel calm, lightweight, polished, and consistent across mobile and desktop without turning into an admin panel or generic enterprise form."
+    },
+
+    "typography": {
+      "font_family": "Plus Jakarta Sans",
+      "weights": {
+        "header": 700,
+        "body": 500,
+        "control": 600,
+        "button": 700
+      },
+      "sizes_px": {
+        "header_l": 32,
+        "header_m": 24,
+        "title": 20,
+        "body": 16,
+        "label": 14,
+        "caption": 12,
+        "large_time": 34
+      }
+    },
+
+    "global_radius_px": 24,
+
+    "color_modes": {
+      "light": {
+        "background": "#EBE4FF",
+        "card_surface": "rgba(255,255,255,0.90)",
+        "primary_action": "#8A7BBF",
+        "text_primary": "#334155",
+        "text_muted": "#64748B",
+        "input_fill": "#F1EDFF",
+        "input_border": "rgba(138,123,191,0.08)",
+        "icon_color": "#A695CF",
+        "pattern_opacity": 0.05
+      },
+      "dark": {
+        "background": "#1E1B2E",
+        "card_surface": "rgba(31,27,46,0.88)",
+        "primary_action": "#8A7BBF",
+        "text_primary": "#F8FAFC",
+        "text_muted": "#A1A1AA",
+        "input_fill": "#141127",
+        "input_border": "rgba(255,255,255,0.05)",
+        "icon_color": "#2E2A43",
+        "pattern_opacity": 0.08
+      }
+    },
+
+    "effects": {
+      "card_backdrop_blur_px": 30,
+      "card_shadow": "0 16px 56px rgba(15,23,42,0.12)",
+      "button_glow": "0 8px 34px rgba(138,123,191,0.15)",
+      "button_glow_stronger": "0 8px 34px rgba(138,123,191,0.20)",
+      "glass_edge_light": "1px solid rgba(255,255,255,1)",
+      "icon_stroke": "1px"
+    },
+
+    "layout_rules": {
+      "grid_side_margin_px": 24,
+      "min_primary_touch_height_px": 56,
+      "min_spacing_between_interactive_px": 16,
+      "outer_modal_radius_px": 28,
+      "section_card_radius_px": 22,
+      "section_gap_px": 16,
+      "field_gap_px": 12,
+      "group_gap_px": 14
+    }
+  },
+
+  "component_library": {
+    "Cards": {
+      "radius_px": 24,
+      "padding_px": 24,
+      "background_light": "rgba(255,255,255,0.90)",
+      "background_dark": "rgba(31,27,46,0.88)",
+      "backdrop_blur_px": 30,
+      "shadow": "0 16px 56px rgba(15,23,42,0.12)",
+      "border_light": "1px solid rgba(255,255,255,1)",
+      "border_dark": "1px solid rgba(255,255,255,0.05)"
+    },
+
+    "Section_Cards": {
+      "radius_px": 22,
+      "padding_x_px": 18,
+      "padding_y_px": 16,
+      "background_light": "rgba(255,255,255,0.90)",
+      "background_dark": "rgba(31,27,46,0.88)",
+      "shadow": "soft_only"
+    },
+
+    "Inputs": {
+      "height_px": 56,
+      "radius_px": 18,
+      "padding_x_px": 16,
+      "font_weight": 500,
+      "font_size_px": 14,
+      "fill_light": "#F1EDFF",
+      "fill_dark": "#141127",
+      "text_light": "#334155",
+      "text_dark": "#F8FAFC",
+      "placeholder_light": "rgba(51,65,85,0.5)",
+      "placeholder_dark": "rgba(161,161,170,0.6)",
+      "border_light": "1px solid rgba(138,123,191,0.08)",
+      "border_dark": "1px solid rgba(255,255,255,0.05)",
+      "icon_size_px": 16,
+      "icon_gap_px": 10
+    },
+
+    "Large_Time_Field": {
+      "height_px": 76,
+      "radius_px": 20,
+      "padding_x_px": 18,
+      "font_size_px": 34,
+      "font_weight": 700,
+      "fill_light": "#F1EDFF",
+      "fill_dark": "#141127",
+      "icon_size_px": 18
+    },
+
+    "Primary_Buttons": {
+      "height_px": 56,
+      "radius_px": 999,
+      "padding_x_px": 20,
+      "background": "#8A7BBF",
+      "text_color": "#FFFFFF",
+      "font_weight": 700,
+      "font_size_px": 16,
+      "glow": "0 8px 34px rgba(138,123,191,0.15)",
+      "states": {
+        "default": "solid",
+        "pressed": "darken_8_percent",
+        "disabled": "opacity_40_percent_no_glow"
+      }
+    },
+
+    "Day_Chips": {
+      "size_px": 36,
+      "radius_px": 999,
+      "font_weight": 600,
+      "font_size_px": 13,
+      "active": {
+        "background": "#8A7BBF",
+        "text_light": "#FFFFFF",
+        "text_dark": "#F8FAFC"
+      },
+      "inactive": {
+        "background_light": "#F1EDFF",
+        "background_dark": "#141127",
+        "text_light": "#64748B",
+        "text_dark": "#A1A1AA",
+        "border_dark": "1px solid rgba(255,255,255,0.05)"
+      },
+      "gap_px": 10
+    },
+
+    "Segmented_Controls": {
+      "height_px": 44,
+      "radius_px": 999,
+      "inner_padding_px": 4,
+      "label_font_size_px": 14,
+      "label_font_weight": 600,
+      "selected_background": "#8A7BBF",
+      "selected_text": "#FFFFFF",
+      "unselected_background_light": "#F1EDFF",
+      "unselected_background_dark": "#141127",
+      "unselected_text_light": "#64748B",
+      "unselected_text_dark": "#A1A1AA"
+    },
+
+    "Close_Button": {
+      "size_px": 40,
+      "radius_px": 999,
+      "background_light": "rgba(255,255,255,0.78)",
+      "background_dark": "rgba(255,255,255,0.08)",
+      "icon_size_px": 16
+    },
+
+    "Toggle_Switches": {
+      "track_width_px": 52,
+      "track_height_px": 32,
+      "thumb_size_px": 24,
+      "radius_px": 24,
+      "on": {
+        "track": "#8A7BBF",
+        "thumb": "#FFFFFF",
+        "thumb_position": "right"
+      },
+      "off": {
+        "track_light": "#D8D0F2",
+        "track_dark": "#2A2540",
+        "thumb": "#FFFFFF",
+        "thumb_position": "left"
+      },
+      "interaction": {
+        "animation_ms": 160,
+        "haptic_feedback": "soft"
+      }
+    }
+  },
+
+  "visual_behavior_rules": {
+    "core_principles": [
+      "compact",
+      "soft",
+      "card-based",
+      "mobile-first",
+      "desktop-safe",
+      "premium health-tech",
+      "never admin-panel-like"
+    ],
+    "composition_rules": [
+      "Use vertical section cards with consistent spacing rhythm.",
+      "Keep the modal visually contained and centered.",
+      "Do not stretch form controls across excessive width.",
+      "Prioritize hierarchy through size, spacing, and surface separation rather than borders."
+    ],
+    "control_family_rules": [
+      "Inputs, chips, segmented controls, and buttons must feel like one system.",
+      "Use consistent radius language across all controls.",
+      "Use consistent height tiers: regular controls, emphasized controls, primary CTA."
+    ]
+  },
+
+  "responsive_behavior": {
+    "core_rule": "This interface supports both mobile and desktop, but must preserve the same compact premium card-based visual language.",
+    "mobile": {
+      "layout": "single-column",
+      "preferred_width_px": "380-420",
+      "rules": [
+        "Stack sections vertically.",
+        "Keep touch targets comfortable.",
+        "Favor compact card proportions.",
+        "Use strong vertical rhythm."
+      ]
+    },
+    "desktop": {
+      "layout": "centered contained card/modal",
+      "preferred_width_px": "560-720",
+      "rules": [
+        "Desktop should feel like an enlarged premium modal/card.",
+        "Do not stretch into a full-width enterprise form.",
+        "Slightly larger spacing is allowed.",
+        "Limited internal 2-column alignment is allowed only if it improves balance."
+      ]
+    },
+    "not_allowed": [
+      "giant full-width empty panels",
+      "admin-dashboard appearance",
+      "browser-default form styling",
+      "overly long input fields with weak hierarchy",
+      "disconnected panels that break the unified card feel"
+    ]
+  },
+
+  "screen_blueprints": {
+    "Screen_1_Main_Hub": {
+      "layout": "Vertical Scroll",
+      "elements": [
+        "Header_Title: My Family Groups",
+        "Ghost_Button: + Add Group",
+        "Group_Cards_List",
+        "Card_Title: Group/Member Name",
+        "Status_Tag: Next dose time",
+        "Member_Avatars_Row",
+        "Master_Toggle",
+        "Primary_Button: View Schedule",
+        "Secondary_Action: Edit Profile"
+      ],
+      "logic": {
+        "tap_add_group": "Navigate to Group Setup",
+        "tap_view_schedule": "Navigate to Screen_2_Group_Calendar with selected group_id",
+        "tap_edit_profile": "Navigate to Profile screen/context for selected member",
+        "toggle_master": "Enable/disable reminders for entire group"
+      }
+    },
+
+    "Screen_2_Group_Calendar": {
+      "layout": "Vertical Scroll + Horizontal Day Strip",
+      "elements": [
+        "Top_Bar: Back, Group Name, Settings",
+        "Weekly_Strip_Horizontal",
+        "Active_Day_Chip",
+        "Timeline_List",
+        "Timeline_Row: Time, Medication Name + Dose, Toggle",
+        "Status_Indicator: Taken/Missed",
+        "Optional_Grouped_Time_Slot: multiple meds at same time"
+      ],
+      "logic": {
+        "tap_back": "Navigate to Screen_1_Main_Hub",
+        "tap_settings": "Open group settings",
+        "tap_day_chip": "Filter timeline by selected day",
+        "tap_timeline_row": "Navigate to Screen_3_Medication_Editor with medication_id",
+        "toggle_taken_state": "Set reminder status taken/missed and persist",
+        "time_slot_grouping": "Render multiple medications under one shared time row"
+      }
+    },
+
+    "Screen_3_Medication_Editor": {
+      "layout": "Compact card-based stacked modal",
+      "elements": [
+        "Header: Edit Medication + Close Button",
+        "Section_Card: Medication",
+        "Input: Drug Name",
+        "Input: Dosage",
+        "Section_Card: Time",
+        "Large_Time_Field: HH:MM",
+        "Day_Chips: S M T W T F S",
+        "Course_Duration_Segmented: Continuous | Set Period",
+        "Section_Card: Meal Correlation",
+        "Meal_Correlation_Segmented: Before | With | After",
+        "Primary_Button: Done"
+      ],
+      "logic": {
+        "tap_time_picker": "Open time selector modal/wheel",
+        "tap_day_chip": "Toggle day selection for schedule",
+        "select_course_duration_continuous": "No end date required",
+        "select_course_duration_set_period": "Require start/end date or duration value",
+        "tap_done": "Validate required fields, save medication, return to previous screen (Hub or Calendar)"
+      },
+      "visual_priorities": [
+        "title first",
+        "large time field second",
+        "selected chips and segmented states as accent",
+        "button as final clear action"
+      ]
+    },
+
+    "Screen_4_Group_Setup": {
+      "layout": "Stacked Form",
+      "elements": [
+        "Header_Title: Group Setup",
+        "Input: Group Name",
+        "Member_Selection_Avatars",
+        "Reminder_Preferences",
+        "Primary_Button: Create/Save Group",
+        "Secondary_Action: Cancel"
+      ],
+      "logic": {
+        "tap_member_avatar": "Select/deselect member for group",
+        "tap_create_save_group": "Persist group with members and defaults; navigate to Screen_1_Main_Hub",
+        "tap_cancel": "Discard draft and return to previous screen"
+      }
+    }
+  },
+
+  "data_structure_hint": {
+    "hierarchy": "User -> Groups -> Medications",
+    "entities": {
+      "Group": {
+        "id": "string",
+        "name": "string",
+        "members": "Member[]",
+        "reminders_enabled": "boolean",
+        "medications": "Medication[]"
+      },
+      "Medication": {
+        "id": "string",
+        "group_id": "string",
+        "name": "string",
+        "dosage": "string",
+        "time": "HH:MM",
+        "days_of_week": "number[]",
+        "course_duration_mode": "continuous|set_period",
+        "start_date": "date|null",
+        "end_date": "date|null",
+        "meal_relation": "before|with|after",
+        "status_by_date": "map<date, taken|missed|pending>"
+      }
+    },
+    "persistence_notes": [
+      "Group Setup creates group shell and member links first.",
+      "Medication Editor writes/updates medication records scoped by group_id.",
+      "Calendar is a computed view from medications filtered by day and grouped by time.",
+      "Hub card status is derived from upcoming pending reminders."
+    ]
+  },
+
+  "anti_patterns": [
+    "Do not create a generic desktop admin form.",
+    "Do not use giant stretched fields or panels.",
+    "Do not mix unrelated radius styles.",
+    "Do not rely on harsh borders.",
+    "Do not make segmented controls look like random separate buttons.",
+    "Do not create inconsistent control heights.",
+    "Do not use weak hierarchy where all elements have equal visual weight.",
+    "Do not overfill the layout with empty space caused by width stretching."
+  ],
+
+  "implementation_notes": [
+    "When building new screens with this variant, prioritize surface hierarchy, spacing rhythm, and consistent component proportions over decorative effects.",
+    "Do not interpret the style tokens as permission to build a generic form.",
+    "Always preserve the premium compact card-based feel.",
+    "Borders are secondary and should remain nearly invisible in light mode.",
+    "Prefer soft filled surfaces over outlined controls."
+  ]
+}
