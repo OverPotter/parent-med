@@ -15,10 +15,9 @@ from src.application.dto.illness_episode import (
     IllnessEpisodeResponseDto,
     IllnessEpisodeUpdateDto,
 )
-from src.domain.entities.administration_event import AdministrationEvent
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
+from src.domain.entities.administration_event import AdministrationEvent
 from src.domain.entities.child import Child
-from src.domain.entities.illness_comment import IllnessComment
 from src.domain.entities.illness_episode import IllnessEpisode
 from src.domain.entities.temperature_entry import TemperatureEntry
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
