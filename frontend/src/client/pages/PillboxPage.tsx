@@ -34,6 +34,8 @@ type SetupDraft = {
   medications: MedicationItem[];
 };
 
+type CoursePreset = "7" | "14" | "30" | "custom";
+
 const PILLBOX_EDITOR_STATE_KEY = "pillbox-editor-state";
 
 const familyMembers = ["Мама", "Папа", "Бабушка"];
@@ -64,7 +66,7 @@ const medicationTemplates: MedicationTemplate[] = [
     times: ["08:30"],
     mealRule: "Во время еды",
     repeatDays: medicationDays.map((day) => day.full),
-    courseMode: "continuous" as const,
+    courseMode: "continuous",
   },
   {
     title: "Омега-3",
@@ -72,7 +74,7 @@ const medicationTemplates: MedicationTemplate[] = [
     times: ["08:30", "14:00", "20:00"],
     mealRule: "После еды",
     repeatDays: ["Пн", "Вт", "Ср", "Чт", "Пт"],
-    courseMode: "period" as const,
+    courseMode: "period",
     courseStartDate: "2026-04-01",
     courseEndDate: "2026-04-21",
   },
@@ -82,7 +84,7 @@ const medicationTemplates: MedicationTemplate[] = [
     times: ["20:00"],
     mealRule: "После еды",
     repeatDays: medicationDays.map((day) => day.full),
-    courseMode: "continuous" as const,
+    courseMode: "continuous",
   },
   {
     title: "Пробиотик",
@@ -90,7 +92,7 @@ const medicationTemplates: MedicationTemplate[] = [
     times: ["09:00", "21:00"],
     mealRule: "После еды",
     repeatDays: medicationDays.map((day) => day.full),
-    courseMode: "period" as const,
+    courseMode: "period",
     courseStartDate: "2026-04-02",
     courseEndDate: "2026-04-12",
   },
@@ -207,27 +209,24 @@ const initialGroups: PillboxGroup[] = [
   },
 ];
 
+const editorSectionCardClass =
+  "soft-card rounded-[24px] px-4 py-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:px-5 sm:py-5 xl:px-6 xl:py-6";
+const actionPrimaryClass =
+  "soft-button-primary inline-flex min-h-[3.05rem] w-full items-center justify-center rounded-[22px] px-4 text-[0.9rem] font-semibold tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-5 sm:text-[0.94rem]";
+const actionSecondaryClass =
+  "soft-button-secondary inline-flex min-h-[3.05rem] w-full items-center justify-center rounded-[22px] px-4 text-[0.88rem] font-semibold tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-5 sm:text-[0.92rem]";
+const actionDangerClass =
+  "soft-button-danger inline-flex min-h-[3.05rem] w-full items-center justify-center rounded-[22px] px-4 text-[0.88rem] font-semibold tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-5 sm:text-[0.92rem]";
+const actionCompactDangerClass =
+  "soft-button-danger inline-flex min-h-[3.05rem] shrink-0 items-center justify-center rounded-[18px] px-3.5 text-[0.84rem] tracking-[-0.02em]";
+
 function memberInitial(member: string) {
   return member.slice(0, 1).toUpperCase();
 }
 
 function createMedication(index: number): MedicationItem {
   const templateIndex = (index - 1) % medicationTemplates.length;
-  const template = medicationTemplates[templateIndex];
-
-  if (!template) {
-    return {
-      id: `new-${Date.now()}-${index}`,
-      title: "Новое лекарство",
-      dose: "1 таблетка",
-      times: ["08:30"],
-      mealRule: "Во время еды",
-      repeatDays: medicationDays.map((day) => day.full),
-      courseMode: "continuous",
-      courseStartDate: "",
-      courseEndDate: "",
-    };
-  }
+  const template = medicationTemplates[templateIndex] ?? medicationTemplates[0]!;
 
   return {
     id: `new-${Date.now()}-${index}`,
@@ -267,7 +266,7 @@ function buildGroupFromDraft(draft: SetupDraft, previous?: PillboxGroup): Pillbo
 
   return {
     id: previous?.id ?? `group-${Date.now()}`,
-    title: draft.title.trim() || "Новая группа",
+    title: draft.title.trim() || "Новый план",
     activeCount: draft.medications.length,
     nextDose,
     members: draft.members,
@@ -284,18 +283,41 @@ function summarizeMedicationTimes(times: string[]) {
   return `${normalized[0]}, ${normalized[1]} +${normalized.length - 2}`;
 }
 
+function getTodayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addDaysToIso(isoDate: string, days: number) {
+  const date = new Date(`${isoDate}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function getCoursePreset(medication: MedicationItem): CoursePreset {
+  if (
+    medication.courseMode !== "period" ||
+    !medication.courseStartDate ||
+    !medication.courseEndDate
+  ) {
+    return "custom";
+  }
+
+  const today = getTodayIso();
+  if (medication.courseStartDate !== today) {
+    return "custom";
+  }
+
+  if (medication.courseEndDate === addDaysToIso(today, 6)) return "7";
+  if (medication.courseEndDate === addDaysToIso(today, 13)) return "14";
+  if (medication.courseEndDate === addDaysToIso(today, 29)) return "30";
+
+  return "custom";
+}
+
 function UtensilsBadge() {
   return (
-    <span className="inline-flex h-4 w-4 items-center justify-center">
-      <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
-        <path
-          d="M6.4 3.8v4.2M4.8 3.8v4.2M6.4 6.15H4.8M5.6 8v7.8M12.1 3.8c1.55 1.85 1.65 4.45.35 6.4L11 12.1v3.7"
-          stroke="currentColor"
-          strokeWidth="1.9"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+    <span className="inline-flex h-4.5 w-4.5 items-center justify-center text-[0.95rem] leading-none">
+      🍴
     </span>
   );
 }
@@ -303,43 +325,24 @@ function UtensilsBadge() {
 function FieldIcon({ kind }: { kind: "pill" | "dose" | "time" }) {
   if (kind === "time") {
     return (
-      <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
-        <circle cx="10" cy="10" r="6.2" stroke="currentColor" strokeWidth="1.8" />
-        <path
-          d="M10 6.8v3.3l2.2 1.3"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <span className="inline-flex h-4.5 w-4.5 items-center justify-center text-[0.95rem] leading-none">
+        ⏰
+      </span>
     );
   }
 
   if (kind === "dose") {
     return (
-      <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
-        <path
-          d="M7.1 4.8h5.8v9.6H7.1zM8.4 3.5h3.2M8.8 8.1h2.4"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <span className="inline-flex h-4.5 w-4.5 items-center justify-center text-[0.95rem] leading-none">
+        🔢
+      </span>
     );
   }
 
   return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
-      <path
-        d="M6.2 6.6a2.2 2.2 0 0 1 2.2-2.2h3.2a2.2 2.2 0 0 1 0 4.4H8.4A2.2 2.2 0 0 1 6.2 6.6Zm0 6.8a2.2 2.2 0 0 1 2.2-2.2h3.2a2.2 2.2 0 1 1 0 4.4H8.4a2.2 2.2 0 0 1-2.2-2.2Z"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <span className="inline-flex h-4.5 w-4.5 items-center justify-center text-[0.95rem] leading-none">
+      💊
+    </span>
   );
 }
 
@@ -381,7 +384,7 @@ function TintedField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className={`soft-input w-full px-4 text-[0.96rem] placeholder:text-muted ${icon ? "pr-14 sm:pr-4 sm:pl-14" : ""}`.trim()}
+          className={`soft-input min-h-[3.05rem] w-full px-4 text-[0.96rem] placeholder:text-muted sm:min-h-[3.15rem] ${icon ? "pr-14 sm:pr-4 sm:pl-14" : ""}`.trim()}
         />
       </span>
     </label>
@@ -401,7 +404,7 @@ function DayChip({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border px-0 text-[11px] font-bold tracking-[-0.03em] transition sm:h-10 sm:w-10 sm:text-[12px] ${
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-full px-0 text-[11px] font-semibold tracking-[-0.03em] transition sm:h-10 sm:w-10 sm:text-[12px] ${
         selected ? "soft-button-primary min-h-0" : "soft-button-secondary min-h-0"
       }`}
     >
@@ -433,7 +436,7 @@ function ChoiceButtons<T extends string>({
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={`inline-flex min-h-[3.05rem] w-full items-center justify-center px-4 text-center text-[0.88rem] font-semibold tracking-[-0.025em] ${
+            className={`inline-flex min-h-[3.05rem] w-full items-center justify-center rounded-[22px] px-4 text-center text-[0.88rem] font-semibold tracking-[-0.025em] sm:min-h-[3.15rem] ${
               selected ? "soft-button-primary" : "soft-button-secondary"
             }`}
           >
@@ -443,6 +446,18 @@ function ChoiceButtons<T extends string>({
         );
       })}
     </div>
+  );
+}
+
+function BackLinkButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex text-sm text-primary hover:underline"
+    >
+      {label}
+    </button>
   );
 }
 
@@ -501,6 +516,7 @@ export function PillboxPage() {
   const [editorTitle, setEditorTitle] = useState("");
   const [editorDose, setEditorDose] = useState("");
   const [editorTimes, setEditorTimes] = useState<string[]>([""]);
+  const [editorCoursePreset, setEditorCoursePreset] = useState<CoursePreset>("custom");
   const screen =
     searchParams.get("mode") === "setup" || searchParams.get("mode") === "medication"
       ? (searchParams.get("mode") as "setup" | "medication")
@@ -576,13 +592,16 @@ export function PillboxPage() {
   useEffect(() => {
     if (screen !== "medication" || !activeMedicationId) {
       resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
+      setEditorCoursePreset("custom");
       return;
     }
 
-    setEditorTitle(activeMedication?.title ?? "");
-    setEditorDose(activeMedication?.dose ?? "");
-    setEditorTimes(activeMedication?.times.length ? [...activeMedication.times] : [""]);
-  }, [activeMedication, activeMedicationId, screen]);
+    const medication = draft?.medications.find((item) => item.id === activeMedicationId) ?? null;
+    setEditorTitle(medication?.title ?? "");
+    setEditorDose(medication?.dose ?? "");
+    setEditorTimes(medication?.times.length ? [...medication.times] : [""]);
+    setEditorCoursePreset(medication ? getCoursePreset(medication) : "custom");
+  }, [activeMedicationId, draft?.id, screen]);
 
   const openCreate = () => {
     setDraft(buildDraft());
@@ -602,6 +621,12 @@ export function PillboxPage() {
 
   const goToSetup = () => {
     navigate("/pillbox?mode=setup");
+  };
+
+  const closeMedicationEditor = () => {
+    resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
+    setEditorCoursePreset("custom");
+    goToSetup();
   };
 
   const goToMedication = (medicationId: string) => {
@@ -710,27 +735,21 @@ export function PillboxPage() {
 
     return (
       <EditorShell>
-        <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-3 px-1">
+          <BackLinkButton label="← К плану" onClick={goToSetup} />
           <div>
             <h1 className="app-page-title text-[1.62rem] tracking-[-0.05em] sm:text-[2rem]">
               Настройка приёма
             </h1>
             <p className="mt-1 text-[0.9rem] leading-5 text-muted">
-              Укажите время, период и связь с едой для одного лекарства.
+              Здесь можно спокойно настроить время, срок и связь с едой для одного лекарства.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={goToSetup}
-            className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-4 text-[0.86rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-5 sm:text-[0.9rem]"
-          >
-            Назад к группе
-          </button>
         </div>
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.18fr)_minmax(0,1fr)] xl:gap-5">
           <div className="space-y-4 xl:space-y-5">
-            <div className="soft-card rounded-[20px] px-4 py-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)] sm:rounded-[22px] sm:px-5 sm:py-5">
+            <div className={editorSectionCardClass}>
               <div className="space-y-5 sm:space-y-6">
                 <div className="space-y-3">
                   <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
@@ -820,52 +839,97 @@ export function PillboxPage() {
                     <div className="space-y-2.5">
                       <ChoiceButtons
                         value={activeMedication.courseMode}
-                        onChange={(value) =>
+                        onChange={(value) => {
+                          if (value === "period") {
+                            const today = getTodayIso();
+                            setEditorCoursePreset("14");
+                            updateMedication(activeMedication.id, {
+                              courseMode: "period",
+                              courseStartDate: activeMedication.courseStartDate || today,
+                              courseEndDate:
+                                activeMedication.courseEndDate || addDaysToIso(today, 13),
+                            });
+                            return;
+                          }
+
                           updateMedication(activeMedication.id, {
-                            courseMode: value as MedicationItem["courseMode"],
-                            courseStartDate:
-                              value === "period" ? activeMedication.courseStartDate : "",
-                            courseEndDate: value === "period" ? activeMedication.courseEndDate : "",
-                          })
-                        }
+                            courseMode: "continuous",
+                            courseStartDate: "",
+                            courseEndDate: "",
+                          });
+                          setEditorCoursePreset("custom");
+                        }}
                         options={[
                           { value: "continuous", label: "Постоянно принимать" },
                           { value: "period", label: "Курсом" },
                         ]}
                       />
                       {showCourseDates ? (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <label className="block space-y-1.5">
-                            <span className="soft-field-label">Начало курса</span>
-                            <DateField
-                              value={activeMedication.courseStartDate}
-                              onChange={(nextValue) =>
+                        <div className="space-y-3">
+                          <ChoiceButtons
+                            value={editorCoursePreset}
+                            onChange={(value) => {
+                              if (value === "custom") {
+                                setEditorCoursePreset("custom");
+                                const today = getTodayIso();
                                 updateMedication(activeMedication.id, {
-                                  courseStartDate: nextValue,
+                                  courseStartDate: activeMedication.courseStartDate || today,
                                   courseEndDate:
-                                    activeMedication.courseEndDate &&
-                                    nextValue &&
-                                    activeMedication.courseEndDate < nextValue
-                                      ? nextValue
-                                      : activeMedication.courseEndDate,
-                                })
+                                    activeMedication.courseEndDate || addDaysToIso(today, 13),
+                                });
+                                return;
                               }
-                              placeholder="Дата начала"
-                            />
-                          </label>
-                          <label className="block space-y-1.5">
-                            <span className="soft-field-label">Окончание</span>
-                            <DateField
-                              value={activeMedication.courseEndDate}
-                              onChange={(nextValue) =>
-                                updateMedication(activeMedication.id, {
-                                  courseEndDate: nextValue,
-                                })
-                              }
-                              placeholder="Дата окончания"
-                              min={activeMedication.courseStartDate || undefined}
-                            />
-                          </label>
+
+                              const today = getTodayIso();
+                              const durationDays = value === "7" ? 7 : value === "14" ? 14 : 30;
+                              setEditorCoursePreset(value);
+                              updateMedication(activeMedication.id, {
+                                courseStartDate: today,
+                                courseEndDate: addDaysToIso(today, durationDays - 1),
+                              });
+                            }}
+                            options={[
+                              { value: "7", label: "7 дней" },
+                              { value: "14", label: "14 дней" },
+                              { value: "30", label: "30 дней" },
+                              { value: "custom", label: "Свои даты" },
+                            ]}
+                          />
+                          {editorCoursePreset === "custom" ? (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <label className="block space-y-1.5">
+                                <span className="soft-field-label">Начало курса</span>
+                                <DateField
+                                  value={activeMedication.courseStartDate}
+                                  onChange={(nextValue) =>
+                                    updateMedication(activeMedication.id, {
+                                      courseStartDate: nextValue,
+                                      courseEndDate:
+                                        activeMedication.courseEndDate &&
+                                        nextValue &&
+                                        activeMedication.courseEndDate < nextValue
+                                          ? nextValue
+                                          : activeMedication.courseEndDate,
+                                    })
+                                  }
+                                  placeholder="Дата начала"
+                                />
+                              </label>
+                              <label className="block space-y-1.5">
+                                <span className="soft-field-label">Окончание</span>
+                                <DateField
+                                  value={activeMedication.courseEndDate}
+                                  onChange={(nextValue) =>
+                                    updateMedication(activeMedication.id, {
+                                      courseEndDate: nextValue,
+                                    })
+                                  }
+                                  placeholder="Дата окончания"
+                                  min={activeMedication.courseStartDate || undefined}
+                                />
+                              </label>
+                            </div>
+                          ) : null}
                         </div>
                       ) : null}
                     </div>
@@ -876,7 +940,7 @@ export function PillboxPage() {
           </div>
 
           <div className="space-y-4 xl:space-y-5">
-            <div className="soft-card rounded-[20px] px-4 py-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)] sm:rounded-[22px] sm:px-5 sm:py-5 xl:px-6 xl:py-6">
+            <div className={editorSectionCardClass}>
               <div className="mx-auto w-full max-w-[36rem]">
                 <ChoiceButtons
                   value={activeMedication.mealRule}
@@ -894,7 +958,7 @@ export function PillboxPage() {
               </div>
             </div>
 
-            <div className="soft-card rounded-[20px] px-4 py-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)] sm:rounded-[22px] sm:px-5 sm:py-5 xl:px-6 xl:py-6">
+            <div className={editorSectionCardClass}>
               <div className="mx-auto flex w-full max-w-[36rem] flex-col gap-2.5 sm:gap-3">
                 <button
                   type="button"
@@ -909,27 +973,16 @@ export function PillboxPage() {
                       dose: editorDose.trim(),
                       times: normalizedTimes.length ? normalizedTimes : ["08:30"],
                     });
-                    resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-                    goToSetup();
+                    closeMedicationEditor();
                   }}
-                  className="soft-button-primary inline-flex min-h-[3.25rem] w-full items-center justify-center px-5 text-[0.94rem] font-bold tracking-[-0.025em] sm:min-h-[3.5rem] sm:text-[0.98rem]"
+                  className={actionPrimaryClass}
                 >
                   Сохранить
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-                    goToSetup();
-                  }}
-                  className="soft-button-secondary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] font-semibold tracking-[-0.025em] sm:min-h-[3.15rem] sm:text-[0.9rem]"
-                >
-                  Назад
-                </button>
-                <button
-                  type="button"
                   onClick={() => deleteMedication(activeMedication.id)}
-                  className="soft-button-danger inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] font-semibold tracking-[-0.025em] sm:min-h-[3.15rem] sm:text-[0.9rem]"
+                  className={actionDangerClass}
                 >
                   Удалить лекарство
                 </button>
@@ -944,18 +997,19 @@ export function PillboxPage() {
   if (screen === "setup" && draft) {
     return (
       <div className="min-w-0 space-y-6">
+        <BackLinkButton label="← К планам" onClick={goToHub} />
         <PageIntro
-          title="Настройка группы"
-          subtitle="Название, состав группы и получатели напоминаний."
+          title="Настройка плана"
+          subtitle="Соберите план: как он называется, что в него входит и кому придут напоминания."
           eyebrow="Таблетница"
           compactOnMobile
         />
 
         <div className="mx-auto grid w-full max-w-5xl gap-4 xl:grid-cols-[minmax(0,1.18fr)_minmax(22rem,0.92fr)] xl:gap-5">
           <div className="space-y-4 xl:space-y-5">
-            <RowSurface className="rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
+            <RowSurface className="sm:px-5 sm:py-5">
               <label className="block space-y-1.5" htmlFor="pillbox-group-title">
-                <span className="soft-field-label">Название группы</span>
+                <span className="soft-field-label">Название плана</span>
                 <input
                   id="pillbox-group-title"
                   value={draft.title}
@@ -964,18 +1018,18 @@ export function PillboxPage() {
                       current ? { ...current, title: event.target.value } : current
                     )
                   }
-                  placeholder="Название группы"
+                  placeholder="Название плана"
                   className="soft-input w-full px-4"
                 />
               </label>
             </RowSurface>
 
-            <RowSurface className="space-y-3 rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
+            <RowSurface className="space-y-3 sm:px-5 sm:py-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="app-card-title text-[1rem]">Что будем принимать</h2>
                   <p className="mt-1 text-[0.84rem] leading-5 text-muted">
-                    Каждое лекарство можно настроить отдельно.
+                    У каждого лекарства можно отдельно задать время, срок и связь с едой.
                   </p>
                 </div>
                 <span className="soft-pill rounded-full px-2.5 py-1 text-[10px]">
@@ -1012,7 +1066,7 @@ export function PillboxPage() {
                     <button
                       type="button"
                       onClick={() => deleteMedication(medication.id)}
-                      className="soft-button-danger inline-flex min-h-[2.75rem] shrink-0 items-center justify-center px-3 text-[0.82rem] tracking-[-0.02em]"
+                      className={actionCompactDangerClass}
                       aria-label={`Удалить ${medication.title || `лекарство ${index + 1}`}`}
                     >
                       Удалить
@@ -1021,19 +1075,15 @@ export function PillboxPage() {
                 ))}
               </div>
 
-              <button
-                type="button"
-                onClick={addMedication}
-                className="soft-button-secondary inline-flex min-h-[3.1rem] w-full items-center justify-center rounded-[22px] px-4 text-[0.88rem] font-semibold tracking-[-0.02em] transition hover:translate-y-[-1px]"
-              >
+              <button type="button" onClick={addMedication} className={actionSecondaryClass}>
                 + Добавить лекарство
               </button>
             </RowSurface>
           </div>
 
           <div className="space-y-4 xl:space-y-5">
-            <RowSurface className="space-y-3 rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
-              <h2 className="app-card-title text-[1rem]">Кому придёт напоминание</h2>
+            <RowSurface className="space-y-3 sm:px-5 sm:py-5">
+              <h2 className="app-card-title text-[1rem]">Кому придут напоминания</h2>
 
               <div className="flex items-start gap-3">
                 {familyMembers.map((member) => {
@@ -1084,39 +1134,24 @@ export function PillboxPage() {
               </div>
 
               <div className="soft-panel-muted rounded-[18px] px-3 py-2 text-[0.72rem] leading-5 text-[color:var(--color-primary)]">
-                Если никого не выбрать, напоминания останутся только у создателя группы.
+                Если никого не выбрать, план останется только у того, кто его настроил.
               </div>
             </RowSurface>
 
-            <RowSurface className="space-y-3 rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
+            <RowSurface className="space-y-3 sm:px-5 sm:py-5">
               <div className="space-y-1">
-                <h2 className="app-card-title text-[1rem]">Действия</h2>
+                <h2 className="app-card-title text-[1rem]">Готово</h2>
                 <p className="text-[0.84rem] leading-5 text-muted">
-                  Сначала соберите группу, затем настройте для каждого лекарства удобный режим.
+                  Сохраните план сейчас или вернитесь позже и спокойно продолжите настройку.
                 </p>
               </div>
               <div className="grid gap-2.5">
-                <button
-                  type="button"
-                  onClick={saveGroup}
-                  className="soft-button-primary inline-flex min-h-[3.5rem] w-full items-center justify-center rounded-[24px] px-5 text-[0.96rem] font-bold tracking-[-0.025em] transition hover:translate-y-[-1px]"
-                >
-                  {isEditing ? "Сохранить изменения" : "Создать группу"}
-                </button>
-                <button
-                  type="button"
-                  onClick={goToHub}
-                  className="soft-button-secondary inline-flex min-h-[3rem] w-full items-center justify-center rounded-[22px] px-4 text-[0.88rem] font-semibold tracking-[-0.02em]"
-                >
-                  Назад к таблетнице
+                <button type="button" onClick={saveGroup} className={actionPrimaryClass}>
+                  {isEditing ? "Сохранить план" : "Создать план"}
                 </button>
                 {isEditing ? (
-                  <button
-                    type="button"
-                    onClick={deleteGroup}
-                    className="soft-button-danger inline-flex min-h-[3rem] w-full items-center justify-center rounded-[22px] px-4 text-[0.88rem] font-semibold tracking-[-0.02em]"
-                  >
-                    Удалить группу
+                  <button type="button" onClick={deleteGroup} className={actionDangerClass}>
+                    Удалить план
                   </button>
                 ) : null}
               </div>
@@ -1131,15 +1166,11 @@ export function PillboxPage() {
     <div className="space-y-6">
       <PageIntro
         title="Таблетница"
-        subtitle="Семейные группы напоминаний, ближайшие приёмы и текущие курсы."
+        subtitle="Семейные планы приёма: что принимать, когда напомнить и как идёт курс."
         compactOnMobile
         action={
-          <button
-            type="button"
-            onClick={openCreate}
-            className="soft-button-secondary inline-flex min-h-[2.7rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.85rem] sm:px-4 sm:text-[0.88rem]"
-          >
-            + Создать группу
+          <button type="button" onClick={openCreate} className={actionPrimaryClass}>
+            + Создать план
           </button>
         }
         className="[&_.app-title]:text-[1.72rem] [&_.app-title]:tracking-[-0.05em] sm:[&_.app-title]:text-[2.1rem] [&_.app-subtitle]:text-[0.93rem] sm:[&_.app-subtitle]:text-[0.98rem]"
@@ -1153,7 +1184,7 @@ export function PillboxPage() {
               onClick={() => openEdit(group)}
               className="block w-full text-left"
             >
-              <RowSurface className="rounded-[24px] px-3.5 py-3.5 transition hover:translate-y-[-1px] sm:px-4.5 sm:py-4">
+              <RowSurface className="rounded-[24px] px-3.5 py-3.5 transition hover:translate-y-[-1px] sm:rounded-[24px] sm:px-4.5 sm:py-4">
                 <div className="grid gap-2.5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
@@ -1161,7 +1192,7 @@ export function PillboxPage() {
                         {group.title}
                       </h2>
                       <p className="mt-1 text-[0.84rem] leading-5 text-muted sm:text-[0.88rem]">
-                        {group.activeCount} напоминания активно
+                        {group.activeCount} лекарства в плане
                       </p>
                     </div>
 
@@ -1230,7 +1261,7 @@ export function PillboxPage() {
       </ul>
 
       <div className="soft-panel-muted rounded-[22px] px-4 py-3 text-sm text-muted">
-        После завершения курса группа автоматически может перейти в историю.
+        Когда курс закончится, план можно будет спокойно убрать в историю.
       </div>
     </div>
   );
