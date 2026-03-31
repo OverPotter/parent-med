@@ -37,6 +37,12 @@ const childrenNavItem = {
 
 const baseDesktopNavLinks = [
   childrenNavItem,
+  {
+    to: "/pillbox",
+    label: "Таблетница",
+    mobileLabel: "Таблетница",
+    exactActivePaths: ["/pillbox"],
+  },
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
   {
     to: "/more",
@@ -48,6 +54,12 @@ const baseDesktopNavLinks = [
 
 const baseMobileNavLinks = [
   childrenNavItem,
+  {
+    to: "/pillbox",
+    label: "Таблетница",
+    mobileLabel: "Таблетница",
+    exactActivePaths: ["/pillbox"],
+  },
   { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
   {
     to: "/more",

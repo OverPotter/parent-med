@@ -56,6 +56,9 @@ const MedicineCabinetPage = lazy(() =>
     default: module.MedicineCabinetPage,
   }))
 );
+const PillboxPage = lazy(() =>
+  import("@client/pages/PillboxPage").then((module) => ({ default: module.PillboxPage }))
+);
 const ChildIllnessPage = lazy(() =>
   import("@client/pages/ChildIllnessPage").then((module) => ({ default: module.ChildIllnessPage }))
 );
@@ -146,6 +149,7 @@ function RouteScrollReset() {
     const isMobileViewport = window.innerWidth < 768;
     const isPrimaryMenuRoute = [
       "/children",
+      "/pillbox",
       "/medicine-cabinet",
       "/home",
       "/more",
@@ -478,6 +482,7 @@ export default function App() {
                 <Route path="family" element={<FamilyPage />} />
                 <Route path="join-family" element={<JoinFamilyPage />} />
                 <Route path="children" element={<ChildrenPage />} />
+                <Route path="pillbox" element={<PillboxPage />} />
                 <Route path="children/:childId" element={<ChildProfilePage />} />
                 <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
                 <Route path="illnesses/history" element={<IllnessHistoryPage />} />

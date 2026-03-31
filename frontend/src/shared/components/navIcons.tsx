@@ -51,6 +51,16 @@ export function renderNavIcon(to: string): ReactNode {
     );
   }
 
+  if (to === "/pillbox") {
+    return (
+      <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-none stroke-current">
+        <rect x="3.25" y="6" width="13.5" height="8" rx="4" strokeWidth="1.7" />
+        <path d="M10 6v8" strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M7.2 10h1.2M11.6 10h1.2" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-none stroke-current">
       <circle cx="10" cy="4.5" r="1.2" fill="currentColor" />
