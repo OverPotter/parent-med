@@ -190,7 +190,11 @@ async def test_get_history_summary_returns_period_aggregates() -> None:
     assert result.guided_episodes == 1
     assert result.total_temperature_entries == 2
     assert len(result.timeline) == 6
-    assert [bucket.label for bucket in result.duration_buckets] == ["1-2 дня", "3-5 дней", "6+ дней"]
+    assert [bucket.label for bucket in result.duration_buckets] == [
+        "1-2 дня",
+        "3-5 дней",
+        "6+ дней",
+    ]
 
 
 @pytest.mark.asyncio

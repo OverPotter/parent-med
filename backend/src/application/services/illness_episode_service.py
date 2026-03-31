@@ -146,10 +146,12 @@ class IllnessEpisodeService:
             period=normalized_period,
             total_closed_episodes=len(closed_episodes),
             episode_count=len(filtered_episodes),
-            last_episode_started_at=self._episode_started_at_as_datetime(last_episode)
-            if last_episode
-            else None,
-            days_since_last_episode=self._days_since_episode(last_episode) if last_episode else None,
+            last_episode_started_at=(
+                self._episode_started_at_as_datetime(last_episode) if last_episode else None
+            ),
+            days_since_last_episode=(
+                self._days_since_episode(last_episode) if last_episode else None
+            ),
             most_active_period_label=self._most_active_period_label(
                 filtered_episodes,
                 normalized_period,
@@ -159,8 +161,12 @@ class IllnessEpisodeService:
             episodes_with_temperature_38_plus=episodes_with_38_plus,
             episodes_with_temperature_39_plus=episodes_with_39_plus,
             episodes_with_administrations=episodes_with_administrations,
-            observation_only_episodes=max(0, len(filtered_episodes) - episodes_with_administrations),
-            guided_episodes=sum(1 for episode in filtered_episodes if episode.medication_mode == "guided"),
+            observation_only_episodes=max(
+                0, len(filtered_episodes) - episodes_with_administrations
+            ),
+            guided_episodes=sum(
+                1 for episode in filtered_episodes if episode.medication_mode == "guided"
+            ),
             total_temperature_entries=total_temperature_entries,
             timeline=self._build_timeline(filtered_episodes, normalized_period),
             duration_buckets=self._build_duration_buckets(filtered_episodes),
@@ -209,8 +215,12 @@ class IllnessEpisodeService:
             medication_mode=episode.medication_mode,
             medicine_names=medicine_names,
             total_events=len(sorted_temperatures) + len(sorted_administrations) + len(comments),
-            first_temperature_at=sorted_temperatures[0].measured_at if sorted_temperatures else None,
-            last_administration_at=last_administration.administered_at if last_administration else None,
+            first_temperature_at=(
+                sorted_temperatures[0].measured_at if sorted_temperatures else None
+            ),
+            last_administration_at=(
+                last_administration.administered_at if last_administration else None
+            ),
             temperature_points=[
                 EpisodeTemperaturePointDto(
                     measured_at=item.measured_at,
