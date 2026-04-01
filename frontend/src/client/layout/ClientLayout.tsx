@@ -11,6 +11,7 @@ import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes"
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
 import { Layout } from "@shared/components/Layout";
 import { Surface } from "@shared/components/Surface";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import {
   getExistingPushSubscription,
@@ -21,55 +22,8 @@ import {
   withTimeout,
 } from "@shared/utils/pushNotifications";
 
-const activeObservationsNavItem = {
-  to: "/illnesses/active",
-  label: "Наблюдения",
-  mobileLabel: "Наблюдения",
-  exactActivePaths: ["/illnesses/active", "/children/:childId/illness"],
-};
-
-const childrenNavItem = {
-  to: "/children",
-  label: "Дети",
-  mobileLabel: "Дети",
-  exactActivePaths: ["/children", "/children/:childId"],
-};
-
-const baseDesktopNavLinks = [
-  childrenNavItem,
-  {
-    to: "/pillbox",
-    label: "Таблетница",
-    mobileLabel: "Таблетница",
-    exactActivePaths: ["/pillbox"],
-  },
-  { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
-  {
-    to: "/more",
-    label: "Ещё",
-    mobileLabel: "Ещё",
-    exactActivePaths: ["/more", "/account", "/about", "/family", "/illnesses/history", "/home"],
-  },
-];
-
-const baseMobileNavLinks = [
-  childrenNavItem,
-  {
-    to: "/pillbox",
-    label: "Таблетница",
-    mobileLabel: "Таблетница",
-    exactActivePaths: ["/pillbox"],
-  },
-  { to: "/medicine-cabinet", label: "Аптечка", mobileLabel: "Аптечка" },
-  {
-    to: "/more",
-    label: "Ещё",
-    mobileLabel: "Ещё",
-    exactActivePaths: ["/more", "/account", "/about", "/family", "/illnesses/history", "/home"],
-  },
-];
-
 export function ClientLayout() {
+  const { copy } = useI18n();
   const accountId = useAppStore((s) => s.accountId);
   const authToken = useAppStore((s) => s.authToken);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
@@ -80,6 +34,39 @@ export function ClientLayout() {
   const [isPushPending, setIsPushPending] = useState(false);
   const [pushPromptError, setPushPromptError] = useState<string | null>(null);
   const [pushPromptSuccess, setPushPromptSuccess] = useState<string | null>(null);
+  const activeObservationsNavItem = {
+    to: "/illnesses/active",
+    label: copy.clientLayout.nav.observations,
+    mobileLabel: copy.clientLayout.nav.observations,
+    exactActivePaths: ["/illnesses/active", "/children/:childId/illness"],
+  };
+  const childrenNavItem = {
+    to: "/children",
+    label: copy.clientLayout.nav.children,
+    mobileLabel: copy.clientLayout.nav.children,
+    exactActivePaths: ["/children", "/children/:childId"],
+  };
+  const baseDesktopNavLinks = [
+    childrenNavItem,
+    {
+      to: "/pillbox",
+      label: copy.clientLayout.nav.pillbox,
+      mobileLabel: copy.clientLayout.nav.pillbox,
+      exactActivePaths: ["/pillbox"],
+    },
+    {
+      to: "/medicine-cabinet",
+      label: copy.clientLayout.nav.cabinet,
+      mobileLabel: copy.clientLayout.nav.cabinet,
+    },
+    {
+      to: "/more",
+      label: copy.clientLayout.nav.more,
+      mobileLabel: copy.clientLayout.nav.more,
+      exactActivePaths: ["/more", "/account", "/about", "/family", "/illnesses/history", "/home"],
+    },
+  ];
+  const baseMobileNavLinks = [...baseDesktopNavLinks];
   const { data: families = [], isSuccess } = useQuery({
     queryKey: ["families", accountId],
     queryFn: fetchFamilies,
@@ -179,11 +166,11 @@ export function ClientLayout() {
   const handleEnablePush = async () => {
     const pushSupportIssue = getPushSupportIssue();
     if (pushSupportIssue) {
-      setPushPromptError(pushSupportIssue);
+      setPushPromptError(copy.clientLayout.pushErrors.supportMissing);
       return;
     }
     if (!pushConfig?.enabled || !pushConfig.vapidPublicKey) {
-      setPushPromptError("Уведомления ещё не настроены на сервере.");
+      setPushPromptError(copy.clientLayout.pushErrors.serverNotReady);
       return;
     }
 
@@ -195,31 +182,31 @@ export function ClientLayout() {
       const permission = await withTimeout(
         Notification.requestPermission(),
         8000,
-        "Браузер не завершил запрос разрешения на уведомления."
+        copy.clientLayout.pushErrors.permissionTimeout
       );
       if (permission !== "granted") {
-        setPushPromptError("Браузер не дал разрешение на уведомления.");
+        setPushPromptError(copy.clientLayout.pushErrors.permissionDenied);
         return;
       }
 
       const subscription = await withTimeout(
         subscribeToPushNotifications(pushConfig.vapidPublicKey),
         10000,
-        "Не удалось завершить подписку устройства на push."
+        copy.clientLayout.pushErrors.subscribeTimeout
       );
 
       await withTimeout(
         upsertPushSubscription(toPushSubscriptionPayload(subscription)),
         8000,
-        "Сервер не принял подписку устройства."
+        copy.clientLayout.pushErrors.acceptTimeout
       );
 
       setPushStatus("enabled");
-      setPushPromptSuccess("Уведомления включены.");
+      setPushPromptSuccess(copy.clientLayout.pushErrors.enabled);
       window.dispatchEvent(new Event("push:subscription-changed"));
     } catch (error) {
       setPushPromptError(
-        error instanceof Error ? error.message : "Не удалось включить уведомления."
+        error instanceof Error ? error.message : copy.clientLayout.pushErrors.enableFailed
       );
     } finally {
       setIsPushPending(false);
@@ -257,18 +244,16 @@ export function ClientLayout() {
               onClick={() => setIsPushPromptActionsHidden(false)}
               className="flex w-full flex-wrap items-center justify-between gap-2 rounded-[20px] text-left transition hover:opacity-95"
             >
-              <p className="app-card-title text-[0.96rem]">Включите уведомления</p>
+              <p className="app-card-title text-[0.96rem]">{copy.clientLayout.pushPrompt.title}</p>
               <span className="soft-button-secondary inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.025em]">
-                Открыть
+                {copy.common.open}
               </span>
             </button>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="app-card-title text-[1rem]">Включите уведомления</p>
-                <p className="mt-1 text-sm leading-6 text-muted">
-                  Так проще не пропустить напоминания по наблюдениям и аптечке.
-                </p>
+                <p className="app-card-title text-[1rem]">{copy.clientLayout.pushPrompt.title}</p>
+                <p className="mt-1 text-sm leading-6 text-muted">{copy.clientLayout.pushPrompt.description}</p>
                 {pushPromptError && (
                   <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
                     {pushPromptError}
@@ -287,7 +272,9 @@ export function ClientLayout() {
                   disabled={isPushPending}
                   className="soft-button-primary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                 >
-                  {isPushPending ? "Подключаем…" : "Включить уведомления"}
+                  {isPushPending
+                    ? copy.clientLayout.pushPrompt.enabling
+                    : copy.clientLayout.pushPrompt.enable}
                 </button>
                 <button
                   type="button"
@@ -295,7 +282,7 @@ export function ClientLayout() {
                   disabled={isPushPending}
                   className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                 >
-                  Скрыть пока
+                  {copy.clientLayout.pushPrompt.hide}
                 </button>
               </div>
             </div>

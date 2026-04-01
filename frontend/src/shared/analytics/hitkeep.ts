@@ -81,7 +81,7 @@ export function normalizeClientError(err: unknown): string {
 
 export async function hashForAnalytics(value: string): Promise<string> {
   const salt = import.meta.env.VITE_HITKEEP_USER_HASH_SALT ?? "";
-  const input = `${value}\0${salt || "parent-med-dev"}`;
+  const input = `${value}\0${salt || "pillpath-dev"}`;
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))

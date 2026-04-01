@@ -21,9 +21,9 @@ export default defineConfig({
         enabled: true,
       },
       manifest: {
-        name: "Parent Med",
-        short_name: "Parent Med",
-        description: "Умная аптечка и ведение болезни ребёнка",
+        name: "PillPath",
+        short_name: "PillPath",
+        description: "Family health tracking, medication plans and first aid kit",
         id: "/",
         scope: "/",
         theme_color: "#ebe4ff",
@@ -135,7 +135,7 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 4173,
     strictPort: true,
-    allowedHosts: ["parent-med-production-frontend.up.railway.app"],
+    allowedHosts: ["pillpath-production-frontend.up.railway.app"],
     https: hasDevHttpsCert
       ? {
           key: fs.readFileSync(devKeyPath),

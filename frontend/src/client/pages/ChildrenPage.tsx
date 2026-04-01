@@ -15,11 +15,13 @@ import { DateField } from "@shared/components/DateField";
 import { trackChildCreated } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child, WeightEntry } from "@shared/types/api";
 import { formatDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
+import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
 type ChildProfileDetails = {
   institutionName?: string | null;
@@ -31,6 +33,9 @@ type ChildProfileDetails = {
 };
 
 export function ChildrenPage() {
+  const { language, t } = useI18n();
+  const copy = getChildrenCopy(language).childrenPage;
+  const common = getChildrenCopy(language).common;
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -97,8 +102,8 @@ export function ChildrenPage() {
   if (!currentFamilyId) {
     return (
       <div>
-        <h1 className="app-title text-[1.9rem]">Дети</h1>
-        <p className="mt-2 text-muted">Сначала выбери семью на странице «Семья».</p>
+        <h1 className="app-title text-[1.9rem]">{copy.title}</h1>
+        <p className="mt-2 text-muted">{common.familyRequired}</p>
       </div>
     );
   }
@@ -106,8 +111,8 @@ export function ChildrenPage() {
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
-        title="Дети"
-        subtitle="Профили детей, быстрый вход в текущее наблюдение и архив прошлых записей без лишнего шума."
+        title={copy.title}
+        subtitle={copy.subtitle}
         compactOnMobile
         hideOnMobile
         action={
@@ -119,7 +124,7 @@ export function ChildrenPage() {
               children.length > 0 ? "hidden sm:inline-flex" : "inline-flex",
             ].join(" ")}
           >
-            {isCreateFormOpen ? "Скрыть форму" : "Добавить ребёнка"}
+            {isCreateFormOpen ? copy.hideForm : copy.addChild}
           </button>
         }
       />
@@ -139,25 +144,27 @@ export function ChildrenPage() {
             )?.response?.data?.detail ?? null
           }
           onCancel={() => setIsCreateFormOpen(false)}
+          copy={copy}
+          language={language}
         />
       )}
 
-      {isLoading && <p className="text-muted">Загрузка…</p>}
+      {isLoading && <p className="text-muted">{common.loading}</p>}
       {error && (
         <p className="soft-note-danger">
-          {(error as { message?: string }).message ?? "Ошибка загрузки"}
+          {(error as { message?: string }).message ?? copy.loadError}
         </p>
       )}
       {!isLoading && !error && children.length === 0 && !isCreateFormOpen && (
         <EmptyState className="text-foreground">
           <div className="space-y-4">
-            <p>Пока нет детей. Добавьте первого ребёнка, чтобы вести записи и наблюдение.</p>
+            <p>{copy.empty}</p>
             <button
               type="button"
               onClick={() => setIsCreateFormOpen(true)}
               className="soft-button-primary inline-flex items-center justify-center min-h-[2.95rem] w-full px-4 text-[0.88rem] tracking-[-0.03em] sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
             >
-              Добавить первого ребёнка
+              {copy.addFirstChild}
             </button>
           </div>
         </EmptyState>
@@ -186,6 +193,9 @@ export function ChildrenPage() {
                   }}
                   isStartingEpisode={false}
                   hasActiveEpisode={!!activeEpisode}
+                  copy={copy}
+                  language={language}
+                  t={t}
                 />
               );
             })}
@@ -195,15 +205,15 @@ export function ChildrenPage() {
             <Surface className="soft-panel-muted p-4 sm:hidden">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="app-card-title text-[1.02rem]">Нужно добавить ещё ребёнка?</p>
-                  <p className="mt-1 text-sm text-muted">Добавьте профиль, когда будете готовы.</p>
+                  <p className="app-card-title text-[1.02rem]">{copy.addAnotherPromptTitle}</p>
+                  <p className="mt-1 text-sm text-muted">{copy.addAnotherPromptText}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsCreateFormOpen(true)}
                   className="soft-button-secondary inline-flex items-center justify-center min-h-[2.8rem] px-3.5 text-[0.84rem] tracking-[-0.025em]"
                 >
-                  Добавить
+                  {copy.addButtonShort}
                 </button>
               </div>
             </Surface>
@@ -220,12 +230,16 @@ function AddChildForm({
   resetKey,
   errorMessage,
   onCancel,
+  copy,
+  language,
 }: {
   onSubmit: (name: string, birthDate?: string | null, details?: ChildProfileDetails) => void;
   isPending: boolean;
   resetKey: number;
   errorMessage: string | null;
   onCancel: () => void;
+  copy: ReturnType<typeof getChildrenCopy>["childrenPage"];
+  language: "ru" | "en";
 }) {
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -255,7 +269,7 @@ function AddChildForm({
 
     const normalizedBirthDate = normalizeIsoDateInput(birthDate);
     if (birthDate && !normalizedBirthDate) {
-      setValidationError("Укажите корректную дату рождения через календарь.");
+      setValidationError(copy.validationBirthDate);
       return;
     }
 
@@ -275,20 +289,20 @@ function AddChildForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="app-card-title text-[1.1rem] sm:text-[1.18rem]">Новый ребёнок</h2>
-            <p className="mt-1 text-sm text-muted">Форма открывается только когда она нужна.</p>
+            <h2 className="app-card-title text-[1.1rem] sm:text-[1.18rem]">{copy.formTitle}</h2>
+            <p className="mt-1 text-sm text-muted">{copy.formSubtitle}</p>
           </div>
           <button
             type="button"
             onClick={onCancel}
             className="soft-button-secondary min-h-[3rem] w-full px-4 text-[0.9rem] sm:min-h-[3.2rem] sm:w-auto sm:text-[0.94rem]"
           >
-            Отмена
+            {copy.cancel}
           </button>
         </div>
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
           <label className="min-w-0 flex-1">
-            <span className="soft-field-label">Имя</span>
+            <span className="soft-field-label">{copy.nameLabel}</span>
             <input
               type="text"
               value={name}
@@ -297,16 +311,18 @@ function AddChildForm({
                 setValidationError(null);
               }}
               className="soft-input w-full px-4"
+              placeholder={copy.namePlaceholder}
             />
           </label>
           <label className="block">
-            <span className="soft-field-label">Дата рождения</span>
+            <span className="soft-field-label">{copy.birthDateLabel}</span>
             <DateField
               value={birthDate}
               onChange={(nextValue) => {
                 setBirthDate(nextValue);
                 setValidationError(null);
               }}
+              language={language}
               max={new Date().toISOString().slice(0, 10)}
               className="mt-1"
             />
@@ -316,24 +332,50 @@ function AddChildForm({
             disabled={isPending || !name.trim()}
             className="soft-button-primary inline-flex items-center justify-center min-h-[3rem] w-full px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:w-auto sm:self-end sm:px-5 sm:text-[0.93rem]"
           >
-            {isPending ? "Добавляем…" : "Добавить"}
+            {isPending ? copy.saving : copy.addButtonShort}
           </button>
         </div>
         <details className="soft-panel-muted rounded-[22px] p-4">
           <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
-            Медицинские и контактные данные
+            {language === "ru" ? "Медицинские и контактные данные" : "Medical and contact details"}
           </summary>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <InputField label="Сад / школа" value={institutionName} onChange={setInstitutionName} />
             <InputField
-              label="Телефон организации"
+              label={copy.institutionNameLabel}
+              value={institutionName}
+              onChange={setInstitutionName}
+              placeholder={copy.institutionNamePlaceholder}
+            />
+            <InputField
+              label={copy.institutionPhoneLabel}
               value={institutionPhone}
               onChange={setInstitutionPhone}
+              placeholder={copy.institutionPhonePlaceholder}
             />
-            <InputField label="Врач" value={doctorName} onChange={setDoctorName} />
-            <InputField label="Телефон врача" value={doctorPhone} onChange={setDoctorPhone} />
-            <TextField label="Аллергии" value={allergies} onChange={setAllergies} />
-            <TextField label="Заметки" value={notes} onChange={setNotes} />
+            <InputField
+              label={copy.doctorNameLabel}
+              value={doctorName}
+              onChange={setDoctorName}
+              placeholder={copy.doctorNamePlaceholder}
+            />
+            <InputField
+              label={copy.doctorPhoneLabel}
+              value={doctorPhone}
+              onChange={setDoctorPhone}
+              placeholder={copy.doctorPhonePlaceholder}
+            />
+            <TextField
+              label={copy.allergiesLabel}
+              value={allergies}
+              onChange={setAllergies}
+              placeholder={copy.allergiesPlaceholder}
+            />
+            <TextField
+              label={copy.notesLabel}
+              value={notes}
+              onChange={setNotes}
+              placeholder={copy.notesPlaceholder}
+            />
           </div>
         </details>
         {(validationError || errorMessage) && (
@@ -352,6 +394,9 @@ function ChildCard({
   onStartEpisode,
   isStartingEpisode,
   hasActiveEpisode,
+  copy,
+  language,
+  t,
 }: {
   child: Child;
   activeEpisodeStartedAt: string | null;
@@ -360,13 +405,20 @@ function ChildCard({
   onStartEpisode: () => void;
   isStartingEpisode: boolean;
   hasActiveEpisode: boolean;
+  copy: ReturnType<typeof getChildrenCopy>["childrenPage"];
+  language: "ru" | "en";
+  t: (text: string, variables?: Record<string, string | number>) => string;
 }) {
-  const latestWeightLabel = latestWeightEntry ? formatWeightValue(latestWeightEntry.valueKg) : null;
+  const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
+  const latestWeightLabel = latestWeightEntry
+    ? formatWeightValue(latestWeightEntry.valueKg, language)
+    : null;
   const primaryMeta = [
-    child.ageLabel,
-    latestWeightLabel ? `Вес ${latestWeightLabel}` : null,
+    ageLabel,
+    latestWeightLabel ? `${copy.childCard.weight} ${latestWeightLabel}` : null,
   ].filter(Boolean) as string[];
-  const historyLabel = episodeCount > 0 ? `${episodeCount} в истории` : "История пустая";
+  const historyLabel =
+    episodeCount > 0 ? `${episodeCount} ${copy.childCard.archiveCount}` : copy.childCard.noHistory;
   return (
     <li>
       <RowSurface
@@ -381,8 +433,10 @@ function ChildCard({
                   <>
                     <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
                       {activeEpisodeStartedAt
-                        ? `Наблюдение с ${formatDate(activeEpisodeStartedAt)}`
-                        : "Наблюдение"}
+                        ? t(copy.childCard.activeSince, {
+                            date: formatDate(activeEpisodeStartedAt),
+                          })
+                        : copy.childCard.activeObservation}
                     </span>
                   </>
                 )}
@@ -411,10 +465,10 @@ function ChildCard({
               className="soft-button-primary inline-flex w-full items-center justify-center min-h-[2.9rem] px-3.5 text-center text-[0.84rem] leading-[1.05] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
               {hasActiveEpisode
-                ? "К активным болезням"
+                ? copy.childCard.openObservation
                 : isStartingEpisode
-                  ? "Открываем…"
-                  : "Начать наблюдение"}
+                  ? commonLoading(language)
+                  : copy.childCard.startObservation}
             </button>
 
             <div className="grid grid-cols-2 gap-2">
@@ -422,13 +476,13 @@ function ChildCard({
                 to={`/children/${child.id}/illness?view=history`}
                 className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] leading-[1.05] tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-4 sm:text-[0.92rem]"
               >
-                История
+                {copy.childCard.history}
               </Link>
               <Link
                 to={`/children/${child.id}`}
                 className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] leading-[1.05] tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-4 sm:text-[0.92rem]"
               >
-                Профиль
+                {language === "ru" ? "Профиль" : "Profile"}
               </Link>
             </div>
           </div>
@@ -438,21 +492,23 @@ function ChildCard({
   );
 }
 
-function formatWeightValue(valueKg: number): string {
-  return `${new Intl.NumberFormat("ru-RU", {
+function formatWeightValue(valueKg: number, language: "ru" | "en"): string {
+  return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
     minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
     maximumFractionDigits: 1,
-  }).format(valueKg)} кг`;
+  }).format(valueKg)} kg`;
 }
 
 function InputField({
   label,
   value,
   onChange,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
 }) {
   return (
     <label className="block">
@@ -462,6 +518,7 @@ function InputField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="soft-input w-full px-4"
+        placeholder={placeholder}
       />
     </label>
   );
@@ -471,10 +528,12 @@ function TextField({
   label,
   value,
   onChange,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
 }) {
   return (
     <label className="block">
@@ -484,7 +543,12 @@ function TextField({
         onChange={(event) => onChange(event.target.value)}
         rows={3}
         className="soft-input w-full px-4"
+        placeholder={placeholder}
       />
     </label>
   );
+}
+
+function commonLoading(language: "ru" | "en") {
+  return language === "ru" ? "Открываем…" : "Opening…";
 }

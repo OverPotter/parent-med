@@ -5,4 +5,4 @@ def test_import_app():
     """Приложение и конфиг импортируются без ошибок."""
     from src.core.config import settings
 
-    assert settings.app_name == "Parent Med API"
+    assert settings.app_name == "PillPath API"

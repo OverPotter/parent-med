@@ -12,6 +12,7 @@ from src.application.dto.auth import (
     LoginDto,
     RefreshDto,
     RegisterDto,
+    UpdateLanguageDto,
 )
 from src.application.dto.family import FamilyResponseDto
 from src.domain.entities.account import Account
@@ -46,6 +47,7 @@ class BaseAuthService(ABC):
             display_name=entity.display_name,
             relationship_label=entity.relationship_label,
             phone=entity.phone,
+            preferred_language=entity.preferred_language,
             family_role=entity.family_role,
         )
 
@@ -79,6 +81,10 @@ class BaseAuthService(ABC):
     @abstractmethod
     async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
         """Сменить пароль текущего аккаунта."""
+
+    @abstractmethod
+    async def update_language(self, account_id: UUID, dto: UpdateLanguageDto) -> AccountResponseDto:
+        """Обновить предпочитаемый язык аккаунта."""
 
     @abstractmethod
     async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:

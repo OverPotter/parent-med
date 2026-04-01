@@ -41,6 +41,7 @@ export async function fetchMyFamilyMembers(): Promise<FamilyMember[]> {
       display_name: string;
       relationship_label: string | null;
       phone: string | null;
+      preferred_language: "ru" | "en";
       family_role: string;
     }>
   >("/families/me/members");
@@ -59,6 +60,7 @@ export async function updateFamilyMemberRole(
     display_name: string;
     relationship_label: string | null;
     phone: string | null;
+    preferred_language: "ru" | "en";
     family_role: string;
   }>(`/families/me/members/${memberAccountId}`, { family_role: familyRole });
   return toFamilyMember(res.data);
@@ -80,6 +82,7 @@ export async function updateFamilyMemberProfile(
     display_name: string;
     relationship_label: string | null;
     phone: string | null;
+    preferred_language: "ru" | "en";
     family_role: string;
   }>(`/families/me/members/${memberAccountId}/profile`, payload);
   return toFamilyMember(res.data);

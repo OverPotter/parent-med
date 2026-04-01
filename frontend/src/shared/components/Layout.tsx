@@ -6,8 +6,11 @@ import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { logout } from "@shared/api/auth";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { BottomTabBar } from "./BottomTabBar";
+import { BrandWordmark } from "./BrandWordmark";
+import { LanguageSwitch } from "./LanguageSwitch";
 import { TopNav, type LayoutNavLink } from "./TopNav";
 import { V3BackgroundDoodles } from "./V3BackgroundDoodles";
 
@@ -65,9 +68,10 @@ export function Layout({
   mobileNavLinks = [],
   showCurrentFamily = false,
 }: LayoutProps) {
+  const { copy } = useI18n();
   const { theme, toggleTheme, currentFamilyName, accountLogin, accountDisplayName, clearSession } =
     useAppStore();
-  const accountLabel = accountDisplayName || accountLogin || "Пользователь";
+  const accountLabel = accountDisplayName || accountLogin || copy.common.userFallback;
   const hasMobileNav = mobileNavLinks.length > 0;
 
   const spinTimeoutRef = useRef<number | null>(null);
@@ -114,8 +118,10 @@ export function Layout({
     toggleTheme();
   };
 
-  const themeToggleLabel = theme === "light" ? "Тёмная тема" : "Светлая тема";
-  const themeToggleText = theme === "light" ? "Ночь" : "День";
+  const themeToggleLabel =
+    theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel;
+  const themeToggleText =
+    theme === "light" ? copy.common.themeDarkText : copy.common.themeLightText;
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -140,19 +146,18 @@ export function Layout({
                       <img
                         src="/pwa-icon.svg"
                         alt=""
-                        className="app-mobile-header__logo h-10 w-10 rounded-[18px]"
+                        className="app-mobile-header__logo h-11 w-11 rounded-[20px]"
                       />
                       <div className="min-w-0">
-                        <span className="app-brand-text block truncate text-[1.04rem]">
-                          Parent Med
-                        </span>
+                        <BrandWordmark className="app-brand-text truncate" />
                         <span className="hidden truncate text-[11px] text-muted sm:block">
-                          Семейный кабинет здоровья
+                          {copy.layout.familyWorkspace}
                         </span>
                       </div>
                     </Link>
                   </div>
                   <div className="app-mobile-header__actions flex shrink-0 items-center gap-2">
+                    <LanguageSwitch />
                     <button
                       type="button"
                       className="soft-theme-toggle"
@@ -175,21 +180,14 @@ export function Layout({
                       >
                         {theme === "light" ? <MoonIcon /> : <SunIcon />}
                       </span>
-                      <span className="text-xs font-semibold">{themeToggleText}</span>
+                      <span className="app-mobile-header__theme-text text-xs font-semibold">
+                        {themeToggleText}
+                      </span>
                     </button>
-                    {accountLogin && (
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
-                      >
-                        Выйти
-                      </button>
-                    )}
                   </div>
                 </div>
                 {(showCurrentFamily && currentFamilyName) || accountLogin ? (
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="app-mobile-header__meta flex flex-wrap items-center gap-2">
                     {showCurrentFamily && currentFamilyName ? (
                       <span className="soft-pill inline-flex max-w-full items-center truncate rounded-full px-3.5 py-1.5 text-[11px]">
                         {currentFamilyName}
@@ -199,6 +197,15 @@ export function Layout({
                       <span className="soft-pill inline-flex max-w-[11rem] items-center truncate rounded-full px-3.5 py-1.5 text-[11px]">
                         {accountLabel}
                       </span>
+                    ) : null}
+                    {accountLogin ? (
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="app-mobile-header__logout soft-button-secondary inline-flex min-h-[2.25rem] items-center justify-center rounded-full px-3.5 py-1.5 text-[11px]"
+                      >
+                        {copy.common.logout}
+                      </button>
                     ) : null}
                   </div>
                 ) : null}
@@ -210,8 +217,8 @@ export function Layout({
             <div className="soft-nav-shell rounded-[32px] px-4 py-3.5">
               <div className="flex items-center justify-between gap-5">
                 <Link to="/" className="inline-flex min-w-0 items-center gap-3">
-                  <img src="/pwa-icon.svg" alt="" className="h-9 w-9 rounded-2xl" />
-                  <p className="app-brand-text truncate text-[1.12rem]">Parent Med</p>
+                  <img src="/pwa-icon.svg" alt="" className="h-10 w-10 rounded-[1.15rem]" />
+                  <BrandWordmark className="app-brand-text truncate" />
                 </Link>
 
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
@@ -225,6 +232,7 @@ export function Layout({
                       {accountLabel}
                     </span>
                   )}
+                  <LanguageSwitch />
                   <button
                     type="button"
                     className="soft-theme-toggle"
@@ -255,7 +263,7 @@ export function Layout({
                       onClick={handleLogout}
                       className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
                     >
-                      Выйти
+                      {copy.common.logout}
                     </button>
                   )}
                 </div>

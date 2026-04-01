@@ -12,8 +12,8 @@ _DEFAULT_CORS_ORIGINS: list[str] = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://parent-med.localhost:5173",
-    "http://parent-med.localhost:3000",
+    "http://pillpath.localhost:5173",
+    "http://pillpath.localhost:3000",
 ]
 
 
@@ -59,19 +59,19 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Parent Med API"
+    app_name: str = "PillPath API"
     debug: bool = False
     log_level: str = "INFO"
 
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/parent_med"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/pillpath"
     jwt_secret: str = "dev-jwt-secret-change-me"
-    jwt_issuer: str = "parent-med"
+    jwt_issuer: str = "pillpath"
     access_token_ttl_minutes: int = 30
     refresh_token_ttl_days: int = 7
     refresh_token_ttl_days_remember_me: int = 60
     cors_allowed_origins: CorsAllowedOrigins = list(_DEFAULT_CORS_ORIGINS)
-    access_cookie_name: str = "parent_med_access_token"
-    refresh_cookie_name: str = "parent_med_refresh_token"
+    access_cookie_name: str = "pillpath_access_token"
+    refresh_cookie_name: str = "pillpath_refresh_token"
     auth_cookie_secure: bool = False
     auth_cookie_samesite: str = "lax"
     app_timezone: str = "Europe/Minsk"

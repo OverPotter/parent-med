@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { applyLanguageToDocument, type AppLanguage } from "@shared/i18n";
 
 type Theme = "light" | "dark";
 type Role = "client" | "admin";
@@ -29,6 +30,8 @@ interface AppState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  language: AppLanguage;
+  setLanguage: (language: AppLanguage) => void;
   medicationIntervalUnit: MedicationIntervalUnit;
   setMedicationIntervalUnit: (unit: MedicationIntervalUnit) => void;
   /** Роль пользователя (MVP: по умолчанию client). */
@@ -40,6 +43,7 @@ interface AppState {
   accountLogin: string | null;
   accountEmail: string | null;
   accountDisplayName: string | null;
+  accountPreferredLanguage: AppLanguage | null;
   accountFamilyRole: string | null;
   /** ID выбранной семьи для контекста (MVP: один пользователь — одна семья). */
   currentFamilyId: string | null;
@@ -52,6 +56,7 @@ interface AppState {
       login: string;
       email: string | null;
       displayName: string;
+      preferredLanguage: AppLanguage;
       familyRole: string;
     };
     family: { id: string; name: string };
@@ -62,10 +67,12 @@ interface AppState {
       login: string;
       email: string | null;
       displayName: string;
+      preferredLanguage: AppLanguage;
       familyRole: string;
     };
     family: { id: string; name: string };
   }) => void;
+  setAccountPreferredLanguage: (language: AppLanguage) => void;
   clearSession: () => void;
   setCurrentFamily: (family: { id: string; name: string } | null) => void;
 }
@@ -89,6 +96,11 @@ export const useAppStore = create<AppState>()(
           return { theme: next };
         });
       },
+      language: "ru",
+      setLanguage: (language) => {
+        set({ language });
+        applyLanguageToDocument(language);
+      },
       medicationIntervalUnit: "hours",
       setMedicationIntervalUnit: (unit) => set({ medicationIntervalUnit: unit }),
       role: "client",
@@ -99,30 +111,49 @@ export const useAppStore = create<AppState>()(
       accountLogin: null,
       accountEmail: null,
       accountDisplayName: null,
+      accountPreferredLanguage: null,
       accountFamilyRole: null,
       currentFamilyId: null,
       currentFamilyName: null,
       setSession: (session) =>
-        set({
-          authToken: session.accessToken,
-          refreshToken: session.refreshToken,
-          accountId: session.account.id,
-          accountLogin: session.account.login,
-          accountEmail: session.account.email,
-          accountDisplayName: session.account.displayName,
-          accountFamilyRole: session.account.familyRole,
-          currentFamilyId: session.family.id,
-          currentFamilyName: session.family.name,
+        set(() => {
+          applyLanguageToDocument(session.account.preferredLanguage);
+          return {
+            authToken: session.accessToken,
+            refreshToken: session.refreshToken,
+            accountId: session.account.id,
+            accountLogin: session.account.login,
+            accountEmail: session.account.email,
+            accountDisplayName: session.account.displayName,
+            accountPreferredLanguage: session.account.preferredLanguage,
+            language: session.account.preferredLanguage,
+            accountFamilyRole: session.account.familyRole,
+            currentFamilyId: session.family.id,
+            currentFamilyName: session.family.name,
+          };
         }),
       setAuthState: (state) =>
-        set({
-          accountId: state.account.id,
-          accountLogin: state.account.login,
-          accountEmail: state.account.email,
-          accountDisplayName: state.account.displayName,
-          accountFamilyRole: state.account.familyRole,
-          currentFamilyId: state.family.id,
-          currentFamilyName: state.family.name,
+        set(() => {
+          applyLanguageToDocument(state.account.preferredLanguage);
+          return {
+            accountId: state.account.id,
+            accountLogin: state.account.login,
+            accountEmail: state.account.email,
+            accountDisplayName: state.account.displayName,
+            accountPreferredLanguage: state.account.preferredLanguage,
+            language: state.account.preferredLanguage,
+            accountFamilyRole: state.account.familyRole,
+            currentFamilyId: state.family.id,
+            currentFamilyName: state.family.name,
+          };
+        }),
+      setAccountPreferredLanguage: (language) =>
+        set(() => {
+          applyLanguageToDocument(language);
+          return {
+            accountPreferredLanguage: language,
+            language,
+          };
         }),
       clearSession: () =>
         set({
@@ -132,6 +163,7 @@ export const useAppStore = create<AppState>()(
           accountLogin: null,
           accountEmail: null,
           accountDisplayName: null,
+          accountPreferredLanguage: null,
           accountFamilyRole: null,
           currentFamilyId: null,
           currentFamilyName: null,
@@ -143,9 +175,10 @@ export const useAppStore = create<AppState>()(
         }),
     }),
     {
-      name: "parent-med-app",
+      name: "pillpath-app",
       partialize: (s) => ({
         theme: s.theme,
+        language: s.language,
         medicationIntervalUnit: s.medicationIntervalUnit,
         role: s.role,
         hasSeenWorkspaceIntro: s.hasSeenWorkspaceIntro,
@@ -155,6 +188,7 @@ export const useAppStore = create<AppState>()(
         accountLogin: s.accountLogin,
         accountEmail: s.accountEmail,
         accountDisplayName: s.accountDisplayName,
+        accountPreferredLanguage: s.accountPreferredLanguage,
         accountFamilyRole: s.accountFamilyRole,
         currentFamilyId: s.currentFamilyId,
         currentFamilyName: s.currentFamilyName,
@@ -162,6 +196,9 @@ export const useAppStore = create<AppState>()(
       onRehydrateStorage: () => (state) => {
         if (state?.theme) {
           applyThemeToDocument(state.theme);
+        }
+        if (state?.language) {
+          applyLanguageToDocument(state.language);
         }
         state?.setHydrated(true);
       },

@@ -3,12 +3,15 @@
  */
 
 import { useNavigate } from "react-router-dom";
+import { labelForRoute, tWorkspaceIntro } from "@client/i18n/workspaceIntro";
 import { useClientStartRoute } from "@client/hooks/useClientStartRoute";
 import { AnalyticsEvents, trackEvent } from "@shared/analytics";
 import { Surface } from "@shared/components/Surface";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 
 export function ClientIntroPage() {
+  const { language } = useI18n();
   const navigate = useNavigate();
   const markWorkspaceIntroSeen = useAppStore((s) => s.markWorkspaceIntroSeen);
   const { isResolving, startRoute, hasFamily, hasChildren, hasActiveEpisode } =
@@ -25,34 +28,45 @@ export function ClientIntroPage() {
       <Surface className="soft-hero overflow-hidden">
         <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
           <span className="soft-pill-primary inline-flex rounded-full px-3 py-1 text-xs">
-            Первый вход
+            {tWorkspaceIntro(language, "badge")}
           </span>
           <h1 className="app-title mt-4 text-2xl sm:text-3xl">
-            Сначала покажем, с чего удобнее начать
+            {tWorkspaceIntro(language, "title")}
           </h1>
           <p className="app-subtitle mt-3 max-w-2xl text-sm">
-            Этот экран нужен один раз: он помогает понять ближайший шаг и сразу перейти в нужный
-            раздел без лишнего обзора.
+            {tWorkspaceIntro(language, "subtitle")}
           </p>
         </div>
 
         <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-3">
           <SetupStep
-            title="Семья"
-            description="Семья объединяет взрослых, детей, аптечку и общие записи."
-            status={hasFamily ? "Готово" : "Следующий шаг"}
+            title={tWorkspaceIntro(language, "familyTitle")}
+            description={tWorkspaceIntro(language, "familyDescription")}
+            status={
+              hasFamily ? tWorkspaceIntro(language, "ready") : tWorkspaceIntro(language, "nextStep")
+            }
             tone={hasFamily ? "ready" : "next"}
           />
           <SetupStep
-            title="Дети"
-            description="После добавления ребёнка можно вести болезни, температуру и приёмы."
-            status={hasChildren ? "Готово" : hasFamily ? "Нужно добавить" : "Ждёт семью"}
+            title={tWorkspaceIntro(language, "childrenTitle")}
+            description={tWorkspaceIntro(language, "childrenDescription")}
+            status={
+              hasChildren
+                ? tWorkspaceIntro(language, "ready")
+                : hasFamily
+                  ? tWorkspaceIntro(language, "needAdd")
+                  : tWorkspaceIntro(language, "waitingFamily")
+            }
             tone={hasChildren ? "ready" : hasFamily ? "next" : "idle"}
           />
           <SetupStep
-            title="Текущая работа"
-            description="Если уже есть активные эпизоды, приложение откроет их в первую очередь."
-            status={hasActiveEpisode ? "Есть активные болезни" : "Откроем самый полезный раздел"}
+            title={tWorkspaceIntro(language, "workTitle")}
+            description={tWorkspaceIntro(language, "workDescription")}
+            status={
+              hasActiveEpisode
+                ? tWorkspaceIntro(language, "activeIllnesses")
+                : tWorkspaceIntro(language, "openUseful")
+            }
             tone={hasActiveEpisode ? "ready" : "idle"}
           />
         </div>
@@ -61,11 +75,15 @@ export function ClientIntroPage() {
       <Surface className="p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-medium text-foreground">Следующий маршрут</p>
+            <p className="text-sm font-medium text-foreground">
+              {tWorkspaceIntro(language, "nextRoute")}
+            </p>
             <p className="mt-1 text-sm leading-6 text-muted">
               {isResolving
-                ? "Подбираем лучший стартовый экран…"
-                : `Откроем ${labelForRoute(startRoute)}.`}
+                ? tWorkspaceIntro(language, "resolving")
+                : tWorkspaceIntro(language, "openRoute", {
+                    route: labelForRoute(startRoute, language),
+                  })}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -75,7 +93,9 @@ export function ClientIntroPage() {
               disabled={isResolving}
               className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
             >
-              {isResolving ? "Подготавливаем…" : "Продолжить"}
+              {isResolving
+                ? tWorkspaceIntro(language, "preparing")
+                : tWorkspaceIntro(language, "continue")}
             </button>
             <button
               type="button"
@@ -83,7 +103,7 @@ export function ClientIntroPage() {
               disabled={isResolving}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              Не показывать снова
+              {tWorkspaceIntro(language, "neverShowAgain")}
             </button>
           </div>
         </div>
@@ -115,16 +135,4 @@ function SetupStep({
       <p className="mt-2 text-sm leading-7 text-muted">{description}</p>
     </div>
   );
-}
-
-function labelForRoute(route: string): string {
-  switch (route) {
-    case "/family":
-      return "раздел «Семья»";
-    case "/illnesses/active":
-      return "раздел «Наблюдения»";
-    case "/children":
-    default:
-      return "раздел «Дети»";
-  }
 }

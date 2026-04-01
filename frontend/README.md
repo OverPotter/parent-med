@@ -1,4 +1,4 @@
-# Parent Med Frontend (PWA)
+# PillPath Frontend (PWA)
 
 Фронтенд по правилам AGENT.md: Vite, React, TypeScript, PWA, Tailwind, Zustand, TanStack Query.
 
@@ -47,7 +47,7 @@ npm run preview
 
 Частые проблемы:
 
-- **`localhost` / `127.0.0.1` в адресе** — в `hk.js` отправка отключена; заходите как **`http://parent-med.localhost:5173`** (или :3000), в HitKeep сайт с доменом **`parent-med.localhost`**, CORS в `backend/.env`.
+- **`localhost` / `127.0.0.1` в адресе** — в `hk.js` отправка отключена; заходите как **`http://pillpath.localhost:5173`** (или :3000), в HitKeep сайт с доменом **`pillpath.localhost`**, CORS в `backend/.env`.
 - **Docker-фронт без событий** — `VITE_*` только на **сборке**; задайте в `frontend/.env`, в корне `make` передаёт `--env-file frontend/.env`, затем `make build-frontend` или пересборка образа.
 - **Domain в UI HitKeep** — только hostname (`метка.зона`), без `http://` и без порта; `localhost` без точки не пройдёт валидацию.
 

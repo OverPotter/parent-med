@@ -1,24 +1,7 @@
 import { Link } from "react-router-dom";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
-
-const moreLinks = [
-  {
-    to: "/home",
-    title: "Помощь",
-    description: "Как устроено приложение и где искать нужные разделы.",
-  },
-  {
-    to: "/family",
-    title: "Семья",
-    description: "Название семьи, участники и приглашения.",
-  },
-  {
-    to: "/account",
-    title: "Аккаунт",
-    description: "Email, имя в семье, напоминания и безопасность.",
-  },
-];
+import { useI18n } from "@shared/hooks/useI18n";
 
 function ArrowRightIcon() {
   return (
@@ -34,16 +17,18 @@ function ArrowRightIcon() {
 }
 
 export function MorePage() {
+  const { copy } = useI18n();
+
   return (
     <div className="min-w-0 space-y-6">
       <PageIntro
-        title="Ещё"
-        subtitle="Помощь, семья, аккаунт и основные настройки."
+        title={copy.more.title}
+        subtitle={copy.more.subtitle}
         compactOnMobile
         hideOnMobile
       />
       <ul className="soft-panel rounded-[32px] p-3 sm:p-4 grid gap-3 sm:gap-4">
-        {moreLinks.map((item) => (
+        {copy.more.links.map((item) => (
           <li key={item.to}>
             <Link
               to={item.to}
@@ -57,7 +42,7 @@ export function MorePage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2 self-center">
                     <span className="soft-pill-primary hidden rounded-full px-3.5 py-1.5 text-[11px] md:inline-flex">
-                      Открыть
+                      {copy.more.openLabel}
                     </span>
                     <span className="soft-pill rounded-full px-2.5 py-2 text-[11px]">
                       <ArrowRightIcon />

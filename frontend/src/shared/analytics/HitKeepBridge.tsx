@@ -27,7 +27,7 @@ function HitKeepScriptLoader() {
     const host = window.location.hostname;
     if (host === "localhost" || host === "127.0.0.1") {
       console.warn(
-        "[HitKeep] localhost: трекер не шлёт события — используйте parent-med.localhost:3000 / :5173"
+        "[HitKeep] localhost: трекер не шлёт события — используйте pillpath.localhost:3000 / :5173"
       );
     }
     if (document.getElementById(SCRIPT_ID)) {

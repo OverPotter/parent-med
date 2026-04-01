@@ -1,85 +1,15 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { Surface } from "@shared/components/Surface";
-
-const guideSections = [
-  {
-    title: "Дети",
-    description: "Профили детей, история по каждому ребёнку и вход в текущее наблюдение.",
-    items: [
-      {
-        title: "Добавить ребёнка",
-        description: "Если профиля ещё нет, начните здесь.",
-      },
-      {
-        title: "Открыть историю",
-        description: "Зайдите в ребёнка и откройте его завершённые эпизоды.",
-      },
-    ],
-    action: { to: "/children", label: "Открыть детей" },
-  },
-  {
-    title: "Наблюдения",
-    description: "Текущее состояние ребёнка: температура, лекарства, комментарии и reminders.",
-    items: [
-      {
-        title: "Начать наблюдение",
-        description: "Откройте карточку ребёнка и запустите новое наблюдение.",
-      },
-      {
-        title: "Добавлять записи",
-        description: "Внутри наблюдения можно фиксировать температуру, приёмы и заметки.",
-      },
-      {
-        title: "Проверить напоминания",
-        description: "Если у эпизода guided-режим, здесь же видны ближайшие действия и планы.",
-      },
-    ],
-    action: { to: "/illnesses/active", label: "Открыть наблюдения" },
-  },
-  {
-    title: "Аптечка",
-    description: "Домашние препараты, упаковки, сроки годности и даты вскрытия.",
-    items: [
-      {
-        title: "Добавить упаковку",
-        description: "Сначала найдите препарат в каталоге или заполните вручную.",
-      },
-      {
-        title: "Следить за сроками",
-        description: "На карточках видно, что скоро истекает и что уже нельзя использовать.",
-      },
-      {
-        title: "Использовать в наблюдении",
-        description: "Препараты из аптечки можно выбирать прямо в эпизоде болезни.",
-      },
-    ],
-    action: { to: "/medicine-cabinet", label: "Открыть аптечку" },
-  },
-] as const;
-
-const analyticsTips = [
-  {
-    title: "Где искать аналитику",
-    description:
-      "Откройте ребёнка, затем его историю. Там есть общая сводка и разбор каждого эпизода.",
-  },
-  {
-    title: "Что показывает сводка",
-    description:
-      "Она помогает понять, как часто ребёнок болел, как менялась частота и насколько длинными были эпизоды.",
-  },
-  {
-    title: "Что показывает разбор",
-    description:
-      "Внутри эпизода видны температура, ключевые события, лекарства и краткая картина по записи.",
-  },
-] as const;
+import { useI18n } from "@shared/hooks/useI18n";
 
 export function ClientHomePage() {
+  const { copy } = useI18n();
+
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
-      {guideSections.map((section) => (
+      {copy.clientHome.sections.map((section) => (
         <HelpSection
           key={section.title}
           title={section.title}
@@ -95,39 +25,28 @@ export function ClientHomePage() {
       ))}
 
       <HelpSection
-        title="Как пользоваться аналитикой"
-        description="Аналитика живёт внутри истории ребёнка и помогает быстро понять общую картину и детали каждого эпизода."
+        title={copy.clientHome.analytics.title}
+        description={copy.clientHome.analytics.description}
       >
         <div className="grid gap-3 lg:grid-cols-3">
-          {analyticsTips.map((item) => (
+          {copy.clientHome.analytics.items.map((item) => (
             <InfoCard key={item.title} title={item.title} description={item.description} />
           ))}
         </div>
       </HelpSection>
 
       <HelpSection
-        title="Установка на телефон"
-        description="Parent Med уже настроен как PWA, поэтому приложение можно добавить на домашний экран прямо из браузера."
+        title={copy.clientHome.install.title}
+        description={
+          <>
+            <BrandWordmark className="brand-wordmark-inline" /> {copy.clientHome.install.description}
+          </>
+        }
       >
         <div className="grid gap-4 lg:grid-cols-2">
-          <InstallCard
-            title="iPhone / iPad"
-            steps={[
-              "Откройте приложение в Safari.",
-              "Нажмите «Поделиться».",
-              "Выберите «На экран Домой».",
-              "Подтвердите добавление.",
-            ]}
-          />
-          <InstallCard
-            title="Android"
-            steps={[
-              "Откройте приложение в Chrome.",
-              "Нажмите меню браузера.",
-              "Выберите «Установить приложение» или «Добавить на главный экран».",
-              "Подтвердите установку.",
-            ]}
-          />
+          {copy.clientHome.install.cards.map((item) => (
+            <InstallCard key={item.title} title={item.title} steps={item.steps} />
+          ))}
         </div>
       </HelpSection>
     </div>
@@ -141,7 +60,7 @@ function HelpSection({
   children,
 }: {
   title: string;
-  description: string;
+  description: ReactNode;
   action?: { to: string; label: string };
   children: ReactNode;
 }) {

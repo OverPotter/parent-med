@@ -993,7 +993,7 @@ wheels = [
 ]
 
 [[package]]
-name = "parent-med-backend"
+name = "pillpath-backend"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

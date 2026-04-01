@@ -26,6 +26,7 @@ class SqlAccountRepository(AccountRepository):
             display_name=model.display_name,
             relationship_label=model.relationship_label,
             phone=model.phone,
+            preferred_language=model.preferred_language,
             family_role=model.family_role,
             push_before_reminder_minutes=model.push_before_reminder_minutes,
             cabinet_notify_10_days=model.cabinet_notify_15_days,
@@ -45,6 +46,7 @@ class SqlAccountRepository(AccountRepository):
             display_name=entity.display_name,
             relationship_label=entity.relationship_label,
             phone=entity.phone,
+            preferred_language=entity.preferred_language,
             family_role=entity.family_role,
             push_before_reminder_minutes=entity.push_before_reminder_minutes,
             cabinet_notify_15_days=entity.cabinet_notify_10_days,
@@ -112,6 +114,7 @@ class SqlAccountRepository(AccountRepository):
         row.display_name = entity.display_name
         row.relationship_label = entity.relationship_label
         row.phone = entity.phone
+        row.preferred_language = entity.preferred_language
         row.family_role = entity.family_role
         row.push_before_reminder_minutes = entity.push_before_reminder_minutes
         row.cabinet_notify_15_days = entity.cabinet_notify_10_days

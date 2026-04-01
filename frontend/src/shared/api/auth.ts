@@ -18,6 +18,7 @@ interface RawAuthResponse {
     display_name: string;
     relationship_label: string | null;
     phone: string | null;
+    preferred_language: "ru" | "en";
     family_role: string;
   };
   family: { id: string; name: string };
@@ -42,6 +43,7 @@ function toAuthState(raw: {
     display_name: string;
     relationship_label: string | null;
     phone: string | null;
+    preferred_language: "ru" | "en";
     family_role: string;
   };
   family: { id: string; name: string };
@@ -97,6 +99,7 @@ export async function fetchMe(): Promise<AuthStateResponse> {
       display_name: string;
       relationship_label: string | null;
       phone: string | null;
+      preferred_language: "ru" | "en";
       family_role: string;
     };
     family: { id: string; name: string };
@@ -113,4 +116,21 @@ export async function changePassword(payload: {
   new_password: string;
 }): Promise<void> {
   await apiClient.patch("/auth/password", payload);
+}
+
+export async function updateAccountLanguage(preferredLanguage: "ru" | "en") {
+  const res = await apiClient.patch<{
+    id: string;
+    login: string;
+    email: string | null;
+    family_id: string;
+    display_name: string;
+    relationship_label: string | null;
+    phone: string | null;
+    preferred_language: "ru" | "en";
+    family_role: string;
+  }>("/auth/language", {
+    preferred_language: preferredLanguage,
+  });
+  return toAccount(res.data);
 }
