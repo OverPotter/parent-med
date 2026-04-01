@@ -323,7 +323,7 @@ export function AuthPage() {
           <div className="auth-v3-header">
             <Link to="/" className="auth-v3-header-brand">
               <img
-                src="/pwa-icon.svg"
+                src="/pwa-icon.png"
                 alt=""
                 className="h-10 w-10 rounded-[1.15rem] shadow-[0_16px_32px_rgba(138,123,191,0.18)]"
               />

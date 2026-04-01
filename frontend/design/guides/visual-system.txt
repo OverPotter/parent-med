@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "name": "PillPath Visual System",
+    "version": "1.0",
+    "purpose": [
+      "Shared visual token reference",
+      "Theme variant comparison",
+      "Brand-safe UI styling baseline"
+    ],
+    "usage_note": "Use this file for app-wide visual decisions. It defines the supported theme variants and their typography, color, and effect tokens. Product-specific screen rules belong in separate guides."
+  },
+  "shared_foundation": {
+    "font_family_primary": "Plus Jakarta Sans",
+    "radius_global": "24px",
+    "card_blur": "30px",
+    "button_padding": "16px 24px",
+    "input_border": "1px solid rgba(0, 0, 0, 0.05)",
+    "header_weight": 700,
+    "body_weight": 500
+  },
+  "variants": {
+    "V1_Medical_Trust_Blue": {
+      "aliases": ["V1_Blue"],
+      "intent": "clean medical trust",
+      "colors": {
+        "light_mode": {
+          "bg_surface": "#D1E9FF",
+          "card_surface": "rgba(255,255,255,0.90)",
+          "primary_action": "#2563EB",
+          "text_primary": "#334155",
+          "text_muted": "#64748B",
+          "input_fill": "#EBF5FF",
+          "pattern_opacity": 0.05,
+          "pattern_color": "#5E8EBB"
+        },
+        "dark_mode": {
+          "bg_surface": "#0F172A",
+          "card_surface": "rgba(30,41,59,0.88)",
+          "primary_action": "#3B82F6",
+          "primary_action_glow": "0 8px 34px rgba(37,99,235,0.20)",
+          "text_primary": "#F8FAFC",
+          "text_muted": "#94A3B8",
+          "input_fill": "#0F172A",
+          "pattern_opacity": 0.08,
+          "pattern_color": "#2A344A"
+        }
+      },
+      "effects": {
+        "card_shadow": "0 16px 56px rgba(15,23,42,0.22)"
+      }
+    },
+    "V2_Warm_Care_Green": {
+      "aliases": ["V2_Green"],
+      "intent": "warm care and softness",
+      "colors": {
+        "light_mode": {
+          "bg_surface": "#DFF1E0",
+          "card_surface": "rgba(255,255,255,0.90)",
+          "primary_action": "#48A07A",
+          "text_primary": "#334155",
+          "text_muted": "#64748B",
+          "input_fill": "#E8F4EA",
+          "pattern_opacity": 0.05,
+          "pattern_color": "#8FB89C"
+        },
+        "dark_mode": {
+          "bg_surface": "#1B2621",
+          "card_surface": "rgba(28,43,36,0.88)",
+          "primary_action": "#48A07A",
+          "primary_action_glow": "0 8px 34px rgba(72,160,122,0.20)",
+          "text_primary": "#F8FAFC",
+          "text_muted": "#94A3B8",
+          "input_fill": "#0E1E18",
+          "pattern_opacity": 0.08,
+          "pattern_color": "#2B3A33"
+        }
+      },
+      "effects": {
+        "card_shadow": "0 16px 56px rgba(15,23,42,0.22)"
+      }
+    },
+    "V3_Clarity_Energy_Purple": {
+      "aliases": ["V3_Purple", "V3_Modern_Purple"],
+      "intent": "soft premium lavender health-tech",
+      "colors": {
+        "light_mode": {
+          "bg_surface": "#EBE4FF",
+          "card_surface": "rgba(255,255,255,0.90)",
+          "primary_action": "#8B5CF6",
+          "primary_action_alt": "#8A7BBF",
+          "text_primary": "#1E1B2E",
+          "text_body": "#4B5563",
+          "text_muted": "#64748B",
+          "input_fill": "#F1EDFF",
+          "pattern_opacity": 0.05,
+          "pattern_color": "#A695CF"
+        },
+        "dark_mode": {
+          "bg_surface": "#120B21",
+          "card_surface": "rgba(31,27,46,0.88)",
+          "primary_action": "#7C3AED",
+          "primary_action_alt": "#8A7BBF",
+          "primary_action_glow": "0 8px 34px rgba(124,58,237,0.15)",
+          "text_primary": "#F8FAFC",
+          "text_body": "#F8FAFC",
+          "text_muted": "#A1A1AA",
+          "input_fill": "#141127",
+          "pattern_opacity": 0.08,
+          "pattern_color": "#2E2A43"
+        }
+      },
+      "effects": {
+        "card_shadow": "0 16px 56px rgba(15,23,42,0.22)"
+      },
+      "component_dimensions": {
+        "primary_button": {
+          "height": "56px",
+          "text_size": "16px",
+          "text_weight": 600
+        },
+        "input_field": {
+          "height": "52px",
+          "corner_radius": "16px"
+        },
+        "typography_scale": {
+          "h1": {
+            "size": "32px",
+            "weight": 700
+          },
+          "body": {
+            "size": "16px",
+            "weight": 500
+          },
+          "label": {
+            "size": "14px",
+            "weight": 600
+          }
+        }
+      }
+    }
+  }
+}

@@ -144,7 +144,7 @@ export function Layout({
                       className="app-mobile-header__brand inline-flex min-w-0 items-center gap-3"
                     >
                       <img
-                        src="/pwa-icon.svg"
+                        src="/pwa-icon.png"
                         alt=""
                         className="app-mobile-header__logo h-11 w-11 rounded-[20px]"
                       />
@@ -217,7 +217,7 @@ export function Layout({
             <div className="soft-nav-shell rounded-[32px] px-4 py-3.5">
               <div className="flex items-center justify-between gap-5">
                 <Link to="/" className="inline-flex min-w-0 items-center gap-3">
-                  <img src="/pwa-icon.svg" alt="" className="h-10 w-10 rounded-[1.15rem]" />
+                  <img src="/pwa-icon.png" alt="" className="h-10 w-10 rounded-[1.15rem]" />
                   <BrandWordmark className="app-brand-text truncate" />
                 </Link>
 
