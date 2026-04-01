@@ -7,7 +7,9 @@ import { useMutation } from "@tanstack/react-query";
 import { login, register } from "@shared/api/auth";
 import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
+import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -168,6 +170,7 @@ function AuthField({
 }
 
 export function AuthPage() {
+  const { copy } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedMode = searchParams.get("mode");
   const [mode, setMode] = useState<Mode>(requestedMode === "login" ? "login" : "register");
@@ -198,7 +201,7 @@ export function AuthPage() {
       trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "auth_page" });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Ошибка входа");
+      setError(err.response?.data?.detail ?? copy.auth.errors.loginFailed);
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "login",
         message: normalizeClientError(err),
@@ -222,7 +225,7 @@ export function AuthPage() {
       trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "auth_page" });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Ошибка регистрации");
+      setError(err.response?.data?.detail ?? copy.auth.errors.registerFailed);
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "register",
         message: normalizeClientError(err),
@@ -238,7 +241,7 @@ export function AuthPage() {
       return;
     }
     if (mode === "register" && password !== passwordConfirm) {
-      setError("Пароли не совпадают");
+      setError(copy.auth.errors.passwordsMismatch);
       return;
     }
     if (mode === "login") {
@@ -262,10 +265,10 @@ export function AuthPage() {
   const passwordsMismatch =
     mode === "register" && passwordConfirm.length > 0 && password !== passwordConfirm;
   const isRegisterMode = mode === "register";
-  const pageTitle = isRegisterMode ? "Регистрация" : "Вход";
+  const pageTitle = isRegisterMode ? copy.auth.page.registerTitle : copy.auth.page.loginTitle;
   const pageDescription = isRegisterMode
-    ? "Создайте семейный доступ к данным ребёнка, аптечке и общим событиям по здоровью."
-    : "Быстрый доступ к данным ребёнка, аптечке и общим записям о здоровье.";
+    ? copy.auth.page.registerDescription
+    : copy.auth.page.loginDescription;
   const switchMode = (nextMode: Mode) => {
     setMode(nextMode);
     setSearchParams(nextMode === "register" ? { mode: "register" } : { mode: "login" });
@@ -275,11 +278,11 @@ export function AuthPage() {
   const submitLabel =
     mode === "login"
       ? isPending
-        ? "Входим…"
-        : "Войти"
+        ? copy.auth.actions.loginLoading
+        : copy.auth.actions.login
       : isPending
-        ? "Регистрируем…"
-        : "Создать аккаунт";
+        ? copy.auth.actions.registerLoading
+        : copy.auth.actions.register;
 
   return (
     <div className="auth-v3-page min-h-screen text-foreground">
@@ -300,18 +303,25 @@ export function AuthPage() {
               <BrandWordmark className="auth-v3-header-brand-text" />
             </Link>
             <div className="auth-v3-header-actions">
+              <LanguageSwitch />
               <button
                 type="button"
                 className="auth-v3-theme-button"
                 onClick={toggleTheme}
-                aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
-                title={theme === "light" ? "Тёмная тема" : "Светлая тема"}
+                aria-label={
+                  theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel
+                }
+                title={
+                  theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel
+                }
               >
                 <span aria-hidden="true">{theme === "light" ? <MoonIcon /> : <SunIcon />}</span>
-                <span>{theme === "light" ? "Ночь" : "День"}</span>
+                <span>
+                  {theme === "light" ? copy.common.themeDarkText : copy.common.themeLightText}
+                </span>
               </button>
               <Link to="/" className="auth-v3-ghost-button">
-                На главную
+                {copy.common.goHome}
               </Link>
             </div>
           </div>
@@ -325,7 +335,7 @@ export function AuthPage() {
             <div
               className="auth-v3-toggle"
               role="tablist"
-              aria-label="Переключение режима авторизации"
+              aria-label={copy.auth.page.toggleLabel}
             >
               <button
                 type="button"
@@ -335,7 +345,7 @@ export function AuthPage() {
                   mode === "login" && "auth-v3-toggle-button-active"
                 )}
               >
-                Вход
+                {copy.auth.page.loginTab}
               </button>
               <button
                 type="button"
@@ -345,7 +355,7 @@ export function AuthPage() {
                   mode === "register" && "auth-v3-toggle-button-active"
                 )}
               >
-                Регистрация
+                {copy.auth.page.registerTab}
               </button>
             </div>
 
@@ -354,38 +364,38 @@ export function AuthPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="auth-v3-section-title">
-                      {mode === "login" ? "Вход" : "Регистрация"}
+                      {mode === "login" ? copy.auth.page.loginCardTitle : copy.auth.page.registerCardTitle}
                     </p>
                     <p className="auth-v3-section-copy">
                       {isRegisterMode
-                        ? "Создайте учётную запись семьи. Основные поля сверху, профильные данные можно раскрыть ниже."
-                        : "Войдите по логину и паролю, чтобы быстро вернуться к семейной базе."}
+                        ? copy.auth.page.registerCardCopy
+                        : copy.auth.page.loginCardCopy}
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-5 space-y-4">
                   <AuthField
-                    label={mode === "login" ? "Логин" : "Логин для входа"}
+                    label={mode === "login" ? copy.auth.fields.login : copy.auth.fields.loginForEntry}
                     value={loginValue}
                     onChange={setLoginValue}
-                    placeholder={mode === "login" ? "Email или логин" : "Придумайте логин"}
+                    placeholder={
+                      mode === "login"
+                        ? copy.auth.fields.loginPlaceholder
+                        : copy.auth.fields.loginPlaceholderRegister
+                    }
                     name="username"
                     autoComplete="username"
                     icon={<MailIcon />}
-                    hint={
-                      isRegisterMode
-                        ? "Логин используется только для входа. Отображаемое имя семьи можно задать отдельно."
-                        : undefined
-                    }
+                    hint={isRegisterMode ? copy.auth.fields.loginHint : undefined}
                   />
 
                   <div className={joinClasses("grid gap-4", isRegisterMode && "sm:grid-cols-2")}>
                     <AuthField
-                      label="Пароль"
+                      label={copy.auth.fields.password}
                       value={password}
                       onChange={setPassword}
-                      placeholder="Минимум 6 символов"
+                      placeholder={copy.auth.fields.passwordPlaceholder}
                       type={isPasswordVisible ? "text" : "password"}
                       name="current-password"
                       autoComplete={isRegisterMode ? "new-password" : "current-password"}
@@ -394,8 +404,16 @@ export function AuthPage() {
                           type="button"
                           className="auth-v3-input-toggle"
                           onClick={() => setIsPasswordVisible((current) => !current)}
-                          aria-label={isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
-                          title={isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
+                          aria-label={
+                            isPasswordVisible
+                              ? copy.auth.actions.hidePassword
+                              : copy.auth.actions.showPassword
+                          }
+                          title={
+                            isPasswordVisible
+                              ? copy.auth.actions.hidePassword
+                              : copy.auth.actions.showPassword
+                          }
                         >
                           {isPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
                         </button>
@@ -403,10 +421,10 @@ export function AuthPage() {
                     />
                     {isRegisterMode ? (
                       <AuthField
-                        label="Повторите пароль"
+                        label={copy.auth.fields.passwordConfirm}
                         value={passwordConfirm}
                         onChange={setPasswordConfirm}
-                        placeholder="Повторите пароль"
+                        placeholder={copy.auth.fields.passwordConfirmPlaceholder}
                         type={isPasswordVisible ? "text" : "password"}
                         name="new-password-confirm"
                         autoComplete="new-password"
@@ -415,8 +433,16 @@ export function AuthPage() {
                             type="button"
                             className="auth-v3-input-toggle"
                             onClick={() => setIsPasswordVisible((current) => !current)}
-                            aria-label={isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
-                            title={isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}
+                            aria-label={
+                              isPasswordVisible
+                                ? copy.auth.actions.hidePassword
+                                : copy.auth.actions.showPassword
+                            }
+                            title={
+                              isPasswordVisible
+                                ? copy.auth.actions.hidePassword
+                                : copy.auth.actions.showPassword
+                            }
                           >
                             {isPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
                           </button>
@@ -438,10 +464,10 @@ export function AuthPage() {
                           <CheckIcon />
                         </span>
                       </span>
-                      <span>Запомнить меня</span>
+                      <span>{copy.auth.page.rememberMe}</span>
                     </label>
                     <button type="button" className="auth-v3-linkish">
-                      Забыли пароль?
+                      {copy.auth.page.forgotPassword}
                     </button>
                   </div>
                 </div>
@@ -449,43 +475,42 @@ export function AuthPage() {
 
               {isRegisterMode ? (
                 <details className="auth-v3-secondary-card">
-                  <summary className="auth-v3-summary">Дополнительные поля профиля</summary>
+                  <summary className="auth-v3-summary">{copy.auth.page.extraProfileFields}</summary>
                   <p className="auth-v3-section-copy mt-2">
-                    Эти данные необязательны на старте, но помогут корректно подписывать участников
-                    семьи.
+                    {copy.auth.page.extraProfileCopy}
                   </p>
                   <div className="mt-4 space-y-4">
                     <AuthField
-                      label="Email"
+                      label={copy.auth.fields.email}
                       value={email}
                       onChange={setEmail}
-                      placeholder="you@example.com"
+                      placeholder={copy.auth.fields.emailPlaceholder}
                       type="email"
                       name="email"
                       autoComplete="email"
                     />
                     <AuthField
-                      label="Имя в семье"
+                      label={copy.auth.fields.displayName}
                       value={displayName}
                       onChange={setDisplayName}
-                      placeholder="Например: Аня"
+                      placeholder={copy.auth.fields.displayNamePlaceholder}
                       name="display-name"
                       autoComplete="name"
                     />
                     <div className="grid gap-4 sm:grid-cols-2">
                       <AuthField
-                        label="Роль в семье"
+                        label={copy.auth.fields.relationship}
                         value={relationshipLabel}
                         onChange={setRelationshipLabel}
-                        placeholder="Например: мама"
+                        placeholder={copy.auth.fields.relationshipPlaceholder}
                         name="relationship-label"
                         autoComplete="organization-title"
                       />
                       <AuthField
-                        label="Телефон"
+                        label={copy.auth.fields.phone}
                         value={phone}
                         onChange={setPhone}
-                        placeholder="+375 ..."
+                        placeholder={copy.auth.fields.phonePlaceholder}
                         type="tel"
                         name="tel"
                         autoComplete="tel"
@@ -496,7 +521,9 @@ export function AuthPage() {
               ) : null}
 
               {passwordsMismatch ? (
-                <p className="auth-v3-error auth-v3-error-warning">Пароли должны совпадать.</p>
+                <p className="auth-v3-error auth-v3-error-warning">
+                  {copy.auth.page.passwordsMismatch}
+                </p>
               ) : null}
 
               {error ? <p className="auth-v3-error">{error}</p> : null}
@@ -515,8 +542,7 @@ export function AuthPage() {
               </button>
 
               <p className="auth-v3-footer-note">
-                Если вас уже пригласили в семью, откройте ссылку приглашения из сообщения. Она сама
-                приведёт в нужный сценарий.
+                {copy.auth.page.invitationNote}
               </p>
             </form>
           </section>

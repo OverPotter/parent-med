@@ -40,6 +40,7 @@ import {
 import { DateField } from "@shared/components/DateField";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { DisclosureHeader } from "@shared/components/DisclosureHeader";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -63,8 +64,10 @@ import {
   type MedicationPlanPriorityItem,
 } from "../utils/medicationPlans";
 import { formatDate, formatDateTime } from "@shared/utils/date";
+import { formatChildAgeLabel } from "@client/i18n/children";
 
 export function ChildIllnessPage() {
+  const { language } = useI18n();
   const { childId } = useParams<{ childId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -272,7 +275,7 @@ export function ChildIllnessPage() {
   if (!childId || childLoading || !child) {
     return (
       <div>
-        <p className="text-muted">Загрузка…</p>
+        <p className="text-muted">{language === "ru" ? "Загрузка…" : "Loading…"}</p>
       </div>
     );
   }
@@ -284,8 +287,16 @@ export function ChildIllnessPage() {
   const visibleHistoryEpisodes = openHistoryEpisodeId
     ? historyEpisodes.filter((episode) => episode.id === openHistoryEpisodeId)
     : historyEpisodes;
+  const childAgeLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
   const backHref = activeEpisode && !historyOnlyView ? "/illnesses/active" : "/children";
-  const backLabel = activeEpisode && !historyOnlyView ? "← К наблюдениям" : "← К списку детей";
+  const backLabel =
+    activeEpisode && !historyOnlyView
+      ? language === "ru"
+        ? "← К наблюдениям"
+        : "← Back to tracking"
+      : language === "ru"
+        ? "← К списку детей"
+        : "← Back to children";
 
   return (
     <div className="min-w-0 space-y-7">
@@ -304,27 +315,46 @@ export function ChildIllnessPage() {
               <h1 className="app-title text-[2rem] sm:text-[2.5rem]">{child.name}</h1>
               <p className="mt-3 text-sm text-muted lg:hidden">
                 {historyOnlyView
-                  ? "Завершённые наблюдения по ребёнку."
+                  ? language === "ru"
+                    ? "Завершённые наблюдения по ребёнку."
+                    : "Completed tracking for this child."
                   : createMode
-                    ? "Заполните короткую карточку и начните наблюдение."
-                    : "Сейчас активного наблюдения нет."}
+                    ? language === "ru"
+                      ? "Заполните короткую карточку и начните наблюдение."
+                      : "Fill in a short card and start tracking."
+                    : language === "ru"
+                      ? "Сейчас активного наблюдения нет."
+                      : "There is no active tracking right now."}
               </p>
             </div>
 
             <div className="mt-4 hidden gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-4">
-              {child.ageLabel ? <SummaryCard label="Возраст" value={child.ageLabel} /> : null}
+              {childAgeLabel ? (
+                <SummaryCard label={language === "ru" ? "Возраст" : "Age"} value={childAgeLabel} />
+              ) : null}
               {child.birthDate ? (
-                <SummaryCard label="Дата рождения" value={formatDate(child.birthDate)} />
+                <SummaryCard
+                  label={language === "ru" ? "Дата рождения" : "Birth date"}
+                  value={formatDate(child.birthDate)}
+                />
               ) : null}
               {latestWeight ? (
-                <SummaryCard label="Вес" value={formatWeightValue(latestWeight.valueKg)} />
+                <SummaryCard
+                  label={language === "ru" ? "Вес" : "Weight"}
+                  value={formatWeightValue(latestWeight.valueKg, language)}
+                />
               ) : null}
-              <SummaryCard label="Эпизоды" value={String(episodes.length)} />
+              <SummaryCard
+                label={language === "ru" ? "Эпизоды" : "Episodes"}
+                value={String(episodes.length)}
+              />
             </div>
 
             {!currentFamilyId && (
               <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
-                Семья не выбрана. Сначала открой страницу «Семья».
+                {language === "ru"
+                  ? "Семья не выбрана. Сначала открой страницу «Семья»."
+                  : "No family selected. Open the Family page first."}
               </div>
             )}
           </div>
@@ -354,8 +384,12 @@ export function ChildIllnessPage() {
       {!activeEpisode && createMode && !historyOnlyView && (
         <section className="space-y-3">
           <SectionTitle
-            title="Новое наблюдение"
-            subtitle="Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи."
+            title={language === "ru" ? "Новое наблюдение" : "New tracking"}
+            subtitle={
+              language === "ru"
+                ? "Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи."
+                : "Start with a tracking session first. Temperature, medicines and reminders can be added inside it."
+            }
           />
           <div ref={createModeCardRef}>
             <EpisodeActivationCard
@@ -377,7 +411,9 @@ export function ChildIllnessPage() {
 
       {!activeEpisode && !createMode && !historyOnlyView && (
         <section className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
-          Сейчас ничего не отслеживается. Новое наблюдение можно начать из раздела «Дети».
+          {language === "ru"
+            ? "Сейчас ничего не отслеживается. Новое наблюдение можно начать из раздела «Дети»."
+            : "Nothing is being tracked right now. Start a new session from the Children section."}
         </section>
       )}
 
@@ -387,14 +423,24 @@ export function ChildIllnessPage() {
             title={`История${child.name ? ` · ${child.name}` : ""}`}
             subtitle={
               historyAnalyticsMode
-                ? "Сводка по завершённым эпизодам."
+                ? language === "ru"
+                  ? "Сводка по завершённым эпизодам."
+                  : "Summary of completed episodes."
                 : historyEpisodeInsightsMode
-                  ? "Подробный разбор конкретного эпизода."
+                  ? language === "ru"
+                    ? "Подробный разбор конкретного эпизода."
+                    : "Detailed breakdown of a specific episode."
                   : openHistoryEpisodeId
-                    ? "Открыта одна запись."
+                    ? language === "ru"
+                      ? "Открыта одна запись."
+                      : "One record is open."
                     : historyEpisodes.length > 0
-                      ? "Завершённые наблюдения по ребёнку."
-                      : "Завершённых наблюдений пока нет."
+                      ? language === "ru"
+                        ? "Завершённые наблюдения по ребёнку."
+                        : "Completed tracking records for this child."
+                      : language === "ru"
+                        ? "Завершённых наблюдений пока нет."
+                        : "No completed tracking yet."
             }
           />
 
@@ -406,7 +452,7 @@ export function ChildIllnessPage() {
                   historyAnalyticsMode ? "soft-button-secondary" : "soft-button-primary"
                 }`}
               >
-                Вся история
+                {language === "ru" ? "Вся история" : "Full history"}
               </Link>
               <Link
                 to={`/children/${child.id}/illness?view=history&mode=analytics`}
@@ -414,7 +460,7 @@ export function ChildIllnessPage() {
                   historyAnalyticsMode ? "soft-button-primary" : "soft-button-secondary"
                 }`}
               >
-                Аналитика
+                {language === "ru" ? "Аналитика" : "Analytics"}
               </Link>
             </div>
           )}
@@ -425,13 +471,17 @@ export function ChildIllnessPage() {
             <HistoryInsightsPreview childId={child.id} />
           ) : openHistoryEpisodeId ? (
             <div className="soft-panel-muted flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-4 py-3">
-              <p className="text-sm text-muted">Показана 1 запись из {historyEpisodes.length}.</p>
+              <p className="text-sm text-muted">
+                {language === "ru"
+                  ? `Показана 1 запись из ${historyEpisodes.length}.`
+                  : `Showing 1 record out of ${historyEpisodes.length}.`}
+              </p>
               <button
                 type="button"
                 onClick={() => setOpenHistoryEpisodeId(null)}
                 className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
               >
-                Показать всю историю
+                {language === "ru" ? "Показать всю историю" : "Show full history"}
               </button>
             </div>
           ) : null}
@@ -460,7 +510,7 @@ export function ChildIllnessPage() {
             </ul>
           ) : !historyAnalyticsMode && !historyEpisodeInsightsMode ? (
             <div className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
-              История пока пустая.
+              {language === "ru" ? "История пока пустая." : "History is still empty."}
             </div>
           ) : null}
         </section>
@@ -483,12 +533,33 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 }
 
 function HistoryInsightsPreview({ childId }: { childId: string }) {
+  const { language } = useI18n();
   const periodOptions = [
-    { key: "month", label: "Месяц", shortLabel: "1м" },
-    { key: "quarter", label: "3 месяца", shortLabel: "3м" },
-    { key: "half_year", label: "6 месяцев", shortLabel: "6м" },
-    { key: "year", label: "Год", shortLabel: "1г" },
-    { key: "all", label: "Всё время", shortLabel: "всё" },
+    {
+      key: "month",
+      label: language === "ru" ? "Месяц" : "Month",
+      shortLabel: language === "ru" ? "1м" : "1m",
+    },
+    {
+      key: "quarter",
+      label: language === "ru" ? "3 месяца" : "3 months",
+      shortLabel: language === "ru" ? "3м" : "3m",
+    },
+    {
+      key: "half_year",
+      label: language === "ru" ? "6 месяцев" : "6 months",
+      shortLabel: language === "ru" ? "6м" : "6m",
+    },
+    {
+      key: "year",
+      label: language === "ru" ? "Год" : "Year",
+      shortLabel: language === "ru" ? "1г" : "1y",
+    },
+    {
+      key: "all",
+      label: language === "ru" ? "Всё время" : "All time",
+      shortLabel: language === "ru" ? "всё" : "all",
+    },
   ] as const;
   const [selectedPeriod, setSelectedPeriod] =
     useState<(typeof periodOptions)[number]["key"]>("half_year");
@@ -499,12 +570,12 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
     enabled: !!childId,
     ...liveQueryOptions,
   });
-  const timelineMeta = getHistoryTimelineMeta(selectedPeriod);
+  const timelineMeta = getHistoryTimelineMeta(selectedPeriod, language);
 
   if (isLoading || !summary) {
     return (
       <div className="soft-panel-muted rounded-[28px] px-5 py-8 text-sm text-muted">
-        Готовим сводку…
+        {language === "ru" ? "Готовим сводку…" : "Preparing summary…"}
       </div>
     );
   }
@@ -513,45 +584,99 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
     {
       label:
         selectedPeriod === "month"
-          ? "Эпизодов за месяц"
+          ? language === "ru"
+            ? "Эпизодов за месяц"
+            : "Episodes this month"
           : selectedPeriod === "quarter"
-            ? "Эпизодов за 3 месяца"
+            ? language === "ru"
+              ? "Эпизодов за 3 месяца"
+              : "Episodes in 3 months"
             : selectedPeriod === "half_year"
-              ? "Эпизодов за 6 месяцев"
+              ? language === "ru"
+                ? "Эпизодов за 6 месяцев"
+                : "Episodes in 6 months"
               : selectedPeriod === "year"
-                ? "Эпизодов за год"
-                : "Эпизодов за всё время",
+                ? language === "ru"
+                  ? "Эпизодов за год"
+                  : "Episodes this year"
+                : language === "ru"
+                  ? "Эпизодов за всё время"
+                  : "Episodes overall",
       value: String(summary.episodeCount),
     },
     {
-      label: "Последний эпизод",
+      label: language === "ru" ? "Последний эпизод" : "Last episode",
       value:
         summary.daysSinceLastEpisode !== null
-          ? formatDaysAgo(summary.daysSinceLastEpisode)
-          : "Нет данных",
+          ? formatDaysAgo(summary.daysSinceLastEpisode, language)
+          : language === "ru"
+            ? "Нет данных"
+            : "No data",
     },
     {
-      label: "Без болезни",
+      label: language === "ru" ? "Без болезни" : "Without illness",
       value:
-        summary.daysSinceLastEpisode !== null ? String(summary.daysSinceLastEpisode) : "Нет данных",
+        summary.daysSinceLastEpisode !== null
+          ? language === "ru"
+            ? `${summary.daysSinceLastEpisode} дн.`
+            : `${summary.daysSinceLastEpisode} days`
+          : language === "ru"
+            ? "Нет данных"
+            : "No data",
     },
     {
-      label: selectedPeriod === "month" ? "Период наблюдения" : "Самый активный период",
+      label:
+        selectedPeriod === "month"
+          ? language === "ru"
+            ? "Период наблюдения"
+            : "Observation window"
+          : language === "ru"
+            ? "Самый активный период"
+            : "Most active period",
       value:
-        selectedPeriod === "month" ? "30 дней" : (summary.mostActivePeriodLabel ?? "Нет данных"),
+        selectedPeriod === "month"
+          ? language === "ru"
+            ? "30 дней"
+            : "30 days"
+          : (translateAnalyticsLabel(summary.mostActivePeriodLabel, language) ??
+            (language === "ru" ? "Нет данных" : "No data")),
     },
   ];
   const severityCards = [
-    { label: "Средняя длительность", value: formatDurationValue(summary.averageDurationDays) },
-    { label: "Самый долгий эпизод", value: formatDurationValue(summary.longestDurationDays) },
-    { label: "Эпизодов с 38+", value: String(summary.episodesWithTemperature38Plus) },
-    { label: "Эпизодов с 39+", value: String(summary.episodesWithTemperature39Plus) },
+    {
+      label: language === "ru" ? "Средняя длительность" : "Average duration",
+      value: formatDurationValue(summary.averageDurationDays, language),
+    },
+    {
+      label: language === "ru" ? "Самый долгий эпизод" : "Longest episode",
+      value: formatDurationValue(summary.longestDurationDays, language),
+    },
+    {
+      label: language === "ru" ? "Эпизодов с 38+" : "Episodes with 38+",
+      value: String(summary.episodesWithTemperature38Plus),
+    },
+    {
+      label: language === "ru" ? "Эпизодов с 39+" : "Episodes with 39+",
+      value: String(summary.episodesWithTemperature39Plus),
+    },
   ];
   const behaviorCards = [
-    { label: "Эпизодов с лекарствами", value: String(summary.episodesWithAdministrations) },
-    { label: "Только наблюдение", value: String(summary.observationOnlyEpisodes) },
-    { label: "С напоминаниями", value: String(summary.guidedEpisodes) },
-    { label: "Всего замеров", value: String(summary.totalTemperatureEntries) },
+    {
+      label: language === "ru" ? "Эпизодов с лекарствами" : "Episodes with medication",
+      value: String(summary.episodesWithAdministrations),
+    },
+    {
+      label: language === "ru" ? "Только наблюдение" : "Observation only",
+      value: String(summary.observationOnlyEpisodes),
+    },
+    {
+      label: language === "ru" ? "С напоминаниями" : "With reminders",
+      value: String(summary.guidedEpisodes),
+    },
+    {
+      label: language === "ru" ? "Всего замеров" : "Total readings",
+      value: String(summary.totalTemperatureEntries),
+    },
   ];
 
   return (
@@ -559,13 +684,18 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
       <div className="soft-panel rounded-[28px] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="app-card-title text-[1.08rem] sm:text-[1.18rem]">Общая сводка</h3>
+            <h3 className="app-card-title text-[1.08rem] sm:text-[1.18rem]">
+              {language === "ru" ? "Общая сводка" : "Overall summary"}
+            </h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-              Как часто ребёнок болел и как это менялось со временем.
+              {language === "ru"
+                ? "Как часто ребёнок болел и как это менялось со временем."
+                : "How often the child got sick and how it changed over time."}
             </p>
           </div>
           <span className="soft-pill-primary rounded-full px-3 py-1.5 text-xs">
-            {summary.totalClosedEpisodes} эп. в архиве
+            {summary.totalClosedEpisodes}{" "}
+            {language === "ru" ? "эп. в архиве" : "episodes in archive"}
           </span>
         </div>
 
@@ -590,7 +720,14 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
       </div>
 
       <section className="space-y-3">
-        <SectionTitle title="Частота" subtitle="Сколько эпизодов было за выбранный период." />
+        <SectionTitle
+          title={language === "ru" ? "Частота" : "Frequency"}
+          subtitle={
+            language === "ru"
+              ? "Сколько эпизодов было за выбранный период."
+              : "How many episodes happened in the selected period."
+          }
+        />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {frequencyCards.map((item) => (
             <AnalyticsCard key={item.label} label={item.label} value={item.value} tone="default" />
@@ -614,15 +751,24 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
             </span>
           </div>
           <div className="mt-5">
-            <MiniHistoryBars items={summary.timeline} />
+            <MiniHistoryBars
+              items={summary.timeline.map((item) => ({
+                ...item,
+                label: translateAnalyticsLabel(item.label, language) ?? item.label,
+              }))}
+            />
           </div>
         </div>
       </section>
 
       <section className="space-y-3">
         <SectionTitle
-          title="Как проходили эпизоды"
-          subtitle="Насколько короткими или длительными они были."
+          title={language === "ru" ? "Как проходили эпизоды" : "How episodes went"}
+          subtitle={
+            language === "ru"
+              ? "Насколько короткими или длительными они были."
+              : "How short or long the episodes were."
+          }
         />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {severityCards.map((item) => (
@@ -633,15 +779,19 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
 
       <section className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-          <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">Сколько обычно длилось</h4>
+          <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">
+            {language === "ru" ? "Сколько обычно длилось" : "Typical duration"}
+          </h4>
           <p className="mt-1 text-sm leading-6 text-muted">
-            Короткие, средние и более длительные эпизоды за этот период.
+            {language === "ru"
+              ? "Короткие, средние и более длительные эпизоды за этот период."
+              : "Short, medium and longer episodes in this period."}
           </p>
           <div className="mt-5 space-y-3">
             {summary.durationBuckets.map((item) => (
               <StatRow
                 key={item.label}
-                label={item.label}
+                label={translateAnalyticsLabel(item.label, language) ?? item.label}
                 value={item.value}
                 max={Math.max(...summary.durationBuckets.map((bucket) => bucket.value), 1)}
               />
@@ -650,9 +800,13 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
         </div>
 
         <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-          <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">Что обычно делали</h4>
+          <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">
+            {language === "ru" ? "Что обычно делали" : "What usually happened"}
+          </h4>
           <p className="mt-1 text-sm leading-6 text-muted">
-            Лекарства, напоминания и замеры за этот период.
+            {language === "ru"
+              ? "Лекарства, напоминания и замеры за этот период."
+              : "Medication, reminders and readings in this period."}
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {behaviorCards.map((item) => (
@@ -737,39 +891,69 @@ function StatRow({ label, value, max }: { label: string; value: number; max: num
   );
 }
 
-function getHistoryTimelineMeta(period: "month" | "quarter" | "half_year" | "year" | "all") {
+function getHistoryTimelineMeta(
+  period: "month" | "quarter" | "half_year" | "year" | "all",
+  language: "ru" | "en"
+) {
   if (period === "month") {
     return {
-      sectionTitle: "За месяц",
-      sectionSubtitle: "На каких неделях за последние 30 дней были эпизоды.",
-      chartTitle: "Распределение по неделям",
-      chartDescription: "Сколько эпизодов пришлось на каждую неделю последних 30 дней.",
+      sectionTitle: language === "ru" ? "За месяц" : "This month",
+      sectionSubtitle:
+        language === "ru"
+          ? "На каких неделях за последние 30 дней были эпизоды."
+          : "Which weeks in the last 30 days had episodes.",
+      chartTitle: language === "ru" ? "Распределение по неделям" : "Weekly distribution",
+      chartDescription:
+        language === "ru"
+          ? "Сколько эпизодов пришлось на каждую неделю последних 30 дней."
+          : "How many episodes fell into each week of the last 30 days.",
     };
   }
 
   if (period === "all") {
     return {
-      sectionTitle: "По годам",
-      sectionSubtitle: "Как менялась частота болезней по годам.",
-      chartTitle: "Динамика по годам",
-      chartDescription: "Каждая полоса показывает, сколько эпизодов было за год.",
+      sectionTitle: language === "ru" ? "По годам" : "By year",
+      sectionSubtitle:
+        language === "ru"
+          ? "Как менялась частота болезней по годам."
+          : "How illness frequency changed by year.",
+      chartTitle: language === "ru" ? "Динамика по годам" : "Yearly trend",
+      chartDescription:
+        language === "ru"
+          ? "Каждая полоса показывает, сколько эпизодов было за год."
+          : "Each bar shows how many episodes happened in a year.",
     };
   }
 
   return {
-    sectionTitle: "По месяцам",
-    sectionSubtitle: "Когда ребёнок болел чаще, а когда реже.",
-    chartTitle: "Динамика по месяцам",
-    chartDescription: "Каждая полоса показывает, сколько эпизодов пришлось на месяц.",
+    sectionTitle: language === "ru" ? "По месяцам" : "By month",
+    sectionSubtitle:
+      language === "ru"
+        ? "Когда ребёнок болел чаще, а когда реже."
+        : "When the child was sick more often and when less often.",
+    chartTitle: language === "ru" ? "Динамика по месяцам" : "Monthly trend",
+    chartDescription:
+      language === "ru"
+        ? "Каждая полоса показывает, сколько эпизодов пришлось на месяц."
+        : "Each bar shows how many episodes fell into a month.",
   };
 }
 
-function formatDurationValue(days: number) {
+function formatDurationValue(days: number, language: "ru" | "en") {
   const normalized = Number.isInteger(days) ? String(days) : days.toFixed(1).replace(".0", "");
-  return `${normalized} дн.`;
+  return `${normalized} ${language === "ru" ? "дн." : "days"}`;
 }
 
-function formatDaysAgo(days: number) {
+function formatDaysAgo(days: number, language: "ru" | "en") {
+  if (language === "en") {
+    if (days === 0) {
+      return "Today";
+    }
+    if (days === 1) {
+      return "1 day ago";
+    }
+    return `${days} days ago`;
+  }
   if (days === 0) {
     return "Сегодня";
   }
@@ -808,6 +992,7 @@ function HistoryEpisodeCard({
   onDeleted: () => void;
   onToggle: () => void;
 }) {
+  const { language } = useI18n();
   const queryClient = useQueryClient();
   const liveQueryOptions = useLiveQueryOptions(10000);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -845,7 +1030,8 @@ function HistoryEpisodeCard({
     temperatureEntries,
     administrations,
     comments,
-    medicines
+    medicines,
+    language
   );
   return (
     <li
@@ -855,9 +1041,23 @@ function HistoryEpisodeCard({
     >
       <ConfirmDialog
         isOpen={isDeleteConfirmOpen}
-        title={`Удалить эпизод ${episodeNumber}`}
-        description="Запись будет полностью удалена из истории ребёнка без возможности восстановления."
-        confirmLabel={deleteEpisodeMutation.isPending ? "Удаляем…" : "Удалить из истории"}
+        title={
+          language === "ru" ? `Удалить эпизод ${episodeNumber}` : `Delete episode ${episodeNumber}`
+        }
+        description={
+          language === "ru"
+            ? "Запись будет полностью удалена из истории ребёнка без возможности восстановления."
+            : "This record will be removed from the child’s history without recovery."
+        }
+        confirmLabel={
+          deleteEpisodeMutation.isPending
+            ? language === "ru"
+              ? "Удаляем…"
+              : "Deleting…"
+            : language === "ru"
+              ? "Удалить из истории"
+              : "Delete from history"
+        }
         confirmTone="danger"
         isPending={deleteEpisodeMutation.isPending}
         onCancel={() => setIsDeleteConfirmOpen(false)}
@@ -870,29 +1070,36 @@ function HistoryEpisodeCard({
       <DisclosureHeader
         isOpen={isOpen}
         onToggle={onToggle}
+        desktopClosedLabel={language === "ru" ? "Открыть" : "Open"}
+        desktopOpenLabel={language === "ru" ? "Скрыть" : "Hide"}
+        mobileClosedLabel={language === "ru" ? "Открыть" : "Open"}
+        mobileOpenLabel={language === "ru" ? "Скрыть" : "Hide"}
         actions={
           <Link
             to={`/children/${childId}/illness?view=history&episodeId=${episode.id}`}
             className="soft-button-secondary inline-flex min-h-[2.65rem] items-center justify-center px-3 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.9rem] sm:px-3.5 sm:text-[0.86rem]"
           >
-            Разбор
+            {language === "ru" ? "Разбор" : "Insights"}
           </Link>
         }
       >
         <>
           <p className="text-xs tracking-[0.08em] text-muted">
-            Эпизод {episodeNumber} · {formatEpisodePeriod(episode.startedAt, episode.closedAt)}
+            {language === "ru" ? "Эпизод" : "Episode"} {episodeNumber} ·{" "}
+            {formatEpisodePeriod(episode.startedAt, episode.closedAt, language)}
           </p>
           <p className="mt-2 text-base font-medium text-[color:color-mix(in_srgb,var(--color-primary)_62%,var(--color-foreground))]">
-            {episode.title?.trim() || "Без названия"}
+            {episode.title?.trim() || (language === "ru" ? "Без названия" : "Untitled")}
           </p>
           <p className="mt-1 text-sm text-muted">
             {episode.closedAt
-              ? `Закрыт ${formatDateTime(episode.closedAt)}`
-              : "Дата закрытия не указана"}
+              ? `${language === "ru" ? "Закрыт" : "Closed"} ${formatDateTime(episode.closedAt)}`
+              : language === "ru"
+                ? "Дата закрытия не указана"
+                : "Close date is not set"}
           </p>
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
-            {episode.note?.trim() || "Без описания"}
+            {episode.note?.trim() || (language === "ru" ? "Без описания" : "No description")}
           </p>
         </>
       </DisclosureHeader>
@@ -901,25 +1108,30 @@ function HistoryEpisodeCard({
         <div className="mt-6 space-y-6 border-t border-border/70 pt-6">
           <section className="space-y-4">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Описание</h3>
+              <h3 className="text-sm font-semibold text-foreground">
+                {language === "ru" ? "Описание" : "Description"}
+              </h3>
               <p className="mt-1 text-sm text-muted">
                 {formatEntrySummary(
                   temperatureEntries.length,
                   administrations.length,
-                  comments.length
+                  comments.length,
+                  language
                 )}
               </p>
             </div>
 
             <div className="soft-panel-muted mt-4 rounded-[22px] px-4 py-4">
               <p className="text-sm leading-6 text-muted">
-                {episode.note?.trim() || "Без описания"}
+                {episode.note?.trim() || (language === "ru" ? "Без описания" : "No description")}
               </p>
             </div>
           </section>
 
           <section className="border-t border-border pt-5">
-            <h3 className="text-sm font-semibold text-foreground">Что уже записано</h3>
+            <h3 className="text-sm font-semibold text-foreground">
+              {language === "ru" ? "Что уже записано" : "What is already logged"}
+            </h3>
 
             {timelineItems.length > 0 ? (
               <div className="mt-4">
@@ -927,7 +1139,9 @@ function HistoryEpisodeCard({
               </div>
             ) : (
               <div className="soft-empty mt-4 rounded-[22px] px-4 py-6 text-sm text-muted">
-                Для этого наблюдения ещё нет температур и отмеченных приёмов.
+                {language === "ru"
+                  ? "Для этого наблюдения ещё нет температур и отмеченных приёмов."
+                  : "There are no temperatures or logged doses for this tracking yet."}
               </div>
             )}
           </section>
@@ -935,8 +1149,14 @@ function HistoryEpisodeCard({
           <section className="border-t border-border pt-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-foreground">Действия</h3>
-                <p className="mt-1 text-sm text-muted">Запись можно удалить из истории.</p>
+                <h3 className="text-sm font-semibold text-foreground">
+                  {language === "ru" ? "Действия" : "Actions"}
+                </h3>
+                <p className="mt-1 text-sm text-muted">
+                  {language === "ru"
+                    ? "Запись можно удалить из истории."
+                    : "This record can be deleted from history."}
+                </p>
               </div>
               <button
                 type="button"
@@ -944,7 +1164,13 @@ function HistoryEpisodeCard({
                 disabled={deleteEpisodeMutation.isPending}
                 className="soft-button-danger inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
               >
-                {deleteEpisodeMutation.isPending ? "Удаляем…" : "Удалить из истории"}
+                {deleteEpisodeMutation.isPending
+                  ? language === "ru"
+                    ? "Удаляем…"
+                    : "Deleting…"
+                  : language === "ru"
+                    ? "Удалить из истории"
+                    : "Delete from history"}
               </button>
             </div>
           </section>
@@ -961,33 +1187,52 @@ function EpisodeInsightsPreview({
   episode: IllnessEpisode;
   insights: IllnessEpisodeInsights;
 }) {
+  const { language } = useI18n();
   const summaryMetrics = [
-    { label: "Длилось", value: formatDurationValue(insights.durationDays) },
     {
-      label: "Пик температуры",
+      label: language === "ru" ? "Длилось" : "Duration",
+      value: formatDurationValue(insights.durationDays, language),
+    },
+    {
+      label: language === "ru" ? "Пик температуры" : "Peak temperature",
       value:
         insights.peakTemperatureCelsius !== null
           ? `${insights.peakTemperatureCelsius} °C`
-          : "Нет замеров",
+          : language === "ru"
+            ? "Нет замеров"
+            : "No readings",
     },
     {
-      label: "Последняя запись",
-      value: insights.lastEventAt ? formatDateTime(insights.lastEventAt) : "Нет записей",
+      label: language === "ru" ? "Последняя запись" : "Last entry",
+      value: insights.lastEventAt
+        ? formatDateTime(insights.lastEventAt)
+        : language === "ru"
+          ? "Нет записей"
+          : "No entries",
     },
   ];
   const summaryFacts = [
-    { label: "Замеров", value: String(insights.temperatureCount) },
-    { label: "Приёмов", value: String(insights.administrationCount) },
+    { label: language === "ru" ? "Замеров" : "Readings", value: String(insights.temperatureCount) },
+    { label: language === "ru" ? "Приёмов" : "Doses", value: String(insights.administrationCount) },
     {
-      label: "Режим",
-      value: insights.medicationMode === "guided" ? "С напоминаниями" : "Вручную",
+      label: language === "ru" ? "Режим" : "Mode",
+      value:
+        insights.medicationMode === "guided"
+          ? language === "ru"
+            ? "С напоминаниями"
+            : "With reminders"
+          : language === "ru"
+            ? "Вручную"
+            : "Manual",
     },
     {
-      label: "Последний замер",
+      label: language === "ru" ? "Последний замер" : "Latest reading",
       value:
         insights.lastTemperatureCelsius !== null
           ? `${insights.lastTemperatureCelsius} °C`
-          : "Нет замеров",
+          : language === "ru"
+            ? "Нет замеров"
+            : "No readings",
     },
   ];
   const temperatures = insights.temperaturePoints.map((item, index) => ({
@@ -1006,20 +1251,24 @@ function EpisodeInsightsPreview({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-[0.72rem] tracking-[0.05em] text-muted sm:text-xs">
-                Разбор эпизода
+                {language === "ru" ? "Разбор эпизода" : "Episode insights"}
               </p>
               <span className="soft-pill rounded-full px-3 py-1 text-[0.72rem] sm:text-xs">
-                {formatEpisodePeriod(episode.startedAt, episode.closedAt)}
+                {formatEpisodePeriod(episode.startedAt, episode.closedAt, language)}
               </span>
             </div>
-            <h4 className="app-card-title mt-2 text-[1rem] sm:text-[1.04rem]">Кратко об эпизоде</h4>
+            <h4 className="app-card-title mt-2 text-[1rem] sm:text-[1.04rem]">
+              {language === "ru" ? "Кратко об эпизоде" : "Episode at a glance"}
+            </h4>
             <p className="mt-1 text-[0.88rem] leading-6 text-muted sm:text-sm">
-              Самое важное по длительности, температуре и событиям.
+              {language === "ru"
+                ? "Самое важное по длительности, температуре и событиям."
+                : "The key points about duration, temperature and events."}
             </p>
           </div>
           {insights.peakTemperatureAt && (
             <span className="soft-pill rounded-full px-3 py-1 text-[0.72rem] sm:text-xs">
-              Пик {formatDateTime(insights.peakTemperatureAt)}
+              {language === "ru" ? "Пик" : "Peak"} {formatDateTime(insights.peakTemperatureAt)}
             </span>
           )}
         </div>
@@ -1045,15 +1294,17 @@ function EpisodeInsightsPreview({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">
-                Температура по эпизоду
+                {language === "ru" ? "Температура по эпизоду" : "Episode temperature"}
               </h4>
               <p className="mt-1 text-[0.88rem] leading-6 text-muted sm:text-sm">
-                Замеры по ходу этого эпизода.
+                {language === "ru"
+                  ? "Замеры по ходу этого эпизода."
+                  : "Readings taken during this episode."}
               </p>
             </div>
             {insights.peakTemperatureAt && (
               <span className="soft-pill rounded-full px-3 py-1 text-[0.72rem] sm:text-xs">
-                Пик {formatDateTime(insights.peakTemperatureAt)}
+                {language === "ru" ? "Пик" : "Peak"} {formatDateTime(insights.peakTemperatureAt)}
               </span>
             )}
           </div>
@@ -1063,39 +1314,55 @@ function EpisodeInsightsPreview({
               <EpisodeTemperatureTrend items={temperatures} />
             ) : (
               <div className="soft-empty rounded-[20px] px-4 py-6 text-[0.9rem] text-muted sm:text-sm">
-                Для этого эпизода ещё нет замеров температуры.
+                {language === "ru"
+                  ? "Для этого эпизода ещё нет замеров температуры."
+                  : "There are no temperature readings for this episode yet."}
               </div>
             )}
           </div>
         </div>
 
         <div className="soft-panel-muted rounded-[24px] p-4 sm:p-5">
-          <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">Ключевые детали</h4>
+          <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">
+            {language === "ru" ? "Ключевые детали" : "Key details"}
+          </h4>
           <div className="mt-4 space-y-3">
             <EpisodeFactRow
-              label="Препараты"
+              label={language === "ru" ? "Препараты" : "Medicines"}
               value={
                 insights.medicineNames.length > 0
                   ? insights.medicineNames.join(", ")
-                  : "Без лекарств"
+                  : language === "ru"
+                    ? "Без лекарств"
+                    : "No medication"
               }
             />
-            <EpisodeFactRow label="Всего событий" value={String(insights.totalEvents)} />
-            <EpisodeFactRow label="Начался" value={formatDate(episode.startedAt)} />
             <EpisodeFactRow
-              label="Первый замер"
+              label={language === "ru" ? "Всего событий" : "Total events"}
+              value={String(insights.totalEvents)}
+            />
+            <EpisodeFactRow
+              label={language === "ru" ? "Начался" : "Started"}
+              value={formatDate(episode.startedAt)}
+            />
+            <EpisodeFactRow
+              label={language === "ru" ? "Первый замер" : "First reading"}
               value={
                 insights.firstTemperatureAt
                   ? formatDateTime(insights.firstTemperatureAt)
-                  : "Нет замеров"
+                  : language === "ru"
+                    ? "Нет замеров"
+                    : "No readings"
               }
             />
             <EpisodeFactRow
-              label="Последний приём"
+              label={language === "ru" ? "Последний приём" : "Last dose"}
               value={
                 insights.lastAdministrationAt
                   ? formatDateTime(insights.lastAdministrationAt)
-                  : "Без приёмов"
+                  : language === "ru"
+                    ? "Без приёмов"
+                    : "No doses"
               }
             />
           </div>
@@ -1122,6 +1389,7 @@ function HistoryEpisodeInsightsScreen({
   childId: string;
   episode: IllnessEpisode;
 }) {
+  const { language } = useI18n();
   const liveQueryOptions = useLiveQueryOptions(10000);
   const { data: insights, isLoading } = useQuery({
     queryKey: ["illness-episode-insights", episode.id],
@@ -1137,13 +1405,13 @@ function HistoryEpisodeInsightsScreen({
           to={`/children/${childId}/illness?view=history`}
           className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
         >
-          Ко всей истории
+          {language === "ru" ? "Ко всей истории" : "Back to full history"}
         </Link>
       </div>
 
       {isLoading || !insights ? (
         <div className="soft-panel-muted rounded-[28px] px-5 py-8 text-sm text-muted">
-          Готовим разбор…
+          {language === "ru" ? "Готовим разбор…" : "Preparing insights…"}
         </div>
       ) : (
         <EpisodeInsightsPreview episode={episode} insights={insights} />
@@ -1295,6 +1563,7 @@ function EpisodeBlock({
   quickReminderDetailMode: boolean;
   reminderPlanId: string | null;
 }) {
+  const { language } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
@@ -1307,20 +1576,23 @@ function EpisodeBlock({
   const quickComposeMeta =
     composerMode === "temperature"
       ? {
-          title: "Запись температуры",
-          subtitle: "Сохраните новый замер.",
-          success: "Температура сохранена",
+          title: language === "ru" ? "Запись температуры" : "Temperature log",
+          subtitle: language === "ru" ? "Сохраните новый замер." : "Save a new reading.",
+          success: language === "ru" ? "Температура сохранена" : "Temperature saved",
         }
       : composerMode === "administration"
         ? {
-            title: "Запись приёма",
-            subtitle: "Сохраните приём.",
-            success: "Приём сохранён",
+            title: language === "ru" ? "Запись приёма" : "Dose log",
+            subtitle: language === "ru" ? "Сохраните приём." : "Save the dose.",
+            success: language === "ru" ? "Приём сохранён" : "Dose saved",
           }
         : {
-            title: "Заметка",
-            subtitle: "Добавьте заметку о состоянии.",
-            success: "Заметка сохранена",
+            title: language === "ru" ? "Заметка" : "Note",
+            subtitle:
+              language === "ru"
+                ? "Добавьте заметку о состоянии."
+                : "Add a note about the current state.",
+            success: language === "ru" ? "Заметка сохранена" : "Note saved",
           };
 
   const { data: temperatureEntries = [] } = useQuery({
@@ -1473,7 +1745,8 @@ function EpisodeBlock({
     temperatureEntries,
     administrations,
     comments,
-    householdMedicines
+    householdMedicines,
+    language
   );
   const reminderItems = getPrioritizedMedicationPlanItems(
     medicationPlans,
@@ -1536,7 +1809,10 @@ function EpisodeBlock({
       {composerMode === "administration" && addAdminMutation.isError && (
         <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
           {(addAdminMutation.error as { response?: { data?: { detail?: string } } }).response?.data
-            ?.detail ?? "Ошибка записи. Проверь срок годности и срок после вскрытия."}
+            ?.detail ??
+            (language === "ru"
+              ? "Ошибка записи. Проверь срок годности и срок после вскрытия."
+              : "Failed to save. Check the expiry date and the after-opening limit.")}
         </p>
       )}
 
@@ -1546,7 +1822,11 @@ function EpisodeBlock({
             rows={3}
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Например: к вечеру бодрее, после сна снова температура."
+            placeholder={
+              language === "ru"
+                ? "Например: к вечеру бодрее, после сна снова температура."
+                : "Example: more active by evening, fever came back after sleep."
+            }
             className="soft-input w-full px-4"
           />
           <div className="flex flex-wrap gap-2">
@@ -1559,7 +1839,13 @@ function EpisodeBlock({
               disabled={addCommentMutation.isPending || !commentText.trim()}
               className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
             >
-              {addCommentMutation.isPending ? "Сохраняем…" : "Добавить комментарий"}
+              {addCommentMutation.isPending
+                ? language === "ru"
+                  ? "Сохраняем…"
+                  : "Saving…"
+                : language === "ru"
+                  ? "Добавить комментарий"
+                  : "Add comment"}
             </button>
           </div>
         </div>
@@ -1571,8 +1857,12 @@ function EpisodeBlock({
   ) : (
     <section className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_24%,transparent)] px-4 py-5 sm:px-5 sm:py-6">
       <div className="min-w-0">
-        <h4 className="text-base font-semibold text-foreground">Быстрые записи</h4>
-        <p className="mt-1 text-sm text-muted">Температура, приёмы и заметки.</p>
+        <h4 className="text-base font-semibold text-foreground">
+          {language === "ru" ? "Быстрые записи" : "Quick logs"}
+        </h4>
+        <p className="mt-1 text-sm text-muted">
+          {language === "ru" ? "Температура, приёмы и заметки." : "Temperature, doses and notes."}
+        </p>
       </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -1580,19 +1870,19 @@ function EpisodeBlock({
           to={`/children/${childId}/illness?focus=temperature`}
           className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
         >
-          Записать температуру
+          {language === "ru" ? "Записать температуру" : "Log temperature"}
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=administration`}
           className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
         >
-          Записать приём
+          {language === "ru" ? "Записать приём" : "Log dose"}
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=comment`}
           className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
         >
-          Добавить заметку
+          {language === "ru" ? "Добавить заметку" : "Add note"}
         </Link>
       </div>
     </section>
@@ -1603,7 +1893,7 @@ function EpisodeBlock({
         <EpisodeTimelineList items={timelineItems} />
       ) : (
         <div className="soft-empty rounded-[22px] px-4 py-6 text-sm text-muted">
-          Пока записей нет.
+          {language === "ru" ? "Пока записей нет." : "No entries yet."}
         </div>
       )}
     </section>
@@ -1611,21 +1901,25 @@ function EpisodeBlock({
     <section className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_24%,transparent)] px-4 py-5 sm:px-5 sm:py-6">
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
         <div className="min-w-0">
-          <h4 className="text-base font-semibold text-foreground">Лента наблюдения</h4>
-          <p className="mt-1 text-sm text-muted">Все записи по времени.</p>
+          <h4 className="text-base font-semibold text-foreground">
+            {language === "ru" ? "Лента наблюдения" : "Tracking timeline"}
+          </h4>
+          <p className="mt-1 text-sm text-muted">
+            {language === "ru" ? "Все записи по времени." : "All entries in time order."}
+          </p>
         </div>
         <Link
           to={`/children/${childId}/illness?focus=timeline`}
           className="soft-button-secondary inline-flex min-h-[2.85rem] w-full self-start items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
         >
-          Открыть
+          {language === "ru" ? "Открыть" : "Open"}
         </Link>
       </div>
 
       {timelineItems.length > 0 ? (
         <div className="mt-4">
           <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
-            Записей: {timelineItems.length}
+            {language === "ru" ? "Записей" : "Entries"}: {timelineItems.length}
           </span>
         </div>
       ) : null}
@@ -1636,8 +1930,14 @@ function EpisodeBlock({
       <section className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_22%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_28%,transparent)] px-4 py-5 sm:px-5 sm:py-6">
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
           <div className="min-w-0">
-            <h4 className="text-base font-semibold text-foreground">Напоминания о приёме</h4>
-            <p className="mt-1 text-sm text-muted">Приёмы по интервалу и статус на сейчас.</p>
+            <h4 className="text-base font-semibold text-foreground">
+              {language === "ru" ? "Напоминания о приёме" : "Dose reminders"}
+            </h4>
+            <p className="mt-1 text-sm text-muted">
+              {language === "ru"
+                ? "Приёмы по интервалу и статус на сейчас."
+                : "Dose intervals and their current status."}
+            </p>
           </div>
           <Link
             to={
@@ -1647,14 +1947,21 @@ function EpisodeBlock({
             }
             className="soft-button-secondary inline-flex min-h-[2.85rem] w-full self-start items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
           >
-            {medicationPlans.length > 0 ? "Напоминания" : "Добавить напоминание"}
+            {medicationPlans.length > 0
+              ? language === "ru"
+                ? "Напоминания"
+                : "Reminders"
+              : language === "ru"
+                ? "Добавить напоминание"
+                : "Add reminder"}
           </Link>
         </div>
 
         {reminderLead ? (
           <div className="mt-4">
             <span className="soft-pill-success rounded-full px-3 py-1.5 text-xs">
-              Активных напоминаний: {medicationPlans.length}
+              {language === "ru" ? "Активных напоминаний" : "Active reminders"}:{" "}
+              {medicationPlans.length}
             </span>
           </div>
         ) : null}
@@ -1687,13 +1994,13 @@ function EpisodeBlock({
               to="/illnesses/active"
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              К наблюдениям
+              {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
             <Link
               to={`/children/${childId}/illness?focus=timeline`}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              К ленте
+              {language === "ru" ? "К ленте" : "Open timeline"}
             </Link>
           </div>
         </div>
@@ -1709,9 +2016,13 @@ function EpisodeBlock({
             <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               {childName}
               <span className="mx-2 text-muted">·</span>
-              <span className="text-muted">Лента наблюдения</span>
+              <span className="text-muted">
+                {language === "ru" ? "Лента наблюдения" : "Tracking timeline"}
+              </span>
             </p>
-            <p className="mt-1 text-sm text-muted">Все записи по времени.</p>
+            <p className="mt-1 text-sm text-muted">
+              {language === "ru" ? "Все записи по времени." : "All entries in time order."}
+            </p>
           </div>
         </div>
 
@@ -1722,7 +2033,7 @@ function EpisodeBlock({
               to="/illnesses/active"
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              К наблюдениям
+              {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
           </div>
         </div>
@@ -1738,9 +2049,13 @@ function EpisodeBlock({
             <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               {childName}
               <span className="mx-2 text-muted">·</span>
-              <span className="text-muted">Напоминания</span>
+              <span className="text-muted">{language === "ru" ? "Напоминания" : "Reminders"}</span>
             </p>
-            <p className="mt-1 text-sm text-muted">Активные напоминания по приёмам.</p>
+            <p className="mt-1 text-sm text-muted">
+              {language === "ru"
+                ? "Активные напоминания по приёмам."
+                : "Active medication reminders."}
+            </p>
           </div>
         </div>
 
@@ -1758,14 +2073,14 @@ function EpisodeBlock({
                   household_medicine_id: plan.householdMedicineId,
                   custom_medicine_name: plan.customMedicineName ?? undefined,
                   amount: plan.doseAmount,
-                  reason: "Отмечено по напоминанию",
+                  reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
                 })
               }
               isSubmittingAdministration={addAdminMutation.isPending}
             />
           ) : (
             <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
-              Напоминаний пока нет.
+              {language === "ru" ? "Напоминаний пока нет." : "No reminders yet."}
             </div>
           )}
 
@@ -1790,13 +2105,13 @@ function EpisodeBlock({
               to="/illnesses/active"
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              К наблюдениям
+              {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
             <Link
               to={`/children/${childId}/illness?focus=reminder-create`}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              Добавить напоминание
+              {language === "ru" ? "Добавить напоминание" : "Add reminder"}
             </Link>
           </div>
         </div>
@@ -1810,20 +2125,20 @@ function EpisodeBlock({
         <div className="soft-panel rounded-[30px]">
           <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
             <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
-              Напоминание не найдено.
+              {language === "ru" ? "Напоминание не найдено." : "Reminder not found."}
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
                 to={`/children/${childId}/illness?focus=reminders`}
                 className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
               >
-                К напоминаниям
+                {language === "ru" ? "К напоминаниям" : "Back to reminders"}
               </Link>
               <Link
                 to="/illnesses/active"
                 className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
               >
-                К наблюдениям
+                {language === "ru" ? "К наблюдениям" : "Back to tracking"}
               </Link>
             </div>
           </div>
@@ -1838,7 +2153,9 @@ function EpisodeBlock({
             <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               {childName}
               <span className="mx-2 text-muted">·</span>
-              <span className="text-muted">Напоминание о приёме</span>
+              <span className="text-muted">
+                {language === "ru" ? "Напоминание о приёме" : "Dose reminder"}
+              </span>
             </p>
           </div>
         </div>
@@ -1857,7 +2174,7 @@ function EpisodeBlock({
                 household_medicine_id: plan.householdMedicineId,
                 custom_medicine_name: plan.customMedicineName ?? undefined,
                 amount: plan.doseAmount,
-                reason: "Отмечено по напоминанию",
+                reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
               })
             }
             onUpdate={(planId, payload) =>
@@ -1901,13 +2218,13 @@ function EpisodeBlock({
               to={`/children/${childId}/illness?focus=reminders`}
               className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
-              К напоминаниям
+              {language === "ru" ? "К напоминаниям" : "Back to reminders"}
             </Link>
             <Link
               to="/illnesses/active"
               className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
             >
-              К наблюдениям
+              {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
           </div>
         </div>
@@ -1923,9 +2240,13 @@ function EpisodeBlock({
             <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               {childName}
               <span className="mx-2 text-muted">·</span>
-              <span className="text-muted">Новое напоминание</span>
+              <span className="text-muted">
+                {language === "ru" ? "Новое напоминание" : "New reminder"}
+              </span>
             </p>
-            <p className="mt-1 text-sm text-muted">Настройте интервал и сохраните.</p>
+            <p className="mt-1 text-sm text-muted">
+              {language === "ru" ? "Настройте интервал и сохраните." : "Set the interval and save."}
+            </p>
           </div>
         </div>
 
@@ -1949,7 +2270,7 @@ function EpisodeBlock({
                 notes: payload.notes,
               })
             }
-            submitLabel="Сохранить напоминание"
+            submitLabel={language === "ru" ? "Сохранить напоминание" : "Save reminder"}
             isPending={createPlanMutation.isPending}
             onCancel={() => navigate(`/children/${childId}/illness?focus=reminders`)}
           />
@@ -1973,13 +2294,13 @@ function EpisodeBlock({
               to={`/children/${childId}/illness?focus=reminders`}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              К напоминаниям
+              {language === "ru" ? "К напоминаниям" : "Back to reminders"}
             </Link>
             <Link
               to="/illnesses/active"
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              К наблюдениям
+              {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
           </div>
         </div>
@@ -1991,9 +2312,15 @@ function EpisodeBlock({
     <div className="soft-panel rounded-[30px]">
       <ConfirmDialog
         isOpen={isCloseConfirmOpen}
-        title={`Закрыть наблюдение · ${childName}`}
-        description="Текущее наблюдение будет завершено и попадёт в историю. При необходимости новое наблюдение можно будет начать заново."
-        confirmLabel="Закрыть наблюдение"
+        title={
+          language === "ru" ? `Закрыть наблюдение · ${childName}` : `Close tracking · ${childName}`
+        }
+        description={
+          language === "ru"
+            ? "Текущее наблюдение будет завершено и попадёт в историю. При необходимости новое наблюдение можно будет начать заново."
+            : "This tracking session will be closed and moved to history. You can start a new one later if needed."
+        }
+        confirmLabel={language === "ru" ? "Закрыть наблюдение" : "Close tracking"}
         confirmTone="danger"
         onCancel={() => setIsCloseConfirmOpen(false)}
         onConfirm={() => {
@@ -2014,7 +2341,9 @@ function EpisodeBlock({
                 </h3>
               ) : null}
               <p className="mt-1 text-sm text-muted">
-                Быстрые записи, напоминания и лента наблюдения.
+                {language === "ru"
+                  ? "Быстрые записи, напоминания и лента наблюдения."
+                  : "Quick logs, reminders and the tracking timeline."}
               </p>
             </div>
             <button
@@ -2022,7 +2351,7 @@ function EpisodeBlock({
               onClick={() => setIsCloseConfirmOpen(true)}
               className="soft-button-danger hidden min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] sm:inline-flex"
             >
-              Закрыть наблюдение
+              {language === "ru" ? "Закрыть наблюдение" : "Close tracking"}
             </button>
           </div>
         ) : (
@@ -2036,7 +2365,9 @@ function EpisodeBlock({
               </h3>
             ) : null}
             <p className="mt-1 text-sm text-muted">
-              Быстрые записи, напоминания и лента наблюдения.
+              {language === "ru"
+                ? "Быстрые записи, напоминания и лента наблюдения."
+                : "Quick logs, reminders and the tracking timeline."}
             </p>
           </div>
         )}
@@ -2055,7 +2386,7 @@ function EpisodeBlock({
               onClick={() => setIsCloseConfirmOpen(true)}
               className="soft-button-danger inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em]"
             >
-              Закрыть наблюдение
+              {language === "ru" ? "Закрыть наблюдение" : "Close tracking"}
             </button>
           </div>
         )}
@@ -2099,17 +2430,21 @@ function EpisodeActivationCard({
   }) => void;
   onCancel: () => void;
 }) {
+  const { language } = useI18n();
   const [startedAt, setStartedAt] = useState(() => new Date().toISOString().slice(0, 10));
   const [title, setTitle] = useState("");
 
   return (
     <div className="soft-panel rounded-[30px]">
       <div className="soft-hero rounded-t-[30px] px-5 py-6 sm:px-6 sm:py-7">
-        <p className="text-xs tracking-[0.1em] text-muted">Старт наблюдения</p>
+        <p className="text-xs tracking-[0.1em] text-muted">
+          {language === "ru" ? "Старт наблюдения" : "Start tracking"}
+        </p>
         <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{childName}</h3>
         <p className="mt-3 text-sm text-muted">
-          Создайте запись о болезни, а дальше просто отмечайте температуру, приёмы и важные
-          изменения.
+          {language === "ru"
+            ? "Создайте запись о болезни, а дальше просто отмечайте температуру, приёмы и важные изменения."
+            : "Create an illness record, then simply log temperature, doses and important changes."}
         </p>
       </div>
 
@@ -2118,37 +2453,58 @@ function EpisodeActivationCard({
           <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{errorMessage}</div>
         )}
         <label className="block space-y-1.5">
-          <span className="soft-field-label">Дата начала</span>
+          <span className="soft-field-label">
+            {language === "ru" ? "Дата начала" : "Start date"}
+          </span>
           <DateField
             value={startedAt}
             onChange={setStartedAt}
+            language={language}
             max={new Date().toISOString().slice(0, 10)}
             className=""
           />
         </label>
         <label className="block space-y-1.5">
-          <span className="soft-field-label">Что случилось?</span>
+          <span className="soft-field-label">
+            {language === "ru" ? "Что случилось?" : "What happened?"}
+          </span>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Например: температура и кашель"
+            placeholder={
+              language === "ru" ? "Например: температура и кашель" : "Example: fever and cough"
+            }
             className="soft-input w-full px-4"
           />
           <p className="mt-2 text-xs text-muted">
-            Необязательно. Нужен только короткий ориентир, чтобы потом быстрее найти запись.
+            {language === "ru"
+              ? "Необязательно. Нужен только короткий ориентир, чтобы потом быстрее найти запись."
+              : "Optional. A short label is enough to find the record faster later."}
           </p>
         </label>
         <div className="soft-panel-muted rounded-[24px] p-4 sm:p-5">
-          <h4 className="text-base font-semibold text-foreground">Что будет дальше</h4>
+          <h4 className="text-base font-semibold text-foreground">
+            {language === "ru" ? "Что будет дальше" : "What happens next"}
+          </h4>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Сразу после запуска откроется экран болезни. Там можно будет отдельно:
+            {language === "ru"
+              ? "Сразу после запуска откроется экран болезни. Там можно будет отдельно:"
+              : "Right after start, the illness screen will open. There you can separately:"}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">Записать температуру</span>
-            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">Отметить приём</span>
-            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">Добавить комментарий</span>
-            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">Добавить напоминание</span>
+            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+              {language === "ru" ? "Записать температуру" : "Log temperature"}
+            </span>
+            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+              {language === "ru" ? "Отметить приём" : "Log dose"}
+            </span>
+            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+              {language === "ru" ? "Добавить комментарий" : "Add comment"}
+            </span>
+            <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+              {language === "ru" ? "Добавить напоминание" : "Add reminder"}
+            </span>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -2169,7 +2525,13 @@ function EpisodeActivationCard({
             disabled={isPending || !startedAt}
             className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
           >
-            {isPending ? "Запускаем…" : "Начать наблюдение"}
+            {isPending
+              ? language === "ru"
+                ? "Запускаем…"
+                : "Starting…"
+              : language === "ru"
+                ? "Начать наблюдение"
+                : "Start tracking"}
           </button>
           <button
             type="button"
@@ -2177,7 +2539,7 @@ function EpisodeActivationCard({
             disabled={isPending}
             className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
           >
-            Назад
+            {language === "ru" ? "Назад" : "Back"}
           </button>
         </div>
       </div>
@@ -2233,16 +2595,19 @@ function TemperatureForm({
   onSubmit: () => void;
   isPending: boolean;
 }) {
+  const { language } = useI18n();
   return (
     <div className="grid gap-4 sm:grid-cols-[minmax(0,168px)_auto] sm:items-end">
       <label className="block max-w-[11rem] space-y-1.5">
-        <span className="soft-field-label">Температура</span>
+        <span className="soft-field-label">
+          {language === "ru" ? "Температура" : "Temperature"}
+        </span>
         <input
           type="number"
           step={0.1}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="36.6"
+          placeholder={language === "ru" ? "36.6" : "98.6 / 37.0"}
           className="soft-input w-full px-4"
         />
       </label>
@@ -2252,7 +2617,13 @@ function TemperatureForm({
         disabled={isPending || !value}
         className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
       >
-        {isPending ? "Сохраняем…" : "Добавить"}
+        {isPending
+          ? language === "ru"
+            ? "Сохраняем…"
+            : "Saving…"
+          : language === "ru"
+            ? "Добавить"
+            : "Add"}
       </button>
     </div>
   );
@@ -2262,13 +2633,15 @@ function CabinetMedicinePicker({
   medicines,
   value,
   onChange,
-  label = "Упаковка",
+  label,
 }: {
   medicines: HouseholdMedicine[];
   value: string;
   onChange: (value: string) => void;
   label?: string;
 }) {
+  const { language } = useI18n();
+  const resolvedLabel = label ?? (language === "ru" ? "Упаковка" : "Pack");
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const selectedMedicine = medicines.find((medicine) => medicine.id === value) ?? null;
@@ -2279,7 +2652,7 @@ function CabinetMedicinePicker({
           medicine.medicineName,
           medicine.medicineConcentration ?? "",
           medicine.medicineForm ?? "",
-          medicine.statusLabel,
+          getMedicineStatusLabel(medicine, language),
         ]
           .join(" ")
           .toLowerCase()
@@ -2304,7 +2677,7 @@ function CabinetMedicinePicker({
   return (
     <>
       <div className="block min-w-0">
-        <span className="soft-field-label">{label}</span>
+        <span className="soft-field-label">{resolvedLabel}</span>
         <div className="mt-2">
           <button
             type="button"
@@ -2322,22 +2695,28 @@ function CabinetMedicinePicker({
                       : ""}
                   </span>
                   <span className="mt-1 block text-xs text-muted">
-                    {selectedMedicine.statusLabel} · до {formatDate(selectedMedicine.expiryDate)}
+                    {getMedicineStatusLabel(selectedMedicine, language)} ·{" "}
+                    {language === "ru" ? "до" : "until"} {formatDate(selectedMedicine.expiryDate)}
                   </span>
                 </>
               ) : (
                 <>
                   <span className="block text-sm font-semibold text-foreground">
-                    Выбрать из аптечки
+                    {language === "ru" ? "Выбрать из аптечки" : "Choose from first aid kit"}
                   </span>
                   <span className="mt-1 block text-xs text-muted">
-                    {medicines.length} {formatMedicineCountLabel(medicines.length)}
+                    {medicines.length}{" "}
+                    {language === "ru"
+                      ? formatMedicineCountLabel(medicines.length)
+                      : medicines.length === 1
+                        ? "medicine"
+                        : "medicines"}
                   </span>
                 </>
               )}
             </span>
             <span className="soft-choice-check" aria-hidden="true">
-              Выбрать
+              {language === "ru" ? "Выбрать" : "Choose"}
             </span>
           </button>
         </div>
@@ -2347,7 +2726,7 @@ function CabinetMedicinePicker({
         <div className="fixed inset-0 z-[140] flex items-end bg-black/28 p-3 sm:items-center sm:justify-center sm:p-6">
           <button
             type="button"
-            aria-label="Закрыть выбор лекарства"
+            aria-label={language === "ru" ? "Закрыть выбор лекарства" : "Close medicine picker"}
             onClick={() => setIsOpen(false)}
             className="absolute inset-0"
           />
@@ -2355,9 +2734,11 @@ function CabinetMedicinePicker({
             <div className="soft-hero rounded-t-[28px] px-5 py-5 sm:px-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs tracking-[0.1em] text-muted">Аптечка</p>
+                  <p className="text-xs tracking-[0.1em] text-muted">
+                    {language === "ru" ? "Аптечка" : "First aid kit"}
+                  </p>
                   <h4 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
-                    Выбрать препарат
+                    {language === "ru" ? "Выбрать препарат" : "Choose medicine"}
                   </h4>
                 </div>
                 <button
@@ -2365,7 +2746,7 @@ function CabinetMedicinePicker({
                   onClick={() => setIsOpen(false)}
                   className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                 >
-                  Закрыть
+                  {language === "ru" ? "Закрыть" : "Close"}
                 </button>
               </div>
             </div>
@@ -2376,7 +2757,7 @@ function CabinetMedicinePicker({
                   type="text"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Поиск по аптечке"
+                  placeholder={language === "ru" ? "Поиск по аптечке" : "Search first aid kit"}
                   className="soft-input w-full px-4"
                 />
               )}
@@ -2403,18 +2784,25 @@ function CabinetMedicinePicker({
                             : ""}
                         </span>
                         <span className="mt-1 block text-xs text-muted">
-                          {medicine.statusLabel} · до {formatDate(medicine.expiryDate)}
+                          {getMedicineStatusLabel(medicine, language)} ·{" "}
+                          {language === "ru" ? "до" : "until"} {formatDate(medicine.expiryDate)}
                         </span>
                       </span>
                       <span className="soft-choice-check" aria-hidden="true">
-                        {isActive ? "Выбрано" : "Выбрать"}
+                        {isActive
+                          ? language === "ru"
+                            ? "Выбрано"
+                            : "Selected"
+                          : language === "ru"
+                            ? "Выбрать"
+                            : "Choose"}
                       </span>
                     </button>
                   );
                 })}
                 {filteredMedicines.length === 0 && (
                   <div className="rounded-2xl bg-[color:color-mix(in_srgb,var(--color-surface-soft)_92%,transparent)] px-4 py-3 text-sm text-muted">
-                    Ничего не найдено.
+                    {language === "ru" ? "Ничего не найдено." : "Nothing found."}
                   </div>
                 )}
               </div>
@@ -2439,6 +2827,55 @@ function formatMedicineCountLabel(count: number) {
   return "препаратов";
 }
 
+function translateAnalyticsLabel(label: string | null | undefined, language: "ru" | "en") {
+  if (!label || language === "ru") {
+    return label ?? null;
+  }
+
+  const exactMap: Record<string, string> = {
+    Янв: "Jan",
+    Фев: "Feb",
+    Мар: "Mar",
+    Апр: "Apr",
+    Май: "May",
+    Июн: "Jun",
+    Июл: "Jul",
+    Авг: "Aug",
+    Сен: "Sep",
+    Окт: "Oct",
+    Ноя: "Nov",
+    Дек: "Dec",
+    "1-2 дня": "1-2 days",
+    "3-5 дней": "3-5 days",
+    "6+ дней": "6+ days",
+  };
+
+  if (exactMap[label]) {
+    return exactMap[label];
+  }
+
+  return label.replace(/\bдн\./g, "days");
+}
+
+function getMedicineStatusLabel(
+  medicine: Pick<HouseholdMedicine, "status" | "statusLabel">,
+  language: "ru" | "en"
+) {
+  if (language === "ru") {
+    return medicine.statusLabel;
+  }
+
+  const labels: Record<string, string> = {
+    expired: "Expired",
+    expired_after_opening: "Expired after opening",
+    expiring_after_opening: "Expiring after opening",
+    expiring_soon: "Expiring soon",
+    ok: "Ready to use",
+  };
+
+  return labels[medicine.status] ?? medicine.statusLabel;
+}
+
 function AdministrationForm({
   customMedicineName,
   amount,
@@ -2454,27 +2891,32 @@ function AdministrationForm({
   onSubmit: () => void;
   isPending: boolean;
 }) {
+  const { language } = useI18n();
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)_auto] md:items-end">
         <label className="block min-w-0 space-y-1.5">
-          <span className="soft-field-label">Что дали</span>
+          <span className="soft-field-label">
+            {language === "ru" ? "Что дали" : "What was given"}
+          </span>
           <input
             type="text"
             value={customMedicineName}
             onChange={(e) => onCustomMedicineNameChange(e.target.value)}
-            placeholder="Например: Уголь"
+            placeholder={language === "ru" ? "Например: Уголь" : "Example: charcoal"}
             className="soft-input w-full px-4"
           />
         </label>
 
         <label className="block space-y-1.5">
-          <span className="soft-field-label">Доза, если нужно</span>
+          <span className="soft-field-label">
+            {language === "ru" ? "Доза, если нужно" : "Dose, if needed"}
+          </span>
           <input
             type="text"
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
-            placeholder="Например: 5 мл или 1 таб."
+            placeholder={language === "ru" ? "Например: 5 мл или 1 таб." : "Example: 5 ml or 1 tab"}
             className="soft-input w-full px-4"
           />
         </label>
@@ -2486,11 +2928,21 @@ function AdministrationForm({
             disabled={isPending || !customMedicineName.trim()}
             className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
           >
-            {isPending ? "Сохраняем…" : "Отметить приём"}
+            {isPending
+              ? language === "ru"
+                ? "Сохраняем…"
+                : "Saving…"
+              : language === "ru"
+                ? "Отметить приём"
+                : "Log dose"}
           </button>
         </div>
       </div>
-      <p className="text-xs text-muted">Дозу можно не указывать для быстрой записи.</p>
+      <p className="text-xs text-muted">
+        {language === "ru"
+          ? "Дозу можно не указывать для быстрой записи."
+          : "The dose can be left empty for a quick entry."}
+      </p>
     </div>
   );
 }
@@ -2541,6 +2993,7 @@ function MedicationPlanComposer({
   initialValue?: MedicationPlanPayload | null;
   onCancel?: () => void;
 }) {
+  const { language } = useI18n();
   const queryClient = useQueryClient();
   const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const defaultPlanMode: "cabinet" | "manual" = initialValue?.householdMedicineId
@@ -2616,7 +3069,7 @@ function MedicationPlanComposer({
                 medicines={medicines}
                 value={selectedMedicineId}
                 onChange={setSelectedMedicineId}
-                label="Лекарство"
+                label={language === "ru" ? "Лекарство" : "Medicine"}
               />
               {medicines.length > 0 && (
                 <button
@@ -2624,19 +3077,23 @@ function MedicationPlanComposer({
                   onClick={() => setPlanMode("manual")}
                   className="text-sm font-medium text-muted transition hover:text-foreground"
                 >
-                  Нет в аптечке? Вписать вручную
+                  {language === "ru"
+                    ? "Нет в аптечке? Вписать вручную"
+                    : "Not in the first aid kit? Enter manually"}
                 </button>
               )}
             </div>
           ) : (
             <div className="space-y-2">
               <label className="block min-w-0 space-y-1.5">
-                <span className="soft-field-label">Лекарство</span>
+                <span className="soft-field-label">
+                  {language === "ru" ? "Лекарство" : "Medicine"}
+                </span>
                 <input
                   type="text"
                   value={customMedicineName}
                   onChange={(event) => setCustomMedicineName(event.target.value)}
-                  placeholder="Например: Ибуклин"
+                  placeholder={language === "ru" ? "Например: Ибуклин" : "Example: Ibuklin"}
                   className="soft-input w-full px-4"
                 />
               </label>
@@ -2646,7 +3103,7 @@ function MedicationPlanComposer({
                   onClick={() => setPlanMode("cabinet")}
                   className="text-sm font-medium text-muted transition hover:text-foreground"
                 >
-                  Выбрать из аптечки
+                  {language === "ru" ? "Выбрать из аптечки" : "Choose from first aid kit"}
                 </button>
               )}
             </div>
@@ -2655,22 +3112,30 @@ function MedicationPlanComposer({
 
         <div>
           <label className="block space-y-1.5">
-            <span className="soft-field-label">Разовая доза, если нужна</span>
+            <span className="soft-field-label">
+              {language === "ru" ? "Разовая доза, если нужна" : "Single dose, if needed"}
+            </span>
             <input
               type="text"
               value={doseAmount}
               onChange={(e) => setDoseAmount(e.target.value)}
-              placeholder="Например: 10 мл или 1 таб."
+              placeholder={
+                language === "ru" ? "Например: 10 мл или 1 таб." : "Example: 10 ml or 1 tab"
+              }
               className="soft-input w-full px-4"
             />
             {hasDoseUnitHint && (
               <p className="mt-2 text-xs text-muted">
-                Лучше добавить единицу: мл, таб., кап. и т.д.
+                {language === "ru"
+                  ? "Лучше добавить единицу: мл, таб., кап. и т.д."
+                  : "Better add a unit: ml, tab, drops, etc."}
               </p>
             )}
             {hasInvalidDose && (
               <p className="soft-text-danger mt-2 text-xs">
-                Укажи единицу дозы: мл, таб., мг, кап. и т.д.
+                {language === "ru"
+                  ? "Укажи единицу дозы: мл, таб., мг, кап. и т.д."
+                  : "Add a dose unit: ml, tab, mg, drops, etc."}
               </p>
             )}
           </label>
@@ -2679,7 +3144,14 @@ function MedicationPlanComposer({
         <div>
           <label className="block space-y-1.5">
             <span className="soft-field-label">
-              Интервал напоминания, {intervalUnit === "minutes" ? "минут" : "часов"}
+              {language === "ru" ? "Интервал напоминания" : "Reminder interval"},{" "}
+              {intervalUnit === "minutes"
+                ? language === "ru"
+                  ? "минут"
+                  : "minutes"
+                : language === "ru"
+                  ? "часов"
+                  : "hours"}
             </span>
             <input
               type="number"
@@ -2699,15 +3171,19 @@ function MedicationPlanComposer({
           <DisclosureHeader
             isOpen={isAdvancedOpen}
             onToggle={() => setIsAdvancedOpen((current) => !current)}
-            desktopClosedLabel="Дополнительно"
-            desktopOpenLabel="Скрыть"
-            mobileClosedLabel="Доп."
-            mobileOpenLabel="Скрыть"
+            desktopClosedLabel={language === "ru" ? "Дополнительно" : "Advanced"}
+            desktopOpenLabel={language === "ru" ? "Скрыть" : "Hide"}
+            mobileClosedLabel={language === "ru" ? "Доп." : "More"}
+            mobileOpenLabel={language === "ru" ? "Скрыть" : "Hide"}
           >
             <div>
-              <h5 className="text-sm font-semibold text-foreground">Дополнительные настройки</h5>
+              <h5 className="text-sm font-semibold text-foreground">
+                {language === "ru" ? "Дополнительные настройки" : "Advanced settings"}
+              </h5>
               <p className="mt-1 text-sm text-muted">
-                Нужны не всегда: суточный лимит и расчёт по весу можно заполнить позже.
+                {language === "ru"
+                  ? "Нужны не всегда: суточный лимит и расчёт по весу можно заполнить позже."
+                  : "Not always needed: the daily limit and weight-based calculation can be added later."}
               </p>
             </div>
           </DisclosureHeader>
@@ -2716,14 +3192,16 @@ function MedicationPlanComposer({
             <div className="mt-4 grid gap-3 xl:grid-cols-2">
               <div>
                 <label className="block space-y-1.5">
-                  <span className="soft-field-label">Максимум в сутки</span>
+                  <span className="soft-field-label">
+                    {language === "ru" ? "Максимум в сутки" : "Max per day"}
+                  </span>
                   <input
                     type="number"
                     min="1"
                     max="24"
                     value={maxDosesPerDay}
                     onChange={(e) => setMaxDosesPerDay(e.target.value)}
-                    placeholder="Необязательно"
+                    placeholder={language === "ru" ? "Необязательно" : "Optional"}
                     className="soft-input w-full px-4"
                   />
                 </label>
@@ -2732,8 +3210,14 @@ function MedicationPlanComposer({
               <div>
                 <label className="block space-y-1.5">
                   <span className="flex items-center gap-2 soft-field-label">
-                    Вес ребёнка, кг
-                    <InlineHint text="Нужно только для расчёта по весу. Если разовая доза уже известна, это поле можно не заполнять." />
+                    {language === "ru" ? "Вес ребёнка, кг" : "Child weight, kg"}
+                    <InlineHint
+                      text={
+                        language === "ru"
+                          ? "Нужно только для расчёта по весу. Если разовая доза уже известна, это поле можно не заполнять."
+                          : "Needed only for weight-based calculation. If the single dose is already known, this field can stay empty."
+                      }
+                    />
                   </span>
                   <input
                     type="number"
@@ -2741,7 +3225,13 @@ function MedicationPlanComposer({
                     step="0.1"
                     value={weightKg}
                     onChange={(e) => setWeightKg(e.target.value)}
-                    placeholder={latestWeight ? String(latestWeight.valueKg) : "Необязательно"}
+                    placeholder={
+                      latestWeight
+                        ? String(latestWeight.valueKg)
+                        : language === "ru"
+                          ? "Необязательно"
+                          : "Optional"
+                    }
                     className="soft-input w-full px-4"
                   />
                   {latestWeight && (
@@ -2753,7 +3243,9 @@ function MedicationPlanComposer({
                   {shouldOfferWeightSync && (
                     <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">
                       <p>
-                        В плане указан вес {parsedWeightKg} кг. Обновить его и в карточке ребёнка?
+                        {language === "ru"
+                          ? `В плане указан вес ${parsedWeightKg} кг. Обновить его и в карточке ребёнка?`
+                          : `The plan uses ${parsedWeightKg} kg. Update it in the child profile too?`}
                       </p>
                       <div className="mt-3">
                         <button
@@ -2767,7 +3259,13 @@ function MedicationPlanComposer({
                           disabled={syncWeightMutation.isPending}
                           className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
                         >
-                          {syncWeightMutation.isPending ? "Сохраняем вес…" : "Обновить вес ребёнка"}
+                          {syncWeightMutation.isPending
+                            ? language === "ru"
+                              ? "Сохраняем вес…"
+                              : "Saving weight…"
+                            : language === "ru"
+                              ? "Обновить вес ребёнка"
+                              : "Update child weight"}
                         </button>
                       </div>
                     </div>
@@ -2778,8 +3276,14 @@ function MedicationPlanComposer({
               <div className="xl:col-span-2">
                 <label className="block space-y-1.5">
                   <span className="flex items-center gap-2 soft-field-label">
-                    Расчёт, мг/кг
-                    <InlineHint text="Используй это поле, если дозировку знают как мг на кг веса. Это только подсказка и не заменяет вручную указанную разовую дозу." />
+                    {language === "ru" ? "Расчёт, мг/кг" : "Calculation, mg/kg"}
+                    <InlineHint
+                      text={
+                        language === "ru"
+                          ? "Используй это поле, если дозировку знают как мг на кг веса. Это только подсказка и не заменяет вручную указанную разовую дозу."
+                          : "Use this field if the dosage is known in mg per kg. It is only a hint and does not replace a manually entered single dose."
+                      }
+                    />
                   </span>
                   <input
                     type="number"
@@ -2787,7 +3291,7 @@ function MedicationPlanComposer({
                     step="0.1"
                     value={doseMgPerKg}
                     onChange={(e) => setDoseMgPerKg(e.target.value)}
-                    placeholder="Необязательно"
+                    placeholder={language === "ru" ? "Необязательно" : "Optional"}
                     className="soft-input w-full px-4"
                   />
                 </label>
@@ -2844,7 +3348,7 @@ function MedicationPlanComposer({
           }
           className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
         >
-          {isPending ? "Сохраняем…" : submitLabel}
+          {isPending ? (language === "ru" ? "Сохраняем…" : "Saving…") : submitLabel}
         </button>
         {onCancel && (
           <button
@@ -2853,7 +3357,7 @@ function MedicationPlanComposer({
             disabled={isPending}
             className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
           >
-            Отмена
+            {language === "ru" ? "Отмена" : "Cancel"}
           </button>
         )}
       </div>
@@ -2876,6 +3380,7 @@ function MedicationPlanList({
   onTakeDose?: (plan: EpisodeMedicationPlan) => void;
   isSubmittingAdministration?: boolean;
 }) {
+  const { language } = useI18n();
   const now = useNow();
   const currentTime = new Date(now);
   const prioritizedPlans = administrations
@@ -2890,16 +3395,29 @@ function MedicationPlanList({
   return (
     <div className="grid gap-3">
       {prioritizedPlans.map(({ plan, medicine, stats, isUnavailable }) => {
-        const planName = plan.customMedicineName ?? medicine?.medicineName ?? "Лекарство";
+        const planName =
+          plan.customMedicineName ??
+          medicine?.medicineName ??
+          (language === "ru" ? "Лекарство" : "Medicine");
         const nextDoseLabel = isUnavailable
-          ? "Упаковка сейчас недоступна"
+          ? language === "ru"
+            ? "Упаковка сейчас недоступна"
+            : "This pack is currently unavailable"
           : stats?.blockedByDailyLimit
-            ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
+            ? language === "ru"
+              ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
+              : `${planName}: today's dose limit is already reached`
             : stats?.nextAllowedAt
               ? stats.nextAllowedAt <= currentTime
+                ? language === "ru"
+                  ? "Следующий приём: можно сейчас"
+                  : "Next dose: available now"
+                : language === "ru"
+                  ? `Следующий приём: ${formatRelativeDateTime(stats.nextAllowedAt, currentTime)}`
+                  : `Next dose: ${formatRelativeDateTime(stats.nextAllowedAt, currentTime)}`
+              : language === "ru"
                 ? "Следующий приём: можно сейчас"
-                : `Следующий приём: ${formatRelativeDateTime(stats.nextAllowedAt, currentTime)}`
-              : "Следующий приём: можно сейчас";
+                : "Next dose: available now";
         const nextDoseToneClass = isUnavailable
           ? "soft-pill-danger"
           : stats?.blockedByDailyLimit
@@ -2924,23 +3442,40 @@ function MedicationPlanList({
                     stats.nextAllowedAt <= currentTime &&
                     !stats.blockedByDailyLimit &&
                     !isUnavailable
-                      ? "Сейчас"
+                      ? language === "ru"
+                        ? "Сейчас"
+                        : "Now"
                       : isUnavailable
-                        ? "Недоступно"
+                        ? language === "ru"
+                          ? "Недоступно"
+                          : "Unavailable"
                         : stats?.blockedByDailyLimit
-                          ? "Лимит"
-                          : "По графику"}
+                          ? language === "ru"
+                            ? "Лимит"
+                            : "Limit"
+                          : language === "ru"
+                            ? "По графику"
+                            : "Scheduled"}
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted">{nextDoseLabel}</p>
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
-                  {plan.doseAmount ? <span>Доза: {plan.doseAmount}</span> : null}
+                  {plan.doseAmount ? (
+                    <span>
+                      {language === "ru" ? "Доза" : "Dose"}: {plan.doseAmount}
+                    </span>
+                  ) : null}
                   {plan.maxDosesPerDay ? (
                     <span>
-                      Сегодня отмечено: {stats?.todayCount ?? 0} из {plan.maxDosesPerDay}
+                      {language === "ru" ? "Сегодня отмечено" : "Logged today"}:{" "}
+                      {stats?.todayCount ?? 0} {language === "ru" ? "из" : "of"}{" "}
+                      {plan.maxDosesPerDay}
                     </span>
                   ) : (stats?.todayCount ?? 0) > 0 ? (
-                    <span>Сегодня отмечено: {stats?.todayCount ?? 0}</span>
+                    <span>
+                      {language === "ru" ? "Сегодня отмечено" : "Logged today"}:{" "}
+                      {stats?.todayCount ?? 0}
+                    </span>
                   ) : null}
                 </div>
               </div>
@@ -2958,12 +3493,20 @@ function MedicationPlanList({
                     }`}
                   >
                     {isSubmittingAdministration
-                      ? "Отмечаем…"
+                      ? language === "ru"
+                        ? "Отмечаем…"
+                        : "Logging…"
                       : isUnavailable
-                        ? "Недоступно"
+                        ? language === "ru"
+                          ? "Недоступно"
+                          : "Unavailable"
                         : stats?.isBlocked
-                          ? "Пока рано"
-                          : "Отметить"}
+                          ? language === "ru"
+                            ? "Пока рано"
+                            : "Too early"
+                          : language === "ru"
+                            ? "Отметить"
+                            : "Log dose"}
                   </button>
                 )}
                 <button
@@ -2971,7 +3514,7 @@ function MedicationPlanList({
                   onClick={() => onOpen(plan.id)}
                   className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
                 >
-                  Открыть
+                  {language === "ru" ? "Открыть" : "Open"}
                 </button>
               </div>
             </div>
@@ -3005,11 +3548,15 @@ function MedicationPlanDetail({
   isUpdating?: boolean;
   isDeleting?: boolean;
 }) {
+  const { language } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const { plan, medicine, stats, isUnavailable } = item;
-  const planName = plan.customMedicineName ?? medicine?.medicineName ?? "Лекарство";
+  const planName =
+    plan.customMedicineName ??
+    medicine?.medicineName ??
+    (language === "ru" ? "Лекарство" : "Medicine");
   const doseBadge = plan.doseAmount?.trim() ?? "";
   const weightHint = buildWeightDoseHint(medicine, plan.weightKg, plan.doseMgPerKg);
   const editableMedicines = Array.from(
@@ -3029,7 +3576,11 @@ function MedicationPlanDetail({
       <section className="space-y-4">
         <div>
           <h4 className="text-base font-semibold text-foreground">{planName}</h4>
-          <p className="mt-1 text-sm text-muted">Измените интервал и параметры напоминания.</p>
+          <p className="mt-1 text-sm text-muted">
+            {language === "ru"
+              ? "Измените интервал и параметры напоминания."
+              : "Adjust the interval and reminder settings."}
+          </p>
         </div>
         <MedicationPlanComposer
           key={plan.id}
@@ -3050,7 +3601,7 @@ function MedicationPlanDetail({
             onUpdate(plan.id, payload);
             setIsEditing(false);
           }}
-          submitLabel="Сохранить напоминание"
+          submitLabel={language === "ru" ? "Сохранить напоминание" : "Save reminder"}
           isPending={isUpdating}
           onCancel={() => setIsEditing(false)}
         />
@@ -3062,9 +3613,23 @@ function MedicationPlanDetail({
     <section className="space-y-5">
       <ConfirmDialog
         isOpen={isDeleteConfirmOpen}
-        title={`Удалить напоминание · ${planName}`}
-        description="Напоминание будет удалено из текущего наблюдения. История уже отмеченных приёмов останется."
-        confirmLabel={isDeleting ? "Удаляем…" : "Удалить"}
+        title={
+          language === "ru" ? `Удалить напоминание · ${planName}` : `Delete reminder · ${planName}`
+        }
+        description={
+          language === "ru"
+            ? "Напоминание будет удалено из текущего наблюдения. История уже отмеченных приёмов останется."
+            : "The reminder will be removed from the current tracking session. Logged dose history will stay."
+        }
+        confirmLabel={
+          isDeleting
+            ? language === "ru"
+              ? "Удаляем…"
+              : "Deleting…"
+            : language === "ru"
+              ? "Удалить"
+              : "Delete"
+        }
         confirmTone="danger"
         isPending={isDeleting}
         onCancel={() => setIsDeleteConfirmOpen(false)}
@@ -3094,56 +3659,87 @@ function MedicationPlanDetail({
             }`}
           >
             {isUnavailable
-              ? "Недоступно"
+              ? language === "ru"
+                ? "Недоступно"
+                : "Unavailable"
               : stats?.blockedByDailyLimit
-                ? "Лимит"
+                ? language === "ru"
+                  ? "Лимит"
+                  : "Limit"
                 : stats?.isBlocked
-                  ? "По графику"
-                  : "Можно сейчас"}
+                  ? language === "ru"
+                    ? "По графику"
+                    : "Scheduled"
+                  : language === "ru"
+                    ? "Можно сейчас"
+                    : "Available now"}
           </span>
         </div>
         <p className="text-sm leading-6 text-foreground/78">
           {isUnavailable
-            ? "Упаковка недоступна для приёма."
+            ? language === "ru"
+              ? "Упаковка недоступна для приёма."
+              : "This pack is unavailable for use."
             : stats?.blockedByDailyLimit
-              ? "Лимит приёмов на сегодня уже достигнут."
+              ? language === "ru"
+                ? "Лимит приёмов на сегодня уже достигнут."
+                : "Today's dose limit has already been reached."
               : stats?.nextAllowedAt
                 ? stats.nextAllowedAt <= new Date()
+                  ? language === "ru"
+                    ? "Приём можно отметить сейчас."
+                    : "A dose can be logged now."
+                  : language === "ru"
+                    ? `Следующий приём ${formatRelativeDateTime(stats.nextAllowedAt, new Date())}.`
+                    : `Next dose ${formatRelativeDateTime(stats.nextAllowedAt, new Date())}.`
+                : language === "ru"
                   ? "Приём можно отметить сейчас."
-                  : `Следующий приём ${formatRelativeDateTime(stats.nextAllowedAt, new Date())}.`
-                : "Приём можно отметить сейчас."}
+                  : "A dose can be logged now."}
         </p>
       </div>
 
       <div className="space-y-6">
         <section className="space-y-3">
-          <h5 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">Схема</h5>
+          <h5 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+            {language === "ru" ? "Схема" : "Schedule"}
+          </h5>
           <DetailRow
-            label="Интервал"
+            label={language === "ru" ? "Интервал" : "Interval"}
             value={formatIntervalForDisplay(plan.minIntervalMinutes, intervalUnit)}
           />
           {plan.maxDosesPerDay ? (
-            <DetailRow label="Ограничение" value={`До ${plan.maxDosesPerDay} раз в сутки`} />
+            <DetailRow
+              label={language === "ru" ? "Ограничение" : "Limit"}
+              value={
+                language === "ru"
+                  ? `До ${plan.maxDosesPerDay} раз в сутки`
+                  : `Up to ${plan.maxDosesPerDay} times per day`
+              }
+            />
           ) : null}
           {medicine && (medicine.medicineForm || medicine.medicineConcentration) ? (
             <DetailRow
-              label="Форма"
+              label={language === "ru" ? "Форма" : "Form"}
               value={[medicine.medicineForm ?? null, medicine.medicineConcentration ?? null]
                 .filter(Boolean)
                 .join(" · ")}
             />
           ) : null}
-          {weightHint ? <DetailRow label="По весу" value={weightHint} /> : null}
+          {weightHint ? (
+            <DetailRow label={language === "ru" ? "По весу" : "Weight based"} value={weightHint} />
+          ) : null}
         </section>
 
         <section className="space-y-3">
-          <h5 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">История</h5>
+          <h5 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+            {language === "ru" ? "История" : "History"}
+          </h5>
           {stats?.lastAdministration ? (
             <DetailRow
-              label="Последний приём"
+              label={language === "ru" ? "Последний приём" : "Last dose"}
               value={[
                 formatDateTime(stats.lastAdministration.administeredAt),
-                getAdministrationActorLabel(stats.lastAdministration),
+                getAdministrationActorLabel(stats.lastAdministration, language),
               ]
                 .filter(Boolean)
                 .join(" • ")}
@@ -3151,15 +3747,21 @@ function MedicationPlanDetail({
           ) : null}
           {(stats?.todayCount ?? 0) > 0 ? (
             <DetailRow
-              label="Сегодня"
+              label={language === "ru" ? "Сегодня" : "Today"}
               value={
                 plan.maxDosesPerDay
-                  ? `Отмечено ${stats?.todayCount ?? 0} из ${plan.maxDosesPerDay}`
-                  : `Отмечено ${stats?.todayCount ?? 0}`
+                  ? language === "ru"
+                    ? `Отмечено ${stats?.todayCount ?? 0} из ${plan.maxDosesPerDay}`
+                    : `Logged ${stats?.todayCount ?? 0} of ${plan.maxDosesPerDay}`
+                  : language === "ru"
+                    ? `Отмечено ${stats?.todayCount ?? 0}`
+                    : `Logged ${stats?.todayCount ?? 0}`
               }
             />
           ) : null}
-          {plan.notes?.trim() ? <DetailRow label="Заметка" value={plan.notes.trim()} /> : null}
+          {plan.notes?.trim() ? (
+            <DetailRow label={language === "ru" ? "Заметка" : "Note"} value={plan.notes.trim()} />
+          ) : null}
         </section>
       </div>
 
@@ -3173,12 +3775,20 @@ function MedicationPlanDetail({
               className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
             >
               {isSubmittingAdministration
-                ? "Отмечаем…"
+                ? language === "ru"
+                  ? "Отмечаем…"
+                  : "Logging…"
                 : isUnavailable
-                  ? "Недоступно"
+                  ? language === "ru"
+                    ? "Недоступно"
+                    : "Unavailable"
                   : stats?.isBlocked
-                    ? "Рано"
-                    : "Отметить приём"}
+                    ? language === "ru"
+                      ? "Рано"
+                      : "Too early"
+                    : language === "ru"
+                      ? "Отметить приём"
+                      : "Log dose"}
             </button>
           )}
           <button
@@ -3186,7 +3796,7 @@ function MedicationPlanDetail({
             onClick={() => setIsEditing(true)}
             className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
           >
-            Изменить
+            {language === "ru" ? "Изменить" : "Edit"}
           </button>
         </div>
         <button
@@ -3195,7 +3805,13 @@ function MedicationPlanDetail({
           disabled={isDeleting}
           className="soft-button-danger inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
         >
-          {isDeleting ? "Удаляем…" : "Удалить"}
+          {isDeleting
+            ? language === "ru"
+              ? "Удаляем…"
+              : "Deleting…"
+            : language === "ru"
+              ? "Удалить"
+              : "Delete"}
         </button>
       </div>
     </section>
@@ -3243,17 +3859,18 @@ function EpisodeTimelineList({ items }: { items: EpisodeTimelineItem[] }) {
 }
 
 function TimelineKindPill({ kind }: { kind: EpisodeTimelineItem["kind"] }) {
+  const { language } = useI18n();
   const config: Record<EpisodeTimelineItem["kind"], { label: string; className: string }> = {
     temperature: {
-      label: "Температура",
+      label: language === "ru" ? "Температура" : "Temperature",
       className: "soft-note-danger",
     },
     administration: {
-      label: "Лекарство",
+      label: language === "ru" ? "Лекарство" : "Medicine",
       className: "soft-note-info",
     },
     comment: {
-      label: "Комментарий",
+      label: language === "ru" ? "Комментарий" : "Comment",
       className: "soft-note-warning",
     },
   };
@@ -3265,43 +3882,48 @@ function TimelineKindPill({ kind }: { kind: EpisodeTimelineItem["kind"] }) {
   );
 }
 
-function formatEpisodePeriod(startedAt: string, closedAt: string | null) {
+function formatEpisodePeriod(startedAt: string, closedAt: string | null, language: "ru" | "en") {
   return closedAt
     ? `${formatDate(startedAt)} - ${formatDate(closedAt)}`
-    : `с ${formatDate(startedAt)}`;
+    : `${language === "ru" ? "с" : "since"} ${formatDate(startedAt)}`;
 }
 
-function formatWeightValue(valueKg: number): string {
-  return `${new Intl.NumberFormat("ru-RU", {
+function formatWeightValue(valueKg: number, language: "ru" | "en" = "ru"): string {
+  return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
     minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
     maximumFractionDigits: 1,
-  }).format(valueKg)} кг`;
+  }).format(valueKg)} kg`;
 }
 
 function formatEntrySummary(
   temperatureCount: number,
   administrationCount: number,
-  commentCount: number
+  commentCount: number,
+  language: "ru" | "en"
 ) {
-  return [
-    `${temperatureCount} темп.`,
-    `${administrationCount} приёма`,
-    `${commentCount} комм.`,
-  ].join(" • ");
+  return language === "ru"
+    ? [`${temperatureCount} темп.`, `${administrationCount} приёма`, `${commentCount} комм.`].join(
+        " • "
+      )
+    : [`${temperatureCount} temps`, `${administrationCount} doses`, `${commentCount} notes`].join(
+        " • "
+      );
 }
 
 function buildEpisodeTimeline(
   temperatures: TemperatureEntry[],
   administrations: AdministrationEvent[],
   comments: IllnessComment[],
-  medicines: HouseholdMedicine[]
+  medicines: HouseholdMedicine[],
+  language: "ru" | "en" = "ru"
 ): EpisodeTimelineItem[] {
   const temperatureItems = temperatures.map((entry) => ({
     id: `temp-${entry.id}`,
     at: entry.measuredAt,
     kind: "temperature" as const,
     title: `${entry.valueCelsius} °C`,
-    description: entry.comment?.trim() || "Замер температуры",
+    description:
+      entry.comment?.trim() || (language === "ru" ? "Замер температуры" : "Temperature reading"),
   }));
 
   const administrationItems = administrations.map((entry) => {
@@ -3309,12 +3931,12 @@ function buildEpisodeTimeline(
       ? medicines.find((item) => item.id === entry.householdMedicineId)
       : null;
     const reason = entry.reason?.trim();
-    const actorLabel = getAdministrationActorLabel(entry);
+    const actorLabel = getAdministrationActorLabel(entry, language);
     const doseLabel = entry.amount?.trim();
     const descriptionLines: string[] = [];
 
     if (doseLabel) {
-      descriptionLines.push(`Доза: ${doseLabel}`);
+      descriptionLines.push(`${language === "ru" ? "Доза" : "Dose"}: ${doseLabel}`);
     }
 
     if (actorLabel) {
@@ -3328,7 +3950,10 @@ function buildEpisodeTimeline(
       id: `admin-${entry.id}`,
       at: entry.administeredAt,
       kind: "administration" as const,
-      title: entry.customMedicineName ?? medicine?.medicineName ?? "Приём лекарства",
+      title:
+        entry.customMedicineName ??
+        medicine?.medicineName ??
+        (language === "ru" ? "Приём лекарства" : "Dose logged"),
       description: descriptionLines.join("\n"),
     };
   });
@@ -3337,7 +3962,7 @@ function buildEpisodeTimeline(
     id: `comment-${entry.id}`,
     at: entry.createdAt,
     kind: "comment" as const,
-    title: "Комментарий",
+    title: language === "ru" ? "Комментарий" : "Comment",
     description: entry.text,
   }));
 

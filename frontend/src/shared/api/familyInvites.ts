@@ -19,6 +19,7 @@ interface RawAuthResponse {
     display_name: string;
     relationship_label: string | null;
     phone: string | null;
+    preferred_language: "ru" | "en";
     family_role: string;
   };
   family: { id: string; name: string };

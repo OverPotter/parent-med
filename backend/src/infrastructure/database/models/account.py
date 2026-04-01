@@ -29,6 +29,9 @@ class AccountModel(Base):
     display_name: Mapped[str] = mapped_column(String(255), nullable=False)
     relationship_label: Mapped[str | None] = mapped_column(String(64), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    preferred_language: Mapped[str] = mapped_column(
+        String(8), nullable=False, default="ru", server_default="ru"
+    )
     family_role: Mapped[str] = mapped_column(
         String(32), nullable=False, default="owner", server_default="owner"
     )

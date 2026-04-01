@@ -56,8 +56,33 @@ except ImportError:  # pragma: no cover - зависит от окружения
     Vapid01 = None  # type: ignore[assignment]
 
 
-def _format_due_body(child_name: str, medicine_name: str, dose_amount: str) -> str:
+def _normalize_language(value: str | None) -> str:
+    return "en" if value == "en" else "ru"
+
+
+def _format_date(value: date, language: str) -> str:
+    if language == "en":
+        return value.strftime("%b %d, %Y")
+    return value.strftime("%d.%m.%Y")
+
+
+def _format_due_body(
+    child_name: str, medicine_name: str, dose_amount: str, language: str
+) -> str:
     dose_text = dose_amount.strip()
+    if language == "en":
+        if dose_text:
+            return (
+                f"Child: {child_name}\n"
+                f"Medicine: {medicine_name}\n"
+                f"Dose: {dose_text}\n"
+                "Open tracking and mark the dose."
+            )
+        return (
+            f"Child: {child_name}\n"
+            f"Medicine: {medicine_name}\n"
+            "It is time to give the medicine and mark the dose."
+        )
     if dose_text:
         return (
             f"Ребёнок: {child_name}\n"
@@ -72,8 +97,23 @@ def _format_due_body(child_name: str, medicine_name: str, dose_amount: str) -> s
     )
 
 
-def _format_overdue_body(child_name: str, medicine_name: str, dose_amount: str) -> str:
+def _format_overdue_body(
+    child_name: str, medicine_name: str, dose_amount: str, language: str
+) -> str:
     dose_text = dose_amount.strip()
+    if language == "en":
+        if dose_text:
+            return (
+                f"Child: {child_name}\n"
+                f"Medicine: {medicine_name}\n"
+                f"Dose: {dose_text}\n"
+                "This dose is still not marked. If it was already given, just mark it."
+            )
+        return (
+            f"Child: {child_name}\n"
+            f"Medicine: {medicine_name}\n"
+            "This dose is still not marked. If it was already given, just mark it."
+        )
     if dose_text:
         return (
             f"Ребёнок: {child_name}\n"
@@ -93,8 +133,22 @@ def _format_before_body(
     medicine_name: str,
     dose_amount: str,
     reminder_before_minutes: int,
+    language: str,
 ) -> str:
     dose_text = dose_amount.strip()
+    if language == "en":
+        if dose_text:
+            return (
+                f"The medicine can be given in {reminder_before_minutes} min.\n"
+                f"Child: {child_name}\n"
+                f"Medicine: {medicine_name}\n"
+                f"Dose: {dose_text}"
+            )
+        return (
+            f"The medicine can be given in {reminder_before_minutes} min.\n"
+            f"Child: {child_name}\n"
+            f"Medicine: {medicine_name}"
+        )
     if dose_text:
         return (
             f"Через {reminder_before_minutes} мин можно дать препарат.\n"
@@ -121,6 +175,10 @@ def _format_days_label(days: int) -> str:
     return f"{days} дней"
 
 
+def _format_days_label_en(days: int) -> str:
+    return f"{days} day" if days == 1 else f"{days} days"
+
+
 def _get_cabinet_offsets(account: Any) -> list[int]:
     mapping = (
         (10, account.cabinet_notify_10_days),
@@ -136,7 +194,28 @@ def _build_cabinet_payload(
     target_date: date,
     days_before: int,
     is_opened_limit: bool,
+    language: str,
 ) -> dict[str, Any]:
+    if language == "en":
+        label = "opened shelf life" if is_opened_limit else "expiry date"
+        day_text = _format_days_label_en(days_before)
+        return {
+            "title": "First aid kit",
+            "body": (
+                f"Medicine: {medicine.medicine_name}\n"
+                f"What expires: {label}\n"
+                f"When: in {day_text}, by {_format_date(target_date, language)}\n"
+                "Check the package in your first aid kit."
+            ),
+            "url": "/medicine-cabinet",
+            "tag": f"cabinet-{medicine.id}-{target_date.isoformat()}-{days_before}",
+            "data": {
+                "medicineId": str(medicine.id),
+                "targetDate": target_date.isoformat(),
+                "daysBefore": days_before,
+                "kind": "opened" if is_opened_limit else "expiry",
+            },
+        }
     label = "срок после вскрытия" if is_opened_limit else "срок годности"
     day_text = _format_days_label(days_before)
     return {
@@ -162,7 +241,27 @@ def _build_cabinet_expired_payload(
     medicine: HouseholdMedicine,
     target_date: date,
     is_opened_limit: bool,
+    language: str,
 ) -> dict[str, Any]:
+    if language == "en":
+        label = "opened shelf life" if is_opened_limit else "expiry date"
+        return {
+            "title": "First aid kit",
+            "body": (
+                f"Medicine: {medicine.medicine_name}\n"
+                f"Expired: {label}\n"
+                f"Date: {_format_date(target_date, language)}\n"
+                "Check the package and discard the medicine if needed."
+            ),
+            "url": "/medicine-cabinet",
+            "tag": f"cabinet-expired-{medicine.id}-{target_date.isoformat()}",
+            "data": {
+                "medicineId": str(medicine.id),
+                "targetDate": target_date.isoformat(),
+                "daysBefore": -1,
+                "kind": "opened_expired" if is_opened_limit else "expired",
+            },
+        }
     label = "срок после вскрытия" if is_opened_limit else "срок годности"
     return {
         "title": "Аптечка",
@@ -318,6 +417,7 @@ class PushNotificationScheduler:
                 preferred_before_minutes = (
                     account.push_before_reminder_minutes or DEFAULT_REMINDER_BEFORE_MINUTES
                 )
+                language = _normalize_language(account.preferred_language)
                 reminder_before_minutes = min(
                     preferred_before_minutes,
                     max(plan.min_interval_minutes - 1, 0),
@@ -329,12 +429,15 @@ class PushNotificationScheduler:
                         and plan.last_before_notification_for_at != next_allowed_at
                     ):
                         payload = {
-                            "title": "Скоро можно дать",
+                            "title": (
+                                "Can be given soon" if language == "en" else "Скоро можно дать"
+                            ),
                             "body": _format_before_body(
                                 child.name,
                                 medicine_name,
                                 plan.dose_amount,
                                 reminder_before_minutes,
+                                language,
                             ),
                             "url": "/illnesses/active",
                             "tag": f"plan-before-{plan.id}-{int(next_allowed_at.timestamp())}",
@@ -354,11 +457,12 @@ class PushNotificationScheduler:
 
                 if now >= next_allowed_at and plan.last_due_notification_for_at != next_allowed_at:
                     payload = {
-                        "title": "Пора дать",
+                        "title": "Time to give" if language == "en" else "Пора дать",
                         "body": _format_due_body(
                             child.name,
                             medicine_name,
                             plan.dose_amount,
+                            language,
                         ),
                         "url": "/illnesses/active",
                         "tag": f"plan-due-{plan.id}-{int(next_allowed_at.timestamp())}",
@@ -379,11 +483,12 @@ class PushNotificationScheduler:
                 overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
                 if now >= overdue_at and plan.last_overdue_notification_for_at != next_allowed_at:
                     payload = {
-                        "title": "Приём не отмечен",
+                        "title": "Dose not marked" if language == "en" else "Приём не отмечен",
                         "body": _format_overdue_body(
                             child.name,
                             medicine_name,
                             plan.dose_amount,
+                            language,
                         ),
                         "url": "/illnesses/active",
                         "tag": f"plan-overdue-{plan.id}-{int(next_allowed_at.timestamp())}",
@@ -428,6 +533,7 @@ class PushNotificationScheduler:
             account = await account_repo.get_by_family_id(family_id)
             if not account:
                 continue
+            language = _normalize_language(account.preferred_language)
             reminder_offsets = _get_cabinet_offsets(account)
 
             subscriptions = await subscription_repo.get_by_account_id(account.id)
@@ -444,6 +550,7 @@ class PushNotificationScheduler:
                     reminder_offsets=reminder_offsets,
                     today=today,
                     now=now,
+                    language=language,
                 )
 
     async def _process_single_household_medicine(
@@ -456,6 +563,7 @@ class PushNotificationScheduler:
         reminder_offsets: list[int],
         today: date,
         now: datetime,
+        language: str,
     ) -> None:
         status = calculate_household_medicine_status(medicine, today=today)
         target_date = status["expiry_alert_date"]
@@ -475,6 +583,7 @@ class PushNotificationScheduler:
                     and status["opened_expires_at"] == target_date
                 ),
                 now=now,
+                language=language,
             )
             return
 
@@ -502,6 +611,7 @@ class PushNotificationScheduler:
             target_date=target_date,
             days_before=days_until,
             is_opened_limit=is_opened_limit,
+            language=language,
         )
         sent = await self._send_to_subscriptions(
             subscriptions=subscriptions,
@@ -531,6 +641,7 @@ class PushNotificationScheduler:
         target_date: date,
         is_opened_limit: bool,
         now: datetime,
+        language: str,
     ) -> None:
         notification_kind = "opened_expired" if is_opened_limit else "expired"
         already_sent_result = await session.execute(
@@ -548,6 +659,7 @@ class PushNotificationScheduler:
             medicine=medicine,
             target_date=target_date,
             is_opened_limit=is_opened_limit,
+            language=language,
         )
         sent = await self._send_to_subscriptions(
             subscriptions=subscriptions,

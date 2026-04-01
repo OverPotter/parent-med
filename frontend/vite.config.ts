@@ -23,7 +23,7 @@ export default defineConfig({
       manifest: {
         name: "PillPath",
         short_name: "PillPath",
-        description: "Умная аптечка и ведение болезни ребёнка",
+        description: "Family health tracking, medication plans and first aid kit",
         id: "/",
         scope: "/",
         theme_color: "#ebe4ff",

@@ -11,11 +11,16 @@ import {
 } from "@shared/api/illnessEpisodes";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child, IllnessEpisode } from "@shared/types/api";
 import { formatDate, formatDateTime } from "@shared/utils/date";
+import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
 export function IllnessHistoryPage() {
+  const { language, t } = useI18n();
+  const copy = getChildrenCopy(language).illnessHistory;
+  const common = getChildrenCopy(language).common;
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
 
   const { data: children = [], isLoading } = useQuery({
@@ -47,8 +52,8 @@ export function IllnessHistoryPage() {
   if (!currentFamilyId) {
     return (
       <Surface className="p-5">
-        <h1 className="app-title text-xl sm:text-2xl">История</h1>
-        <p className="mt-2 text-muted">Сначала выбери семью в разделе «Семья».</p>
+        <h1 className="app-title text-xl sm:text-2xl">{copy.title}</h1>
+        <p className="mt-2 text-muted">{common.familyRequired}</p>
       </Surface>
     );
   }
@@ -70,16 +75,12 @@ export function IllnessHistoryPage() {
 
   return (
     <div className="space-y-7">
-      <PageIntro
-        title="История"
-        subtitle="Завершённые наблюдения по детям без активных эпизодов и текущего шума."
-        hideOnMobile
-      />
+      <PageIntro title={copy.title} subtitle={copy.subtitle} hideOnMobile />
 
-      {(isLoading || isEpisodesLoading) && <p className="text-muted">Загрузка…</p>}
+      {(isLoading || isEpisodesLoading) && <p className="text-muted">{common.loading}</p>}
 
       {!isLoading && !isEpisodesLoading && childHistory.length === 0 && (
-        <EmptyState>Завершённых наблюдений пока нет.</EmptyState>
+        <EmptyState>{copy.empty}</EmptyState>
       )}
 
       {!isLoading && !isEpisodesLoading && childHistory.length > 0 && (
@@ -90,6 +91,8 @@ export function IllnessHistoryPage() {
               child={child}
               episodes={episodes}
               hasActiveEpisode={!!activeEpisode}
+              copy={copy}
+              t={t}
             />
           ))}
         </ul>
@@ -102,12 +105,18 @@ function HistoryCard({
   child,
   episodes,
   hasActiveEpisode,
+  copy,
+  t,
 }: {
   child: Child;
   episodes: IllnessEpisode[];
   hasActiveEpisode: boolean;
+  copy: ReturnType<typeof getChildrenCopy>["illnessHistory"];
+  t: (text: string, variables?: Record<string, string | number>) => string;
 }) {
+  const { language } = useI18n();
   const lastEpisode = episodes[0] ?? null;
+  const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
 
   return (
     <li>
@@ -117,23 +126,21 @@ function HistoryCard({
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="app-card-title text-[1.08rem]">{child.name}</h2>
               <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
-                {episodes.length} в архиве
+                {episodes.length} {copy.inArchive}
               </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-muted">
-              {child.ageLabel ? `${child.ageLabel} • ` : ""}
+              {ageLabel ? `${ageLabel} • ` : ""}
               {lastEpisode
-                ? `Последний начался ${formatDate(lastEpisode.startedAt)}`
-                : "История пуста"}
+                ? t(copy.latestStarted, { date: formatDate(lastEpisode.startedAt) })
+                : copy.historyEmpty}
             </p>
             {hasActiveEpisode && (
-              <p className="soft-text-success mt-1 text-sm">
-                Сейчас идёт активное наблюдение, в архив не входит
-              </p>
+              <p className="soft-text-success mt-1 text-sm">{copy.activeOutsideArchive}</p>
             )}
             {lastEpisode?.closedAt && (
               <p className="mt-1 text-sm text-muted">
-                Закрыт: {formatDateTime(lastEpisode.closedAt)}
+                {t(copy.closedAt, { date: formatDateTime(lastEpisode.closedAt) })}
               </p>
             )}
           </div>
@@ -142,7 +149,7 @@ function HistoryCard({
             to={`/children/${child.id}/illness?view=history`}
             className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
           >
-            История
+            {copy.historyLink}
           </Link>
         </div>
       </RowSurface>

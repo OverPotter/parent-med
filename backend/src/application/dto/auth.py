@@ -1,12 +1,15 @@
 """DTO для регистрации и авторизации."""
 
 from dataclasses import dataclass
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from src.application.dto.base import ResponseBase
 from src.application.dto.family import FamilyResponseDto
+
+AccountLanguage = Literal["ru", "en"]
 
 
 class RegisterDto(BaseModel):
@@ -37,6 +40,12 @@ class ChangePasswordDto(BaseModel):
     new_password: str = Field(..., min_length=6, description="Новый пароль")
 
 
+class UpdateLanguageDto(BaseModel):
+    """Смена предпочитаемого языка аккаунта."""
+
+    preferred_language: AccountLanguage = Field(..., description="Предпочитаемый язык аккаунта")
+
+
 class RefreshDto(BaseModel):
     """Обновление access token по refresh token."""
 
@@ -53,6 +62,7 @@ class AccountResponseDto(ResponseBase):
     display_name: str
     relationship_label: str | None = None
     phone: str | None = None
+    preferred_language: AccountLanguage = "ru"
     family_role: str
 
 
@@ -68,6 +78,7 @@ class AuthenticatedAccount:
     family_role: str
     relationship_label: str | None = None
     phone: str | None = None
+    preferred_language: AccountLanguage = "ru"
 
 
 class AuthStateResponseDto(ResponseBase):

@@ -83,6 +83,7 @@ class PushNotificationService:
                 display_name=account.display_name,
                 relationship_label=account.relationship_label,
                 phone=account.phone,
+                preferred_language=account.preferred_language,
                 family_role=account.family_role,
                 push_before_reminder_minutes=before_reminder_minutes,
                 cabinet_notify_10_days=(

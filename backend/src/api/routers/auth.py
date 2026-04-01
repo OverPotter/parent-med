@@ -13,6 +13,8 @@ from src.application.dto.auth import (
     LoginDto,
     RefreshDto,
     RegisterDto,
+    AccountResponseDto,
+    UpdateLanguageDto,
 )
 from src.application.services.base_auth_service import BaseAuthService
 from src.core.config import settings
@@ -95,3 +97,13 @@ async def change_password(
 ) -> None:
     logger.info(f"Смена пароля | account_id={current_account.id}")
     await service.change_password(current_account.id, dto)
+
+
+@router.patch("/language", response_model=AccountResponseDto)
+async def update_language(
+    dto: UpdateLanguageDto,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: BaseAuthService = Depends(get_auth_service),
+) -> AccountResponseDto:
+    logger.info(f"Смена языка | account_id={current_account.id} language={dto.preferred_language}")
+    return await service.update_language(current_account.id, dto)

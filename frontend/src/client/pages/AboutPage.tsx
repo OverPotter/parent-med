@@ -1,71 +1,39 @@
 import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
+import { useI18n } from "@shared/hooks/useI18n";
 
 export function AboutPage() {
+  const { copy } = useI18n();
+
   return (
     <div className="min-w-0 space-y-6">
       <PageIntro
         title={<BrandWordmark className="brand-wordmark-page-title" />}
-        subtitle="Семейный кабинет для детей, домашней аптечки и истории болезни. Это не ежедневный рабочий экран, поэтому описание вынесено сюда отдельно."
-        eyebrow="О приложении"
+        subtitle={copy.about.subtitle}
+        eyebrow={copy.about.eyebrow}
         hideOnMobile
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <FeatureCard
-          title="О семье"
-          description="Семья задаёт контекст аккаунта: родители, дети и общая домашняя аптечка."
-        />
-        <FeatureCard
-          title="О детях"
-          description="По каждому ребёнку можно вести эпизоды болезни, температуру и историю."
-        />
-        <FeatureCard
-          title="О лекарствах"
-          description="Аптечка хранит реальные упаковки, сроки годности и правила после вскрытия."
-        />
+        {copy.about.features.map((item) => (
+          <FeatureCard key={item.title} title={item.title} description={item.description} />
+        ))}
       </div>
 
       <Surface className="overflow-hidden">
         <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
-          <p className="app-kicker">Установка на телефон</p>
-          <h2 className="app-title mt-2 text-[1.7rem] sm:text-[2.15rem]">
-            Приложение можно установить как иконку на домашний экран
-          </h2>
+          <p className="app-kicker">{copy.about.install.eyebrow}</p>
+          <h2 className="app-title mt-2 text-[1.7rem] sm:text-[2.15rem]">{copy.about.install.title}</h2>
           <p className="app-subtitle mt-3 max-w-2xl text-sm">
-            <BrandWordmark className="brand-wordmark-inline" /> уже настроен как PWA. Установка
-            идёт через браузер без App Store и Google Play.
+            <BrandWordmark className="brand-wordmark-inline" /> {copy.about.install.description}
           </p>
         </div>
 
         <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-3">
-          <InstallCard
-            title="iPhone / iPad"
-            steps={[
-              "Откройте приложение в Safari.",
-              "Нажмите «Поделиться».",
-              "Выберите «На экран Домой».",
-              "Подтвердите добавление.",
-            ]}
-          />
-          <InstallCard
-            title="Android"
-            steps={[
-              "Откройте приложение в Chrome.",
-              "Нажмите меню браузера.",
-              "Выберите «Установить приложение» или «Добавить на главный экран».",
-              "Подтвердите установку.",
-            ]}
-          />
-          <InstallCard
-            title="Локальная разработка"
-            steps={[
-              "Откройте приложение с телефона по IP ноутбука в одной Wi‑Fi сети.",
-              "Используйте браузер Safari или Chrome, а не встроенный webview.",
-              "Если иконка установки не появилась, обновите страницу и попробуйте снова.",
-            ]}
-          />
+          {copy.about.install.cards.map((item) => (
+            <InstallCard key={item.title} title={item.title} steps={item.steps} />
+          ))}
         </div>
       </Surface>
     </div>

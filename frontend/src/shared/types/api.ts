@@ -15,6 +15,7 @@ export interface Account {
   displayName: string;
   relationshipLabel: string | null;
   phone: string | null;
+  preferredLanguage: "ru" | "en";
   familyRole: string;
 }
 

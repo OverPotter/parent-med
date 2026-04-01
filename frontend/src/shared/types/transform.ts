@@ -33,6 +33,7 @@ interface RawAccount {
   display_name: string;
   relationship_label: string | null;
   phone: string | null;
+  preferred_language: "ru" | "en";
   family_role: string;
 }
 
@@ -179,6 +180,7 @@ export function toAccount(r: RawAccount): Account {
     displayName: r.display_name,
     relationshipLabel: r.relationship_label ?? null,
     phone: r.phone ?? null,
+    preferredLanguage: r.preferred_language ?? "ru",
     familyRole: r.family_role,
   };
 }

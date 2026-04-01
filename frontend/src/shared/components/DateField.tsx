@@ -1,22 +1,74 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-const MONTH_LABELS = [
-  "Январь",
-  "Февраль",
-  "Март",
-  "Апрель",
-  "Май",
-  "Июнь",
-  "Июль",
-  "Август",
-  "Сентябрь",
-  "Октябрь",
-  "Ноябрь",
-  "Декабрь",
-];
+type DateFieldLanguage = "ru" | "en";
 
-const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const DATE_FIELD_COPY: Record<
+  DateFieldLanguage,
+  {
+    months: string[];
+    weekdays: string[];
+    placeholder: string;
+    prevMonth: string;
+    nextMonth: string;
+    month: string;
+    year: string;
+    today: string;
+    clear: string;
+    dateBadge: string;
+  }
+> = {
+  ru: {
+    months: [
+      "Январь",
+      "Февраль",
+      "Март",
+      "Апрель",
+      "Май",
+      "Июнь",
+      "Июль",
+      "Август",
+      "Сентябрь",
+      "Октябрь",
+      "Ноябрь",
+      "Декабрь",
+    ],
+    weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
+    placeholder: "Выберите дату",
+    prevMonth: "Предыдущий месяц",
+    nextMonth: "Следующий месяц",
+    month: "Месяц",
+    year: "Год",
+    today: "Сегодня",
+    clear: "Очистить",
+    dateBadge: "Дата",
+  },
+  en: {
+    months: [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ],
+    weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    placeholder: "Choose date",
+    prevMonth: "Previous month",
+    nextMonth: "Next month",
+    month: "Month",
+    year: "Year",
+    today: "Today",
+    clear: "Clear",
+    dateBadge: "Date",
+  },
+};
 
 function parseIsoDate(value: string | null | undefined): Date | null {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -43,13 +95,13 @@ function toIsoDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function formatDisplayDate(value: string | null | undefined): string {
+function formatDisplayDate(value: string | null | undefined, language: DateFieldLanguage): string {
   const date = parseIsoDate(value);
   if (!date) {
     return "";
   }
 
-  return new Intl.DateTimeFormat("ru-RU", {
+  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -109,6 +161,7 @@ interface DateFieldProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  language?: DateFieldLanguage;
   disabled?: boolean;
   min?: string;
   max?: string;
@@ -126,7 +179,8 @@ interface PanelPosition {
 export function DateField({
   value,
   onChange,
-  placeholder = "Выберите дату",
+  placeholder,
+  language = "ru",
   disabled = false,
   min,
   max,
@@ -141,6 +195,7 @@ export function DateField({
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => selectedDate ?? new Date());
   const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(null);
+  const copy = DATE_FIELD_COPY[language];
 
   useEffect(() => {
     if (selectedDate) {
@@ -234,7 +289,7 @@ export function DateField({
   }, [isOpen, viewDate]);
 
   const monthDays = useMemo(() => buildMonthDays(viewDate), [viewDate]);
-  const monthLabel = `${MONTH_LABELS[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
+  const monthLabel = `${copy.months[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
   const today = new Date();
   const yearOptions = useMemo(
     () => buildYearOptions(selectedDate, minDate, maxDate),
@@ -263,7 +318,7 @@ export function DateField({
                     )
                   }
                   className="soft-button-secondary min-h-0 px-3 py-2 text-sm"
-                  aria-label="Предыдущий месяц"
+                  aria-label={copy.prevMonth}
                 >
                   ←
                 </button>
@@ -276,7 +331,7 @@ export function DateField({
                     )
                   }
                   className="soft-button-secondary min-h-0 px-3 py-2 text-sm"
-                  aria-label="Следующий месяц"
+                  aria-label={copy.nextMonth}
                 >
                   →
                 </button>
@@ -284,7 +339,7 @@ export function DateField({
 
               <div className="grid grid-cols-[minmax(0,1fr)_104px] gap-2">
                 <label className="block">
-                  <span className="soft-field-label mb-1 text-[0.8rem]">Месяц</span>
+                  <span className="soft-field-label mb-1 text-[0.8rem]">{copy.month}</span>
                   <select
                     value={viewDate.getMonth()}
                     onChange={(event) =>
@@ -292,7 +347,7 @@ export function DateField({
                     }
                     className="soft-input min-h-[3rem] w-full px-3 text-sm"
                   >
-                    {MONTH_LABELS.map((label, index) => (
+                    {copy.months.map((label, index) => (
                       <option key={label} value={index}>
                         {label}
                       </option>
@@ -301,7 +356,7 @@ export function DateField({
                 </label>
 
                 <label className="block">
-                  <span className="soft-field-label mb-1 text-[0.8rem]">Год</span>
+                  <span className="soft-field-label mb-1 text-[0.8rem]">{copy.year}</span>
                   <select
                     value={viewDate.getFullYear()}
                     onChange={(event) =>
@@ -320,7 +375,7 @@ export function DateField({
             </div>
 
             <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] text-muted">
-              {WEEKDAY_LABELS.map((label) => (
+              {copy.weekdays.map((label) => (
                 <div key={label} className="py-0.5">
                   {label}
                 </div>
@@ -374,7 +429,7 @@ export function DateField({
                 }}
                 className="soft-button-secondary min-h-0 px-3.5 py-2 text-sm"
               >
-                Сегодня
+                {copy.today}
               </button>
               {allowClear && value && (
                 <button
@@ -385,7 +440,7 @@ export function DateField({
                   }}
                   className="soft-button-secondary min-h-0 px-3.5 py-2 text-sm"
                 >
-                  Очистить
+                  {copy.clear}
                 </button>
               )}
             </div>
@@ -408,9 +463,9 @@ export function DateField({
         aria-expanded={isOpen}
       >
         <span className={value ? "text-foreground" : "text-muted"}>
-          {value ? formatDisplayDate(value) : placeholder}
+          {value ? formatDisplayDate(value, language) : (placeholder ?? copy.placeholder)}
         </span>
-        <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">Дата</span>
+        <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">{copy.dateBadge}</span>
       </button>
       {panel}
     </div>

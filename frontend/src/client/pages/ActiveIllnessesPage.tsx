@@ -17,6 +17,7 @@ import { trackMedicationAdministered } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -33,8 +34,12 @@ import {
   getPrioritizedMedicationPlanItems,
 } from "../utils/medicationPlans";
 import { formatDate } from "@shared/utils/date";
+import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
 export function ActiveIllnessesPage() {
+  const { language, t } = useI18n();
+  const copy = getChildrenCopy(language).activeIllnesses;
+  const common = getChildrenCopy(language).common;
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const now = useNow();
   const currentTime = new Date(now);
@@ -95,25 +100,20 @@ export function ActiveIllnessesPage() {
   if (!currentFamilyId) {
     return (
       <Surface className="p-5">
-        <h1 className="app-title text-[1.9rem] sm:text-[2.2rem]">Активные наблюдения</h1>
-        <p className="mt-2 text-muted">Сначала выбери семью в разделе «Семья».</p>
+        <h1 className="app-title text-[1.9rem] sm:text-[2.2rem]">{copy.title}</h1>
+        <p className="mt-2 text-muted">{common.familyRequired}</p>
       </Surface>
     );
   }
 
   return (
     <div className="space-y-7">
-      <PageIntro
-        title="Активные наблюдения"
-        subtitle="Только текущие наблюдения, где важны ближайшие действия, приёмы и комментарии."
-        compactOnMobile
-        hideOnMobile
-      />
+      <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
 
-      {(isLoading || isActiveEpisodesLoading) && <p className="text-muted">Загрузка…</p>}
+      {(isLoading || isActiveEpisodesLoading) && <p className="text-muted">{common.loading}</p>}
 
       {!isLoading && !isActiveEpisodesLoading && activeChildren.length === 0 && (
-        <EmptyState>Сейчас нет активных наблюдений.</EmptyState>
+        <EmptyState>{copy.empty}</EmptyState>
       )}
 
       {!isLoading && !isActiveEpisodesLoading && activeChildren.length > 0 && (
@@ -127,6 +127,8 @@ export function ActiveIllnessesPage() {
               plans={medicationPlanQueries[index]?.data ?? []}
               administrations={administrationQueries[index]?.data ?? []}
               now={currentTime}
+              copy={copy}
+              t={t}
             />
           ))}
         </ul>
@@ -142,6 +144,8 @@ function ActiveIllnessCard({
   plans,
   administrations,
   now,
+  copy,
+  t,
 }: {
   child: Child;
   episode: IllnessEpisode;
@@ -149,11 +153,15 @@ function ActiveIllnessCard({
   plans: EpisodeMedicationPlan[];
   administrations: AdministrationEvent[];
   now: Date;
+  copy: ReturnType<typeof getChildrenCopy>["activeIllnesses"];
+  t: (text: string, variables?: Record<string, string | number>) => string;
 }) {
+  const { language } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [justSaved, setJustSaved] = useState(false);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
+  const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
   const prioritizedItems = getPrioritizedMedicationPlanItems(
     plans,
     administrations,
@@ -179,14 +187,14 @@ function ActiveIllnessCard({
   const takeDoseMutation = useMutation({
     mutationFn: (plan: EpisodeMedicationPlan) => {
       if (!plan) {
-        throw new Error("Нет доступного напоминания.");
+        throw new Error(copy.noReminder);
       }
       return createAdministrationEvent({
         episode_id: episode.id,
         household_medicine_id: plan.householdMedicineId,
         custom_medicine_name: plan.customMedicineName ?? undefined,
         amount: plan.doseAmount,
-        reason: "Отмечено по напоминанию",
+        reason: copy.reminderReason,
       });
     },
     onSuccess: () => {
@@ -221,9 +229,9 @@ function ActiveIllnessCard({
     <li>
       <ConfirmDialog
         isOpen={isCloseConfirmOpen}
-        title={`Закрыть наблюдение · ${child.name}`}
-        description="Наблюдение уйдёт в историю. Новые записи температуры и приёма будут относиться уже к следующему эпизоду."
-        confirmLabel={closeEpisodeMutation.isPending ? "Закрываем…" : "Закрыть наблюдение"}
+        title={t(copy.closeTitle, { name: child.name })}
+        description={copy.closeDescription}
+        confirmLabel={closeEpisodeMutation.isPending ? copy.closing : copy.closeConfirm}
         confirmTone="danger"
         isPending={closeEpisodeMutation.isPending}
         onCancel={() => setIsCloseConfirmOpen(false)}
@@ -238,12 +246,12 @@ function ActiveIllnessCard({
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="app-card-title text-[1.08rem]">{child.name}</h2>
               <span className="soft-pill-danger rounded-full px-2.5 py-1 text-[11px]">
-                Наблюдение
+                {copy.observationBadge}
               </span>
             </div>
             <p className="mt-1 text-sm leading-6 text-muted">
-              {child.ageLabel ? `${child.ageLabel} • ` : ""}
-              Наблюдение с {formatDate(episode.startedAt)}
+              {ageLabel ? `${ageLabel} • ` : ""}
+              {t(copy.observationSince, { date: formatDate(episode.startedAt) })}
             </p>
             {episode.title && (
               <p className="mt-1 line-clamp-1 text-sm leading-5 text-foreground/80">
@@ -252,7 +260,7 @@ function ActiveIllnessCard({
             )}
             {upcomingLead && !availableNowLead && (
               <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[color:color-mix(in_srgb,var(--color-warning)_24%,transparent)] bg-[color:color-mix(in_srgb,var(--color-warning-soft)_36%,transparent)] px-3 py-1.5 text-xs text-foreground">
-                <span className="soft-text-warning font-medium">По графику</span>
+                <span className="soft-text-warning font-medium">{copy.scheduled}</span>
                 <span className="truncate">
                   {getPlanDisplayName(upcomingLead)}
                   {upcomingLead.stats.nextAllowedAt
@@ -272,7 +280,7 @@ function ActiveIllnessCard({
                       <div className="min-w-0">
                         <p className="flex flex-wrap items-center gap-2 text-sm leading-5 text-foreground">
                           <span className="soft-pill-success rounded-full px-2.5 py-1 text-[11px]">
-                            Можно дать
+                            {copy.availableNow}
                           </span>
                           <span className="font-medium">
                             {getPlanDisplayName(availableNowLead)}
@@ -283,7 +291,7 @@ function ActiveIllnessCard({
                         </p>
                         {availableNowOverflowCount > 0 && (
                           <p className="mt-1 text-xs text-muted">
-                            Ещё доступно сейчас: {availableNowOverflowCount}
+                            {t(copy.moreAvailableNow, { count: availableNowOverflowCount })}
                           </p>
                         )}
                       </div>
@@ -293,16 +301,14 @@ function ActiveIllnessCard({
                         disabled={takeDoseMutation.isPending}
                         className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 md:w-auto md:min-h-[3.15rem] md:px-5 md:text-[0.93rem]"
                       >
-                        {takeDoseMutation.isPending ? "Сохраняем…" : "Записать приём"}
+                        {takeDoseMutation.isPending ? copy.saving : copy.logDose}
                       </button>
                     </div>
                   </div>
-                  {justSaved && <p className="text-xs soft-text-success">Приём сохранён</p>}
+                  {justSaved && <p className="text-xs soft-text-success">{copy.doseSaved}</p>}
                 </div>
               ) : upcomingLead ? null : (
-                <p className="soft-text-danger text-sm">
-                  Есть напоминание, но упаковку нужно проверить.
-                </p>
+                <p className="soft-text-danger text-sm">{copy.packNeedsReview}</p>
               )}
             </div>
           )}
@@ -312,33 +318,33 @@ function ActiveIllnessCard({
               to={`/children/${child.id}/illness?focus=temperature`}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
             >
-              Записать температуру
+              {copy.logTemperature}
             </Link>
             {!availableNowLead && (
               <Link
                 to={`/children/${child.id}/illness?focus=administration`}
                 className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
               >
-                Записать приём
+                {copy.logDose}
               </Link>
             )}
             <Link
               to={`/children/${child.id}/illness?focus=comment`}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
             >
-              Добавить заметку
+              {copy.addNote}
             </Link>
             <Link
               to={`/children/${child.id}/illness?focus=timeline`}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
             >
-              Лента
+              {copy.timeline}
             </Link>
             <Link
               to={`/children/${child.id}/illness?focus=reminders`}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
             >
-              {plans.length > 0 ? "Напоминания" : "Добавить напоминание"}
+              {plans.length > 0 ? copy.reminders : copy.addReminder}
             </Link>
           </div>
 
@@ -348,7 +354,7 @@ function ActiveIllnessCard({
             disabled={closeEpisodeMutation.isPending}
             className="soft-button-danger inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:text-[0.92rem]"
           >
-            {closeEpisodeMutation.isPending ? "Закрываем…" : "Закрыть наблюдение"}
+            {closeEpisodeMutation.isPending ? copy.closing : copy.closeConfirm}
           </button>
         </div>
       </RowSurface>
@@ -357,7 +363,7 @@ function ActiveIllnessCard({
 }
 
 function getPlanDisplayName(item: MedicationPlanPriorityItem) {
-  return item.plan.customMedicineName ?? item.medicine?.medicineName ?? "Лекарство";
+  return item.plan.customMedicineName ?? item.medicine?.medicineName ?? "Medicine";
 }
 
 function getPlanDose(item: MedicationPlanPriorityItem) {

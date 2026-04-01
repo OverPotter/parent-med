@@ -1,70 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
+import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 
-const landingBrandName = "PillPath";
-
-const heroCards = [
-  {
-    title: "Ничего не теряется",
-    description:
-      "Записи, лекарства и важные действия остаются в одном месте, а не распадаются по сообщениям и заметкам.",
-  },
-  {
-    title: "Все видят одно и то же",
-    description: "Одна общая картина помогает семье быстрее договориться и ничего не упустить.",
-  },
-  {
-    title: "Видно, что уже сделали",
-    description: "Легко проверить последние записи, время событий и кто обновил информацию.",
-  },
-  {
-    title: "Понятно, что дальше",
-    description: "Следующие шаги и важные действия остаются рядом, когда они действительно нужны.",
-  },
-];
-
-const comparison = {
-  oldWay: [
-    "важная запись быстро уходит вверх",
-    "приходится переспросить, кто и что уже сделал",
-    "общую картину приходится собирать вручную",
-  ],
-  newWay: [
-    "последние записи всегда под рукой",
-    "сразу видно, что уже сделали и кто это отметил",
-    "вся семья смотрит на одну и ту же картину",
-  ],
-};
-
-const workflow = [
-  {
-    step: "01",
-    title: "Добавляете ребёнка и начинаете запись",
-    description:
-      "Создаёте профиль ребёнка и открываете наблюдение, когда нужно зафиксировать состояние, лекарства и важные изменения.",
-  },
-  {
-    step: "02",
-    title: "Фиксируете всё в одной истории",
-    description:
-      "Температура, приёмы, комментарии и напоминания собираются в одной ленте, а не теряются между сообщениями.",
-  },
-  {
-    step: "03",
-    title: "Семья видит, что происходит дальше",
-    description:
-      "Все взрослые видят текущий статус, последние действия и быстрее понимают, что уже сделали и что ещё нужно.",
-  },
-];
-
 export function LandingPage() {
+  const { copy } = useI18n();
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const [activePreview, setActivePreview] = useState<{ src: string; alt: string } | null>(null);
+  const [primaryScreenshotAlt, secondaryScreenshotAlt, tertiaryScreenshotAlt] =
+    copy.landing.product.screenshots;
 
   useEffect(() => {
     if (activePreview) {
@@ -105,48 +54,54 @@ export function LandingPage() {
           <section className="landing-hero-reset">
             <div className="landing-hero-reset-inner">
               <div className="landing-hero-reset-topline">
-                <Link to="/" className="landing-hero-reset-brandicon" aria-label={landingBrandName}>
+                <Link to="/" className="landing-hero-reset-brandicon" aria-label={copy.common.brandName}>
                   <img src="/pwa-icon.png" alt="" className="landing-hero-reset-logo" />
                 </Link>
-                <Link to="/" className="landing-hero-reset-brandmark" aria-label={landingBrandName}>
-                  <BrandWordmark className="landing-hero-reset-brand" ariaLabel={landingBrandName} />
+                <Link to="/" className="landing-hero-reset-brandmark" aria-label={copy.common.brandName}>
+                  <BrandWordmark
+                    className="landing-hero-reset-brand"
+                    ariaLabel={copy.common.brandName}
+                  />
                 </Link>
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className="landing-secondary-button landing-theme-toggle rounded-full px-4 py-2 text-sm"
-                  aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
-                >
-                  {theme === "light" ? "Ночь" : "День"}
-                </button>
+                <div className="landing-hero-reset-actions-inline">
+                  <LanguageSwitch />
+                  <button
+                    type="button"
+                    onClick={toggleTheme}
+                    className="landing-secondary-button landing-theme-toggle rounded-full px-4 py-2 text-sm"
+                    aria-label={
+                      theme === "light"
+                        ? copy.landing.hero.themeToggleAriaDark
+                        : copy.landing.hero.themeToggleAriaLight
+                    }
+                  >
+                    {theme === "light" ? copy.common.themeDarkText : copy.common.themeLightText}
+                  </button>
+                </div>
               </div>
               <p className="landing-section-label mt-4 justify-center sm:mt-5">
-                Семейный трекер здоровья ребёнка
+                {copy.landing.hero.eyebrow}
               </p>
-              <h1 className="landing-hero-reset-title">Всё важное о ребёнке в одном месте</h1>
-              <p className="landing-hero-reset-lead">
-                Семье проще вести наблюдение за ребёнком, держать под рукой лекарства, домашнюю
-                аптечку и важные записи в одном месте, чтобы не терять детали между сообщениями,
-                заметками и памятью.
-              </p>
+              <h1 className="landing-hero-reset-title">{copy.landing.hero.title}</h1>
+              <p className="landing-hero-reset-lead">{copy.landing.hero.lead}</p>
 
               <div className="landing-hero-reset-actions">
                 <Link
                   to="/auth?mode=register"
                   className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                 >
-                  Создать аккаунт
+                  {copy.landing.hero.createAccount}
                 </Link>
                 <Link
                   to="/auth?mode=login"
                   className="landing-secondary-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
                 >
-                  Уже есть аккаунт
+                  {copy.landing.hero.login}
                 </Link>
               </div>
 
               <div className="landing-hero-reset-grid">
-                {heroCards.map((item) => (
+                {copy.landing.cards.map((item) => (
                   <div key={item.title} className="landing-hero-reset-card">
                     <p className="landing-hero-reset-card-title">{item.title}</p>
                     <p className="landing-hero-reset-card-text">{item.description}</p>
@@ -159,52 +114,37 @@ export function LandingPage() {
           <section className="landing-section-shell overflow-hidden">
             <div className="grid gap-6 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
               <div className="min-w-0">
-                <p className="landing-section-label">Как выглядит продукт</p>
-                <h2 className="landing-section-title mt-2">
-                  Три экрана, по которым сразу понятен рабочий сценарий
-                </h2>
+                <p className="landing-section-label">{copy.landing.product.eyebrow}</p>
+                <h2 className="landing-section-title mt-2">{copy.landing.product.title}</h2>
                 <p className="mt-4 max-w-xl text-sm leading-7 text-muted sm:text-base">
-                  {landingBrandName} показывает не отдельные разрозненные записи, а целый рабочий сценарий:
-                  текущее наблюдение, историю записей и быстрый вход в профиль ребёнка.
+                  {copy.landing.product.description}
                 </p>
                 <ul className="mt-6 space-y-3">
-                  <li className="landing-comparison-item">
-                    <span className="landing-comparison-dot" />
-                    <span>
-                      Текущее наблюдение помогает быстро понять, что можно сделать сейчас.
-                    </span>
-                  </li>
-                  <li className="landing-comparison-item">
-                    <span className="landing-comparison-dot" />
-                    <span>
-                      История записей собирает температуру, лекарства и заметки в одной ленте.
-                    </span>
-                  </li>
-                  <li className="landing-comparison-item">
-                    <span className="landing-comparison-dot" />
-                    <span>
-                      Профиль ребёнка даёт быстрый вход в работу без лишнего архивного шума.
-                    </span>
-                  </li>
+                  {copy.landing.product.bullets.map((point) => (
+                    <li key={point} className="landing-comparison-item">
+                      <span className="landing-comparison-dot" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
 
-              <div className="landing-phone-gallery" aria-label={`Скриншоты ${landingBrandName}`}>
+              <div className="landing-phone-gallery" aria-label={copy.landing.product.screenshotsLabel}>
                 <ScreenshotCard
                   src="/landing/IMG_7138.PNG"
-                  alt="Экран текущего наблюдения по ребёнку"
+                  alt={primaryScreenshotAlt}
                   className="landing-screenshot-card landing-phone-gallery-item landing-phone-gallery-item-primary"
                   onPreview={setActivePreview}
                 />
                 <ScreenshotCard
                   src="/landing/IMG_7140.PNG"
-                  alt="Экран ленты событий по ребёнку"
+                  alt={secondaryScreenshotAlt}
                   className="landing-screenshot-card landing-phone-gallery-item"
                   onPreview={setActivePreview}
                 />
                 <ScreenshotCard
                   src="/landing/IMG_7141.PNG"
-                  alt="Экран списка детей"
+                  alt={tertiaryScreenshotAlt}
                   className="landing-screenshot-card landing-phone-gallery-item"
                   onPreview={setActivePreview}
                 />
@@ -214,21 +154,18 @@ export function LandingPage() {
 
           <section className="landing-comparison grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
             <Surface className="landing-section-shell p-5 sm:p-6 lg:p-7">
-              <p className="landing-section-label">Вместо переписки</p>
-              <h2 className="landing-section-title mt-2">
-                Когда важное не приходится искать по чату
-              </h2>
+              <p className="landing-section-label">{copy.landing.comparison.eyebrow}</p>
+              <h2 className="landing-section-title mt-2">{copy.landing.comparison.title}</h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
-                Чат помогает быстро написать сообщение, но плохо помогает понять, что уже сделали,
-                что происходит сейчас и что нужно дальше.
+                {copy.landing.comparison.description}
               </p>
             </Surface>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Surface className="landing-comparison-card p-5 sm:p-6">
-                <p className="landing-comparison-title">Когда всё остаётся в переписке</p>
+                <p className="landing-comparison-title">{copy.landing.comparison.oldTitle}</p>
                 <ul className="mt-4 space-y-3">
-                  {comparison.oldWay.map((point) => (
+                  {copy.landing.comparison.oldWay.map((point) => (
                     <li key={point} className="landing-comparison-item">
                       <span className="landing-comparison-dot" />
                       <span>{point}</span>
@@ -238,11 +175,9 @@ export function LandingPage() {
               </Surface>
 
               <Surface className="landing-comparison-card landing-comparison-card-primary p-5 sm:p-6">
-                <p className="landing-comparison-title">
-                  Когда всё собрано в {landingBrandName}
-                </p>
+                <p className="landing-comparison-title">{copy.landing.comparison.newTitle}</p>
                 <ul className="mt-4 space-y-3">
-                  {comparison.newWay.map((point) => (
+                  {copy.landing.comparison.newWay.map((point) => (
                     <li key={point} className="landing-comparison-item">
                       <span className="landing-comparison-dot" />
                       <span>{point}</span>
@@ -256,21 +191,18 @@ export function LandingPage() {
           <section id="how-it-works">
             <Surface className="landing-section-shell overflow-hidden">
               <div className="landing-section-header px-5 py-5 sm:px-8 sm:py-7">
-                <p className="landing-section-label">Рабочий сценарий</p>
-                <h2 className="landing-section-title mt-2">
-                  Не просто записи, а понятный сценарий для всей семьи
-                </h2>
+                <p className="landing-section-label">{copy.landing.workflow.eyebrow}</p>
+                <h2 className="landing-section-title mt-2">{copy.landing.workflow.title}</h2>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
-                  {landingBrandName} нужен не для хранения отдельных заметок, а для того, чтобы вся семья
-                  быстрее понимала состояние ребёнка и следующие действия.
+                  {copy.landing.workflow.description}
                 </p>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-                  Помимо записей и наблюдения, в {landingBrandName} под рукой остаётся и домашняя аптечка.
+                  {copy.landing.workflow.descriptionSecondary}
                 </p>
               </div>
 
               <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-3">
-                {workflow.map((item) => (
+                {copy.landing.workflow.steps.map((item) => (
                   <RowSurface
                     key={item.step}
                     className="soft-landing-step landing-flow-card h-full"
@@ -286,45 +218,30 @@ export function LandingPage() {
 
           <section className="landing-section-shell overflow-hidden">
             <div className="landing-section-header px-5 py-5 sm:px-8 sm:py-7">
-              <p className="landing-section-label">Установка на телефон</p>
-              <h2 className="landing-section-title mt-2">
-                {landingBrandName} можно добавить на домашний экран
-              </h2>
+              <p className="landing-section-label">{copy.landing.install.eyebrow}</p>
+              <h2 className="landing-section-title mt-2">{copy.landing.install.title}</h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
-                Приложение уже работает как PWA, поэтому устанавливается через браузер без App Store
-                и Google Play.
+                {copy.landing.install.description}
               </p>
             </div>
 
             <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-2">
               <InstallStepsCard
-                title="iPhone / iPad"
-                steps={[
-                  `Откройте ${landingBrandName} в Safari.`,
-                  "Нажмите «Поделиться».",
-                  "Выберите «На экран Домой».",
-                  "Подтвердите добавление.",
-                ]}
+                title={copy.landing.install.iphoneTitle}
+                steps={copy.landing.install.iphoneSteps}
               />
               <InstallStepsCard
-                title="Android"
-                steps={[
-                  `Откройте ${landingBrandName} в Chrome.`,
-                  "Нажмите меню браузера.",
-                  "Выберите «Установить приложение» или «Добавить на главный экран».",
-                  "Подтвердите установку.",
-                ]}
+                title={copy.landing.install.androidTitle}
+                steps={copy.landing.install.androidSteps}
               />
             </div>
 
             <div className="landing-install-cta border-t border-border/60 px-5 py-5 sm:px-8 sm:py-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground">
-                    Сначала зарегистрируйтесь, потом установите приложение на телефон.
-                  </p>
+                  <p className="text-sm font-medium text-foreground">{copy.landing.install.ctaTitle}</p>
                   <p className="mt-1 text-sm leading-6 text-muted">
-                    Так иконка на домашнем экране сразу откроет ваш семейный кабинет.
+                    {copy.landing.install.ctaDescription}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
@@ -332,13 +249,13 @@ export function LandingPage() {
                     to="/auth?mode=register"
                     className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                   >
-                    Создать аккаунт
+                    {copy.landing.install.createAccount}
                   </Link>
                   <Link
                     to="/auth?mode=login"
                     className="landing-secondary-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
                   >
-                    Войти
+                    {copy.landing.install.login}
                   </Link>
                 </div>
               </div>
@@ -354,7 +271,7 @@ export function LandingPage() {
         >
           <button
             type="button"
-            aria-label="Закрыть увеличенный просмотр"
+            aria-label={copy.landing.install.previewCloseLabel}
             className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_58%,transparent)] backdrop-blur-sm"
             onClick={() => setActivePreview(null)}
           />
@@ -367,12 +284,12 @@ export function LandingPage() {
               className="landing-preview-close"
               onClick={() => setActivePreview(null)}
             >
-              Закрыть
+              {copy.landing.install.closePreview}
             </button>
             <button
               type="button"
               className="landing-preview-frame"
-              aria-label={`Закрыть просмотр: ${activePreview.alt}`}
+              aria-label={`${copy.landing.install.closePreview}: ${activePreview.alt}`}
               onClick={() => setActivePreview(null)}
             >
               <img
@@ -400,12 +317,14 @@ function ScreenshotCard({
   className?: string;
   onPreview?: (preview: { src: string; alt: string }) => void;
 }) {
+  const { copy } = useI18n();
+
   return (
     <button
       type="button"
       className={["landing-phone-clickable", className].filter(Boolean).join(" ")}
       onClick={() => onPreview?.({ src, alt })}
-      aria-label={`Открыть увеличенный просмотр: ${alt}`}
+      aria-label={`${copy.landing.install.previewOpenLabel}: ${alt}`}
     >
       <div className="landing-phone-stage h-full w-full">
         <img src={src} alt={alt} className="h-full w-full object-cover" loading="lazy" />

@@ -43,6 +43,7 @@ class FamilyService:
             display_name=entity.display_name,
             relationship_label=entity.relationship_label,
             phone=entity.phone,
+            preferred_language=entity.preferred_language,
             family_role=entity.family_role,
         )
 
@@ -112,6 +113,7 @@ class FamilyService:
                 display_name=target.display_name,
                 relationship_label=target.relationship_label,
                 phone=target.phone,
+                preferred_language=target.preferred_language,
                 family_role=dto.family_role,
                 push_before_reminder_minutes=target.push_before_reminder_minutes,
                 cabinet_notify_10_days=target.cabinet_notify_10_days,
@@ -189,6 +191,7 @@ class FamilyService:
                     if "phone" in dto.model_fields_set
                     else target.phone
                 ),
+                preferred_language=target.preferred_language,
                 family_role=target.family_role,
                 push_before_reminder_minutes=target.push_before_reminder_minutes,
                 cabinet_notify_10_days=target.cabinet_notify_10_days,

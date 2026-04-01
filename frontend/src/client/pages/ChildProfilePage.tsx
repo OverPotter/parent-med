@@ -6,9 +6,11 @@ import { createWeightEntry, fetchLatestWeightEntryByChildId } from "@shared/api/
 import { DateField } from "@shared/components/DateField";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PageIntro } from "@shared/components/PageIntro";
+import { useI18n } from "@shared/hooks/useI18n";
 import { Surface } from "@shared/components/Surface";
 import type { WeightEntry } from "@shared/types/api";
 import { formatDate } from "@shared/utils/date";
+import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
 type ChildProfileDetails = {
   institutionName?: string | null;
@@ -20,6 +22,9 @@ type ChildProfileDetails = {
 };
 
 export function ChildProfilePage() {
+  const { language, t } = useI18n();
+  const copy = getChildrenCopy(language).childProfile;
+  const common = getChildrenCopy(language).common;
   const { childId } = useParams<{ childId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -91,16 +96,17 @@ export function ChildProfilePage() {
   });
 
   if (!childId || isLoading || !child) {
-    return <p className="text-sm text-muted">Загрузка…</p>;
+    return <p className="text-sm text-muted">{common.loading}</p>;
   }
+  const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
 
   return (
     <div className="min-w-0 space-y-6">
       <ConfirmDialog
         isOpen={isDeleteConfirmOpen}
-        title={`Удалить ребёнка · ${child.name}`}
-        description="Профиль ребёнка будет удалён без возможности восстановления. Используй это только если карточка создана ошибочно."
-        confirmLabel={deleteMutation.isPending ? "Удаляем…" : "Удалить ребёнка"}
+        title={t(copy.deleteTitle, { name: child.name })}
+        description={copy.deleteDescription}
+        confirmLabel={deleteMutation.isPending ? copy.deleting : copy.deleteConfirm}
         confirmTone="danger"
         isPending={deleteMutation.isPending}
         onCancel={() => setIsDeleteConfirmOpen(false)}
@@ -110,8 +116,8 @@ export function ChildProfilePage() {
       />
       <PageIntro
         title={child.name}
-        subtitle="Основные данные ребёнка, вес и семейные заметки в одном месте."
-        eyebrow="Профиль ребёнка"
+        subtitle={copy.subtitle}
+        eyebrow={copy.eyebrow}
         hideOnMobile
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
@@ -119,7 +125,7 @@ export function ChildProfilePage() {
               to={`/children/${child.id}/illness?view=history`}
               className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
             >
-              История
+              {copy.history}
             </Link>
             <button
               type="button"
@@ -128,7 +134,7 @@ export function ChildProfilePage() {
               aria-expanded={isEditing}
               aria-controls="child-profile-edit-form"
             >
-              {isEditing ? "Свернуть форму" : "Редактировать профиль"}
+              {isEditing ? copy.collapseForm : copy.editProfile}
             </button>
           </div>
         }
@@ -145,48 +151,56 @@ export function ChildProfilePage() {
             onRequestDeleteConfirm={() => setIsDeleteConfirmOpen(true)}
             isSaving={updateMutation.isPending}
             isDeleting={deleteMutation.isPending}
+            copy={copy}
+            language={language}
           />
         </div>
       )}
 
       <Surface className="p-5 sm:p-6">
         <div className="mb-4">
-          <h2 className="app-card-title text-[1.08rem]">Основное</h2>
+          <h2 className="app-card-title text-[1.08rem]">{copy.basic}</h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <InfoLine label="Возраст" value={child.ageLabel ?? "Не указан"} />
+          <InfoLine label={copy.age} value={ageLabel ?? copy.ageMissing} />
           <InfoLine
-            label="Дата рождения"
-            value={child.birthDate ? formatDate(child.birthDate) : "Не указана"}
+            label={copy.birthDate}
+            value={child.birthDate ? formatDate(child.birthDate) : copy.birthDateMissing}
           />
           <InfoLine
-            label="Последний вес"
-            value={latestWeight ? formatWeightValue(latestWeight.valueKg) : "Пока нет записи"}
+            label={copy.latestWeight}
+            value={
+              latestWeight
+                ? formatWeightValue(latestWeight.valueKg, language)
+                : copy.latestWeightMissing
+            }
           />
         </div>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {child.allergies && <InfoLine label="Аллергии" value={child.allergies} />}
-          {child.notes && <InfoLine label="Заметки" value={child.notes} fullWidth />}
+          {child.allergies && <InfoLine label={copy.allergies} value={child.allergies} />}
+          {child.notes && <InfoLine label={copy.notes} value={child.notes} fullWidth />}
           {hasExtraContacts(child) && (
             <details className="soft-panel-muted rounded-[24px] px-4 py-4 sm:col-span-2">
               <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
-                Сад, врач и дополнительные контакты
+                {copy.contactsSummary}
               </summary>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 {child.institutionName && (
-                  <InfoLine label="Сад / школа" value={child.institutionName} />
+                  <InfoLine label={copy.institution} value={child.institutionName} />
                 )}
                 {child.institutionPhone && (
-                  <InfoLine label="Телефон организации" value={child.institutionPhone} />
+                  <InfoLine label={copy.institutionPhone} value={child.institutionPhone} />
                 )}
-                {child.doctorName && <InfoLine label="Врач" value={child.doctorName} />}
-                {child.doctorPhone && <InfoLine label="Телефон врача" value={child.doctorPhone} />}
+                {child.doctorName && <InfoLine label={copy.doctor} value={child.doctorName} />}
+                {child.doctorPhone && (
+                  <InfoLine label={copy.doctorPhone} value={child.doctorPhone} />
+                )}
               </div>
             </details>
           )}
           {!hasProfileDetails(child, latestWeight) && (
             <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:col-span-2">
-              <p className="text-sm text-muted">Дополнительные данные пока не заполнены.</p>
+              <p className="text-sm text-muted">{copy.noExtra}</p>
             </div>
           )}
         </div>
@@ -202,6 +216,8 @@ function EditChildProfileForm({
   onRequestDeleteConfirm,
   isSaving,
   isDeleting,
+  copy,
+  language,
 }: {
   child: {
     id: string;
@@ -224,6 +240,8 @@ function EditChildProfileForm({
   onRequestDeleteConfirm: () => void;
   isSaving: boolean;
   isDeleting: boolean;
+  copy: ReturnType<typeof getChildrenCopy>["childProfile"];
+  language: "ru" | "en";
 }) {
   const [draftName, setDraftName] = useState(child.name);
   const [draftBirthDate, setDraftBirthDate] = useState(child.birthDate ?? "");
@@ -258,76 +276,85 @@ function EditChildProfileForm({
       <Surface className="soft-hero border-primary/25 p-5 ring-1 ring-primary/10 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-[1.08rem]">Редактирование профиля</h2>
-            <p className="mt-1 text-sm text-muted">
-              Те же мягкие поля и ритм, что и на экране входа.
-            </p>
+            <h2 className="app-card-title text-[1.08rem]">{copy.form.title}</h2>
+            <p className="mt-1 text-sm text-muted">{copy.form.subtitle}</p>
           </div>
           {latestWeight && (
             <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
-              Последний вес: {formatWeightValue(latestWeight.valueKg)}
+              {copy.latestWeight}: {formatWeightValue(latestWeight.valueKg, language)}
             </span>
           )}
         </div>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px] xl:grid-cols-[minmax(0,1fr)_220px_220px]">
           <label className="block min-w-0 space-y-1.5">
-            <span className="soft-field-label">Имя</span>
+            <span className="soft-field-label">{copy.form.nameLabel}</span>
             <input
               type="text"
               value={draftName}
               onChange={(e) => setDraftName(e.target.value)}
               className="soft-input w-full px-4"
-              placeholder="Как зовут ребёнка"
+              placeholder={language === "ru" ? "Например: Миша" : "Example: Misha"}
             />
           </label>
           <label className="block space-y-1.5">
-            <span className="soft-field-label">Дата рождения</span>
+            <span className="soft-field-label">{copy.form.birthDateLabel}</span>
             <DateField
               value={draftBirthDate}
               onChange={setDraftBirthDate}
+              language={language}
               max={new Date().toISOString().slice(0, 10)}
               className="w-full"
             />
           </label>
           <label className="block space-y-1.5">
-            <span className="soft-field-label">Вес, кг</span>
+            <span className="soft-field-label">{copy.form.weightLabel}</span>
             <input
               type="number"
               min="0"
               step="0.1"
               value={draftWeight}
               onChange={(e) => setDraftWeight(e.target.value)}
-              placeholder="Например: 14.2"
+              placeholder={copy.form.weightPlaceholder}
               className="soft-input w-full px-4"
             />
             <p className="soft-field-hint">
               {latestWeight
-                ? `Сейчас в профиле: ${formatWeightValue(latestWeight.valueKg)}`
-                : "Если заполнить вес, он сохранится как последняя запись."}
+                ? `${copy.latestWeight}: ${formatWeightValue(latestWeight.valueKg, language)}`
+                : language === "ru"
+                  ? "Если заполнить вес, он сохранится как последняя запись."
+                  : "If you add the weight, it will be saved as the latest entry."}
             </p>
           </label>
           <div className="sm:col-span-2 xl:col-span-3 grid gap-3 sm:grid-cols-2">
-            <TextField label="Аллергии" value={allergies} onChange={setAllergies} />
-            <TextField label="Заметки" value={notes} onChange={setNotes} />
+            <TextField label={copy.form.allergiesLabel} value={allergies} onChange={setAllergies} />
+            <TextField label={copy.form.notesLabel} value={notes} onChange={setNotes} />
           </div>
           <details className="soft-panel sm:col-span-2 xl:col-span-3 rounded-[26px] p-4 sm:p-5">
             <summary className="cursor-pointer list-none text-sm font-medium tracking-[-0.02em] text-foreground">
-              Сад, врач и дополнительные контакты
+              {copy.contactsSummary}
             </summary>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <InputField
-                label="Сад / школа"
+                label={copy.form.institutionNameLabel}
                 value={institutionName}
                 onChange={setInstitutionName}
               />
               <InputField
-                label="Телефон организации"
+                label={copy.form.institutionPhoneLabel}
                 value={institutionPhone}
                 onChange={setInstitutionPhone}
               />
-              <InputField label="Врач" value={doctorName} onChange={setDoctorName} />
-              <InputField label="Телефон врача" value={doctorPhone} onChange={setDoctorPhone} />
+              <InputField
+                label={copy.form.doctorNameLabel}
+                value={doctorName}
+                onChange={setDoctorName}
+              />
+              <InputField
+                label={copy.form.doctorPhoneLabel}
+                value={doctorPhone}
+                onChange={setDoctorPhone}
+              />
             </div>
           </details>
           <div className="sm:col-span-2 xl:col-span-3 flex flex-wrap items-center gap-3 border-t border-border/70 pt-4">
@@ -355,7 +382,7 @@ function EditChildProfileForm({
               }
               className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
             >
-              {isSaving ? "Сохраняем…" : "Сохранить изменения"}
+              {isSaving ? copy.form.saving : copy.form.save}
             </button>
             <button
               type="button"
@@ -363,7 +390,7 @@ function EditChildProfileForm({
               disabled={isDeleting}
               className="soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:text-[0.92rem]"
             >
-              {isDeleting ? "Удаляем…" : "Удалить ребёнка"}
+              {isDeleting ? copy.deleting : copy.form.delete}
             </button>
           </div>
         </div>
@@ -420,11 +447,11 @@ function hasExtraContacts(child: {
   );
 }
 
-function formatWeightValue(valueKg: number): string {
-  return `${new Intl.NumberFormat("ru-RU", {
+function formatWeightValue(valueKg: number, language: "ru" | "en"): string {
+  return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
     minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
     maximumFractionDigits: 1,
-  }).format(valueKg)} кг`;
+  }).format(valueKg)} kg`;
 }
 
 function InputField({

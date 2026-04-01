@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from src.application.dto.auth import (
+    AccountResponseDto,
     AuthenticatedAccount,
     AuthResponseDto,
     AuthStateResponseDto,
@@ -11,6 +12,7 @@ from src.application.dto.auth import (
     LoginDto,
     RefreshDto,
     RegisterDto,
+    UpdateLanguageDto,
 )
 from src.application.services.base_auth_service import BaseAuthService
 from src.core.config import settings
@@ -153,6 +155,7 @@ class AuthService(BaseAuthService):
             display_name=(dto.display_name or "").strip() or login,
             relationship_label=(dto.relationship_label or "").strip() or None,
             phone=(dto.phone or "").strip() or None,
+            preferred_language="ru",
             family_role=family_role,
             push_before_reminder_minutes=10,
             cabinet_notify_10_days=True,
@@ -203,6 +206,7 @@ class AuthService(BaseAuthService):
             display_name=account.display_name,
             relationship_label=account.relationship_label,
             phone=account.phone,
+            preferred_language=account.preferred_language,
             family_role=account.family_role,
         )
 
@@ -263,6 +267,7 @@ class AuthService(BaseAuthService):
                 display_name=account.display_name,
                 relationship_label=account.relationship_label,
                 phone=account.phone,
+                preferred_language=account.preferred_language,
                 family_role=account.family_role,
                 push_before_reminder_minutes=account.push_before_reminder_minutes,
                 cabinet_notify_10_days=account.cabinet_notify_10_days,
@@ -311,6 +316,7 @@ class AuthService(BaseAuthService):
                 display_name=account.display_name,
                 relationship_label=account.relationship_label,
                 phone=account.phone,
+                preferred_language=account.preferred_language,
                 family_role=invite.family_role,
                 push_before_reminder_minutes=account.push_before_reminder_minutes,
                 cabinet_notify_10_days=account.cabinet_notify_10_days,
@@ -336,6 +342,33 @@ class AuthService(BaseAuthService):
         await self._session_repo.delete_by_account_id(updated_account.id)
         await self._family_repo.delete(old_family_id)
         return await self._create_auth_response(updated_account, family, remember_me=False)
+
+    async def update_language(self, account_id: UUID, dto: UpdateLanguageDto) -> AccountResponseDto:
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None:
+            raise UnauthorizedError()
+
+        updated = await self._account_repo.update(
+            Account(
+                id=account.id,
+                login=account.login,
+                email=account.email,
+                password_hash=account.password_hash,
+                family_id=account.family_id,
+                display_name=account.display_name,
+                relationship_label=account.relationship_label,
+                phone=account.phone,
+                preferred_language=dto.preferred_language,
+                family_role=account.family_role,
+                push_before_reminder_minutes=account.push_before_reminder_minutes,
+                cabinet_notify_10_days=account.cabinet_notify_10_days,
+                cabinet_notify_7_days=account.cabinet_notify_7_days,
+                cabinet_notify_3_days=account.cabinet_notify_3_days,
+                cabinet_notify_1_day=account.cabinet_notify_1_day,
+                created_at=account.created_at,
+            )
+        )
+        return self._account_to_response(updated)
 
     async def _ensure_can_leave_current_family(self, account: Account) -> None:
         family_accounts = await self._account_repo.list_by_family_id(account.family_id)

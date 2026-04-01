@@ -185,9 +185,12 @@ export function getEpisodeMedicationLead(
   return getPrioritizedMedicationPlanItems(plans, administrations, medicines, now)[0] ?? null;
 }
 
-export function getAdministrationActorLabel(administration: AdministrationEvent) {
+export function getAdministrationActorLabel(
+  administration: AdministrationEvent,
+  language: "ru" | "en" = "ru"
+) {
   const actor = administration.administeredByNameSnapshot?.trim();
-  return actor ? `Дал(а): ${actor}` : null;
+  return actor ? `${language === "ru" ? "Дал(а)" : "Given by"}: ${actor}` : null;
 }
 
 export function formatRelativeDateTime(date: Date, now = new Date()) {
