@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Sora:wght@600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -771,13 +771,50 @@ p {
     }
   }
 
-  .app-brand-text {
-    font-family: var(--font-display);
-    font-size: 1.08rem;
+  .brand-wordmark {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.06rem;
+    font-family: "Sora", "Manrope", var(--font-display);
     font-weight: 800;
     line-height: 1;
+    white-space: nowrap;
+    text-transform: none;
+  }
+
+  .brand-wordmark-pill {
+    color: #4e4a61;
+    text-shadow: 0 1px 0 rgb(255 255 255 / 0.22);
+  }
+
+  .brand-wordmark-path {
+    background: linear-gradient(
+      145deg,
+      #f08ab8 0%,
+      #cc7fd3 34%,
+      color-mix(in srgb, var(--color-primary) 92%, #7c3aed) 68%,
+      #6b4fd3 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 10px 18px rgb(111 92 192 / 0.16));
+  }
+
+  .brand-wordmark-inline {
+    font-size: 1em;
     letter-spacing: -0.055em;
-    color: color-mix(in srgb, var(--color-primary) 68%, var(--color-foreground));
+    vertical-align: baseline;
+  }
+
+  .brand-wordmark-page-title {
+    font-size: 1em;
+    letter-spacing: -0.07em;
+  }
+
+  .app-brand-text {
+    font-size: 1.18rem;
+    letter-spacing: -0.05em;
   }
 
   .app-kicker {
@@ -1842,26 +1879,23 @@ p {
   .landing-hero-reset-brandmark {
     display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.92rem;
     min-width: 0;
     text-decoration: none;
   }
 
   .landing-hero-reset-logo {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.9rem;
+    height: 2.9rem;
     flex: 0 0 auto;
-    border-radius: 1rem;
-    box-shadow: 0 10px 18px -16px rgb(var(--color-shadow) / 0.22);
+    border-radius: 1.15rem;
+    box-shadow: 0 14px 24px -18px rgb(var(--color-shadow) / 0.24);
   }
 
   .landing-hero-reset-brand {
     margin: 0;
-    font-family: var(--landing-font-heading);
-    font-size: 0.96rem;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: color-mix(in srgb, var(--color-primary) 58%, var(--color-foreground));
+    font-size: 1.28rem;
+    letter-spacing: -0.055em;
   }
 
   .landing-hero-reset-title {
@@ -2457,18 +2491,18 @@ p {
     .landing-hero-reset-brandmark {
       flex: 1 1 auto;
       min-width: 0;
-      gap: 0.65rem;
+      gap: 0.72rem;
     }
 
     .landing-hero-reset-logo {
-      width: 2.35rem;
-      height: 2.35rem;
-      border-radius: 0.9rem;
+      width: 2.55rem;
+      height: 2.55rem;
+      border-radius: 1rem;
     }
 
     .landing-hero-reset-brand {
-      font-size: 0.98rem;
-      letter-spacing: -0.03em;
+      font-size: 1.14rem;
+      letter-spacing: -0.072em;
     }
 
     .landing-theme-toggle {
@@ -2631,20 +2665,15 @@ p {
   .auth-v3-header-brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.7rem;
+    gap: 0.82rem;
     min-width: 0;
     text-decoration: none;
   }
 
   .auth-v3-header-brand-text {
-    display: inline-block;
     min-width: 0;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    color: var(--auth-v3-text);
-    white-space: nowrap;
+    font-size: 1.12rem;
+    letter-spacing: -0.045em;
   }
 
   .auth-v3-header-actions {
@@ -3105,8 +3134,8 @@ p {
     }
 
     .app-mobile-header .app-brand-text {
-      font-size: 0.98rem !important;
-      letter-spacing: -0.04em;
+      font-size: 1.08rem !important;
+      letter-spacing: -0.05em;
     }
 
     .app-mobile-header__actions {
@@ -3243,18 +3272,18 @@ p {
     .auth-v3-header-brand {
       flex: 1 1 auto;
       min-width: 0;
-      gap: 0.65rem;
+      gap: 0.72rem;
     }
 
     .auth-v3-header-brand img {
-      height: 2.35rem;
-      width: 2.35rem;
-      border-radius: 0.9rem;
+      height: 2.55rem;
+      width: 2.55rem;
+      border-radius: 1rem;
     }
 
     .auth-v3-header-brand-text {
-      font-size: 0.98rem;
-      letter-spacing: -0.04em;
+      font-size: 1.06rem;
+      letter-spacing: -0.05em;
     }
 
     .auth-v3-header-actions {

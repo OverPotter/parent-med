@@ -1,4 +1,4 @@
-# Parent Med — см. make help
+# PillPath — см. make help
 
 COMPOSE ?= docker compose
 COMPOSE_ENV_FILE := $(shell test -f frontend/.env && echo --env-file frontend/.env)
@@ -9,7 +9,7 @@ DOCKER_COMPOSE := $(COMPOSE) $(COMPOSE_ENV_FILE) -f docker-compose.yml
 .PHONY: dev-backend dev-frontend shell-backend shell-db backup init
 
 help:
-	@echo "Parent Med"
+	@echo "PillPath"
 	@echo "  make up / up-d     — docker: postgres, backend, frontend, hitkeep (8080)"
 	@echo "  make down / down-v — остановка; -v удалит volumes (БД, логи, hitkeep)"
 	@echo "  make logs          — логи всех сервисов; logs-backend / logs-hitkeep — один"
@@ -64,7 +64,7 @@ migrate-downgrade:
 	$(DOCKER_COMPOSE) exec backend uv run alembic downgrade -1
 
 shell-db:
-	$(DOCKER_COMPOSE) exec postgres psql -U parent_med_user parent_med
+	$(DOCKER_COMPOSE) exec postgres psql -U pillpath_user pillpath
 
 dev-backend:
 	cd backend && uv sync && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
@@ -87,7 +87,7 @@ shell-backend:
 	$(DOCKER_COMPOSE) exec backend /bin/bash
 
 backup:
-	$(DOCKER_COMPOSE) exec postgres pg_dump -U parent_med_user parent_med > backup_$$(date +%Y%m%d_%H%M%S).sql
+	$(DOCKER_COMPOSE) exec postgres pg_dump -U pillpath_user pillpath > backup_$$(date +%Y%m%d_%H%M%S).sql
 
 init:
 	cp backend/.env.example backend/.env 2>/dev/null || true

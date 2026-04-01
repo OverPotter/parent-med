@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { login, register } from "@shared/api/auth";
 import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
+import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
 import { useAppStore } from "@shared/store/useAppStore";
 import { Link, useSearchParams } from "react-router-dom";
@@ -294,9 +295,9 @@ export function AuthPage() {
               <img
                 src="/pwa-icon.svg"
                 alt=""
-                className="h-9 w-9 rounded-2xl shadow-[0_16px_32px_rgba(138,123,191,0.18)]"
+                className="h-10 w-10 rounded-[1.15rem] shadow-[0_16px_32px_rgba(138,123,191,0.18)]"
               />
-              <span className="auth-v3-header-brand-text">Parent Med</span>
+              <BrandWordmark className="auth-v3-header-brand-text" />
             </Link>
             <div className="auth-v3-header-actions">
               <button

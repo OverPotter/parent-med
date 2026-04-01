@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
 import { useAppStore } from "@shared/store/useAppStore";
+
+const landingBrandName = "PillPath";
 
 const heroCards = [
   {
@@ -102,9 +105,9 @@ export function LandingPage() {
           <section className="landing-hero-reset">
             <div className="landing-hero-reset-inner">
               <div className="landing-hero-reset-topline">
-                <Link to="/" className="landing-hero-reset-brandmark" aria-label="Parent Med">
+                <Link to="/" className="landing-hero-reset-brandmark" aria-label={landingBrandName}>
                   <img src="/pwa-icon.png" alt="" className="landing-hero-reset-logo" />
-                  <span className="landing-hero-reset-brand">Parent Med</span>
+                  <BrandWordmark className="landing-hero-reset-brand" ariaLabel={landingBrandName} />
                 </Link>
                 <button
                   type="button"
@@ -120,9 +123,10 @@ export function LandingPage() {
               </p>
               <h1 className="landing-hero-reset-title">Всё важное о ребёнке в одном месте</h1>
               <p className="landing-hero-reset-lead">
-                Parent Med помогает семье вести наблюдение за ребёнком, держать под рукой лекарства,
-                домашнюю аптечку и важные записи в одном месте, чтобы не терять детали между
-                сообщениями, заметками и памятью.
+                <BrandWordmark className="brand-wordmark-inline" ariaLabel={landingBrandName} />{" "}
+                помогает семье вести наблюдение за ребёнком, держать под рукой лекарства, домашнюю
+                аптечку и важные записи в одном месте, чтобы не терять детали между сообщениями,
+                заметками и памятью.
               </p>
 
               <div className="landing-hero-reset-actions">
@@ -159,7 +163,7 @@ export function LandingPage() {
                   Три экрана, по которым сразу понятен рабочий сценарий
                 </h2>
                 <p className="mt-4 max-w-xl text-sm leading-7 text-muted sm:text-base">
-                  Parent Med показывает не отдельные разрозненные записи, а целый рабочий сценарий:
+                  {landingBrandName} показывает не отдельные разрозненные записи, а целый рабочий сценарий:
                   текущее наблюдение, историю записей и быстрый вход в профиль ребёнка.
                 </p>
                 <ul className="mt-6 space-y-3">
@@ -184,7 +188,7 @@ export function LandingPage() {
                 </ul>
               </div>
 
-              <div className="landing-phone-gallery" aria-label="Скриншоты Parent Med">
+              <div className="landing-phone-gallery" aria-label={`Скриншоты ${landingBrandName}`}>
                 <ScreenshotCard
                   src="/landing/IMG_7138.PNG"
                   alt="Экран текущего наблюдения по ребёнку"
@@ -233,7 +237,9 @@ export function LandingPage() {
               </Surface>
 
               <Surface className="landing-comparison-card landing-comparison-card-primary p-5 sm:p-6">
-                <p className="landing-comparison-title">Когда всё собрано в Parent Med</p>
+                <p className="landing-comparison-title">
+                  Когда всё собрано в {landingBrandName}
+                </p>
                 <ul className="mt-4 space-y-3">
                   {comparison.newWay.map((point) => (
                     <li key={point} className="landing-comparison-item">
@@ -254,11 +260,11 @@ export function LandingPage() {
                   Не просто записи, а понятный сценарий для всей семьи
                 </h2>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
-                  Parent Med нужен не для хранения отдельных заметок, а для того, чтобы вся семья
+                  {landingBrandName} нужен не для хранения отдельных заметок, а для того, чтобы вся семья
                   быстрее понимала состояние ребёнка и следующие действия.
                 </p>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-                  Помимо записей и наблюдения, в Parent Med под рукой остаётся и домашняя аптечка.
+                  Помимо записей и наблюдения, в {landingBrandName} под рукой остаётся и домашняя аптечка.
                 </p>
               </div>
 
@@ -281,7 +287,7 @@ export function LandingPage() {
             <div className="landing-section-header px-5 py-5 sm:px-8 sm:py-7">
               <p className="landing-section-label">Установка на телефон</p>
               <h2 className="landing-section-title mt-2">
-                Parent Med можно добавить на домашний экран
+                {landingBrandName} можно добавить на домашний экран
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
                 Приложение уже работает как PWA, поэтому устанавливается через браузер без App Store
@@ -293,7 +299,7 @@ export function LandingPage() {
               <InstallStepsCard
                 title="iPhone / iPad"
                 steps={[
-                  "Откройте Parent Med в Safari.",
+                  `Откройте ${landingBrandName} в Safari.`,
                   "Нажмите «Поделиться».",
                   "Выберите «На экран Домой».",
                   "Подтвердите добавление.",
@@ -302,7 +308,7 @@ export function LandingPage() {
               <InstallStepsCard
                 title="Android"
                 steps={[
-                  "Откройте Parent Med в Chrome.",
+                  `Откройте ${landingBrandName} в Chrome.`,
                   "Нажмите меню браузера.",
                   "Выберите «Установить приложение» или «Добавить на главный экран».",
                   "Подтвердите установку.",

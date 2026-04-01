@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { Surface } from "@shared/components/Surface";
 
 const guideSections = [
@@ -107,7 +108,12 @@ export function ClientHomePage() {
 
       <HelpSection
         title="Установка на телефон"
-        description="Parent Med уже настроен как PWA, поэтому приложение можно добавить на домашний экран прямо из браузера."
+        description={
+          <>
+            <BrandWordmark className="brand-wordmark-inline" /> уже настроен как PWA, поэтому
+            приложение можно добавить на домашний экран прямо из браузера.
+          </>
+        }
       >
         <div className="grid gap-4 lg:grid-cols-2">
           <InstallCard
@@ -141,7 +147,7 @@ function HelpSection({
   children,
 }: {
   title: string;
-  description: string;
+  description: ReactNode;
   action?: { to: string; label: string };
   children: ReactNode;
 }) {

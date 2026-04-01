@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🏥 Starting Parent Med Backend..."
+echo "🏥 Starting PillPath Backend..."
 
 echo "⏳ Waiting for PostgreSQL..."
 python3 << 'EOF'

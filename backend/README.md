@@ -1,4 +1,4 @@
-# Parent Med Backend (MVP)
+# PillPath Backend (MVP)
 
 Бэкенд в стиле AGENT.md: умная аптечка и ведение болезни ребёнка.
 

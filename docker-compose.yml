@@ -7,23 +7,23 @@ services:
   # ========== PostgreSQL ==========
   postgres:
     image: postgres:15-alpine
-    container_name: parent_med_postgres
+    container_name: pillpath_postgres
     environment:
-      POSTGRES_DB: parent_med
-      POSTGRES_USER: parent_med_user
-      POSTGRES_PASSWORD: parent_med_secure_password
+      POSTGRES_DB: pillpath
+      POSTGRES_USER: pillpath_user
+      POSTGRES_PASSWORD: pillpath_secure_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U parent_med_user -d parent_med"]
+      test: ["CMD-SHELL", "pg_isready -U pillpath_user -d pillpath"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - parent_med_network
+      - pillpath_network
     logging: *default-logging
 
   # ========== Backend (FastAPI) ==========
@@ -31,11 +31,11 @@ services:
     build:
       context: ./backend
       dockerfile: docker/Dockerfile
-    container_name: parent_med_backend
+    container_name: pillpath_backend
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql+asyncpg://parent_med_user:parent_med_secure_password@postgres:5432/parent_med
+      DATABASE_URL: postgresql+asyncpg://pillpath_user:pillpath_secure_password@postgres:5432/pillpath
     ports:
       - "8000:8000"
     depends_on:
@@ -46,7 +46,7 @@ services:
       - ./backend/alembic:/app/alembic:ro
       - backend_logs:/app/logs
     networks:
-      - parent_med_network
+      - pillpath_network
     logging: *default-logging
 
   # ========== Frontend (React + Vite) ==========
@@ -58,21 +58,21 @@ services:
         VITE_HITKEEP_SCRIPT_URL: ${VITE_HITKEEP_SCRIPT_URL:-}
         VITE_HITKEEP_USER_HASH_SALT: ${VITE_HITKEEP_USER_HASH_SALT:-}
         VITE_API_URL: ${VITE_API_URL:-}
-    container_name: parent_med_frontend
+    container_name: pillpath_frontend
     ports:
       - "3000:80"
     depends_on:
       - backend
     networks:
-      - parent_med_network
+      - pillpath_network
     logging: *default-logging
 
   hitkeep:
     build:
       context: ./docker/hitkeep
       dockerfile: Dockerfile
-    image: parent_med_hitkeep:local
-    container_name: parent_med_hitkeep
+    image: pillpath_hitkeep:local
+    container_name: pillpath_hitkeep
     ports:
       - "8080:8080"
     environment:
@@ -82,7 +82,7 @@ services:
     volumes:
       - hitkeep_data:/var/lib/hitkeep/data
     networks:
-      - parent_med_network
+      - pillpath_network
     logging: *default-logging
 
 volumes:
@@ -91,5 +91,5 @@ volumes:
   hitkeep_data:
 
 networks:
-  parent_med_network:
+  pillpath_network:
     driver: bridge

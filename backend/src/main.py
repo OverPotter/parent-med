@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="Parent Med API",
+        title="PillPath API",
         description="Умная аптечка и ведение болезни ребёнка (MVP)",
         lifespan=lifespan,
     )

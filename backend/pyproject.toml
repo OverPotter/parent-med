@@ -1,5 +1,5 @@
 [project]
-name = "parent-med-backend"
+name = "pillpath-backend"
 version = "0.1.0"
 description = "Backend: умная аптечка и ведение болезни ребёнка (MVP)"
 readme = "README.md"

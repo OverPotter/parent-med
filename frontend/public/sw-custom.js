@@ -9,7 +9,7 @@ self.addEventListener("push", (event) => {
     };
   }
 
-  const title = payload.title || "Parent Med";
+  const title = payload.title || "PillPath";
   const options = {
     body: payload.body || "",
     icon: "/pwa-192x192.png",

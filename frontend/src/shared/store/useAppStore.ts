@@ -143,7 +143,7 @@ export const useAppStore = create<AppState>()(
         }),
     }),
     {
-      name: "parent-med-app",
+      name: "pillpath-app",
       partialize: (s) => ({
         theme: s.theme,
         medicationIntervalUnit: s.medicationIntervalUnit,

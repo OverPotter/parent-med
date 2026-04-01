@@ -14,8 +14,8 @@ export function PageIntro({
   compactOnMobile = false,
   hideOnMobile = false,
 }: {
-  title: string;
-  subtitle?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
   action?: ReactNode;
   eyebrow?: string;
   className?: string;

@@ -8,6 +8,7 @@ import type { CSSProperties } from "react";
 import { logout } from "@shared/api/auth";
 import { useAppStore } from "@shared/store/useAppStore";
 import { BottomTabBar } from "./BottomTabBar";
+import { BrandWordmark } from "./BrandWordmark";
 import { TopNav, type LayoutNavLink } from "./TopNav";
 import { V3BackgroundDoodles } from "./V3BackgroundDoodles";
 
@@ -140,12 +141,10 @@ export function Layout({
                       <img
                         src="/pwa-icon.svg"
                         alt=""
-                        className="app-mobile-header__logo h-10 w-10 rounded-[18px]"
+                        className="app-mobile-header__logo h-11 w-11 rounded-[20px]"
                       />
                       <div className="min-w-0">
-                        <span className="app-brand-text block truncate text-[1.04rem]">
-                          Parent Med
-                        </span>
+                        <BrandWordmark className="app-brand-text truncate" />
                         <span className="hidden truncate text-[11px] text-muted sm:block">
                           Семейный кабинет здоровья
                         </span>
@@ -210,8 +209,8 @@ export function Layout({
             <div className="soft-nav-shell rounded-[32px] px-4 py-3.5">
               <div className="flex items-center justify-between gap-5">
                 <Link to="/" className="inline-flex min-w-0 items-center gap-3">
-                  <img src="/pwa-icon.svg" alt="" className="h-9 w-9 rounded-2xl" />
-                  <p className="app-brand-text truncate text-[1.12rem]">Parent Med</p>
+                  <img src="/pwa-icon.svg" alt="" className="h-10 w-10 rounded-[1.15rem]" />
+                  <BrandWordmark className="app-brand-text truncate" />
                 </Link>
 
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">

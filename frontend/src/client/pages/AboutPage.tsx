@@ -1,3 +1,4 @@
+import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 
@@ -5,7 +6,7 @@ export function AboutPage() {
   return (
     <div className="min-w-0 space-y-6">
       <PageIntro
-        title="Parent Med"
+        title={<BrandWordmark className="brand-wordmark-page-title" />}
         subtitle="Семейный кабинет для детей, домашней аптечки и истории болезни. Это не ежедневный рабочий экран, поэтому описание вынесено сюда отдельно."
         eyebrow="О приложении"
         hideOnMobile
@@ -33,8 +34,8 @@ export function AboutPage() {
             Приложение можно установить как иконку на домашний экран
           </h2>
           <p className="app-subtitle mt-3 max-w-2xl text-sm">
-            Parent Med уже настроен как PWA. Установка идёт через браузер без App Store и Google
-            Play.
+            <BrandWordmark className="brand-wordmark-inline" /> уже настроен как PWA. Установка
+            идёт через браузер без App Store и Google Play.
           </p>
         </div>
 
