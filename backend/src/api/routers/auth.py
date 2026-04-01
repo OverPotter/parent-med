@@ -6,6 +6,7 @@ from src.api.deps import get_auth_service
 from src.api.deps.auth import get_current_account
 from src.api.utils.auth_cookies import clear_auth_cookies, set_auth_cookies
 from src.application.dto.auth import (
+    AccountResponseDto,
     AuthenticatedAccount,
     AuthResponseDto,
     AuthStateResponseDto,
@@ -13,7 +14,6 @@ from src.application.dto.auth import (
     LoginDto,
     RefreshDto,
     RegisterDto,
-    AccountResponseDto,
     UpdateLanguageDto,
 )
 from src.application.services.base_auth_service import BaseAuthService
