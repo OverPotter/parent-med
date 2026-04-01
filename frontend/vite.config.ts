@@ -135,7 +135,10 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 4173,
     strictPort: true,
-    allowedHosts: ["pillpath-production-frontend.up.railway.app"],
+    allowedHosts: [
+      "parent-med-production-frontend.up.railway.app",
+      "pillpath-production-frontend.up.railway.app",
+    ],
     https: hasDevHttpsCert
       ? {
           key: fs.readFileSync(devKeyPath),
