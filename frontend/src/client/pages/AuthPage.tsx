@@ -10,6 +10,7 @@ import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
 import { useI18n } from "@shared/hooks/useI18n";
+import type { AppLanguage } from "@shared/i18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -86,6 +87,28 @@ function CheckIcon() {
       />
     </svg>
   );
+}
+
+function getLocalizedAuthError(
+  detail: string | undefined,
+  language: AppLanguage,
+  fallback: string
+) {
+  if (!detail) {
+    return fallback;
+  }
+
+  if (language === "ru") {
+    return detail;
+  }
+
+  const knownMessages: Record<string, string> = {
+    "Неверный логин или пароль": "Invalid login or password.",
+    "Аккаунт с таким логином уже существует": "An account with this login already exists.",
+    "Аккаунт с таким email уже существует": "An account with this email already exists.",
+  };
+
+  return knownMessages[detail] ?? fallback;
 }
 
 function MoonIcon() {
@@ -170,7 +193,7 @@ function AuthField({
 }
 
 export function AuthPage() {
-  const { copy } = useI18n();
+  const { copy, language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedMode = searchParams.get("mode");
   const [mode, setMode] = useState<Mode>(requestedMode === "login" ? "login" : "register");
@@ -201,7 +224,9 @@ export function AuthPage() {
       trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "auth_page" });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? copy.auth.errors.loginFailed);
+      setError(
+        getLocalizedAuthError(err.response?.data?.detail, language, copy.auth.errors.loginFailed)
+      );
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "login",
         message: normalizeClientError(err),
@@ -225,7 +250,9 @@ export function AuthPage() {
       trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "auth_page" });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? copy.auth.errors.registerFailed);
+      setError(
+        getLocalizedAuthError(err.response?.data?.detail, language, copy.auth.errors.registerFailed)
+      );
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "register",
         message: normalizeClientError(err),
@@ -311,19 +338,22 @@ export function AuthPage() {
                 aria-label={
                   theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel
                 }
-                title={
-                  theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel
-                }
+                title={theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel}
               >
                 <span aria-hidden="true">{theme === "light" ? <MoonIcon /> : <SunIcon />}</span>
-                <span>
+                <span className="auth-v3-theme-button-text">
                   {theme === "light" ? copy.common.themeDarkText : copy.common.themeLightText}
                 </span>
               </button>
-              <Link to="/" className="auth-v3-ghost-button">
+              <Link to="/" className="auth-v3-ghost-button auth-v3-home-link">
                 {copy.common.goHome}
               </Link>
             </div>
+          </div>
+          <div className="auth-v3-mobile-home-wrap">
+            <Link to="/" className="auth-v3-ghost-button auth-v3-mobile-home-link">
+              {copy.common.goHome}
+            </Link>
           </div>
 
           <div className="auth-v3-hero">
@@ -332,11 +362,7 @@ export function AuthPage() {
           </div>
 
           <section className="auth-v3-panel auth-v3-panel-compact">
-            <div
-              className="auth-v3-toggle"
-              role="tablist"
-              aria-label={copy.auth.page.toggleLabel}
-            >
+            <div className="auth-v3-toggle" role="tablist" aria-label={copy.auth.page.toggleLabel}>
               <button
                 type="button"
                 onClick={() => switchMode("login")}
@@ -364,7 +390,9 @@ export function AuthPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="auth-v3-section-title">
-                      {mode === "login" ? copy.auth.page.loginCardTitle : copy.auth.page.registerCardTitle}
+                      {mode === "login"
+                        ? copy.auth.page.loginCardTitle
+                        : copy.auth.page.registerCardTitle}
                     </p>
                     <p className="auth-v3-section-copy">
                       {isRegisterMode
@@ -376,7 +404,9 @@ export function AuthPage() {
 
                 <div className="mt-5 space-y-4">
                   <AuthField
-                    label={mode === "login" ? copy.auth.fields.login : copy.auth.fields.loginForEntry}
+                    label={
+                      mode === "login" ? copy.auth.fields.login : copy.auth.fields.loginForEntry
+                    }
                     value={loginValue}
                     onChange={setLoginValue}
                     placeholder={
@@ -476,9 +506,7 @@ export function AuthPage() {
               {isRegisterMode ? (
                 <details className="auth-v3-secondary-card">
                   <summary className="auth-v3-summary">{copy.auth.page.extraProfileFields}</summary>
-                  <p className="auth-v3-section-copy mt-2">
-                    {copy.auth.page.extraProfileCopy}
-                  </p>
+                  <p className="auth-v3-section-copy mt-2">{copy.auth.page.extraProfileCopy}</p>
                   <div className="mt-4 space-y-4">
                     <AuthField
                       label={copy.auth.fields.email}
@@ -541,9 +569,7 @@ export function AuthPage() {
                 {submitLabel}
               </button>
 
-              <p className="auth-v3-footer-note">
-                {copy.auth.page.invitationNote}
-              </p>
+              <p className="auth-v3-footer-note">{copy.auth.page.invitationNote}</p>
             </form>
           </section>
         </section>

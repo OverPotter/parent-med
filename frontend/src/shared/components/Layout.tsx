@@ -180,21 +180,14 @@ export function Layout({
                       >
                         {theme === "light" ? <MoonIcon /> : <SunIcon />}
                       </span>
-                      <span className="text-xs font-semibold">{themeToggleText}</span>
+                      <span className="app-mobile-header__theme-text text-xs font-semibold">
+                        {themeToggleText}
+                      </span>
                     </button>
-                    {accountLogin && (
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
-                      >
-                        {copy.common.logout}
-                      </button>
-                    )}
                   </div>
                 </div>
                 {(showCurrentFamily && currentFamilyName) || accountLogin ? (
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="app-mobile-header__meta flex flex-wrap items-center gap-2">
                     {showCurrentFamily && currentFamilyName ? (
                       <span className="soft-pill inline-flex max-w-full items-center truncate rounded-full px-3.5 py-1.5 text-[11px]">
                         {currentFamilyName}
@@ -204,6 +197,15 @@ export function Layout({
                       <span className="soft-pill inline-flex max-w-[11rem] items-center truncate rounded-full px-3.5 py-1.5 text-[11px]">
                         {accountLabel}
                       </span>
+                    ) : null}
+                    {accountLogin ? (
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="app-mobile-header__logout soft-button-secondary inline-flex min-h-[2.25rem] items-center justify-center rounded-full px-3.5 py-1.5 text-[11px]"
+                      >
+                        {copy.common.logout}
+                      </button>
                     ) : null}
                   </div>
                 ) : null}

@@ -1,11 +1,14 @@
 import { useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
+import { labelForRoute, tWorkspaceIntro } from "@client/i18n/workspaceIntro";
 import { useClientStartRoute } from "@client/hooks/useClientStartRoute";
 import { AnalyticsEvents, trackEvent } from "@shared/analytics";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { useIsDesktop } from "@shared/hooks/useIsDesktop";
 
 export function ClientStartPage() {
+  const { language } = useI18n();
   const hasSeenWorkspaceIntro = useAppStore((s) => s.hasSeenWorkspaceIntro);
   const isDesktop = useIsDesktop();
   const { isResolving, startRoute, hasFamily, hasChildren, hasActiveEpisode } =
@@ -31,7 +34,11 @@ export function ClientStartPage() {
     }
 
     if (isResolving) {
-      return <div className="py-8 text-sm text-muted">Открываем рабочий раздел…</div>;
+      return (
+        <div className="py-8 text-sm text-muted">
+          {tWorkspaceIntro(language, "openingWorkspace")}
+        </div>
+      );
     }
 
     return <Navigate to={startRoute} replace />;
@@ -42,7 +49,13 @@ export function ClientStartPage() {
   }
 
   if (isResolving) {
-    return <div className="py-8 text-sm text-muted">Открываем рабочий раздел…</div>;
+    return (
+      <div className="py-8 text-sm text-muted">
+        {language === "ru"
+          ? tWorkspaceIntro(language, "openingWorkspace")
+          : `Opening ${labelForRoute(startRoute, language)}…`}
+      </div>
+    );
   }
 
   return <Navigate to={startRoute} replace />;

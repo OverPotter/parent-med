@@ -11,6 +11,8 @@ import {
 import { DisclosureHeader } from "@shared/components/DisclosureHeader";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
+import { useI18n } from "@shared/hooks/useI18n";
+import type { AppLanguage } from "@shared/i18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import {
   getPushSupportIssue,
@@ -22,7 +24,133 @@ import {
   withTimeout,
 } from "@shared/utils/pushNotifications";
 
+const accountCopy = {
+  ru: {
+    pushConfigCheckFailed: "Не удалось быстро проверить настройки push на сервере.",
+    reminderSaveFailed: "Не удалось сохранить время дополнительного напоминания.",
+    devicePushCheckFailed: "Не удалось быстро проверить push на этом устройстве.",
+    passwordUpdated: "Пароль обновлён.",
+    passwordChangeFailed: "Не удалось сменить пароль.",
+    pushServerNotReady: "Push-уведомления ещё не настроены на сервере.",
+    pushUnsupported: "На этом устройстве web push недоступен.",
+    permissionTimeout: "Браузер не завершил запрос разрешения на уведомления.",
+    permissionDenied: "Браузер не дал разрешение на уведомления.",
+    subscribeTimeout: "Не удалось завершить подписку устройства на push.",
+    serverAcceptFailed: "Сервер не принял подписку устройства.",
+    enablePushFailed: "Не удалось включить уведомления на этом устройстве.",
+    disablePushFailed: "Не удалось отключить уведомления.",
+    fillAllPasswordFields: "Заполни все поля пароля.",
+    passwordsMismatch: "Новый пароль и подтверждение не совпадают.",
+    passwordTooShort: "Новый пароль должен быть не короче 6 символов.",
+    title: "Аккаунт",
+    subtitle: "Личные настройки, уведомления и безопасность.",
+    profile: "Профиль",
+    familyName: "Имя в семье",
+    login: "Логин",
+    notSet: "Не указано",
+    familyRole: "Роль в семье",
+    owner: "Владелец",
+    member: "Участник",
+    changePassword: "Сменить пароль",
+    changePasswordHint: "Открывается только когда нужно, чтобы не перегружать настройки.",
+    currentPassword: "Текущий пароль",
+    newPassword: "Новый пароль",
+    confirmNewPassword: "Повтори новый пароль",
+    saving: "Сохраняем…",
+    updatePassword: "Обновить пароль",
+    medicationPlans: "Планы лекарства",
+    medicationPlansHint:
+      "Как показывать и вводить интервал в планах по времени: в часах или в минутах.",
+    hours: "Часы",
+    minutes: "Минуты",
+    notifications: "Уведомления",
+    notificationsHint:
+      "Одно уведомление приходит всегда, когда препарат уже можно дать. Дополнительно можно выбрать раннее напоминание заранее.",
+    pushServerMissing: "Серверная отправка push пока не настроена. Нужны VAPID-ключи на backend.",
+    disabling: "Отключаем…",
+    enabling: "Подключаем…",
+    checkingServer: "Проверяем сервер…",
+    checking: "Проверяем…",
+    disableNotifications: "Выключить уведомления",
+    enableNotifications: "Включить уведомления",
+    earlyReminder: "Раннее напоминание",
+    earlyReminderHint:
+      "Дополнительное уведомление заранее. Основное уведомление в момент следующей дозы остаётся всегда.",
+    minShort: "мин",
+    cabinetReminders: "Напоминания по аптечке",
+    cabinetRemindersHint:
+      "Отдельные push-напоминания по сроку годности или сроку после вскрытия. Напоминание за 1 день приходит всегда.",
+    days10: "За 10 дней",
+    days7: "За 7 дней",
+    days3: "За 3 дня",
+  },
+  en: {
+    pushConfigCheckFailed: "Could not quickly verify push settings on the server.",
+    reminderSaveFailed: "Could not save the advance reminder time.",
+    devicePushCheckFailed: "Could not quickly verify push on this device.",
+    passwordUpdated: "Password updated.",
+    passwordChangeFailed: "Could not change the password.",
+    pushServerNotReady: "Push notifications are not configured on the server yet.",
+    pushUnsupported: "Web push is not available on this device.",
+    permissionTimeout: "The browser did not finish the notification permission request.",
+    permissionDenied: "The browser did not grant notification permission.",
+    subscribeTimeout: "Could not finish subscribing this device to push.",
+    serverAcceptFailed: "The server did not accept the device subscription.",
+    enablePushFailed: "Could not enable notifications on this device.",
+    disablePushFailed: "Could not disable notifications.",
+    fillAllPasswordFields: "Fill in all password fields.",
+    passwordsMismatch: "New password and confirmation do not match.",
+    passwordTooShort: "The new password must be at least 6 characters long.",
+    title: "Account",
+    subtitle: "Personal settings, notifications and security.",
+    profile: "Profile",
+    familyName: "Family name",
+    login: "Login",
+    notSet: "Not set",
+    familyRole: "Family role",
+    owner: "Owner",
+    member: "Member",
+    changePassword: "Change password",
+    changePasswordHint: "This stays collapsed until needed, so settings stay lighter.",
+    currentPassword: "Current password",
+    newPassword: "New password",
+    confirmNewPassword: "Repeat new password",
+    saving: "Saving…",
+    updatePassword: "Update password",
+    medicationPlans: "Medication plans",
+    medicationPlansHint: "How to show and enter plan intervals: in hours or in minutes.",
+    hours: "Hours",
+    minutes: "Minutes",
+    notifications: "Notifications",
+    notificationsHint:
+      "One notification always arrives when it is time to give the medicine. You can also choose an earlier heads-up.",
+    pushServerMissing:
+      "Server-side push delivery is not configured yet. Backend VAPID keys are required.",
+    disabling: "Disabling…",
+    enabling: "Enabling…",
+    checkingServer: "Checking server…",
+    checking: "Checking…",
+    disableNotifications: "Turn off notifications",
+    enableNotifications: "Turn on notifications",
+    earlyReminder: "Advance reminder",
+    earlyReminderHint:
+      "An extra notification ahead of time. The main notification at the next dose time always stays on.",
+    minShort: "min",
+    cabinetReminders: "First aid kit reminders",
+    cabinetRemindersHint:
+      "Separate push reminders for expiry dates or shelf life after opening. The 1-day reminder always stays on.",
+    days10: "10 days before",
+    days7: "7 days before",
+    days3: "3 days before",
+  },
+} satisfies Record<AppLanguage, Record<string, string>>;
+
+function tAccount(language: AppLanguage, key: keyof (typeof accountCopy)["ru"]) {
+  return accountCopy[language][key];
+}
+
 export function AccountPage() {
+  const { language } = useI18n();
   const queryClient = useQueryClient();
   const accountLogin = useAppStore((s) => s.accountLogin);
   const accountEmail = useAppStore((s) => s.accountEmail);
@@ -46,11 +174,7 @@ export function AccountPage() {
   const { data: pushConfig, isLoading: isPushConfigLoading } = useQuery({
     queryKey: ["push", "config", "account"],
     queryFn: () =>
-      withTimeout(
-        fetchPushNotificationConfig(),
-        5000,
-        "Не удалось быстро проверить настройки push на сервере."
-      ),
+      withTimeout(fetchPushNotificationConfig(), 5000, tAccount(language, "pushConfigCheckFailed")),
     staleTime: 5 * 60 * 1000,
     retry: false,
     refetchOnWindowFocus: false,
@@ -75,9 +199,7 @@ export function AccountPage() {
     },
     onError: (error) => {
       setPushError(
-        error instanceof Error
-          ? error.message
-          : "Не удалось сохранить время дополнительного напоминания."
+        error instanceof Error ? error.message : tAccount(language, "reminderSaveFailed")
       );
     },
   });
@@ -100,7 +222,7 @@ export function AccountPage() {
         const subscription = await withTimeout(
           getExistingPushSubscription(),
           5000,
-          "Не удалось быстро проверить push на этом устройстве."
+          tAccount(language, "devicePushCheckFailed")
         );
         if (!isCancelled) {
           setPushStatus(subscription ? "enabled" : "disabled");
@@ -125,13 +247,13 @@ export function AccountPage() {
       setNewPassword("");
       setConfirmPassword("");
       setPasswordError(null);
-      setPasswordSuccess("Пароль обновлён.");
+      setPasswordSuccess(tAccount(language, "passwordUpdated"));
     },
     onError: (error) => {
       setPasswordSuccess(null);
       setPasswordError(
         (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
-          (error instanceof Error ? error.message : "Не удалось сменить пароль.")
+          (error instanceof Error ? error.message : tAccount(language, "passwordChangeFailed"))
       );
     },
   });
@@ -142,11 +264,11 @@ export function AccountPage() {
       return;
     }
     if (!pushConfig?.enabled || !pushConfig.vapidPublicKey) {
-      setPushError("Push-уведомления ещё не настроены на сервере.");
+      setPushError(tAccount(language, "pushServerNotReady"));
       return;
     }
     if (!isPushSupported()) {
-      setPushError("На этом устройстве web push недоступен.");
+      setPushError(tAccount(language, "pushUnsupported"));
       return;
     }
     setPushError(null);
@@ -155,30 +277,26 @@ export function AccountPage() {
       const permission = await withTimeout(
         Notification.requestPermission(),
         8000,
-        "Браузер не завершил запрос разрешения на уведомления."
+        tAccount(language, "permissionTimeout")
       );
       if (permission !== "granted") {
-        setPushError("Браузер не дал разрешение на уведомления.");
+        setPushError(tAccount(language, "permissionDenied"));
         return;
       }
       const subscription = await withTimeout(
         subscribeToPushNotifications(pushConfig.vapidPublicKey),
         10000,
-        "Не удалось завершить подписку устройства на push."
+        tAccount(language, "subscribeTimeout")
       );
       await withTimeout(
         upsertPushSubscription(toPushSubscriptionPayload(subscription)),
         8000,
-        "Сервер не принял подписку устройства."
+        tAccount(language, "serverAcceptFailed")
       );
       setPushStatus("enabled");
       window.dispatchEvent(new Event("push:subscription-changed"));
     } catch (error) {
-      setPushError(
-        error instanceof Error
-          ? error.message
-          : "Не удалось включить уведомления на этом устройстве."
-      );
+      setPushError(error instanceof Error ? error.message : tAccount(language, "enablePushFailed"));
     } finally {
       setIsPushPending(false);
     }
@@ -197,7 +315,7 @@ export function AccountPage() {
       setPushStatus(remainingSubscription ? "enabled" : "disabled");
       window.dispatchEvent(new Event("push:subscription-changed"));
     } catch {
-      setPushError("Не удалось отключить уведомления.");
+      setPushError(tAccount(language, "disablePushFailed"));
     } finally {
       setIsPushPending(false);
     }
@@ -220,17 +338,17 @@ export function AccountPage() {
   const handleSubmitPasswordChange = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordSuccess(null);
-      setPasswordError("Заполни все поля пароля.");
+      setPasswordError(tAccount(language, "fillAllPasswordFields"));
       return;
     }
     if (newPassword !== confirmPassword) {
       setPasswordSuccess(null);
-      setPasswordError("Новый пароль и подтверждение не совпадают.");
+      setPasswordError(tAccount(language, "passwordsMismatch"));
       return;
     }
     if (newPassword.length < 6) {
       setPasswordSuccess(null);
-      setPasswordError("Новый пароль должен быть не короче 6 символов.");
+      setPasswordError(tAccount(language, "passwordTooShort"));
       return;
     }
     setPasswordError(null);
@@ -244,24 +362,31 @@ export function AccountPage() {
   return (
     <div className="min-w-0 space-y-6">
       <PageIntro
-        title="Аккаунт"
-        subtitle="Личные настройки, уведомления и безопасность."
+        title={tAccount(language, "title")}
+        subtitle={tAccount(language, "subtitle")}
         compactOnMobile
         hideOnMobile
       />
 
       <Surface className="p-5 sm:p-6">
-        <p className="app-card-title text-[1.05rem]">Профиль</p>
+        <p className="app-card-title text-[1.05rem]">{tAccount(language, "profile")}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <InfoCard
-            label="Имя в семье"
-            value={accountDisplayName || accountLogin || "Не указано"}
+            label={tAccount(language, "familyName")}
+            value={accountDisplayName || accountLogin || tAccount(language, "notSet")}
           />
-          <InfoCard label="Логин" value={accountLogin ? `@${accountLogin}` : "Не указан"} />
-          <InfoCard label="Email" value={accountEmail || "Не указан"} />
           <InfoCard
-            label="Роль в семье"
-            value={accountFamilyRole === "owner" ? "Владелец" : "Участник"}
+            label={tAccount(language, "login")}
+            value={accountLogin ? `@${accountLogin}` : tAccount(language, "notSet")}
+          />
+          <InfoCard label="Email" value={accountEmail || tAccount(language, "notSet")} />
+          <InfoCard
+            label={tAccount(language, "familyRole")}
+            value={
+              accountFamilyRole === "owner"
+                ? tAccount(language, "owner")
+                : tAccount(language, "member")
+            }
           />
         </div>
       </Surface>
@@ -272,9 +397,9 @@ export function AccountPage() {
           onToggle={() => setIsPasswordFormOpen((current) => !current)}
         >
           <>
-            <p className="app-card-title text-[1.02rem]">Сменить пароль</p>
+            <p className="app-card-title text-[1.02rem]">{tAccount(language, "changePassword")}</p>
             <p className="mt-2 text-sm leading-6 text-muted">
-              Открывается только когда нужно, чтобы не перегружать настройки.
+              {tAccount(language, "changePasswordHint")}
             </p>
           </>
         </DisclosureHeader>
@@ -282,7 +407,7 @@ export function AccountPage() {
           <>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <label className="block space-y-1.5">
-                <span className="soft-field-label">Текущий пароль</span>
+                <span className="soft-field-label">{tAccount(language, "currentPassword")}</span>
                 <input
                   type="password"
                   value={currentPassword}
@@ -295,7 +420,7 @@ export function AccountPage() {
                 />
               </label>
               <label className="block space-y-1.5">
-                <span className="soft-field-label">Новый пароль</span>
+                <span className="soft-field-label">{tAccount(language, "newPassword")}</span>
                 <input
                   type="password"
                   value={newPassword}
@@ -308,7 +433,7 @@ export function AccountPage() {
                 />
               </label>
               <label className="block space-y-1.5">
-                <span className="soft-field-label">Повтори новый пароль</span>
+                <span className="soft-field-label">{tAccount(language, "confirmNewPassword")}</span>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -328,7 +453,9 @@ export function AccountPage() {
                 disabled={changePasswordMutation.isPending}
                 className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
               >
-                {changePasswordMutation.isPending ? "Сохраняем…" : "Обновить пароль"}
+                {changePasswordMutation.isPending
+                  ? tAccount(language, "saving")
+                  : tAccount(language, "updatePassword")}
               </button>
               {passwordSuccess && <p className="soft-text-success text-sm">{passwordSuccess}</p>}
             </div>
@@ -342,15 +469,15 @@ export function AccountPage() {
       </Surface>
 
       <Surface className="p-5 sm:p-6">
-        <p className="app-card-title text-[1.02rem]">Планы лекарства</p>
+        <p className="app-card-title text-[1.02rem]">{tAccount(language, "medicationPlans")}</p>
         <p className="mt-3 text-sm leading-7 text-muted">
-          Как показывать и вводить интервал в планах по времени: в часах или в минутах.
+          {tAccount(language, "medicationPlansHint")}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {(
             [
-              { value: "hours", label: "Часы" },
-              { value: "minutes", label: "Минуты" },
+              { value: "hours", label: tAccount(language, "hours") },
+              { value: "minutes", label: tAccount(language, "minutes") },
             ] as const
           ).map((option) => (
             <button
@@ -368,17 +495,16 @@ export function AccountPage() {
       </Surface>
 
       <Surface className="p-5 sm:p-6">
-        <p className="app-card-title text-[1.02rem]">Уведомления</p>
+        <p className="app-card-title text-[1.02rem]">{tAccount(language, "notifications")}</p>
         <p className="mt-3 text-sm leading-7 text-muted">
-          Одно уведомление приходит всегда, когда препарат уже можно дать. Дополнительно можно
-          выбрать раннее напоминание заранее.
+          {tAccount(language, "notificationsHint")}
         </p>
         {pushError && (
           <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">{pushError}</div>
         )}
         {!isPushConfigLoading && pushConfig && !pushConfig.enabled && (
           <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
-            Серверная отправка push пока не настроена. Нужны VAPID-ключи на backend.
+            {tAccount(language, "pushServerMissing")}
           </div>
         )}
         <div className="mt-4 flex flex-wrap gap-2">
@@ -397,22 +523,21 @@ export function AccountPage() {
           >
             {isPushPending
               ? isPushEnabled
-                ? "Отключаем…"
-                : "Подключаем…"
+                ? tAccount(language, "disabling")
+                : tAccount(language, "enabling")
               : isPushConfigLoading
-                ? "Проверяем сервер…"
+                ? tAccount(language, "checkingServer")
                 : pushStatus === "checking"
-                  ? "Проверяем…"
+                  ? tAccount(language, "checking")
                   : isPushEnabled
-                    ? "Выключить уведомления"
-                    : "Включить уведомления"}
+                    ? tAccount(language, "disableNotifications")
+                    : tAccount(language, "enableNotifications")}
           </button>
         </div>
         <div className="mt-5 border-t border-border/70 pt-4">
-          <p className="app-card-title text-base">Раннее напоминание</p>
+          <p className="app-card-title text-base">{tAccount(language, "earlyReminder")}</p>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Дополнительное уведомление заранее. Основное уведомление в момент следующей дозы
-            остаётся всегда.
+            {tAccount(language, "earlyReminderHint")}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {[5, 10, 15, 20].map((minutes) => (
@@ -425,32 +550,31 @@ export function AccountPage() {
                   selectedReminderMinutes === String(minutes) ? "soft-tab-active" : "soft-tab"
                 } inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]`}
               >
-                {minutes} мин
+                {minutes} {tAccount(language, "minShort")}
               </button>
             ))}
           </div>
         </div>
         <div className="mt-5 border-t border-border/70 pt-4">
-          <p className="app-card-title text-base">Напоминания по аптечке</p>
+          <p className="app-card-title text-base">{tAccount(language, "cabinetReminders")}</p>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Отдельные push-напоминания по сроку годности или сроку после вскрытия. Напоминание за 1
-            день приходит всегда.
+            {tAccount(language, "cabinetRemindersHint")}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {[
               {
                 key: "cabinet_notify_10_days" as const,
-                label: "За 10 дней",
+                label: tAccount(language, "days10"),
                 enabled: pushPreferences?.cabinetNotify10Days ?? false,
               },
               {
                 key: "cabinet_notify_7_days" as const,
-                label: "За 7 дней",
+                label: tAccount(language, "days7"),
                 enabled: pushPreferences?.cabinetNotify7Days ?? false,
               },
               {
                 key: "cabinet_notify_3_days" as const,
-                label: "За 3 дня",
+                label: tAccount(language, "days3"),
                 enabled: pushPreferences?.cabinetNotify3Days ?? false,
               },
             ].map((option) => (

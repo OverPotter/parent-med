@@ -12,14 +12,156 @@ import { createFamilyInvite } from "@shared/api/familyInvites";
 import { DisclosureHeader } from "@shared/components/DisclosureHeader";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
+import type { AppLanguage } from "@shared/i18n";
 import type { FamilyMember } from "@shared/types/api";
 
-function roleLabel(role: string): string {
-  return role === "owner" ? "Владелец" : "Участник";
+const familyCopy = {
+  ru: {
+    title: "Семья",
+    subtitle:
+      "Одна общая семейная база, но у каждого взрослого свой личный аккаунт, история входов и подпись в событиях.",
+    memberCountOne: "участник",
+    memberCountFew: "участника",
+    memberCountMany: "участников",
+    loadFamilyFailed: "Не удалось загрузить семью.",
+    loadMembersFailed: "Не удалось загрузить участников.",
+    updateFamilyFailed: "Не удалось обновить название семьи.",
+    createInviteFailed: "Не удалось создать ссылку приглашения.",
+    updateRoleFailed: "Не удалось обновить роль участника.",
+    deleteMemberFailed: "Не удалось удалить участника из семьи.",
+    updateProfileFailed: "Не удалось обновить профиль участника.",
+    familyNameTitle: "Название семьи",
+    familyNameDescription: "Это общее имя семьи, которое увидят все приглашённые участники.",
+    edit: "Изменить",
+    hide: "Скрыть",
+    currentFamilyName: "Текущее название",
+    familyNameMissing: "Название пока не указано",
+    newFamilyName: "Новое название",
+    newFamilyNamePlaceholder: "Например: Семья Ивановых",
+    saving: "Сохраняем…",
+    save: "Сохранить",
+    cancel: "Отмена",
+    membersTitle: "Участники семьи",
+    membersDescription: "Владельцы могут приглашать новых взрослых, менять роли и отзывать доступ.",
+    peopleShort: "чел.",
+    membersLoading: "Загружаем участников…",
+    noMembers: "У семьи пока нет подключённых участников.",
+    inviteTitle: "Приглашение в семью",
+    inviteDescription:
+      "Новому взрослому отправляется личная ссылка. Он войдёт в ту же семейную базу, но под своим аккаунтом.",
+    ownerOnly: "Только для owner",
+    inviteOnlyOwner: "Приглашать новых участников может только владелец семьи.",
+    creatingInvite: "Создаём ссылку…",
+    createInvite: "Создать ссылку-приглашение",
+    newLink: "Новая ссылка",
+    validUntil: "Действует до",
+    inviteCopied: "Ссылка скопирована",
+    copyInvite: "Скопировать ссылку",
+    owner: "Владелец",
+    member: "Участник",
+    noName: "Без имени",
+    thisIsYou: "Это вы",
+    emailMissing: "Email не указан",
+    phoneMissing: "Телефон не указан",
+    hideProfile: "Скрыть профиль",
+    editProfile: "Редактировать профиль",
+    makeOwner: "Сделать owner",
+    makeAdult: "Сделать adult",
+    removeFromFamily: "Удалить из семьи",
+    displayName: "Имя в семье",
+    displayNamePlaceholder: "Например: Оля",
+    relationship: "Кто это в семье",
+    relationshipPlaceholder: "Например: няня",
+    phone: "Телефон",
+    saveProfile: "Сохранить профиль",
+  },
+  en: {
+    title: "Family",
+    subtitle:
+      "One shared family workspace, while each adult keeps their own account, sign-in history and signature in events.",
+    memberCountOne: "member",
+    memberCountFew: "members",
+    memberCountMany: "members",
+    loadFamilyFailed: "Could not load family.",
+    loadMembersFailed: "Could not load members.",
+    updateFamilyFailed: "Could not update the family name.",
+    createInviteFailed: "Could not create an invite link.",
+    updateRoleFailed: "Could not update the member role.",
+    deleteMemberFailed: "Could not remove the member from the family.",
+    updateProfileFailed: "Could not update the member profile.",
+    familyNameTitle: "Family name",
+    familyNameDescription: "This is the shared family name visible to everyone you invite.",
+    edit: "Edit",
+    hide: "Hide",
+    currentFamilyName: "Current name",
+    familyNameMissing: "Family name is not set yet",
+    newFamilyName: "New family name",
+    newFamilyNamePlaceholder: "Example: The Ivanov Family",
+    saving: "Saving…",
+    save: "Save",
+    cancel: "Cancel",
+    membersTitle: "Family members",
+    membersDescription: "Owners can invite new adults, change roles and revoke access.",
+    peopleShort: "people",
+    membersLoading: "Loading members…",
+    noMembers: "No family members are connected yet.",
+    inviteTitle: "Family invite",
+    inviteDescription:
+      "A new adult gets a personal invite link. They join the same family workspace under their own account.",
+    ownerOnly: "Owners only",
+    inviteOnlyOwner: "Only the family owner can invite new members.",
+    creatingInvite: "Creating link…",
+    createInvite: "Create invite link",
+    newLink: "New link",
+    validUntil: "Valid until",
+    inviteCopied: "Link copied",
+    copyInvite: "Copy link",
+    owner: "Owner",
+    member: "Member",
+    noName: "No name",
+    thisIsYou: "You",
+    emailMissing: "Email is not set",
+    phoneMissing: "Phone is not set",
+    hideProfile: "Hide profile",
+    editProfile: "Edit profile",
+    makeOwner: "Make owner",
+    makeAdult: "Make adult",
+    removeFromFamily: "Remove from family",
+    displayName: "Family name",
+    displayNamePlaceholder: "Example: Olivia",
+    relationship: "Relationship",
+    relationshipPlaceholder: "Example: nanny",
+    phone: "Phone",
+    saveProfile: "Save profile",
+  },
+} satisfies Record<AppLanguage, Record<string, string>>;
+
+function tFamily(language: AppLanguage, key: keyof (typeof familyCopy)["ru"]) {
+  return familyCopy[language][key];
+}
+
+function memberCountLabel(language: AppLanguage, count: number) {
+  if (language === "en") {
+    return `${count} ${count === 1 ? tFamily(language, "memberCountOne") : tFamily(language, "memberCountMany")}`;
+  }
+
+  const label =
+    count === 1
+      ? tFamily(language, "memberCountOne")
+      : count < 5
+        ? tFamily(language, "memberCountFew")
+        : tFamily(language, "memberCountMany");
+  return `${count} ${label}`;
+}
+
+function roleLabel(role: string, language: AppLanguage): string {
+  return role === "owner" ? tFamily(language, "owner") : tFamily(language, "member");
 }
 
 export function FamilyPage() {
+  const { language } = useI18n();
   const [familyName, setFamilyName] = useState("");
   const [isEditingFamilyName, setIsEditingFamilyName] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +220,7 @@ export function FamilyPage() {
       queryClient.invalidateQueries({ queryKey: ["families", accountId] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Не удалось обновить название семьи.");
+      setError(err.response?.data?.detail ?? tFamily(language, "updateFamilyFailed"));
     },
   });
 
@@ -89,7 +231,7 @@ export function FamilyPage() {
       setError(null);
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Не удалось создать ссылку приглашения.");
+      setError(err.response?.data?.detail ?? tFamily(language, "createInviteFailed"));
     },
   });
 
@@ -106,7 +248,7 @@ export function FamilyPage() {
       queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Не удалось обновить роль участника.");
+      setError(err.response?.data?.detail ?? tFamily(language, "updateRoleFailed"));
     },
   });
 
@@ -117,7 +259,7 @@ export function FamilyPage() {
       queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Не удалось удалить участника из семьи.");
+      setError(err.response?.data?.detail ?? tFamily(language, "deleteMemberFailed"));
     },
   });
 
@@ -143,7 +285,7 @@ export function FamilyPage() {
       queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Не удалось обновить профиль участника.");
+      setError(err.response?.data?.detail ?? tFamily(language, "updateProfileFailed"));
     },
   });
 
@@ -173,13 +315,13 @@ export function FamilyPage() {
   return (
     <div className="min-w-0 space-y-6">
       <PageIntro
-        title="Семья"
-        subtitle="Одна общая семейная база, но у каждого взрослого свой личный аккаунт, история входов и подпись в событиях."
+        title={tFamily(language, "title")}
+        subtitle={tFamily(language, "subtitle")}
         compactOnMobile
         hideOnMobile
         action={
           <span className="soft-pill inline-flex min-h-[2.45rem] w-fit items-center rounded-full px-3.5 py-1.5 text-[0.78rem] tracking-[-0.015em]">
-            {members.length} участник{members.length === 1 ? "" : members.length < 5 ? "а" : "ов"}
+            {memberCountLabel(language, members.length)}
           </span>
         }
       />
@@ -187,21 +329,23 @@ export function FamilyPage() {
       {error && <p className="soft-note-danger">{error}</p>}
       {familyError && (
         <p className="soft-note-danger">
-          {(familyError as { message?: string }).message ?? "Не удалось загрузить семью."}
+          {(familyError as { message?: string }).message ?? tFamily(language, "loadFamilyFailed")}
         </p>
       )}
       {membersError && (
         <p className="soft-note-danger">
-          {(membersError as { message?: string }).message ?? "Не удалось загрузить участников."}
+          {(membersError as { message?: string }).message ?? tFamily(language, "loadMembersFailed")}
         </p>
       )}
 
       <Surface className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-[1.08rem]">Название семьи</h2>
+            <h2 className="app-card-title text-[1.08rem]">
+              {tFamily(language, "familyNameTitle")}
+            </h2>
             <p className="mt-1.5 text-sm leading-6 text-muted">
-              Это общее имя семьи, которое увидят все приглашённые участники.
+              {tFamily(language, "familyNameDescription")}
             </p>
           </div>
           {family && (
@@ -218,16 +362,18 @@ export function FamilyPage() {
               setFamilyName(family?.name ?? "");
               setIsEditingFamilyName((current) => !current);
             }}
-            desktopClosedLabel="Изменить"
-            desktopOpenLabel="Скрыть"
-            mobileClosedLabel="Изменить"
-            mobileOpenLabel="Скрыть"
+            desktopClosedLabel={tFamily(language, "edit")}
+            desktopOpenLabel={tFamily(language, "hide")}
+            mobileClosedLabel={tFamily(language, "edit")}
+            mobileOpenLabel={tFamily(language, "hide")}
             contentClassName="space-y-1"
           >
             <>
-              <p className="soft-field-label">Текущее название</p>
+              <p className="soft-field-label">{tFamily(language, "currentFamilyName")}</p>
               <div className="soft-pill inline-flex min-h-[2.2rem] w-fit max-w-full items-center rounded-full px-3.5 py-1.5 text-xs text-foreground">
-                <span className="truncate">{family?.name || "Название пока не указано"}</span>
+                <span className="truncate">
+                  {family?.name || tFamily(language, "familyNameMissing")}
+                </span>
               </div>
             </>
           </DisclosureHeader>
@@ -235,13 +381,13 @@ export function FamilyPage() {
           {isEditingFamilyName && (
             <form onSubmit={handleFamilySubmit} className="flex flex-wrap items-end gap-3">
               <label className="min-w-0 flex-1">
-                <span className="soft-field-label">Новое название</span>
+                <span className="soft-field-label">{tFamily(language, "newFamilyName")}</span>
                 <input
                   type="text"
                   value={familyName}
                   onChange={(event) => setFamilyName(event.target.value)}
                   className="soft-input w-full px-4"
-                  placeholder="Например: Семья Ивановых"
+                  placeholder={tFamily(language, "newFamilyNamePlaceholder")}
                 />
               </label>
               <div className="flex w-full flex-wrap gap-2 sm:w-auto">
@@ -256,7 +402,9 @@ export function FamilyPage() {
                   }
                   className="soft-button-primary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
                 >
-                  {updateFamilyMutation.isPending ? "Сохраняем…" : "Сохранить"}
+                  {updateFamilyMutation.isPending
+                    ? tFamily(language, "saving")
+                    : tFamily(language, "save")}
                 </button>
                 <button
                   type="button"
@@ -267,7 +415,7 @@ export function FamilyPage() {
                   disabled={updateFamilyMutation.isPending}
                   className="soft-button-secondary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.025em] sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
                 >
-                  Отмена
+                  {tFamily(language, "cancel")}
                 </button>
               </div>
             </form>
@@ -278,20 +426,20 @@ export function FamilyPage() {
       <Surface className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-[1.08rem]">Участники семьи</h2>
+            <h2 className="app-card-title text-[1.08rem]">{tFamily(language, "membersTitle")}</h2>
             <p className="mt-1.5 text-sm leading-6 text-muted">
-              Владельцы могут приглашать новых взрослых, менять роли и отзывать доступ.
+              {tFamily(language, "membersDescription")}
             </p>
           </div>
           <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
-            {members.length} чел.
+            {members.length} {tFamily(language, "peopleShort")}
           </span>
         </div>
 
         {isMembersLoading ? (
-          <p className="mt-4 text-sm text-muted">Загружаем участников…</p>
+          <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
         ) : members.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">У семьи пока нет подключённых участников.</p>
+          <p className="mt-4 text-sm text-muted">{tFamily(language, "noMembers")}</p>
         ) : (
           <div className="mt-4 space-y-3">
             {members.map((member) => (
@@ -328,6 +476,7 @@ export function FamilyPage() {
                     phone: payload.phone,
                   })
                 }
+                language={language}
               />
             ))}
           </div>
@@ -337,19 +486,18 @@ export function FamilyPage() {
       <Surface className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-[1.08rem]">Приглашение в семью</h2>
+            <h2 className="app-card-title text-[1.08rem]">{tFamily(language, "inviteTitle")}</h2>
             <p className="mt-1.5 text-sm leading-6 text-muted">
-              Новому взрослому отправляется личная ссылка. Он войдёт в ту же семейную базу, но под
-              своим аккаунтом.
+              {tFamily(language, "inviteDescription")}
             </p>
           </div>
-          <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">Только для owner</span>
+          <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
+            {tFamily(language, "ownerOnly")}
+          </span>
         </div>
 
         {!canManageFamily ? (
-          <p className="soft-note-warning mt-4">
-            Приглашать новых участников может только владелец семьи.
-          </p>
+          <p className="soft-note-warning mt-4">{tFamily(language, "inviteOnlyOwner")}</p>
         ) : (
           <>
             <button
@@ -358,16 +506,23 @@ export function FamilyPage() {
               disabled={createInviteMutation.isPending}
               className="soft-button-primary mt-4 inline-flex min-h-[3rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5 sm:text-[0.93rem]"
             >
-              {createInviteMutation.isPending ? "Создаём ссылку…" : "Создать ссылку-приглашение"}
+              {createInviteMutation.isPending
+                ? tFamily(language, "creatingInvite")
+                : tFamily(language, "createInvite")}
             </button>
 
             {createInviteMutation.data && (
               <div className="soft-panel mt-4 rounded-[24px] p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-muted">Новая ссылка</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-muted">
+                  {tFamily(language, "newLink")}
+                </p>
                 <p className="mt-2 break-all text-sm text-foreground">{latestInviteUrl}</p>
                 <p className="mt-2 text-sm text-muted">
-                  Действует до{" "}
-                  {new Date(createInviteMutation.data.expiresAt).toLocaleString("ru-RU")}.
+                  {tFamily(language, "validUntil")}{" "}
+                  {new Date(createInviteMutation.data.expiresAt).toLocaleString(
+                    language === "ru" ? "ru-RU" : "en-US"
+                  )}
+                  .
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
@@ -375,7 +530,9 @@ export function FamilyPage() {
                     onClick={handleCopyInvite}
                     className="soft-button-secondary inline-flex min-h-[2.8rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em]"
                   >
-                    {inviteCopied ? "Ссылка скопирована" : "Скопировать ссылку"}
+                    {inviteCopied
+                      ? tFamily(language, "inviteCopied")
+                      : tFamily(language, "copyInvite")}
                   </button>
                 </div>
               </div>
@@ -394,6 +551,7 @@ interface MemberCardProps {
   canEditProfile: boolean;
   ownersCount: number;
   isPending: boolean;
+  language: AppLanguage;
   onPromote: () => void;
   onDemote: () => void;
   onDelete: () => void;
@@ -411,6 +569,7 @@ function MemberCard({
   canEditProfile,
   ownersCount,
   isPending,
+  language,
   onPromote,
   onDemote,
   onDelete,
@@ -436,7 +595,7 @@ function MemberCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className="app-card-title text-base">
-              {member.displayName || member.login || "Без имени"}
+              {member.displayName || member.login || tFamily(language, "noName")}
             </p>
             {member.relationshipLabel && (
               <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
@@ -448,15 +607,21 @@ function MemberCard({
                 member.familyRole === "owner" ? "soft-pill-primary" : "soft-pill"
               }`}
             >
-              {roleLabel(member.familyRole)}
+              {roleLabel(member.familyRole, language)}
             </span>
             {isCurrent && (
-              <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">Это вы</span>
+              <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
+                {tFamily(language, "thisIsYou")}
+              </span>
             )}
           </div>
           <p className="mt-2 text-sm text-muted">@{member.login}</p>
-          <p className="mt-1 text-sm text-muted">{member.email || "Email не указан"}</p>
-          <p className="mt-1 text-sm text-muted">{member.phone || "Телефон не указан"}</p>
+          <p className="mt-1 text-sm text-muted">
+            {member.email || tFamily(language, "emailMissing")}
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            {member.phone || tFamily(language, "phoneMissing")}
+          </p>
         </div>
 
         {(isOwner || canEditProfile) && (
@@ -467,7 +632,7 @@ function MemberCard({
                 onClick={() => setIsEditing((current) => !current)}
                 className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
-                {isEditing ? "Скрыть профиль" : "Редактировать профиль"}
+                {isEditing ? tFamily(language, "hideProfile") : tFamily(language, "editProfile")}
               </button>
             )}
             {canPromote && (
@@ -477,7 +642,7 @@ function MemberCard({
                 disabled={isPending}
                 className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
-                Сделать owner
+                {tFamily(language, "makeOwner")}
               </button>
             )}
             {canDemote && (
@@ -487,7 +652,7 @@ function MemberCard({
                 disabled={isPending}
                 className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
-                Сделать adult
+                {tFamily(language, "makeAdult")}
               </button>
             )}
             {canDelete && (
@@ -497,7 +662,7 @@ function MemberCard({
                 disabled={isPending}
                 className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
-                Удалить из семьи
+                {tFamily(language, "removeFromFamily")}
               </button>
             )}
           </div>
@@ -507,27 +672,27 @@ function MemberCard({
       {isEditing && (
         <div className="mt-4 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2">
           <label className="block">
-            <span className="soft-field-label">Имя в семье</span>
+            <span className="soft-field-label">{tFamily(language, "displayName")}</span>
             <input
               type="text"
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
               className="soft-input w-full px-4"
-              placeholder="Например: Оля"
+              placeholder={tFamily(language, "displayNamePlaceholder")}
             />
           </label>
           <label className="block">
-            <span className="soft-field-label">Кто это в семье</span>
+            <span className="soft-field-label">{tFamily(language, "relationship")}</span>
             <input
               type="text"
               value={relationshipLabel}
               onChange={(event) => setRelationshipLabel(event.target.value)}
               className="soft-input w-full px-4"
-              placeholder="Например: няня"
+              placeholder={tFamily(language, "relationshipPlaceholder")}
             />
           </label>
           <label className="block">
-            <span className="soft-field-label">Телефон</span>
+            <span className="soft-field-label">{tFamily(language, "phone")}</span>
             <input
               type="tel"
               value={phone}
@@ -550,7 +715,7 @@ function MemberCard({
               disabled={isPending || !displayName.trim()}
               className="soft-button-primary inline-flex min-h-[3rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5 sm:text-[0.93rem]"
             >
-              {isPending ? "Сохраняем…" : "Сохранить профиль"}
+              {isPending ? tFamily(language, "saving") : tFamily(language, "saveProfile")}
             </button>
           </div>
         </div>

@@ -16,7 +16,9 @@ import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { trackHouseholdMedicineAdded } from "@shared/analytics";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
+import type { AppLanguage } from "@shared/i18n";
 import type { HouseholdMedicine, MedicineCatalogItem } from "@shared/types/api";
 import { formatDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
@@ -30,16 +32,232 @@ const STATUS_CARD_STYLES: Record<string, string> = {
   expired_after_opening: "soft-card-status-danger",
 };
 
-const MEDICINE_FORM_OPTIONS = [
-  { value: "таблетки", label: "Таблетки" },
-  { value: "сироп", label: "Сироп" },
-  { value: "капли", label: "Капли" },
-  { value: "суспензия", label: "Суспензия" },
-  { value: "раствор", label: "Раствор" },
-  { value: "суппозитории", label: "Суппозитории (свечи)" },
-];
+const cabinetCopy = {
+  ru: {
+    title: "Аптечка",
+    subtitle:
+      "Реальные упаковки дома: срок годности, дата вскрытия и можно ли использовать препарат сейчас.",
+    addTab: "Добавить препарат",
+    cabinetTab: "Наша аптечка",
+    loading: "Загрузка…",
+    loadError: "Ошибка загрузки",
+    empty: "В аптечке пока нет препаратов. Переключитесь на «Добавить препарат».",
+    searchLabel: "Найти в аптечке",
+    searchPlaceholder: "Название, форма или комментарий",
+    foundCount: "Найдено: {{count}}",
+    nothingFound: "По запросу ничего не найдено.",
+    intakeForbidden: "Принимать нельзя",
+    intakeCheckOpened: "Проверить вскрытие",
+    intakeAllowed: "Принимать можно",
+    untilOpened: "После вскрытия до {{date}}",
+    untilExpiry: "Годен до {{date}}",
+    openedHint: "Вскрыли {{date}} · после вскрытия {{days}} дн.",
+    addPack: "Добавить упаковку",
+    catalogSearch: "Поиск по справочнику",
+    catalogSearchPlaceholder: "Название препарата",
+    searching: "Поиск…",
+    dosageHint: "Как применять: {{value}}",
+    descriptionLabel: "Описание: {{value}}",
+    openedShelfHint: "После вскрытия: {{days}} дн.",
+    switchMedicine: "Сменить препарат",
+    newMedicineName: "Название нового препарата",
+    newMedicineNamePlaceholder: "Название нового препарата",
+    medicineForm: "Форма препарата",
+    concentration: "Концентрация",
+    concentrationPlaceholder: "Концентрация",
+    description: "Описание",
+    descriptionPlaceholder: "Для чего препарат и в каких случаях нужен",
+    usage: "Как применять",
+    usagePlaceholder: "Например: по 5 мл 3 раза в день после еды",
+    expiryDate: "Срок годности",
+    openedAt: "Дата вскрытия",
+    openedShelfDays: "Срок после вскрытия, дней",
+    openedShelfDaysUnknown: "Если не знаете, оставьте пустым",
+    openedShelfDaysAuto:
+      "Если у препарата есть срок после вскрытия в справочнике, он подставится автоматически.",
+    expiredWarning:
+      "Срок годности уже истёк. Препарат можно сохранить в аптечку для учёта, но Safety Engine не даст использовать его в приёмах.",
+    openedUnknownWarning:
+      "Дата вскрытия указана, но срок после вскрытия не задан. Препарат сохранится, но оценка после вскрытия будет считаться неизвестной.",
+    comment: "Комментарий",
+    commentPlaceholder: "Например: только ночью после еды",
+    addToKit: "Добавить в аптечку",
+    addOwnToKit: "Добавить свой препарат в аптечку",
+    reset: "Сбросить",
+    expiryDateError: "Укажите корректный срок годности через календарь.",
+    openedAtError: "Укажите корректную дату вскрытия через календарь.",
+    addError: "Не удалось добавить препарат.",
+    writeOffTitle: "Списать препарат · {{name}}",
+    writeOffDescription:
+      "Карточка будет удалена из аптечки. Используйте это для реально списанной или выброшенной упаковки.",
+    writeOffPending: "Списываем…",
+    writeOff: "Списать",
+    hide: "Скрыть",
+    details: "Подробнее",
+    newPack: "Новая упаковка",
+    close: "Закрыть",
+    formField: "Форма: {{value}}",
+    openedFieldKnown: "Вскрыто: {{date}} · После вскрытия: {{days}} дн.{{untilText}}",
+    openedFieldUnknown: "Вскрыто: {{date}} · Срок после вскрытия не указан{{untilText}}",
+    useUntil: " · Использовать до: {{date}}",
+    usageField: "Как применять: {{value}}",
+    descriptionField: "Описание: {{value}}",
+    commentField: "Комментарий: {{value}}",
+    newPackHint:
+      "Если купили новую упаковку этого же препарата, обновите здесь срок годности и дату вскрытия. Старую карточку заводить заново не нужно.",
+    medicineName: "Название препарата",
+    formShort: "Форма",
+    save: "Сохранить",
+    expiredCardWarning:
+      "Срок годности уже истёк. Препарат останется в аптечке для учёта, но использовать его в приёмах нельзя.",
+    openedCardWarning:
+      "Дата вскрытия указана, но срок после вскрытия не задан. Статус после вскрытия будет считаться неизвестным.",
+    tablets: "Таблетки",
+    syrup: "Сироп",
+    drops: "Капли",
+    suspension: "Суспензия",
+    solution: "Раствор",
+    suppositories: "Суппозитории (свечи)",
+  },
+  en: {
+    title: "First aid kit",
+    subtitle:
+      "Real packs at home: expiry dates, opened dates and whether a medicine can be used right now.",
+    addTab: "Add medicine",
+    cabinetTab: "Our first aid kit",
+    loading: "Loading…",
+    loadError: "Failed to load data",
+    empty: "There are no medicines in your first aid kit yet. Switch to “Add medicine”.",
+    searchLabel: "Search first aid kit",
+    searchPlaceholder: "Name, form or comment",
+    foundCount: "Found: {{count}}",
+    nothingFound: "Nothing matches this search.",
+    intakeForbidden: "Do not use",
+    intakeCheckOpened: "Check opened date",
+    intakeAllowed: "Can be used",
+    untilOpened: "After opening until {{date}}",
+    untilExpiry: "Good until {{date}}",
+    openedHint: "Opened on {{date}} · after opening {{days}} days",
+    addPack: "Add pack",
+    catalogSearch: "Catalog search",
+    catalogSearchPlaceholder: "Medicine name",
+    searching: "Searching…",
+    dosageHint: "How to use: {{value}}",
+    descriptionLabel: "Description: {{value}}",
+    openedShelfHint: "After opening: {{days}} days",
+    switchMedicine: "Change medicine",
+    newMedicineName: "New medicine name",
+    newMedicineNamePlaceholder: "New medicine name",
+    medicineForm: "Medicine form",
+    concentration: "Concentration",
+    concentrationPlaceholder: "Concentration",
+    description: "Description",
+    descriptionPlaceholder: "What it is for and when it is used",
+    usage: "How to use",
+    usagePlaceholder: "Example: 5 ml 3 times a day after meals",
+    expiryDate: "Expiry date",
+    openedAt: "Opened date",
+    openedShelfDays: "Shelf life after opening, days",
+    openedShelfDaysUnknown: "Leave empty if you do not know it",
+    openedShelfDaysAuto:
+      "If the catalog already has a shelf life after opening, it will be filled in automatically.",
+    expiredWarning:
+      "The expiry date has already passed. You can still keep the medicine in the first aid kit for reference, but the Safety Engine will not allow it in medication plans.",
+    openedUnknownWarning:
+      "Opened date is set, but shelf life after opening is missing. The medicine will be saved, but post-opening status will stay unknown.",
+    comment: "Comment",
+    commentPlaceholder: "For example: only at night after meals",
+    addToKit: "Add to first aid kit",
+    addOwnToKit: "Add your own medicine to the first aid kit",
+    reset: "Reset",
+    expiryDateError: "Pick a valid expiry date from the calendar.",
+    openedAtError: "Pick a valid opened date from the calendar.",
+    addError: "Could not add the medicine.",
+    writeOffTitle: "Remove medicine · {{name}}",
+    writeOffDescription:
+      "This card will be removed from the first aid kit. Use this only for a pack that was actually discarded or written off.",
+    writeOffPending: "Removing…",
+    writeOff: "Remove",
+    hide: "Hide",
+    details: "Details",
+    newPack: "New pack",
+    close: "Close",
+    formField: "Form: {{value}}",
+    openedFieldKnown: "Opened: {{date}} · After opening: {{days}} days{{untilText}}",
+    openedFieldUnknown: "Opened: {{date}} · Shelf life after opening is unknown{{untilText}}",
+    useUntil: " · Use until: {{date}}",
+    usageField: "How to use: {{value}}",
+    descriptionField: "Description: {{value}}",
+    commentField: "Comment: {{value}}",
+    newPackHint:
+      "If you bought a new pack of the same medicine, update the expiry date and opened date here. You do not need to create a second card.",
+    medicineName: "Medicine name",
+    formShort: "Form",
+    save: "Save",
+    expiredCardWarning:
+      "The expiry date has already passed. The medicine stays in the first aid kit for reference, but it cannot be used in medication plans.",
+    openedCardWarning:
+      "Opened date is set, but shelf life after opening is missing. Post-opening status will stay unknown.",
+    tablets: "Tablets",
+    syrup: "Syrup",
+    drops: "Drops",
+    suspension: "Suspension",
+    solution: "Solution",
+    suppositories: "Suppositories",
+  },
+} satisfies Record<AppLanguage, Record<string, string>>;
+
+function tCabinet(
+  language: AppLanguage,
+  key: keyof (typeof cabinetCopy)["ru"],
+  variables?: Record<string, string | number>
+) {
+  const template = cabinetCopy[language][key];
+  if (!variables) return template;
+  return Object.entries(variables).reduce(
+    (result, [name, value]) => result.replace(`{{${name}}}`, String(value)),
+    template
+  );
+}
+
+function getMedicineFormOptions(language: AppLanguage) {
+  return [
+    { value: "таблетки", label: tCabinet(language, "tablets") },
+    { value: "сироп", label: tCabinet(language, "syrup") },
+    { value: "капли", label: tCabinet(language, "drops") },
+    { value: "суспензия", label: tCabinet(language, "suspension") },
+    { value: "раствор", label: tCabinet(language, "solution") },
+    { value: "суппозитории", label: tCabinet(language, "suppositories") },
+  ];
+}
+
+function getLocalizedMedicineForm(value: string, language: AppLanguage): string {
+  const normalized = value.trim().toLowerCase();
+
+  if (!normalized) {
+    return value;
+  }
+
+  const knownForms: Record<string, keyof (typeof cabinetCopy)["ru"]> = {
+    таблетки: "tablets",
+    syrup: "syrup",
+    сироп: "syrup",
+    капли: "drops",
+    drops: "drops",
+    суспензия: "suspension",
+    suspension: "suspension",
+    раствор: "solution",
+    solution: "solution",
+    суппозитории: "suppositories",
+    suppositories: "suppositories",
+  };
+
+  const matchedKey = knownForms[normalized];
+  return matchedKey ? tCabinet(language, matchedKey) : value;
+}
 
 export function MedicineCabinetPage() {
+  const { language } = useI18n();
   const queryClient = useQueryClient();
   const [view, setView] = useState<"cabinet" | "add">("cabinet");
   const [cabinetSearch, setCabinetSearch] = useState("");
@@ -84,8 +302,8 @@ export function MedicineCabinetPage() {
   return (
     <div className="min-w-0 space-y-6">
       <PageIntro
-        title="Аптечка"
-        subtitle="Реальные упаковки дома: срок годности, дата вскрытия и можно ли использовать препарат сейчас."
+        title={tCabinet(language, "title")}
+        subtitle={tCabinet(language, "subtitle")}
         compactOnMobile
         hideOnMobile
       />
@@ -98,7 +316,7 @@ export function MedicineCabinetPage() {
             view === "add" ? "soft-tab-active" : "soft-tab"
           }`}
         >
-          Добавить препарат
+          {tCabinet(language, "addTab")}
         </button>
         <button
           type="button"
@@ -110,45 +328,47 @@ export function MedicineCabinetPage() {
             view === "cabinet" ? "soft-tab-active" : "soft-tab"
           }`}
         >
-          Наша аптечка
+          {tCabinet(language, "cabinetTab")}
         </button>
       </div>
 
       {view === "add" ? (
-        <AddHouseholdMedicineForm onCreated={() => setView("cabinet")} />
+        <AddHouseholdMedicineForm language={language} onCreated={() => setView("cabinet")} />
       ) : (
         <>
-          {isLoading && <p className="mt-4 text-muted">Загрузка…</p>}
+          {isLoading && <p className="mt-4 text-muted">{tCabinet(language, "loading")}</p>}
           {error && (
             <p className="soft-note-danger">
-              {(error as { message?: string }).message ?? "Ошибка загрузки"}
+              {(error as { message?: string }).message ?? tCabinet(language, "loadError")}
             </p>
           )}
           {!isLoading && !error && medicines.length === 0 && (
             <p className="soft-panel-muted rounded-[24px] px-5 py-4 text-sm text-muted">
-              В аптечке пока нет препаратов. Переключитесь на «Добавить препарат».
+              {tCabinet(language, "empty")}
             </p>
           )}
           {medicines.length > 0 && (
             <div className="mt-4 soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5 sm:py-5">
               <label className="block">
-                <span className="soft-field-label">Найти в аптечке</span>
+                <span className="soft-field-label">{tCabinet(language, "searchLabel")}</span>
                 <input
                   type="search"
                   value={cabinetSearch}
                   onChange={(event) => setCabinetSearch(event.target.value)}
-                  placeholder="Название, форма или комментарий"
+                  placeholder={tCabinet(language, "searchPlaceholder")}
                   className="soft-input mt-2 w-full px-4 text-base sm:text-sm"
                 />
               </label>
               {isSearchMode && (
-                <p className="mt-2 text-xs text-muted">Найдено: {filteredMedicines.length}</p>
+                <p className="mt-2 text-xs text-muted">
+                  {tCabinet(language, "foundCount", { count: filteredMedicines.length })}
+                </p>
               )}
             </div>
           )}
           {medicines.length > 0 && filteredMedicines.length === 0 && (
             <p className="soft-panel-muted mt-4 rounded-[24px] px-5 py-4 text-sm text-muted">
-              По запросу ничего не найдено.
+              {tCabinet(language, "nothingFound")}
             </p>
           )}
           {medicines.length > 0 && (
@@ -156,6 +376,7 @@ export function MedicineCabinetPage() {
               {filteredMedicines.map((m) => (
                 <MedicineItemCard
                   key={m.id}
+                  language={language}
                   medicine={m}
                   onDelete={(id) => deleteMutation.mutate(id)}
                   isDeleting={deleteMutation.isPending}
@@ -180,14 +401,17 @@ function hasUnknownOpenedShelfLife(openedAt: string, openedShelfDays: string): b
   return Boolean(openedAt && !openedShelfDays);
 }
 
-function getIntakeMessage(medicine: HouseholdMedicine): {
+function getIntakeMessage(
+  medicine: HouseholdMedicine,
+  language: AppLanguage
+): {
   text: string;
   icon: string;
   className: string;
 } {
   if (medicine.status === "expired" || medicine.status === "expired_after_opening") {
     return {
-      text: "Принимать нельзя",
+      text: tCabinet(language, "intakeForbidden"),
       icon: "✕",
       className: "soft-pill-danger inline-flex rounded-full px-3 py-1 text-xs",
     };
@@ -195,43 +419,54 @@ function getIntakeMessage(medicine: HouseholdMedicine): {
 
   if (!medicine.openedAt) {
     return {
-      text: "Проверить вскрытие",
+      text: tCabinet(language, "intakeCheckOpened"),
       icon: "!",
       className: "soft-pill-warning inline-flex rounded-full px-3 py-1 text-xs",
     };
   }
 
   return {
-    text: "Принимать можно",
+    text: tCabinet(language, "intakeAllowed"),
     icon: "✓",
     className: "soft-pill-success inline-flex rounded-full px-3 py-1 text-xs",
   };
 }
 
-function getStatusDateText(medicine: HouseholdMedicine): string {
+function getStatusDateText(medicine: HouseholdMedicine, language: AppLanguage): string {
   if (
     (medicine.status === "expired_after_opening" || medicine.status === "expiring_after_opening") &&
     medicine.openedExpiresAt
   ) {
-    return `После вскрытия до ${formatDate(medicine.openedExpiresAt)}`;
+    return tCabinet(language, "untilOpened", {
+      date: formatDate(medicine.openedExpiresAt),
+    });
   }
 
-  return `Годен до ${formatDate(medicine.expiryDate)}`;
+  return tCabinet(language, "untilExpiry", { date: formatDate(medicine.expiryDate) });
 }
 
-function getOpenedStatusHint(medicine: HouseholdMedicine): string | null {
+function getOpenedStatusHint(medicine: HouseholdMedicine, language: AppLanguage): string | null {
   if (
     (medicine.status === "expired_after_opening" || medicine.status === "expiring_after_opening") &&
     medicine.openedAt &&
     medicine.effectiveOpenedShelfDays
   ) {
-    return `Вскрыли ${formatDate(medicine.openedAt)} · после вскрытия ${medicine.effectiveOpenedShelfDays} дн.`;
+    return tCabinet(language, "openedHint", {
+      date: formatDate(medicine.openedAt),
+      days: medicine.effectiveOpenedShelfDays,
+    });
   }
 
   return null;
 }
 
-function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
+function AddHouseholdMedicineForm({
+  language,
+  onCreated,
+}: {
+  language: AppLanguage;
+  onCreated: () => void;
+}) {
   const [searchName, setSearchName] = useState("");
   const [catalogItem, setCatalogItem] = useState<MedicineCatalogItem | null>(null);
   const [expiryDate, setExpiryDate] = useState("");
@@ -246,6 +481,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
   const [formError, setFormError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
+  const medicineFormOptions = getMedicineFormOptions(language);
   const isExpired = isExpiredDate(expiryDate);
   const hasUnknownAfterOpening = hasUnknownOpenedShelfLife(openedAt, openedShelfDays);
 
@@ -300,11 +536,11 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
 
     if (!newMedicineName.trim()) return;
     if (!normalizedExpiryDate) {
-      setFormError("Укажите корректный срок годности через календарь.");
+      setFormError(tCabinet(language, "expiryDateError"));
       return;
     }
     if (openedAt && !normalizedOpenedAt) {
-      setFormError("Укажите корректную дату вскрытия через календарь.");
+      setFormError(tCabinet(language, "openedAtError"));
       return;
     }
 
@@ -328,11 +564,11 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
 
     if (!catalogItem) return;
     if (!normalizedExpiryDate) {
-      setFormError("Укажите корректный срок годности через календарь.");
+      setFormError(tCabinet(language, "expiryDateError"));
       return;
     }
     if (openedAt && !normalizedOpenedAt) {
-      setFormError("Укажите корректную дату вскрытия через календарь.");
+      setFormError(tCabinet(language, "openedAtError"));
       return;
     }
 
@@ -349,11 +585,11 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
   return (
     <Surface className="mt-4 p-4 sm:p-6">
       <div className="space-y-4">
-        <h2 className="app-card-title text-lg">Добавить упаковку</h2>
+        <h2 className="app-card-title text-lg">{tCabinet(language, "addPack")}</h2>
 
         <div className="flex flex-wrap gap-4">
           <label className="min-w-0 flex-1 space-y-1.5">
-            <span className="soft-field-label">Поиск по справочнику</span>
+            <span className="soft-field-label">{tCabinet(language, "catalogSearch")}</span>
             <input
               type="text"
               value={searchName}
@@ -362,11 +598,11 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 setFormError(null);
               }}
               className="soft-input w-full min-w-0 px-4 sm:max-w-xs"
-              placeholder="Название препарата"
+              placeholder={tCabinet(language, "catalogSearchPlaceholder")}
             />
           </label>
         </div>
-        {searchLoading && <p className="text-sm text-muted">Поиск…</p>}
+        {searchLoading && <p className="text-sm text-muted">{tCabinet(language, "searching")}</p>}
         {!catalogItem && catalogItems.length > 0 && (
           <ul className="grid gap-2">
             {catalogItems.map((item) => (
@@ -377,18 +613,22 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   className="soft-card w-full rounded-[22px] px-4 py-4 text-left text-sm transition-colors hover:bg-[color:var(--color-surface-soft)]"
                 >
                   <p className="font-medium text-foreground">
-                    {item.name} ({item.form}
+                    {item.name} ({getLocalizedMedicineForm(item.form, language)}
                     {item.concentration ? `, ${item.concentration}` : ""})
                   </p>
                   {item.dosage && (
-                    <p className="mt-1 text-xs text-muted">Как применять: {item.dosage}</p>
+                    <p className="mt-1 text-xs text-muted">
+                      {tCabinet(language, "dosageHint", { value: item.dosage })}
+                    </p>
                   )}
                   {item.description && (
                     <p className="mt-1 line-clamp-2 text-xs text-muted">{item.description}</p>
                   )}
                   {item.defaultOpenedShelfDays && (
                     <p className="mt-1 text-xs text-muted">
-                      После вскрытия: {item.defaultOpenedShelfDays} дн.
+                      {tCabinet(language, "openedShelfHint", {
+                        days: item.defaultOpenedShelfDays,
+                      })}
                     </p>
                   )}
                 </button>
@@ -402,18 +642,24 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-medium text-foreground">
-                  {catalogItem.name} ({catalogItem.form}
+                  {catalogItem.name} ({getLocalizedMedicineForm(catalogItem.form, language)}
                   {catalogItem.concentration ? `, ${catalogItem.concentration}` : ""})
                 </p>
                 {catalogItem.dosage && (
-                  <p className="mt-1 text-sm text-muted">Как применять: {catalogItem.dosage}</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {tCabinet(language, "dosageHint", { value: catalogItem.dosage })}
+                  </p>
                 )}
                 {catalogItem.description && (
-                  <p className="mt-2 text-sm text-muted">Описание: {catalogItem.description}</p>
+                  <p className="mt-2 text-sm text-muted">
+                    {tCabinet(language, "descriptionLabel", { value: catalogItem.description })}
+                  </p>
                 )}
                 {catalogItem.defaultOpenedShelfDays && (
                   <p className="mt-2 text-sm text-muted">
-                    После вскрытия: {catalogItem.defaultOpenedShelfDays} дн.
+                    {tCabinet(language, "openedShelfHint", {
+                      days: catalogItem.defaultOpenedShelfDays,
+                    })}
                   </p>
                 )}
               </div>
@@ -426,7 +672,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 }}
                 className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
               >
-                Сменить препарат
+                {tCabinet(language, "switchMedicine")}
               </button>
             </div>
           </div>
@@ -435,7 +681,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
         {!catalogItem && (
           <div className="grid gap-3">
             <label className="block space-y-1.5">
-              <span className="soft-field-label">Название нового препарата</span>
+              <span className="soft-field-label">{tCabinet(language, "newMedicineName")}</span>
               <input
                 type="text"
                 value={newMedicineName}
@@ -443,14 +689,14 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   setNewMedicineName(e.target.value);
                   setFormError(null);
                 }}
-                placeholder="Название нового препарата"
+                placeholder={tCabinet(language, "newMedicineNamePlaceholder")}
                 className="soft-input w-full px-4"
               />
             </label>
             <div>
-              <span className="soft-field-label">Форма препарата</span>
+              <span className="soft-field-label">{tCabinet(language, "medicineForm")}</span>
               <div className="mt-2 flex flex-wrap gap-2">
-                {MEDICINE_FORM_OPTIONS.map((option) => (
+                {medicineFormOptions.map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -469,7 +715,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
               </div>
             </div>
             <label className="block space-y-1.5">
-              <span className="soft-field-label">Концентрация</span>
+              <span className="soft-field-label">{tCabinet(language, "concentration")}</span>
               <input
                 type="text"
                 value={newMedicineConcentration}
@@ -477,7 +723,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   setNewMedicineConcentration(e.target.value);
                   setFormError(null);
                 }}
-                placeholder="Концентрация"
+                placeholder={tCabinet(language, "concentrationPlaceholder")}
                 className="soft-input w-full px-4"
               />
             </label>
@@ -489,7 +735,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
             {!catalogItem && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block space-y-1.5 sm:col-span-2">
-                  <span className="soft-field-label">Описание</span>
+                  <span className="soft-field-label">{tCabinet(language, "description")}</span>
                   <textarea
                     value={newMedicineDescription}
                     onChange={(e) => {
@@ -497,11 +743,11 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                       setFormError(null);
                     }}
                     className="soft-input min-h-20 w-full px-4"
-                    placeholder="Для чего препарат и в каких случаях нужен"
+                    placeholder={tCabinet(language, "descriptionPlaceholder")}
                   />
                 </label>
                 <label className="block space-y-1.5 sm:col-span-2">
-                  <span className="soft-field-label">Как применять</span>
+                  <span className="soft-field-label">{tCabinet(language, "usage")}</span>
                   <textarea
                     value={newMedicineDosage}
                     onChange={(e) => {
@@ -509,7 +755,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                       setFormError(null);
                     }}
                     className="soft-input min-h-20 w-full px-4"
-                    placeholder="Например: по 5 мл 3 раза в день после еды"
+                    placeholder={tCabinet(language, "usagePlaceholder")}
                   />
                 </label>
               </div>
@@ -517,7 +763,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block space-y-1.5">
-                <span className="soft-field-label">Срок годности</span>
+                <span className="soft-field-label">{tCabinet(language, "expiryDate")}</span>
                 <DateField
                   value={expiryDate}
                   onChange={(nextValue) => {
@@ -525,10 +771,11 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                     setFormError(null);
                   }}
                   className=""
+                  language={language}
                 />
               </label>
               <label className="block space-y-1.5">
-                <span className="soft-field-label">Дата вскрытия</span>
+                <span className="soft-field-label">{tCabinet(language, "openedAt")}</span>
                 <DateField
                   value={openedAt}
                   onChange={(nextValue) => {
@@ -536,10 +783,11 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                     setFormError(null);
                   }}
                   className=""
+                  language={language}
                 />
               </label>
               <label className="block space-y-1.5">
-                <span className="soft-field-label">Срок после вскрытия, дней</span>
+                <span className="soft-field-label">{tCabinet(language, "openedShelfDays")}</span>
                 <input
                   type="number"
                   min="1"
@@ -553,29 +801,26 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   placeholder={
                     catalogItem?.defaultOpenedShelfDays
                       ? String(catalogItem.defaultOpenedShelfDays)
-                      : "Если не знаете, оставьте пустым"
+                      : tCabinet(language, "openedShelfDaysUnknown")
                   }
                 />
                 <span className="mt-1 block text-xs text-muted">
-                  Если у препарата есть срок после вскрытия в справочнике, он подставится
-                  автоматически.
+                  {tCabinet(language, "openedShelfDaysAuto")}
                 </span>
               </label>
             </div>
             {isExpired && (
               <p className="soft-note-warning rounded-2xl px-4 py-3 text-sm">
-                Срок годности уже истёк. Препарат можно сохранить в аптечку для учёта, но Safety
-                Engine не даст использовать его в приёмах.
+                {tCabinet(language, "expiredWarning")}
               </p>
             )}
             {hasUnknownAfterOpening && (
               <p className="soft-note-info rounded-2xl px-4 py-3 text-sm">
-                Дата вскрытия указана, но срок после вскрытия не задан. Препарат сохранится, но
-                оценка после вскрытия будет считаться неизвестной.
+                {tCabinet(language, "openedUnknownWarning")}
               </p>
             )}
             <label className="block space-y-1.5">
-              <span className="soft-field-label">Комментарий</span>
+              <span className="soft-field-label">{tCabinet(language, "comment")}</span>
               <textarea
                 value={comment}
                 onChange={(e) => {
@@ -583,7 +828,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   setFormError(null);
                 }}
                 className="soft-input min-h-20 w-full px-4"
-                placeholder="Например: только ночью после еды"
+                placeholder={tCabinet(language, "commentPlaceholder")}
               />
             </label>
             {(formError ||
@@ -596,7 +841,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                       response?: { data?: { detail?: string } };
                     }
                   ).response?.data?.detail ??
-                  "Не удалось добавить препарат."}
+                  tCabinet(language, "addError")}
               </p>
             )}
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -607,7 +852,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   disabled={!expiryDate || createHouseholdMutation.isPending}
                   className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
                 >
-                  Добавить в аптечку
+                  {tCabinet(language, "addToKit")}
                 </button>
               ) : (
                 <button
@@ -618,7 +863,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                   }
                   className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
                 >
-                  Добавить свой препарат в аптечку
+                  {tCabinet(language, "addOwnToKit")}
                 </button>
               )}
               <button
@@ -639,7 +884,7 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
                 }}
                 className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
               >
-                Сбросить
+                {tCabinet(language, "reset")}
               </button>
             </div>
           </>
@@ -650,11 +895,13 @@ function AddHouseholdMedicineForm({ onCreated }: { onCreated: () => void }) {
 }
 
 function MedicineItemCard({
+  language,
   medicine,
   onDelete,
   isDeleting = false,
   compact = false,
 }: {
+  language: AppLanguage;
   medicine: HouseholdMedicine;
   onDelete: (id: string) => void;
   isDeleting?: boolean;
@@ -686,9 +933,13 @@ function MedicineItemCard({
   const isExpired = isExpiredDate(expiryDate);
   const hasUnknownAfterOpening = hasUnknownOpenedShelfLife(openedAt, openedShelfDays);
   const isOwnMedicine = medicine.catalogItemId === null;
-  const intakeMessage = getIntakeMessage(medicine);
-  const statusDateText = getStatusDateText(medicine);
-  const openedStatusHint = getOpenedStatusHint(medicine);
+  const intakeMessage = getIntakeMessage(medicine, language);
+  const statusDateText = getStatusDateText(medicine, language);
+  const openedStatusHint = getOpenedStatusHint(medicine, language);
+  const localizedMedicineForm = getLocalizedMedicineForm(medicine.medicineForm, language);
+  const useUntilText = medicine.openedExpiresAt
+    ? tCabinet(language, "useUntil", { date: formatDate(medicine.openedExpiresAt) })
+    : "";
 
   const collapseMobileCard = () => {
     setIsMobileActionsExpanded(false);
@@ -761,11 +1012,14 @@ function MedicineItemCard({
       <li>
         <ConfirmDialog
           isOpen={isDeleteConfirmOpen}
-          title={`Списать препарат · ${medicine.medicineName}`}
-          description="Карточка будет удалена из аптечки. Используй это для реально списанной или выброшенной упаковки."
-          confirmLabel={isDeleting ? "Списываем…" : "Списать"}
+          title={tCabinet(language, "writeOffTitle", { name: medicine.medicineName })}
+          description={tCabinet(language, "writeOffDescription")}
+          confirmLabel={
+            isDeleting ? tCabinet(language, "writeOffPending") : tCabinet(language, "writeOff")
+          }
           confirmTone="danger"
           isPending={isDeleting}
+          cancelLabel={tCabinet(language, "close")}
           onCancel={() => setIsDeleteConfirmOpen(false)}
           onConfirm={() => onDelete(medicine.id)}
         />
@@ -836,7 +1090,7 @@ function MedicineItemCard({
                   </div>
                   {medicine.medicineForm &&
                   medicine.medicineForm.trim().toLowerCase() !== "не указано" ? (
-                    <p className="mt-1 text-xs text-muted">{medicine.medicineForm}</p>
+                    <p className="mt-1 text-xs text-muted">{localizedMedicineForm}</p>
                   ) : null}
                 </div>
               </div>
@@ -846,23 +1100,34 @@ function MedicineItemCard({
               <div className="space-y-3 border-t border-border/60 pt-3">
                 {isDetailsExpanded && (
                   <div className="space-y-1.5 text-sm text-muted">
-                    <p>Форма: {medicine.medicineForm}</p>
+                    <p>{tCabinet(language, "formField", { value: localizedMedicineForm })}</p>
                     {medicine.openedAt && (
                       <p>
-                        Вскрыто: {formatDate(medicine.openedAt)}
                         {medicine.effectiveOpenedShelfDays
-                          ? ` · После вскрытия: ${medicine.effectiveOpenedShelfDays} дн.`
-                          : " · Срок после вскрытия не указан"}
-                        {medicine.openedExpiresAt
-                          ? ` · Использовать до: ${formatDate(medicine.openedExpiresAt)}`
-                          : ""}
+                          ? tCabinet(language, "openedFieldKnown", {
+                              date: formatDate(medicine.openedAt),
+                              days: medicine.effectiveOpenedShelfDays,
+                              untilText: useUntilText,
+                            })
+                          : tCabinet(language, "openedFieldUnknown", {
+                              date: formatDate(medicine.openedAt),
+                              untilText: useUntilText,
+                            })}
                       </p>
                     )}
-                    {medicine.medicineDosage && <p>Как применять: {medicine.medicineDosage}</p>}
-                    {medicine.medicineDescription && (
-                      <p>Описание: {medicine.medicineDescription}</p>
+                    {medicine.medicineDosage && (
+                      <p>{tCabinet(language, "usageField", { value: medicine.medicineDosage })}</p>
                     )}
-                    {medicine.comment && <p>Комментарий: {medicine.comment}</p>}
+                    {medicine.medicineDescription && (
+                      <p>
+                        {tCabinet(language, "descriptionField", {
+                          value: medicine.medicineDescription,
+                        })}
+                      </p>
+                    )}
+                    {medicine.comment && (
+                      <p>{tCabinet(language, "commentField", { value: medicine.comment })}</p>
+                    )}
                   </div>
                 )}
 
@@ -872,14 +1137,14 @@ function MedicineItemCard({
                     onClick={() => setIsDetailsExpanded((value) => !value)}
                     className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                   >
-                    {isDetailsExpanded ? "Скрыть" : "Подробнее"}
+                    {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsDeleteConfirmOpen(true)}
                     className="soft-button-danger inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                   >
-                    Списать
+                    {tCabinet(language, "writeOff")}
                   </button>
                 </div>
               </div>
@@ -894,11 +1159,14 @@ function MedicineItemCard({
     <li>
       <ConfirmDialog
         isOpen={isDeleteConfirmOpen}
-        title={`Списать препарат · ${medicine.medicineName}`}
-        description="Карточка будет удалена из аптечки. Используй это для реально списанной или выброшенной упаковки."
-        confirmLabel={isDeleting ? "Списываем…" : "Списать"}
+        title={tCabinet(language, "writeOffTitle", { name: medicine.medicineName })}
+        description={tCabinet(language, "writeOffDescription")}
+        confirmLabel={
+          isDeleting ? tCabinet(language, "writeOffPending") : tCabinet(language, "writeOff")
+        }
         confirmTone="danger"
         isPending={isDeleting}
+        cancelLabel={tCabinet(language, "close")}
         onCancel={() => setIsDeleteConfirmOpen(false)}
         onConfirm={() => onDelete(medicine.id)}
       />
@@ -989,21 +1257,34 @@ function MedicineItemCard({
 
             {isDetailsExpanded && (
               <div className="mt-4 space-y-2 border-t border-border/70 pt-4 text-sm text-muted">
-                <p>Форма: {medicine.medicineForm}</p>
+                <p>{tCabinet(language, "formField", { value: localizedMedicineForm })}</p>
                 {medicine.openedAt && (
                   <p>
-                    Вскрыто: {formatDate(medicine.openedAt)}
                     {medicine.effectiveOpenedShelfDays
-                      ? ` · После вскрытия: ${medicine.effectiveOpenedShelfDays} дн.`
-                      : " · Срок после вскрытия не указан"}
-                    {medicine.openedExpiresAt
-                      ? ` · Использовать до: ${formatDate(medicine.openedExpiresAt)}`
-                      : ""}
+                      ? tCabinet(language, "openedFieldKnown", {
+                          date: formatDate(medicine.openedAt),
+                          days: medicine.effectiveOpenedShelfDays,
+                          untilText: useUntilText,
+                        })
+                      : tCabinet(language, "openedFieldUnknown", {
+                          date: formatDate(medicine.openedAt),
+                          untilText: useUntilText,
+                        })}
                   </p>
                 )}
-                {medicine.medicineDosage && <p>Как применять: {medicine.medicineDosage}</p>}
-                {medicine.medicineDescription && <p>Описание: {medicine.medicineDescription}</p>}
-                {medicine.comment && <p>Комментарий: {medicine.comment}</p>}
+                {medicine.medicineDosage && (
+                  <p>{tCabinet(language, "usageField", { value: medicine.medicineDosage })}</p>
+                )}
+                {medicine.medicineDescription && (
+                  <p>
+                    {tCabinet(language, "descriptionField", {
+                      value: medicine.medicineDescription,
+                    })}
+                  </p>
+                )}
+                {medicine.comment && (
+                  <p>{tCabinet(language, "commentField", { value: medicine.comment })}</p>
+                )}
               </div>
             )}
           </div>
@@ -1015,7 +1296,7 @@ function MedicineItemCard({
                   onClick={() => setIsDetailsExpanded((value) => !value)}
                   className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                 >
-                  {isDetailsExpanded ? "Скрыть" : "Подробнее"}
+                  {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
                 </button>
                 {!compact && (
                   <button
@@ -1023,7 +1304,7 @@ function MedicineItemCard({
                     onClick={() => setIsEditing((value) => !value)}
                     className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                   >
-                    {isEditing ? "Закрыть" : "Новая упаковка"}
+                    {isEditing ? tCabinet(language, "close") : tCabinet(language, "newPack")}
                   </button>
                 )}
                 <button
@@ -1031,7 +1312,7 @@ function MedicineItemCard({
                   onClick={() => setIsDeleteConfirmOpen(true)}
                   className="soft-button-danger inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                 >
-                  Списать
+                  {tCabinet(language, "writeOff")}
                 </button>
               </div>
             </div>
@@ -1043,7 +1324,7 @@ function MedicineItemCard({
                 onClick={() => setIsDetailsExpanded((value) => !value)}
                 className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
               >
-                {isDetailsExpanded ? "Скрыть" : "Подробнее"}
+                {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
               </button>
               {!compact && (
                 <button
@@ -1051,7 +1332,7 @@ function MedicineItemCard({
                   onClick={() => setIsEditing((value) => !value)}
                   className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
                 >
-                  {isEditing ? "Закрыть" : "Новая упаковка"}
+                  {isEditing ? tCabinet(language, "close") : tCabinet(language, "newPack")}
                 </button>
               )}
               <button
@@ -1059,7 +1340,7 @@ function MedicineItemCard({
                 onClick={() => setIsDeleteConfirmOpen(true)}
                 className="soft-button-danger inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
               >
-                Списать
+                {tCabinet(language, "writeOff")}
               </button>
             </div>
           )}
@@ -1067,14 +1348,11 @@ function MedicineItemCard({
 
         {isEditing && (
           <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
-            <p className="sm:col-span-2 text-sm text-muted">
-              Если купили новую упаковку этого же препарата, обновите здесь срок годности и дату
-              вскрытия. Старую карточку заводить заново не нужно.
-            </p>
+            <p className="sm:col-span-2 text-sm text-muted">{tCabinet(language, "newPackHint")}</p>
             {isOwnMedicine && (
               <>
                 <label className="block space-y-1.5">
-                  <span className="soft-field-label">Название препарата</span>
+                  <span className="soft-field-label">{tCabinet(language, "medicineName")}</span>
                   <input
                     type="text"
                     value={medicineName}
@@ -1083,7 +1361,7 @@ function MedicineItemCard({
                   />
                 </label>
                 <label className="block space-y-1.5">
-                  <span className="soft-field-label">Форма</span>
+                  <span className="soft-field-label">{tCabinet(language, "formShort")}</span>
                   <input
                     type="text"
                     value={medicineForm}
@@ -1092,7 +1370,7 @@ function MedicineItemCard({
                   />
                 </label>
                 <label className="block space-y-1.5 sm:col-span-2">
-                  <span className="soft-field-label">Концентрация</span>
+                  <span className="soft-field-label">{tCabinet(language, "concentration")}</span>
                   <input
                     type="text"
                     value={medicineConcentration}
@@ -1101,7 +1379,7 @@ function MedicineItemCard({
                   />
                 </label>
                 <label className="block space-y-1.5 sm:col-span-2">
-                  <span className="soft-field-label">Описание</span>
+                  <span className="soft-field-label">{tCabinet(language, "description")}</span>
                   <textarea
                     value={medicineDescription}
                     onChange={(e) => setMedicineDescription(e.target.value)}
@@ -1109,7 +1387,7 @@ function MedicineItemCard({
                   />
                 </label>
                 <label className="block space-y-1.5 sm:col-span-2">
-                  <span className="soft-field-label">Как применять</span>
+                  <span className="soft-field-label">{tCabinet(language, "usage")}</span>
                   <textarea
                     value={medicineDosage}
                     onChange={(e) => setMedicineDosage(e.target.value)}
@@ -1119,15 +1397,20 @@ function MedicineItemCard({
               </>
             )}
             <label className="block space-y-1.5">
-              <span className="soft-field-label">Срок годности</span>
-              <DateField value={expiryDate} onChange={setExpiryDate} className="" />
+              <span className="soft-field-label">{tCabinet(language, "expiryDate")}</span>
+              <DateField
+                value={expiryDate}
+                onChange={setExpiryDate}
+                className=""
+                language={language}
+              />
             </label>
             <label className="block space-y-1.5">
-              <span className="soft-field-label">Дата вскрытия</span>
-              <DateField value={openedAt} onChange={setOpenedAt} className="" />
+              <span className="soft-field-label">{tCabinet(language, "openedAt")}</span>
+              <DateField value={openedAt} onChange={setOpenedAt} className="" language={language} />
             </label>
             <label className="block space-y-1.5">
-              <span className="soft-field-label">Срок после вскрытия, дней</span>
+              <span className="soft-field-label">{tCabinet(language, "openedShelfDays")}</span>
               <input
                 type="number"
                 min="1"
@@ -1139,18 +1422,16 @@ function MedicineItemCard({
             </label>
             {isExpired && (
               <p className="soft-note-warning rounded-2xl px-4 py-3 text-sm sm:col-span-2">
-                Срок годности уже истёк. Препарат останется в аптечке для учёта, но использовать его
-                в приёмах нельзя.
+                {tCabinet(language, "expiredCardWarning")}
               </p>
             )}
             {hasUnknownAfterOpening && (
               <p className="soft-note-info rounded-2xl px-4 py-3 text-sm sm:col-span-2">
-                Дата вскрытия указана, но срок после вскрытия не задан. Статус после вскрытия будет
-                считаться неизвестным.
+                {tCabinet(language, "openedCardWarning")}
               </p>
             )}
             <label className="block space-y-1.5 sm:col-span-2">
-              <span className="soft-field-label">Комментарий</span>
+              <span className="soft-field-label">{tCabinet(language, "comment")}</span>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
@@ -1167,7 +1448,7 @@ function MedicineItemCard({
                 }
                 className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
               >
-                Сохранить
+                {tCabinet(language, "save")}
               </button>
             </div>
           </div>
