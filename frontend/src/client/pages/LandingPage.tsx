@@ -105,8 +105,10 @@ export function LandingPage() {
           <section className="landing-hero-reset">
             <div className="landing-hero-reset-inner">
               <div className="landing-hero-reset-topline">
-                <Link to="/" className="landing-hero-reset-brandmark" aria-label={landingBrandName}>
+                <Link to="/" className="landing-hero-reset-brandicon" aria-label={landingBrandName}>
                   <img src="/pwa-icon.png" alt="" className="landing-hero-reset-logo" />
+                </Link>
+                <Link to="/" className="landing-hero-reset-brandmark" aria-label={landingBrandName}>
                   <BrandWordmark className="landing-hero-reset-brand" ariaLabel={landingBrandName} />
                 </Link>
                 <button
@@ -118,13 +120,12 @@ export function LandingPage() {
                   {theme === "light" ? "Ночь" : "День"}
                 </button>
               </div>
-              <p className="landing-section-label mt-6 justify-center">
+              <p className="landing-section-label mt-4 justify-center sm:mt-5">
                 Семейный трекер здоровья ребёнка
               </p>
               <h1 className="landing-hero-reset-title">Всё важное о ребёнке в одном месте</h1>
               <p className="landing-hero-reset-lead">
-                <BrandWordmark className="brand-wordmark-inline" ariaLabel={landingBrandName} />{" "}
-                помогает семье вести наблюдение за ребёнком, держать под рукой лекарства, домашнюю
+                Семье проще вести наблюдение за ребёнком, держать под рукой лекарства, домашнюю
                 аптечку и важные записи в одном месте, чтобы не терять детали между сообщениями,
                 заметками и памятью.
               </p>

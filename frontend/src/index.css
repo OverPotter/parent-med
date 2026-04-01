@@ -1870,32 +1870,41 @@ p {
   }
 
   .landing-hero-reset-topline {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
   }
 
+  .landing-hero-reset-brandicon,
   .landing-hero-reset-brandmark {
     display: inline-flex;
     align-items: center;
-    gap: 0.92rem;
     min-width: 0;
     text-decoration: none;
   }
 
+  .landing-hero-reset-brandicon {
+    justify-self: start;
+  }
+
+  .landing-hero-reset-brandmark {
+    justify-self: center;
+  }
+
   .landing-hero-reset-logo {
-    width: 2.9rem;
-    height: 2.9rem;
+    width: 3.1rem;
+    height: 3.1rem;
     flex: 0 0 auto;
-    border-radius: 1.15rem;
-    box-shadow: 0 14px 24px -18px rgb(var(--color-shadow) / 0.24);
+    border-radius: 1.2rem;
+    box-shadow: 0 16px 26px -18px rgb(var(--color-shadow) / 0.26);
   }
 
   .landing-hero-reset-brand {
     margin: 0;
     font-size: 1.28rem;
     letter-spacing: -0.055em;
+    text-align: center;
   }
 
   .landing-hero-reset-title {
@@ -2482,28 +2491,27 @@ p {
 
   @media (max-width: 640px) {
     .landing-hero-reset-topline {
-      flex-direction: row;
+      grid-template-columns: auto 1fr auto;
       align-items: center;
-      justify-content: space-between;
       gap: 0.85rem;
     }
 
     .landing-hero-reset-brandmark {
-      flex: 1 1 auto;
       min-width: 0;
-      gap: 0.72rem;
+      justify-self: center;
     }
 
     .landing-hero-reset-logo {
-      width: 2.55rem;
-      height: 2.55rem;
-      border-radius: 1rem;
+      width: 2.7rem;
+      height: 2.7rem;
+      border-radius: 1.05rem;
     }
 
     .landing-hero-reset-brand {
       font-size: 1.14rem;
       letter-spacing: -0.072em;
     }
+
 
     .landing-theme-toggle {
       flex: 0 0 auto;
