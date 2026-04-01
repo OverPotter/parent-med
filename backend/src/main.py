@@ -19,6 +19,7 @@ from src.api.routers import (
     illness_episodes,
     medicine_catalog,
     parents,
+    pillbox_plans,
     push_notifications,
     temperature_entries,
     weight_entries,
@@ -91,6 +92,11 @@ def create_app() -> FastAPI:
     )
     app.include_router(
         episode_medication_plans.router,
+        prefix="/api/v1",
+        dependencies=protected_dependencies,
+    )
+    app.include_router(
+        pillbox_plans.router,
         prefix="/api/v1",
         dependencies=protected_dependencies,
     )

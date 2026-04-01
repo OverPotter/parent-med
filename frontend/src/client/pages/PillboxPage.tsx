@@ -1,19 +1,36 @@
-import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  createPillboxPlan,
+  deletePillboxPlan,
+  fetchPillboxPlan,
+  fetchPillboxPlans,
+  takePillboxDose,
+  updatePillboxPlan,
+} from "@shared/api/pillboxPlans";
+import type {
+  PillboxMealRule,
+  PillboxPlan,
+  PillboxPlanSummary,
+  PillboxPlanWrite,
+} from "@shared/api/pillboxPlans.contract";
+import { fetchMyFamilyMembers } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { DateField } from "@shared/components/DateField";
 import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { AppLanguage } from "@shared/i18n";
+import { useAppStore } from "@shared/store/useAppStore";
 
 type MedicationItem = {
   id: string;
   title: string;
   dose: string;
   times: string[];
-  mealRule: string;
-  repeatDays: string[];
+  mealRule: PillboxMealRule;
+  repeatDays: number[];
   courseMode: "continuous" | "period";
   courseStartDate: string;
   courseEndDate: string;
@@ -24,10 +41,11 @@ type PillboxGroup = {
   title: string;
   activeCount: number;
   nextDose: string;
+  nextMedicationId: string | null;
+  nextMedicationTitle: string | null;
   members: string[];
   dayLabel?: string;
   progress: number;
-  medications: MedicationItem[];
 };
 
 type SetupDraft = {
@@ -41,8 +59,6 @@ type CoursePreset = "7" | "14" | "30" | "custom";
 type PillboxDeleteTarget =
   | { kind: "plan" }
   | { kind: "medication"; medicationId: string; medicationName: string };
-
-const PILLBOX_EDITOR_STATE_KEY = "pillbox-editor-state";
 
 const pillboxCopy = {
   ru: {
@@ -95,6 +111,8 @@ const pillboxCopy = {
     medicinesInPlan: "лекарства в плане",
     nextShort: "След",
     nextDose: "Следующий приём",
+    markTaken: "Отметить приём",
+    taking: "Сохраняем...",
     courseActive: "Курс активен",
     noDeadline: "Без срока",
     archiveHint: "Когда курс закончится, план можно будет спокойно убрать в историю.",
@@ -163,6 +181,8 @@ const pillboxCopy = {
     medicinesInPlan: "medicines in plan",
     nextShort: "Next",
     nextDose: "Next dose",
+    markTaken: "Mark as taken",
+    taking: "Saving...",
     courseActive: "Course active",
     noDeadline: "No deadline",
     archiveHint: "When the course ends, the plan can be moved to history later.",
@@ -182,126 +202,15 @@ const pillboxCopy = {
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
 
-const familyMembers = ["Мама", "Папа", "Бабушка"];
 const medicationDays = [
-  { full: "Пн", short: "Пн" },
-  { full: "Вт", short: "Вт" },
-  { full: "Ср", short: "Ср" },
-  { full: "Чт", short: "Чт" },
-  { full: "Пт", short: "Пт" },
-  { full: "Сб", short: "Сб" },
-  { full: "Вс", short: "Вс" },
+  { value: 1, shortRu: "Пн", shortEn: "Mon" },
+  { value: 2, shortRu: "Вт", shortEn: "Tue" },
+  { value: 3, shortRu: "Ср", shortEn: "Wed" },
+  { value: 4, shortRu: "Чт", shortEn: "Thu" },
+  { value: 5, shortRu: "Пт", shortEn: "Fri" },
+  { value: 6, shortRu: "Сб", shortEn: "Sat" },
+  { value: 7, shortRu: "Вс", shortEn: "Sun" },
 ] as const;
-const initialGroups: PillboxGroup[] = [
-  {
-    id: "grandma",
-    title: "Таблетки бабушки",
-    activeCount: 3,
-    nextDose: "14:00",
-    members: ["Мама", "Папа"],
-    dayLabel: "День 5 из 14",
-    progress: 0.58,
-    medications: [
-      {
-        id: "g1",
-        title: "Магний B6",
-        dose: "1 таблетка",
-        times: ["08:30"],
-        mealRule: "Во время еды",
-        repeatDays: medicationDays.map((day) => day.full),
-        courseMode: "continuous",
-        courseStartDate: "",
-        courseEndDate: "",
-      },
-      {
-        id: "g2",
-        title: "Омега-3",
-        dose: "1 капсула",
-        times: ["08:30", "14:00", "20:00"],
-        mealRule: "После еды",
-        repeatDays: ["Пн", "Вт", "Ср", "Чт", "Пт"],
-        courseMode: "period",
-        courseStartDate: "",
-        courseEndDate: "",
-      },
-      {
-        id: "g3",
-        title: "Витамин D3",
-        dose: "4 капли",
-        times: ["20:00"],
-        mealRule: "После еды",
-        repeatDays: ["Пн", "Ср", "Пт"],
-        courseMode: "continuous",
-        courseStartDate: "",
-        courseEndDate: "",
-      },
-    ],
-  },
-  {
-    id: "recovery",
-    title: "Восстановление после операции",
-    activeCount: 2,
-    nextDose: "14:00",
-    members: ["Папа"],
-    progress: 0.44,
-    medications: [
-      {
-        id: "r1",
-        title: "Амоксиклав",
-        dose: "1 таблетка",
-        times: ["09:00", "21:00"],
-        mealRule: "После еды",
-        repeatDays: medicationDays.map((day) => day.full),
-        courseMode: "period",
-        courseStartDate: "2026-03-28",
-        courseEndDate: "2026-04-06",
-      },
-      {
-        id: "r2",
-        title: "Пробиотик",
-        dose: "1 капсула",
-        times: ["21:00"],
-        mealRule: "После еды",
-        repeatDays: medicationDays.map((day) => day.full),
-        courseMode: "continuous",
-        courseStartDate: "",
-        courseEndDate: "",
-      },
-    ],
-  },
-  {
-    id: "family",
-    title: "Семейный курс витаминов",
-    activeCount: 4,
-    nextDose: "14:00",
-    members: ["Мама"],
-    progress: 0.72,
-    medications: [
-      {
-        id: "f1",
-        title: "Витамин C",
-        dose: "1 шипучая таблетка",
-        times: ["07:30"],
-        mealRule: "До еды",
-        repeatDays: ["Пн", "Вт", "Ср", "Чт", "Пт"],
-        courseMode: "continuous",
-        courseStartDate: "",
-        courseEndDate: "",
-      },
-      {
-        id: "f2",
-        title: "Мультивитамины",
-        dose: "1 жевательная пастилка",
-        times: ["08:00", "13:00"],
-        mealRule: "После еды",
-        repeatDays: medicationDays.map((day) => day.full),
-        courseMode: "continuous",
-        courseStartDate: "",
-        courseEndDate: "",
-      },
-    ],
-  },
-];
 
 const editorSectionCardClass =
   "soft-card rounded-[24px] px-4 py-4 shadow-[0_10px_28px_rgba(15,23,42,0.06)] sm:rounded-[28px] sm:px-5 sm:py-5 xl:px-6 xl:py-6";
@@ -333,96 +242,17 @@ function tPillbox(
   );
 }
 
-function translateSeedValue(value: string, language: AppLanguage) {
-  if (language === "ru") {
-    return value;
-  }
-
-  const map: Record<string, string> = {
-    Мама: "Mom",
-    Папа: "Dad",
-    Бабушка: "Grandma",
-    Пн: "Mon",
-    Вт: "Tue",
-    Ср: "Wed",
-    Чт: "Thu",
-    Пт: "Fri",
-    Сб: "Sat",
-    Вс: "Sun",
-    "Магний B6": "Magnesium B6",
-    "Омега-3": "Omega-3",
-    "Витамин D3": "Vitamin D3",
-    Пробиотик: "Probiotic",
-    Амоксиклав: "Amoxiclav",
-    "Витамин C": "Vitamin C",
-    Мультивитамины: "Multivitamins",
-    "Таблетки бабушки": "Grandma's pills",
-    "Восстановление после операции": "Post-surgery recovery",
-    "Семейный курс витаминов": "Family vitamin course",
-    "1 таблетка": "1 tablet",
-    "1 капсула": "1 capsule",
-    "4 капли": "4 drops",
-    "1 шипучая таблетка": "1 effervescent tablet",
-    "1 жевательная пастилка": "1 chewable lozenge",
-    "Во время еды": "With meal",
-    "После еды": "After meal",
-    "До еды": "Before meal",
-    "День 5 из 14": "Day 5 of 14",
-  };
-
-  return map[value] ?? value;
-}
-
 function createMedication(): MedicationItem {
   return {
     id: `new-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     title: "",
     dose: "",
     times: [""],
-    mealRule: "После еды",
-    repeatDays: medicationDays.map((day) => day.full),
+    mealRule: "after_meal",
+    repeatDays: medicationDays.map((day) => day.value),
     courseMode: "continuous",
     courseStartDate: "",
     courseEndDate: "",
-  };
-}
-
-function buildDraft(group?: PillboxGroup): SetupDraft {
-  if (!group) {
-    return {
-      id: null,
-      title: "",
-      members: ["Мама"],
-      medications: [],
-    };
-  }
-
-  return {
-    id: group.id,
-    title: group.title,
-    members: [...group.members],
-    medications: group.medications.map((item) => ({ ...item })),
-  };
-}
-
-function buildGroupFromDraft(
-  draft: SetupDraft,
-  language: AppLanguage,
-  previous?: PillboxGroup
-): PillboxGroup {
-  const nextDose =
-    draft.medications.flatMap((item) => item.times).sort((a, b) => a.localeCompare(b))[0] ??
-    "08:30";
-
-  return {
-    id: previous?.id ?? `group-${Date.now()}`,
-    title: draft.title.trim() || tPillbox(language, "untitledPlan"),
-    activeCount: draft.medications.length,
-    nextDose,
-    members: draft.members,
-    dayLabel: previous?.dayLabel,
-    progress: previous?.progress ?? 0.35,
-    medications: draft.medications,
   };
 }
 
@@ -666,15 +496,86 @@ function resetMedicationEditorFields(
   setEditorTimes([""]);
 }
 
-function displayPillboxText(value: string, language: AppLanguage) {
-  return translateSeedValue(value, language);
+function displayPillboxText(value: string) {
+  return value;
+}
+
+function getMedicationDayLabel(day: (typeof medicationDays)[number], language: AppLanguage) {
+  return language === "ru" ? day.shortRu : day.shortEn;
+}
+
+function buildDraft(accountId: string | null, plan?: PillboxPlan): SetupDraft {
+  if (!plan) {
+    return {
+      id: null,
+      title: "",
+      members: accountId ? [accountId] : [],
+      medications: [],
+    };
+  }
+
+  return {
+    id: plan.id,
+    title: plan.title,
+    members: [...plan.memberAccountIds],
+    medications: plan.medications
+      .slice()
+      .sort((left, right) => left.position - right.position)
+      .map((item) => ({
+        id: item.id,
+        title: item.customMedicineName ?? "",
+        dose: item.doseAmount,
+        times: [...item.times],
+        mealRule: item.mealRule,
+        repeatDays: [...item.repeatDays],
+        courseMode: item.courseMode,
+        courseStartDate: item.courseStartDate ?? "",
+        courseEndDate: item.courseEndDate ?? "",
+      })),
+  };
+}
+
+function toPlanWrite(draft: SetupDraft): PillboxPlanWrite {
+  return {
+    title: draft.title.trim(),
+    memberAccountIds: draft.members,
+    medications: draft.medications.map((item, index) => ({
+      id: item.id.startsWith("new-") ? null : item.id,
+      householdMedicineId: null,
+      customMedicineName: item.title.trim() || null,
+      doseAmount: item.dose.trim(),
+      mealRule: item.mealRule,
+      repeatDays: [...item.repeatDays],
+      times: item.times.map((value) => finalizeTimeInput(value)),
+      courseMode: item.courseMode,
+      courseStartDate: item.courseMode === "period" ? item.courseStartDate || null : null,
+      courseEndDate: item.courseMode === "period" ? item.courseEndDate || null : null,
+      position: index,
+    })),
+  };
+}
+
+function toGroupSummary(summary: PillboxPlanSummary): PillboxGroup {
+  return {
+    id: summary.id,
+    title: summary.title,
+    activeCount: summary.activeMedicationCount,
+    nextDose: summary.nextDoseLabel ?? "—",
+    nextMedicationId: summary.nextMedicationId,
+    nextMedicationTitle: summary.nextMedicationTitle,
+    members: summary.memberAccountIds,
+    dayLabel: summary.courseDayLabel ?? undefined,
+    progress: summary.courseProgressRatio ?? 0,
+  };
 }
 
 export function PillboxPage() {
   const { language } = useI18n();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const [groups, setGroups] = useState(initialGroups);
+  const accountId = useAppStore((s) => s.accountId);
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const [draft, setDraft] = useState<SetupDraft | null>(null);
   const [editorTitle, setEditorTitle] = useState("");
   const [editorDose, setEditorDose] = useState("");
@@ -686,72 +587,110 @@ export function PillboxPage() {
       ? (searchParams.get("mode") as "setup" | "medication")
       : "hub";
   const activeMedicationId = searchParams.get("med");
+  const selectedPlanId = searchParams.get("plan");
+  const isCreating = selectedPlanId === "new" || (screen !== "hub" && !selectedPlanId);
 
   const isEditing = Boolean(draft?.id);
   const activeMedication =
     draft?.medications.find((medication) => medication.id === activeMedicationId) ?? null;
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+  const { data: familyMembers = [] } = useQuery({
+    queryKey: ["families", "me", "members", currentFamilyId],
+    queryFn: fetchMyFamilyMembers,
+    enabled: Boolean(currentFamilyId),
+    staleTime: 5 * 60 * 1000,
+  });
 
-    const saved = window.sessionStorage.getItem(PILLBOX_EDITOR_STATE_KEY);
-    if (!saved) {
-      return;
-    }
+  const { data: planSummaries = [], isLoading: plansLoading } = useQuery({
+    queryKey: ["pillbox-plans", currentFamilyId],
+    queryFn: fetchPillboxPlans,
+    enabled: Boolean(currentFamilyId),
+  });
 
-    try {
-      const parsed = JSON.parse(saved) as {
-        groups?: PillboxGroup[];
-        draft?: SetupDraft | null;
-        editorTitle?: string;
-        editorDose?: string;
-        editorTimes?: string[];
-      };
+  const { data: selectedPlan, isLoading: selectedPlanLoading } = useQuery({
+    queryKey: ["pillbox-plan", selectedPlanId],
+    queryFn: () => fetchPillboxPlan(selectedPlanId!),
+    enabled: Boolean(selectedPlanId && selectedPlanId !== "new"),
+  });
 
-      if (parsed.groups) setGroups(parsed.groups);
-      if ("draft" in parsed) setDraft(parsed.draft ?? null);
-      if (typeof parsed.editorTitle === "string") setEditorTitle(parsed.editorTitle);
-      if (typeof parsed.editorDose === "string") setEditorDose(parsed.editorDose);
-      if (Array.isArray(parsed.editorTimes)) setEditorTimes(parsed.editorTimes);
-    } catch {
-      window.sessionStorage.removeItem(PILLBOX_EDITOR_STATE_KEY);
-    }
-  }, []);
+  const memberLabelById = useMemo(
+    () =>
+      new Map(
+        familyMembers.map((member) => [member.id, member.displayName || member.login || member.id])
+      ),
+    [familyMembers]
+  );
+  const groups = useMemo(() => planSummaries.map(toGroupSummary), [planSummaries]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+  const createPlanMutation = useMutation({
+    mutationFn: createPillboxPlan,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
+      goToHub();
+    },
+  });
 
-    if (screen === "hub" && !draft) {
-      window.sessionStorage.removeItem(PILLBOX_EDITOR_STATE_KEY);
-      return;
-    }
+  const updatePlanMutation = useMutation({
+    mutationFn: ({ planId, payload }: { planId: string; payload: PillboxPlanWrite }) =>
+      updatePillboxPlan(planId, payload),
+    onSuccess: async (plan) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
+        queryClient.invalidateQueries({ queryKey: ["pillbox-plan", plan.id] }),
+      ]);
+      goToHub();
+    },
+  });
 
-    window.sessionStorage.setItem(
-      PILLBOX_EDITOR_STATE_KEY,
-      JSON.stringify({
-        groups,
-        draft,
-        editorTitle,
-        editorDose,
-        editorTimes,
-      })
-    );
-  }, [draft, editorDose, editorTimes, editorTitle, groups, screen]);
+  const deletePlanMutation = useMutation({
+    mutationFn: deletePillboxPlan,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
+      goToHub();
+    },
+  });
+
+  const takeDoseMutation = useMutation({
+    mutationFn: ({ planId, medicationId }: { planId: string; medicationId: string }) =>
+      takePillboxDose(planId, medicationId, { source: "manual" }),
+    onSuccess: async (_, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
+        queryClient.invalidateQueries({ queryKey: ["pillbox-plan", variables.planId] }),
+      ]);
+    },
+  });
 
   useEffect(() => {
     if (screen !== "hub" && !draft) {
-      navigate("/pillbox", { replace: true });
+      if (isCreating) {
+        setDraft(buildDraft(accountId, undefined));
+      } else if (!selectedPlanLoading && !selectedPlanId) {
+        navigate("/pillbox", { replace: true });
+      }
       return;
     }
 
     if (screen === "medication" && draft && !activeMedication) {
-      navigate("/pillbox?mode=setup", { replace: true });
+      navigate(
+        `/pillbox?mode=setup${draft.id ? `&plan=${draft.id}` : "&plan=new"}`,
+        { replace: true }
+      );
     }
-  }, [activeMedication, draft, navigate, screen]);
+  }, [accountId, activeMedication, draft, isCreating, navigate, screen, selectedPlanId, selectedPlanLoading]);
+
+  useEffect(() => {
+    if (screen === "hub") {
+      return;
+    }
+    if (isCreating) {
+      setDraft((current) => current ?? buildDraft(accountId, undefined));
+      return;
+    }
+    if (selectedPlan && selectedPlanId && draft?.id !== selectedPlanId) {
+      setDraft(buildDraft(accountId, selectedPlan));
+    }
+  }, [accountId, draft?.id, isCreating, screen, selectedPlan, selectedPlanId]);
 
   useEffect(() => {
     if (screen !== "medication" || !activeMedicationId) {
@@ -761,20 +700,20 @@ export function PillboxPage() {
     }
 
     const medication = draft?.medications.find((item) => item.id === activeMedicationId) ?? null;
-    setEditorTitle(medication ? displayPillboxText(medication.title, language) : "");
-    setEditorDose(medication ? displayPillboxText(medication.dose, language) : "");
+    setEditorTitle(medication ? displayPillboxText(medication.title) : "");
+    setEditorDose(medication ? displayPillboxText(medication.dose) : "");
     setEditorTimes(medication?.times.length ? [...medication.times] : [""]);
     setEditorCoursePreset(medication ? getCoursePreset(medication) : "custom");
-  }, [activeMedicationId, draft?.id, language, screen]);
+  }, [activeMedicationId, draft?.id, screen]);
 
   const openCreate = () => {
-    setDraft(buildDraft());
-    navigate("/pillbox?mode=setup");
+    setDraft(buildDraft(accountId, undefined));
+    navigate("/pillbox?mode=setup&plan=new");
   };
 
   const openEdit = (group: PillboxGroup) => {
-    setDraft(buildDraft(group));
-    navigate("/pillbox?mode=setup");
+    setDraft(null);
+    navigate(`/pillbox?mode=setup&plan=${group.id}`);
   };
 
   const goToHub = () => {
@@ -784,7 +723,7 @@ export function PillboxPage() {
   };
 
   const goToSetup = () => {
-    navigate("/pillbox?mode=setup");
+    navigate(`/pillbox?mode=setup${draft?.id ? `&plan=${draft.id}` : "&plan=new"}`);
   };
 
   const closeMedicationEditor = () => {
@@ -794,7 +733,9 @@ export function PillboxPage() {
   };
 
   const goToMedication = (medicationId: string) => {
-    navigate(`/pillbox?mode=medication&med=${medicationId}`);
+    navigate(
+      `/pillbox?mode=medication&med=${medicationId}${draft?.id ? `&plan=${draft.id}` : "&plan=new"}`
+    );
   };
 
   const addMedication = () => {
@@ -855,26 +796,20 @@ export function PillboxPage() {
 
   const saveGroup = () => {
     if (!draft) return;
-
-    const previous = groups.find((group) => group.id === draft.id);
-    const nextGroup = buildGroupFromDraft(draft, language, previous);
-
-    setGroups((current) => {
-      if (draft.id) {
-        return current.map((group) => (group.id === draft.id ? nextGroup : group));
-      }
-
-      return [nextGroup, ...current];
-    });
-
-    goToHub();
+    const payload = toPlanWrite(draft);
+    if (draft.id) {
+      updatePlanMutation.mutate({ planId: draft.id, payload });
+      return;
+    }
+    createPlanMutation.mutate(payload);
   };
 
   const deleteGroup = () => {
-    if (!draft?.id) return;
-
-    setGroups((current) => current.filter((group) => group.id !== draft.id));
-    goToHub();
+    if (!draft?.id) {
+      goToHub();
+      return;
+    }
+    deletePlanMutation.mutate(draft.id);
   };
 
   const deleteMedication = (medicationId: string) => {
@@ -913,6 +848,52 @@ export function PillboxPage() {
     deleteMedication(deleteTarget.medicationId);
     setDeleteTarget(null);
   };
+
+  const markNextDoseTaken = (group: PillboxGroup) => {
+    if (!group.nextMedicationId || takeDoseMutation.isPending) {
+      return;
+    }
+    takeDoseMutation.mutate({ planId: group.id, medicationId: group.nextMedicationId });
+  };
+
+  if (screen === "hub" && plansLoading) {
+    return (
+      <div className="space-y-6">
+        <PageIntro
+          title={tPillbox(language, "hubTitle")}
+          subtitle={tPillbox(language, "hubSubtitle")}
+          compactOnMobile
+          action={
+            <button type="button" disabled className={actionPrimaryClass}>
+              {tPillbox(language, "createPlan")}
+            </button>
+          }
+          className="[&_.app-title]:text-[1.72rem] [&_.app-title]:tracking-[-0.05em] sm:[&_.app-title]:text-[2.1rem] [&_.app-subtitle]:text-[0.93rem] sm:[&_.app-subtitle]:text-[0.98rem]"
+        />
+        <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
+          {language === "ru" ? "Загружаем планы приёма..." : "Loading medication plans..."}
+        </div>
+      </div>
+    );
+  }
+
+  if (screen !== "hub" && !isCreating && selectedPlanLoading && !draft) {
+    return (
+      <div className="space-y-6">
+        <BackLinkButton
+          label={
+            screen === "medication"
+              ? tPillbox(language, "medicationBack")
+              : tPillbox(language, "setupBack")
+          }
+          onClick={goToHub}
+        />
+        <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
+          {language === "ru" ? "Загружаем план..." : "Loading plan..."}
+        </div>
+      </div>
+    );
+  }
 
   if (screen === "medication" && draft && activeMedication) {
     const showCourseDates = activeMedication.courseMode === "period";
@@ -1002,19 +983,19 @@ export function PillboxPage() {
                     <div className="space-y-2.5">
                       <div className="grid grid-cols-7 gap-2 sm:gap-2.5 lg:gap-2">
                         {medicationDays.map((day) => {
-                          const selected = activeMedication.repeatDays.includes(day.full);
+                          const selected = activeMedication.repeatDays.includes(day.value);
                           return (
                             <DayChip
-                              key={day.full}
-                              label={displayPillboxText(day.short, language)}
+                              key={day.value}
+                              label={getMedicationDayLabel(day, language)}
                               selected={selected}
                               onClick={() =>
                                 updateMedication(activeMedication.id, {
                                   repeatDays: selected
                                     ? activeMedication.repeatDays.filter(
-                                        (item) => item !== day.full
+                                        (item) => item !== day.value
                                       )
-                                    : [...activeMedication.repeatDays, day.full],
+                                    : [...activeMedication.repeatDays, day.value],
                                 })
                               }
                             />
@@ -1149,17 +1130,17 @@ export function PillboxPage() {
                   buttonClassName="text-[0.84rem] sm:text-[0.86rem]"
                   options={[
                     {
-                      value: "До еды",
+                      value: "before_meal",
                       label: tPillbox(language, "beforeMeal"),
                       icon: <UtensilsBadge />,
                     },
                     {
-                      value: "Во время еды",
+                      value: "with_meal",
                       label: tPillbox(language, "duringMeal"),
                       icon: <UtensilsBadge />,
                     },
                     {
-                      value: "После еды",
+                      value: "after_meal",
                       label: tPillbox(language, "afterMeal"),
                       icon: <UtensilsBadge />,
                     },
@@ -1288,17 +1269,12 @@ export function PillboxPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-[0.95rem] font-semibold tracking-[-0.025em] text-foreground">
                               {displayPillboxText(
-                                medication.title ||
-                                  tPillbox(language, "unnamedMedicine", { index: index + 1 }),
-                                language
+                                medication.title || tPillbox(language, "unnamedMedicine", { index: index + 1 })
                               )}
                             </span>
                           </div>
                           <p className="mt-1 text-[0.78rem] text-muted">
-                            {displayPillboxText(
-                              medication.dose || tPillbox(language, "amountMissing"),
-                              language
-                            )}{" "}
+                            {displayPillboxText(medication.dose || tPillbox(language, "amountMissing"))}{" "}
                             · {summarizeMedicationTimes(medication.times, language)}
                           </p>
                         </div>
@@ -1312,17 +1288,13 @@ export function PillboxPage() {
                           requestDeleteMedication(
                             medication.id,
                             displayPillboxText(
-                              medication.title ||
-                                tPillbox(language, "unnamedMedicine", { index: index + 1 }),
-                              language
+                              medication.title || tPillbox(language, "unnamedMedicine", { index: index + 1 })
                             )
                           )
                         }
                         className={actionCompactDangerClass}
                         aria-label={`${tPillbox(language, "delete")} ${displayPillboxText(
-                          medication.title ||
-                            tPillbox(language, "unnamedMedicine", { index: index + 1 }),
-                          language
+                          medication.title || tPillbox(language, "unnamedMedicine", { index: index + 1 })
                         )}`}
                       >
                         {tPillbox(language, "delete")}
@@ -1351,21 +1323,22 @@ export function PillboxPage() {
 
               <div className="flex items-start gap-3">
                 {familyMembers.map((member) => {
-                  const selected = draft.members.includes(member);
+                  const selected = draft.members.includes(member.id);
+                  const memberLabel = member.displayName || member.login || member.id;
 
                   return (
                     <button
-                      key={member}
+                      key={member.id}
                       type="button"
                       onClick={() =>
                         setDraft((current) => {
                           if (!current) return current;
-                          const hasMember = current.members.includes(member);
+                          const hasMember = current.members.includes(member.id);
                           return {
                             ...current,
                             members: hasMember
-                              ? current.members.filter((item) => item !== member)
-                              : [...current.members, member],
+                              ? current.members.filter((item) => item !== member.id)
+                              : [...current.members, member.id],
                           };
                         })
                       }
@@ -1388,11 +1361,11 @@ export function PillboxPage() {
                           />
                         ) : null}
                         <span className="text-[0.95rem] font-semibold text-[color:var(--color-primary)]">
-                          {memberInitial(member)}
+                          {memberInitial(memberLabel)}
                         </span>
                       </span>
                       <span className="text-[0.78rem] font-medium text-foreground">
-                        {displayPillboxText(member, language)}
+                        {memberLabel}
                       </span>
                     </button>
                   );
@@ -1473,7 +1446,7 @@ export function PillboxPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <h2 className="app-card-title text-[1rem] sm:text-[1.08rem]">
-                        {displayPillboxText(group.title, language)}
+                        {displayPillboxText(group.title)}
                       </h2>
                       <p className="mt-1 text-[0.84rem] leading-5 text-muted sm:text-[0.88rem]">
                         {group.activeCount} {tPillbox(language, "medicinesInPlan")}
@@ -1486,7 +1459,7 @@ export function PillboxPage() {
                       </span>
                       {group.dayLabel ? (
                         <span className="text-[0.72rem] font-medium leading-none text-muted">
-                          {displayPillboxText(group.dayLabel, language)}
+                          {displayPillboxText(group.dayLabel)}
                         </span>
                       ) : null}
                     </div>
@@ -1502,10 +1475,10 @@ export function PillboxPage() {
                           className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_16%,white)] text-[8px] font-semibold text-[color:var(--color-primary)]"
                           title={member}
                         >
-                          {memberInitial(member)}
+                          {memberInitial(memberLabelById.get(member) ?? member)}
                         </span>
                         <span className="leading-none text-foreground">
-                          {displayPillboxText(member, language)}
+                          {memberLabelById.get(member) ?? member}
                         </span>
                       </span>
                     ))}
@@ -1518,6 +1491,25 @@ export function PillboxPage() {
                         : tPillbox(language, "noDeadline")}
                     </span>
                   </div>
+
+                  {group.nextMedicationId ? (
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          markNextDoseTaken(group);
+                        }}
+                        disabled={takeDoseMutation.isPending}
+                        className={`${actionSecondaryClass} w-auto min-w-[12rem] px-4 disabled:cursor-not-allowed disabled:opacity-60`}
+                      >
+                        {takeDoseMutation.isPending
+                          ? tPillbox(language, "taking")
+                          : tPillbox(language, "markTaken")}
+                      </button>
+                    </div>
+                  ) : null}
 
                   <div className="grid gap-1">
                     <div className="flex justify-end text-[0.72rem] font-semibold tracking-[-0.02em] text-muted">

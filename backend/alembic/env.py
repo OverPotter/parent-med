@@ -24,6 +24,10 @@ from src.infrastructure.database.models import (  # noqa: F401
     IllnessEpisodeModel,
     MedicineCatalogItemModel,
     ParentModel,
+    PillboxDoseLogModel,
+    PillboxMedicationModel,
+    PillboxNotificationDeliveryModel,
+    PillboxPlanModel,
     TemperatureEntryModel,
     WeightEntryModel,
 )

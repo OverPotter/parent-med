@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.orm import selectinload
 
 from src.application.services.safety_engine import calculate_household_medicine_status
 from src.core.config import settings
@@ -20,6 +21,11 @@ from src.domain.entities.push_subscription import PushSubscription
 from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
 from src.infrastructure.database.models.household_medicine_notification_delivery import (
     HouseholdMedicineNotificationDeliveryModel,
+)
+from src.infrastructure.database.models.pillbox import (
+    PillboxMedicationModel,
+    PillboxNotificationDeliveryModel,
+    PillboxPlanModel,
 )
 from src.infrastructure.database.repositories.account_repository import SqlAccountRepository
 from src.infrastructure.database.repositories.administration_event_repository import (
@@ -159,6 +165,76 @@ def _format_before_body(
         f"Ребёнок: {child_name}\n"
         f"Лекарство: {medicine_name}"
     )
+
+
+def _format_pillbox_before_body(
+    plan_title: str,
+    medicine_name: str,
+    dose_amount: str,
+    scheduled_time_label: str,
+    reminder_before_minutes: int,
+    language: str,
+) -> str:
+    dose_text = dose_amount.strip()
+    if language == "en":
+        if dose_text:
+            return (
+                f"{medicine_name} · {dose_text}\n"
+                f"{scheduled_time_label} in {reminder_before_minutes} min · {plan_title}"
+            )
+        return (
+            f"{medicine_name}\n"
+            f"{scheduled_time_label} in {reminder_before_minutes} min · {plan_title}"
+        )
+    if dose_text:
+        return (
+            f"{medicine_name} · {dose_text}\n"
+            f"{scheduled_time_label} через {reminder_before_minutes} мин · {plan_title}"
+        )
+    return (
+        f"{medicine_name}\n"
+        f"{scheduled_time_label} через {reminder_before_minutes} мин · {plan_title}"
+    )
+
+
+def _format_pillbox_due_body(
+    plan_title: str,
+    medicine_name: str,
+    dose_amount: str,
+    scheduled_time_label: str,
+    language: str,
+) -> str:
+    dose_text = dose_amount.strip()
+    if language == "en":
+        if dose_text:
+            return f"{medicine_name} · {dose_text}\n{scheduled_time_label} · {plan_title}"
+        return f"{medicine_name}\n{scheduled_time_label} · {plan_title}"
+    if dose_text:
+        return f"{medicine_name} · {dose_text}\n{scheduled_time_label} · {plan_title}"
+    return f"{medicine_name}\n{scheduled_time_label} · {plan_title}"
+
+
+def _format_pillbox_overdue_body(
+    plan_title: str,
+    medicine_name: str,
+    dose_amount: str,
+    scheduled_time_label: str,
+    language: str,
+) -> str:
+    dose_text = dose_amount.strip()
+    if language == "en":
+        if dose_text:
+            return (
+                f"{medicine_name} · {dose_text}\n"
+                f"{scheduled_time_label} still needs confirmation · {plan_title}"
+            )
+        return f"{medicine_name}\n{scheduled_time_label} still needs confirmation · {plan_title}"
+    if dose_text:
+        return (
+            f"{medicine_name} · {dose_text}\n"
+            f"Приём на {scheduled_time_label} ещё не отмечен · {plan_title}"
+        )
+    return f"{medicine_name}\n" f"Приём на {scheduled_time_label} ещё не отмечен · {plan_title}"
 
 
 def _normalize_medicine_name(value: str | None) -> str:
@@ -504,6 +580,13 @@ class PushNotificationScheduler:
                         updated = replace(plan, last_overdue_notification_for_at=next_allowed_at)
                         await plan_repo.update_notification_marks(updated)
 
+            await self._process_pillbox_plan_reminders(
+                session=session,
+                account_repo=account_repo,
+                subscription_repo=subscription_repo,
+                now=now,
+            )
+
             await self._process_household_medicine_reminders(
                 session=session,
                 account_repo=account_repo,
@@ -513,6 +596,319 @@ class PushNotificationScheduler:
             )
 
             await session.commit()
+
+    def _is_pillbox_medication_active_on(
+        self, medication: PillboxMedicationModel, target_day: date
+    ) -> bool:
+        if medication.course_mode == "continuous":
+            return True
+        if not medication.course_start_date or not medication.course_end_date:
+            return False
+        return medication.course_start_date <= target_day <= medication.course_end_date
+
+    def _resolve_pillbox_medicine_name(self, medication: PillboxMedicationModel) -> str:
+        if medication.custom_medicine_name and medication.custom_medicine_name.strip():
+            return medication.custom_medicine_name.strip()
+        return "Medicine"
+
+    def _get_pillbox_schedule_candidates(
+        self,
+        plan: PillboxPlanModel,
+        now: datetime,
+    ) -> list[tuple[datetime, PillboxMedicationModel]]:
+        candidates: list[tuple[datetime, PillboxMedicationModel]] = []
+        local_now = now.astimezone(self._timezone)
+        for offset in (0,):
+            target_day = (local_now + timedelta(days=offset)).date()
+            weekday = target_day.isoweekday()
+            for medication in plan.medications:
+                if not self._is_pillbox_medication_active_on(medication, target_day):
+                    continue
+                if weekday not in (medication.repeat_days or []):
+                    continue
+                for dose_time in medication.times or []:
+                    local_scheduled_for = datetime.combine(
+                        target_day,
+                        dose_time,
+                        tzinfo=self._timezone,
+                    )
+                    candidates.append((local_scheduled_for.astimezone(UTC), medication))
+        return sorted(candidates, key=lambda item: item[0])
+
+    def _is_pillbox_dose_logged(
+        self,
+        plan: PillboxPlanModel,
+        medication_id: Any,
+        scheduled_for: datetime,
+    ) -> bool:
+        lower_bound = scheduled_for - timedelta(minutes=90)
+        upper_bound = scheduled_for + timedelta(hours=6)
+        for log in plan.dose_logs:
+            if log.medication_id != medication_id:
+                continue
+            if lower_bound <= log.taken_at <= upper_bound:
+                return True
+        return False
+
+    async def _has_pillbox_delivery(
+        self,
+        *,
+        session: Any,
+        account_id: Any,
+        plan_id: Any,
+        medication_id: Any,
+        notification_kind: str,
+        scheduled_for: datetime,
+    ) -> bool:
+        result = await session.execute(
+            select(PillboxNotificationDeliveryModel.id).where(
+                PillboxNotificationDeliveryModel.account_id == account_id,
+                PillboxNotificationDeliveryModel.plan_id == plan_id,
+                PillboxNotificationDeliveryModel.medication_id == medication_id,
+                PillboxNotificationDeliveryModel.notification_kind == notification_kind,
+                PillboxNotificationDeliveryModel.scheduled_for == scheduled_for,
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    def _record_pillbox_delivery(
+        self,
+        *,
+        session: Any,
+        family_id: Any,
+        account_id: Any,
+        plan_id: Any,
+        medication_id: Any,
+        notification_kind: str,
+        scheduled_for: datetime,
+        now: datetime,
+    ) -> None:
+        session.add(
+            PillboxNotificationDeliveryModel(
+                family_id=family_id,
+                account_id=account_id,
+                plan_id=plan_id,
+                medication_id=medication_id,
+                notification_kind=notification_kind,
+                scheduled_for=scheduled_for,
+                sent_at=now,
+            )
+        )
+
+    async def _process_pillbox_plan_reminders(
+        self,
+        *,
+        session: Any,
+        account_repo: SqlAccountRepository,
+        subscription_repo: SqlPushSubscriptionRepository,
+        now: datetime,
+    ) -> None:
+        result = await session.execute(
+            select(PillboxPlanModel)
+            .where(PillboxPlanModel.status == "active")
+            .options(
+                selectinload(PillboxPlanModel.medications),
+                selectinload(PillboxPlanModel.dose_logs),
+            )
+        )
+        plans = result.scalars().all()
+
+        for plan in plans:
+            if not plan.medications:
+                continue
+
+            target_account_ids = list(plan.member_account_ids or [])
+            if not target_account_ids:
+                target_account_ids = [plan.created_by_account_id]
+
+            schedule_candidates = self._get_pillbox_schedule_candidates(plan, now)
+            if not schedule_candidates:
+                continue
+
+            for account_id in target_account_ids:
+                account = await account_repo.get_by_id(account_id)
+                if not account:
+                    continue
+                subscriptions = await subscription_repo.get_by_account_id(account.id)
+                if not subscriptions:
+                    continue
+
+                language = _normalize_language(account.preferred_language)
+                preferred_before_minutes = (
+                    account.push_before_reminder_minutes or DEFAULT_REMINDER_BEFORE_MINUTES
+                )
+
+                for scheduled_for, medication in schedule_candidates:
+                    if self._is_pillbox_dose_logged(plan, medication.id, scheduled_for):
+                        continue
+
+                    reminder_before_minutes = min(preferred_before_minutes, 60)
+                    remind_at = scheduled_for - timedelta(minutes=reminder_before_minutes)
+                    overdue_at = scheduled_for + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
+                    scheduled_time_label = scheduled_for.astimezone(self._timezone).strftime(
+                        "%H:%M"
+                    )
+                    medicine_name = self._resolve_pillbox_medicine_name(medication)
+                    timestamp = int(scheduled_for.timestamp())
+                    take_dose_path = (
+                        f"/api/v1/pillbox-plans/{plan.id}/medications/{medication.id}/take"
+                    )
+                    notification_data = {
+                        "planId": str(plan.id),
+                        "medicationId": str(medication.id),
+                        "scheduledFor": scheduled_for.isoformat(),
+                        "takeDoseUrl": take_dose_path,
+                    }
+
+                    if (
+                        reminder_before_minutes > 0
+                        and remind_at <= now < scheduled_for
+                        and not await self._has_pillbox_delivery(
+                            session=session,
+                            account_id=account.id,
+                            plan_id=plan.id,
+                            medication_id=medication.id,
+                            notification_kind="before",
+                            scheduled_for=scheduled_for,
+                        )
+                    ):
+                        payload = {
+                            "title": "PillPath",
+                            "body": _format_pillbox_before_body(
+                                plan.title,
+                                medicine_name,
+                                medication.dose_amount,
+                                scheduled_time_label,
+                                reminder_before_minutes,
+                                language,
+                            ),
+                            "url": "/pillbox",
+                            "tag": f"pillbox-before-{plan.id}-{medication.id}-{timestamp}",
+                            "data": notification_data,
+                            "actions": [
+                                {
+                                    "action": "open-pillbox",
+                                    "title": "Open" if language == "en" else "Открыть",
+                                }
+                            ],
+                        }
+                        if await self._send_to_subscriptions(
+                            subscriptions=subscriptions,
+                            subscription_repo=subscription_repo,
+                            payload=payload,
+                        ):
+                            self._record_pillbox_delivery(
+                                session=session,
+                                family_id=plan.family_id,
+                                account_id=account.id,
+                                plan_id=plan.id,
+                                medication_id=medication.id,
+                                notification_kind="before",
+                                scheduled_for=scheduled_for,
+                                now=now,
+                            )
+
+                    if scheduled_for <= now < overdue_at and not await self._has_pillbox_delivery(
+                        session=session,
+                        account_id=account.id,
+                        plan_id=plan.id,
+                        medication_id=medication.id,
+                        notification_kind="due",
+                        scheduled_for=scheduled_for,
+                    ):
+                        payload = {
+                            "title": "PillPath",
+                            "body": _format_pillbox_due_body(
+                                plan.title,
+                                medicine_name,
+                                medication.dose_amount,
+                                scheduled_time_label,
+                                language,
+                            ),
+                            "url": "/pillbox",
+                            "tag": f"pillbox-due-{plan.id}-{medication.id}-{timestamp}",
+                            "data": notification_data,
+                            "actions": [
+                                {
+                                    "action": "take-dose",
+                                    "title": (
+                                        "Mark as taken" if language == "en" else "Отметить приём"
+                                    ),
+                                },
+                                {
+                                    "action": "open-pillbox",
+                                    "title": "Open" if language == "en" else "Открыть",
+                                },
+                            ],
+                        }
+                        if await self._send_to_subscriptions(
+                            subscriptions=subscriptions,
+                            subscription_repo=subscription_repo,
+                            payload=payload,
+                        ):
+                            self._record_pillbox_delivery(
+                                session=session,
+                                family_id=plan.family_id,
+                                account_id=account.id,
+                                plan_id=plan.id,
+                                medication_id=medication.id,
+                                notification_kind="due",
+                                scheduled_for=scheduled_for,
+                                now=now,
+                            )
+
+                    if (
+                        now >= overdue_at
+                        and not await self._has_pillbox_delivery(
+                            session=session,
+                            account_id=account.id,
+                            plan_id=plan.id,
+                            medication_id=medication.id,
+                            notification_kind="overdue",
+                            scheduled_for=scheduled_for,
+                        )
+                        and not self._is_pillbox_dose_logged(plan, medication.id, scheduled_for)
+                    ):
+                        payload = {
+                            "title": "PillPath",
+                            "body": _format_pillbox_overdue_body(
+                                plan.title,
+                                medicine_name,
+                                medication.dose_amount,
+                                scheduled_time_label,
+                                language,
+                            ),
+                            "url": "/pillbox",
+                            "tag": f"pillbox-overdue-{plan.id}-{medication.id}-{timestamp}",
+                            "data": notification_data,
+                            "actions": [
+                                {
+                                    "action": "take-dose",
+                                    "title": (
+                                        "Mark as taken" if language == "en" else "Отметить приём"
+                                    ),
+                                },
+                                {
+                                    "action": "open-pillbox",
+                                    "title": "Open" if language == "en" else "Открыть",
+                                },
+                            ],
+                        }
+                        if await self._send_to_subscriptions(
+                            subscriptions=subscriptions,
+                            subscription_repo=subscription_repo,
+                            payload=payload,
+                        ):
+                            self._record_pillbox_delivery(
+                                session=session,
+                                family_id=plan.family_id,
+                                account_id=account.id,
+                                plan_id=plan.id,
+                                medication_id=medication.id,
+                                notification_kind="overdue",
+                                scheduled_for=scheduled_for,
+                                now=now,
+                            )
 
     async def _process_household_medicine_reminders(
         self,
