@@ -66,9 +66,7 @@ def _format_date(value: date, language: str) -> str:
     return value.strftime("%d.%m.%Y")
 
 
-def _format_due_body(
-    child_name: str, medicine_name: str, dose_amount: str, language: str
-) -> str:
+def _format_due_body(child_name: str, medicine_name: str, dose_amount: str, language: str) -> str:
     dose_text = dose_amount.strip()
     if language == "en":
         if dose_text:
