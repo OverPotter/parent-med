@@ -1,4 +1,5 @@
 """Реализация репозитория семейной таблетницы."""
+
 from uuid import UUID
 
 from sqlalchemy import select
@@ -20,6 +21,22 @@ class SqlPillboxRepository(PillboxRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    def _to_dose_log_entity(self, model: PillboxDoseLogModel) -> PillboxDoseLog:
+        return PillboxDoseLog(
+            id=model.id,
+            family_id=model.family_id,
+            plan_id=model.plan_id,
+            medication_id=model.medication_id,
+            scheduled_for=model.scheduled_for,
+            taken_at=model.taken_at,
+            taken_by_account_id=model.taken_by_account_id,
+            taken_by_name_snapshot=model.taken_by_name_snapshot,
+            amount_snapshot=model.amount_snapshot,
+            source=model.source,
+            notes=model.notes,
+            created_at=model.created_at,
+        )
+
     def _to_medication_entity(self, model: PillboxMedicationModel) -> PillboxMedication:
         return PillboxMedication(
             id=model.id,
@@ -36,6 +53,7 @@ class SqlPillboxRepository(PillboxRepository):
             position=model.position,
             created_at=model.created_at,
             updated_at=model.updated_at,
+            dose_logs=[self._to_dose_log_entity(item) for item in model.dose_logs],
         )
 
     def _to_plan_entity(self, model: PillboxPlanModel) -> PillboxPlan:
@@ -50,13 +68,19 @@ class SqlPillboxRepository(PillboxRepository):
             created_at=model.created_at,
             updated_at=model.updated_at,
             medications=medications,
+            dose_logs=[self._to_dose_log_entity(item) for item in model.dose_logs],
         )
 
     async def _get_model(self, id: UUID) -> PillboxPlanModel | None:
         result = await self._session.execute(
             select(PillboxPlanModel)
             .where(PillboxPlanModel.id == id)
-            .options(selectinload(PillboxPlanModel.medications))
+            .options(
+                selectinload(PillboxPlanModel.medications).selectinload(
+                    PillboxMedicationModel.dose_logs
+                ),
+                selectinload(PillboxPlanModel.dose_logs),
+            )
         )
         return result.scalars().one_or_none()
 
@@ -64,7 +88,12 @@ class SqlPillboxRepository(PillboxRepository):
         result = await self._session.execute(
             select(PillboxPlanModel)
             .where(PillboxPlanModel.family_id == family_id)
-            .options(selectinload(PillboxPlanModel.medications))
+            .options(
+                selectinload(PillboxPlanModel.medications).selectinload(
+                    PillboxMedicationModel.dose_logs
+                ),
+                selectinload(PillboxPlanModel.dose_logs),
+            )
             .order_by(PillboxPlanModel.updated_at.desc(), PillboxPlanModel.created_at.desc())
         )
         return [self._to_plan_entity(row) for row in result.scalars().all()]
@@ -119,10 +148,29 @@ class SqlPillboxRepository(PillboxRepository):
         model.status = entity.status
         model.member_account_ids = list(entity.member_account_ids)
         model.updated_at = entity.updated_at
-        model.medications.clear()
-        await self._session.flush()
+        existing_by_id = {item.id: item for item in model.medications}
+        incoming_ids = {item.id for item in entity.medications}
+
+        for existing in list(model.medications):
+            if existing.id not in incoming_ids:
+                model.medications.remove(existing)
 
         for item in entity.medications:
+            existing = existing_by_id.get(item.id)
+            if existing:
+                existing.household_medicine_id = item.household_medicine_id
+                existing.custom_medicine_name = item.custom_medicine_name
+                existing.dose_amount = item.dose_amount
+                existing.meal_rule = item.meal_rule
+                existing.repeat_days = list(item.repeat_days)
+                existing.times = list(item.times)
+                existing.course_mode = item.course_mode
+                existing.course_start_date = item.course_start_date
+                existing.course_end_date = item.course_end_date
+                existing.position = item.position
+                existing.updated_at = item.updated_at
+                continue
+
             model.medications.append(
                 PillboxMedicationModel(
                     id=item.id,
@@ -161,6 +209,7 @@ class SqlPillboxRepository(PillboxRepository):
             family_id=entity.family_id,
             plan_id=entity.plan_id,
             medication_id=entity.medication_id,
+            scheduled_for=entity.scheduled_for,
             taken_at=entity.taken_at,
             taken_by_account_id=entity.taken_by_account_id,
             taken_by_name_snapshot=entity.taken_by_name_snapshot,
@@ -171,16 +220,4 @@ class SqlPillboxRepository(PillboxRepository):
         )
         self._session.add(model)
         await self._session.flush()
-        return PillboxDoseLog(
-            id=model.id,
-            family_id=model.family_id,
-            plan_id=model.plan_id,
-            medication_id=model.medication_id,
-            taken_at=model.taken_at,
-            taken_by_account_id=model.taken_by_account_id,
-            taken_by_name_snapshot=model.taken_by_name_snapshot,
-            amount_snapshot=model.amount_snapshot,
-            source=model.source,
-            notes=model.notes,
-            created_at=model.created_at,
-        )
+        return self._to_dose_log_entity(model)

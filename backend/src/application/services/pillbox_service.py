@@ -1,8 +1,9 @@
 """Сервис семейной таблетницы."""
 
 from dataclasses import replace
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID, uuid4
+from zoneinfo import ZoneInfo
 
 from src.application.dto.pillbox import (
     PillboxDoseLogCreateDto,
@@ -13,6 +14,7 @@ from src.application.dto.pillbox import (
     PillboxPlanSummaryDto,
     PillboxPlanUpdateDto,
 )
+from src.core.config import settings
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.pillbox import PillboxDoseLog, PillboxMedication, PillboxPlan
 from src.domain.repositories.account_repository import AccountRepository
@@ -32,6 +34,16 @@ class PillboxService:
         self._repo = pillbox_repo
         self._account_repo = account_repo
         self._household_repo = household_repo
+        try:
+            self._timezone = ZoneInfo(settings.app_timezone)
+        except Exception:  # pragma: no cover - defensive fallback for broken timezone config
+            self._timezone = ZoneInfo("UTC")
+
+    def _to_local(self, value: datetime) -> datetime:
+        return value.astimezone(self._timezone)
+
+    def _build_local_scheduled_at(self, target_day: date, dose_time: time) -> datetime:
+        return datetime.combine(target_day, dose_time, tzinfo=self._timezone)
 
     def _to_medication_response(self, entity: PillboxMedication) -> PillboxMedicationResponseDto:
         return PillboxMedicationResponseDto(
@@ -55,12 +67,53 @@ class PillboxService:
             return False
         return medication.course_start_date <= day <= medication.course_end_date
 
+    def _format_next_dose_label(self, dose_at: datetime, now: datetime) -> str:
+        local_now = self._to_local(now)
+        local_dose_at = self._to_local(dose_at)
+        local_today = local_now.date()
+        local_target = local_dose_at.date()
+        time_label = local_dose_at.strftime("%H:%M")
+        if local_target == local_today:
+            return time_label
+        return local_dose_at.strftime("%d.%m · %H:%M")
+
+    def _is_candidate_already_taken(
+        self,
+        plan: PillboxPlan,
+        medication: PillboxMedication,
+        scheduled_for: datetime,
+    ) -> bool:
+        if any(
+            dose_log.scheduled_for == scheduled_for
+            for dose_log in medication.dose_logs
+            if dose_log.scheduled_for is not None
+        ):
+            return True
+
+        return any(
+            dose_log.medication_id == medication.id and dose_log.scheduled_for == scheduled_for
+            for dose_log in plan.dose_logs
+            if dose_log.scheduled_for is not None
+        )
+
+    def _is_valid_scheduled_slot(
+        self, medication: PillboxMedication, scheduled_for: datetime
+    ) -> bool:
+        local_scheduled_for = self._to_local(scheduled_for)
+        target_day = local_scheduled_for.date()
+        return (
+            self._is_medication_active_on(medication, target_day)
+            and local_scheduled_for.isoweekday() in medication.repeat_days
+            and local_scheduled_for.timetz().replace(tzinfo=None) in medication.times
+        )
+
     def _get_next_dose_details(
         self, plan: PillboxPlan, now: datetime
     ) -> tuple[datetime | None, PillboxMedication | None]:
         candidates: list[tuple[datetime, PillboxMedication]] = []
+        local_now = self._to_local(now)
         for offset in range(0, 21):
-            target_day = (now + timedelta(days=offset)).date()
+            target_day = (local_now + timedelta(days=offset)).date()
             weekday = target_day.isoweekday()
             for medication in plan.medications:
                 if not self._is_medication_active_on(medication, target_day):
@@ -68,8 +121,12 @@ class PillboxService:
                 if weekday not in medication.repeat_days:
                     continue
                 for dose_time in medication.times:
-                    candidate = datetime.combine(target_day, dose_time, tzinfo=UTC)
-                    if candidate >= now:
+                    candidate = self._build_local_scheduled_at(target_day, dose_time).astimezone(
+                        UTC
+                    )
+                    if self._is_candidate_already_taken(plan, medication, candidate):
+                        continue
+                    if offset == 0 or candidate >= now:
                         candidates.append((candidate, medication))
             if candidates:
                 break
@@ -78,33 +135,44 @@ class PillboxService:
         next_dose_at, medication = min(candidates, key=lambda item: item[0])
         return next_dose_at, medication
 
-    def _get_course_progress(self, plan: PillboxPlan) -> tuple[float | None, str | None]:
-        today = datetime.now(UTC).date()
+    def _get_course_progress(
+        self, plan: PillboxPlan
+    ) -> tuple[str | None, float | None, str | None]:
+        today = datetime.now(UTC).astimezone(self._timezone).date()
+        continuous_medications = [
+            item for item in plan.medications if item.course_mode == "continuous"
+        ]
         period_medications = [
             item
             for item in sorted(plan.medications, key=lambda medication: medication.position)
             if item.course_mode == "period" and item.course_start_date and item.course_end_date
         ]
+        if period_medications and continuous_medications:
+            return "mixed", None, None
+        if continuous_medications:
+            return "continuous", None, None
         if not period_medications:
-            return None, None
+            return None, None, None
         item = period_medications[0]
         assert item.course_start_date is not None
         assert item.course_end_date is not None
         total_days = (item.course_end_date - item.course_start_date).days + 1
         if total_days <= 0:
-            return None, None
+            return "period", None, None
         if today < item.course_start_date:
             current_day = 1
         elif today > item.course_end_date:
             current_day = total_days
         else:
             current_day = (today - item.course_start_date).days + 1
-        return current_day / total_days, f"Day {current_day} of {total_days}"
+        return "period", current_day / total_days, f"Day {current_day} of {total_days}"
 
     def _to_summary_response(self, entity: PillboxPlan) -> PillboxPlanSummaryDto:
         now = datetime.now(UTC)
         next_dose_at, next_medication = self._get_next_dose_details(entity, now)
-        course_progress_ratio, course_day_label = self._get_course_progress(entity)
+        course_summary_kind, course_progress_ratio, course_day_label = self._get_course_progress(
+            entity
+        )
         return PillboxPlanSummaryDto(
             id=entity.id,
             title=entity.title,
@@ -112,11 +180,14 @@ class PillboxService:
             member_account_ids=list(entity.member_account_ids),
             active_medication_count=len(entity.medications),
             next_dose_at=next_dose_at,
-            next_dose_label=next_dose_at.strftime("%H:%M") if next_dose_at else None,
+            next_dose_label=(
+                self._format_next_dose_label(next_dose_at, now) if next_dose_at else None
+            ),
             next_medication_id=next_medication.id if next_medication else None,
             next_medication_title=(
                 next_medication.custom_medicine_name if next_medication else None
             ),
+            course_summary_kind=course_summary_kind,
             course_progress_ratio=course_progress_ratio,
             course_day_label=course_day_label,
         )
@@ -165,8 +236,6 @@ class PillboxService:
             raise ValidationError("Выберите лекарство из аптечки или введите название вручную")
         if dto.household_medicine_id:
             await self._validate_household_medicine(dto.household_medicine_id, current_family_id)
-        if not dose_amount:
-            raise ValidationError("Укажите дозировку")
         if not dto.times:
             raise ValidationError("Укажите хотя бы одно время приёма")
         times = sorted({value for value in dto.times})
@@ -215,9 +284,7 @@ class PillboxService:
         current_account_id: UUID,
         current_family_id: UUID,
     ) -> PillboxPlan:
-        normalized_title = title.strip()
-        if not normalized_title:
-            raise ValidationError("Укажи название плана")
+        normalized_title = title.strip() or "Новый план"
         await self._require_member_ids_in_family(member_account_ids, current_family_id)
         if not medications:
             raise ValidationError("В плане должно быть хотя бы одно лекарство")
@@ -322,19 +389,32 @@ class PillboxService:
         medication = next((item for item in plan.medications if item.id == medication_id), None)
         if not medication:
             raise NotFoundError("Лекарство внутри плана не найдено", resource="pillbox_medication")
+        scheduled_for = dto.scheduled_for
+        now = datetime.now(UTC)
+        if scheduled_for is None:
+            raise ValidationError("Для подтверждения приёма нужен конкретный слот")
+        if scheduled_for.tzinfo is None:
+            scheduled_for = scheduled_for.replace(tzinfo=UTC)
+        if not self._is_valid_scheduled_slot(medication, scheduled_for):
+            raise ValidationError("Нельзя отметить приём для несуществующего слота")
+        if scheduled_for > now:
+            raise ValidationError("Нельзя отметить приём заранее")
+        if self._is_candidate_already_taken(plan, medication, scheduled_for):
+            raise ValidationError("Этот приём уже отмечен")
         await self._repo.add_dose_log(
             PillboxDoseLog(
                 id=uuid4(),
                 family_id=current_family_id,
                 plan_id=plan.id,
                 medication_id=medication.id,
-                taken_at=dto.taken_at or datetime.now(UTC),
+                scheduled_for=scheduled_for,
+                taken_at=dto.taken_at or now,
                 taken_by_account_id=current_account_id,
                 taken_by_name_snapshot=current_account_display_name,
                 amount_snapshot=medication.dose_amount,
                 source=dto.source,
                 notes=(dto.notes or "").strip() or None,
-                created_at=datetime.now(UTC),
+                created_at=now,
             )
         )
         refreshed = await self._get_plan_for_family(plan_id, current_family_id)

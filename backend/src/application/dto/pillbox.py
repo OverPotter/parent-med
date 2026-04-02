@@ -79,6 +79,7 @@ class PillboxPlanSummaryDto(ResponseBase):
     next_dose_label: str | None
     next_medication_id: UUID | None
     next_medication_title: str | None
+    course_summary_kind: str | None
     course_progress_ratio: float | None
     course_day_label: str | None
 
@@ -99,6 +100,7 @@ class PillboxPlanResponseDto(ResponseBase):
 class PillboxDoseLogCreateDto(BaseModel):
     """Записать факт приёма по плану таблетницы."""
 
+    scheduled_for: datetime | None = None
     taken_at: datetime | None = None
     source: str = Field("manual", description="manual | reminder")
     notes: str | None = None

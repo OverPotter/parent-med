@@ -1,6 +1,6 @@
 """Сущности семейной таблетницы."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from uuid import UUID
 
@@ -27,6 +27,7 @@ class PillboxMedication:
     position: int
     created_at: datetime
     updated_at: datetime
+    dose_logs: list["PillboxDoseLog"] = field(default_factory=list)
 
 
 @dataclass
@@ -42,6 +43,7 @@ class PillboxPlan:
     created_at: datetime
     updated_at: datetime
     medications: list[PillboxMedication]
+    dose_logs: list["PillboxDoseLog"] = field(default_factory=list)
 
 
 @dataclass
@@ -52,6 +54,7 @@ class PillboxDoseLog:
     family_id: UUID
     plan_id: UUID
     medication_id: UUID
+    scheduled_for: datetime | None
     taken_at: datetime
     taken_by_account_id: UUID | None
     taken_by_name_snapshot: str | None

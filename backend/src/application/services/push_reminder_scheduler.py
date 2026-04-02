@@ -167,17 +167,6 @@ def _format_before_body(
     )
 
 
-def _format_pillbox_before_body(
-    summary_label: str,
-    scheduled_time_label: str,
-    reminder_before_minutes: int,
-    language: str,
-) -> str:
-    if language == "en":
-        return f"{scheduled_time_label} in {reminder_before_minutes} min\n" f"{summary_label}"
-    return f"{scheduled_time_label} через {reminder_before_minutes} мин\n" f"{summary_label}"
-
-
 def _format_pillbox_due_body(
     summary_label: str,
     scheduled_time_label: str,
@@ -629,6 +618,10 @@ class PushNotificationScheduler:
         for log in plan.dose_logs:
             if log.medication_id != medication_id:
                 continue
+            if log.scheduled_for is not None:
+                if log.scheduled_for == scheduled_for:
+                    return True
+                continue
             if lower_bound <= log.taken_at <= upper_bound:
                 return True
         return False
@@ -735,11 +728,6 @@ class PushNotificationScheduler:
             scheduled_for = slot["scheduled_for"]
             items: list[tuple[PillboxPlanModel, PillboxMedicationModel]] = slot["items"]
             language = _normalize_language(account.preferred_language)
-            preferred_before_minutes = (
-                account.push_before_reminder_minutes or DEFAULT_REMINDER_BEFORE_MINUTES
-            )
-            reminder_before_minutes = min(preferred_before_minutes, 60)
-            remind_at = scheduled_for - timedelta(minutes=reminder_before_minutes)
             overdue_at = scheduled_for + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
             scheduled_time_label = scheduled_for.astimezone(self._timezone).strftime("%H:%M")
             timestamp = int(scheduled_for.timestamp())
@@ -786,30 +774,9 @@ class PushNotificationScheduler:
                 }
             ]
 
-            if (
-                reminder_before_minutes > 0
-                and remind_at <= now < scheduled_for
-                and not await slot_delivered("before")
-            ):
-                payload = {
-                    "title": "PillPath",
-                    "body": _format_pillbox_before_body(
-                        summary_label,
-                        scheduled_time_label,
-                        reminder_before_minutes,
-                        language,
-                    ),
-                    "url": "/pillbox",
-                    "tag": f"pillbox-before-{account.id}-{timestamp}",
-                    "data": notification_data,
-                    "actions": actions,
-                }
-                if await self._send_to_subscriptions(
-                    subscriptions=subscriptions,
-                    subscription_repo=subscription_repo,
-                    payload=payload,
-                ):
-                    record_slot_delivery("before")
+            pillbox_url = (
+                f"/pillbox?mode=details&plan={first_plan.id}&highlightPlan={first_plan.id}"
+            )
 
             if scheduled_for <= now < overdue_at and not await slot_delivered("due"):
                 payload = {
@@ -819,7 +786,7 @@ class PushNotificationScheduler:
                         scheduled_time_label,
                         language,
                     ),
-                    "url": "/pillbox",
+                    "url": pillbox_url,
                     "tag": f"pillbox-due-{account.id}-{timestamp}",
                     "data": notification_data,
                     "actions": actions,
@@ -839,7 +806,7 @@ class PushNotificationScheduler:
                         scheduled_time_label,
                         language,
                     ),
-                    "url": "/pillbox",
+                    "url": pillbox_url,
                     "tag": f"pillbox-overdue-{account.id}-{timestamp}",
                     "data": notification_data,
                     "actions": actions,
@@ -1021,7 +988,15 @@ class PushNotificationScheduler:
         payload: dict[str, Any],
     ) -> bool:
         sent = False
+        unique_subscriptions: list[PushSubscription] = []
+        seen_endpoints: set[str] = set()
         for subscription in subscriptions:
+            if subscription.endpoint in seen_endpoints:
+                continue
+            seen_endpoints.add(subscription.endpoint)
+            unique_subscriptions.append(subscription)
+
+        for subscription in unique_subscriptions:
             try:
                 await asyncio.to_thread(
                     webpush,

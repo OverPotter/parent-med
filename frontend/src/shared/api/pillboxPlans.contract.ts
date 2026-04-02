@@ -35,6 +35,7 @@ export interface PillboxPlanSummary {
   nextDoseLabel: string | null;
   nextMedicationId: string | null;
   nextMedicationTitle: string | null;
+  courseSummaryKind: "continuous" | "period" | "mixed" | null;
   courseProgressRatio: number | null;
   courseDayLabel: string | null;
 }

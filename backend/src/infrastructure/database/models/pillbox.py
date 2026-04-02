@@ -125,6 +125,7 @@ class PillboxDoseLogModel(Base):
     medication_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("pillbox_medications.id", ondelete="CASCADE"), nullable=False
     )
+    scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     taken_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     taken_by_account_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True

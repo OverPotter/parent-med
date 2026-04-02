@@ -31,6 +31,7 @@ interface RawPillboxPlanSummary {
   next_dose_label: string | null;
   next_medication_id: string | null;
   next_medication_title: string | null;
+  course_summary_kind: PillboxPlanSummary["courseSummaryKind"];
   course_progress_ratio: number | null;
   course_day_label: string | null;
 }
@@ -46,6 +47,12 @@ interface RawPillboxPlan {
   updated_at: string;
 }
 
+function normalizeApiTime(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.slice(0, 5);
+}
+
 function toPillboxMedication(raw: RawPillboxMedication): PillboxMedication {
   return {
     id: raw.id,
@@ -54,7 +61,7 @@ function toPillboxMedication(raw: RawPillboxMedication): PillboxMedication {
     doseAmount: raw.dose_amount,
     mealRule: raw.meal_rule,
     repeatDays: raw.repeat_days ?? [],
-    times: raw.times ?? [],
+    times: (raw.times ?? []).map(normalizeApiTime),
     courseMode: raw.course_mode,
     courseStartDate: raw.course_start_date ?? null,
     courseEndDate: raw.course_end_date ?? null,
@@ -73,6 +80,7 @@ function toPillboxPlanSummary(raw: RawPillboxPlanSummary): PillboxPlanSummary {
     nextDoseLabel: raw.next_dose_label ?? null,
     nextMedicationId: raw.next_medication_id ?? null,
     nextMedicationTitle: raw.next_medication_title ?? null,
+    courseSummaryKind: raw.course_summary_kind ?? null,
     courseProgressRatio: raw.course_progress_ratio ?? null,
     courseDayLabel: raw.course_day_label ?? null,
   };
@@ -145,7 +153,12 @@ export async function deletePillboxPlan(planId: string): Promise<void> {
 export async function takePillboxDose(
   planId: string,
   medicationId: string,
-  payload?: { taken_at?: string; source?: "manual" | "reminder"; notes?: string | null }
+  payload?: {
+    scheduled_for?: string | null;
+    taken_at?: string;
+    source?: "manual" | "reminder";
+    notes?: string | null;
+  }
 ): Promise<PillboxPlanSummary> {
   const res = await apiClient.post<RawPillboxPlanSummary>(
     `/pillbox-plans/${planId}/medications/${medicationId}/take`,

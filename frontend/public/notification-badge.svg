@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <linearGradient id="notification-bg" x1="48" y1="208" x2="208" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F08AB8" />
+      <stop offset="0.55" stop-color="#CC7FD3" />
+      <stop offset="1" stop-color="#6B4FD3" />
+    </linearGradient>
+    <filter id="notification-shadow" x="28" y="28" width="200" height="200" filterUnits="userSpaceOnUse">
+      <feOffset dy="10" />
+      <feGaussianBlur stdDeviation="14" />
+      <feColorMatrix
+        type="matrix"
+        values="0 0 0 0 0.419608 0 0 0 0 0.309804 0 0 0 0 0.827451 0 0 0 0.22 0"
+      />
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="70" fill="#EFE9FF" />
+  <g filter="url(#notification-shadow)">
+    <rect x="42" y="42" width="172" height="172" rx="54" fill="url(#notification-bg)" />
+  </g>
+  <ellipse cx="128" cy="84" rx="62" ry="25" fill="white" fill-opacity="0.12" />
+  <ellipse cx="102" cy="104" rx="22" ry="18" fill="white" fill-opacity="0.82" />
+  <ellipse cx="154" cy="104" rx="22" ry="18" fill="white" fill-opacity="0.82" />
+  <ellipse cx="128" cy="133" rx="46" ry="30" fill="#FFF7FB" />
+  <path
+    d="M108 135H118L124 122L130 146L136 135H146"
+    stroke="#7B59DD"
+    stroke-width="4.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M171 133c0-4.4-3.2-7.5-7.1-7.5-2.5 0-4.3 1.3-5.4 3-1.1-1.7-3-3-5.4-3-3.9 0-7.1 3.1-7.1 7.5 0 8.4 12.5 14.8 12.5 14.8s12.5-6.4 12.5-14.8Z"
+    stroke="#FF6FB0"
+    stroke-width="3.4"
+    stroke-linejoin="round"
+    fill="none"
+  />
+</svg>
