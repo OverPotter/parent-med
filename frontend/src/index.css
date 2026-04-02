@@ -1987,6 +1987,91 @@ p {
     font-family: var(--landing-font-body);
   }
 
+  .landing-topbar-shell {
+    border-radius: 1.7rem;
+    background:
+      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 50%),
+      linear-gradient(180deg, var(--landing-hero-top), var(--landing-hero-bottom));
+    box-shadow:
+      0 14px 30px -28px rgb(var(--color-shadow) / 0.12),
+      0 5px 12px -12px rgb(var(--color-shadow) / 0.06);
+    position: relative;
+    overflow: visible;
+    z-index: 20;
+  }
+
+  .landing-topbar-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .landing-topbar-inner {
+    position: relative;
+    z-index: 21;
+    max-width: 74rem;
+    margin: 0 auto;
+    padding: 0.95rem 1.2rem;
+    overflow: visible;
+  }
+
+  .landing-topline-button {
+    min-height: 2.9rem;
+    padding-inline: 0.92rem;
+    font-size: 0.78rem;
+    border-radius: 9999px;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.38),
+      0 10px 24px -22px rgb(var(--color-shadow) / 0.12);
+  }
+
+  .landing-language-switch {
+    position: relative;
+    z-index: 12;
+  }
+
+  .landing-language-switch .soft-language-dropdown__trigger {
+    min-height: 2.9rem;
+    padding-inline: 0.92rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
+    background: color-mix(in srgb, var(--color-surface) 98%, transparent);
+    color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
+    font-family: var(--landing-font-heading);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-transform: none;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.38),
+      0 10px 24px -22px rgb(var(--color-shadow) / 0.12);
+  }
+
+  .landing-language-switch .soft-language-dropdown__trigger:hover {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+    border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.34);
+  }
+
+  .landing-language-switch .soft-language-dropdown__chevron {
+    color: inherit;
+  }
+
+  .landing-language-switch .soft-language-dropdown__option {
+    text-transform: none;
+    color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
+  }
+
+  .landing-language-switch .soft-language-dropdown__menu {
+    z-index: 80;
+    min-width: 6.5rem;
+    pointer-events: auto;
+  }
+
   .landing-page-glow {
     background:
       radial-gradient(circle at 12% 0%, var(--landing-bg-top), transparent 34%),
@@ -2022,9 +2107,9 @@ p {
   .landing-hero-reset-inner {
     position: relative;
     z-index: 1;
-    max-width: 70rem;
+    max-width: 74rem;
     margin: 0 auto;
-    padding: 2.15rem 1.35rem 2.05rem;
+    padding: 1.95rem 1.2rem 1.9rem;
     text-align: center;
   }
 
@@ -2099,44 +2184,6 @@ p {
     text-wrap: pretty;
   }
 
-  .landing-hero-reset-actions {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 1.6rem;
-  }
-
-  .landing-hero-reset-grid {
-    display: grid;
-    gap: 1rem;
-    margin-top: 1.8rem;
-  }
-
-  .landing-hero-reset-card {
-    border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
-    border-radius: 1.5rem;
-    background: var(--landing-panel-bg);
-    padding: 1rem 1rem 1.05rem;
-    box-shadow: 0 8px 18px -24px rgb(var(--color-shadow) / 0.08);
-  }
-
-  .landing-hero-reset-card-title {
-    margin: 0;
-    font-family: var(--landing-font-heading);
-    font-size: 0.98rem;
-    font-weight: 700;
-    line-height: 1.42;
-    color: color-mix(in srgb, var(--color-foreground) 92%, var(--color-muted));
-  }
-
-  .landing-hero-reset-card-text {
-    margin: 0.55rem 0 0;
-    font-size: 0.94rem;
-    line-height: 1.7;
-    color: var(--color-muted);
-  }
-
   .landing-section-shell {
     border-color: color-mix(in srgb, var(--landing-card-border) 88%, transparent);
     border-radius: 2rem;
@@ -2151,6 +2198,69 @@ p {
     box-shadow:
       0 12px 28px -28px rgb(var(--color-shadow) / 0.1),
       0 4px 12px -16px rgb(var(--color-shadow) / 0.05);
+  }
+
+  .landing-section-shell--child {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .landing-child-hero-shell {
+    position: relative;
+    overflow: hidden;
+    border-radius: 2rem;
+    background:
+      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 34%),
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--color-surface-hero) 92%, transparent),
+        transparent 48%
+      ),
+      linear-gradient(180deg, var(--landing-hero-top), var(--landing-hero-bottom));
+    box-shadow:
+      0 16px 38px -34px rgb(var(--color-shadow) / 0.12),
+      0 6px 16px -16px rgb(var(--color-shadow) / 0.06);
+    padding: 0.95rem;
+  }
+
+  .landing-child-hero-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .landing-child-shell {
+    border-radius: 2rem;
+    border: 1px solid rgba(159, 140, 219, 0.3);
+    background: rgba(205, 191, 241, 0.34);
+    box-shadow: 0 26px 60px -42px rgba(73, 56, 129, 0.24);
+    padding: 0.75rem;
+    width: 100%;
+  }
+
+  .landing-child-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.95rem;
+    background: rgba(205, 191, 241, 0.34);
+    border: 1px solid rgba(159, 140, 219, 0.2);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.015em;
+    color: color-mix(in srgb, var(--color-primary) 56%, var(--color-foreground));
+    font-family: var(--landing-font-heading);
+  }
+
+  .landing-feature-card {
+    border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+    background: var(--landing-panel-bg);
+    box-shadow: 0 8px 18px -24px rgb(var(--color-shadow) / 0.08);
   }
 
   .landing-section-header {
@@ -2621,10 +2731,6 @@ p {
 
     .landing-hero-reset-inner {
       padding: 2.9rem 2.2rem 2.35rem;
-    }
-
-    .landing-hero-reset-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .landing-phone-gallery {

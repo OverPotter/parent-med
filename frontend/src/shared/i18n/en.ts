@@ -44,35 +44,37 @@ export const en: Translations = {
   },
   landing: {
     hero: {
-      eyebrow: "Family child health tracker",
-      title: "Everything important about your child in one place",
+      eyebrow: "Calm family organizer for medicines and care",
+      titleLines: ["When a child is sick,", "the family needs one", "clear plan."],
       lead:
-        "It is easier for a family to track a child, keep medicines, a home medicine cabinet and important notes in one place, so details do not get lost across messages, notes and memory.",
-      createAccount: "Create account",
-      login: "Already have an account",
+        "PillPath helps you track a child’s illness, remember medicine doses, watch expiry dates and keep the family aligned in one account.",
+      createAccount: "Try it free",
+      loginPrompt: "Already have an account?",
+      login: "Log in",
+      highlights: [
+        "See how the child's condition changes",
+        "Reminders arrive on time",
+        "Expiry dates do not get lost",
+      ],
       themeToggleAriaDark: "Dark theme",
       themeToggleAriaLight: "Light theme",
     },
     cards: [
       {
-        title: "Nothing gets lost",
-        description:
-          "Records, medicines and important actions stay in one place instead of breaking apart across messages and notes.",
+        title: "Children",
+        description: "Track symptoms, temperature, notes and medicine reminders.",
       },
       {
-        title: "Everyone sees the same picture",
-        description:
-          "One shared view helps the family align faster and miss less.",
+        title: "Pillbox",
+        description: "Create medicine schedules and receive reminders.",
       },
       {
-        title: "You can see what is already done",
-        description:
-          "It is easy to check the latest entries, event times and who updated the information.",
+        title: "Home medicine cabinet",
+        description: "Keep track of expiry dates for medicines at home.",
       },
       {
-        title: "The next step is clear",
-        description:
-          "Next steps and important actions stay close when they are actually needed.",
+        title: "Family account",
+        description: "Bring parents and relatives together in one care space.",
       },
     ],
     product: {

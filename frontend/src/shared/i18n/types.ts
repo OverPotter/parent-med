@@ -45,10 +45,12 @@ export interface Translations {
   landing: {
     hero: {
       eyebrow: string;
-      title: string;
+      titleLines: [string, string, string];
       lead: string;
       createAccount: string;
+      loginPrompt: string;
       login: string;
+      highlights: string[];
       themeToggleAriaDark: string;
       themeToggleAriaLight: string;
     };
