@@ -12,9 +12,10 @@ self.addEventListener("push", (event) => {
   const title = payload.title || "PillPath";
   const options = {
     body: payload.body || "",
-    icon: "/pwa-192x192.png",
-    badge: "/pwa-192x192.png",
+    icon: "/notification-badge.svg",
+    badge: "/notification-badge.svg",
     tag: payload.tag,
+    actions: Array.isArray(payload.actions) ? payload.actions : [],
     data: {
       url: payload.url || "/",
       ...(payload.data || {}),
@@ -29,10 +30,13 @@ self.addEventListener("notificationclick", (event) => {
   const targetUrl = event.notification.data?.url || "/";
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+    (async () => {
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       for (const client of clients) {
         if ("focus" in client) {
-          client.navigate(targetUrl);
+          if ("navigate" in client) {
+            await client.navigate(targetUrl);
+          }
           return client.focus();
         }
       }
@@ -40,6 +44,6 @@ self.addEventListener("notificationclick", (event) => {
         return self.clients.openWindow(targetUrl);
       }
       return undefined;
-    })
+    })()
   );
 });

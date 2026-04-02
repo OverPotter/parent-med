@@ -15,6 +15,12 @@ from src.infrastructure.database.models.illness_episode import IllnessEpisodeMod
 from src.infrastructure.database.models.illness_episode_event import IllnessEpisodeEventModel
 from src.infrastructure.database.models.medicine_catalog_item import MedicineCatalogItemModel
 from src.infrastructure.database.models.parent import ParentModel
+from src.infrastructure.database.models.pillbox import (
+    PillboxDoseLogModel,
+    PillboxMedicationModel,
+    PillboxNotificationDeliveryModel,
+    PillboxPlanModel,
+)
 from src.infrastructure.database.models.push_subscription import PushSubscriptionModel
 from src.infrastructure.database.models.temperature_entry import TemperatureEntryModel
 from src.infrastructure.database.models.weight_entry import WeightEntryModel
@@ -29,6 +35,10 @@ __all__ = [
     "WeightEntryModel",
     "MedicineCatalogItemModel",
     "ParentModel",
+    "PillboxPlanModel",
+    "PillboxMedicationModel",
+    "PillboxDoseLogModel",
+    "PillboxNotificationDeliveryModel",
     "PushSubscriptionModel",
     "HouseholdMedicineModel",
     "HouseholdMedicineNotificationDeliveryModel",

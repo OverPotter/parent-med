@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.orm import selectinload
 
 from src.application.services.safety_engine import calculate_household_medicine_status
 from src.core.config import settings
@@ -20,6 +21,11 @@ from src.domain.entities.push_subscription import PushSubscription
 from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
 from src.infrastructure.database.models.household_medicine_notification_delivery import (
     HouseholdMedicineNotificationDeliveryModel,
+)
+from src.infrastructure.database.models.pillbox import (
+    PillboxMedicationModel,
+    PillboxNotificationDeliveryModel,
+    PillboxPlanModel,
 )
 from src.infrastructure.database.repositories.account_repository import SqlAccountRepository
 from src.infrastructure.database.repositories.administration_event_repository import (
@@ -159,6 +165,26 @@ def _format_before_body(
         f"Ребёнок: {child_name}\n"
         f"Лекарство: {medicine_name}"
     )
+
+
+def _format_pillbox_due_body(
+    summary_label: str,
+    scheduled_time_label: str,
+    language: str,
+) -> str:
+    if language == "en":
+        return f"{scheduled_time_label} now\n{summary_label}"
+    return f"{scheduled_time_label} сейчас\n{summary_label}"
+
+
+def _format_pillbox_overdue_body(
+    summary_label: str,
+    scheduled_time_label: str,
+    language: str,
+) -> str:
+    if language == "en":
+        return f"{scheduled_time_label} still needs confirmation\n{summary_label}"
+    return f"Приём на {scheduled_time_label} ещё не отмечен\n{summary_label}"
 
 
 def _normalize_medicine_name(value: str | None) -> str:
@@ -504,6 +530,13 @@ class PushNotificationScheduler:
                         updated = replace(plan, last_overdue_notification_for_at=next_allowed_at)
                         await plan_repo.update_notification_marks(updated)
 
+            await self._process_pillbox_plan_reminders(
+                session=session,
+                account_repo=account_repo,
+                subscription_repo=subscription_repo,
+                now=now,
+            )
+
             await self._process_household_medicine_reminders(
                 session=session,
                 account_repo=account_repo,
@@ -513,6 +546,277 @@ class PushNotificationScheduler:
             )
 
             await session.commit()
+
+    def _is_pillbox_medication_active_on(
+        self, medication: PillboxMedicationModel, target_day: date
+    ) -> bool:
+        if medication.course_mode == "continuous":
+            return True
+        if not medication.course_start_date or not medication.course_end_date:
+            return False
+        return medication.course_start_date <= target_day <= medication.course_end_date
+
+    def _resolve_pillbox_medicine_name(self, medication: PillboxMedicationModel) -> str:
+        if medication.custom_medicine_name and medication.custom_medicine_name.strip():
+            return medication.custom_medicine_name.strip()
+        return "Medicine"
+
+    def _build_pillbox_slot_summary_label(
+        self,
+        items: list[tuple[PillboxPlanModel, PillboxMedicationModel]],
+        language: str,
+    ) -> str:
+        labels: list[str] = []
+        for _, medication in items:
+            name = self._resolve_pillbox_medicine_name(medication)
+            dose = medication.dose_amount.strip()
+            labels.append(f"{name} · {dose}" if dose else name)
+
+        if not labels:
+            return "Medicines" if language == "en" else "Лекарства"
+        if len(labels) == 1:
+            return labels[0]
+        if len(labels) == 2:
+            return ", ".join(labels)
+
+        if language == "en":
+            return f"{labels[0]}, {labels[1]} +{len(labels) - 2} more"
+        return f"{labels[0]}, {labels[1]} +{len(labels) - 2}"
+
+    def _get_pillbox_schedule_candidates(
+        self,
+        plan: PillboxPlanModel,
+        now: datetime,
+    ) -> list[tuple[datetime, PillboxMedicationModel]]:
+        candidates: list[tuple[datetime, PillboxMedicationModel]] = []
+        local_now = now.astimezone(self._timezone)
+        for offset in (0,):
+            target_day = (local_now + timedelta(days=offset)).date()
+            weekday = target_day.isoweekday()
+            for medication in plan.medications:
+                if not self._is_pillbox_medication_active_on(medication, target_day):
+                    continue
+                if weekday not in (medication.repeat_days or []):
+                    continue
+                for dose_time in medication.times or []:
+                    local_scheduled_for = datetime.combine(
+                        target_day,
+                        dose_time,
+                        tzinfo=self._timezone,
+                    )
+                    candidates.append((local_scheduled_for.astimezone(UTC), medication))
+        return sorted(candidates, key=lambda item: item[0])
+
+    def _is_pillbox_dose_logged(
+        self,
+        plan: PillboxPlanModel,
+        medication_id: Any,
+        scheduled_for: datetime,
+    ) -> bool:
+        lower_bound = scheduled_for - timedelta(minutes=90)
+        upper_bound = scheduled_for + timedelta(hours=6)
+        for log in plan.dose_logs:
+            if log.medication_id != medication_id:
+                continue
+            if log.scheduled_for is not None:
+                if log.scheduled_for == scheduled_for:
+                    return True
+                continue
+            if lower_bound <= log.taken_at <= upper_bound:
+                return True
+        return False
+
+    async def _has_pillbox_delivery(
+        self,
+        *,
+        session: Any,
+        account_id: Any,
+        plan_id: Any,
+        medication_id: Any,
+        notification_kind: str,
+        scheduled_for: datetime,
+    ) -> bool:
+        result = await session.execute(
+            select(PillboxNotificationDeliveryModel.id).where(
+                PillboxNotificationDeliveryModel.account_id == account_id,
+                PillboxNotificationDeliveryModel.plan_id == plan_id,
+                PillboxNotificationDeliveryModel.medication_id == medication_id,
+                PillboxNotificationDeliveryModel.notification_kind == notification_kind,
+                PillboxNotificationDeliveryModel.scheduled_for == scheduled_for,
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    def _record_pillbox_delivery(
+        self,
+        *,
+        session: Any,
+        family_id: Any,
+        account_id: Any,
+        plan_id: Any,
+        medication_id: Any,
+        notification_kind: str,
+        scheduled_for: datetime,
+        now: datetime,
+    ) -> None:
+        session.add(
+            PillboxNotificationDeliveryModel(
+                family_id=family_id,
+                account_id=account_id,
+                plan_id=plan_id,
+                medication_id=medication_id,
+                notification_kind=notification_kind,
+                scheduled_for=scheduled_for,
+                sent_at=now,
+            )
+        )
+
+    async def _process_pillbox_plan_reminders(
+        self,
+        *,
+        session: Any,
+        account_repo: SqlAccountRepository,
+        subscription_repo: SqlPushSubscriptionRepository,
+        now: datetime,
+    ) -> None:
+        result = await session.execute(
+            select(PillboxPlanModel)
+            .where(PillboxPlanModel.status == "active")
+            .options(
+                selectinload(PillboxPlanModel.medications),
+                selectinload(PillboxPlanModel.dose_logs),
+            )
+        )
+        plans = result.scalars().all()
+        slot_map: dict[tuple[Any, datetime], dict[str, Any]] = {}
+
+        for plan in plans:
+            if not plan.medications:
+                continue
+
+            target_account_ids = list(plan.member_account_ids or [])
+            if not target_account_ids:
+                target_account_ids = [plan.created_by_account_id]
+
+            schedule_candidates = self._get_pillbox_schedule_candidates(plan, now)
+            if not schedule_candidates:
+                continue
+
+            for account_id in target_account_ids:
+                for scheduled_for, medication in schedule_candidates:
+                    if self._is_pillbox_dose_logged(plan, medication.id, scheduled_for):
+                        continue
+                    slot = slot_map.setdefault(
+                        (account_id, scheduled_for),
+                        {
+                            "account_id": account_id,
+                            "scheduled_for": scheduled_for,
+                            "family_id": plan.family_id,
+                            "items": [],
+                        },
+                    )
+                    slot["items"].append((plan, medication))
+
+        for slot in slot_map.values():
+            account = await account_repo.get_by_id(slot["account_id"])
+            if not account:
+                continue
+            subscriptions = await subscription_repo.get_by_account_id(account.id)
+            if not subscriptions:
+                continue
+
+            scheduled_for = slot["scheduled_for"]
+            items: list[tuple[PillboxPlanModel, PillboxMedicationModel]] = slot["items"]
+            language = _normalize_language(account.preferred_language)
+            overdue_at = scheduled_for + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
+            scheduled_time_label = scheduled_for.astimezone(self._timezone).strftime("%H:%M")
+            timestamp = int(scheduled_for.timestamp())
+            summary_label = self._build_pillbox_slot_summary_label(items, language)
+
+            first_plan, first_medication = items[0]
+            notification_data = {
+                "planId": str(first_plan.id),
+                "medicationId": str(first_medication.id),
+                "scheduledFor": scheduled_for.isoformat(),
+                "slotCount": len(items),
+            }
+
+            async def slot_delivered(notification_kind: str) -> bool:
+                for plan, medication in items:
+                    if not await self._has_pillbox_delivery(
+                        session=session,
+                        account_id=account.id,
+                        plan_id=plan.id,
+                        medication_id=medication.id,
+                        notification_kind=notification_kind,
+                        scheduled_for=scheduled_for,
+                    ):
+                        return False
+                return True
+
+            def record_slot_delivery(notification_kind: str) -> None:
+                for plan, medication in items:
+                    self._record_pillbox_delivery(
+                        session=session,
+                        family_id=plan.family_id,
+                        account_id=account.id,
+                        plan_id=plan.id,
+                        medication_id=medication.id,
+                        notification_kind=notification_kind,
+                        scheduled_for=scheduled_for,
+                        now=now,
+                    )
+
+            actions = [
+                {
+                    "action": "open-pillbox",
+                    "title": "Open" if language == "en" else "Открыть",
+                }
+            ]
+
+            pillbox_url = (
+                f"/pillbox?mode=details&plan={first_plan.id}&highlightPlan={first_plan.id}"
+            )
+
+            if scheduled_for <= now < overdue_at and not await slot_delivered("due"):
+                payload = {
+                    "title": "PillPath",
+                    "body": _format_pillbox_due_body(
+                        summary_label,
+                        scheduled_time_label,
+                        language,
+                    ),
+                    "url": pillbox_url,
+                    "tag": f"pillbox-due-{account.id}-{timestamp}",
+                    "data": notification_data,
+                    "actions": actions,
+                }
+                if await self._send_to_subscriptions(
+                    subscriptions=subscriptions,
+                    subscription_repo=subscription_repo,
+                    payload=payload,
+                ):
+                    record_slot_delivery("due")
+
+            if now >= overdue_at and not await slot_delivered("overdue"):
+                payload = {
+                    "title": "PillPath",
+                    "body": _format_pillbox_overdue_body(
+                        summary_label,
+                        scheduled_time_label,
+                        language,
+                    ),
+                    "url": pillbox_url,
+                    "tag": f"pillbox-overdue-{account.id}-{timestamp}",
+                    "data": notification_data,
+                    "actions": actions,
+                }
+                if await self._send_to_subscriptions(
+                    subscriptions=subscriptions,
+                    subscription_repo=subscription_repo,
+                    payload=payload,
+                ):
+                    record_slot_delivery("overdue")
 
     async def _process_household_medicine_reminders(
         self,
@@ -684,7 +988,15 @@ class PushNotificationScheduler:
         payload: dict[str, Any],
     ) -> bool:
         sent = False
+        unique_subscriptions: list[PushSubscription] = []
+        seen_endpoints: set[str] = set()
         for subscription in subscriptions:
+            if subscription.endpoint in seen_endpoints:
+                continue
+            seen_endpoints.add(subscription.endpoint)
+            unique_subscriptions.append(subscription)
+
+        for subscription in unique_subscriptions:
             try:
                 await asyncio.to_thread(
                     webpush,

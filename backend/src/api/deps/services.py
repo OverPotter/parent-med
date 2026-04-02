@@ -15,6 +15,7 @@ from src.api.deps.repositories import (
     get_illness_episode_repo,
     get_medicine_catalog_repo,
     get_parent_repo,
+    get_pillbox_repo,
     get_push_subscription_repo,
     get_temperature_entry_repo,
     get_weight_entry_repo,
@@ -33,6 +34,7 @@ from src.application.services.illness_comment_service import IllnessCommentServi
 from src.application.services.illness_episode_service import IllnessEpisodeService
 from src.application.services.medicine_catalog_service import MedicineCatalogService
 from src.application.services.parent_service import ParentService
+from src.application.services.pillbox_service import PillboxService
 from src.application.services.push_notification_service import PushNotificationService
 from src.application.services.temperature_entry_service import TemperatureEntryService
 from src.application.services.weight_entry_service import WeightEntryService
@@ -103,6 +105,18 @@ def get_parent_service(
     family_repo=Depends(get_family_repo),
 ) -> ParentService:
     return ParentService(account_repo=account_repo, family_repo=family_repo)
+
+
+def get_pillbox_service(
+    pillbox_repo=Depends(get_pillbox_repo),
+    account_repo=Depends(get_account_repo),
+    household_repo=Depends(get_household_medicine_repo),
+) -> PillboxService:
+    return PillboxService(
+        pillbox_repo=pillbox_repo,
+        account_repo=account_repo,
+        household_repo=household_repo,
+    )
 
 
 def get_push_notification_service(

@@ -18,6 +18,7 @@ from src.domain.repositories.illness_comment_repository import IllnessCommentRep
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 from src.domain.repositories.medicine_catalog_repository import MedicineCatalogRepository
 from src.domain.repositories.parent_repository import ParentRepository
+from src.domain.repositories.pillbox_repository import PillboxRepository
 from src.domain.repositories.push_subscription_repository import PushSubscriptionRepository
 from src.domain.repositories.temperature_entry_repository import TemperatureEntryRepository
 from src.domain.repositories.weight_entry_repository import WeightEntryRepository
@@ -49,6 +50,7 @@ from src.infrastructure.database.repositories.medicine_catalog_repository import
     SqlMedicineCatalogRepository,
 )
 from src.infrastructure.database.repositories.parent_repository import SqlParentRepository
+from src.infrastructure.database.repositories.pillbox_repository import SqlPillboxRepository
 from src.infrastructure.database.repositories.push_subscription_repository import (
     SqlPushSubscriptionRepository,
 )
@@ -92,6 +94,10 @@ def get_episode_medication_plan_repo(
 
 def get_parent_repo(session: AsyncSession = Depends(get_db_session)) -> ParentRepository:
     return SqlParentRepository(session)
+
+
+def get_pillbox_repo(session: AsyncSession = Depends(get_db_session)) -> PillboxRepository:
+    return SqlPillboxRepository(session)
 
 
 def get_push_subscription_repo(
