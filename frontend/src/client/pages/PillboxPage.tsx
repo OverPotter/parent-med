@@ -1608,22 +1608,6 @@ export function PillboxPage() {
                     {tPillbox(language, "saveMedicationRequiresTitle")}
                   </p>
                 ) : null}
-                {!activeMedication.id.startsWith("new-") ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      requestDeleteMedication(
-                        activeMedication.id,
-                        editorTitle.trim() ||
-                          activeMedication.title ||
-                          tPillbox(language, "unnamedMedicine", { index: 1 })
-                      )
-                    }
-                    className={actionDangerClass}
-                  >
-                    {tPillbox(language, "deleteMedicine")}
-                  </button>
-                ) : null}
               </div>
             </div>
           </div>
