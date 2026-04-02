@@ -330,10 +330,13 @@ export function AuthPage() {
               <BrandWordmark className="auth-v3-header-brand-text" />
             </Link>
             <div className="auth-v3-header-actions">
-              <LanguageSwitch />
+              <LanguageSwitch
+                className="auth-v3-language-switch"
+                triggerClassName="auth-v3-header-control"
+              />
               <button
                 type="button"
-                className="auth-v3-theme-button"
+                className="auth-v3-theme-button auth-v3-header-control"
                 onClick={toggleTheme}
                 aria-label={
                   theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel
@@ -345,7 +348,7 @@ export function AuthPage() {
                   {theme === "light" ? copy.common.themeDarkText : copy.common.themeLightText}
                 </span>
               </button>
-              <Link to="/" className="auth-v3-ghost-button auth-v3-home-link">
+              <Link to="/" className="auth-v3-ghost-button auth-v3-home-link auth-v3-header-control">
                 {copy.common.goHome}
               </Link>
             </div>
