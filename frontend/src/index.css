@@ -1986,10 +1986,10 @@ p {
 
   .landing-page {
     --landing-primary: var(--color-primary);
-    --landing-title-color: var(--color-foreground);
-    --landing-lead-color: var(--color-muted);
-    --landing-font-body: "Plus Jakarta Sans", var(--font-sans);
-    --landing-font-heading: "Plus Jakarta Sans", var(--font-display);
+    --landing-title-color: color-mix(in srgb, var(--color-foreground) 88%, var(--color-muted));
+    --landing-lead-color: color-mix(in srgb, var(--color-muted) 90%, var(--color-foreground));
+    --landing-font-body: "Nunito Sans", "Plus Jakarta Sans", var(--font-sans);
+    --landing-font-heading: "Nunito Sans", "Plus Jakarta Sans", var(--font-display);
     --landing-white: rgb(255 255 255 / 0.08);
     --landing-white-strong: rgb(255 255 255 / 0.14);
     --landing-bg-top: color-mix(in srgb, var(--color-surface-hero) 138%, transparent);
@@ -2185,8 +2185,8 @@ p {
     font-size: clamp(1.95rem, 3.35vw, 3.15rem);
     line-height: 1.06;
     letter-spacing: -0.038em;
-    font-weight: 800;
-    color: color-mix(in srgb, var(--color-foreground) 94%, var(--color-muted));
+    font-weight: 760;
+    color: var(--landing-title-color);
     text-wrap: balance;
   }
 
@@ -2199,7 +2199,7 @@ p {
     margin: 1.35rem auto 0;
     font-size: clamp(0.96rem, 1.05vw, 1.02rem);
     line-height: 1.7;
-    color: var(--color-muted);
+    color: var(--landing-lead-color);
     text-wrap: pretty;
   }
 
@@ -2272,13 +2272,27 @@ p {
     font-size: 0.82rem;
     font-weight: 600;
     letter-spacing: 0.015em;
-    color: color-mix(in srgb, var(--color-primary) 56%, var(--color-foreground));
+    color: color-mix(in srgb, var(--color-primary) 42%, var(--color-foreground));
     font-family: var(--landing-font-heading);
+  }
+
+  .landing-child-pill--active {
+    background: color-mix(in srgb, var(--color-success-soft) 76%, white);
+    border-color: color-mix(in srgb, var(--color-success) 32%, var(--color-border));
+    color: color-mix(in srgb, var(--color-success) 72%, var(--color-foreground));
+  }
+
+  .landing-child-pill--danger {
+    background: color-mix(in srgb, var(--color-danger-soft) 82%, white);
+    border-color: color-mix(in srgb, var(--color-danger) 36%, var(--color-border));
+    color: color-mix(in srgb, var(--color-danger) 76%, var(--color-foreground));
   }
 
   .landing-feature-card {
     border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
-    background: var(--landing-panel-bg);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.045), transparent 34%),
+      color-mix(in srgb, var(--color-surface-soft) 97%, transparent);
     box-shadow: 0 8px 18px -24px rgb(var(--color-shadow) / 0.08);
   }
 
@@ -2728,18 +2742,18 @@ p {
 
   .landing-section-label {
     font-size: 0.82rem;
-    font-weight: 600;
+    font-weight: 650;
     letter-spacing: 0.015em;
-    color: color-mix(in srgb, var(--color-primary) 56%, var(--color-foreground));
+    color: color-mix(in srgb, var(--color-primary) 44%, var(--color-foreground));
   }
 
   .landing-section-title {
     font-family: var(--landing-font-heading);
     font-size: clamp(1.55rem, 1.85vw, 2.15rem);
-    font-weight: 800;
-    line-height: 1.2;
+    font-weight: 760;
+    line-height: 1.24;
     letter-spacing: -0.01em;
-    color: color-mix(in srgb, var(--color-foreground) 93%, var(--color-muted));
+    color: var(--landing-title-color);
     text-wrap: balance;
   }
 

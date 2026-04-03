@@ -23,10 +23,18 @@ export function LandingPage() {
           <section className="landing-topbar-shell">
             <div className="landing-topbar-inner">
               <div className="landing-hero-reset-topline">
-                <Link to="/" className="landing-hero-reset-brandicon" aria-label={copy.common.brandName}>
+                <Link
+                  to="/"
+                  className="landing-hero-reset-brandicon"
+                  aria-label={copy.common.brandName}
+                >
                   <img src="/pwa-icon.png" alt="" className="landing-hero-reset-logo" />
                 </Link>
-                <Link to="/" className="landing-hero-reset-brandmark" aria-label={copy.common.brandName}>
+                <Link
+                  to="/"
+                  className="landing-hero-reset-brandmark"
+                  aria-label={copy.common.brandName}
+                >
                   <BrandWordmark
                     className="landing-hero-reset-brand"
                     ariaLabel={copy.common.brandName}
@@ -101,9 +109,16 @@ export function LandingPage() {
                   <div className="mt-5 space-y-2.5">
                     {copy.landing.hero.highlights.map((item, index) => {
                       const Icon =
-                        index === 0 ? HeroStethoscopeIcon : index === 1 ? HeroBellRingIcon : HeroShieldCheckIcon;
+                        index === 0
+                          ? HeroStethoscopeIcon
+                          : index === 1
+                            ? HeroBellRingIcon
+                            : HeroShieldCheckIcon;
                       return (
-                        <div key={item} className="flex items-center gap-2.5 text-sm font-semibold leading-6 text-foreground/85">
+                        <div
+                          key={item}
+                          className="flex items-center gap-2.5 text-sm font-semibold leading-6 text-foreground/85"
+                        >
                           <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-[color:var(--color-primary)]">
                             <Icon />
                           </span>
@@ -138,7 +153,9 @@ export function LandingPage() {
                             <p className="min-w-0 text-sm font-semibold leading-6 text-foreground sm:text-[0.98rem]">
                               {item.title}
                             </p>
-                            <p className="min-w-0 text-sm leading-6 text-muted">{item.description}</p>
+                            <p className="min-w-0 text-sm leading-6 text-muted">
+                              {item.description}
+                            </p>
                           </div>
                         </Surface>
                       );
@@ -187,19 +204,14 @@ export function LandingPage() {
           <section className="landing-section-shell landing-section-shell--child overflow-hidden">
             <div className="px-0 py-4 sm:py-5">
               <div className="landing-child-hero-shell">
-                <h2 className="landing-section-title">
-                  Дети: профиль, симптомы, температура и напоминания
-                </h2>
+                <h2 className="landing-section-title">Дети</h2>
                 <p className="mt-4 max-w-[68rem] text-sm leading-7 text-muted sm:text-base">
                   Создайте профиль ребенка, отслеживайте симптомы и температуру, добавляйте заметки
                   и получайте напоминания, когда пора дать лекарство.
                 </p>
 
                 <div className="mt-4 flex flex-wrap gap-3">
-                  {[
-                    "Профиль ребенка создан",
-                    "Наблюдение по дням",
-                  ].map((label) => (
+                  {["Профиль ребенка создан", "Наблюдение по дням"].map((label) => (
                     <span key={label} className="landing-child-pill">
                       {label}
                     </span>
@@ -244,161 +256,178 @@ export function LandingPage() {
             </div>
           </section>
 
-          <section className="landing-section-shell overflow-hidden">
-            <div className="px-5 py-5 sm:px-8 sm:py-7">
-              <p className="landing-section-label">Таблетница</p>
-              <h2 className="landing-section-title mt-2">
-                Настройте напоминания о лекарствах и витаминах для себя или близкого человека
-              </h2>
-              <p className="mt-4 max-w-[62rem] text-sm leading-7 text-muted sm:text-base">
-                Повторяющиеся напоминания помогают держать режим приема без путаницы и не забывать
-                о следующем шаге.
-              </p>
+          <section className="landing-section-shell landing-section-shell--child overflow-hidden">
+            <div className="px-0 py-4 sm:py-5">
+              <div className="landing-child-hero-shell">
+                <h2 className="landing-section-title">Таблетница</h2>
+                <p className="mt-4 max-w-[62rem] text-sm leading-7 text-muted sm:text-base">
+                  Настройте напоминания о лекарствах и витаминах для себя или близкого человека.
+                </p>
 
-              <Surface className="mt-6 rounded-[2rem] border border-border/70 bg-white/96 p-5 sm:p-6">
-                <div className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+                <div className="landing-child-shell mt-6">
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    <Surface className="landing-feature-card rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-4">
+                      <ul className="space-y-1.5 text-[15px] font-medium leading-7 text-muted sm:text-base">
+                        {[
+                          "Повторяющиеся напоминания",
+                          "Для себя и близких",
+                          "Понятный режим без путаницы",
+                        ].map((line) => (
+                          <li key={line} className="flex items-start gap-2">
+                            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-primary)]" />
+                            <span>{line}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </Surface>
+                    <Surface className="landing-feature-card rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-4">
+                      <div className="flex flex-col items-start gap-2">
+                        <span className="landing-child-pill">8:30 — Витамин D ежедневно</span>
+                        <span className="landing-child-pill landing-child-pill--active">
+                          Напоминание активно
+                        </span>
+                        <span className="landing-child-pill">
+                          Создано для бабушки в семейном аккаунте
+                        </span>
+                      </div>
+                    </Surface>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm font-semibold leading-6 text-[color:var(--color-primary)] sm:text-base">
+                  Мама добавила план, папа его видит, бабушка получает напоминание.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="landing-section-shell landing-section-shell--child overflow-hidden">
+            <div className="px-0 py-4 sm:py-5">
+              <div className="landing-child-hero-shell">
+                <h2 className="landing-section-title">Домашняя аптечка</h2>
+                <p className="mt-4 max-w-[62rem] text-sm leading-7 text-muted sm:text-base">
+                  Добавляйте лекарства и получайте напоминания до истечения срока годности.
+                </p>
+
+                <div className="landing-child-shell mt-6">
+                  <div>
+                    <Surface className="landing-feature-card rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-4">
+                      <div className="flex flex-col items-start gap-2 text-sm font-medium leading-7 text-muted sm:text-base">
+                        <p className="flex items-start gap-2 text-[15px] font-medium leading-7 text-muted sm:text-base">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-primary)]" />
+                          <span>Контроль сроков годности лекарств дома</span>
+                        </p>
+                        <span className="landing-child-pill landing-child-pill--danger">
+                          Парацетамол: срок истекает через 12 дней
+                        </span>
+                        <span className="landing-child-pill">
+                          Напоминание: проверьте аптечку в выходные
+                        </span>
+                      </div>
+                    </Surface>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="landing-section-shell landing-section-shell--child overflow-hidden">
+            <div className="px-0 py-4 sm:py-5">
+              <div className="landing-child-hero-shell">
+                <h2 className="landing-section-title">Семейный аккаунт</h2>
+                <p className="mt-4 max-w-[62rem] text-sm leading-7 text-muted sm:text-base">
+                  Родители и родственники видят общие планы и остаются синхронизированы по
+                  напоминаниям.
+                </p>
+                <p className="mt-4 text-sm font-semibold leading-6 text-[color:var(--color-primary)] sm:text-base">
+                  Мама добавила план, папа его видит, бабушка получает напоминание.
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {["Мама", "Папа", "Бабушка", "Дедушка", "Другие родственники"].map((role) => (
+                    <span
+                      key={role}
+                      className="rounded-full border border-[color:var(--color-primary)] bg-[color:var(--color-primary)] px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      {role}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="landing-section-shell landing-section-shell--child overflow-hidden">
+            <div className="px-0 py-4 sm:py-5">
+              <div className="landing-child-hero-shell">
+                <h2 className="landing-section-title">Доверие и приватность</h2>
+
+                <div className="landing-child-shell mt-6">
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    <Surface className="landing-feature-card rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-4">
+                      <p className="text-sm font-medium leading-7 text-muted sm:text-base">
+                        Вы сами выбираете, кто видит общую семейную информацию.
+                      </p>
+                    </Surface>
+                    <Surface className="landing-feature-card rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-4">
+                      <p className="text-sm font-medium leading-7 text-muted sm:text-base">
+                        Доступ можно выдать и отозвать в любой момент.
+                      </p>
+                    </Surface>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-sm font-semibold leading-6 text-[color:var(--color-primary)] sm:text-base">
+                  Общие данные видят только приглашенные вами члены семьи.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="landing-section-shell landing-section-shell--child overflow-hidden">
+            <div className="px-0 py-4 sm:py-5">
+              <div className="landing-child-hero-shell">
+                <h2 className="landing-section-title">Вопросы и ответы</h2>
+
+                <div className="landing-child-shell mt-6">
                   <div className="space-y-3">
                     {[
-                      "Повторяющиеся напоминания",
-                      "Для себя или семьи",
-                      "Понятный режим без путаницы",
-                    ].map((line) => (
-                      <div key={line} className="flex items-center gap-3 rounded-[1.2rem] bg-[color:rgba(205,191,241,0.14)] px-4 py-3">
-                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-[color:var(--color-primary)]">
-                          <HeroAlarmIcon />
-                        </span>
-                        <span className="text-sm font-medium leading-6 text-foreground">{line}</span>
-                      </div>
+                      [
+                        "Можно создать профили для нескольких детей?",
+                        "Да, в одном семейном аккаунте можно вести несколько профилей детей.",
+                      ],
+                      [
+                        "Можно поставить напоминания для другого члена семьи?",
+                        "Да, напоминания можно настроить для другого члена семьи.",
+                      ],
+                      [
+                        "Что отслеживает домашняя аптечка?",
+                        "Домашняя аптечка помогает держать под контролем сроки годности и вовремя проверять запасы.",
+                      ],
+                      [
+                        "Несколько родственников могут пользоваться одним аккаунтом?",
+                        "Да. Один родитель создает аккаунт и отправляет пригласительную ссылку, чтобы подключить других членов семьи в общее пространство.",
+                      ],
+                      [
+                        "Кто видит общую информацию?",
+                        "Только приглашенные члены семьи с открытым доступом.",
+                      ],
+                      [
+                        "Что умеет Таблетница в PillPath?",
+                        "Это умный трекинг приема: вы настраиваете график для лекарств, витаминов или других добавок, а приложение вовремя присылает напоминания.",
+                      ],
+                    ].map(([question, answer]) => (
+                      <Surface
+                        key={question}
+                        className="landing-feature-card rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-4"
+                      >
+                        <h3 className="text-[1.02rem] font-semibold leading-7 text-foreground">
+                          {question}
+                        </h3>
+                        <p className="mt-2 text-sm leading-7 text-muted sm:text-base">{answer}</p>
+                      </Surface>
                     ))}
                   </div>
-                  <div className="rounded-[1.6rem] bg-[color:rgba(205,191,241,0.18)] px-5 py-5">
-                    <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[color:var(--color-primary)]">
-                      Исход
-                    </p>
-                    <p className="mt-3 text-[1.02rem] font-semibold leading-7 text-foreground">
-                      Никто не забывает о следующем приеме.
-                    </p>
-                  </div>
                 </div>
-              </Surface>
-            </div>
-          </section>
-
-          <section className="landing-section-shell overflow-hidden">
-            <div className="px-5 py-5 sm:px-8 sm:py-7">
-              <p className="landing-section-label">Домашняя аптечка</p>
-              <h2 className="landing-section-title mt-2">
-                Отслеживайте сроки годности лекарств в домашней аптечке
-              </h2>
-              <p className="mt-4 max-w-[62rem] text-sm leading-7 text-muted sm:text-base">
-                Добавляйте лекарства и получайте напоминания до истечения срока годности.
-              </p>
-
-              <Surface className="mt-6 rounded-[2rem] border border-border/70 bg-white/96 p-5 sm:p-6">
-                <div className="space-y-3">
-                  <div className="rounded-[1.4rem] bg-[color:rgba(205,191,241,0.14)] px-4 py-3 text-sm font-medium leading-6 text-foreground">
-                    Контроль сроков годности лекарств дома
-                  </div>
-                  <div className="rounded-[1.4rem] bg-[color:rgba(205,191,241,0.14)] px-4 py-3 text-sm font-medium leading-6 text-foreground">
-                    Парацетамол: срок истекает через 12 дней
-                  </div>
-                  <div className="rounded-[1.4rem] bg-[color:rgba(205,191,241,0.14)] px-4 py-3 text-sm font-medium leading-6 text-foreground">
-                    Напоминание: проверьте аптечку в выходные
-                  </div>
-                </div>
-              </Surface>
-            </div>
-          </section>
-
-          <section className="landing-section-shell overflow-hidden">
-            <div className="px-5 py-5 sm:px-8 sm:py-7">
-              <p className="landing-section-label">Семейный аккаунт</p>
-              <h2 className="landing-section-title mt-2">
-                Родители и родственники работают в одном пространстве
-              </h2>
-              <p className="mt-4 max-w-[62rem] text-sm leading-7 text-muted sm:text-base">
-                Родители и родственники видят общие планы и остаются синхронизированы по
-                напоминаниям.
-              </p>
-              <p className="mt-5 text-[1.02rem] font-semibold leading-7 text-foreground">
-                Мама добавила план, папа его видит, бабушка получает напоминание.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                {["Мама", "Папа", "Бабушка", "Дедушка", "Другие родственники"].map((role) => (
-                  <span
-                    key={role}
-                    className="rounded-full border border-border/70 bg-white/90 px-4 py-2 text-sm font-medium text-foreground"
-                  >
-                    {role}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="landing-section-shell overflow-hidden">
-            <div className="px-5 py-5 sm:px-8 sm:py-7">
-              <p className="landing-section-label">Доверие и приватность</p>
-              <h2 className="landing-section-title mt-2">Вы сами выбираете, кто видит семейные данные</h2>
-
-              <div className="mt-6 grid gap-4 lg:grid-cols-2">
-                <Surface className="landing-comparison-card p-5 sm:p-6">
-                  <p className="text-[1.02rem] font-semibold leading-7 text-foreground">
-                    Вы сами выбираете, кто видит общую семейную информацию.
-                  </p>
-                </Surface>
-                <Surface className="landing-comparison-card p-5 sm:p-6">
-                  <p className="text-[1.02rem] font-semibold leading-7 text-foreground">
-                    Доступ можно выдать и отозвать в любой момент.
-                  </p>
-                </Surface>
-              </div>
-
-              <p className="mt-5 text-sm leading-7 text-muted">
-                Общие данные видят только приглашенные вами члены семьи.
-              </p>
-            </div>
-          </section>
-
-          <section className="landing-section-shell overflow-hidden">
-            <div className="px-5 py-5 sm:px-8 sm:py-7">
-              <p className="landing-section-label">Вопросы и ответы</p>
-              <h2 className="landing-section-title mt-2">Частые вопросы</h2>
-
-              <div className="mt-6 space-y-4">
-                {[
-                  [
-                    "Можно создать профили для нескольких детей?",
-                    "Да, в одном семейном аккаунте можно вести несколько профилей детей.",
-                  ],
-                  [
-                    "Можно поставить напоминания для другого члена семьи?",
-                    "Да, напоминания можно настроить для другого члена семьи.",
-                  ],
-                  [
-                    "Домашняя аптечка отслеживает только сроки годности?",
-                    "Да, домашняя аптечка фокусируется на напоминаниях о сроках годности.",
-                  ],
-                  [
-                    "Несколько родственников могут пользоваться одним аккаунтом?",
-                    "Да, несколько родственников могут координироваться в одном аккаунте.",
-                  ],
-                  [
-                    "Кто видит общую информацию?",
-                    "Только приглашенные члены семьи с открытым доступом.",
-                  ],
-                  [
-                    "Можно использовать PillPath и для витаминов?",
-                    "Да, напоминания работают и для витаминов, и для лекарств.",
-                  ],
-                ].map(([question, answer]) => (
-                  <Surface key={question} className="landing-comparison-card p-5 sm:p-6">
-                    <h3 className="text-[1.02rem] font-semibold leading-7 text-foreground">
-                      {question}
-                    </h3>
-                    <p className="mt-2 text-sm leading-7 text-muted">{answer}</p>
-                  </Surface>
-                ))}
               </div>
             </div>
           </section>
