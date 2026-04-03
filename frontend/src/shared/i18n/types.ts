@@ -45,10 +45,12 @@ export interface Translations {
   landing: {
     hero: {
       eyebrow: string;
-      title: string;
+      titleLines: [string, string, string];
       lead: string;
       createAccount: string;
+      loginPrompt: string;
       login: string;
+      highlights: string[];
       themeToggleAriaDark: string;
       themeToggleAriaLight: string;
     };
@@ -92,6 +94,63 @@ export interface Translations {
       closePreview: string;
       previewCloseLabel: string;
       previewOpenLabel: string;
+    };
+    sections: {
+      strip: Array<{ title: string; description: string }>;
+      children: {
+        title: string;
+        description: string;
+        mobilePoints: [string, string, string];
+        chips: [string, string];
+        cards: Array<{ title: string; lines: [string, string] }>;
+        footer: string;
+      };
+      pillbox: {
+        title: string;
+        description: string;
+        mobilePoints: [string, string, string];
+        bullets: [string, string, string];
+        chips: [string, string, string];
+        footer: string;
+      };
+      cabinet: {
+        title: string;
+        description: string;
+        mobilePoints: [string, string, string];
+        statusTitle: string;
+        statusItems: [string, string, string];
+        checklistTitle: string;
+        checklistItems: [string, string, string];
+        footer: string;
+      };
+      family: {
+        title: string;
+        description: string;
+        mobilePoints: [string, string, string];
+        footer: string;
+        roles: string[];
+        flowTitle: string;
+        flowSteps: [string, string, string];
+      };
+      trust: {
+        title: string;
+        description: string;
+        mobilePoints: [string, string];
+        cards: [string, string];
+        footer: string;
+      };
+      faq: {
+        title: string;
+        showMore: string;
+        showLess: string;
+        items: Array<{ question: string; answer: string }>;
+      };
+      finalCta: {
+        title: string;
+        description: string;
+        primary: string;
+        secondary: string;
+      };
     };
   };
   auth: {

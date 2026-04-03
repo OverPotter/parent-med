@@ -12,7 +12,13 @@ const languageLabels = {
   en: "EN",
 } as const;
 
-export function LanguageSwitch({ className }: { className?: string }) {
+export function LanguageSwitch({
+  className,
+  triggerClassName,
+}: {
+  className?: string;
+  triggerClassName?: string;
+}) {
   const { language, setLanguage, copy } = useI18n();
   const authToken = useAppStore((s) => s.authToken);
   const accountId = useAppStore((s) => s.accountId);
@@ -25,7 +31,7 @@ export function LanguageSwitch({ className }: { className?: string }) {
       return;
     }
 
-    const handlePointerDown = (event: MouseEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) {
         setIsOpen(false);
       }
@@ -37,11 +43,11 @@ export function LanguageSwitch({ className }: { className?: string }) {
       }
     };
 
-    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("pointerdown", handlePointerDown, true);
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("pointerdown", handlePointerDown, true);
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
@@ -52,6 +58,7 @@ export function LanguageSwitch({ className }: { className?: string }) {
         type="button"
         className={joinClasses(
           "soft-language-dropdown__trigger",
+          triggerClassName,
           isOpen && "soft-language-dropdown__trigger-active"
         )}
         onClick={() => setIsOpen((current) => !current)}

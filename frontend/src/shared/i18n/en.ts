@@ -44,35 +44,36 @@ export const en: Translations = {
   },
   landing: {
     hero: {
-      eyebrow: "Family child health tracker",
-      title: "Everything important about your child in one place",
-      lead:
-        "It is easier for a family to track a child, keep medicines, a home medicine cabinet and important notes in one place, so details do not get lost across messages, notes and memory.",
-      createAccount: "Create account",
-      login: "Already have an account",
+      eyebrow: "Family care for sick days and daily meds",
+      titleLines: ["When a child is sick,", "the family needs one", "clear plan."],
+      lead: "Child illness profile, dose reminders, and home medicine cabinet in one app.",
+      createAccount: "Try it free",
+      loginPrompt: "Already have an account?",
+      login: "Log in",
+      highlights: [
+        "See how your child’s condition changes",
+        "Get reminders on time",
+        "Keep expiry dates under control",
+      ],
       themeToggleAriaDark: "Dark theme",
       themeToggleAriaLight: "Light theme",
     },
     cards: [
       {
-        title: "Nothing gets lost",
-        description:
-          "Records, medicines and important actions stay in one place instead of breaking apart across messages and notes.",
+        title: "Children",
+        description: "Track symptoms, temperature, notes and medicine reminders.",
       },
       {
-        title: "Everyone sees the same picture",
-        description:
-          "One shared view helps the family align faster and miss less.",
+        title: "Pillbox",
+        description: "Create medicine schedules and receive reminders.",
       },
       {
-        title: "You can see what is already done",
-        description:
-          "It is easy to check the latest entries, event times and who updated the information.",
+        title: "Home medicine cabinet",
+        description: "Keep track of expiry dates for medicines at home.",
       },
       {
-        title: "The next step is clear",
-        description:
-          "Next steps and important actions stay close when they are actually needed.",
+        title: "Family account",
+        description: "Bring parents and relatives together in one care space.",
       },
     ],
     product: {
@@ -165,12 +166,167 @@ export const en: Translations = {
       previewCloseLabel: "Close enlarged preview",
       previewOpenLabel: "Open enlarged preview",
     },
+    sections: {
+      strip: [
+        {
+          title: "Children",
+          description: "A day-by-day illness profile for your child.",
+        },
+        {
+          title: "Pillbox",
+          description: "Reminders for medicines and vitamins.",
+        },
+        {
+          title: "Home Medicine Cabinet",
+          description: "Expiry dates and stock levels under control.",
+        },
+        {
+          title: "Family Account",
+          description: "One shared access for parents and relatives.",
+        },
+      ],
+      children: {
+        title: "Children",
+        description:
+          "Create a child profile and track illness day by day: symptoms, temperature, notes, and reminders.",
+        mobilePoints: [
+          "Symptoms and temperature in one day-by-day history",
+          "Medication reminders at the right time",
+          "Notes you can quickly share with a doctor",
+        ],
+        chips: ["Child profile created", "Day-by-day timeline"],
+        cards: [
+          {
+            title: "Condition",
+            lines: ["Symptoms: cough, weakness", "Temperature: 38.1°"],
+          },
+          {
+            title: "Treatment",
+            lines: ["Medication plan added", "Note: day 2, feeling better"],
+          },
+          {
+            title: "Reminders",
+            lines: ["Give medicine at 2:00 PM", "Next step is clear"],
+          },
+        ],
+        footer:
+          "Mom added the plan, dad followed the schedule, gave the dose, and logged it on time.",
+      },
+      pillbox: {
+        title: "Pillbox",
+        description: "Set up medicine and vitamin schedules for yourself or a family member.",
+        mobilePoints: [
+          "Flexible schedules: daily, specific days, specific times",
+          "Assign a plan to yourself or a family member",
+          "See immediately which dose was already logged",
+        ],
+        bullets: [
+          "Recurring reminders",
+          "For yourself or loved ones",
+          "A clear routine without confusion",
+        ],
+        chips: [
+          "8:30 AM — Vitamin D daily",
+          "Reminder active",
+          "Created for grandma in the family account",
+        ],
+        footer: "One clear routine for the family, without missed doses.",
+      },
+      cabinet: {
+        title: "Home Medicine Cabinet",
+        description: "Shows expiry dates, stock levels, and what to restock next.",
+        mobilePoints: [
+          "See what is at home and how much is left",
+          "Get alerts before medicines expire",
+          "Know what to restock first",
+        ],
+        statusTitle: "Expiry and stock control",
+        statusItems: [
+          "Ibuprofen: 6 doses left",
+          "Paracetamol: expires in 12 days",
+          "Vitamin D: low stock, add to shopping list",
+        ],
+        checklistTitle: "What Home Medicine Cabinet gives you",
+        checklistItems: [
+          "Alerts before expiry dates are reached",
+          "A low-stock mark for critical medicines",
+          "A shopping list for quick restocking",
+        ],
+        footer: "So you always know what is safe to use now and what to restock next.",
+      },
+      family: {
+        title: "Family Account",
+        description: "One parent creates the account and invites family members with a link.",
+        mobilePoints: [
+          "One parent sends an invite link",
+          "Everyone sees the same treatment plan and reminders",
+          "It is clear who logged a note or marked a dose",
+        ],
+        footer: "One shared plan for the family: everyone sees current notes and reminders.",
+        roles: ["Mom", "Dad", "Grandma", "Grandpa", "Other relatives"],
+        flowTitle: "How family access works",
+        flowSteps: [
+          "Mom creates the account",
+          "Sends an invite link",
+          "Family sees one shared medication plan",
+        ],
+      },
+      trust: {
+        title: "Trust & Privacy",
+        description: "You share access only with people you trust.",
+        mobilePoints: [
+          "Only people you invite can access family data",
+          "You can revoke access at any time",
+        ],
+        cards: ["You control who gets access.", "You can grant or revoke access anytime."],
+        footer: "Shared data is visible only to family members you invite.",
+      },
+      faq: {
+        title: "FAQ",
+        showMore: "Show more",
+        showLess: "Show less",
+        items: [
+          {
+            question: "Who can see child data?",
+            answer: "Only family members you invite.",
+          },
+          {
+            question: "Can I track more than one child?",
+            answer: "Yes, you can add multiple child profiles.",
+          },
+          {
+            question: "Can I set up Pillbox for another family member?",
+            answer: "Yes, you can create a schedule for a loved one.",
+          },
+          {
+            question: "Will I get medication reminders?",
+            answer: "Yes, the app sends reminders on your schedule.",
+          },
+          {
+            question: "What can I log in Children?",
+            answer: "Symptoms, temperature, notes, plans, and reminders.",
+          },
+          {
+            question: "What does Home Medicine Cabinet warn about?",
+            answer: "Upcoming expiry dates and low stock.",
+          },
+        ],
+      },
+      finalCta: {
+        title: "When a child is sick, it helps to miss nothing important.",
+        description:
+          "PillPath combines illness tracking, dose reminders, and medicine cabinet control.",
+        primary: "Try it free",
+        secondary: "Log in",
+      },
+    },
   },
   auth: {
     page: {
       loginTitle: "Log in",
       registerTitle: "Register",
-      loginDescription: "Fast access to child data, the medicine cabinet and shared health records.",
+      loginDescription:
+        "Fast access to child data, the medicine cabinet and shared health records.",
       registerDescription:
         "Create shared family access to child data, the medicine cabinet and health events.",
       toggleLabel: "Switch authentication mode",
@@ -195,7 +351,8 @@ export const en: Translations = {
       loginForEntry: "Login",
       loginPlaceholder: "Email or login",
       loginPlaceholderRegister: "Create a login",
-      loginHint: "The login is only used for sign-in. You can set a separate display name for the family.",
+      loginHint:
+        "The login is only used for sign-in. You can set a separate display name for the family.",
       password: "Password",
       passwordPlaceholder: "At least 6 characters",
       passwordConfirm: "Repeat password",
@@ -252,11 +409,13 @@ export const en: Translations = {
     features: [
       {
         title: "Family",
-        description: "The family sets the account context: parents, children and one shared home medicine cabinet.",
+        description:
+          "The family sets the account context: parents, children and one shared home medicine cabinet.",
       },
       {
         title: "Children",
-        description: "Each child can have illness episodes, temperatures and history tracked separately.",
+        description:
+          "Each child can have illness episodes, temperatures and history tracked separately.",
       },
       {
         title: "Medicines",
@@ -349,7 +508,8 @@ export const en: Translations = {
           },
           {
             title: "Use during tracking",
-            description: "Medicines from the cabinet can be selected right inside an illness episode.",
+            description:
+              "Medicines from the cabinet can be selected right inside an illness episode.",
           },
         ],
         action: { to: "/medicine-cabinet", label: "Open cabinet" },
