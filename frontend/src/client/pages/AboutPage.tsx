@@ -43,7 +43,7 @@ export function AboutPage() {
 function FeatureCard({ title, description }: { title: string; description: string }) {
   return (
     <Surface className="p-5 sm:p-6">
-      <h2 className="app-card-title text-[1.05rem]">{title}</h2>
+      <h2 className="app-card-title">{title}</h2>
       <p className="mt-3 text-sm leading-7 text-muted">{description}</p>
     </Surface>
   );
@@ -52,7 +52,7 @@ function FeatureCard({ title, description }: { title: string; description: strin
 function InstallCard({ title, steps }: { title: string; steps: string[] }) {
   return (
     <div className="soft-card rounded-[30px] px-4 py-4 sm:px-5">
-      <h3 className="app-card-title text-[1.05rem]">{title}</h3>
+      <h3 className="app-card-title">{title}</h3>
       <ol className="mt-3 space-y-2 text-sm leading-7 text-muted">
         {steps.map((step, index) => (
           <li key={step}>

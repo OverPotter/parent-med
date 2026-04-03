@@ -102,7 +102,7 @@ export function ChildrenPage() {
   if (!currentFamilyId) {
     return (
       <div>
-        <h1 className="app-title text-[1.9rem]">{copy.title}</h1>
+        <h1 className="app-title">{copy.title}</h1>
         <p className="mt-2 text-muted">{common.familyRequired}</p>
       </div>
     );
@@ -115,12 +115,13 @@ export function ChildrenPage() {
         subtitle={copy.subtitle}
         compactOnMobile
         hideOnMobile
+        className="children-intro-hero"
         action={
           <button
             type="button"
             onClick={() => setIsCreateFormOpen((current) => !current)}
             className={[
-              "soft-button-primary inline-flex items-center justify-center min-h-[2.95rem] w-full px-4 text-[0.88rem] tracking-[-0.03em] sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]",
+              "soft-button-primary app-btn-primary-md w-full sm:w-auto",
               children.length > 0 ? "hidden sm:inline-flex" : "inline-flex",
             ].join(" ")}
           >
@@ -162,7 +163,7 @@ export function ChildrenPage() {
             <button
               type="button"
               onClick={() => setIsCreateFormOpen(true)}
-              className="soft-button-primary inline-flex items-center justify-center min-h-[2.95rem] w-full px-4 text-[0.88rem] tracking-[-0.03em] sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
+              className="soft-button-primary app-btn-primary-md w-full sm:w-auto"
             >
               {copy.addFirstChild}
             </button>
@@ -205,13 +206,15 @@ export function ChildrenPage() {
             <Surface className="soft-panel-muted p-4 sm:hidden">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="app-card-title text-[1.02rem]">{copy.addAnotherPromptTitle}</p>
-                  <p className="mt-1 text-sm text-muted">{copy.addAnotherPromptText}</p>
+                  <p className="app-card-title">{copy.addAnotherPromptTitle}</p>
+                  {copy.addAnotherPromptText ? (
+                    <p className="mt-1 text-sm text-muted">{copy.addAnotherPromptText}</p>
+                  ) : null}
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsCreateFormOpen(true)}
-                  className="soft-button-secondary inline-flex items-center justify-center min-h-[2.8rem] px-3.5 text-[0.84rem] tracking-[-0.025em]"
+                  className="soft-button-secondary app-btn-secondary-md"
                 >
                   {copy.addButtonShort}
                 </button>
@@ -285,17 +288,17 @@ function AddChildForm({
   };
 
   return (
-    <Surface className="p-5 sm:p-6">
+    <Surface className="app-section-surface">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="app-card-title text-[1.1rem] sm:text-[1.18rem]">{copy.formTitle}</h2>
+            <h2 className="app-card-title">{copy.formTitle}</h2>
             <p className="mt-1 text-sm text-muted">{copy.formSubtitle}</p>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="soft-button-secondary min-h-[3rem] w-full px-4 text-[0.9rem] sm:min-h-[3.2rem] sm:w-auto sm:text-[0.94rem]"
+            className="soft-button-secondary app-btn-secondary-md w-full sm:w-auto"
           >
             {copy.cancel}
           </button>
@@ -330,7 +333,7 @@ function AddChildForm({
           <button
             type="submit"
             disabled={isPending || !name.trim()}
-            className="soft-button-primary inline-flex items-center justify-center min-h-[3rem] w-full px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:w-auto sm:self-end sm:px-5 sm:text-[0.93rem]"
+            className="soft-button-primary app-btn-primary-md inline-flex w-full disabled:opacity-50 sm:w-auto sm:self-end"
           >
             {isPending ? copy.saving : copy.addButtonShort}
           </button>
@@ -418,17 +421,17 @@ function ChildCard({
     latestWeightLabel ? `${copy.childCard.weight} ${latestWeightLabel}` : null,
   ].filter(Boolean) as string[];
   const historyLabel =
-    episodeCount > 0 ? `${episodeCount} ${copy.childCard.archiveCount}` : copy.childCard.noHistory;
+    episodeCount > 0 ? t(copy.childCard.historyCount, { count: episodeCount }) : null;
   return (
     <li>
       <RowSurface
-        className={hasActiveEpisode ? "soft-card-status-danger" : "soft-card-status-success"}
+        className={`children-card-hero ${hasActiveEpisode ? "children-card-hero--active" : ""}`}
       >
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="app-card-title text-[1.12rem] sm:text-[1.18rem]">{child.name}</h2>
+                <h2 className="app-card-title">{child.name}</h2>
                 {hasActiveEpisode && (
                   <>
                     <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
@@ -441,28 +444,32 @@ function ChildCard({
                   </>
                 )}
               </div>
-              <span className="soft-pill hidden rounded-full px-3 py-1 text-xs sm:inline-flex">
-                {historyLabel}
-              </span>
+              {historyLabel ? (
+                <span className="landing-child-pill hidden rounded-full px-3.5 py-1.5 text-sm sm:inline-flex">
+                  {historyLabel}
+                </span>
+              ) : null}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {primaryMeta.map((chip) => (
-                <span key={chip} className="soft-pill rounded-full px-3 py-1 text-xs">
+                <span key={chip} className="landing-child-pill rounded-full px-3.5 py-1.5 text-sm">
                   {chip}
                 </span>
               ))}
-              <span className="soft-pill rounded-full px-3 py-1 text-xs sm:hidden">
-                {historyLabel}
-              </span>
+              {historyLabel ? (
+                <span className="landing-child-pill rounded-full px-3.5 py-1.5 text-sm sm:hidden">
+                  {historyLabel}
+                </span>
+              ) : null}
             </div>
           </div>
 
-          <div className="grid w-full gap-2 sm:w-[14.5rem] sm:shrink-0 lg:w-[16rem]">
+          <div className="grid w-full gap-2 sm:w-[13.75rem] sm:shrink-0">
             <button
               type="button"
               onClick={onStartEpisode}
               disabled={isStartingEpisode}
-              className="soft-button-primary inline-flex w-full items-center justify-center min-h-[2.9rem] px-3.5 text-center text-[0.84rem] leading-[1.05] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className="soft-button-primary app-btn-primary-md inline-flex w-full text-center leading-[1.05] disabled:opacity-50"
             >
               {hasActiveEpisode
                 ? copy.childCard.openObservation
@@ -471,20 +478,12 @@ function ChildCard({
                   : copy.childCard.startObservation}
             </button>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Link
-                to={`/children/${child.id}/illness?view=history`}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] leading-[1.05] tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-4 sm:text-[0.92rem]"
-              >
-                {copy.childCard.history}
-              </Link>
-              <Link
-                to={`/children/${child.id}`}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] leading-[1.05] tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-4 sm:text-[0.92rem]"
-              >
-                {language === "ru" ? "Профиль" : "Profile"}
-              </Link>
-            </div>
+            <Link
+              to={`/children/${child.id}`}
+              className="soft-button-secondary app-btn-secondary-md inline-flex text-center leading-[1.05]"
+            >
+              {copy.childCard.profile}
+            </Link>
           </div>
         </div>
       </RowSurface>
@@ -493,10 +492,11 @@ function ChildCard({
 }
 
 function formatWeightValue(valueKg: number, language: "ru" | "en"): string {
+  const unit = language === "ru" ? "кг" : "kg";
   return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
     minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
     maximumFractionDigits: 1,
-  }).format(valueKg)} kg`;
+  }).format(valueKg)} ${unit}`;
 }
 
 function InputField({

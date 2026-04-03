@@ -4,12 +4,10 @@ import { labelForRoute, tWorkspaceIntro } from "@client/i18n/workspaceIntro";
 import { useClientStartRoute } from "@client/hooks/useClientStartRoute";
 import { AnalyticsEvents, trackEvent } from "@shared/analytics";
 import { useI18n } from "@shared/hooks/useI18n";
-import { useAppStore } from "@shared/store/useAppStore";
 import { useIsDesktop } from "@shared/hooks/useIsDesktop";
 
 export function ClientStartPage() {
   const { language } = useI18n();
-  const hasSeenWorkspaceIntro = useAppStore((s) => s.hasSeenWorkspaceIntro);
   const isDesktop = useIsDesktop();
   const { isResolving, startRoute, hasFamily, hasChildren, hasActiveEpisode } =
     useClientStartRoute();
@@ -29,10 +27,6 @@ export function ClientStartPage() {
   }, [isResolving, startRoute, hasFamily, hasChildren, hasActiveEpisode]);
 
   if (isDesktop) {
-    if (!hasSeenWorkspaceIntro) {
-      return <Navigate to="/home" replace />;
-    }
-
     if (isResolving) {
       return (
         <div className="py-8 text-sm text-muted">
@@ -42,10 +36,6 @@ export function ClientStartPage() {
     }
 
     return <Navigate to={startRoute} replace />;
-  }
-
-  if (!hasSeenWorkspaceIntro) {
-    return <Navigate to="/intro" replace />;
   }
 
   if (isResolving) {

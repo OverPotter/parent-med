@@ -10,6 +10,7 @@ import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
 
 type Mode = "register" | "login";
+const appBtnPrimaryClass = "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
 
 function roleLabel(role: string): string {
   return role === "owner" ? "Владелец" : "Участник семьи";
@@ -175,7 +176,7 @@ export function JoinFamilyPage() {
       />
 
       <Surface className="p-5 sm:p-6">
-        <p className="app-card-title text-[1.04rem]">Куда ведёт ссылка</p>
+        <p className="app-card-title">Куда ведёт ссылка</p>
         {isInviteLoading ? (
           <p className="mt-3 text-sm text-muted">Проверяем приглашение…</p>
         ) : inviteErrorMessage ? (
@@ -194,7 +195,7 @@ export function JoinFamilyPage() {
 
       {invitePreview && isAuthenticated ? (
         <Surface className="p-5 sm:p-6">
-          <p className="app-card-title text-[1.04rem]">Текущий аккаунт</p>
+          <p className="app-card-title">Текущий аккаунт</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <InfoCard
               label="Имя в семье"
@@ -226,7 +227,7 @@ export function JoinFamilyPage() {
         </Surface>
       ) : (
         <Surface className="p-5 sm:p-6">
-          <h2 className="app-card-title text-xl">Создать аккаунт или войти</h2>
+          <h2 className="app-card-title">Создать аккаунт или войти</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
             Новый аккаунт можно сразу привязать к семье по этой ссылке. Если аккаунт уже есть,
             войдите под ним, затем подтвердите присоединение.
@@ -257,7 +258,7 @@ export function JoinFamilyPage() {
             <div className="soft-panel rounded-[24px] p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="app-card-title text-[1rem]">Обязательные поля</p>
+                  <p className="app-card-title">Обязательные поля</p>
                   <p className="soft-field-hint mt-1">
                     Для входа и быстрой регистрации нужен только логин для входа и пароль.
                   </p>
@@ -395,7 +396,7 @@ export function JoinFamilyPage() {
                 password.length < 6 ||
                 (isRegisterMode && (!passwordConfirm || password !== passwordConfirm))
               }
-              className="soft-button-primary w-full disabled:opacity-50"
+              className={`${appBtnPrimaryClass} w-full disabled:opacity-50`}
             >
               {mode === "login"
                 ? loginMutation.isPending

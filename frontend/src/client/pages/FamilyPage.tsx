@@ -20,8 +20,7 @@ import type { FamilyMember } from "@shared/types/api";
 const familyCopy = {
   ru: {
     title: "Семья",
-    subtitle:
-      "Одна общая семейная база, но у каждого взрослого свой личный аккаунт, история входов и подпись в событиях.",
+    subtitle: "Родители и близкие работают в одном семейном пространстве.",
     memberCountOne: "участник",
     memberCountFew: "участника",
     memberCountMany: "участников",
@@ -33,7 +32,7 @@ const familyCopy = {
     deleteMemberFailed: "Не удалось удалить участника из семьи.",
     updateProfileFailed: "Не удалось обновить профиль участника.",
     familyNameTitle: "Название семьи",
-    familyNameDescription: "Это общее имя семьи, которое увидят все приглашённые участники.",
+    familyNameDescription: "Общее название, которое видят все участники семьи.",
     edit: "Изменить",
     hide: "Скрыть",
     currentFamilyName: "Текущее название",
@@ -79,8 +78,7 @@ const familyCopy = {
   },
   en: {
     title: "Family",
-    subtitle:
-      "One shared family workspace, while each adult keeps their own account, sign-in history and signature in events.",
+    subtitle: "Parents and relatives work together in one family space.",
     memberCountOne: "member",
     memberCountFew: "members",
     memberCountMany: "members",
@@ -92,7 +90,7 @@ const familyCopy = {
     deleteMemberFailed: "Could not remove the member from the family.",
     updateProfileFailed: "Could not update the member profile.",
     familyNameTitle: "Family name",
-    familyNameDescription: "This is the shared family name visible to everyone you invite.",
+    familyNameDescription: "Shared name visible to everyone in your family space.",
     edit: "Edit",
     hide: "Hide",
     currentFamilyName: "Current name",
@@ -311,11 +309,13 @@ export function FamilyPage() {
   };
 
   const canManageFamily = currentAccountRole === "owner";
+  const familyTitle =
+    family?.name?.trim() || currentFamilyName?.trim() || tFamily(language, "title");
 
   return (
     <div className="min-w-0 space-y-6">
       <PageIntro
-        title={tFamily(language, "title")}
+        title={familyTitle}
         subtitle={tFamily(language, "subtitle")}
         compactOnMobile
         hideOnMobile
@@ -325,6 +325,10 @@ export function FamilyPage() {
           </span>
         }
       />
+
+      <div className="md:hidden">
+        <h1 className="app-title text-[1.52rem] tracking-[-0.045em]">{familyTitle}</h1>
+      </div>
 
       {error && <p className="soft-note-danger">{error}</p>}
       {familyError && (
@@ -338,95 +342,10 @@ export function FamilyPage() {
         </p>
       )}
 
-      <Surface className="p-5 sm:p-6">
+      <Surface className="app-section-surface">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-[1.08rem]">
-              {tFamily(language, "familyNameTitle")}
-            </h2>
-            <p className="mt-1.5 text-sm leading-6 text-muted">
-              {tFamily(language, "familyNameDescription")}
-            </p>
-          </div>
-          {family && (
-            <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
-              ID: {family.id.slice(0, 8)}
-            </span>
-          )}
-        </div>
-
-        <div className="mt-4 space-y-4">
-          <DisclosureHeader
-            isOpen={isEditingFamilyName}
-            onToggle={() => {
-              setFamilyName(family?.name ?? "");
-              setIsEditingFamilyName((current) => !current);
-            }}
-            desktopClosedLabel={tFamily(language, "edit")}
-            desktopOpenLabel={tFamily(language, "hide")}
-            mobileClosedLabel={tFamily(language, "edit")}
-            mobileOpenLabel={tFamily(language, "hide")}
-            contentClassName="space-y-1"
-          >
-            <>
-              <p className="soft-field-label">{tFamily(language, "currentFamilyName")}</p>
-              <div className="soft-pill inline-flex min-h-[2.2rem] w-fit max-w-full items-center rounded-full px-3.5 py-1.5 text-xs text-foreground">
-                <span className="truncate">
-                  {family?.name || tFamily(language, "familyNameMissing")}
-                </span>
-              </div>
-            </>
-          </DisclosureHeader>
-
-          {isEditingFamilyName && (
-            <form onSubmit={handleFamilySubmit} className="flex flex-wrap items-end gap-3">
-              <label className="min-w-0 flex-1">
-                <span className="soft-field-label">{tFamily(language, "newFamilyName")}</span>
-                <input
-                  type="text"
-                  value={familyName}
-                  onChange={(event) => setFamilyName(event.target.value)}
-                  className="soft-input w-full px-4"
-                  placeholder={tFamily(language, "newFamilyNamePlaceholder")}
-                />
-              </label>
-              <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                <button
-                  type="submit"
-                  disabled={
-                    !family ||
-                    isFamilyLoading ||
-                    updateFamilyMutation.isPending ||
-                    !familyName.trim() ||
-                    familyName.trim() === family.name
-                  }
-                  className="soft-button-primary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
-                >
-                  {updateFamilyMutation.isPending
-                    ? tFamily(language, "saving")
-                    : tFamily(language, "save")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFamilyName(family?.name ?? "");
-                    setIsEditingFamilyName(false);
-                  }}
-                  disabled={updateFamilyMutation.isPending}
-                  className="soft-button-secondary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.025em] sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
-                >
-                  {tFamily(language, "cancel")}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-      </Surface>
-
-      <Surface className="p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="app-card-title text-[1.08rem]">{tFamily(language, "membersTitle")}</h2>
+            <h2 className="app-card-title">{tFamily(language, "membersTitle")}</h2>
             <p className="mt-1.5 text-sm leading-6 text-muted">
               {tFamily(language, "membersDescription")}
             </p>
@@ -483,10 +402,10 @@ export function FamilyPage() {
         )}
       </Surface>
 
-      <Surface className="p-5 sm:p-6">
+      <Surface className="app-section-surface">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-[1.08rem]">{tFamily(language, "inviteTitle")}</h2>
+            <h2 className="app-card-title">{tFamily(language, "inviteTitle")}</h2>
             <p className="mt-1.5 text-sm leading-6 text-muted">
               {tFamily(language, "inviteDescription")}
             </p>
@@ -504,7 +423,7 @@ export function FamilyPage() {
               type="button"
               onClick={() => createInviteMutation.mutate()}
               disabled={createInviteMutation.isPending}
-              className="soft-button-primary mt-4 inline-flex min-h-[3rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5 sm:text-[0.93rem]"
+              className="soft-button-primary app-btn-primary-md mt-4 inline-flex disabled:opacity-50"
             >
               {createInviteMutation.isPending
                 ? tFamily(language, "creatingInvite")
@@ -528,7 +447,7 @@ export function FamilyPage() {
                   <button
                     type="button"
                     onClick={handleCopyInvite}
-                    className="soft-button-secondary inline-flex min-h-[2.8rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em]"
+                    className="soft-button-secondary app-btn-secondary-md inline-flex"
                   >
                     {inviteCopied
                       ? tFamily(language, "inviteCopied")
@@ -539,6 +458,77 @@ export function FamilyPage() {
             )}
           </>
         )}
+      </Surface>
+
+      <Surface className="app-section-surface">
+        <div>
+          <h2 className="app-card-title">{tFamily(language, "familyNameTitle")}</h2>
+          <p className="mt-1.5 text-sm leading-6 text-muted">
+            {tFamily(language, "familyNameDescription")}
+          </p>
+        </div>
+
+        <div className="mt-4 space-y-4">
+          <DisclosureHeader
+            isOpen={isEditingFamilyName}
+            onToggle={() => {
+              setFamilyName(family?.name ?? "");
+              setIsEditingFamilyName((current) => !current);
+            }}
+            desktopClosedLabel={tFamily(language, "edit")}
+            desktopOpenLabel={tFamily(language, "hide")}
+            mobileClosedLabel={tFamily(language, "edit")}
+            mobileOpenLabel={tFamily(language, "hide")}
+            contentClassName="space-y-0"
+          >
+            <p className="app-card-title truncate">
+              {family?.name || tFamily(language, "familyNameMissing")}
+            </p>
+          </DisclosureHeader>
+
+          {isEditingFamilyName && (
+            <form onSubmit={handleFamilySubmit} className="flex flex-wrap items-end gap-3">
+              <label className="min-w-0 flex-1">
+                <span className="soft-field-label">{tFamily(language, "newFamilyName")}</span>
+                <input
+                  type="text"
+                  value={familyName}
+                  onChange={(event) => setFamilyName(event.target.value)}
+                  className="soft-input w-full px-4"
+                  placeholder={tFamily(language, "newFamilyNamePlaceholder")}
+                />
+              </label>
+              <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                <button
+                  type="submit"
+                  disabled={
+                    !family ||
+                    isFamilyLoading ||
+                    updateFamilyMutation.isPending ||
+                    !familyName.trim() ||
+                    familyName.trim() === family.name
+                  }
+                  className="soft-button-primary app-btn-primary-md inline-flex w-full disabled:opacity-50 sm:w-auto"
+                >
+                  {updateFamilyMutation.isPending
+                    ? tFamily(language, "saving")
+                    : tFamily(language, "save")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFamilyName(family?.name ?? "");
+                    setIsEditingFamilyName(false);
+                  }}
+                  disabled={updateFamilyMutation.isPending}
+                  className="soft-button-secondary app-btn-secondary-md inline-flex w-full sm:w-auto"
+                >
+                  {tFamily(language, "cancel")}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </Surface>
     </div>
   );
@@ -713,7 +703,7 @@ function MemberCard({
                 setIsEditing(false);
               }}
               disabled={isPending || !displayName.trim()}
-              className="soft-button-primary inline-flex min-h-[3rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5 sm:text-[0.93rem]"
+              className="app-btn-primary-md soft-button-primary inline-flex min-h-[3rem] items-center justify-center px-4 disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5"
             >
               {isPending ? tFamily(language, "saving") : tFamily(language, "saveProfile")}
             </button>

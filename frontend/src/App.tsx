@@ -33,9 +33,6 @@ const AboutPage = lazy(() =>
 const ClientHomePage = lazy(() =>
   import("@client/pages/ClientHomePage").then((module) => ({ default: module.ClientHomePage }))
 );
-const ClientIntroPage = lazy(() =>
-  import("@client/pages/ClientIntroPage").then((module) => ({ default: module.ClientIntroPage }))
-);
 const ClientStartPage = lazy(() =>
   import("@client/pages/ClientStartPage").then((module) => ({ default: module.ClientStartPage }))
 );
@@ -95,18 +92,18 @@ function BootLog() {
 }
 
 function ThemeSync() {
-  const theme = useAppStore((s) => s.theme);
+  const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    document.documentElement.style.colorScheme = theme;
-    const background = theme === "dark" ? "#1e1b2e" : "#ebe4ff";
+    document.documentElement.setAttribute("data-theme", effectiveTheme);
+    document.documentElement.style.colorScheme = effectiveTheme;
+    const background = effectiveTheme === "dark" ? "#1e1b2e" : "#ebe4ff";
     document.documentElement.style.background = background;
     document.body.style.background = background;
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
     document
       .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
-      ?.setAttribute("content", theme === "dark" ? "black-translucent" : "default");
-  }, [theme]);
+      ?.setAttribute("content", effectiveTheme === "dark" ? "black-translucent" : "default");
+  }, [effectiveTheme]);
   return null;
 }
 
@@ -135,8 +132,16 @@ function DisplayModeSync() {
 
 function RouteScrollReset() {
   const location = useLocation();
+  const previousPathnameRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const previousPathname = previousPathnameRef.current;
+    previousPathnameRef.current = location.pathname;
+
+    if (previousPathname === location.pathname) {
+      return;
+    }
+
     const isCreateObservationRoute =
       location.pathname.startsWith("/children/") &&
       location.pathname.endsWith("/illness") &&
@@ -165,15 +170,7 @@ function RouteScrollReset() {
       return;
     }
 
-    window.requestAnimationFrame(() => {
-      const main = document.querySelector("main");
-      if (!(main instanceof HTMLElement)) {
-        window.scrollTo({ top: 0, behavior: "auto" });
-        return;
-      }
-      const mainTop = main.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top: Math.max(0, mainTop - 8), behavior: "auto" });
-    });
+    window.scrollTo({ top: 0, behavior: "auto" });
   }, [location.pathname, location.search]);
 
   return null;
@@ -478,7 +475,7 @@ export default function App() {
                 <Route path="auth" element={<Navigate to="/" replace />} />
                 <Route index element={<ClientStartPage />} />
                 <Route path="home" element={<ClientHomePage />} />
-                <Route path="intro" element={<ClientIntroPage />} />
+                <Route path="intro" element={<Navigate to="/home" replace />} />
                 <Route path="family" element={<FamilyPage />} />
                 <Route path="join-family" element={<JoinFamilyPage />} />
                 <Route path="children" element={<ChildrenPage />} />

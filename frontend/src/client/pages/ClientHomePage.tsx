@@ -70,13 +70,15 @@ function HelpSection({
         <div className="border-b border-border/70 px-5 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="app-card-title text-lg sm:text-[1.1rem]">{title}</h2>
-              <p className="mt-1.5 max-w-3xl text-sm leading-6 text-muted">{description}</p>
+              <h2 className="app-card-title">{title}</h2>
+              <p className="app-card-description-2l mt-1.5 max-w-3xl text-sm leading-6 text-muted">
+                {description}
+              </p>
             </div>
             {action ? (
               <Link
                 to={action.to}
-                className="soft-button-secondary inline-flex min-h-[2.7rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em]"
+                className="app-btn-secondary-md soft-button-secondary inline-flex px-4"
               >
                 {action.label}
               </Link>
@@ -92,8 +94,8 @@ function HelpSection({
 function InfoCard({ title, description }: { title: string; description: string }) {
   return (
     <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5 sm:py-5">
-      <h3 className="app-card-title text-[1.02rem]">{title}</h3>
-      <p className="mt-2 text-sm leading-7 text-muted">{description}</p>
+      <h3 className="app-card-title">{title}</h3>
+      <p className="app-card-description-2l mt-2 text-sm leading-7 text-muted">{description}</p>
     </div>
   );
 }
@@ -101,7 +103,7 @@ function InfoCard({ title, description }: { title: string; description: string }
 function InstallCard({ title, steps }: { title: string; steps: string[] }) {
   return (
     <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5 sm:py-5">
-      <h3 className="app-card-title text-[1.05rem]">{title}</h3>
+      <h3 className="app-card-title">{title}</h3>
       <ol className="mt-3 space-y-2 text-sm leading-7 text-muted">
         {steps.map((step, index) => (
           <li key={step}>

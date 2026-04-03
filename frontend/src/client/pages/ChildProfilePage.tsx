@@ -21,6 +21,13 @@ type ChildProfileDetails = {
   notes?: string | null;
 };
 
+const appBtnPrimaryClass =
+  "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
+const appBtnSecondaryClass =
+  "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
+const appBtnDangerClass =
+  "app-btn-danger-md soft-button-danger inline-flex items-center justify-center px-4";
+
 export function ChildProfilePage() {
   const { language, t } = useI18n();
   const copy = getChildrenCopy(language).childProfile;
@@ -114,23 +121,28 @@ export function ChildProfilePage() {
           deleteMutation.mutate(child.id, { onSuccess: () => setIsDeleteConfirmOpen(false) })
         }
       />
+      <div className="px-1">
+        <Link to="/children" className="inline-flex text-sm text-primary hover:underline">
+          {language === "ru" ? "← К детям" : "← Back to children"}
+        </Link>
+      </div>
       <PageIntro
         title={child.name}
-        subtitle={copy.subtitle}
-        eyebrow={copy.eyebrow}
+        subtitle={undefined}
+        eyebrow={undefined}
         hideOnMobile
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
             <Link
               to={`/children/${child.id}/illness?view=history`}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
             >
               {copy.history}
             </Link>
             <button
               type="button"
               onClick={() => setIsEditing((current) => !current)}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
               aria-expanded={isEditing}
               aria-controls="child-profile-edit-form"
             >
@@ -139,6 +151,28 @@ export function ChildProfilePage() {
           </div>
         }
       />
+      <div className="md:hidden">
+        <Surface className="p-4">
+          <h1 className="app-title mb-3 text-[1.42rem] tracking-[-0.04em]">{child.name}</h1>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Link
+              to={`/children/${child.id}/illness?view=history`}
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full text-center sm:min-h-[3.05rem]`}
+            >
+              {copy.history}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsEditing((current) => !current)}
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full sm:min-h-[3.05rem]`}
+              aria-expanded={isEditing}
+              aria-controls="child-profile-edit-form"
+            >
+              {isEditing ? copy.collapseForm : copy.editProfile}
+            </button>
+          </div>
+        </Surface>
+      </div>
 
       {isEditing && (
         <div ref={editFormRef}>
@@ -159,7 +193,7 @@ export function ChildProfilePage() {
 
       <Surface className="p-5 sm:p-6">
         <div className="mb-4">
-          <h2 className="app-card-title text-[1.08rem]">{copy.basic}</h2>
+          <h2 className="app-card-title">{copy.basic}</h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <InfoLine label={copy.age} value={ageLabel ?? copy.ageMissing} />
@@ -276,7 +310,7 @@ function EditChildProfileForm({
       <Surface className="soft-hero border-primary/25 p-5 ring-1 ring-primary/10 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-[1.08rem]">{copy.form.title}</h2>
+            <h2 className="app-card-title">{copy.form.title}</h2>
             <p className="mt-1 text-sm text-muted">{copy.form.subtitle}</p>
           </div>
           {latestWeight && (
@@ -380,7 +414,7 @@ function EditChildProfileForm({
                 !draftName.trim() ||
                 (draftWeight.trim().length > 0 && parsedWeight === null)
               }
-              className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
+              className={`${appBtnPrimaryClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5`}
             >
               {isSaving ? copy.form.saving : copy.form.save}
             </button>
@@ -388,7 +422,7 @@ function EditChildProfileForm({
               type="button"
               onClick={onRequestDeleteConfirm}
               disabled={isDeleting}
-              className="soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:text-[0.92rem]"
+              className={`${appBtnDangerClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem]`}
             >
               {isDeleting ? copy.deleting : copy.form.delete}
             </button>
@@ -448,10 +482,11 @@ function hasExtraContacts(child: {
 }
 
 function formatWeightValue(valueKg: number, language: "ru" | "en"): string {
+  const unit = language === "ru" ? "кг" : "kg";
   return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
     minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
     maximumFractionDigits: 1,
-  }).format(valueKg)} kg`;
+  }).format(valueKg)} ${unit}`;
 }
 
 function InputField({

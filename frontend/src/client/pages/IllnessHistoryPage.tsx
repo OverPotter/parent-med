@@ -17,6 +17,9 @@ import type { Child, IllnessEpisode } from "@shared/types/api";
 import { formatDate, formatDateTime } from "@shared/utils/date";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
+const appBtnSecondaryClass =
+  "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
+
 export function IllnessHistoryPage() {
   const { language, t } = useI18n();
   const copy = getChildrenCopy(language).illnessHistory;
@@ -124,7 +127,7 @@ function HistoryCard({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="app-card-title text-[1.08rem]">{child.name}</h2>
+              <h2 className="app-card-title">{child.name}</h2>
               <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
                 {episodes.length} {copy.inArchive}
               </span>
@@ -147,7 +150,7 @@ function HistoryCard({
 
           <Link
             to={`/children/${child.id}/illness?view=history`}
-            className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+            className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
           >
             {copy.historyLink}
           </Link>

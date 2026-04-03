@@ -4,14 +4,19 @@ export const en: Translations = {
   common: {
     brandName: "PillPath",
     userFallback: "User",
+    login: "Log in",
     open: "Open",
     goHome: "Home",
     logout: "Log out",
+    profile: "Profile",
+    logoutFromAccount: "Log out",
+    profileMenuLabel: "Profile menu",
     languageSwitcherLabel: "Choose language",
+    languageLabel: "Language",
+    themeLabel: "Theme",
     themeDarkLabel: "Dark theme",
     themeLightLabel: "Light theme",
-    themeDarkText: "Night",
-    themeLightText: "Day",
+    themeAutoLabel: "Auto",
   },
   layout: {
     familyWorkspace: "Family health workspace",
@@ -234,11 +239,12 @@ export const en: Translations = {
       },
       cabinet: {
         title: "Home Medicine Cabinet",
-        description: "Shows expiry dates, stock levels, and what to restock next.",
+        description:
+          "Shows what is safe to use now, what is running out soon, and what to buy next.",
         mobilePoints: [
           "See what is at home and how much is left",
-          "Get alerts before medicines expire",
-          "Know what to restock first",
+          "Get early expiry alerts",
+          "Know what to add to the shopping list first",
         ],
         statusTitle: "Expiry and stock control",
         statusItems: [
@@ -249,10 +255,10 @@ export const en: Translations = {
         checklistTitle: "What Home Medicine Cabinet gives you",
         checklistItems: [
           "Alerts before expiry dates are reached",
-          "A low-stock mark for critical medicines",
-          "A shopping list for quick restocking",
+          "A low-stock signal",
+          "A quick restock list",
         ],
-        footer: "So you always know what is safe to use now and what to restock next.",
+        footer: "One-glance decision: use now, check soon, or restock.",
       },
       family: {
         title: "Family Account",
@@ -382,23 +388,23 @@ export const en: Translations = {
   },
   more: {
     title: "More",
-    subtitle: "Help, family, account and core settings.",
+    subtitle: "Family, account and help.",
     openLabel: "Open",
     links: [
       {
         to: "/home",
         title: "Help",
-        description: "How the app is structured and where to find the key sections.",
+        description: "Quick guide to key sections.",
       },
       {
         to: "/family",
         title: "Family",
-        description: "Family name, members and invitations.",
+        description: "Members, roles and invites.",
       },
       {
         to: "/account",
         title: "Account",
-        description: "Email, family name, reminders and security.",
+        description: "Profile, reminders and security.",
       },
     ],
   },
@@ -460,8 +466,23 @@ export const en: Translations = {
   clientHome: {
     sections: [
       {
+        title: "First step",
+        description: "Quick start and your next working section.",
+        items: [
+          {
+            title: "Open again",
+            description: "You can reopen it anytime.",
+          },
+          {
+            title: "Continue safely",
+            description: "After closing, you return to work.",
+          },
+        ],
+        action: { to: "/children", label: "Open Children" },
+      },
+      {
         title: "Children",
-        description: "Child profiles, history for each child and a way into current tracking.",
+        description: "Child profiles, history and tracking entry.",
         items: [
           {
             title: "Add a child",
@@ -476,7 +497,7 @@ export const en: Translations = {
       },
       {
         title: "Tracking",
-        description: "Current child state: temperature, medicines, comments and reminders.",
+        description: "Current state: temperature, doses and notes.",
         items: [
           {
             title: "Start tracking",
@@ -488,28 +509,26 @@ export const en: Translations = {
           },
           {
             title: "Check reminders",
-            description:
-              "If the episode uses guided mode, the nearest actions and plans stay visible there too.",
+            description: "Nearest actions and plans stay visible.",
           },
         ],
         action: { to: "/illnesses/active", label: "Open tracking" },
       },
       {
         title: "Cabinet",
-        description: "Home medicines, packs, expiry dates and opened dates.",
+        description: "Home medicines, expiry and stock.",
         items: [
           {
             title: "Add a pack",
-            description: "First find the medicine in the catalog or enter it manually.",
+            description: "Find in catalog or add manually.",
           },
           {
             title: "Watch expiry dates",
-            description: "Cards show what expires soon and what should no longer be used.",
+            description: "See what expires soon at a glance.",
           },
           {
             title: "Use during tracking",
-            description:
-              "Medicines from the cabinet can be selected right inside an illness episode.",
+            description: "Pick a medicine directly in an episode.",
           },
         ],
         action: { to: "/medicine-cabinet", label: "Open cabinet" },

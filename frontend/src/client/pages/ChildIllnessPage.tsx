@@ -66,6 +66,13 @@ import {
 import { formatDate, formatDateTime } from "@shared/utils/date";
 import { formatChildAgeLabel } from "@client/i18n/children";
 
+const appBtnPrimaryClass =
+  "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
+const appBtnSecondaryClass =
+  "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
+const appBtnDangerClass =
+  "app-btn-danger-md soft-button-danger inline-flex items-center justify-center px-4";
+
 export function ChildIllnessPage() {
   const { language } = useI18n();
   const { childId } = useParams<{ childId: string }>();
@@ -684,7 +691,7 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
       <div className="soft-panel rounded-[28px] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="app-card-title text-[1.08rem] sm:text-[1.18rem]">
+            <h3 className="app-card-title">
               {language === "ru" ? "Общая сводка" : "Overall summary"}
             </h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
@@ -693,9 +700,9 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
                 : "How often the child got sick and how it changed over time."}
             </p>
           </div>
-          <span className="soft-pill-primary rounded-full px-3 py-1.5 text-xs">
+          <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs font-medium">
             {summary.totalClosedEpisodes}{" "}
-            {language === "ru" ? "эп. в архиве" : "episodes in archive"}
+            {language === "ru" ? "эпизодов в архиве" : "episodes in archive"}
           </span>
         </div>
 
@@ -741,7 +748,7 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
         <div className="soft-panel rounded-[28px] p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">
+              <h4 className="app-card-title">
                 {timelineMeta.chartTitle}
               </h4>
               <p className="mt-1 text-sm leading-6 text-muted">{timelineMeta.chartDescription}</p>
@@ -779,7 +786,7 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
 
       <section className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-          <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">
+          <h4 className="app-card-title">
             {language === "ru" ? "Сколько обычно длилось" : "Typical duration"}
           </h4>
           <p className="mt-1 text-sm leading-6 text-muted">
@@ -800,7 +807,7 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
         </div>
 
         <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-          <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">
+          <h4 className="app-card-title">
             {language === "ru" ? "Что обычно делали" : "What usually happened"}
           </h4>
           <p className="mt-1 text-sm leading-6 text-muted">
@@ -969,7 +976,7 @@ function formatDaysAgo(days: number, language: "ru" | "en") {
 function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div>
-      <h2 className="app-card-title text-[1.08rem] sm:text-xl">{title}</h2>
+      <h2 className="app-card-title">{title}</h2>
       <p className="mt-1 text-sm leading-6 text-muted">{subtitle}</p>
     </div>
   );
@@ -1077,7 +1084,7 @@ function HistoryEpisodeCard({
         actions={
           <Link
             to={`/children/${childId}/illness?view=history&episodeId=${episode.id}`}
-            className="soft-button-secondary inline-flex min-h-[2.65rem] items-center justify-center px-3 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.9rem] sm:px-3.5 sm:text-[0.86rem]"
+            className={`${appBtnSecondaryClass} min-h-[2.65rem] px-3 sm:min-h-[2.9rem]`}
           >
             {language === "ru" ? "Разбор" : "Insights"}
           </Link>
@@ -1162,7 +1169,7 @@ function HistoryEpisodeCard({
                 type="button"
                 onClick={() => setIsDeleteConfirmOpen(true)}
                 disabled={deleteEpisodeMutation.isPending}
-                className="soft-button-danger inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                className={`${appBtnDangerClass} min-h-[2.85rem] px-3.5 disabled:opacity-50 sm:min-h-[3rem]`}
               >
                 {deleteEpisodeMutation.isPending
                   ? language === "ru"
@@ -1293,7 +1300,7 @@ function EpisodeInsightsPreview({
         <div className="soft-panel rounded-[24px] p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">
+              <h4 className="app-card-title">
                 {language === "ru" ? "Температура по эпизоду" : "Episode temperature"}
               </h4>
               <p className="mt-1 text-[0.88rem] leading-6 text-muted sm:text-sm">
@@ -1323,7 +1330,7 @@ function EpisodeInsightsPreview({
         </div>
 
         <div className="soft-panel-muted rounded-[24px] p-4 sm:p-5">
-          <h4 className="app-card-title text-[1rem] sm:text-[1.04rem]">
+          <h4 className="app-card-title">
             {language === "ru" ? "Ключевые детали" : "Key details"}
           </h4>
           <div className="mt-4 space-y-3">
@@ -1403,7 +1410,7 @@ function HistoryEpisodeInsightsScreen({
       <div className="flex flex-wrap items-center justify-end gap-3">
         <Link
           to={`/children/${childId}/illness?view=history`}
-          className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+          className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
         >
           {language === "ru" ? "Ко всей истории" : "Back to full history"}
         </Link>
@@ -1837,7 +1844,7 @@ function EpisodeBlock({
                 addCommentMutation.mutate();
               }}
               disabled={addCommentMutation.isPending || !commentText.trim()}
-              className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
+              className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
             >
               {addCommentMutation.isPending
                 ? language === "ru"
@@ -1868,19 +1875,19 @@ function EpisodeBlock({
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         <Link
           to={`/children/${childId}/illness?focus=temperature`}
-          className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+          className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
         >
           {language === "ru" ? "Записать температуру" : "Log temperature"}
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=administration`}
-          className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+          className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
         >
           {language === "ru" ? "Записать приём" : "Log dose"}
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=comment`}
-          className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+          className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
         >
           {language === "ru" ? "Добавить заметку" : "Add note"}
         </Link>
@@ -1910,7 +1917,7 @@ function EpisodeBlock({
         </div>
         <Link
           to={`/children/${childId}/illness?focus=timeline`}
-          className="soft-button-secondary inline-flex min-h-[2.85rem] w-full self-start items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
+          className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full self-start text-center sm:min-h-[3.05rem] sm:w-auto`}
         >
           {language === "ru" ? "Открыть" : "Open"}
         </Link>
@@ -1945,7 +1952,7 @@ function EpisodeBlock({
                 ? `/children/${childId}/illness?focus=reminders`
                 : `/children/${childId}/illness?focus=reminder-create`
             }
-            className="soft-button-secondary inline-flex min-h-[2.85rem] w-full self-start items-center justify-center px-3.5 text-center text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
+            className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full self-start text-center sm:min-h-[3.05rem] sm:w-auto`}
           >
             {medicationPlans.length > 0
               ? language === "ru"
@@ -1992,13 +1999,13 @@ function EpisodeBlock({
           <div className="flex flex-wrap gap-2">
             <Link
               to="/illnesses/active"
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
             >
               {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
             <Link
               to={`/children/${childId}/illness?focus=timeline`}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
             >
               {language === "ru" ? "К ленте" : "Open timeline"}
             </Link>
@@ -2031,7 +2038,7 @@ function EpisodeBlock({
           <div className="flex flex-wrap gap-2">
             <Link
               to="/illnesses/active"
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
             >
               {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
@@ -2103,13 +2110,13 @@ function EpisodeBlock({
           <div className="flex flex-wrap gap-2">
             <Link
               to="/illnesses/active"
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
             >
               {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
             <Link
               to={`/children/${childId}/illness?focus=reminder-create`}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
             >
               {language === "ru" ? "Добавить напоминание" : "Add reminder"}
             </Link>
@@ -2130,13 +2137,13 @@ function EpisodeBlock({
             <div className="flex flex-wrap gap-2">
               <Link
                 to={`/children/${childId}/illness?focus=reminders`}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+                className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
               >
                 {language === "ru" ? "К напоминаниям" : "Back to reminders"}
               </Link>
               <Link
                 to="/illnesses/active"
-                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+                className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
               >
                 {language === "ru" ? "К наблюдениям" : "Back to tracking"}
               </Link>
@@ -2292,13 +2299,13 @@ function EpisodeBlock({
           <div className="flex flex-wrap gap-2">
             <Link
               to={`/children/${childId}/illness?focus=reminders`}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
             >
               {language === "ru" ? "К напоминаниям" : "Back to reminders"}
             </Link>
             <Link
               to="/illnesses/active"
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
             >
               {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
@@ -2349,7 +2356,7 @@ function EpisodeBlock({
             <button
               type="button"
               onClick={() => setIsCloseConfirmOpen(true)}
-              className="soft-button-danger hidden min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] sm:inline-flex"
+              className={`${appBtnDangerClass} hidden min-h-[2.95rem] sm:inline-flex`}
             >
               {language === "ru" ? "Закрыть наблюдение" : "Close tracking"}
             </button>
@@ -2384,7 +2391,7 @@ function EpisodeBlock({
             <button
               type="button"
               onClick={() => setIsCloseConfirmOpen(true)}
-              className="soft-button-danger inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em]"
+              className={`${appBtnDangerClass} min-h-[2.95rem] w-full`}
             >
               {language === "ru" ? "Закрыть наблюдение" : "Close tracking"}
             </button>
@@ -2508,23 +2515,23 @@ function EpisodeActivationCard({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() =>
-              onActivate({
-                started_at: startedAt,
-                title: title.trim() ? title.trim() : null,
-                medication_mode: "guided",
-                note: null,
-                temperatures: [],
-                administrations: [],
-                comments: [],
-                medication_plans: [],
-              })
-            }
-            disabled={isPending || !startedAt}
-            className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
-          >
+            <button
+              type="button"
+              onClick={() =>
+                onActivate({
+                  started_at: startedAt,
+                  title: title.trim() ? title.trim() : null,
+                  medication_mode: "guided",
+                  note: null,
+                  temperatures: [],
+                  administrations: [],
+                  comments: [],
+                  medication_plans: [],
+                })
+              }
+              disabled={isPending || !startedAt}
+              className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
+            >
             {isPending
               ? language === "ru"
                 ? "Запускаем…"
@@ -2537,7 +2544,7 @@ function EpisodeActivationCard({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+            className={`${appBtnSecondaryClass} min-h-[2.85rem] disabled:opacity-50 sm:min-h-[3.05rem]`}
           >
             {language === "ru" ? "Назад" : "Back"}
           </button>
@@ -2611,12 +2618,12 @@ function TemperatureForm({
           className="soft-input w-full px-4"
         />
       </label>
-      <button
-        type="button"
-        onClick={onSubmit}
-        disabled={isPending || !value}
-        className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
-      >
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={isPending || !value}
+          className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5`}
+        >
         {isPending
           ? language === "ru"
             ? "Сохраняем…"
@@ -2683,7 +2690,7 @@ function CabinetMedicinePicker({
             type="button"
             onClick={() => setIsOpen(true)}
             aria-expanded={isOpen}
-            className="soft-button-secondary flex min-h-[2.95rem] w-full items-center justify-between gap-3 px-4 text-left text-[0.88rem] tracking-[-0.025em] sm:min-h-[3.1rem] sm:text-[0.92rem]"
+            className={`${appBtnSecondaryClass} flex min-h-[2.95rem] w-full justify-between gap-3 px-4 text-left sm:min-h-[3.1rem]`}
           >
             <span className="min-w-0">
               {selectedMedicine ? (
@@ -2744,7 +2751,7 @@ function CabinetMedicinePicker({
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                  className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3rem]`}
                 >
                   {language === "ru" ? "Закрыть" : "Close"}
                 </button>
@@ -2926,7 +2933,7 @@ function AdministrationForm({
             type="button"
             onClick={onSubmit}
             disabled={isPending || !customMedicineName.trim()}
-            className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
+            className={`${appBtnPrimaryClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
           >
             {isPending
               ? language === "ru"
@@ -3113,7 +3120,7 @@ function MedicationPlanComposer({
         <div>
           <label className="block space-y-1.5">
             <span className="soft-field-label">
-              {language === "ru" ? "Разовая доза, если нужна" : "Single dose, if needed"}
+              {language === "ru" ? "Сколько дать сейчас (разовая доза)" : "Dose for now (single dose)"}
             </span>
             <input
               type="text"
@@ -3182,8 +3189,8 @@ function MedicationPlanComposer({
               </h5>
               <p className="mt-1 text-sm text-muted">
                 {language === "ru"
-                  ? "Нужны не всегда: суточный лимит и расчёт по весу можно заполнить позже."
-                  : "Not always needed: the daily limit and weight-based calculation can be added later."}
+                  ? "Опционально: лимит в сутки и проверка по весу."
+                  : "Optional: daily limit and a weight-based check."}
               </p>
             </div>
           </DisclosureHeader>
@@ -3210,12 +3217,12 @@ function MedicationPlanComposer({
               <div>
                 <label className="block space-y-1.5">
                   <span className="flex items-center gap-2 soft-field-label">
-                    {language === "ru" ? "Вес ребёнка, кг" : "Child weight, kg"}
+                    {language === "ru" ? "Вес ребёнка для проверки, кг" : "Child weight for check, kg"}
                     <InlineHint
                       text={
                         language === "ru"
-                          ? "Нужно только для расчёта по весу. Если разовая доза уже известна, это поле можно не заполнять."
-                          : "Needed only for weight-based calculation. If the single dose is already known, this field can stay empty."
+                          ? "Нужен только для проверки по мг/кг. Если доза уже известна, поле можно пропустить."
+                          : "Needed only for the mg/kg check. If the dose is already known, you can skip this field."
                       }
                     />
                   </span>
@@ -3257,7 +3264,7 @@ function MedicationPlanComposer({
                             syncWeightMutation.mutate(parsedWeightKg);
                           }}
                           disabled={syncWeightMutation.isPending}
-                          className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+                          className={`${appBtnSecondaryClass} min-h-[2.85rem] disabled:opacity-50 sm:min-h-[3.05rem]`}
                         >
                           {syncWeightMutation.isPending
                             ? language === "ru"
@@ -3276,12 +3283,12 @@ function MedicationPlanComposer({
               <div className="xl:col-span-2">
                 <label className="block space-y-1.5">
                   <span className="flex items-center gap-2 soft-field-label">
-                    {language === "ru" ? "Расчёт, мг/кг" : "Calculation, mg/kg"}
+                    {language === "ru" ? "Проверка по весу, мг/кг" : "Weight check, mg/kg"}
                     <InlineHint
                       text={
                         language === "ru"
-                          ? "Используй это поле, если дозировку знают как мг на кг веса. Это только подсказка и не заменяет вручную указанную разовую дозу."
-                          : "Use this field if the dosage is known in mg per kg. It is only a hint and does not replace a manually entered single dose."
+                          ? "Если врач указал дозу в мг/кг, введи значение. Это проверка, основная доза задаётся выше."
+                          : "If the doctor gave the dose in mg/kg, enter it here. This is a check, the main dose is set above."
                       }
                     />
                   </span>
@@ -3291,9 +3298,14 @@ function MedicationPlanComposer({
                     step="0.1"
                     value={doseMgPerKg}
                     onChange={(e) => setDoseMgPerKg(e.target.value)}
-                    placeholder={language === "ru" ? "Необязательно" : "Optional"}
+                    placeholder={language === "ru" ? "Введите дозировку, мг" : "Optional"}
                     className="soft-input w-full px-4"
                   />
+                  <p className="mt-2 text-xs text-muted">
+                    {language === "ru"
+                      ? "Покажем ориентир по мг и мл. Решение о приёме — по назначению врача."
+                      : "Shows an approximate mg/ml estimate. Follow your clinician's instructions for dosing."}
+                  </p>
                 </label>
               </div>
             </div>
@@ -3346,7 +3358,7 @@ function MedicationPlanComposer({
             hasInvalidDose ||
             parsedIntervalMinutes === null
           }
-          className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
+          className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
         >
           {isPending ? (language === "ru" ? "Сохраняем…" : "Saving…") : submitLabel}
         </button>
@@ -3355,7 +3367,7 @@ function MedicationPlanComposer({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+            className={`${appBtnSecondaryClass} min-h-[2.85rem] disabled:opacity-50 sm:min-h-[3.05rem]`}
           >
             {language === "ru" ? "Отмена" : "Cancel"}
           </button>
@@ -3488,8 +3500,8 @@ function MedicationPlanList({
                     disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
                     className={`inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] transition disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem] ${
                       isUnavailable || stats?.isBlocked
-                        ? "soft-button-secondary text-muted"
-                        : "soft-button-primary"
+                        ? `${appBtnSecondaryClass} text-muted`
+                        : appBtnPrimaryClass
                     }`}
                   >
                     {isSubmittingAdministration
@@ -3512,7 +3524,7 @@ function MedicationPlanList({
                 <button
                   type="button"
                   onClick={() => onOpen(plan.id)}
-                  className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+                  className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
                 >
                   {language === "ru" ? "Открыть" : "Open"}
                 </button>
@@ -3772,7 +3784,7 @@ function MedicationPlanDetail({
               type="button"
               onClick={() => onTakeDose(plan)}
               disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
-              className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
+              className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
             >
               {isSubmittingAdministration
                 ? language === "ru"
@@ -3794,7 +3806,7 @@ function MedicationPlanDetail({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+            className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
           >
             {language === "ru" ? "Изменить" : "Edit"}
           </button>
@@ -3803,7 +3815,7 @@ function MedicationPlanDetail({
           type="button"
           onClick={() => setIsDeleteConfirmOpen(true)}
           disabled={isDeleting}
-          className="soft-button-danger inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
+          className={`${appBtnDangerClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
         >
           {isDeleting
             ? language === "ru"
@@ -3889,10 +3901,11 @@ function formatEpisodePeriod(startedAt: string, closedAt: string | null, languag
 }
 
 function formatWeightValue(valueKg: number, language: "ru" | "en" = "ru"): string {
+  const unit = language === "ru" ? "кг" : "kg";
   return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
     minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
     maximumFractionDigits: 1,
-  }).format(valueKg)} kg`;
+  }).format(valueKg)} ${unit}`;
 }
 
 function formatEntrySummary(

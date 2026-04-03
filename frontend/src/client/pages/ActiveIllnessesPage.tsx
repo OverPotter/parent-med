@@ -36,6 +36,13 @@ import {
 import { formatDate } from "@shared/utils/date";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
+const appBtnPrimaryClass =
+  "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
+const appBtnSecondaryClass =
+  "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
+const appBtnDangerClass =
+  "app-btn-danger-md soft-button-danger inline-flex items-center justify-center px-4";
+
 export function ActiveIllnessesPage() {
   const { language, t } = useI18n();
   const copy = getChildrenCopy(language).activeIllnesses;
@@ -244,7 +251,7 @@ function ActiveIllnessCard({
         <div className="space-y-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="app-card-title text-[1.08rem]">{child.name}</h2>
+              <h2 className="app-card-title">{child.name}</h2>
               <span className="soft-pill-danger rounded-full px-2.5 py-1 text-[11px]">
                 {copy.observationBadge}
               </span>
@@ -299,7 +306,7 @@ function ActiveIllnessCard({
                         type="button"
                         onClick={() => takeDoseMutation.mutate(availableNowLead.plan)}
                         disabled={takeDoseMutation.isPending}
-                        className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 md:w-auto md:min-h-[3.15rem] md:px-5 md:text-[0.93rem]"
+                        className={`${appBtnPrimaryClass} min-h-[2.95rem] w-full disabled:opacity-50 md:w-auto md:min-h-[3.15rem] md:px-5`}
                       >
                         {takeDoseMutation.isPending ? copy.saving : copy.logDose}
                       </button>
@@ -316,33 +323,33 @@ function ActiveIllnessCard({
           <div className="grid gap-2 pt-0 sm:grid-cols-2 xl:grid-cols-4">
             <Link
               to={`/children/${child.id}/illness?focus=temperature`}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
             >
               {copy.logTemperature}
             </Link>
             {!availableNowLead && (
               <Link
                 to={`/children/${child.id}/illness?focus=administration`}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
+                className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
               >
                 {copy.logDose}
               </Link>
             )}
             <Link
               to={`/children/${child.id}/illness?focus=comment`}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
             >
               {copy.addNote}
             </Link>
             <Link
               to={`/children/${child.id}/illness?focus=timeline`}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
             >
               {copy.timeline}
             </Link>
             <Link
               to={`/children/${child.id}/illness?focus=reminders`}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-center text-[0.82rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:text-[0.87rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
             >
               {plans.length > 0 ? copy.reminders : copy.addReminder}
             </Link>
@@ -352,7 +359,7 @@ function ActiveIllnessCard({
             type="button"
             onClick={() => setIsCloseConfirmOpen(true)}
             disabled={closeEpisodeMutation.isPending}
-            className="soft-button-danger inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:text-[0.92rem]"
+            className={`${appBtnDangerClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:min-h-[3.1rem]`}
           >
             {closeEpisodeMutation.isPending ? copy.closing : copy.closeConfirm}
           </button>

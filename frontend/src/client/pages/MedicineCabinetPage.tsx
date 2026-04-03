@@ -2,7 +2,7 @@
  * Аптечка: список упаковок по семье, добавление (справочник + срок годности).
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchHouseholdMedicines,
@@ -46,9 +46,9 @@ const cabinetCopy = {
     searchPlaceholder: "Название, форма или комментарий",
     foundCount: "Найдено: {{count}}",
     nothingFound: "По запросу ничего не найдено.",
-    intakeForbidden: "Принимать нельзя",
-    intakeCheckOpened: "Проверить вскрытие",
-    intakeAllowed: "Принимать можно",
+    intakeForbidden: "Просрочено",
+    intakeCheckOpened: "Проверьте дату вскрытия",
+    intakeAllowed: "Можно использовать",
     untilOpened: "После вскрытия до {{date}}",
     untilExpiry: "Годен до {{date}}",
     openedHint: "Вскрыли {{date}} · после вскрытия {{days}} дн.",
@@ -132,9 +132,9 @@ const cabinetCopy = {
     searchPlaceholder: "Name, form or comment",
     foundCount: "Found: {{count}}",
     nothingFound: "Nothing matches this search.",
-    intakeForbidden: "Do not use",
+    intakeForbidden: "Expired",
     intakeCheckOpened: "Check opened date",
-    intakeAllowed: "Can be used",
+    intakeAllowed: "Usable",
     untilOpened: "After opening until {{date}}",
     untilExpiry: "Good until {{date}}",
     openedHint: "Opened on {{date}} · after opening {{days}} days",
@@ -312,7 +312,7 @@ export function MedicineCabinetPage() {
         <button
           type="button"
           onClick={() => setView("add")}
-          className={`inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] transition-colors sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem] ${
+          className={`app-tab-md inline-flex w-full items-center justify-center transition-colors ${
             view === "add" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -324,7 +324,7 @@ export function MedicineCabinetPage() {
             setView("cabinet");
             setCabinetSearch("");
           }}
-          className={`inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] transition-colors sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem] ${
+          className={`app-tab-md inline-flex w-full items-center justify-center transition-colors ${
             view === "cabinet" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -583,9 +583,9 @@ function AddHouseholdMedicineForm({
   };
 
   return (
-    <Surface className="mt-4 p-4 sm:p-6">
+    <Surface className="app-section-surface mt-4">
       <div className="space-y-4">
-        <h2 className="app-card-title text-lg">{tCabinet(language, "addPack")}</h2>
+        <h2 className="app-card-title">{tCabinet(language, "addPack")}</h2>
 
         <div className="flex flex-wrap gap-4">
           <label className="min-w-0 flex-1 space-y-1.5">
@@ -670,8 +670,8 @@ function AddHouseholdMedicineForm({
                   setCatalogItem(null);
                   setSearchName("");
                 }}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
-              >
+                  className="soft-button-secondary app-btn-secondary-md inline-flex"
+                >
                 {tCabinet(language, "switchMedicine")}
               </button>
             </div>
@@ -850,7 +850,7 @@ function AddHouseholdMedicineForm({
                   type="button"
                   onClick={handleAddSelected}
                   disabled={!expiryDate || createHouseholdMutation.isPending}
-                  className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
+                  className="soft-button-primary app-btn-primary-md inline-flex w-full disabled:opacity-50 sm:w-auto"
                 >
                   {tCabinet(language, "addToKit")}
                 </button>
@@ -861,7 +861,7 @@ function AddHouseholdMedicineForm({
                   disabled={
                     !newMedicineName.trim() || !expiryDate || createHouseholdMutation.isPending
                   }
-                  className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
+                  className="soft-button-primary app-btn-primary-md inline-flex w-full disabled:opacity-50 sm:w-auto"
                 >
                   {tCabinet(language, "addOwnToKit")}
                 </button>
@@ -882,7 +882,7 @@ function AddHouseholdMedicineForm({
                   setNewMedicineDosage("");
                   setFormError(null);
                 }}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
+                className="soft-button-secondary app-btn-secondary-md inline-flex w-full sm:w-auto"
               >
                 {tCabinet(language, "reset")}
               </button>
@@ -913,8 +913,6 @@ function MedicineItemCard({
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isMobileActionsExpanded, setIsMobileActionsExpanded] = useState(false);
-  const [isStatusTooltipVisible, setIsStatusTooltipVisible] = useState(false);
-  const [statusTooltipMode, setStatusTooltipMode] = useState<"idle" | "hover" | "touch">("idle");
   const [expiryDate, setExpiryDate] = useState(medicine.expiryDate);
   const [openedAt, setOpenedAt] = useState(medicine.openedAt?.slice(0, 10) ?? "");
   const [openedShelfDays, setOpenedShelfDays] = useState(
@@ -961,28 +959,12 @@ function MedicineItemCard({
       setIsEditing(false);
       return;
     }
-    if (typeof window !== "undefined" && isStatusTooltipVisible && statusTooltipMode === "touch") {
-      return;
-    }
     if (isMobileActionsExpanded || isDetailsExpanded || isEditing) {
       collapseMobileCard();
       return;
     }
     setIsMobileActionsExpanded(true);
   };
-
-  useEffect(() => {
-    if (!isStatusTooltipVisible || statusTooltipMode !== "touch") {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      setIsStatusTooltipVisible(false);
-      setStatusTooltipMode("idle");
-    }, 1200);
-
-    return () => window.clearTimeout(timeout);
-  }, [isStatusTooltipVisible, statusTooltipMode]);
 
   const updateMutation = useMutation({
     mutationFn: () =>
@@ -1035,50 +1017,12 @@ function MedicineItemCard({
             >
               <div className="flex min-w-0 items-start gap-2">
                 <div className="group relative shrink-0">
-                  <button
-                    type="button"
-                    title={intakeMessage.text}
+                  <span
                     aria-label={intakeMessage.text}
-                    onClick={(event) => event.stopPropagation()}
-                    onMouseEnter={() => {
-                      setStatusTooltipMode("hover");
-                      setIsStatusTooltipVisible(true);
-                    }}
-                    onMouseLeave={() => {
-                      setIsStatusTooltipVisible(false);
-                      setStatusTooltipMode("idle");
-                    }}
-                    onFocus={() => {
-                      setStatusTooltipMode("hover");
-                      setIsStatusTooltipVisible(true);
-                    }}
-                    onBlur={() => {
-                      setIsStatusTooltipVisible(false);
-                      setStatusTooltipMode("idle");
-                    }}
-                    onTouchStart={() => {
-                      setStatusTooltipMode("touch");
-                      setIsStatusTooltipVisible(true);
-                    }}
-                    onTouchEnd={(event) => {
-                      event.currentTarget.blur();
-                    }}
-                    onTouchCancel={() => {
-                      setIsStatusTooltipVisible(false);
-                      setStatusTooltipMode("idle");
-                    }}
-                    className={`${intakeMessage.className} h-7 min-w-7 shrink-0 px-2 font-semibold`}
+                    className={`${intakeMessage.className} inline-flex h-7 min-w-7 shrink-0 items-center justify-center px-2 font-semibold`}
                   >
                     {intakeMessage.icon}
-                  </button>
-                  <div
-                    className={[
-                      "pointer-events-none absolute left-0 top-full z-10 mt-2 w-max max-w-[12rem] rounded-2xl border border-border/80 bg-[color:var(--color-surface-soft)] px-3 py-2 text-xs leading-5 text-foreground shadow-lg backdrop-blur-xl",
-                      isStatusTooltipVisible ? "block" : "hidden",
-                    ].join(" ")}
-                  >
-                    {intakeMessage.text}
-                  </div>
+                  </span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -1092,6 +1036,7 @@ function MedicineItemCard({
                   medicine.medicineForm.trim().toLowerCase() !== "не указано" ? (
                     <p className="mt-1 text-xs text-muted">{localizedMedicineForm}</p>
                   ) : null}
+                  <p className="mt-1 text-xs font-medium text-muted">{intakeMessage.text}</p>
                 </div>
               </div>
             </button>
@@ -1135,14 +1080,14 @@ function MedicineItemCard({
                   <button
                     type="button"
                     onClick={() => setIsDetailsExpanded((value) => !value)}
-                    className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                    className="app-btn-secondary-md soft-button-secondary inline-flex w-full items-center justify-center px-3.5"
                   >
                     {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsDeleteConfirmOpen(true)}
-                    className="soft-button-danger inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                    className="app-btn-danger-md soft-button-danger inline-flex w-full items-center justify-center px-3.5"
                   >
                     {tCabinet(language, "writeOff")}
                   </button>
@@ -1189,50 +1134,12 @@ function MedicineItemCard({
               >
                 <div className="flex min-w-0 items-start gap-2">
                   <div className="group relative shrink-0">
-                    <button
-                      type="button"
-                      title={intakeMessage.text}
+                    <span
                       aria-label={intakeMessage.text}
-                      onClick={(event) => event.stopPropagation()}
-                      onMouseEnter={() => {
-                        setStatusTooltipMode("hover");
-                        setIsStatusTooltipVisible(true);
-                      }}
-                      onMouseLeave={() => {
-                        setIsStatusTooltipVisible(false);
-                        setStatusTooltipMode("idle");
-                      }}
-                      onFocus={() => {
-                        setStatusTooltipMode("hover");
-                        setIsStatusTooltipVisible(true);
-                      }}
-                      onBlur={() => {
-                        setIsStatusTooltipVisible(false);
-                        setStatusTooltipMode("idle");
-                      }}
-                      onTouchStart={() => {
-                        setStatusTooltipMode("touch");
-                        setIsStatusTooltipVisible(true);
-                      }}
-                      onTouchEnd={(event) => {
-                        event.currentTarget.blur();
-                      }}
-                      onTouchCancel={() => {
-                        setIsStatusTooltipVisible(false);
-                        setStatusTooltipMode("idle");
-                      }}
-                      className={`${intakeMessage.className} h-7 min-w-7 shrink-0 px-2 font-semibold`}
+                      className={`${intakeMessage.className} inline-flex h-7 min-w-7 shrink-0 items-center justify-center px-2 font-semibold`}
                     >
                       {intakeMessage.icon}
-                    </button>
-                    <div
-                      className={[
-                        "pointer-events-none absolute left-0 top-full z-10 mt-2 w-max max-w-[12rem] rounded-2xl border border-border/80 bg-[color:var(--color-surface-soft)] px-3 py-2 text-xs leading-5 text-foreground shadow-lg backdrop-blur-xl",
-                        isStatusTooltipVisible ? "block" : "hidden",
-                      ].join(" ")}
-                    >
-                      {intakeMessage.text}
-                    </div>
+                    </span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 sm:items-center">
@@ -1246,6 +1153,7 @@ function MedicineItemCard({
                         {statusDateText}
                       </span>
                     </div>
+                    <p className="mt-1 text-xs font-medium text-muted">{intakeMessage.text}</p>
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2" />
@@ -1294,7 +1202,7 @@ function MedicineItemCard({
                 <button
                   type="button"
                   onClick={() => setIsDetailsExpanded((value) => !value)}
-                  className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                  className="app-btn-secondary-md soft-button-secondary inline-flex w-full items-center justify-center px-3.5"
                 >
                   {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
                 </button>
@@ -1302,7 +1210,7 @@ function MedicineItemCard({
                   <button
                     type="button"
                     onClick={() => setIsEditing((value) => !value)}
-                    className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                    className="app-btn-secondary-md soft-button-secondary inline-flex w-full items-center justify-center px-3.5"
                   >
                     {isEditing ? tCabinet(language, "close") : tCabinet(language, "newPack")}
                   </button>
@@ -1310,7 +1218,7 @@ function MedicineItemCard({
                 <button
                   type="button"
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="soft-button-danger inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                  className="app-btn-danger-md soft-button-danger inline-flex w-full items-center justify-center px-3.5"
                 >
                   {tCabinet(language, "writeOff")}
                 </button>
@@ -1322,7 +1230,7 @@ function MedicineItemCard({
               <button
                 type="button"
                 onClick={() => setIsDetailsExpanded((value) => !value)}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                className="app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5"
               >
                 {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
               </button>
@@ -1330,7 +1238,7 @@ function MedicineItemCard({
                 <button
                   type="button"
                   onClick={() => setIsEditing((value) => !value)}
-                  className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                  className="app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5"
                 >
                   {isEditing ? tCabinet(language, "close") : tCabinet(language, "newPack")}
                 </button>
@@ -1338,7 +1246,7 @@ function MedicineItemCard({
               <button
                 type="button"
                 onClick={() => setIsDeleteConfirmOpen(true)}
-                className="soft-button-danger inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                className="app-btn-danger-md soft-button-danger inline-flex items-center justify-center px-3.5"
               >
                 {tCabinet(language, "writeOff")}
               </button>
@@ -1446,7 +1354,7 @@ function MedicineItemCard({
                   updateMutation.isPending ||
                   (isOwnMedicine && (!medicineName.trim() || !medicineForm.trim()))
                 }
-                className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
+                className="app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4 disabled:opacity-50 sm:px-5"
               >
                 {tCabinet(language, "save")}
               </button>
