@@ -4,22 +4,33 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { applyLanguageToDocument, type AppLanguage } from "@shared/i18n";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "system";
+type ResolvedTheme = "light" | "dark";
 type Role = "client" | "admin";
 export type MedicationIntervalUnit = "hours" | "minutes";
 
-function applyThemeToDocument(theme: Theme) {
-  const background = theme === "dark" ? "#1e1b2e" : "#ebe4ff";
-  const statusBarStyle = theme === "dark" ? "black-translucent" : "default";
+function resolveTheme(theme: Theme): ResolvedTheme {
+  if (theme === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return theme;
+}
 
-  document.documentElement.setAttribute("data-theme", theme);
-  document.documentElement.style.colorScheme = theme;
+function applyThemeToDocument(theme: Theme): ResolvedTheme {
+  const resolvedTheme = resolveTheme(theme);
+  const background = resolvedTheme === "dark" ? "#1e1b2e" : "#ebe4ff";
+  const statusBarStyle = resolvedTheme === "dark" ? "black-translucent" : "default";
+
+  document.documentElement.setAttribute("data-theme", resolvedTheme);
+  document.documentElement.setAttribute("data-theme-mode", theme);
+  document.documentElement.style.colorScheme = resolvedTheme;
   document.documentElement.style.background = background;
   document.body.style.background = background;
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
   document
     .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
     ?.setAttribute("content", statusBarStyle);
+  return resolvedTheme;
 }
 
 interface AppState {
@@ -28,8 +39,10 @@ interface AppState {
   hasSeenWorkspaceIntro: boolean;
   markWorkspaceIntroSeen: () => void;
   theme: Theme;
+  effectiveTheme: ResolvedTheme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  syncSystemTheme: () => void;
   language: AppLanguage;
   setLanguage: (language: AppLanguage) => void;
   medicationIntervalUnit: MedicationIntervalUnit;
@@ -84,16 +97,29 @@ export const useAppStore = create<AppState>()(
       setHydrated: (value) => set({ hydrated: value }),
       hasSeenWorkspaceIntro: false,
       markWorkspaceIntroSeen: () => set({ hasSeenWorkspaceIntro: true }),
-      theme: "light",
+      theme: "system",
+      effectiveTheme: "light",
       setTheme: (theme) => {
-        set({ theme });
-        applyThemeToDocument(theme);
+        const effectiveTheme = applyThemeToDocument(theme);
+        set({ theme, effectiveTheme });
       },
       toggleTheme: () => {
         set((s) => {
-          const next: Theme = s.theme === "light" ? "dark" : "light";
-          applyThemeToDocument(next);
-          return { theme: next };
+          const next: Theme = s.effectiveTheme === "light" ? "dark" : "light";
+          const effectiveTheme = applyThemeToDocument(next);
+          return { theme: next, effectiveTheme };
+        });
+      },
+      syncSystemTheme: () => {
+        set((s) => {
+          if (s.theme !== "system") {
+            return {};
+          }
+          const effectiveTheme = applyThemeToDocument("system");
+          if (effectiveTheme === s.effectiveTheme) {
+            return {};
+          }
+          return { effectiveTheme };
         });
       },
       language: "ru",
@@ -178,6 +204,7 @@ export const useAppStore = create<AppState>()(
       name: "pillpath-app",
       partialize: (s) => ({
         theme: s.theme,
+        effectiveTheme: s.effectiveTheme,
         language: s.language,
         medicationIntervalUnit: s.medicationIntervalUnit,
         role: s.role,
@@ -195,7 +222,8 @@ export const useAppStore = create<AppState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.theme) {
-          applyThemeToDocument(state.theme);
+          const effectiveTheme = applyThemeToDocument(state.theme);
+          state.effectiveTheme = effectiveTheme;
         }
         if (state?.language) {
           applyLanguageToDocument(state.language);
@@ -205,3 +233,11 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
+
+if (typeof window !== "undefined") {
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const syncSystemTheme = () => {
+    useAppStore.getState().syncSystemTheme();
+  };
+  mediaQuery.addEventListener("change", syncSystemTheme);
+}

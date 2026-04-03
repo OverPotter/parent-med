@@ -42,6 +42,11 @@ class PillboxService:
     def _to_local(self, value: datetime) -> datetime:
         return value.astimezone(self._timezone)
 
+    def _format_course_day_label(self, current_day: int, total_days: int, language: str) -> str:
+        if language == "en":
+            return f"Day {current_day} of {total_days}"
+        return f"День {current_day} из {total_days}"
+
     def _build_local_scheduled_at(self, target_day: date, dose_time: time) -> datetime:
         return datetime.combine(target_day, dose_time, tzinfo=self._timezone)
 
@@ -136,7 +141,7 @@ class PillboxService:
         return next_dose_at, medication
 
     def _get_course_progress(
-        self, plan: PillboxPlan
+        self, plan: PillboxPlan, language: str
     ) -> tuple[str | None, float | None, str | None]:
         today = datetime.now(UTC).astimezone(self._timezone).date()
         continuous_medications = [
@@ -165,13 +170,21 @@ class PillboxService:
             current_day = total_days
         else:
             current_day = (today - item.course_start_date).days + 1
-        return "period", current_day / total_days, f"Day {current_day} of {total_days}"
+        return (
+            "period",
+            current_day / total_days,
+            self._format_course_day_label(current_day, total_days, language),
+        )
 
-    def _to_summary_response(self, entity: PillboxPlan) -> PillboxPlanSummaryDto:
+    def _to_summary_response(
+        self,
+        entity: PillboxPlan,
+        language: str = "ru",
+    ) -> PillboxPlanSummaryDto:
         now = datetime.now(UTC)
         next_dose_at, next_medication = self._get_next_dose_details(entity, now)
         course_summary_kind, course_progress_ratio, course_day_label = self._get_course_progress(
-            entity
+            entity, language
         )
         return PillboxPlanSummaryDto(
             id=entity.id,
@@ -323,9 +336,11 @@ class PillboxService:
             raise ForbiddenError("Нет доступа к плану другой семьи")
         return plan
 
-    async def list_by_family_id(self, current_family_id: UUID) -> list[PillboxPlanSummaryDto]:
+    async def list_by_family_id(
+        self, current_family_id: UUID, preferred_language: str = "ru"
+    ) -> list[PillboxPlanSummaryDto]:
         entities = await self._repo.list_by_family_id(current_family_id)
-        return [self._to_summary_response(entity) for entity in entities]
+        return [self._to_summary_response(entity, preferred_language) for entity in entities]
 
     async def get_by_id(self, plan_id: UUID, current_family_id: UUID) -> PillboxPlanResponseDto:
         entity = await self._get_plan_for_family(plan_id, current_family_id)
@@ -384,6 +399,7 @@ class PillboxService:
         current_account_id: UUID,
         current_account_display_name: str,
         current_family_id: UUID,
+        preferred_language: str = "ru",
     ) -> PillboxPlanSummaryDto:
         plan = await self._get_plan_for_family(plan_id, current_family_id)
         medication = next((item for item in plan.medications if item.id == medication_id), None)
@@ -418,4 +434,4 @@ class PillboxService:
             )
         )
         refreshed = await self._get_plan_for_family(plan_id, current_family_id)
-        return self._to_summary_response(refreshed)
+        return self._to_summary_response(refreshed, preferred_language)

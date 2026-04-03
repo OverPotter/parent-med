@@ -12,8 +12,11 @@ export const en: Translations = {
     logoutFromAccount: "Log out",
     profileMenuLabel: "Profile menu",
     languageSwitcherLabel: "Choose language",
+    languageLabel: "Language",
+    themeLabel: "Theme",
     themeDarkLabel: "Dark theme",
     themeLightLabel: "Light theme",
+    themeAutoLabel: "Auto",
   },
   layout: {
     familyWorkspace: "Family health workspace",

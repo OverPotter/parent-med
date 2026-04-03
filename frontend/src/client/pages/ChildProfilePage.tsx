@@ -121,10 +121,15 @@ export function ChildProfilePage() {
           deleteMutation.mutate(child.id, { onSuccess: () => setIsDeleteConfirmOpen(false) })
         }
       />
+      <div className="px-1">
+        <Link to="/children" className="inline-flex text-sm text-primary hover:underline">
+          {language === "ru" ? "← К детям" : "← Back to children"}
+        </Link>
+      </div>
       <PageIntro
         title={child.name}
-        subtitle={copy.subtitle}
-        eyebrow={copy.eyebrow}
+        subtitle={undefined}
+        eyebrow={undefined}
         hideOnMobile
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
@@ -146,6 +151,28 @@ export function ChildProfilePage() {
           </div>
         }
       />
+      <div className="md:hidden">
+        <Surface className="p-4">
+          <h1 className="app-title mb-3 text-[1.42rem] tracking-[-0.04em]">{child.name}</h1>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Link
+              to={`/children/${child.id}/illness?view=history`}
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full text-center sm:min-h-[3.05rem]`}
+            >
+              {copy.history}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsEditing((current) => !current)}
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full sm:min-h-[3.05rem]`}
+              aria-expanded={isEditing}
+              aria-controls="child-profile-edit-form"
+            >
+              {isEditing ? copy.collapseForm : copy.editProfile}
+            </button>
+          </div>
+        </Surface>
+      </div>
 
       {isEditing && (
         <div ref={editFormRef}>
@@ -455,10 +482,11 @@ function hasExtraContacts(child: {
 }
 
 function formatWeightValue(valueKg: number, language: "ru" | "en"): string {
+  const unit = language === "ru" ? "кг" : "kg";
   return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
     minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
     maximumFractionDigits: 1,
-  }).format(valueKg)} kg`;
+  }).format(valueKg)} ${unit}`;
 }
 
 function InputField({

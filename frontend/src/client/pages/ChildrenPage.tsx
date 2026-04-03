@@ -207,7 +207,9 @@ export function ChildrenPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="app-card-title">{copy.addAnotherPromptTitle}</p>
-                  <p className="mt-1 text-sm text-muted">{copy.addAnotherPromptText}</p>
+                  {copy.addAnotherPromptText ? (
+                    <p className="mt-1 text-sm text-muted">{copy.addAnotherPromptText}</p>
+                  ) : null}
                 </div>
                 <button
                   type="button"
@@ -490,10 +492,11 @@ function ChildCard({
 }
 
 function formatWeightValue(valueKg: number, language: "ru" | "en"): string {
+  const unit = language === "ru" ? "кг" : "kg";
   return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
     minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
     maximumFractionDigits: 1,
-  }).format(valueKg)} kg`;
+  }).format(valueKg)} ${unit}`;
 }
 
 function InputField({

@@ -3901,10 +3901,11 @@ function formatEpisodePeriod(startedAt: string, closedAt: string | null, languag
 }
 
 function formatWeightValue(valueKg: number, language: "ru" | "en" = "ru"): string {
+  const unit = language === "ru" ? "кг" : "kg";
   return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
     minimumFractionDigits: valueKg % 1 === 0 ? 0 : 1,
     maximumFractionDigits: 1,
-  }).format(valueKg)} kg`;
+  }).format(valueKg)} ${unit}`;
 }
 
 function formatEntrySummary(

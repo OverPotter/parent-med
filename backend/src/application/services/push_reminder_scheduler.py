@@ -72,64 +72,42 @@ def _format_date(value: date, language: str) -> str:
     return value.strftime("%d.%m.%Y")
 
 
-def _format_due_body(child_name: str, medicine_name: str, dose_amount: str, language: str) -> str:
-    dose_text = dose_amount.strip()
-    if language == "en":
-        if dose_text:
-            return (
-                f"Child: {child_name}\n"
-                f"Medicine: {medicine_name}\n"
-                f"Dose: {dose_text}\n"
-                "Open tracking and mark the dose."
-            )
-        return (
-            f"Child: {child_name}\n"
-            f"Medicine: {medicine_name}\n"
-            "It is time to give the medicine and mark the dose."
-        )
-    if dose_text:
-        return (
-            f"Ребёнок: {child_name}\n"
-            f"Лекарство: {medicine_name}\n"
-            f"Доза: {dose_text}\n"
-            "Откройте наблюдение и отметьте приём."
-        )
-    return (
-        f"Ребёнок: {child_name}\n"
-        f"Лекарство: {medicine_name}\n"
-        "Сейчас пора дать препарат и отметить приём."
-    )
-
-
-def _format_overdue_body(
-    child_name: str, medicine_name: str, dose_amount: str, language: str
+def _format_due_body(
+    child_name: str,
+    medicine_name: str,
+    dose_amount: str,
+    scheduled_time_label: str,
+    language: str,
 ) -> str:
     dose_text = dose_amount.strip()
     if language == "en":
-        if dose_text:
-            return (
-                f"Child: {child_name}\n"
-                f"Medicine: {medicine_name}\n"
-                f"Dose: {dose_text}\n"
-                "This dose is still not marked. If it was already given, just mark it."
-            )
+        medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
         return (
-            f"Child: {child_name}\n"
-            f"Medicine: {medicine_name}\n"
-            "This dose is still not marked. If it was already given, just mark it."
+            f"For: {child_name}\n"
+            f"Give: {medicine_line}\n"
+            f"When: now ({scheduled_time_label})"
         )
-    if dose_text:
+    medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
+    return f"Кому: {child_name}\nЧто: {medicine_line}\nКогда: сейчас ({scheduled_time_label})"
+
+
+def _format_overdue_body(
+    child_name: str,
+    medicine_name: str,
+    dose_amount: str,
+    scheduled_time_label: str,
+    language: str,
+) -> str:
+    dose_text = dose_amount.strip()
+    if language == "en":
+        medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
         return (
-            f"Ребёнок: {child_name}\n"
-            f"Лекарство: {medicine_name}\n"
-            f"Доза: {dose_text}\n"
-            "Приём ещё не отмечен. Если уже дали препарат, просто отметьте приём."
+            f"For: {child_name}\n"
+            f"Not marked: {medicine_line}\n"
+            f"When: since {scheduled_time_label}"
         )
-    return (
-        f"Ребёнок: {child_name}\n"
-        f"Лекарство: {medicine_name}\n"
-        "Приём ещё не отмечен. Если уже дали препарат, просто отметьте приём."
-    )
+    medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
+    return f"Кому: {child_name}\nНе отмечено: {medicine_line}\nКогда: с {scheduled_time_label}"
 
 
 def _format_before_body(
@@ -137,33 +115,22 @@ def _format_before_body(
     medicine_name: str,
     dose_amount: str,
     reminder_before_minutes: int,
+    scheduled_time_label: str,
     language: str,
 ) -> str:
     dose_text = dose_amount.strip()
     if language == "en":
-        if dose_text:
-            return (
-                f"The medicine can be given in {reminder_before_minutes} min.\n"
-                f"Child: {child_name}\n"
-                f"Medicine: {medicine_name}\n"
-                f"Dose: {dose_text}"
-            )
+        medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
         return (
-            f"The medicine can be given in {reminder_before_minutes} min.\n"
-            f"Child: {child_name}\n"
-            f"Medicine: {medicine_name}"
+            f"For: {child_name}\n"
+            f"Prepare: {medicine_line}\n"
+            f"When: in {reminder_before_minutes} min ({scheduled_time_label})"
         )
-    if dose_text:
-        return (
-            f"Через {reminder_before_minutes} мин можно дать препарат.\n"
-            f"Ребёнок: {child_name}\n"
-            f"Лекарство: {medicine_name}\n"
-            f"Доза: {dose_text}"
-        )
+    medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
     return (
-        f"Через {reminder_before_minutes} мин можно дать препарат.\n"
-        f"Ребёнок: {child_name}\n"
-        f"Лекарство: {medicine_name}"
+        f"Кому: {child_name}\n"
+        f"Подготовить: {medicine_line}\n"
+        f"Когда: через {reminder_before_minutes} мин ({scheduled_time_label})"
     )
 
 
@@ -173,8 +140,8 @@ def _format_pillbox_due_body(
     language: str,
 ) -> str:
     if language == "en":
-        return f"{scheduled_time_label} now\n{summary_label}"
-    return f"{scheduled_time_label} сейчас\n{summary_label}"
+        return f"For: you\nTake: {summary_label}\nWhen: now ({scheduled_time_label})"
+    return f"Кому: вам\nЧто: {summary_label}\nКогда: сейчас ({scheduled_time_label})"
 
 
 def _format_pillbox_overdue_body(
@@ -183,8 +150,16 @@ def _format_pillbox_overdue_body(
     language: str,
 ) -> str:
     if language == "en":
-        return f"{scheduled_time_label} still needs confirmation\n{summary_label}"
-    return f"Приём на {scheduled_time_label} ещё не отмечен\n{summary_label}"
+        return f"For: you\nNot marked: {summary_label}\nWhen: since {scheduled_time_label}"
+    return f"Кому: вам\nНе отмечено: {summary_label}\nКогда: с {scheduled_time_label}"
+
+
+def _format_pillbox_meal_rule(meal_rule: str, language: str) -> str:
+    if meal_rule == "before_meal":
+        return "before meal" if language == "en" else "до еды"
+    if meal_rule == "with_meal":
+        return "with meal" if language == "en" else "во время еды"
+    return "after meal" if language == "en" else "после еды"
 
 
 def _normalize_medicine_name(value: str | None) -> str:
@@ -442,6 +417,9 @@ class PushNotificationScheduler:
                     account.push_before_reminder_minutes or DEFAULT_REMINDER_BEFORE_MINUTES
                 )
                 language = _normalize_language(account.preferred_language)
+                next_allowed_local_label = next_allowed_at.astimezone(self._timezone).strftime(
+                    "%H:%M"
+                )
                 reminder_before_minutes = min(
                     preferred_before_minutes,
                     max(plan.min_interval_minutes - 1, 0),
@@ -461,6 +439,7 @@ class PushNotificationScheduler:
                                 medicine_name,
                                 plan.dose_amount,
                                 reminder_before_minutes,
+                                next_allowed_local_label,
                                 language,
                             ),
                             "url": "/illnesses/active",
@@ -486,6 +465,7 @@ class PushNotificationScheduler:
                             child.name,
                             medicine_name,
                             plan.dose_amount,
+                            next_allowed_local_label,
                             language,
                         ),
                         "url": "/illnesses/active",
@@ -512,6 +492,7 @@ class PushNotificationScheduler:
                             child.name,
                             medicine_name,
                             plan.dose_amount,
+                            next_allowed_local_label,
                             language,
                         ),
                         "url": "/illnesses/active",
@@ -570,7 +551,11 @@ class PushNotificationScheduler:
         for _, medication in items:
             name = self._resolve_pillbox_medicine_name(medication)
             dose = medication.dose_amount.strip()
-            labels.append(f"{name} · {dose}" if dose else name)
+            meal_rule_label = _format_pillbox_meal_rule(medication.meal_rule, language)
+            if dose:
+                labels.append(f"{name} · {dose} · {meal_rule_label}")
+                continue
+            labels.append(f"{name} · {meal_rule_label}")
 
         if not labels:
             return "Medicines" if language == "en" else "Лекарства"

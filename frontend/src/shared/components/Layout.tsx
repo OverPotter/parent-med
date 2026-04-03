@@ -25,7 +25,6 @@ interface LayoutProps {
   /** Ссылки для навигации (client или admin). */
   navLinks?: LayoutNavLink[];
   mobileNavLinks?: LayoutNavLink[];
-  showCurrentFamily?: boolean;
 }
 
 function MoonIcon() {
@@ -165,19 +164,17 @@ export function Layout({
   children,
   navLinks = [],
   mobileNavLinks = [],
-  showCurrentFamily = false,
 }: LayoutProps) {
   const { copy } = useI18n();
-  const { theme, toggleTheme, currentFamilyName, accountLogin, accountDisplayName, clearSession } =
+  const { effectiveTheme, toggleTheme, accountLogin, accountDisplayName, clearSession } =
     useAppStore();
   const accountLabel = accountDisplayName || accountLogin || copy.common.userFallback;
-  const resolvedFamilyName =
-    currentFamilyName?.trim() === "Семья тестовогоата" ? "Семья Тестовых" : currentFamilyName;
   const hasMobileNav = mobileNavLinks.length > 0;
+  const isAuthenticated = Boolean(accountLogin);
 
   const spinTimeoutRef = useRef<number | null>(null);
   const [isIconSpinning, setIsIconSpinning] = useState(false);
-  const initialRotation = theme === "light" ? -12 : 12;
+  const initialRotation = effectiveTheme === "light" ? -12 : 12;
   const [iconSpin, setIconSpin] = useState({ from: initialRotation, to: initialRotation });
 
   useEffect(() => {
@@ -201,11 +198,11 @@ export function Layout({
   const iconStyle: ThemeIconStyle = {
     "--soft-theme-icon-from": `${iconSpin.from}deg`,
     "--soft-theme-icon-to": `${iconSpin.to}deg`,
-    "--soft-theme-icon-scale": theme === "light" ? 1 : 1.06,
+    "--soft-theme-icon-scale": effectiveTheme === "light" ? 1 : 1.06,
   };
 
   const handleThemeToggle = () => {
-    const nextTheme = theme === "light" ? "dark" : "light";
+    const nextTheme = effectiveTheme === "light" ? "dark" : "light";
     const nextRotation = nextTheme === "light" ? -12 : 12;
     setIconSpin((current) => ({ from: current.to, to: nextRotation }));
     setIsIconSpinning(true);
@@ -220,7 +217,7 @@ export function Layout({
   };
 
   const themeToggleLabel =
-    theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel;
+    effectiveTheme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel;
 
   return (
     <div className="app-shell-auth min-h-screen flex flex-col bg-background text-foreground">
@@ -256,31 +253,7 @@ export function Layout({
                     <BrandWordmark className="app-brand-text app-mobile-header__brand-text truncate" />
                   </Link>
                   <div className="app-mobile-header__actions flex shrink-0 items-center gap-2">
-                    <LanguageSwitch className="app-header-language-switch" />
-                    <button
-                      type="button"
-                      className="soft-theme-toggle app-header-theme-toggle"
-                      onClick={handleThemeToggle}
-                      aria-label={themeToggleLabel}
-                      title={themeToggleLabel}
-                    >
-                      <span
-                        className={[
-                          "soft-theme-toggle__icon",
-                          theme === "light"
-                            ? "soft-theme-toggle__icon--moon"
-                            : "soft-theme-toggle__icon--sun",
-                          isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        aria-hidden="true"
-                        style={iconStyle}
-                      >
-                        {theme === "light" ? <MoonIcon /> : <SunIcon />}
-                      </span>
-                    </button>
-                    {accountLogin ? (
+                    {isAuthenticated ? (
                       <ProfileMenu
                         accountLabel={accountLabel}
                         servicesLabel={copy.clientLayout.nav.more}
@@ -290,41 +263,60 @@ export function Layout({
                         onLogout={handleLogout}
                       />
                     ) : (
-                      <Link to="/auth?mode=login" className="app-header-utility-button">
-                        {copy.common.login}
-                      </Link>
+                      <>
+                        <LanguageSwitch className="app-header-language-switch" />
+                        <button
+                          type="button"
+                          className="soft-theme-toggle app-header-theme-toggle"
+                          onClick={handleThemeToggle}
+                          aria-label={themeToggleLabel}
+                          title={themeToggleLabel}
+                        >
+                          <span
+                            className={[
+                              "soft-theme-toggle__icon",
+                              effectiveTheme === "light"
+                                ? "soft-theme-toggle__icon--moon"
+                                : "soft-theme-toggle__icon--sun",
+                              isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            aria-hidden="true"
+                            style={iconStyle}
+                          >
+                            {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
+                          </span>
+                        </button>
+                        <Link to="/auth?mode=login" className="app-header-utility-button">
+                          {copy.common.login}
+                        </Link>
+                      </>
                     )}
                   </div>
                 </div>
-                {showCurrentFamily && resolvedFamilyName ? (
-                  <div className="app-mobile-header__meta flex flex-wrap items-center gap-2">
-                    {showCurrentFamily && resolvedFamilyName ? (
-                      <span className="soft-pill inline-flex max-w-full items-center truncate rounded-full px-3.5 py-1.5 text-[11px]">
-                        {resolvedFamilyName}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
               </div>
             </div>
           </div>
 
           <div className="hidden md:block md:py-2">
             <div className="soft-nav-shell relative z-20 rounded-[32px] px-4 py-3.5">
-              <div className="flex items-center justify-between gap-5">
-                <Link to="/" className="inline-flex min-w-0 items-center gap-3">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-5">
+                <Link to="/" className="inline-flex items-center" aria-label={copy.common.brandName}>
                   <img src="/pwa-icon.png" alt="" className="h-10 w-10 rounded-[1.15rem]" />
+                </Link>
+
+                <Link
+                  to="/"
+                  className="inline-flex min-w-0 items-center justify-center"
+                  aria-label={copy.common.brandName}
+                >
                   <BrandWordmark className="app-brand-text truncate" />
                 </Link>
 
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    {showCurrentFamily && resolvedFamilyName && (
-                      <span className="soft-pill max-w-[12rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                        {resolvedFamilyName}
-                      </span>
-                    )}
-                    {accountLogin ? (
+                  {isAuthenticated ? (
+                    <div className="flex min-w-0 items-center gap-2">
                       <ProfileMenu
                         accountLabel={accountLabel}
                         servicesLabel={copy.clientLayout.nav.more}
@@ -333,36 +325,38 @@ export function Layout({
                         menuLabel={copy.common.profileMenuLabel}
                         onLogout={handleLogout}
                       />
-                    ) : (
+                    </div>
+                  ) : (
+                    <>
                       <Link to="/auth?mode=login" className="app-header-utility-button">
                         {copy.common.login}
                       </Link>
-                    )}
-                  </div>
-                  <LanguageSwitch className="app-header-language-switch" />
-                  <button
-                    type="button"
-                    className="soft-theme-toggle app-header-theme-toggle"
-                    onClick={handleThemeToggle}
-                    aria-label={themeToggleLabel}
-                    title={themeToggleLabel}
-                  >
-                    <span
-                      className={[
-                        "soft-theme-toggle__icon",
-                        theme === "light"
-                          ? "soft-theme-toggle__icon--moon"
-                          : "soft-theme-toggle__icon--sun",
-                        isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                      aria-hidden="true"
-                      style={iconStyle}
-                    >
-                      {theme === "light" ? <MoonIcon /> : <SunIcon />}
-                    </span>
-                  </button>
+                      <LanguageSwitch className="app-header-language-switch" />
+                      <button
+                        type="button"
+                        className="soft-theme-toggle app-header-theme-toggle"
+                        onClick={handleThemeToggle}
+                        aria-label={themeToggleLabel}
+                        title={themeToggleLabel}
+                      >
+                        <span
+                          className={[
+                            "soft-theme-toggle__icon",
+                            effectiveTheme === "light"
+                              ? "soft-theme-toggle__icon--moon"
+                              : "soft-theme-toggle__icon--sun",
+                            isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          aria-hidden="true"
+                          style={iconStyle}
+                        >
+                          {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
+                        </span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

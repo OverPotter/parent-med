@@ -9,6 +9,7 @@ import {
   upsertPushSubscription,
 } from "@shared/api/pushNotifications";
 import { DisclosureHeader } from "@shared/components/DisclosureHeader";
+import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -66,6 +67,13 @@ const accountCopy = {
       "Как показывать и вводить интервал в планах по времени: в часах или в минутах.",
     hours: "Часы",
     minutes: "Минуты",
+    appSettings: "Настройки приложения",
+    appSettingsHint: "Язык интерфейса и тема приложения для вашего аккаунта.",
+    interfaceLanguage: "Язык",
+    interfaceTheme: "Тема",
+    themeLight: "Светлая",
+    themeDark: "Тёмная",
+    themeAuto: "Авто",
     notifications: "Уведомления",
     notificationsHint:
       "Одно уведомление приходит всегда, когда препарат уже можно дать. Дополнительно можно выбрать раннее напоминание заранее.",
@@ -124,6 +132,13 @@ const accountCopy = {
     medicationPlansHint: "How to show and enter plan intervals: in hours or in minutes.",
     hours: "Hours",
     minutes: "Minutes",
+    appSettings: "App settings",
+    appSettingsHint: "Interface language and app theme for your account.",
+    interfaceLanguage: "Language",
+    interfaceTheme: "Theme",
+    themeLight: "Light",
+    themeDark: "Dark",
+    themeAuto: "Auto",
     notifications: "Notifications",
     notificationsHint:
       "One notification always arrives when it is time to give the medicine. You can also choose an earlier heads-up.",
@@ -161,6 +176,8 @@ export function AccountPage() {
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const medicationIntervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const setMedicationIntervalUnit = useAppStore((s) => s.setMedicationIntervalUnit);
+  const theme = useAppStore((s) => s.theme);
+  const setTheme = useAppStore((s) => s.setTheme);
   const [pushStatus, setPushStatus] = useState<"checking" | "enabled" | "disabled">("checking");
   const [pushError, setPushError] = useState<string | null>(null);
   const [isPushPending, setIsPushPending] = useState(false);
@@ -391,6 +408,50 @@ export function AccountPage() {
                 : tAccount(language, "member")
             }
           />
+        </div>
+      </Surface>
+
+      <Surface className="p-5 sm:p-6">
+        <p className="app-card-title">{tAccount(language, "appSettings")}</p>
+        <p className="mt-3 text-sm leading-7 text-muted">{tAccount(language, "appSettingsHint")}</p>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="soft-card account-settings-card rounded-[24px] px-4 py-4 sm:px-5">
+            <p className="text-xs font-semibold tracking-[0.08em] text-muted">
+              {tAccount(language, "interfaceLanguage")}
+            </p>
+            <div className="account-language-switch mt-3">
+              <LanguageSwitch
+                triggerClassName="soft-button-secondary min-h-[2.85rem] px-3.5 text-[0.84rem] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              />
+            </div>
+          </div>
+
+          <div className="soft-card account-theme-card rounded-[24px] px-4 py-4 sm:px-5">
+            <p className="text-xs font-semibold tracking-[0.08em] text-muted">
+              {tAccount(language, "interfaceTheme")}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(
+                [
+                  { value: "light", label: tAccount(language, "themeLight") },
+                  { value: "dark", label: tAccount(language, "themeDark") },
+                  { value: "system", label: tAccount(language, "themeAuto") },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTheme(option.value)}
+                  className={`${
+                    theme === option.value ? "soft-tab-active" : "soft-tab"
+                  } inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </Surface>
 

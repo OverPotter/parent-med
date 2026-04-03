@@ -19,7 +19,7 @@ export function LandingPage() {
   const [isFeatureMobile, setIsFeatureMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth <= 767 : false
   );
-  const theme = useAppStore((s) => s.theme);
+  const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const heroCardsCarouselRef = useRef<HTMLDivElement | null>(null);
   const featureCarouselRef = useRef<HTMLDivElement | null>(null);
@@ -628,18 +628,18 @@ export function LandingPage() {
                     onClick={toggleTheme}
                     className="landing-topline-button landing-theme-toggle rounded-full"
                     aria-label={
-                      theme === "light"
+                      effectiveTheme === "light"
                         ? copy.landing.hero.themeToggleAriaDark
                         : copy.landing.hero.themeToggleAriaLight
                     }
                     title={
-                      theme === "light"
+                      effectiveTheme === "light"
                         ? copy.landing.hero.themeToggleAriaDark
                         : copy.landing.hero.themeToggleAriaLight
                     }
                   >
                     <span aria-hidden="true" className="inline-flex">
-                      {theme === "light" ? <LandingMoonIcon /> : <LandingSunIcon />}
+                      {effectiveTheme === "light" ? <LandingMoonIcon /> : <LandingSunIcon />}
                     </span>
                   </button>
                 </div>

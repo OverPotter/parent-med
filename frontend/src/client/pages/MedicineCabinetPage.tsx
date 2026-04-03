@@ -2,7 +2,7 @@
  * Аптечка: список упаковок по семье, добавление (справочник + срок годности).
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchHouseholdMedicines,
@@ -46,9 +46,9 @@ const cabinetCopy = {
     searchPlaceholder: "Название, форма или комментарий",
     foundCount: "Найдено: {{count}}",
     nothingFound: "По запросу ничего не найдено.",
-    intakeForbidden: "Принимать нельзя",
-    intakeCheckOpened: "Проверить вскрытие",
-    intakeAllowed: "Принимать можно",
+    intakeForbidden: "Просрочено",
+    intakeCheckOpened: "Проверьте дату вскрытия",
+    intakeAllowed: "Можно использовать",
     untilOpened: "После вскрытия до {{date}}",
     untilExpiry: "Годен до {{date}}",
     openedHint: "Вскрыли {{date}} · после вскрытия {{days}} дн.",
@@ -132,9 +132,9 @@ const cabinetCopy = {
     searchPlaceholder: "Name, form or comment",
     foundCount: "Found: {{count}}",
     nothingFound: "Nothing matches this search.",
-    intakeForbidden: "Do not use",
+    intakeForbidden: "Expired",
     intakeCheckOpened: "Check opened date",
-    intakeAllowed: "Can be used",
+    intakeAllowed: "Usable",
     untilOpened: "After opening until {{date}}",
     untilExpiry: "Good until {{date}}",
     openedHint: "Opened on {{date}} · after opening {{days}} days",
@@ -913,8 +913,6 @@ function MedicineItemCard({
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isMobileActionsExpanded, setIsMobileActionsExpanded] = useState(false);
-  const [isStatusTooltipVisible, setIsStatusTooltipVisible] = useState(false);
-  const [statusTooltipMode, setStatusTooltipMode] = useState<"idle" | "hover" | "touch">("idle");
   const [expiryDate, setExpiryDate] = useState(medicine.expiryDate);
   const [openedAt, setOpenedAt] = useState(medicine.openedAt?.slice(0, 10) ?? "");
   const [openedShelfDays, setOpenedShelfDays] = useState(
@@ -961,28 +959,12 @@ function MedicineItemCard({
       setIsEditing(false);
       return;
     }
-    if (typeof window !== "undefined" && isStatusTooltipVisible && statusTooltipMode === "touch") {
-      return;
-    }
     if (isMobileActionsExpanded || isDetailsExpanded || isEditing) {
       collapseMobileCard();
       return;
     }
     setIsMobileActionsExpanded(true);
   };
-
-  useEffect(() => {
-    if (!isStatusTooltipVisible || statusTooltipMode !== "touch") {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      setIsStatusTooltipVisible(false);
-      setStatusTooltipMode("idle");
-    }, 1200);
-
-    return () => window.clearTimeout(timeout);
-  }, [isStatusTooltipVisible, statusTooltipMode]);
 
   const updateMutation = useMutation({
     mutationFn: () =>
@@ -1035,50 +1017,12 @@ function MedicineItemCard({
             >
               <div className="flex min-w-0 items-start gap-2">
                 <div className="group relative shrink-0">
-                  <button
-                    type="button"
-                    title={intakeMessage.text}
+                  <span
                     aria-label={intakeMessage.text}
-                    onClick={(event) => event.stopPropagation()}
-                    onMouseEnter={() => {
-                      setStatusTooltipMode("hover");
-                      setIsStatusTooltipVisible(true);
-                    }}
-                    onMouseLeave={() => {
-                      setIsStatusTooltipVisible(false);
-                      setStatusTooltipMode("idle");
-                    }}
-                    onFocus={() => {
-                      setStatusTooltipMode("hover");
-                      setIsStatusTooltipVisible(true);
-                    }}
-                    onBlur={() => {
-                      setIsStatusTooltipVisible(false);
-                      setStatusTooltipMode("idle");
-                    }}
-                    onTouchStart={() => {
-                      setStatusTooltipMode("touch");
-                      setIsStatusTooltipVisible(true);
-                    }}
-                    onTouchEnd={(event) => {
-                      event.currentTarget.blur();
-                    }}
-                    onTouchCancel={() => {
-                      setIsStatusTooltipVisible(false);
-                      setStatusTooltipMode("idle");
-                    }}
-                    className={`${intakeMessage.className} h-7 min-w-7 shrink-0 px-2 font-semibold`}
+                    className={`${intakeMessage.className} inline-flex h-7 min-w-7 shrink-0 items-center justify-center px-2 font-semibold`}
                   >
                     {intakeMessage.icon}
-                  </button>
-                  <div
-                    className={[
-                      "pointer-events-none absolute left-0 top-full z-10 mt-2 w-max max-w-[12rem] rounded-2xl border border-border/80 bg-[color:var(--color-surface-soft)] px-3 py-2 text-xs leading-5 text-foreground shadow-lg backdrop-blur-xl",
-                      isStatusTooltipVisible ? "block" : "hidden",
-                    ].join(" ")}
-                  >
-                    {intakeMessage.text}
-                  </div>
+                  </span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -1092,6 +1036,7 @@ function MedicineItemCard({
                   medicine.medicineForm.trim().toLowerCase() !== "не указано" ? (
                     <p className="mt-1 text-xs text-muted">{localizedMedicineForm}</p>
                   ) : null}
+                  <p className="mt-1 text-xs font-medium text-muted">{intakeMessage.text}</p>
                 </div>
               </div>
             </button>
@@ -1189,50 +1134,12 @@ function MedicineItemCard({
               >
                 <div className="flex min-w-0 items-start gap-2">
                   <div className="group relative shrink-0">
-                    <button
-                      type="button"
-                      title={intakeMessage.text}
+                    <span
                       aria-label={intakeMessage.text}
-                      onClick={(event) => event.stopPropagation()}
-                      onMouseEnter={() => {
-                        setStatusTooltipMode("hover");
-                        setIsStatusTooltipVisible(true);
-                      }}
-                      onMouseLeave={() => {
-                        setIsStatusTooltipVisible(false);
-                        setStatusTooltipMode("idle");
-                      }}
-                      onFocus={() => {
-                        setStatusTooltipMode("hover");
-                        setIsStatusTooltipVisible(true);
-                      }}
-                      onBlur={() => {
-                        setIsStatusTooltipVisible(false);
-                        setStatusTooltipMode("idle");
-                      }}
-                      onTouchStart={() => {
-                        setStatusTooltipMode("touch");
-                        setIsStatusTooltipVisible(true);
-                      }}
-                      onTouchEnd={(event) => {
-                        event.currentTarget.blur();
-                      }}
-                      onTouchCancel={() => {
-                        setIsStatusTooltipVisible(false);
-                        setStatusTooltipMode("idle");
-                      }}
-                      className={`${intakeMessage.className} h-7 min-w-7 shrink-0 px-2 font-semibold`}
+                      className={`${intakeMessage.className} inline-flex h-7 min-w-7 shrink-0 items-center justify-center px-2 font-semibold`}
                     >
                       {intakeMessage.icon}
-                    </button>
-                    <div
-                      className={[
-                        "pointer-events-none absolute left-0 top-full z-10 mt-2 w-max max-w-[12rem] rounded-2xl border border-border/80 bg-[color:var(--color-surface-soft)] px-3 py-2 text-xs leading-5 text-foreground shadow-lg backdrop-blur-xl",
-                        isStatusTooltipVisible ? "block" : "hidden",
-                      ].join(" ")}
-                    >
-                      {intakeMessage.text}
-                    </div>
+                    </span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 sm:items-center">
@@ -1246,6 +1153,7 @@ function MedicineItemCard({
                         {statusDateText}
                       </span>
                     </div>
+                    <p className="mt-1 text-xs font-medium text-muted">{intakeMessage.text}</p>
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2" />

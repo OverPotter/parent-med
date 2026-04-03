@@ -12,8 +12,11 @@ export interface Translations {
     logoutFromAccount: string;
     profileMenuLabel: string;
     languageSwitcherLabel: string;
+    languageLabel: string;
+    themeLabel: string;
     themeDarkLabel: string;
     themeLightLabel: string;
+    themeAutoLabel: string;
   };
   layout: {
     familyWorkspace: string;

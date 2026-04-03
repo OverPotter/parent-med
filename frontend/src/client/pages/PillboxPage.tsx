@@ -89,6 +89,11 @@ const pillboxCopy = {
     hubTitle: "Таблетница",
     hubSubtitle: "Семейные планы приёма: что принимать, когда напомнить и как идёт курс.",
     createPlan: "+ Создать план",
+    analytics: "Аналитика",
+    analyticsSoonTitle: "Аналитика в разработке",
+    analyticsSoonDescription:
+      "Скоро здесь появится сводка по приёмам и прогрессу планов. Пока раздел готовится.",
+    analyticsSoonConfirm: "Понятно",
     editPlan: "Редактировать",
     pausePlan: "Поставить на паузу",
     resumePlan: "Возобновить план",
@@ -149,8 +154,8 @@ const pillboxCopy = {
     saveMedication: "Сохранить лекарство",
     saveMedicationRequiresTitle: "Укажите название лекарства.",
     overdueState: "Просроченный приём",
-    nextDoseState: "Следующий приём",
     dueNowState: "Пора записать",
+    planActiveState: "План активен",
     pausedPlanState: "План на паузе",
     archivedPlanState: "План в архиве",
     savePlanFailed: "Не удалось сохранить план. Попробуйте ещё раз.",
@@ -182,6 +187,11 @@ const pillboxCopy = {
     hubSubtitle:
       "Family medication plans: what to take, when to remind and how the course is going.",
     createPlan: "+ Create plan",
+    analytics: "Analytics",
+    analyticsSoonTitle: "Analytics is in progress",
+    analyticsSoonDescription:
+      "A summary of doses and plan progress will appear here soon. This section is being built.",
+    analyticsSoonConfirm: "Got it",
     editPlan: "Edit plan",
     pausePlan: "Pause plan",
     resumePlan: "Resume plan",
@@ -243,8 +253,8 @@ const pillboxCopy = {
     saveMedication: "Save medicine",
     saveMedicationRequiresTitle: "Add a medicine name.",
     overdueState: "Overdue dose",
-    nextDoseState: "Next dose",
     dueNowState: "Ready to log",
+    planActiveState: "Plan active",
     pausedPlanState: "Plan is paused",
     archivedPlanState: "Plan is archived",
     savePlanFailed: "Could not save the plan. Please try again.",
@@ -457,6 +467,10 @@ function TintedField({
           type="text"
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
           placeholder={placeholder}
           className={`soft-input min-h-[3.05rem] w-full px-4 text-[0.96rem] placeholder:text-muted sm:min-h-[3.15rem] ${icon ? "pr-14 sm:pr-4 sm:pl-14" : ""}`.trim()}
         />
@@ -602,6 +616,26 @@ function displayPillboxText(value: string) {
   return value;
 }
 
+function formatPillboxNextDoseLabel(
+  nextDoseAt: string | null,
+  fallbackLabel: string | null,
+  language: AppLanguage
+) {
+  if (nextDoseAt) {
+    const scheduledAt = new Date(nextDoseAt);
+    if (!Number.isNaN(scheduledAt.getTime())) {
+      const locale = language === "ru" ? "ru-RU" : "en-US";
+      return new Intl.DateTimeFormat(locale, {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(scheduledAt);
+    }
+  }
+  return fallbackLabel ?? "—";
+}
+
 function formatMealRule(mealRule: PillboxMealRule, language: AppLanguage) {
   if (mealRule === "before_meal") {
     return tPillbox(language, "beforeMeal");
@@ -632,10 +666,6 @@ function isOverdueDose(nextDoseAt: string | null, status: PillboxGroup["status"]
   return scheduledAt.getTime() < Date.now();
 }
 
-function getReminderRecipientsCount(memberIds: string[]) {
-  return memberIds.length || 1;
-}
-
 function getPlanStateHeadline(
   status: PillboxGroup["status"],
   isOverdue: boolean,
@@ -654,12 +684,24 @@ function getPlanStateHeadline(
   if (canMarkNow) {
     return tPillbox(language, "dueNowState");
   }
-  return tPillbox(language, "nextDoseState");
+  return tPillbox(language, "planActiveState");
+}
+
+function formatCourseDayLabel(rawLabel: string, language: AppLanguage) {
+  const normalized = rawLabel.trim();
+  if (language !== "ru") {
+    return normalized;
+  }
+  const englishMatch = normalized.match(/^Day\s+(\d+)\s+of\s+(\d+)$/i);
+  if (englishMatch) {
+    return `День ${englishMatch[1]} из ${englishMatch[2]}`;
+  }
+  return normalized;
 }
 
 function getCourseSummaryLabel(group: PillboxGroup, language: AppLanguage) {
   if (group.courseSummaryKind === "period" && group.dayLabel) {
-    return displayPillboxText(group.dayLabel);
+    return displayPillboxText(formatCourseDayLabel(group.dayLabel, language));
   }
   if (group.courseSummaryKind === "continuous") {
     return tPillbox(language, "continuousPlan");
@@ -749,14 +791,14 @@ function toPlanWriteFromPlan(plan: PillboxPlan, status?: PillboxPlan["status"]):
   };
 }
 
-function toGroupSummary(summary: PillboxPlanSummary): PillboxGroup {
+function toGroupSummary(summary: PillboxPlanSummary, language: AppLanguage): PillboxGroup {
   return {
     id: summary.id,
     title: summary.title,
     status: summary.status,
     activeCount: summary.activeMedicationCount,
     nextDoseAt: summary.nextDoseAt,
-    nextDose: summary.nextDoseLabel ?? "—",
+    nextDose: formatPillboxNextDoseLabel(summary.nextDoseAt, summary.nextDoseLabel, language),
     nextMedicationId: summary.nextMedicationId,
     members: summary.memberAccountIds,
     courseSummaryKind: summary.courseSummaryKind,
@@ -785,6 +827,7 @@ export function PillboxPage() {
   );
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [savePlanError, setSavePlanError] = useState<string | null>(null);
+  const [isAnalyticsSoonOpen, setIsAnalyticsSoonOpen] = useState(false);
   const screen =
     searchParams.get("mode") === "setup" ||
     searchParams.get("mode") === "medication" ||
@@ -815,7 +858,7 @@ export function PillboxPage() {
   });
 
   const { data: planSummaries = [], isLoading: plansLoading } = useQuery({
-    queryKey: ["pillbox-plans", currentFamilyId],
+    queryKey: ["pillbox-plans", currentFamilyId, language],
     queryFn: fetchPillboxPlans,
     enabled: Boolean(currentFamilyId),
   });
@@ -827,7 +870,7 @@ export function PillboxPage() {
   });
 
   const groups = useMemo(() => {
-    const mapped = planSummaries.map(toGroupSummary);
+    const mapped = planSummaries.map((summary) => toGroupSummary(summary, language));
     if (!highlightedPlanId) {
       return mapped;
     }
@@ -836,7 +879,7 @@ export function PillboxPage() {
       const rightRank = right.id === highlightedPlanId ? 0 : 1;
       return leftRank - rightRank;
     });
-  }, [highlightedPlanId, planSummaries]);
+  }, [highlightedPlanId, language, planSummaries]);
 
   const createPlanMutation = useMutation({
     mutationFn: createPillboxPlan,
@@ -1262,6 +1305,10 @@ export function PillboxPage() {
     setPlanActionTarget(null);
   };
 
+  const openAnalytics = () => {
+    setIsAnalyticsSoonOpen(true);
+  };
+
   if (screen === "hub" && plansLoading) {
     return (
       <div className="space-y-6">
@@ -1271,9 +1318,14 @@ export function PillboxPage() {
           compactOnMobile
           hideOnMobile
           action={
-            <button type="button" disabled className={actionPrimaryClass}>
-              {tPillbox(language, "createPlan")}
-            </button>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={openAnalytics} className={actionSecondaryClass}>
+                {tPillbox(language, "analytics")}
+              </button>
+              <button type="button" disabled className={actionPrimaryClass}>
+                {tPillbox(language, "createPlan")}
+              </button>
+            </div>
           }
           className="[&_.app-title]:text-[1.72rem] [&_.app-title]:tracking-[-0.05em] sm:[&_.app-title]:text-[2.1rem] [&_.app-subtitle]:text-[0.93rem] sm:[&_.app-subtitle]:text-[0.98rem]"
         />
@@ -1283,6 +1335,14 @@ export function PillboxPage() {
               {tPillbox(language, "hubTitle")}
             </h1>
           </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={openAnalytics}
+            className="app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]"
+          >
+            {tPillbox(language, "analytics")}
+          </button>
           <button
             type="button"
             disabled
@@ -1291,9 +1351,19 @@ export function PillboxPage() {
             {tPillbox(language, "createPlan")}
           </button>
         </div>
+      </div>
         <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
           {language === "ru" ? "Загружаем планы приёма..." : "Loading medication plans..."}
         </div>
+        <ConfirmDialog
+          isOpen={isAnalyticsSoonOpen}
+          title={tPillbox(language, "analyticsSoonTitle")}
+          description={tPillbox(language, "analyticsSoonDescription")}
+          confirmLabel={tPillbox(language, "analyticsSoonConfirm")}
+          cancelLabel={tPillbox(language, "cancel")}
+          onConfirm={() => setIsAnalyticsSoonOpen(false)}
+          onCancel={() => setIsAnalyticsSoonOpen(false)}
+        />
       </div>
     );
   }
@@ -1661,7 +1731,9 @@ export function PillboxPage() {
                   className={`inline-flex h-2.5 w-2.5 rounded-full ${
                     selectedPlan.status === "active"
                       ? "bg-[color:var(--color-success)]"
-                      : "bg-[color:var(--color-danger)]"
+                      : selectedPlan.status === "paused"
+                        ? "bg-[color:var(--color-warning)]"
+                        : "bg-[color:var(--color-danger)]"
                   }`}
                 />
                 <p className="app-card-title">
@@ -1726,14 +1798,6 @@ export function PillboxPage() {
                   </p>
                   <p className="text-right text-[0.82rem] font-semibold text-foreground">
                     {sortedMedications.length}
-                  </p>
-                </div>
-                <div className="mt-2 flex items-start justify-between gap-3">
-                  <p className="text-[0.76rem] leading-5 text-muted">
-                    {tPillbox(language, "memberCount")}
-                  </p>
-                  <p className="text-right text-[0.82rem] font-semibold text-foreground">
-                    {getReminderRecipientsCount(selectedPlan.memberAccountIds)}
                   </p>
                 </div>
               </div>
@@ -2104,9 +2168,14 @@ export function PillboxPage() {
         compactOnMobile
         hideOnMobile
         action={
-          <button type="button" onClick={openCreate} className={actionPrimaryClass}>
-            {tPillbox(language, "createPlan")}
-          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={openAnalytics} className={actionSecondaryClass}>
+              {tPillbox(language, "analytics")}
+            </button>
+            <button type="button" onClick={openCreate} className={actionPrimaryClass}>
+              {tPillbox(language, "createPlan")}
+            </button>
+          </div>
         }
         className="[&_.app-title]:text-[1.72rem] [&_.app-title]:tracking-[-0.05em] sm:[&_.app-title]:text-[2.1rem] [&_.app-subtitle]:text-[0.93rem] sm:[&_.app-subtitle]:text-[0.98rem]"
       />
@@ -2117,9 +2186,22 @@ export function PillboxPage() {
             {tPillbox(language, "hubTitle")}
           </h1>
         </div>
-        <button type="button" onClick={openCreate} className={`${actionPrimaryClass} w-auto px-3.5`}>
-          {tPillbox(language, "createPlan")}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={openAnalytics}
+            className="app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]"
+          >
+            {tPillbox(language, "analytics")}
+          </button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="app-btn-primary-md soft-button-primary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]"
+          >
+            {tPillbox(language, "createPlan")}
+          </button>
+        </div>
       </div>
 
       <ul className="grid gap-3.5">
@@ -2151,7 +2233,9 @@ export function PillboxPage() {
                             className={`inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${
                               group.status === "active"
                                 ? "bg-[color:var(--color-success)]"
-                                : "bg-[color:var(--color-danger)]"
+                                : group.status === "paused"
+                                  ? "bg-[color:var(--color-warning)]"
+                                  : "bg-[color:var(--color-danger)]"
                             }`}
                             aria-hidden="true"
                           />
@@ -2193,12 +2277,6 @@ export function PillboxPage() {
                               {tPillbox(language, "medicineCount")}
                             </span>
                             <span className="font-medium text-foreground">{group.activeCount}</span>
-                          </div>
-                          <div className="flex items-start justify-between gap-3 text-[0.76rem] leading-4">
-                            <span className="text-muted">{tPillbox(language, "memberCount")}</span>
-                            <span className="font-medium text-foreground">
-                              {getReminderRecipientsCount(group.members)}
-                            </span>
                           </div>
                         </div>
                       </div>
@@ -2278,6 +2356,15 @@ export function PillboxPage() {
         confirmTone="danger"
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+      <ConfirmDialog
+        isOpen={isAnalyticsSoonOpen}
+        title={tPillbox(language, "analyticsSoonTitle")}
+        description={tPillbox(language, "analyticsSoonDescription")}
+        confirmLabel={tPillbox(language, "analyticsSoonConfirm")}
+        cancelLabel={tPillbox(language, "cancel")}
+        onConfirm={() => setIsAnalyticsSoonOpen(false)}
+        onCancel={() => setIsAnalyticsSoonOpen(false)}
       />
     </div>
   );

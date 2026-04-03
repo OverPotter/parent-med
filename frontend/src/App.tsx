@@ -92,18 +92,18 @@ function BootLog() {
 }
 
 function ThemeSync() {
-  const theme = useAppStore((s) => s.theme);
+  const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    document.documentElement.style.colorScheme = theme;
-    const background = theme === "dark" ? "#1e1b2e" : "#ebe4ff";
+    document.documentElement.setAttribute("data-theme", effectiveTheme);
+    document.documentElement.style.colorScheme = effectiveTheme;
+    const background = effectiveTheme === "dark" ? "#1e1b2e" : "#ebe4ff";
     document.documentElement.style.background = background;
     document.body.style.background = background;
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
     document
       .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
-      ?.setAttribute("content", theme === "dark" ? "black-translucent" : "default");
-  }, [theme]);
+      ?.setAttribute("content", effectiveTheme === "dark" ? "black-translucent" : "default");
+  }, [effectiveTheme]);
   return null;
 }
 

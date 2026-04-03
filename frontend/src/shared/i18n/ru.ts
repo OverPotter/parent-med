@@ -12,8 +12,11 @@ export const ru: Translations = {
     logoutFromAccount: "Выйти из аккаунта",
     profileMenuLabel: "Меню профиля",
     languageSwitcherLabel: "Выбор языка",
+    languageLabel: "Язык",
+    themeLabel: "Тема",
     themeDarkLabel: "Тёмная тема",
     themeLightLabel: "Светлая тема",
+    themeAutoLabel: "Авто",
   },
   layout: {
     familyWorkspace: "Семейный кабинет здоровья",

@@ -25,7 +25,10 @@ async def list_pillbox_plans(
     service: PillboxService = Depends(get_pillbox_service),
 ) -> list[PillboxPlanSummaryDto]:
     """Все family-level планы таблетницы."""
-    return await service.list_by_family_id(current_account.family_id)
+    return await service.list_by_family_id(
+        current_account.family_id,
+        current_account.preferred_language,
+    )
 
 
 @router.get("/{plan_id}", response_model=PillboxPlanResponseDto)
@@ -88,4 +91,5 @@ async def log_pillbox_dose(
         current_account.id,
         current_account.display_name,
         current_account.family_id,
+        current_account.preferred_language,
     )

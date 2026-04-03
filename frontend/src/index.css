@@ -913,7 +913,7 @@ p {
     position: absolute;
     top: calc(100% + 0.45rem);
     right: 0;
-    z-index: 40;
+    z-index: 320;
     min-width: 6rem;
     padding: 0.4rem;
     border: 1px solid color-mix(in srgb, var(--color-border) 86%, transparent);
@@ -925,6 +925,27 @@ p {
       0 20px 34px -24px rgb(var(--color-shadow) / 0.22),
       inset 0 1px 0 rgb(255 255 255 / 0.34);
     backdrop-filter: blur(18px);
+  }
+
+  .account-settings-card {
+    position: relative;
+    overflow: visible;
+    z-index: 8;
+  }
+
+  .account-language-switch {
+    position: relative;
+    z-index: 16;
+    display: inline-flex;
+  }
+
+  .account-settings-card .soft-language-dropdown__menu {
+    z-index: 420;
+  }
+
+  .account-theme-card {
+    position: relative;
+    z-index: 2;
   }
 
   .soft-language-dropdown__option {
@@ -2648,7 +2669,7 @@ p {
 
   .landing-hero-reset-topline {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 1rem;
   }
@@ -3719,6 +3740,7 @@ p {
     }
 
     .landing-hero-reset-brandmark {
+      width: 100%;
       min-width: 0;
       justify-self: center;
     }
@@ -3730,8 +3752,12 @@ p {
     }
 
     .landing-hero-reset-brand {
-      font-size: 1.02rem;
+      max-width: 100%;
+      font-size: 0.96rem;
       letter-spacing: -0.072em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .landing-theme-toggle {
@@ -4040,19 +4066,27 @@ p {
   }
 
   .auth-v3-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
     gap: 0.75rem;
     width: 100%;
-    flex-wrap: wrap;
+  }
+
+  .auth-v3-header-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    text-decoration: none;
   }
 
   .auth-v3-header-brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.82rem;
+    justify-content: center;
+    justify-self: center;
     min-width: 0;
+    width: 100%;
     text-decoration: none;
   }
 
@@ -4065,6 +4099,7 @@ p {
   .auth-v3-header-actions {
     display: inline-flex;
     align-items: center;
+    justify-self: end;
     gap: 0.55rem;
     flex-wrap: wrap;
   }
@@ -4745,19 +4780,21 @@ p {
 
     .auth-v3-header {
       align-items: center;
-      justify-content: space-between;
-      flex-wrap: nowrap;
+      grid-template-columns: auto minmax(0, 1fr) auto;
       gap: 0.75rem;
     }
 
-    .auth-v3-header-brand {
-      flex: 1 1 auto;
-      min-width: 0;
-      gap: 0.72rem;
-      max-width: 100%;
+    .auth-v3-header-logo {
+      flex: 0 0 auto;
     }
 
-    .auth-v3-header-brand img {
+    .auth-v3-header-brand {
+      justify-self: center;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .auth-v3-header-logo img {
       height: 2.55rem;
       width: 2.55rem;
       border-radius: 1rem;
@@ -4773,6 +4810,7 @@ p {
     .auth-v3-header-actions {
       width: auto;
       flex: 0 0 auto;
+      justify-self: end;
       justify-content: flex-end;
       flex-wrap: nowrap;
       gap: 0.45rem;
