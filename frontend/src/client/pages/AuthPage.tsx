@@ -348,13 +348,19 @@ export function AuthPage() {
                   {theme === "light" ? copy.common.themeDarkText : copy.common.themeLightText}
                 </span>
               </button>
-              <Link to="/" className="auth-v3-ghost-button auth-v3-home-link auth-v3-header-control">
+              <Link
+                to="/"
+                className="auth-v3-ghost-button auth-v3-home-link auth-v3-header-control"
+              >
                 {copy.common.goHome}
               </Link>
             </div>
           </div>
           <div className="auth-v3-mobile-home-wrap">
-            <Link to="/" className="auth-v3-ghost-button auth-v3-mobile-home-link">
+            <Link
+              to="/"
+              className="auth-v3-ghost-button auth-v3-header-control auth-v3-mobile-home-link"
+            >
               {copy.common.goHome}
             </Link>
           </div>

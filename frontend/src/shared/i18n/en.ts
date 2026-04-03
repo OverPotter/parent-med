@@ -46,7 +46,7 @@ export const en: Translations = {
     hero: {
       eyebrow: "Family care for sick days and daily meds",
       titleLines: ["When a child is sick,", "the family needs one", "clear plan."],
-      lead: "Child illness tracking, medication schedules, and home meds in one clear flow.",
+      lead: "Child illness profile, dose reminders, and home medicine cabinet in one app.",
       createAccount: "Try it free",
       loginPrompt: "Already have an account?",
       login: "Log in",
@@ -170,19 +170,19 @@ export const en: Translations = {
       strip: [
         {
           title: "Children",
-          description: "Symptoms, temperature, notes, and reminders in one profile.",
+          description: "A day-by-day illness profile for your child.",
         },
         {
           title: "Pillbox",
-          description: "Flexible schedules for medicines and vitamins.",
+          description: "Reminders for medicines and vitamins.",
         },
         {
           title: "Home Medicine Cabinet",
-          description: "Expiry dates and supplies at a glance.",
+          description: "Expiry dates and stock levels under control.",
         },
         {
           title: "Family Account",
-          description: "One shared plan for parents and relatives.",
+          description: "One shared access for parents and relatives.",
         },
       ],
       children: {
@@ -230,29 +230,29 @@ export const en: Translations = {
           "Reminder active",
           "Created for grandma in the family account",
         ],
-        footer: "Mom added the plan, dad can see it, grandma gets reminders.",
+        footer: "One clear routine for the family, without missed doses.",
       },
       cabinet: {
         title: "Home Medicine Cabinet",
-        description: "See what you have at home, what expires soon, and what to restock.",
+        description: "Shows expiry dates, stock levels, and what to restock next.",
         mobilePoints: [
-          "One list for medicines and expiry dates",
-          "Alerts before a medicine expires",
-          "Clear priority for what to restock first",
+          "See what is at home and how much is left",
+          "Get alerts before medicines expire",
+          "Know what to restock first",
         ],
-        statusTitle: "Expiry status",
+        statusTitle: "Expiry and stock control",
         statusItems: [
-          "Medicines and stock levels under control",
+          "Ibuprofen: 6 doses left",
           "Paracetamol: expires in 12 days",
-          "Low stock: add it to your shopping list",
+          "Vitamin D: low stock, add to shopping list",
         ],
         checklistTitle: "What Home Medicine Cabinet gives you",
         checklistItems: [
           "Alerts before expiry dates are reached",
-          "A quick view of what is at home now",
-          "Clear priority for checks and restocking",
+          "A low-stock mark for critical medicines",
+          "A shopping list for quick restocking",
         ],
-        footer: "So you avoid missed expiry dates and restock critical meds in time.",
+        footer: "So you always know what is safe to use now and what to restock next.",
       },
       family: {
         title: "Family Account",
@@ -287,6 +287,10 @@ export const en: Translations = {
         showLess: "Show less",
         items: [
           {
+            question: "Who can see child data?",
+            answer: "Only family members you invite.",
+          },
+          {
             question: "Can I track more than one child?",
             answer: "Yes, you can add multiple child profiles.",
           },
@@ -295,24 +299,23 @@ export const en: Translations = {
             answer: "Yes, you can create a schedule for a loved one.",
           },
           {
+            question: "Will I get medication reminders?",
+            answer: "Yes, the app sends reminders on your schedule.",
+          },
+          {
             question: "What can I log in Children?",
             answer: "Symptoms, temperature, notes, plans, and reminders.",
           },
           {
-            question: "How do medication reminders work?",
-            answer: "Set the schedule, and the app sends reminders at the right time.",
-          },
-          {
-            question: "What does Home Medicine Cabinet track?",
-            answer: "Expiry dates and reminders to review home supply.",
+            question: "What does Home Medicine Cabinet warn about?",
+            answer: "Upcoming expiry dates and low stock.",
           },
         ],
       },
       finalCta: {
-        title:
-          "One clear tool for child illness, medication schedules, and your home medicine cabinet.",
+        title: "When a child is sick, it helps to miss nothing important.",
         description:
-          "PillPath helps you track illness, stay on schedule, and keep home meds under control.",
+          "PillPath combines illness tracking, dose reminders, and medicine cabinet control.",
         primary: "Try it free",
         secondary: "Log in",
       },

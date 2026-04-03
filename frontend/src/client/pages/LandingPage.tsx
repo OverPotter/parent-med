@@ -24,7 +24,6 @@ export function LandingPage() {
   const heroCardsCarouselRef = useRef<HTMLDivElement | null>(null);
   const featureCarouselRef = useRef<HTMLDivElement | null>(null);
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
-  const hasFeatureManualInteractionRef = useRef(false);
   const [featureSlideIndex, setFeatureSlideIndex] = useState(0);
   const [featureVirtualIndex, setFeatureVirtualIndex] = useState(1);
   const [featureSlideHeight, setFeatureSlideHeight] = useState<number | null>(null);
@@ -182,7 +181,6 @@ export function LandingPage() {
   useEffect(() => {
     const track = featureCarouselRef.current;
     if (!track || !isFeatureMobile) return;
-    let lastInteractionAt = Date.now();
     let snapTimeoutId: number | null = null;
     const getSlideStep = () => {
       // Every mobile slide is exactly 100% width, so using track width avoids
@@ -208,8 +206,9 @@ export function LandingPage() {
     };
 
     const markInteraction = () => {
-      lastInteractionAt = Date.now();
-      hasFeatureManualInteractionRef.current = true;
+      if (snapTimeoutId) {
+        window.clearTimeout(snapTimeoutId);
+      }
     };
 
     const releaseInteraction = () => {
@@ -245,16 +244,6 @@ export function LandingPage() {
 
     ensureInitialOffset();
 
-    const timer = window.setInterval(() => {
-      if (window.innerWidth >= 768 || document.hidden) return;
-      if (hasFeatureManualInteractionRef.current) return;
-      if (Date.now() - lastInteractionAt < 4500) return;
-      const step = getSlideStep();
-      const current = Math.round(track.scrollLeft / step);
-      const next = current + 1;
-      track.scrollTo({ left: step * next, behavior: "smooth" });
-    }, 6000);
-
     track.addEventListener("scroll", onScroll, { passive: true });
     track.addEventListener("touchstart", markInteraction, { passive: true });
     track.addEventListener("pointerdown", markInteraction, { passive: true });
@@ -266,7 +255,6 @@ export function LandingPage() {
     window.addEventListener("pointercancel", releaseInteraction, { passive: true });
 
     return () => {
-      window.clearInterval(timer);
       if (snapTimeoutId) {
         window.clearTimeout(snapTimeoutId);
       }
@@ -331,7 +319,6 @@ export function LandingPage() {
   const scrollToFeatureSlide = (index: number) => {
     const track = featureCarouselRef.current;
     if (!track) return;
-    hasFeatureManualInteractionRef.current = true;
     const step = Math.max(track.clientWidth, 1);
     const targetVirtualIndex = index + 1;
     track.scrollTo({ left: step * targetVirtualIndex, behavior: "smooth" });
@@ -352,7 +339,7 @@ export function LandingPage() {
             <ul className="landing-mobile-summary mt-4 md:hidden">
               {copy.landing.sections.children.mobilePoints.map((line) => (
                 <li key={line} className="landing-mobile-summary-item">
-                  {line}
+                  <span className="landing-mobile-summary-text">{line}</span>
                 </li>
               ))}
             </ul>
@@ -408,7 +395,7 @@ export function LandingPage() {
             <ul className="landing-mobile-summary mt-4 md:hidden">
               {copy.landing.sections.pillbox.mobilePoints.map((line) => (
                 <li key={line} className="landing-mobile-summary-item">
-                  {line}
+                  <span className="landing-mobile-summary-text">{line}</span>
                 </li>
               ))}
             </ul>
@@ -460,7 +447,7 @@ export function LandingPage() {
             <ul className="landing-mobile-summary mt-4 md:hidden">
               {copy.landing.sections.cabinet.mobilePoints.map((line) => (
                 <li key={line} className="landing-mobile-summary-item">
-                  {line}
+                  <span className="landing-mobile-summary-text">{line}</span>
                 </li>
               ))}
             </ul>
@@ -522,7 +509,7 @@ export function LandingPage() {
             <ul className="landing-mobile-summary mt-4 md:hidden">
               {copy.landing.sections.family.mobilePoints.map((line) => (
                 <li key={line} className="landing-mobile-summary-item">
-                  {line}
+                  <span className="landing-mobile-summary-text">{line}</span>
                 </li>
               ))}
             </ul>
@@ -568,7 +555,7 @@ export function LandingPage() {
           <ul className="landing-mobile-summary mt-4 md:hidden">
             {copy.landing.sections.trust.mobilePoints.map((line) => (
               <li key={line} className="landing-mobile-summary-item">
-                {line}
+                <span className="landing-mobile-summary-text">{line}</span>
               </li>
             ))}
           </ul>
