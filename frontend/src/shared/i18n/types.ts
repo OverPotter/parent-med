@@ -4,14 +4,16 @@ export interface Translations {
   common: {
     brandName: string;
     userFallback: string;
+    login: string;
     open: string;
     goHome: string;
     logout: string;
+    profile: string;
+    logoutFromAccount: string;
+    profileMenuLabel: string;
     languageSwitcherLabel: string;
     themeDarkLabel: string;
     themeLightLabel: string;
-    themeDarkText: string;
-    themeLightText: string;
   };
   layout: {
     familyWorkspace: string;

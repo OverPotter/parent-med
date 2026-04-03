@@ -9,8 +9,7 @@ export const childrenCopy = {
     },
     childrenPage: {
       title: "Дети",
-      subtitle:
-        "Профили детей, быстрый вход в текущее наблюдение и архив прошлых записей без лишнего шума.",
+      subtitle: "Профили детей и быстрый вход в текущее наблюдение.",
       hideForm: "Скрыть форму",
       addChild: "Добавить ребёнка",
       loadError: "Ошибка загрузки",
@@ -45,13 +44,11 @@ export const childrenCopy = {
         age: "Возраст",
         weight: "Вес",
         noWeight: "Нет записи",
-        archiveCount: "в архиве",
+        historyCount: "История: {{count}} эпизодов",
         startObservation: "Начать наблюдение",
         openObservation: "Открыть наблюдение",
-        history: "История",
+        profile: "Профиль",
         activeSince: "Активно с {{date}}",
-        latestEpisode: "Последний эпизод {{date}}",
-        noHistory: "Истории пока нет",
       },
     },
     childProfile: {
@@ -147,8 +144,7 @@ export const childrenCopy = {
     },
     childrenPage: {
       title: "Children",
-      subtitle:
-        "Child profiles, a fast way into current tracking and clean access to past history without extra noise.",
+      subtitle: "Child profiles with quick access to current tracking.",
       hideForm: "Hide form",
       addChild: "Add child",
       loadError: "Failed to load",
@@ -183,13 +179,11 @@ export const childrenCopy = {
         age: "Age",
         weight: "Weight",
         noWeight: "No entry",
-        archiveCount: "in archive",
+        historyCount: "History: {{count}} episodes",
         startObservation: "Start tracking",
         openObservation: "Open tracking",
-        history: "History",
+        profile: "Profile",
         activeSince: "Active since {{date}}",
-        latestEpisode: "Latest episode {{date}}",
-        noHistory: "No history yet",
       },
     },
     childProfile: {

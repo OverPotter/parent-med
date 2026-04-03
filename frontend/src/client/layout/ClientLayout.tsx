@@ -3,11 +3,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Outlet } from "react-router-dom";
-import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchFamilies } from "@shared/api/families";
-import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
 import { Layout } from "@shared/components/Layout";
 import { Surface } from "@shared/components/Surface";
@@ -47,6 +45,7 @@ export function ClientLayout() {
     exactActivePaths: ["/children", "/children/:childId"],
   };
   const baseDesktopNavLinks = [
+    activeObservationsNavItem,
     childrenNavItem,
     {
       to: "/pillbox",
@@ -58,12 +57,6 @@ export function ClientLayout() {
       to: "/medicine-cabinet",
       label: copy.clientLayout.nav.cabinet,
       mobileLabel: copy.clientLayout.nav.cabinet,
-    },
-    {
-      to: "/more",
-      label: copy.clientLayout.nav.more,
-      mobileLabel: copy.clientLayout.nav.more,
-      exactActivePaths: ["/more", "/account", "/about", "/family", "/illnesses/history", "/home"],
     },
   ];
   const baseMobileNavLinks = [...baseDesktopNavLinks];
@@ -80,30 +73,8 @@ export function ClientLayout() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const familyId = currentFamilyId ?? families[0]?.id ?? null;
-
-  const { data: children = [] } = useQuery({
-    queryKey: ["children", familyId],
-    queryFn: () => fetchChildrenByFamilyId(familyId!),
-    enabled: !!familyId,
-  });
-
-  const activeEpisodeQueries = useQueries({
-    queries: children.map((child) => ({
-      queryKey: ["illness-episode-active", child.id],
-      queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
-      enabled: !!child.id,
-    })),
-  });
-
-  const hasActiveEpisode = activeEpisodeQueries.some((query) => Boolean(query.data));
-
-  const desktopNavLinks = hasActiveEpisode
-    ? [activeObservationsNavItem, ...baseDesktopNavLinks]
-    : baseDesktopNavLinks;
-  const mobileNavLinks = hasActiveEpisode
-    ? [activeObservationsNavItem, ...baseMobileNavLinks]
-    : baseMobileNavLinks;
+  const desktopNavLinks = baseDesktopNavLinks;
+  const mobileNavLinks = baseMobileNavLinks;
 
   useEffect(() => {
     setIsPushPromptActionsHidden(false);
@@ -253,7 +224,9 @@ export function ClientLayout() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="app-card-title text-[1rem]">{copy.clientLayout.pushPrompt.title}</p>
-                <p className="mt-1 text-sm leading-6 text-muted">{copy.clientLayout.pushPrompt.description}</p>
+                <p className="mt-1 text-sm leading-6 text-muted">
+                  {copy.clientLayout.pushPrompt.description}
+                </p>
                 {pushPromptError && (
                   <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
                     {pushPromptError}

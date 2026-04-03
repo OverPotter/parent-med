@@ -24,6 +24,9 @@ import {
   withTimeout,
 } from "@shared/utils/pushNotifications";
 
+const appBtnPrimaryClass =
+  "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
+
 const accountCopy = {
   ru: {
     pushConfigCheckFailed: "Не удалось быстро проверить настройки push на сервере.",
@@ -369,7 +372,7 @@ export function AccountPage() {
       />
 
       <Surface className="p-5 sm:p-6">
-        <p className="app-card-title text-[1.05rem]">{tAccount(language, "profile")}</p>
+        <p className="app-card-title">{tAccount(language, "profile")}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <InfoCard
             label={tAccount(language, "familyName")}
@@ -397,7 +400,7 @@ export function AccountPage() {
           onToggle={() => setIsPasswordFormOpen((current) => !current)}
         >
           <>
-            <p className="app-card-title text-[1.02rem]">{tAccount(language, "changePassword")}</p>
+            <p className="app-card-title">{tAccount(language, "changePassword")}</p>
             <p className="mt-2 text-sm leading-6 text-muted">
               {tAccount(language, "changePasswordHint")}
             </p>
@@ -451,7 +454,7 @@ export function AccountPage() {
                 type="button"
                 onClick={handleSubmitPasswordChange}
                 disabled={changePasswordMutation.isPending}
-                className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
+                className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
               >
                 {changePasswordMutation.isPending
                   ? tAccount(language, "saving")
@@ -469,7 +472,7 @@ export function AccountPage() {
       </Surface>
 
       <Surface className="p-5 sm:p-6">
-        <p className="app-card-title text-[1.02rem]">{tAccount(language, "medicationPlans")}</p>
+        <p className="app-card-title">{tAccount(language, "medicationPlans")}</p>
         <p className="mt-3 text-sm leading-7 text-muted">
           {tAccount(language, "medicationPlansHint")}
         </p>
@@ -495,7 +498,7 @@ export function AccountPage() {
       </Surface>
 
       <Surface className="p-5 sm:p-6">
-        <p className="app-card-title text-[1.02rem]">{tAccount(language, "notifications")}</p>
+        <p className="app-card-title">{tAccount(language, "notifications")}</p>
         <p className="mt-3 text-sm leading-7 text-muted">
           {tAccount(language, "notificationsHint")}
         </p>

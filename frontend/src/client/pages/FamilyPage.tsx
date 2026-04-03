@@ -338,10 +338,10 @@ export function FamilyPage() {
         </p>
       )}
 
-      <Surface className="p-5 sm:p-6">
+      <Surface className="app-section-surface">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-[1.08rem]">
+            <h2 className="app-card-title">
               {tFamily(language, "familyNameTitle")}
             </h2>
             <p className="mt-1.5 text-sm leading-6 text-muted">
@@ -400,7 +400,7 @@ export function FamilyPage() {
                     !familyName.trim() ||
                     familyName.trim() === family.name
                   }
-                  className="soft-button-primary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
+                  className="soft-button-primary app-btn-primary-md inline-flex w-full disabled:opacity-50 sm:w-auto"
                 >
                   {updateFamilyMutation.isPending
                     ? tFamily(language, "saving")
@@ -413,7 +413,7 @@ export function FamilyPage() {
                     setIsEditingFamilyName(false);
                   }}
                   disabled={updateFamilyMutation.isPending}
-                  className="soft-button-secondary inline-flex min-h-[3rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.025em] sm:min-h-[3.15rem] sm:w-auto sm:px-5 sm:text-[0.93rem]"
+                  className="soft-button-secondary app-btn-secondary-md inline-flex w-full sm:w-auto"
                 >
                   {tFamily(language, "cancel")}
                 </button>
@@ -423,10 +423,10 @@ export function FamilyPage() {
         </div>
       </Surface>
 
-      <Surface className="p-5 sm:p-6">
+      <Surface className="app-section-surface">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-[1.08rem]">{tFamily(language, "membersTitle")}</h2>
+            <h2 className="app-card-title">{tFamily(language, "membersTitle")}</h2>
             <p className="mt-1.5 text-sm leading-6 text-muted">
               {tFamily(language, "membersDescription")}
             </p>
@@ -483,10 +483,10 @@ export function FamilyPage() {
         )}
       </Surface>
 
-      <Surface className="p-5 sm:p-6">
+      <Surface className="app-section-surface">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="app-card-title text-[1.08rem]">{tFamily(language, "inviteTitle")}</h2>
+            <h2 className="app-card-title">{tFamily(language, "inviteTitle")}</h2>
             <p className="mt-1.5 text-sm leading-6 text-muted">
               {tFamily(language, "inviteDescription")}
             </p>
@@ -504,7 +504,7 @@ export function FamilyPage() {
               type="button"
               onClick={() => createInviteMutation.mutate()}
               disabled={createInviteMutation.isPending}
-              className="soft-button-primary mt-4 inline-flex min-h-[3rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5 sm:text-[0.93rem]"
+              className="soft-button-primary app-btn-primary-md mt-4 inline-flex disabled:opacity-50"
             >
               {createInviteMutation.isPending
                 ? tFamily(language, "creatingInvite")
@@ -528,7 +528,7 @@ export function FamilyPage() {
                   <button
                     type="button"
                     onClick={handleCopyInvite}
-                    className="soft-button-secondary inline-flex min-h-[2.8rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em]"
+                    className="soft-button-secondary app-btn-secondary-md inline-flex"
                   >
                     {inviteCopied
                       ? tFamily(language, "inviteCopied")
@@ -713,7 +713,7 @@ function MemberCard({
                 setIsEditing(false);
               }}
               disabled={isPending || !displayName.trim()}
-              className="soft-button-primary inline-flex min-h-[3rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5 sm:text-[0.93rem]"
+              className="app-btn-primary-md soft-button-primary inline-flex min-h-[3rem] items-center justify-center px-4 disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5"
             >
               {isPending ? tFamily(language, "saving") : tFamily(language, "saveProfile")}
             </button>

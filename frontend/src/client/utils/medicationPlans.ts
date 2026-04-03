@@ -93,10 +93,10 @@ export function buildWeightDoseHint(
   const concentration = parseMedicineConcentration(medicine?.medicineConcentration ?? null);
   if (concentration) {
     const totalMl = totalMg / concentration.mgPerMl;
-    return `По весу: ${formatDecimal(totalMg)} мг, это примерно ${formatDecimal(totalMl)} мл.`;
+    return `Проверка по весу: примерно ${formatDecimal(totalMg)} мг (около ${formatDecimal(totalMl)} мл).`;
   }
 
-  return `По весу: ${formatDecimal(totalMg)} мг. Пересчёт в мл лучше проверить вручную по концентрации упаковки.`;
+  return `Проверка по весу: примерно ${formatDecimal(totalMg)} мг. Для мл сверьтесь с концентрацией на упаковке.`;
 }
 
 export function getEpisodeMedicationReminder(

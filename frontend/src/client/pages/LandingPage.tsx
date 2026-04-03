@@ -357,7 +357,7 @@ export function LandingPage() {
                 {copy.landing.sections.children.cards.map((item) => (
                   <Surface
                     key={item.title}
-                    className="landing-feature-card rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-4"
+                    className="landing-feature-card landing-hero-card-item rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-4"
                   >
                     <div className="flex flex-col gap-2">
                       <h3 className="landing-card-title text-[1.02rem] font-semibold leading-7 text-foreground">
@@ -632,8 +632,15 @@ export function LandingPage() {
                         ? copy.landing.hero.themeToggleAriaDark
                         : copy.landing.hero.themeToggleAriaLight
                     }
+                    title={
+                      theme === "light"
+                        ? copy.landing.hero.themeToggleAriaDark
+                        : copy.landing.hero.themeToggleAriaLight
+                    }
                   >
-                    {theme === "light" ? copy.common.themeDarkText : copy.common.themeLightText}
+                    <span aria-hidden="true" className="inline-flex">
+                      {theme === "light" ? <LandingMoonIcon /> : <LandingSunIcon />}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -911,6 +918,40 @@ function HeroStethoscopeIcon() {
     >
       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
       <path d="M3 12h4.5l1.5 -6l4 12l2 -9l1.5 3h4.5" />
+    </svg>
+  );
+}
+
+function LandingMoonIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-[1rem] w-[1rem] fill-none stroke-current"
+    >
+      <path
+        d="M14.5 3.5a7.9 7.9 0 1 0 6 13.05A8.7 8.7 0 0 1 14.5 3.5Z"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function LandingSunIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-[1rem] w-[1rem] fill-none stroke-current"
+    >
+      <circle cx="12" cy="12" r="4" strokeWidth="1.8" />
+      <path
+        d="M12 2.75v2.1M12 19.15v2.1M21.25 12h-2.1M4.85 12h-2.1M18.54 5.46l-1.49 1.49M6.95 17.05l-1.49 1.49M18.54 18.54l-1.49-1.49M6.95 6.95 5.46 5.46"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

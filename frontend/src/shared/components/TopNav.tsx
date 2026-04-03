@@ -36,8 +36,8 @@ export function TopNav({ links }: { links: LayoutNavLink[] }) {
               end={to === "/"}
               className={() =>
                 [
-                  "flex min-h-[3.45rem] items-center justify-center gap-2.5 rounded-full px-4 py-3 text-center text-[0.98rem] font-extrabold tracking-[-0.04em] shadow-[0_14px_28px_-24px_rgba(15,23,42,0.22)] transition-colors",
-                  isActive ? "soft-tab-active" : "soft-tab",
+                  "app-primary-tab flex min-h-[3.45rem] items-center justify-center gap-2.5 rounded-full px-4 py-3 text-center text-[0.98rem] font-extrabold tracking-[-0.04em] shadow-[0_14px_28px_-24px_rgba(15,23,42,0.22)] transition-colors",
+                  isActive ? "soft-tab-active app-primary-tab--active" : "soft-tab",
                 ].join(" ")
               }
             >

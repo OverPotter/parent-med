@@ -312,7 +312,7 @@ export function MedicineCabinetPage() {
         <button
           type="button"
           onClick={() => setView("add")}
-          className={`inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] transition-colors sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem] ${
+          className={`app-tab-md inline-flex w-full items-center justify-center transition-colors ${
             view === "add" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -324,7 +324,7 @@ export function MedicineCabinetPage() {
             setView("cabinet");
             setCabinetSearch("");
           }}
-          className={`inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] transition-colors sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem] ${
+          className={`app-tab-md inline-flex w-full items-center justify-center transition-colors ${
             view === "cabinet" ? "soft-tab-active" : "soft-tab"
           }`}
         >
@@ -583,9 +583,9 @@ function AddHouseholdMedicineForm({
   };
 
   return (
-    <Surface className="mt-4 p-4 sm:p-6">
+    <Surface className="app-section-surface mt-4">
       <div className="space-y-4">
-        <h2 className="app-card-title text-lg">{tCabinet(language, "addPack")}</h2>
+        <h2 className="app-card-title">{tCabinet(language, "addPack")}</h2>
 
         <div className="flex flex-wrap gap-4">
           <label className="min-w-0 flex-1 space-y-1.5">
@@ -670,8 +670,8 @@ function AddHouseholdMedicineForm({
                   setCatalogItem(null);
                   setSearchName("");
                 }}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
-              >
+                  className="soft-button-secondary app-btn-secondary-md inline-flex"
+                >
                 {tCabinet(language, "switchMedicine")}
               </button>
             </div>
@@ -850,7 +850,7 @@ function AddHouseholdMedicineForm({
                   type="button"
                   onClick={handleAddSelected}
                   disabled={!expiryDate || createHouseholdMutation.isPending}
-                  className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
+                  className="soft-button-primary app-btn-primary-md inline-flex w-full disabled:opacity-50 sm:w-auto"
                 >
                   {tCabinet(language, "addToKit")}
                 </button>
@@ -861,7 +861,7 @@ function AddHouseholdMedicineForm({
                   disabled={
                     !newMedicineName.trim() || !expiryDate || createHouseholdMutation.isPending
                   }
-                  className="soft-button-primary inline-flex min-h-[2.95rem] w-full items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5 sm:text-[0.92rem]"
+                  className="soft-button-primary app-btn-primary-md inline-flex w-full disabled:opacity-50 sm:w-auto"
                 >
                   {tCabinet(language, "addOwnToKit")}
                 </button>
@@ -882,7 +882,7 @@ function AddHouseholdMedicineForm({
                   setNewMedicineDosage("");
                   setFormError(null);
                 }}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:w-auto sm:px-4 sm:text-[0.89rem]"
+                className="soft-button-secondary app-btn-secondary-md inline-flex w-full sm:w-auto"
               >
                 {tCabinet(language, "reset")}
               </button>
@@ -1135,14 +1135,14 @@ function MedicineItemCard({
                   <button
                     type="button"
                     onClick={() => setIsDetailsExpanded((value) => !value)}
-                    className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                    className="app-btn-secondary-md soft-button-secondary inline-flex w-full items-center justify-center px-3.5"
                   >
                     {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsDeleteConfirmOpen(true)}
-                    className="soft-button-danger inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                    className="app-btn-danger-md soft-button-danger inline-flex w-full items-center justify-center px-3.5"
                   >
                     {tCabinet(language, "writeOff")}
                   </button>
@@ -1294,7 +1294,7 @@ function MedicineItemCard({
                 <button
                   type="button"
                   onClick={() => setIsDetailsExpanded((value) => !value)}
-                  className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                  className="app-btn-secondary-md soft-button-secondary inline-flex w-full items-center justify-center px-3.5"
                 >
                   {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
                 </button>
@@ -1302,7 +1302,7 @@ function MedicineItemCard({
                   <button
                     type="button"
                     onClick={() => setIsEditing((value) => !value)}
-                    className="soft-button-secondary inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                    className="app-btn-secondary-md soft-button-secondary inline-flex w-full items-center justify-center px-3.5"
                   >
                     {isEditing ? tCabinet(language, "close") : tCabinet(language, "newPack")}
                   </button>
@@ -1310,7 +1310,7 @@ function MedicineItemCard({
                 <button
                   type="button"
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="soft-button-danger inline-flex min-h-[2.85rem] w-full items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                  className="app-btn-danger-md soft-button-danger inline-flex w-full items-center justify-center px-3.5"
                 >
                   {tCabinet(language, "writeOff")}
                 </button>
@@ -1322,7 +1322,7 @@ function MedicineItemCard({
               <button
                 type="button"
                 onClick={() => setIsDetailsExpanded((value) => !value)}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                className="app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5"
               >
                 {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
               </button>
@@ -1330,7 +1330,7 @@ function MedicineItemCard({
                 <button
                   type="button"
                   onClick={() => setIsEditing((value) => !value)}
-                  className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                  className="app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5"
                 >
                   {isEditing ? tCabinet(language, "close") : tCabinet(language, "newPack")}
                 </button>
@@ -1338,7 +1338,7 @@ function MedicineItemCard({
               <button
                 type="button"
                 onClick={() => setIsDeleteConfirmOpen(true)}
-                className="soft-button-danger inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+                className="app-btn-danger-md soft-button-danger inline-flex items-center justify-center px-3.5"
               >
                 {tCabinet(language, "writeOff")}
               </button>
@@ -1446,7 +1446,7 @@ function MedicineItemCard({
                   updateMutation.isPending ||
                   (isOwnMedicine && (!medicineName.trim() || !medicineForm.trim()))
                 }
-                className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
+                className="app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4 disabled:opacity-50 sm:px-5"
               >
                 {tCabinet(language, "save")}
               </button>

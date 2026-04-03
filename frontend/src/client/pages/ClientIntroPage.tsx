@@ -10,6 +10,11 @@ import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 
+const appBtnPrimaryClass =
+  "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
+const appBtnSecondaryClass =
+  "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
+
 export function ClientIntroPage() {
   const { language } = useI18n();
   const navigate = useNavigate();
@@ -91,7 +96,7 @@ export function ClientIntroPage() {
               type="button"
               onClick={handleContinue}
               disabled={isResolving}
-              className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem]"
+              className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
             >
               {isResolving
                 ? tWorkspaceIntro(language, "preparing")
@@ -101,7 +106,7 @@ export function ClientIntroPage() {
               type="button"
               onClick={handleContinue}
               disabled={isResolving}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
+              className={`${appBtnSecondaryClass} min-h-[2.85rem] disabled:opacity-50 sm:min-h-[3.05rem]`}
             >
               {tWorkspaceIntro(language, "neverShowAgain")}
             </button>
@@ -131,7 +136,7 @@ function SetupStep({
       <span className={`${toneClassName} inline-flex rounded-full px-3 py-1 text-xs`}>
         {status}
       </span>
-      <h2 className="app-card-title mt-4 text-lg">{title}</h2>
+      <h2 className="app-card-title mt-4">{title}</h2>
       <p className="mt-2 text-sm leading-7 text-muted">{description}</p>
     </div>
   );

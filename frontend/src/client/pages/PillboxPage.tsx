@@ -274,17 +274,17 @@ const medicationDays = [
 ] as const;
 
 const editorSectionCardClass =
-  "soft-card rounded-[24px] px-4 py-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] sm:rounded-[26px] sm:px-5 sm:py-5 xl:px-5.5 xl:py-5.5";
+  "app-section-surface soft-card rounded-[24px] shadow-[0_10px_28px_rgba(15,23,42,0.05)] sm:rounded-[26px] xl:px-5.5 xl:py-5.5";
 const actionPrimaryClass =
-  "soft-button-primary inline-flex min-h-[3.05rem] w-full items-center justify-center rounded-[22px] px-4 text-[0.9rem] font-semibold tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-5 sm:text-[0.94rem]";
+  "app-btn-primary-md soft-button-primary inline-flex w-full items-center justify-center rounded-[22px] font-semibold";
 const actionSecondaryClass =
-  "soft-button-secondary inline-flex min-h-[3.05rem] w-full items-center justify-center rounded-[22px] px-4 text-[0.88rem] font-semibold tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-5 sm:text-[0.92rem]";
+  "app-btn-secondary-md soft-button-secondary inline-flex w-full items-center justify-center rounded-[22px] font-semibold";
 const actionDangerClass =
-  "soft-button-danger inline-flex min-h-[3.05rem] w-full items-center justify-center rounded-[22px] px-4 text-[0.88rem] font-semibold tracking-[-0.025em] sm:min-h-[3.15rem] sm:px-5 sm:text-[0.92rem]";
+  "app-btn-danger-md soft-button-danger inline-flex w-full items-center justify-center rounded-[22px] font-semibold";
 const actionCompactDangerClass =
-  "soft-button-danger inline-flex min-h-[3.05rem] shrink-0 items-center justify-center rounded-[18px] px-3.5 text-[0.84rem] tracking-[-0.02em]";
+  "app-btn-danger-md soft-button-danger inline-flex min-h-[2.85rem] shrink-0 items-center justify-center rounded-[18px] px-3.5";
 const flowShellClass =
-  "soft-panel w-full rounded-[24px] px-3 py-3 sm:rounded-[26px] sm:px-5 sm:py-5 lg:px-6 lg:py-6";
+  "app-section-surface soft-panel w-full rounded-[24px] sm:rounded-[26px] lg:px-6 lg:py-6";
 const flowShellSpacingClass = "space-y-3 sm:space-y-3.5 lg:space-y-4";
 
 function tPillbox(
@@ -1664,7 +1664,7 @@ export function PillboxPage() {
                       : "bg-[color:var(--color-danger)]"
                   }`}
                 />
-                <p className="app-card-title text-[1.02rem] sm:text-[1.08rem]">
+                <p className="app-card-title">
                   {displayPillboxText(selectedPlan.title)}
                 </p>
               </div>
@@ -1867,7 +1867,7 @@ export function PillboxPage() {
             <RowSurface className="space-y-3 px-4 py-4 sm:px-5 sm:py-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h1 className="app-card-title text-[1.08rem] sm:text-[1.14rem]">
+                  <h1 className="app-card-title">
                     {tPillbox(language, "medsTitle")}
                   </h1>
                   <p className="mt-1 text-[0.8rem] leading-5 text-muted">
@@ -1970,7 +1970,7 @@ export function PillboxPage() {
           <div className="space-y-4 xl:space-y-5">
             <RowSurface className="space-y-3.5 px-4 py-4 sm:px-5 sm:py-5">
               <div className="space-y-1">
-                <h2 className="app-card-title text-[1rem]">{tPillbox(language, "membersTitle")}</h2>
+                <h2 className="app-card-title">{tPillbox(language, "membersTitle")}</h2>
                 <p className="text-[0.8rem] leading-5 text-muted">
                   {tPillbox(language, "membersHint")}
                 </p>
@@ -2048,7 +2048,7 @@ export function PillboxPage() {
 
               <div className="border-t border-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] pt-3.5">
                 <div className="space-y-1">
-                  <h2 className="app-card-title text-[1rem]">{tPillbox(language, "doneTitle")}</h2>
+                  <h2 className="app-card-title">{tPillbox(language, "doneTitle")}</h2>
                   <p className="text-[0.84rem] leading-5 text-muted">
                     {tPillbox(language, "doneSubtitle")}
                   </p>
@@ -2117,11 +2117,7 @@ export function PillboxPage() {
             {tPillbox(language, "hubTitle")}
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="soft-button-primary inline-flex min-h-[2.8rem] shrink-0 items-center justify-center rounded-[18px] px-3.5 text-[0.82rem] font-semibold tracking-[-0.025em]"
-        >
+        <button type="button" onClick={openCreate} className={`${actionPrimaryClass} w-auto px-3.5`}>
           {tPillbox(language, "createPlan")}
         </button>
       </div>
@@ -2141,7 +2137,7 @@ export function PillboxPage() {
                 className="block w-full cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
               >
                 <RowSurface
-                  className={`rounded-[24px] px-4 py-3.5 transition hover:translate-y-[-1px] sm:rounded-[26px] sm:px-5 sm:py-4 ${
+                  className={`app-section-surface rounded-[24px] py-3.5 transition hover:translate-y-[-1px] sm:rounded-[26px] sm:py-4 ${
                     isHighlighted
                       ? "ring-2 ring-[color:color-mix(in_srgb,var(--color-primary)_52%,white)] ring-offset-2 ring-offset-transparent"
                       : ""
@@ -2159,7 +2155,7 @@ export function PillboxPage() {
                             }`}
                             aria-hidden="true"
                           />
-                          <h2 className="app-card-title min-w-0 text-[1.08rem] sm:text-[1.12rem]">
+                          <h2 className="app-card-title min-w-0">
                             {displayPillboxText(group.title)}
                           </h2>
                         </div>
@@ -2239,7 +2235,7 @@ export function PillboxPage() {
                             markNextDoseTaken(group);
                           }}
                           disabled={takeDoseMutation.isPending}
-                          className={`${actionPrimaryClass} min-h-[2.85rem] w-full px-3.5 text-center text-[0.84rem] leading-[1.05] tracking-[-0.03em] sm:w-auto sm:min-w-[12.5rem] sm:px-4 sm:text-[0.89rem] disabled:cursor-not-allowed disabled:opacity-60`}
+                          className={`${actionPrimaryClass} min-h-[2.85rem] w-full px-3.5 text-center leading-[1.05] sm:w-auto sm:min-w-[12.5rem] sm:px-4 disabled:cursor-not-allowed disabled:opacity-60`}
                         >
                           {takeDoseMutation.isPending
                             ? tPillbox(language, "taking")

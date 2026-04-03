@@ -10,10 +10,10 @@ export function BottomTabBar({ links }: { links: LayoutNavLink[] }) {
   }
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[calc(env(safe-area-inset-bottom)+0.65rem)] pt-2 md:hidden">
-      <div className="mx-auto w-full max-w-[28rem]">
+    <nav className="app-bottom-nav-wrap fixed inset-x-0 bottom-0 z-[90] px-0 pb-0 pt-0 md:hidden">
+      <div className="w-full px-0">
         <div
-          className="grid gap-1.5"
+          className="app-bottom-nav-shell soft-nav-shell grid gap-1"
           style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}
         >
           {links.map(({ to, label, mobileLabel, activePaths, exactActivePaths }) => {
@@ -30,8 +30,8 @@ export function BottomTabBar({ links }: { links: LayoutNavLink[] }) {
                 end={to === "/"}
                 className={() =>
                   [
-                    "flex min-h-[3.7rem] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[24px] px-1.5 py-2 text-center text-[10px] font-extrabold leading-[1.05] tracking-[-0.03em] transition-colors",
-                    isActive ? "soft-tab-active" : "soft-tab",
+                    "app-bottom-nav-link flex min-h-[3.55rem] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[16px] px-1.5 py-2 text-center text-[10px] font-extrabold leading-[1.05] tracking-[-0.03em] transition-colors",
+                    isActive ? "app-bottom-nav-link--active" : "",
                   ].join(" ")
                 }
               >

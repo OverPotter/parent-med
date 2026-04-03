@@ -331,36 +331,35 @@ export function AuthPage() {
             </Link>
             <div className="auth-v3-header-actions">
               <LanguageSwitch
-                className="auth-v3-language-switch"
-                triggerClassName="auth-v3-header-control"
+                className="auth-v3-language-switch app-header-language-switch"
+                triggerClassName="app-header-utility-button"
               />
               <button
                 type="button"
-                className="auth-v3-theme-button auth-v3-header-control"
+                className="soft-theme-toggle app-header-theme-toggle"
                 onClick={toggleTheme}
                 aria-label={
                   theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel
                 }
                 title={theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel}
               >
-                <span aria-hidden="true">{theme === "light" ? <MoonIcon /> : <SunIcon />}</span>
-                <span className="auth-v3-theme-button-text">
-                  {theme === "light" ? copy.common.themeDarkText : copy.common.themeLightText}
+                <span
+                  aria-hidden="true"
+                  className={[
+                    "soft-theme-toggle__icon",
+                    theme === "light" ? "soft-theme-toggle__icon--moon" : "soft-theme-toggle__icon--sun",
+                  ].join(" ")}
+                >
+                  {theme === "light" ? <MoonIcon /> : <SunIcon />}
                 </span>
               </button>
-              <Link
-                to="/"
-                className="auth-v3-ghost-button auth-v3-home-link auth-v3-header-control"
-              >
+              <Link to="/" className="app-header-utility-button auth-v3-home-link">
                 {copy.common.goHome}
               </Link>
             </div>
           </div>
           <div className="auth-v3-mobile-home-wrap">
-            <Link
-              to="/"
-              className="auth-v3-ghost-button auth-v3-header-control auth-v3-mobile-home-link"
-            >
+            <Link to="/" className="app-header-utility-button auth-v3-mobile-home-link">
               {copy.common.goHome}
             </Link>
           </div>

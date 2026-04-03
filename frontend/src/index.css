@@ -236,6 +236,78 @@ p {
       0 4px 10px -12px rgb(var(--color-shadow) / 0.1);
   }
 
+  .children-card-hero {
+    border-color: color-mix(in srgb, var(--color-border) 82%, transparent) !important;
+    background:
+      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 34%),
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--color-surface-hero) 92%, transparent),
+        transparent 48%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-surface-hero) 92%, var(--color-surface)),
+        color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-soft))
+      ) !important;
+    box-shadow:
+      0 16px 38px -34px rgb(var(--color-shadow) / 0.12),
+      0 6px 16px -16px rgb(var(--color-shadow) / 0.06);
+  }
+
+  .children-card-hero--active {
+    border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-border)) !important;
+    box-shadow:
+      0 14px 30px -24px color-mix(in srgb, var(--color-danger) 26%, transparent),
+      0 5px 10px -10px rgb(var(--color-shadow) / 0.1);
+  }
+
+  [data-theme="dark"] .children-card-hero {
+    border-color: color-mix(in srgb, var(--color-border) 86%, transparent) !important;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.02) 34%),
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--color-surface-hero) 72%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-soft)) !important;
+    box-shadow:
+      0 10px 20px -24px rgb(0 0 0 / 0.32),
+      inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+
+  .children-intro-hero {
+    border-color: color-mix(in srgb, var(--color-border) 82%, transparent) !important;
+    background:
+      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 34%),
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--color-surface-hero) 90%, transparent),
+        transparent 50%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-surface-hero) 92%, var(--color-surface)),
+        color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-soft))
+      ) !important;
+    box-shadow:
+      0 16px 38px -34px rgb(var(--color-shadow) / 0.12),
+      0 6px 16px -16px rgb(var(--color-shadow) / 0.06);
+  }
+
+  [data-theme="dark"] .children-intro-hero {
+    border-color: color-mix(in srgb, var(--color-border) 86%, transparent) !important;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.02) 34%),
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--color-surface-hero) 72%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-soft)) !important;
+  }
+
   .soft-panel-muted {
     border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
     background:
@@ -288,6 +360,7 @@ p {
       inset 0 1px 0 rgb(255 255 255 / 0.04),
       0 12px 24px -28px rgb(var(--color-shadow) / 0.12);
     backdrop-filter: blur(18px);
+    overflow: visible;
   }
 
   .soft-page-intro {
@@ -572,6 +645,206 @@ p {
     border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
   }
 
+  .app-profile-menu {
+    position: relative;
+    display: inline-flex;
+    z-index: 180;
+  }
+
+  .app-header-utility-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.9rem;
+    height: 2.9rem;
+    border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-surface) 98%, transparent);
+    color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
+    padding: 0 0.92rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
+    transition:
+      background 160ms ease,
+      border-color 160ms ease,
+      transform 160ms ease;
+  }
+
+  .app-header-utility-button:hover {
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+    border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+    transform: translateY(-1px);
+  }
+
+  .app-profile-menu__trigger {
+    display: inline-flex;
+    min-height: 2.9rem;
+    height: 2.9rem;
+    max-width: 14rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+    border-radius: 9999px;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent 78%),
+      color-mix(in srgb, var(--color-surface) 98%, transparent);
+    color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
+    padding: 0.45rem 0.92rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
+    transition:
+      background 160ms ease,
+      border-color 160ms ease,
+      transform 160ms ease;
+  }
+
+  .app-profile-menu__trigger:hover {
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+    border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+    transform: translateY(-1px);
+  }
+
+  .app-profile-menu__trigger:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+
+  .app-profile-menu__panel {
+    position: absolute;
+    top: calc(100% + 0.45rem);
+    right: 0;
+    z-index: 260;
+    min-width: 13rem;
+    padding: 0.42rem;
+    border: 1px solid color-mix(in srgb, var(--color-border) 84%, transparent);
+    border-radius: 1rem;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.36), transparent 34%),
+      color-mix(in srgb, var(--color-surface-soft) 98%, transparent);
+    box-shadow:
+      0 22px 38px -24px rgb(var(--color-shadow) / 0.24),
+      inset 0 1px 0 rgb(255 255 255 / 0.34);
+    backdrop-filter: blur(18px);
+  }
+
+  .app-profile-menu__item {
+    display: flex;
+    width: 100%;
+    min-height: 2.25rem;
+    align-items: center;
+    border: 0;
+    border-radius: 0.78rem;
+    background: transparent;
+    color: color-mix(in srgb, var(--color-primary) 78%, var(--color-foreground));
+    padding: 0.52rem 0.7rem;
+    text-decoration: none;
+    text-align: left;
+    font-size: 0.77rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    cursor: pointer;
+    transition:
+      background 160ms ease,
+      color 160ms ease;
+  }
+
+  .app-profile-menu__item:hover {
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  }
+
+  .app-profile-menu__item--danger {
+    color: color-mix(in srgb, var(--color-danger) 84%, var(--color-foreground));
+  }
+
+  .app-header-language-switch .soft-language-dropdown__trigger,
+  .app-header-theme-toggle {
+    min-height: 2.9rem;
+    height: 2.9rem;
+    min-width: 2.9rem;
+    padding: 0 0.84rem;
+    font-size: 0.78rem;
+    border-radius: 9999px;
+  }
+
+  .app-header-language-switch .soft-language-dropdown__trigger {
+    min-width: 3.1rem;
+    gap: 0.22rem;
+    text-transform: uppercase;
+  }
+
+  .app-header-theme-toggle {
+    gap: 0;
+    padding: 0 0.78rem;
+  }
+
+  .app-primary-tab {
+    position: relative;
+  }
+
+  .app-primary-tab--active {
+    box-shadow:
+      0 14px 34px -20px color-mix(in srgb, var(--color-primary) 36%, transparent),
+      0 8px 22px -20px rgb(var(--color-shadow) / 0.2);
+  }
+
+  .app-bottom-nav-wrap {
+    background: transparent;
+  }
+
+  .app-bottom-nav-shell {
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-radius: 1.1rem 1.1rem 0 0;
+    padding: 0.24rem 0.34rem calc(0.02rem + env(safe-area-inset-bottom) / 4);
+  }
+
+  .app-bottom-nav-link {
+    position: relative;
+    border: 0;
+    border-radius: 0.95rem;
+    background: transparent;
+    color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
+    box-shadow: inset 0 0 0 1px transparent;
+    transition:
+      background 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
+  }
+
+  .app-bottom-nav-link:hover {
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  }
+
+  .app-bottom-nav-link:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 30%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--color-primary) 22%, transparent);
+  }
+
+  .app-bottom-nav-link--active {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.22), transparent 86%),
+      color-mix(in srgb, var(--color-primary) 16%, transparent);
+    color: color-mix(in srgb, var(--color-foreground) 92%, var(--color-primary));
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent),
+      0 6px 14px -10px color-mix(in srgb, var(--color-primary) 32%, transparent);
+    transform: translateY(-0.5px);
+  }
+
   .soft-language-dropdown {
     position: relative;
     display: inline-flex;
@@ -743,6 +1016,58 @@ p {
       transform: rotate(calc(var(--soft-theme-icon-to, 0deg) + 360deg))
         scale(var(--soft-theme-icon-scale, 1));
     }
+  }
+
+  /* Unified button chrome: align app controls with auth/register visual language */
+  .soft-theme-toggle,
+  .app-header-utility-button,
+  .app-profile-menu__trigger,
+  .soft-language-dropdown__trigger,
+  .soft-button-secondary,
+  .soft-button-danger {
+    border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent 78%),
+      color-mix(in srgb, var(--color-surface) 98%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.34),
+      0 10px 24px -22px rgb(var(--color-shadow) / 0.12);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    transition:
+      background 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease,
+      transform 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .soft-theme-toggle:hover,
+  .app-header-utility-button:hover,
+  .app-profile-menu__trigger:hover,
+  .soft-language-dropdown__trigger:hover,
+  .soft-button-secondary:hover,
+  .soft-button-danger:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.32), transparent 78%),
+      color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.36),
+      0 12px 28px -22px color-mix(in srgb, var(--color-primary) 16%, transparent);
+  }
+
+  .soft-theme-toggle:focus-visible,
+  .app-header-utility-button:focus-visible,
+  .app-profile-menu__trigger:focus-visible,
+  .soft-language-dropdown__trigger:focus-visible,
+  .soft-button-secondary:focus-visible,
+  .soft-button-danger:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent),
+      inset 0 1px 0 rgb(255 255 255 / 0.34);
   }
 
   .soft-tab {
@@ -976,6 +1301,72 @@ p {
     line-height: 1.16;
     letter-spacing: -0.05em;
     color: color-mix(in srgb, var(--color-foreground) 92%, var(--color-muted));
+  }
+
+  .app-card-description-2l {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    min-height: calc(1.6em * 2);
+  }
+
+  .app-section-surface {
+    padding: 1.25rem;
+  }
+
+  .app-btn-primary-md,
+  .app-btn-secondary-md,
+  .app-btn-danger-md {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0 1rem;
+    font-size: 0.88rem;
+    letter-spacing: -0.03em;
+  }
+
+  .app-btn-secondary-md {
+    font-size: 0.84rem;
+    letter-spacing: -0.025em;
+  }
+
+  .app-btn-danger-md {
+    font-size: 0.84rem;
+    letter-spacing: -0.03em;
+  }
+
+  .app-tab-md {
+    min-height: 2.95rem;
+    padding: 0 1rem;
+    font-size: 0.88rem;
+    letter-spacing: -0.03em;
+  }
+
+  @media (min-width: 640px) {
+    .app-section-surface {
+      padding: 1.5rem;
+    }
+
+    .app-btn-primary-md,
+    .app-btn-secondary-md,
+    .app-btn-danger-md {
+      min-height: 3.15rem;
+      padding: 0 1.25rem;
+      font-size: 0.92rem;
+    }
+
+    .app-btn-secondary-md,
+    .app-btn-danger-md {
+      font-size: 0.89rem;
+    }
+
+    .app-tab-md {
+      min-height: 3.1rem;
+      padding: 0 1.25rem;
+      font-size: 0.92rem;
+    }
   }
 
   .app-v3-background {
@@ -1766,6 +2157,8 @@ p {
   [data-theme="dark"] .soft-button-secondary,
   [data-theme="dark"] .soft-theme-toggle,
   [data-theme="dark"] .soft-language-dropdown__trigger,
+  [data-theme="dark"] .app-header-utility-button,
+  [data-theme="dark"] .app-profile-menu__trigger,
   [data-theme="dark"] .soft-tab {
     border-color: rgba(166, 149, 207, 0.2);
     background:
@@ -1790,6 +2183,8 @@ p {
   [data-theme="dark"] .soft-button-secondary:hover,
   [data-theme="dark"] .soft-theme-toggle:hover,
   [data-theme="dark"] .soft-language-dropdown__trigger:hover,
+  [data-theme="dark"] .app-header-utility-button:hover,
+  [data-theme="dark"] .app-profile-menu__trigger:hover,
   [data-theme="dark"] .soft-tab:hover {
     background:
       linear-gradient(
@@ -1830,6 +2225,20 @@ p {
       0 18px 32px -24px rgb(0 0 0 / 0.38);
   }
 
+  [data-theme="dark"] .app-profile-menu__panel {
+    border-color: color-mix(in srgb, var(--color-border) 90%, transparent);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.08), transparent 34%),
+      color-mix(in srgb, var(--color-surface-soft) 96%, transparent);
+    box-shadow:
+      0 20px 36px -24px rgb(0 0 0 / 0.32),
+      inset 0 1px 0 rgb(255 255 255 / 0.06);
+  }
+
+  [data-theme="dark"] .app-profile-menu__item:hover {
+    background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  }
+
   [data-theme="dark"] .soft-language-dropdown__option:hover {
     background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   }
@@ -1838,6 +2247,62 @@ p {
     background:
       linear-gradient(180deg, rgb(255 255 255 / 0.14), transparent 82%),
       color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  }
+
+  [data-theme="light"] .app-bottom-nav-shell {
+    border-color: color-mix(in srgb, var(--color-border) 82%, transparent);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.52), rgb(255 255 255 / 0.12) 32%, transparent 72%),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-glare-soft)),
+        color-mix(in srgb, var(--color-primary) 8%, transparent) 52%,
+        color-mix(in srgb, var(--color-surface) 94%, var(--color-primary) 6%) 100%
+      ) !important;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.42),
+      0 14px 32px -24px rgb(var(--color-shadow) / 0.2) !important;
+    backdrop-filter: blur(18px);
+  }
+
+  [data-theme="dark"] .app-bottom-nav-shell {
+    border-top-color: rgba(166, 149, 207, 0.34);
+    background:
+      linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.2) 0%,
+        rgb(255 255 255 / 0.08) 18%,
+        transparent 46%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 20%, var(--color-surface-glare-soft)),
+        color-mix(in srgb, var(--color-primary) 12%, transparent) 54%,
+        color-mix(in srgb, var(--color-surface) 94%, var(--color-primary) 6%) 100%
+      ),
+      color-mix(in srgb, var(--color-surface) 98%, transparent) !important;
+    box-shadow:
+      0 14px 32px -18px rgb(0 0 0 / 0.38),
+      inset 0 1px 0 rgb(255 255 255 / 0.08) !important;
+    backdrop-filter: blur(18px);
+  }
+
+  [data-theme="dark"] .app-bottom-nav-link {
+    color: color-mix(in srgb, var(--color-primary-focus) 24%, var(--color-foreground));
+  }
+
+  [data-theme="dark"] .app-bottom-nav-link:hover {
+    background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  }
+
+  [data-theme="dark"] .app-bottom-nav-link--active {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.14), transparent 84%),
+      color-mix(in srgb, var(--color-primary) 22%, transparent);
+    color: var(--color-foreground);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 28%, transparent),
+      0 8px 18px -12px rgb(0 0 0 / 0.34);
   }
 
   [data-theme="dark"] .soft-tab-active {
@@ -2017,6 +2482,40 @@ p {
     position: relative;
     overflow: visible;
     z-index: 20;
+  }
+
+  .app-shell-auth {
+    --app-auth-hero-top: color-mix(in srgb, var(--color-surface-hero) 92%, var(--color-surface));
+    --app-auth-hero-bottom: color-mix(
+      in srgb,
+      var(--color-surface) 96%,
+      var(--color-surface-soft)
+    );
+  }
+
+  .app-shell-auth .soft-nav-shell,
+  .app-shell-auth .soft-page-intro,
+  .app-shell-auth .soft-panel,
+  .app-shell-auth .soft-card,
+  .app-shell-auth .soft-panel-muted {
+    border-color: color-mix(in srgb, var(--color-border) 82%, transparent);
+    background:
+      linear-gradient(180deg, var(--color-surface-glare-soft), transparent 34%),
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--color-surface-hero) 90%, transparent),
+        transparent 50%
+      ),
+      linear-gradient(180deg, var(--app-auth-hero-top), var(--app-auth-hero-bottom));
+    box-shadow:
+      0 14px 30px -28px rgb(var(--color-shadow) / 0.12),
+      0 5px 12px -14px rgb(var(--color-shadow) / 0.06);
+  }
+
+  .app-shell-auth .soft-nav-shell {
+    box-shadow:
+      0 16px 34px -30px rgb(var(--color-shadow) / 0.14),
+      0 6px 14px -14px rgb(var(--color-shadow) / 0.08);
   }
 
   .landing-topbar-shell::before {
@@ -2270,11 +2769,50 @@ p {
 
   .landing-child-shell {
     border-radius: 2rem;
-    border: 1px solid rgba(159, 140, 219, 0.3);
-    background: rgba(205, 191, 241, 0.34);
-    box-shadow: 0 26px 60px -42px rgba(73, 56, 129, 0.24);
+    border: 1px solid color-mix(in srgb, var(--landing-card-border) 88%, transparent);
+    background:
+      linear-gradient(180deg, var(--landing-white), transparent 30%),
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--color-surface-hero) 76%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-soft));
+    box-shadow:
+      0 12px 28px -28px rgb(var(--color-shadow) / 0.1),
+      0 4px 12px -16px rgb(var(--color-shadow) / 0.05);
     padding: 0.75rem;
     width: 100%;
+  }
+
+  .landing-child-shell .landing-feature-card {
+    border-color: color-mix(in srgb, var(--landing-card-border) 88%, transparent);
+    background:
+      linear-gradient(180deg, var(--landing-white), transparent 32%),
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--color-surface-hero) 70%, transparent),
+        transparent 56%
+      ),
+      color-mix(in srgb, var(--color-surface) 95%, var(--color-surface-soft)) !important;
+    box-shadow:
+      0 10px 22px -24px rgb(var(--color-shadow) / 0.1),
+      0 4px 10px -14px rgb(var(--color-shadow) / 0.06);
+  }
+
+  [data-theme="dark"] .landing-child-shell .landing-feature-card {
+    border-color: color-mix(in srgb, var(--landing-card-border) 90%, transparent);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.02) 34%),
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--color-surface-hero) 56%, transparent),
+        transparent 58%
+      ),
+      color-mix(in srgb, var(--color-surface) 95%, var(--color-surface-soft)) !important;
+    box-shadow:
+      0 10px 20px -24px rgb(0 0 0 / 0.32),
+      inset 0 1px 0 rgb(255 255 255 / 0.05);
   }
 
   .landing-child-pill {
@@ -3971,25 +4509,34 @@ p {
     .app-mobile-header {
       padding: 0.95rem 1rem;
       border-radius: 1.75rem;
+      overflow: visible;
     }
 
     .app-mobile-header__row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
       gap: 0.75rem;
     }
 
-    .app-mobile-header__brand {
-      gap: 0.7rem;
-      max-width: 100%;
+    .app-mobile-header__logo-link {
+      border: 0;
+      background: transparent;
+      box-shadow: none;
     }
 
     .app-mobile-header__logo {
-      height: 2.35rem;
-      width: 2.35rem;
-      border-radius: 0.9rem;
+      height: 2.5rem;
+      width: 2.5rem;
+      border-radius: 1.15rem;
       flex: 0 0 auto;
+    }
+
+    .app-mobile-header__brand-center {
+      justify-self: center;
+      text-decoration: none;
+      min-width: 0;
+      max-width: 100%;
     }
 
     .app-mobile-header .app-brand-text {
@@ -3997,6 +4544,7 @@ p {
       max-width: min(42vw, 9rem);
       font-size: 0.98rem !important;
       letter-spacing: -0.045em;
+      text-align: center;
     }
 
     .app-mobile-header__actions {
@@ -4008,10 +4556,35 @@ p {
       margin-top: 0.1rem;
     }
 
-    .app-mobile-header__logout {
-      min-height: 2.15rem;
-      font-size: 0.7rem;
+    .app-profile-menu__trigger {
+      min-height: 2.72rem;
+      max-width: 8.4rem;
+      padding: 0.4rem 0.72rem;
+      font-size: 0.68rem;
       letter-spacing: -0.01em;
+    }
+
+    .app-header-utility-button {
+      min-height: 2.72rem;
+      height: 2.72rem;
+      padding: 0 0.72rem;
+      font-size: 0.69rem;
+    }
+
+    .app-profile-menu__panel {
+      right: 0;
+      top: calc(100% + 0.38rem);
+      min-width: 11rem;
+      max-width: calc(100vw - 1.75rem);
+      padding: 0.34rem;
+      border-radius: 0.9rem;
+    }
+
+    .app-profile-menu__item {
+      min-height: 2.1rem;
+      border-radius: 0.72rem;
+      font-size: 0.72rem;
+      padding: 0.45rem 0.58rem;
     }
 
     .soft-nav-shell {
@@ -4079,6 +4652,21 @@ p {
       min-height: 2.72rem;
       padding: 0 0.58rem 0 0.66rem;
       gap: 0.2rem;
+      font-size: 0.69rem;
+    }
+
+    .app-header-theme-toggle {
+      min-height: 2.72rem;
+      height: 2.72rem;
+      min-width: 2.72rem;
+      padding: 0 0.64rem;
+    }
+
+    .app-header-language-switch .soft-language-dropdown__trigger {
+      min-height: 2.72rem;
+      height: 2.72rem;
+      min-width: 2.95rem;
+      padding: 0 0.56rem;
       font-size: 0.69rem;
     }
 
@@ -4199,9 +4787,10 @@ p {
     }
 
     .auth-v3-mobile-home-link {
-      min-height: 2.55rem;
-      padding-inline: 0.95rem;
-      font-size: 0.82rem;
+      min-height: 2.72rem;
+      height: 2.72rem;
+      padding: 0 0.72rem;
+      font-size: 0.69rem;
     }
 
     .auth-v3-ghost-button {
@@ -4209,17 +4798,26 @@ p {
       padding-inline: 0.9rem;
     }
 
-    .auth-v3-theme-button,
-    .auth-v3-ghost-button,
-    .auth-v3-language-switch .soft-language-dropdown__trigger {
-      min-height: 2.66rem;
-      height: 2.66rem;
-      font-size: 0.8rem;
-      padding-inline: 0.82rem;
+    .auth-v3-header-actions .app-header-utility-button,
+    .auth-v3-header-actions .app-header-theme-toggle,
+    .auth-v3-header-actions .app-header-language-switch .soft-language-dropdown__trigger {
+      min-height: 2.72rem;
+      height: 2.72rem;
+      font-size: 0.69rem;
     }
 
-    .auth-v3-theme-button {
-      min-width: 2.66rem;
+    .auth-v3-header-actions .app-header-utility-button {
+      padding: 0 0.72rem;
+    }
+
+    .auth-v3-header-actions .app-header-theme-toggle {
+      min-width: 2.72rem;
+      padding: 0 0.64rem;
+    }
+
+    .auth-v3-header-actions .app-header-language-switch .soft-language-dropdown__trigger {
+      min-width: 2.95rem;
+      padding: 0 0.56rem;
     }
 
     .auth-v3-theme-button-text,
@@ -4249,9 +4847,9 @@ p {
   }
 
   @media (max-width: 639px) {
-    [data-theme="light"] .soft-panel,
-    [data-theme="light"] .soft-card,
-    [data-theme="light"] .soft-page-intro,
+    [data-theme="light"] .soft-panel:not(.children-intro-hero),
+    [data-theme="light"] .soft-card:not(.children-card-hero),
+    [data-theme="light"] .soft-page-intro:not(.children-intro-hero),
     [data-theme="light"] .soft-hero {
       background: linear-gradient(
         180deg,
@@ -4259,6 +4857,21 @@ p {
         color-mix(in srgb, var(--color-primary) 6%, white) 30%,
         color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-soft)) 100%
       );
+    }
+
+    [data-theme="light"] .app-shell-auth .soft-nav-shell,
+    [data-theme="light"] .app-shell-auth .soft-page-intro,
+    [data-theme="light"] .app-shell-auth .soft-panel,
+    [data-theme="light"] .app-shell-auth .soft-card,
+    [data-theme="light"] .app-shell-auth .soft-panel-muted {
+      background:
+        linear-gradient(180deg, var(--color-surface-glare-soft), transparent 34%),
+        radial-gradient(
+          circle at top,
+          color-mix(in srgb, var(--color-surface-hero) 90%, transparent),
+          transparent 50%
+        ),
+        linear-gradient(180deg, var(--app-auth-hero-top), var(--app-auth-hero-bottom)) !important;
     }
 
     [data-theme="light"] .v3-doodle-layer {
@@ -4274,6 +4887,39 @@ p {
       opacity: 1;
       color: rgba(205, 153, 18, 1);
       background: rgba(255, 244, 186, 0.18);
+    }
+
+    [data-theme="light"] .landing-page .landing-child-hero-shell {
+      background:
+        linear-gradient(180deg, var(--color-surface-glare-soft), transparent 34%),
+        radial-gradient(
+          circle at top,
+          color-mix(in srgb, var(--color-surface-hero) 92%, transparent),
+          transparent 48%
+        ),
+        linear-gradient(180deg, var(--landing-hero-top), var(--landing-hero-bottom)) !important;
+    }
+
+    [data-theme="light"] .landing-page .landing-child-shell {
+      background:
+        linear-gradient(180deg, var(--landing-white), transparent 30%),
+        radial-gradient(
+          circle at top,
+          color-mix(in srgb, var(--color-surface-hero) 76%, transparent),
+          transparent 52%
+        ),
+        color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-soft)) !important;
+    }
+
+    [data-theme="light"] .landing-page .landing-feature-card {
+      background:
+        linear-gradient(180deg, var(--landing-white), transparent 32%),
+        radial-gradient(
+          circle at top,
+          color-mix(in srgb, var(--color-surface-hero) 70%, transparent),
+          transparent 56%
+        ),
+        color-mix(in srgb, var(--color-surface) 95%, var(--color-surface-soft)) !important;
     }
   }
 }

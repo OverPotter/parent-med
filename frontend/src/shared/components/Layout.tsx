@@ -62,6 +62,105 @@ function SunIcon() {
   );
 }
 
+function ProfileMenu({
+  accountLabel,
+  servicesLabel,
+  profileLabel,
+  logoutLabel,
+  menuLabel,
+  onLogout,
+}: {
+  accountLabel: string;
+  servicesLabel: string;
+  profileLabel: string;
+  logoutLabel: string;
+  menuLabel: string;
+  onLogout: () => Promise<void>;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!rootRef.current) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
+      if (!rootRef.current.contains(target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={rootRef} className="app-profile-menu">
+      <button
+        type="button"
+        className="app-profile-menu__trigger"
+        aria-label={menuLabel}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((prev) => !prev)}
+      >
+        {accountLabel}
+      </button>
+      {isOpen ? (
+        <div className="app-profile-menu__panel" role="menu">
+          <Link
+            to="/more"
+            role="menuitem"
+            className="app-profile-menu__item"
+            onClick={() => setIsOpen(false)}
+          >
+            {servicesLabel}
+          </Link>
+          <Link
+            to="/account"
+            role="menuitem"
+            className="app-profile-menu__item"
+            onClick={() => setIsOpen(false)}
+          >
+            {profileLabel}
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            className="app-profile-menu__item app-profile-menu__item--danger"
+            onClick={() => {
+              setIsOpen(false);
+              void onLogout();
+            }}
+          >
+            {logoutLabel}
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function Layout({
   children,
   navLinks = [],
@@ -72,6 +171,8 @@ export function Layout({
   const { theme, toggleTheme, currentFamilyName, accountLogin, accountDisplayName, clearSession } =
     useAppStore();
   const accountLabel = accountDisplayName || accountLogin || copy.common.userFallback;
+  const resolvedFamilyName =
+    currentFamilyName?.trim() === "Семья тестовогоата" ? "Семья Тестовых" : currentFamilyName;
   const hasMobileNav = mobileNavLinks.length > 0;
 
   const spinTimeoutRef = useRef<number | null>(null);
@@ -120,11 +221,9 @@ export function Layout({
 
   const themeToggleLabel =
     theme === "light" ? copy.common.themeDarkLabel : copy.common.themeLightLabel;
-  const themeToggleText =
-    theme === "light" ? copy.common.themeDarkText : copy.common.themeLightText;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
+    <div className="app-shell-auth min-h-screen flex flex-col bg-background text-foreground">
       <div className="app-v3-background" aria-hidden="true">
         <V3BackgroundDoodles />
         <div className="app-v3-decor app-v3-decor-a" />
@@ -132,35 +231,35 @@ export function Layout({
         <div className="app-v3-decor app-v3-decor-c" />
         <div className="app-v3-noise" />
       </div>
-      <header className="min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
-        <div className="relative z-[1] mx-auto max-w-5xl">
+      <header className="relative z-30 min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
+        <div className="relative z-30 mx-auto max-w-5xl">
           <div className="md:hidden">
             <div className="soft-nav-shell app-mobile-header rounded-[30px] px-3.5 py-3.5">
               <div className="flex flex-col gap-3">
-                <div className="app-mobile-header__row flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      to="/"
-                      className="app-mobile-header__brand inline-flex min-w-0 items-center gap-3"
-                    >
-                      <img
-                        src="/pwa-icon.png"
-                        alt=""
-                        className="app-mobile-header__logo h-11 w-11 rounded-[20px]"
-                      />
-                      <div className="min-w-0">
-                        <BrandWordmark className="app-brand-text truncate" />
-                        <span className="hidden truncate text-[11px] text-muted sm:block">
-                          {copy.layout.familyWorkspace}
-                        </span>
-                      </div>
-                    </Link>
-                  </div>
+                <div className="app-mobile-header__row">
+                  <Link
+                    to="/"
+                    className="app-mobile-header__logo-link inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[1.15rem]"
+                    aria-label={copy.common.brandName}
+                  >
+                    <img
+                      src="/pwa-icon.png"
+                      alt=""
+                      className="app-mobile-header__logo h-10 w-10 rounded-[1.15rem]"
+                    />
+                  </Link>
+                  <Link
+                    to="/"
+                    className="app-mobile-header__brand-center inline-flex min-w-0 items-center justify-center"
+                    aria-label={copy.common.brandName}
+                  >
+                    <BrandWordmark className="app-brand-text app-mobile-header__brand-text truncate" />
+                  </Link>
                   <div className="app-mobile-header__actions flex shrink-0 items-center gap-2">
-                    <LanguageSwitch />
+                    <LanguageSwitch className="app-header-language-switch" />
                     <button
                       type="button"
-                      className="soft-theme-toggle"
+                      className="soft-theme-toggle app-header-theme-toggle"
                       onClick={handleThemeToggle}
                       aria-label={themeToggleLabel}
                       title={themeToggleLabel}
@@ -180,32 +279,29 @@ export function Layout({
                       >
                         {theme === "light" ? <MoonIcon /> : <SunIcon />}
                       </span>
-                      <span className="app-mobile-header__theme-text text-xs font-semibold">
-                        {themeToggleText}
-                      </span>
                     </button>
+                    {accountLogin ? (
+                      <ProfileMenu
+                        accountLabel={accountLabel}
+                        servicesLabel={copy.clientLayout.nav.more}
+                        profileLabel={copy.common.profile}
+                        logoutLabel={copy.common.logoutFromAccount}
+                        menuLabel={copy.common.profileMenuLabel}
+                        onLogout={handleLogout}
+                      />
+                    ) : (
+                      <Link to="/auth?mode=login" className="app-header-utility-button">
+                        {copy.common.login}
+                      </Link>
+                    )}
                   </div>
                 </div>
-                {(showCurrentFamily && currentFamilyName) || accountLogin ? (
+                {showCurrentFamily && resolvedFamilyName ? (
                   <div className="app-mobile-header__meta flex flex-wrap items-center gap-2">
-                    {showCurrentFamily && currentFamilyName ? (
+                    {showCurrentFamily && resolvedFamilyName ? (
                       <span className="soft-pill inline-flex max-w-full items-center truncate rounded-full px-3.5 py-1.5 text-[11px]">
-                        {currentFamilyName}
+                        {resolvedFamilyName}
                       </span>
-                    ) : null}
-                    {accountLogin ? (
-                      <span className="soft-pill inline-flex max-w-[11rem] items-center truncate rounded-full px-3.5 py-1.5 text-[11px]">
-                        {accountLabel}
-                      </span>
-                    ) : null}
-                    {accountLogin ? (
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="app-mobile-header__logout soft-button-secondary inline-flex min-h-[2.25rem] items-center justify-center rounded-full px-3.5 py-1.5 text-[11px]"
-                      >
-                        {copy.common.logout}
-                      </button>
                     ) : null}
                   </div>
                 ) : null}
@@ -214,7 +310,7 @@ export function Layout({
           </div>
 
           <div className="hidden md:block md:py-2">
-            <div className="soft-nav-shell rounded-[32px] px-4 py-3.5">
+            <div className="soft-nav-shell relative z-20 rounded-[32px] px-4 py-3.5">
               <div className="flex items-center justify-between gap-5">
                 <Link to="/" className="inline-flex min-w-0 items-center gap-3">
                   <img src="/pwa-icon.png" alt="" className="h-10 w-10 rounded-[1.15rem]" />
@@ -222,20 +318,31 @@ export function Layout({
                 </Link>
 
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-                  {showCurrentFamily && currentFamilyName && (
-                    <span className="soft-pill max-w-[12rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                      {currentFamilyName}
-                    </span>
-                  )}
-                  {accountLogin && (
-                    <span className="soft-pill max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-xs">
-                      {accountLabel}
-                    </span>
-                  )}
-                  <LanguageSwitch />
+                  <div className="flex min-w-0 items-center gap-2">
+                    {showCurrentFamily && resolvedFamilyName && (
+                      <span className="soft-pill max-w-[12rem] truncate rounded-full px-3.5 py-1.5 text-xs">
+                        {resolvedFamilyName}
+                      </span>
+                    )}
+                    {accountLogin ? (
+                      <ProfileMenu
+                        accountLabel={accountLabel}
+                        servicesLabel={copy.clientLayout.nav.more}
+                        profileLabel={copy.common.profile}
+                        logoutLabel={copy.common.logoutFromAccount}
+                        menuLabel={copy.common.profileMenuLabel}
+                        onLogout={handleLogout}
+                      />
+                    ) : (
+                      <Link to="/auth?mode=login" className="app-header-utility-button">
+                        {copy.common.login}
+                      </Link>
+                    )}
+                  </div>
+                  <LanguageSwitch className="app-header-language-switch" />
                   <button
                     type="button"
-                    className="soft-theme-toggle"
+                    className="soft-theme-toggle app-header-theme-toggle"
                     onClick={handleThemeToggle}
                     aria-label={themeToggleLabel}
                     title={themeToggleLabel}
@@ -255,23 +362,13 @@ export function Layout({
                     >
                       {theme === "light" ? <MoonIcon /> : <SunIcon />}
                     </span>
-                    <span className="text-xs font-semibold">{themeToggleText}</span>
                   </button>
-                  {accountLogin && (
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="soft-button-secondary rounded-full px-3.5 py-1.5 text-xs"
-                    >
-                      {copy.common.logout}
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
 
             {navLinks.length > 0 && (
-              <div className="mt-3 px-2">
+              <div className="relative z-10 mt-3 px-2">
                 <TopNav links={navLinks} />
               </div>
             )}

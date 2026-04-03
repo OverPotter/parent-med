@@ -37,8 +37,10 @@ export function MorePage() {
               <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="app-card-title text-[1.02rem]">{item.title}</p>
-                    <p className="mt-1.5 text-sm leading-6 text-muted">{item.description}</p>
+                    <p className="app-card-title">{item.title}</p>
+                    <p className="app-card-description-2l mt-1.5 text-sm leading-6 text-muted">
+                      {item.description}
+                    </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2 self-center">
                     <span className="soft-pill-primary hidden rounded-full px-3.5 py-1.5 text-[11px] md:inline-flex">
