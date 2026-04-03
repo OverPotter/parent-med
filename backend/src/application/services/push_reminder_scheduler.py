@@ -83,9 +83,7 @@ def _format_due_body(
     if language == "en":
         medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
         return (
-            f"For: {child_name}\n"
-            f"Give: {medicine_line}\n"
-            f"When: now ({scheduled_time_label})"
+            f"For: {child_name}\n" f"Give: {medicine_line}\n" f"When: now ({scheduled_time_label})"
         )
     medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
     return f"Кому: {child_name}\nЧто: {medicine_line}\nКогда: сейчас ({scheduled_time_label})"
