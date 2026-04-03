@@ -628,7 +628,7 @@ export function LandingPage() {
                 <div className="landing-hero-reset-actions-inline">
                   <Link
                     to="/auth?mode=login"
-                    className="landing-secondary-button landing-topline-button rounded-full px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                    className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
                   >
                     {copy.landing.hero.login}
                   </Link>
@@ -639,7 +639,7 @@ export function LandingPage() {
                   <button
                     type="button"
                     onClick={toggleTheme}
-                    className="landing-secondary-button landing-topline-button landing-theme-toggle rounded-full px-4 py-2 text-sm"
+                    className="landing-topline-button landing-theme-toggle rounded-full"
                     aria-label={
                       theme === "light"
                         ? copy.landing.hero.themeToggleAriaDark
