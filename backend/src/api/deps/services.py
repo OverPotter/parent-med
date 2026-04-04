@@ -3,6 +3,7 @@
 from fastapi import Depends
 
 from src.api.deps.repositories import (
+    get_account_feedback_repo,
     get_account_repo,
     get_account_session_repo,
     get_administration_repo,
@@ -20,6 +21,7 @@ from src.api.deps.repositories import (
     get_temperature_entry_repo,
     get_weight_entry_repo,
 )
+from src.application.services.account_feedback_service import AccountFeedbackService
 from src.application.services.administration_service import AdministrationService
 from src.application.services.auth_service import AuthService
 from src.application.services.base_auth_service import BaseAuthService
@@ -38,6 +40,12 @@ from src.application.services.pillbox_service import PillboxService
 from src.application.services.push_notification_service import PushNotificationService
 from src.application.services.temperature_entry_service import TemperatureEntryService
 from src.application.services.weight_entry_service import WeightEntryService
+
+
+def get_account_feedback_service(
+    feedback_repo=Depends(get_account_feedback_repo),
+) -> AccountFeedbackService:
+    return AccountFeedbackService(feedback_repo=feedback_repo)
 
 
 def get_auth_service(

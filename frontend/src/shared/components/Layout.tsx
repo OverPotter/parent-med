@@ -160,11 +160,7 @@ function ProfileMenu({
   );
 }
 
-export function Layout({
-  children,
-  navLinks = [],
-  mobileNavLinks = [],
-}: LayoutProps) {
+export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutProps) {
   const { copy } = useI18n();
   const { effectiveTheme, toggleTheme, accountLogin, accountDisplayName, clearSession } =
     useAppStore();
@@ -254,14 +250,22 @@ export function Layout({
                   </Link>
                   <div className="app-mobile-header__actions flex shrink-0 items-center gap-2">
                     {isAuthenticated ? (
-                      <ProfileMenu
-                        accountLabel={accountLabel}
-                        servicesLabel={copy.clientLayout.nav.more}
-                        profileLabel={copy.common.profile}
-                        logoutLabel={copy.common.logoutFromAccount}
-                        menuLabel={copy.common.profileMenuLabel}
-                        onLogout={handleLogout}
-                      />
+                      <>
+                        <Link
+                          to="/feedback"
+                          className="app-header-utility-button max-w-[5.5rem] truncate sm:max-w-none"
+                        >
+                          {copy.feedback.navShort}
+                        </Link>
+                        <ProfileMenu
+                          accountLabel={accountLabel}
+                          servicesLabel={copy.clientLayout.nav.more}
+                          profileLabel={copy.common.profile}
+                          logoutLabel={copy.common.logoutFromAccount}
+                          menuLabel={copy.common.profileMenuLabel}
+                          onLogout={handleLogout}
+                        />
+                      </>
                     ) : (
                       <>
                         <LanguageSwitch className="app-header-language-switch" />
@@ -302,7 +306,11 @@ export function Layout({
           <div className="hidden md:block md:py-2">
             <div className="soft-nav-shell relative z-20 rounded-[32px] px-4 py-3.5">
               <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-5">
-                <Link to="/" className="inline-flex items-center" aria-label={copy.common.brandName}>
+                <Link
+                  to="/"
+                  className="inline-flex items-center"
+                  aria-label={copy.common.brandName}
+                >
                   <img src="/pwa-icon.png" alt="" className="h-10 w-10 rounded-[1.15rem]" />
                 </Link>
 
@@ -317,6 +325,9 @@ export function Layout({
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
                   {isAuthenticated ? (
                     <div className="flex min-w-0 items-center gap-2">
+                      <Link to="/feedback" className="app-header-utility-button shrink-0">
+                        {copy.feedback.navShort}
+                      </Link>
                       <ProfileMenu
                         accountLabel={accountLabel}
                         servicesLabel={copy.clientLayout.nav.more}

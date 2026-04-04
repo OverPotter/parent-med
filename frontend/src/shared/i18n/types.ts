@@ -228,6 +228,20 @@ export interface Translations {
       cards: Array<{ title: string; steps: string[] }>;
     };
   };
+  feedback: {
+    navShort: string;
+    pageTitle: string;
+    pageSubtitle: string;
+    privacyHint: string;
+    placeholder: string;
+    submit: string;
+    submitting: string;
+    success: string;
+    errors: {
+      rateLimited: string;
+      generic: string;
+    };
+  };
   clientHome: {
     sections: Array<{
       title: string;

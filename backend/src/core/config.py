@@ -3,7 +3,7 @@
 import json
 from typing import Annotated, Any
 
-from pydantic import BeforeValidator
+from pydantic import BeforeValidator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_settings.sources.types import NoDecode
 
@@ -79,6 +79,12 @@ class Settings(BaseSettings):
     web_push_public_key: str | None = None
     web_push_private_key: str | None = None
     web_push_subject: str = "mailto:dev@example.com"
+    feedback_rate_limit_per_hour: int = Field(
+        default=5,
+        ge=1,
+        le=10_000,
+        description="Максимум обращений обратной связи с одного аккаунта за час",
+    )
 
     @property
     def web_push_enabled(self) -> bool:

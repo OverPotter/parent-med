@@ -10,7 +10,8 @@ import { Surface } from "@shared/components/Surface";
 import { useAppStore } from "@shared/store/useAppStore";
 
 type Mode = "register" | "login";
-const appBtnPrimaryClass = "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
+const appBtnPrimaryClass =
+  "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
 
 function roleLabel(role: string): string {
   return role === "owner" ? "Владелец" : "Участник семьи";

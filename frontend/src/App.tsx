@@ -72,6 +72,9 @@ const IllnessHistoryPage = lazy(() =>
 const MorePage = lazy(() =>
   import("@client/pages/MorePage").then((module) => ({ default: module.MorePage }))
 );
+const FeedbackPage = lazy(() =>
+  import("@client/pages/FeedbackPage").then((module) => ({ default: module.FeedbackPage }))
+);
 const AdminLayout = lazy(() =>
   import("@admin/layout/AdminLayout").then((module) => ({ default: module.AdminLayout }))
 );
@@ -163,6 +166,7 @@ function RouteScrollReset() {
       "/family",
       "/account",
       "/about",
+      "/feedback",
     ].some((path) => location.pathname === path);
 
     if (!isMobileViewport || !isPrimaryMenuRoute) {
@@ -485,6 +489,7 @@ export default function App() {
                 <Route path="illnesses/history" element={<IllnessHistoryPage />} />
                 <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
                 <Route path="more" element={<MorePage />} />
+                <Route path="feedback" element={<FeedbackPage />} />
                 <Route path="account" element={<AccountPage />} />
                 <Route path="about" element={<AboutPage />} />
                 <Route path="children/:childId/illness" element={<ChildIllnessPage />} />

@@ -421,9 +421,7 @@ export function AccountPage() {
               {tAccount(language, "interfaceLanguage")}
             </p>
             <div className="account-language-switch mt-3">
-              <LanguageSwitch
-                triggerClassName="soft-button-secondary min-h-[2.85rem] px-3.5 text-[0.84rem] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
-              />
+              <LanguageSwitch triggerClassName="soft-button-secondary min-h-[2.85rem] px-3.5 text-[0.84rem] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]" />
             </div>
           </div>
 

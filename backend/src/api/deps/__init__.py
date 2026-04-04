@@ -3,6 +3,7 @@
 from src.api.deps.auth import get_bearer_token, get_current_account
 from src.api.deps.database import get_db_session
 from src.api.deps.repositories import (
+    get_account_feedback_repo,
     get_account_repo,
     get_account_session_repo,
     get_administration_repo,
@@ -21,6 +22,7 @@ from src.api.deps.repositories import (
     get_weight_entry_repo,
 )
 from src.api.deps.services import (
+    get_account_feedback_service,
     get_administration_service,
     get_auth_service,
     get_child_service,
@@ -43,6 +45,7 @@ __all__ = [
     "get_bearer_token",
     "get_current_account",
     "get_account_repo",
+    "get_account_feedback_repo",
     "get_account_session_repo",
     "get_family_repo",
     "get_family_invite_repo",
@@ -58,6 +61,7 @@ __all__ = [
     "get_temperature_entry_repo",
     "get_administration_repo",
     "get_episode_medication_plan_repo",
+    "get_account_feedback_service",
     "get_auth_service",
     "get_family_service",
     "get_family_invite_service",

@@ -86,7 +86,11 @@ export function LanguageSwitch({
       </button>
 
       {isOpen ? (
-        <div className="soft-language-dropdown__menu" role="menu" aria-label={copy.common.languageSwitcherLabel}>
+        <div
+          className="soft-language-dropdown__menu"
+          role="menu"
+          aria-label={copy.common.languageSwitcherLabel}
+        >
           {(["ru", "en"] as const).map((option) => (
             <button
               key={option}

@@ -670,8 +670,8 @@ function AddHouseholdMedicineForm({
                   setCatalogItem(null);
                   setSearchName("");
                 }}
-                  className="soft-button-secondary app-btn-secondary-md inline-flex"
-                >
+                className="soft-button-secondary app-btn-secondary-md inline-flex"
+              >
                 {tCabinet(language, "switchMedicine")}
               </button>
             </div>

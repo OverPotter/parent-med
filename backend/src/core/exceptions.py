@@ -45,3 +45,10 @@ class SafetyBlockedError(AppException):
 
     def __init__(self, message: str, code: str = "SAFETY_BLOCKED", status_code: int = 422):
         super().__init__(message=message, code=code, status_code=status_code)
+
+
+class RateLimitedError(AppException):
+    """Слишком много запросов за период."""
+
+    def __init__(self, message: str, code: str = "RATE_LIMITED"):
+        super().__init__(message=message, code=code, status_code=429)

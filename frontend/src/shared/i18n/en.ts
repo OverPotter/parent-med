@@ -406,7 +406,27 @@ export const en: Translations = {
         title: "Account",
         description: "Profile, reminders and security.",
       },
+      {
+        to: "/feedback",
+        title: "Feedback",
+        description: "Send the team a bug report or suggestion.",
+      },
     ],
+  },
+  feedback: {
+    navShort: "Feedback",
+    pageTitle: "Feedback",
+    pageSubtitle: "Tell us about a bug, friction or idea — your message is saved for the team.",
+    privacyHint:
+      "Please do not include personal data, children’s names or health details — this is not a medical support channel.",
+    placeholder: "Briefly describe what happened or what you’d like improved…",
+    submit: "Send",
+    submitting: "Sending…",
+    success: "Thanks! Your message was saved.",
+    errors: {
+      rateLimited: "Too many messages per hour. Please try again later.",
+      generic: "Could not send. Please try again.",
+    },
   },
   about: {
     eyebrow: "About",

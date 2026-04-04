@@ -2273,7 +2273,12 @@ p {
   [data-theme="light"] .app-bottom-nav-shell {
     border-color: color-mix(in srgb, var(--color-border) 82%, transparent);
     background:
-      linear-gradient(180deg, rgb(255 255 255 / 0.52), rgb(255 255 255 / 0.12) 32%, transparent 72%),
+      linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.52),
+        rgb(255 255 255 / 0.12) 32%,
+        transparent 72%
+      ),
       linear-gradient(
         180deg,
         color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-glare-soft)),
@@ -2507,11 +2512,7 @@ p {
 
   .app-shell-auth {
     --app-auth-hero-top: color-mix(in srgb, var(--color-surface-hero) 92%, var(--color-surface));
-    --app-auth-hero-bottom: color-mix(
-      in srgb,
-      var(--color-surface) 96%,
-      var(--color-surface-soft)
-    );
+    --app-auth-hero-bottom: color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-soft));
   }
 
   .app-shell-auth .soft-nav-shell,

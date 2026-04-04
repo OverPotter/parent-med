@@ -39,7 +39,8 @@ export function ClientHomePage() {
         title={copy.clientHome.install.title}
         description={
           <>
-            <BrandWordmark className="brand-wordmark-inline" /> {copy.clientHome.install.description}
+            <BrandWordmark className="brand-wordmark-inline" />{" "}
+            {copy.clientHome.install.description}
           </>
         }
       >

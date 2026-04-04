@@ -14,6 +14,7 @@ from src.api.routers import (
     episode_medication_plans,
     families,
     family_invites,
+    feedback,
     household_medicines,
     illness_comments,
     illness_episodes,
@@ -103,6 +104,11 @@ def create_app() -> FastAPI:
     app.include_router(
         push_notifications.router,
         prefix="/api/v1",
+    )
+    app.include_router(
+        feedback.router,
+        prefix="/api/v1",
+        dependencies=protected_dependencies,
     )
 
     @app.get("/health")

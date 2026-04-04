@@ -748,9 +748,7 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
         <div className="soft-panel rounded-[28px] p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h4 className="app-card-title">
-                {timelineMeta.chartTitle}
-              </h4>
+              <h4 className="app-card-title">{timelineMeta.chartTitle}</h4>
               <p className="mt-1 text-sm leading-6 text-muted">{timelineMeta.chartDescription}</p>
             </div>
             <span className="soft-pill rounded-full px-3 py-1 text-xs">
@@ -2515,23 +2513,23 @@ function EpisodeActivationCard({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                onActivate({
-                  started_at: startedAt,
-                  title: title.trim() ? title.trim() : null,
-                  medication_mode: "guided",
-                  note: null,
-                  temperatures: [],
-                  administrations: [],
-                  comments: [],
-                  medication_plans: [],
-                })
-              }
-              disabled={isPending || !startedAt}
-              className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
-            >
+          <button
+            type="button"
+            onClick={() =>
+              onActivate({
+                started_at: startedAt,
+                title: title.trim() ? title.trim() : null,
+                medication_mode: "guided",
+                note: null,
+                temperatures: [],
+                administrations: [],
+                comments: [],
+                medication_plans: [],
+              })
+            }
+            disabled={isPending || !startedAt}
+            className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
+          >
             {isPending
               ? language === "ru"
                 ? "Запускаем…"
@@ -2618,12 +2616,12 @@ function TemperatureForm({
           className="soft-input w-full px-4"
         />
       </label>
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={isPending || !value}
-          className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5`}
-        >
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={isPending || !value}
+        className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5`}
+      >
         {isPending
           ? language === "ru"
             ? "Сохраняем…"
@@ -3120,7 +3118,9 @@ function MedicationPlanComposer({
         <div>
           <label className="block space-y-1.5">
             <span className="soft-field-label">
-              {language === "ru" ? "Сколько дать сейчас (разовая доза)" : "Dose for now (single dose)"}
+              {language === "ru"
+                ? "Сколько дать сейчас (разовая доза)"
+                : "Dose for now (single dose)"}
             </span>
             <input
               type="text"
@@ -3217,7 +3217,9 @@ function MedicationPlanComposer({
               <div>
                 <label className="block space-y-1.5">
                   <span className="flex items-center gap-2 soft-field-label">
-                    {language === "ru" ? "Вес ребёнка для проверки, кг" : "Child weight for check, kg"}
+                    {language === "ru"
+                      ? "Вес ребёнка для проверки, кг"
+                      : "Child weight for check, kg"}
                     <InlineHint
                       text={
                         language === "ru"

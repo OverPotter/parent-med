@@ -1335,23 +1335,23 @@ export function PillboxPage() {
               {tPillbox(language, "hubTitle")}
             </h1>
           </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={openAnalytics}
-            className="app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]"
-          >
-            {tPillbox(language, "analytics")}
-          </button>
-          <button
-            type="button"
-            disabled
-            className="soft-button-primary inline-flex min-h-[2.8rem] shrink-0 items-center justify-center rounded-[18px] px-3.5 text-[0.82rem] font-semibold tracking-[-0.025em] opacity-70"
-          >
-            {tPillbox(language, "createPlan")}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openAnalytics}
+              className="app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]"
+            >
+              {tPillbox(language, "analytics")}
+            </button>
+            <button
+              type="button"
+              disabled
+              className="soft-button-primary inline-flex min-h-[2.8rem] shrink-0 items-center justify-center rounded-[18px] px-3.5 text-[0.82rem] font-semibold tracking-[-0.025em] opacity-70"
+            >
+              {tPillbox(language, "createPlan")}
+            </button>
+          </div>
         </div>
-      </div>
         <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
           {language === "ru" ? "Загружаем планы приёма..." : "Loading medication plans..."}
         </div>
@@ -1736,9 +1736,7 @@ export function PillboxPage() {
                         : "bg-[color:var(--color-danger)]"
                   }`}
                 />
-                <p className="app-card-title">
-                  {displayPillboxText(selectedPlan.title)}
-                </p>
+                <p className="app-card-title">{displayPillboxText(selectedPlan.title)}</p>
               </div>
               <p
                 className={`mt-2 text-[0.92rem] leading-6 ${
@@ -1931,9 +1929,7 @@ export function PillboxPage() {
             <RowSurface className="space-y-3 px-4 py-4 sm:px-5 sm:py-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h1 className="app-card-title">
-                    {tPillbox(language, "medsTitle")}
-                  </h1>
+                  <h1 className="app-card-title">{tPillbox(language, "medsTitle")}</h1>
                   <p className="mt-1 text-[0.8rem] leading-5 text-muted">
                     {tPillbox(language, "medsSubtitle")}
                   </p>

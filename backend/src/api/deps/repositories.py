@@ -4,6 +4,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps.database import get_db_session
+from src.domain.repositories.account_feedback_repository import AccountFeedbackRepository
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
@@ -22,6 +23,9 @@ from src.domain.repositories.pillbox_repository import PillboxRepository
 from src.domain.repositories.push_subscription_repository import PushSubscriptionRepository
 from src.domain.repositories.temperature_entry_repository import TemperatureEntryRepository
 from src.domain.repositories.weight_entry_repository import WeightEntryRepository
+from src.infrastructure.database.repositories.account_feedback_repository import (
+    SqlAccountFeedbackRepository,
+)
 from src.infrastructure.database.repositories.account_repository import SqlAccountRepository
 from src.infrastructure.database.repositories.account_session_repository import (
     SqlAccountSessionRepository,
@@ -64,6 +68,12 @@ from src.infrastructure.database.repositories.weight_entry_repository import (
 
 def get_account_repo(session: AsyncSession = Depends(get_db_session)) -> AccountRepository:
     return SqlAccountRepository(session)
+
+
+def get_account_feedback_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> AccountFeedbackRepository:
+    return SqlAccountFeedbackRepository(session)
 
 
 def get_account_session_repo(

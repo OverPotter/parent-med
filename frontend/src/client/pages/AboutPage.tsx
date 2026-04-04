@@ -24,7 +24,9 @@ export function AboutPage() {
       <Surface className="overflow-hidden">
         <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
           <p className="app-kicker">{copy.about.install.eyebrow}</p>
-          <h2 className="app-title mt-2 text-[1.7rem] sm:text-[2.15rem]">{copy.about.install.title}</h2>
+          <h2 className="app-title mt-2 text-[1.7rem] sm:text-[2.15rem]">
+            {copy.about.install.title}
+          </h2>
           <p className="app-subtitle mt-3 max-w-2xl text-sm">
             <BrandWordmark className="brand-wordmark-inline" /> {copy.about.install.description}
           </p>

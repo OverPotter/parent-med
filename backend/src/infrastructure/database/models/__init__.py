@@ -1,6 +1,7 @@
 # ORM-модели (одна модель на файл)
 
 from src.infrastructure.database.models.account import AccountModel
+from src.infrastructure.database.models.account_feedback import AccountFeedbackModel
 from src.infrastructure.database.models.account_session import AccountSessionModel
 from src.infrastructure.database.models.administration_event import AdministrationEventModel
 from src.infrastructure.database.models.child import ChildModel
@@ -27,6 +28,7 @@ from src.infrastructure.database.models.weight_entry import WeightEntryModel
 
 __all__ = [
     "AccountModel",
+    "AccountFeedbackModel",
     "AccountSessionModel",
     "FamilyModel",
     "FamilyInviteModel",
