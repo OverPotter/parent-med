@@ -186,6 +186,15 @@ class PillboxService:
         course_summary_kind, course_progress_ratio, course_day_label = self._get_course_progress(
             entity, language
         )
+        next_medication_title = None
+        if next_medication:
+            medication_name = (next_medication.custom_medicine_name or "").strip() or (
+                "Medicine" if language == "en" else "Лекарство"
+            )
+            dose_amount = next_medication.dose_amount.strip()
+            next_medication_title = (
+                f"{medication_name} · {dose_amount}" if dose_amount else medication_name
+            )
         return PillboxPlanSummaryDto(
             id=entity.id,
             title=entity.title,
@@ -197,9 +206,7 @@ class PillboxService:
                 self._format_next_dose_label(next_dose_at, now) if next_dose_at else None
             ),
             next_medication_id=next_medication.id if next_medication else None,
-            next_medication_title=(
-                next_medication.custom_medicine_name if next_medication else None
-            ),
+            next_medication_title=next_medication_title,
             course_summary_kind=course_summary_kind,
             course_progress_ratio=course_progress_ratio,
             course_day_label=course_day_label,

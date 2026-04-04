@@ -44,14 +44,16 @@ export function FeedbackPage() {
     <div className="min-w-0 space-y-6">
       <PageIntro title={copy.feedback.pageTitle} subtitle={copy.feedback.pageSubtitle} />
 
-      <Surface className="p-5 sm:p-8">
-        <p className="text-sm leading-6 text-muted">{copy.feedback.privacyHint}</p>
+      <Surface className="app-section-surface space-y-4 rounded-[24px] p-5 sm:rounded-[26px] sm:p-8">
+        <p className="text-[0.86rem] leading-6 text-muted sm:text-[0.9rem]">
+          {copy.feedback.privacyHint}
+        </p>
 
-        <form className="mt-6 space-y-4" onSubmit={(e) => void handleSubmit(e)}>
-          <label className="block">
+        <form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
+          <label className="block space-y-1.5">
             <span className="sr-only">{copy.feedback.placeholder}</span>
             <textarea
-              className="soft-input min-h-[160px] w-full resize-y rounded-2xl px-4 py-3 text-sm"
+              className="soft-input min-h-[170px] w-full resize-y rounded-[20px] px-4 py-3 text-[0.94rem] leading-6 sm:min-h-[190px]"
               name="message"
               rows={6}
               maxLength={8000}
@@ -76,7 +78,7 @@ export function FeedbackPage() {
 
           <button
             type="submit"
-            className="soft-primary-button rounded-full px-6 py-2.5 text-sm font-medium disabled:opacity-60"
+            className="app-btn-primary-md soft-button-primary inline-flex min-w-[12rem] items-center justify-center rounded-[20px] px-5 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
             disabled={pending}
           >
             {pending ? copy.feedback.submitting : copy.feedback.submit}

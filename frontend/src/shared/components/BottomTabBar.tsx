@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { NavLink, matchPath, useLocation } from "react-router-dom";
 import type { LayoutNavLink } from "./TopNav";
 import { renderNavIcon } from "./navIcons";
@@ -9,7 +10,7 @@ export function BottomTabBar({ links }: { links: LayoutNavLink[] }) {
     return null;
   }
 
-  return (
+  const nav = (
     <nav className="app-bottom-nav-wrap fixed inset-x-0 bottom-0 z-[90] px-0 pb-0 pt-0 md:hidden">
       <div className="w-full px-0">
         <div
@@ -69,4 +70,10 @@ export function BottomTabBar({ links }: { links: LayoutNavLink[] }) {
       </div>
     </nav>
   );
+
+  if (typeof document === "undefined") {
+    return nav;
+  }
+
+  return createPortal(nav, document.body);
 }

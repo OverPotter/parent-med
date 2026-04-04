@@ -25,6 +25,7 @@ class Account:
     cabinet_notify_3_days: bool
     cabinet_notify_1_day: bool
     created_at: datetime
+    pillbox_push_before_reminder_minutes: int = 10
     relationship_label: str | None = None
     phone: str | None = None
     preferred_language: AccountLanguage = "ru"

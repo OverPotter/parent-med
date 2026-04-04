@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import {
   deleteFamilyMember,
   fetchFamilies,
@@ -160,6 +161,7 @@ function roleLabel(role: string, language: AppLanguage): string {
 
 export function FamilyPage() {
   const { language } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [familyName, setFamilyName] = useState("");
   const [isEditingFamilyName, setIsEditingFamilyName] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -309,6 +311,8 @@ export function FamilyPage() {
   };
 
   const canManageFamily = currentAccountRole === "owner";
+  const shouldOpenCurrentProfileEditor =
+    searchParams.get("edit") === "profile" || searchParams.get("edit") === "me";
   const familyTitle =
     family?.name?.trim() || currentFamilyName?.trim() || tFamily(language, "title");
 
@@ -366,6 +370,9 @@ export function FamilyPage() {
                 key={member.id}
                 member={member}
                 isCurrent={member.id === currentAccountId}
+                forceEdit={Boolean(
+                  shouldOpenCurrentProfileEditor && member.id === currentAccountId
+                )}
                 isOwner={canManageFamily}
                 canEditProfile={canManageFamily || member.id === currentAccountId}
                 ownersCount={ownersCount}
@@ -395,6 +402,14 @@ export function FamilyPage() {
                     phone: payload.phone,
                   })
                 }
+                onHideForcedEdit={() => {
+                  if (!shouldOpenCurrentProfileEditor) {
+                    return;
+                  }
+                  const next = new URLSearchParams(searchParams);
+                  next.delete("edit");
+                  setSearchParams(next, { replace: true });
+                }}
                 language={language}
               />
             ))}
@@ -537,6 +552,7 @@ export function FamilyPage() {
 interface MemberCardProps {
   member: FamilyMember;
   isCurrent: boolean;
+  forceEdit: boolean;
   isOwner: boolean;
   canEditProfile: boolean;
   ownersCount: number;
@@ -550,11 +566,13 @@ interface MemberCardProps {
     relationshipLabel?: string | null;
     phone?: string | null;
   }) => void;
+  onHideForcedEdit: () => void;
 }
 
 function MemberCard({
   member,
   isCurrent,
+  forceEdit,
   isOwner,
   canEditProfile,
   ownersCount,
@@ -564,11 +582,12 @@ function MemberCard({
   onDemote,
   onDelete,
   onSaveProfile,
+  onHideForcedEdit,
 }: MemberCardProps) {
   const canDemote = member.familyRole === "owner" && ownersCount > 1 && !isCurrent;
   const canPromote = member.familyRole !== "owner" && !isCurrent;
   const canDelete = !isCurrent;
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(forceEdit);
   const [displayName, setDisplayName] = useState(member.displayName || "");
   const [relationshipLabel, setRelationshipLabel] = useState(member.relationshipLabel || "");
   const [phone, setPhone] = useState(member.phone || "");
@@ -578,6 +597,12 @@ function MemberCard({
     setRelationshipLabel(member.relationshipLabel || "");
     setPhone(member.phone || "");
   }, [member.displayName, member.relationshipLabel, member.phone]);
+
+  useEffect(() => {
+    if (forceEdit) {
+      setIsEditing(true);
+    }
+  }, [forceEdit]);
 
   return (
     <div className="soft-panel rounded-[30px] p-4">
@@ -619,7 +644,15 @@ function MemberCard({
             {canEditProfile && (
               <button
                 type="button"
-                onClick={() => setIsEditing((current) => !current)}
+                onClick={() =>
+                  setIsEditing((current) => {
+                    const next = !current;
+                    if (!next) {
+                      onHideForcedEdit();
+                    }
+                    return next;
+                  })
+                }
                 className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
                 {isEditing ? tFamily(language, "hideProfile") : tFamily(language, "editProfile")}

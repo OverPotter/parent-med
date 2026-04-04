@@ -9,6 +9,7 @@ export const ru: Translations = {
     goHome: "На главную",
     logout: "Выйти",
     profile: "Профиль",
+    settings: "Настройки",
     logoutFromAccount: "Выйти из аккаунта",
     profileMenuLabel: "Меню профиля",
     languageSwitcherLabel: "Выбор языка",
@@ -384,7 +385,7 @@ export const ru: Translations = {
   },
   more: {
     title: "Ещё",
-    subtitle: "Семья, аккаунт и справка.",
+    subtitle: "Семья, профиль, настройки и справка.",
     openLabel: "Открыть",
     links: [
       {
@@ -399,8 +400,13 @@ export const ru: Translations = {
       },
       {
         to: "/account",
-        title: "Аккаунт",
-        description: "Профиль, уведомления и безопасность.",
+        title: "Профиль",
+        description: "Логин, email, имя и роль.",
+      },
+      {
+        to: "/settings",
+        title: "Настройки",
+        description: "Язык, тема, уведомления и безопасность.",
       },
       {
         to: "/feedback",
@@ -527,6 +533,25 @@ export const ru: Translations = {
           },
         ],
         action: { to: "/illnesses/active", label: "Открыть наблюдения" },
+      },
+      {
+        title: "Таблетница",
+        description: "Планы приёма для себя и близких: кто, что и когда принимает.",
+        items: [
+          {
+            title: "Создать план",
+            description: "Добавьте лекарство, время приёма и сохраните план.",
+          },
+          {
+            title: "Отмечать приём",
+            description: "Когда время наступило, нажмите «Записать приём».",
+          },
+          {
+            title: "Пауза и возобновление",
+            description: "План можно поставить на паузу и вернуть без потери истории.",
+          },
+        ],
+        action: { to: "/pillbox", label: "Открыть таблетницу" },
       },
       {
         title: "Аптечка",

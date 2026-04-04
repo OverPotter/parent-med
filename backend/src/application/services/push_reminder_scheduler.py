@@ -80,13 +80,10 @@ def _format_due_body(
     language: str,
 ) -> str:
     dose_text = dose_amount.strip()
-    if language == "en":
-        medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
-        return (
-            f"For: {child_name}\n" f"Give: {medicine_line}\n" f"When: now ({scheduled_time_label})"
-        )
     medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
-    return f"Кому: {child_name}\nЧто: {medicine_line}\nКогда: сейчас ({scheduled_time_label})"
+    if language == "en":
+        return f"{child_name}: {medicine_line}\nDose time: {scheduled_time_label}"
+    return f"{child_name}: {medicine_line}\nВремя приёма: {scheduled_time_label}"
 
 
 def _format_overdue_body(
@@ -97,15 +94,10 @@ def _format_overdue_body(
     language: str,
 ) -> str:
     dose_text = dose_amount.strip()
-    if language == "en":
-        medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
-        return (
-            f"For: {child_name}\n"
-            f"Not marked: {medicine_line}\n"
-            f"When: since {scheduled_time_label}"
-        )
     medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
-    return f"Кому: {child_name}\nНе отмечено: {medicine_line}\nКогда: с {scheduled_time_label}"
+    if language == "en":
+        return f"{child_name}: {medicine_line}\nNot marked since {scheduled_time_label}"
+    return f"{child_name}: {medicine_line}\nНе отмечено с {scheduled_time_label}"
 
 
 def _format_before_body(
@@ -117,39 +109,56 @@ def _format_before_body(
     language: str,
 ) -> str:
     dose_text = dose_amount.strip()
-    if language == "en":
-        medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
-        return (
-            f"For: {child_name}\n"
-            f"Prepare: {medicine_line}\n"
-            f"When: in {reminder_before_minutes} min ({scheduled_time_label})"
-        )
     medicine_line = f"{medicine_name} · {dose_text}" if dose_text else medicine_name
+    if language == "en":
+        return (
+            f"{child_name}: {medicine_line}\n"
+            f"In {reminder_before_minutes} min (at {scheduled_time_label})"
+        )
     return (
-        f"Кому: {child_name}\n"
-        f"Подготовить: {medicine_line}\n"
-        f"Когда: через {reminder_before_minutes} мин ({scheduled_time_label})"
+        f"{child_name}: {medicine_line}\n"
+        f"Через {reminder_before_minutes} мин (в {scheduled_time_label})"
     )
 
 
 def _format_pillbox_due_body(
     summary_label: str,
+    recipient_label: str,
     scheduled_time_label: str,
     language: str,
 ) -> str:
     if language == "en":
-        return f"For: you\nTake: {summary_label}\nWhen: now ({scheduled_time_label})"
-    return f"Кому: вам\nЧто: {summary_label}\nКогда: сейчас ({scheduled_time_label})"
+        return f"{summary_label}\nFor: {recipient_label} · now ({scheduled_time_label})"
+    return f"{summary_label}\nКому: {recipient_label} · сейчас ({scheduled_time_label})"
+
+
+def _format_pillbox_before_body(
+    summary_label: str,
+    recipient_label: str,
+    reminder_before_minutes: int,
+    scheduled_time_label: str,
+    language: str,
+) -> str:
+    if language == "en":
+        return (
+            f"{summary_label}\n"
+            f"For: {recipient_label} · in {reminder_before_minutes} min (at {scheduled_time_label})"
+        )
+    return (
+        f"{summary_label}\n"
+        f"Кому: {recipient_label} · через {reminder_before_minutes} мин (в {scheduled_time_label})"
+    )
 
 
 def _format_pillbox_overdue_body(
     summary_label: str,
+    recipient_label: str,
     scheduled_time_label: str,
     language: str,
 ) -> str:
     if language == "en":
-        return f"For: you\nNot marked: {summary_label}\nWhen: since {scheduled_time_label}"
-    return f"Кому: вам\nНе отмечено: {summary_label}\nКогда: с {scheduled_time_label}"
+        return f"{summary_label}\nFor: {recipient_label} · not marked since {scheduled_time_label}"
+    return f"{summary_label}\nКому: {recipient_label} · не отмечено с {scheduled_time_label}"
 
 
 def _format_pillbox_meal_rule(meal_rule: str, language: str) -> str:
@@ -162,6 +171,16 @@ def _format_pillbox_meal_rule(meal_rule: str, language: str) -> str:
 
 def _normalize_medicine_name(value: str | None) -> str:
     return (value or "").strip().casefold()
+
+
+def _resolve_account_recipient_label(account: Any, language: str) -> str:
+    display_name = (getattr(account, "display_name", None) or "").strip()
+    login = (getattr(account, "login", None) or "").strip()
+    if display_name:
+        return display_name
+    if login:
+        return f"@{login}"
+    return "you" if language == "en" else "вас"
 
 
 def _format_days_label(days: int) -> str:
@@ -200,9 +219,8 @@ def _build_cabinet_payload(
             "title": "First aid kit",
             "body": (
                 f"Medicine: {medicine.medicine_name}\n"
-                f"What expires: {label}\n"
-                f"When: in {day_text}, by {_format_date(target_date, language)}\n"
-                "Check the package in your first aid kit."
+                f"{label.capitalize()}: in {day_text} (by {_format_date(target_date, language)})\n"
+                "Please check the package in your cabinet."
             ),
             "url": "/medicine-cabinet",
             "tag": f"cabinet-{medicine.id}-{target_date.isoformat()}-{days_before}",
@@ -219,8 +237,7 @@ def _build_cabinet_payload(
         "title": "Аптечка",
         "body": (
             f"Лекарство: {medicine.medicine_name}\n"
-            f"Что истечёт: {label}\n"
-            f"Когда: через {day_text}, до {target_date.strftime('%d.%m.%Y')}\n"
+            f"{label.capitalize()}: через {day_text} (до {target_date.strftime('%d.%m.%Y')})\n"
             "Проверьте упаковку в аптечке."
         ),
         "url": "/medicine-cabinet",
@@ -246,9 +263,8 @@ def _build_cabinet_expired_payload(
             "title": "First aid kit",
             "body": (
                 f"Medicine: {medicine.medicine_name}\n"
-                f"Expired: {label}\n"
-                f"Date: {_format_date(target_date, language)}\n"
-                "Check the package and discard the medicine if needed."
+                f"Expired: {label} ({_format_date(target_date, language)})\n"
+                "Please check and discard if needed."
             ),
             "url": "/medicine-cabinet",
             "tag": f"cabinet-expired-{medicine.id}-{target_date.isoformat()}",
@@ -264,8 +280,7 @@ def _build_cabinet_expired_payload(
         "title": "Аптечка",
         "body": (
             f"Лекарство: {medicine.medicine_name}\n"
-            f"Истёк: {label}\n"
-            f"Дата: {target_date.strftime('%d.%m.%Y')}\n"
+            f"Истёк: {label} ({target_date.strftime('%d.%m.%Y')})\n"
             "Проверьте упаковку и при необходимости спишите препарат."
         ),
         "url": "/medicine-cabinet",
@@ -412,7 +427,9 @@ class PushNotificationScheduler:
                     continue
 
                 preferred_before_minutes = (
-                    account.push_before_reminder_minutes or DEFAULT_REMINDER_BEFORE_MINUTES
+                    account.push_before_reminder_minutes
+                    if account.push_before_reminder_minutes is not None
+                    else DEFAULT_REMINDER_BEFORE_MINUTES
                 )
                 language = _normalize_language(account.preferred_language)
                 next_allowed_local_label = next_allowed_at.astimezone(self._timezone).strftime(
@@ -429,9 +446,7 @@ class PushNotificationScheduler:
                         and plan.last_before_notification_for_at != next_allowed_at
                     ):
                         payload = {
-                            "title": (
-                                "Can be given soon" if language == "en" else "Скоро можно дать"
-                            ),
+                            "title": "Coming up" if language == "en" else "Скоро приём",
                             "body": _format_before_body(
                                 child.name,
                                 medicine_name,
@@ -485,7 +500,7 @@ class PushNotificationScheduler:
                 overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
                 if now >= overdue_at and plan.last_overdue_notification_for_at != next_allowed_at:
                     payload = {
-                        "title": "Dose not marked" if language == "en" else "Приём не отмечен",
+                        "title": "Not marked" if language == "en" else "Приём не отмечен",
                         "body": _format_overdue_body(
                             child.name,
                             medicine_name,
@@ -715,6 +730,8 @@ class PushNotificationScheduler:
             scheduled_time_label = scheduled_for.astimezone(self._timezone).strftime("%H:%M")
             timestamp = int(scheduled_for.timestamp())
             summary_label = self._build_pillbox_slot_summary_label(items, language)
+            recipient_label = _resolve_account_recipient_label(account, language)
+            pillbox_before_minutes = account.pillbox_push_before_reminder_minutes
 
             first_plan, first_medication = items[0]
             notification_data = {
@@ -761,11 +778,35 @@ class PushNotificationScheduler:
                 f"/pillbox?mode=details&plan={first_plan.id}&highlightPlan={first_plan.id}"
             )
 
+            remind_at = scheduled_for - timedelta(minutes=pillbox_before_minutes)
+            if remind_at <= now < scheduled_for and not await slot_delivered("before"):
+                payload = {
+                    "title": "Pillbox · soon" if language == "en" else "Таблетница · скоро",
+                    "body": _format_pillbox_before_body(
+                        summary_label,
+                        recipient_label,
+                        pillbox_before_minutes,
+                        scheduled_time_label,
+                        language,
+                    ),
+                    "url": pillbox_url,
+                    "tag": f"pillbox-before-{account.id}-{timestamp}",
+                    "data": notification_data,
+                    "actions": actions,
+                }
+                if await self._send_to_subscriptions(
+                    subscriptions=subscriptions,
+                    subscription_repo=subscription_repo,
+                    payload=payload,
+                ):
+                    record_slot_delivery("before")
+
             if scheduled_for <= now < overdue_at and not await slot_delivered("due"):
                 payload = {
-                    "title": "PillPath",
+                    "title": "Pillbox · now" if language == "en" else "Таблетница · сейчас",
                     "body": _format_pillbox_due_body(
                         summary_label,
+                        recipient_label,
                         scheduled_time_label,
                         language,
                     ),
@@ -783,9 +824,10 @@ class PushNotificationScheduler:
 
             if now >= overdue_at and not await slot_delivered("overdue"):
                 payload = {
-                    "title": "PillPath",
+                    "title": "Pillbox · overdue" if language == "en" else "Таблетница · просрочено",
                     "body": _format_pillbox_overdue_body(
                         summary_label,
+                        recipient_label,
                         scheduled_time_label,
                         language,
                     ),
