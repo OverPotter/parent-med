@@ -9,6 +9,7 @@ export const en: Translations = {
     goHome: "Home",
     logout: "Log out",
     profile: "Profile",
+    settings: "Settings",
     logoutFromAccount: "Log out",
     profileMenuLabel: "Profile menu",
     languageSwitcherLabel: "Choose language",
@@ -388,7 +389,7 @@ export const en: Translations = {
   },
   more: {
     title: "More",
-    subtitle: "Family, account and help.",
+    subtitle: "Family, profile, settings and help.",
     openLabel: "Open",
     links: [
       {
@@ -403,8 +404,13 @@ export const en: Translations = {
       },
       {
         to: "/account",
-        title: "Account",
-        description: "Profile, reminders and security.",
+        title: "Profile",
+        description: "Login, email, name and role.",
+      },
+      {
+        to: "/settings",
+        title: "Settings",
+        description: "Language, theme, reminders and security.",
       },
       {
         to: "/feedback",
@@ -533,6 +539,25 @@ export const en: Translations = {
           },
         ],
         action: { to: "/illnesses/active", label: "Open tracking" },
+      },
+      {
+        title: "Pillbox",
+        description: "Medication plans for you and family members: who takes what and when.",
+        items: [
+          {
+            title: "Create a plan",
+            description: "Add medicine, dose times and save the plan.",
+          },
+          {
+            title: "Log a dose",
+            description: "When it is time, tap “Log dose”.",
+          },
+          {
+            title: "Pause and resume",
+            description: "Pause a plan and resume it later without losing history.",
+          },
+        ],
+        action: { to: "/pillbox", label: "Open pillbox" },
       },
       {
         title: "Cabinet",

@@ -21,6 +21,9 @@ const ClientLayout = lazy(() =>
 const AccountPage = lazy(() =>
   import("@client/pages/AccountPage").then((module) => ({ default: module.AccountPage }))
 );
+const SettingsPage = lazy(() =>
+  import("@client/pages/SettingsPage").then((module) => ({ default: module.SettingsPage }))
+);
 const LandingPage = lazy(() =>
   import("@client/pages/LandingPage").then((module) => ({ default: module.LandingPage }))
 );
@@ -165,6 +168,7 @@ function RouteScrollReset() {
       "/illnesses/history",
       "/family",
       "/account",
+      "/settings",
       "/about",
       "/feedback",
     ].some((path) => location.pathname === path);
@@ -491,6 +495,7 @@ export default function App() {
                 <Route path="more" element={<MorePage />} />
                 <Route path="feedback" element={<FeedbackPage />} />
                 <Route path="account" element={<AccountPage />} />
+                <Route path="settings" element={<SettingsPage />} />
                 <Route path="about" element={<AboutPage />} />
                 <Route path="children/:childId/illness" element={<ChildIllnessPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

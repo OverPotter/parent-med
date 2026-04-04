@@ -9,6 +9,7 @@ export interface Translations {
     goHome: string;
     logout: string;
     profile: string;
+    settings: string;
     logoutFromAccount: string;
     profileMenuLabel: string;
     languageSwitcherLabel: string;

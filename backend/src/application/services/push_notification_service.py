@@ -22,7 +22,8 @@ from src.domain.repositories.push_subscription_repository import PushSubscriptio
 class PushNotificationService:
     """Работа с push-подписками и конфигом VAPID."""
 
-    ALLOWED_BEFORE_REMINDER_MINUTES = {5, 10, 15, 20}
+    ALLOWED_BEFORE_REMINDER_MINUTES = {0, 5, 10, 15, 20}
+    ALLOWED_PILLBOX_BEFORE_REMINDER_MINUTES = {0, 5, 10, 15}
 
     def __init__(
         self,
@@ -44,6 +45,7 @@ class PushNotificationService:
             raise NotFoundError("Аккаунт не найден", resource="account")
         return PushNotificationPreferencesResponseDto(
             before_reminder_minutes=account.push_before_reminder_minutes,
+            pillbox_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,
             due_reminder_enabled=True,
             cabinet_notify_10_days=account.cabinet_notify_10_days,
             cabinet_notify_7_days=account.cabinet_notify_7_days,
@@ -60,13 +62,22 @@ class PushNotificationService:
             raise NotFoundError("Аккаунт не найден", resource="account")
 
         before_reminder_minutes = account.push_before_reminder_minutes
+        pillbox_before_reminder_minutes = account.pillbox_push_before_reminder_minutes
         if dto.before_reminder_minutes is not None:
             if dto.before_reminder_minutes not in self.ALLOWED_BEFORE_REMINDER_MINUTES:
-                raise ValidationError("Можно выбрать только 5, 10, 15 или 20 минут")
+                raise ValidationError("Можно выбрать 0, 5, 10, 15 или 20 минут")
             before_reminder_minutes = dto.before_reminder_minutes
+        if dto.pillbox_before_reminder_minutes is not None:
+            if (
+                dto.pillbox_before_reminder_minutes
+                not in self.ALLOWED_PILLBOX_BEFORE_REMINDER_MINUTES
+            ):
+                raise ValidationError("Для таблетницы можно выбрать 0, 5, 10 или 15 минут")
+            pillbox_before_reminder_minutes = dto.pillbox_before_reminder_minutes
 
         if (
             dto.before_reminder_minutes is None
+            and dto.pillbox_before_reminder_minutes is None
             and dto.cabinet_notify_10_days is None
             and dto.cabinet_notify_7_days is None
             and dto.cabinet_notify_3_days is None
@@ -86,6 +97,7 @@ class PushNotificationService:
                 preferred_language=account.preferred_language,
                 family_role=account.family_role,
                 push_before_reminder_minutes=before_reminder_minutes,
+                pillbox_push_before_reminder_minutes=pillbox_before_reminder_minutes,
                 cabinet_notify_10_days=(
                     dto.cabinet_notify_10_days
                     if dto.cabinet_notify_10_days is not None
@@ -107,6 +119,7 @@ class PushNotificationService:
         )
         return PushNotificationPreferencesResponseDto(
             before_reminder_minutes=updated.push_before_reminder_minutes,
+            pillbox_before_reminder_minutes=updated.pillbox_push_before_reminder_minutes,
             due_reminder_enabled=True,
             cabinet_notify_10_days=updated.cabinet_notify_10_days,
             cabinet_notify_7_days=updated.cabinet_notify_7_days,

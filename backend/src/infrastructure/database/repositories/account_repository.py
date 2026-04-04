@@ -29,6 +29,7 @@ class SqlAccountRepository(AccountRepository):
             preferred_language=model.preferred_language,
             family_role=model.family_role,
             push_before_reminder_minutes=model.push_before_reminder_minutes,
+            pillbox_push_before_reminder_minutes=model.pillbox_push_before_reminder_minutes,
             cabinet_notify_10_days=model.cabinet_notify_15_days,
             cabinet_notify_7_days=model.cabinet_notify_7_days,
             cabinet_notify_3_days=model.cabinet_notify_3_days,
@@ -49,6 +50,7 @@ class SqlAccountRepository(AccountRepository):
             preferred_language=entity.preferred_language,
             family_role=entity.family_role,
             push_before_reminder_minutes=entity.push_before_reminder_minutes,
+            pillbox_push_before_reminder_minutes=entity.pillbox_push_before_reminder_minutes,
             cabinet_notify_15_days=entity.cabinet_notify_10_days,
             cabinet_notify_7_days=entity.cabinet_notify_7_days,
             cabinet_notify_3_days=entity.cabinet_notify_3_days,
@@ -117,6 +119,7 @@ class SqlAccountRepository(AccountRepository):
         row.preferred_language = entity.preferred_language
         row.family_role = entity.family_role
         row.push_before_reminder_minutes = entity.push_before_reminder_minutes
+        row.pillbox_push_before_reminder_minutes = entity.pillbox_push_before_reminder_minutes
         row.cabinet_notify_15_days = entity.cabinet_notify_10_days
         row.cabinet_notify_7_days = entity.cabinet_notify_7_days
         row.cabinet_notify_3_days = entity.cabinet_notify_3_days

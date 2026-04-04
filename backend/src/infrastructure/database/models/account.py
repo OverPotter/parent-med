@@ -38,6 +38,9 @@ class AccountModel(Base):
     push_before_reminder_minutes: Mapped[int] = mapped_column(
         Integer, nullable=False, default=10, server_default="10"
     )
+    pillbox_push_before_reminder_minutes: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=10, server_default="10"
+    )
     cabinet_notify_30_days: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )

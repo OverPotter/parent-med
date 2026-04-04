@@ -8,6 +8,7 @@ interface RawPushNotificationConfig {
 
 interface RawPushNotificationPreferences {
   before_reminder_minutes: number;
+  pillbox_before_reminder_minutes: number;
   due_reminder_enabled: boolean;
   cabinet_notify_10_days: boolean;
   cabinet_notify_7_days: boolean;
@@ -28,6 +29,7 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
   );
   return {
     beforeReminderMinutes: res.data.before_reminder_minutes,
+    pillboxBeforeReminderMinutes: res.data.pillbox_before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,
     cabinetNotify10Days: res.data.cabinet_notify_10_days,
     cabinetNotify7Days: res.data.cabinet_notify_7_days,
@@ -37,6 +39,7 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
 
 export async function updatePushNotificationPreferences(body: {
   before_reminder_minutes?: number;
+  pillbox_before_reminder_minutes?: number;
   cabinet_notify_10_days?: boolean;
   cabinet_notify_7_days?: boolean;
   cabinet_notify_3_days?: boolean;
@@ -47,6 +50,7 @@ export async function updatePushNotificationPreferences(body: {
   );
   return {
     beforeReminderMinutes: res.data.before_reminder_minutes,
+    pillboxBeforeReminderMinutes: res.data.pillbox_before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,
     cabinetNotify10Days: res.data.cabinet_notify_10_days,
     cabinetNotify7Days: res.data.cabinet_notify_7_days,

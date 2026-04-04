@@ -19,6 +19,7 @@ class PushNotificationPreferencesResponseDto(ResponseBase):
     """Настройки push-напоминаний на уровне аккаунта."""
 
     before_reminder_minutes: int
+    pillbox_before_reminder_minutes: int
     due_reminder_enabled: bool = True
     cabinet_notify_10_days: bool
     cabinet_notify_7_days: bool
@@ -30,6 +31,9 @@ class PushNotificationPreferencesUpdateDto(BaseModel):
 
     before_reminder_minutes: int | None = Field(
         None, description="За сколько минут прислать раннее напоминание"
+    )
+    pillbox_before_reminder_minutes: int | None = Field(
+        None, description="За сколько минут прислать раннее напоминание для таблетницы"
     )
     cabinet_notify_10_days: bool | None = Field(
         None, description="Присылать reminder по аптечке за 10 дней"
