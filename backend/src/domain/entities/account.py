@@ -20,12 +20,12 @@ class Account:
     display_name: str
     family_role: str
     push_before_reminder_minutes: int
-    pillbox_push_before_reminder_minutes: int
     cabinet_notify_10_days: bool
     cabinet_notify_7_days: bool
     cabinet_notify_3_days: bool
     cabinet_notify_1_day: bool
     created_at: datetime
+    pillbox_push_before_reminder_minutes: int = 10
     relationship_label: str | None = None
     phone: str | None = None
     preferred_language: AccountLanguage = "ru"
