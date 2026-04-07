@@ -28,6 +28,8 @@ from src.domain.repositories.pillbox_repository import PillboxRepository
 
 class PillboxService:
     """CRUD и вычислительная логика семейной таблетницы."""
+    _ON_TIME_WINDOW = timedelta(minutes=30)
+    _LATE_WINDOW = timedelta(hours=6)
 
     def __init__(
         self,
@@ -460,14 +462,16 @@ class PillboxService:
             return f"W{week_index}" if language == "en" else f"Нед {week_index}"
         return self._month_label(slot_day, language)
 
-    async def get_history_summary(
+    async def get_plan_history_summary(
         self,
+        plan_id: UUID,
         current_family_id: UUID,
         period: str,
         preferred_language: str = "ru",
     ) -> PillboxHistorySummaryDto:
         normalized_period = self._normalize_period(period)
-        plans = await self._repo.list_by_family_id(current_family_id)
+        plan = await self._get_plan_for_family(plan_id, current_family_id)
+        plans = [plan]
         now_utc = datetime.now(UTC)
         today_local = self._to_local(now_utc).date()
         start_date = self._resolve_period_start_date(normalized_period, plans, today_local)
@@ -476,11 +480,6 @@ class PillboxService:
         )
         timeline_counts: dict[str, int] = {label: 0 for label in timeline_labels}
 
-        total_plans = len(plans)
-        active_plans = sum(1 for item in plans if item.status == "active")
-        paused_plans = sum(1 for item in plans if item.status == "paused")
-        archived_plans = sum(1 for item in plans if item.status == "archived")
-
         scheduled_slots = 0
         taken_slots = 0
         missed_slots = 0
@@ -488,80 +487,91 @@ class PillboxService:
         on_time_slots = 0
         top_missed: dict[str, int] = defaultdict(int)
         total_medications = 0
-        late_threshold = timedelta(minutes=3)
+        total_medications += len(plan.medications)
 
-        for plan in plans:
-            if plan.status != "active":
+        logs_by_slot: dict[tuple[UUID, datetime], datetime] = {}
+        period_start_utc = datetime.combine(
+            start_date,
+            time.min,
+            tzinfo=self._timezone,
+        ).astimezone(UTC)
+        for log in plan.dose_logs:
+            if log.scheduled_for is None:
                 continue
-            total_medications += len(plan.medications)
+            if log.scheduled_for < period_start_utc:
+                continue
+            previous_taken_at = logs_by_slot.get((log.medication_id, log.scheduled_for))
+            if previous_taken_at is None or log.taken_at < previous_taken_at:
+                logs_by_slot[(log.medication_id, log.scheduled_for)] = log.taken_at
 
-            logs_by_slot: dict[tuple[UUID, datetime], datetime] = {}
-            period_start_utc = datetime.combine(
-                start_date,
-                time.min,
-                tzinfo=self._timezone,
-            ).astimezone(UTC)
-            for log in plan.dose_logs:
-                if log.scheduled_for is None:
-                    continue
-                if log.scheduled_for < period_start_utc:
-                    continue
-                previous_taken_at = logs_by_slot.get((log.medication_id, log.scheduled_for))
-                if previous_taken_at is None or log.taken_at < previous_taken_at:
-                    logs_by_slot[(log.medication_id, log.scheduled_for)] = log.taken_at
-
-            for medication in plan.medications:
-                day_cursor = start_date
-                while day_cursor <= today_local:
-                    if not self._is_medication_active_on(medication, day_cursor):
-                        day_cursor += timedelta(days=1)
-                        continue
-                    if day_cursor.isoweekday() not in medication.repeat_days:
-                        day_cursor += timedelta(days=1)
-                        continue
-
-                    for dose_time in medication.times:
-                        scheduled_for = self._build_local_scheduled_at(
-                            day_cursor, dose_time
-                        ).astimezone(UTC)
-                        if scheduled_for > now_utc:
-                            continue
-                        scheduled_slots += 1
-                        taken_at = logs_by_slot.get((medication.id, scheduled_for))
-                        if taken_at is None:
-                            missed_slots += 1
-                            medicine_name = (
-                                (medication.custom_medicine_name or "").strip()
-                                or ("Medicine" if preferred_language == "en" else "Лекарство")
-                            )
-                            top_missed[medicine_name] += 1
-                            continue
-
-                        taken_slots += 1
-                        if taken_at - scheduled_for > late_threshold:
-                            late_slots += 1
-                        else:
-                            on_time_slots += 1
-                        bucket_label = self._timeline_bucket_label(
-                            normalized_period,
-                            day_cursor,
-                            start_date,
-                            preferred_language,
-                        )
-                        if bucket_label in timeline_counts:
-                            timeline_counts[bucket_label] += 1
+        for medication in plan.medications:
+            day_cursor = start_date
+            while day_cursor <= today_local:
+                if not self._is_medication_active_on(medication, day_cursor):
                     day_cursor += timedelta(days=1)
+                    continue
+                if day_cursor.isoweekday() not in medication.repeat_days:
+                    day_cursor += timedelta(days=1)
+                    continue
+
+                for dose_time in medication.times:
+                    local_scheduled_for = self._build_local_scheduled_at(day_cursor, dose_time)
+                    scheduled_for = local_scheduled_for.astimezone(UTC)
+                    if scheduled_for > now_utc:
+                        continue
+
+                    taken_at = logs_by_slot.get((medication.id, scheduled_for))
+                    slot_deadline = scheduled_for + self._LATE_WINDOW
+                    is_finalized_slot = taken_at is not None or now_utc >= slot_deadline
+                    if not is_finalized_slot:
+                        continue
+
+                    scheduled_slots += 1
+                    if taken_at is None:
+                        missed_slots += 1
+                        medicine_name = (
+                            (medication.custom_medicine_name or "").strip()
+                            or ("Medicine" if preferred_language == "en" else "Лекарство")
+                        )
+                        top_missed[medicine_name] += 1
+                        continue
+
+                    delay = taken_at - scheduled_for
+                    if delay <= self._ON_TIME_WINDOW:
+                        on_time_slots += 1
+                        taken_slots += 1
+                    elif delay <= self._LATE_WINDOW:
+                        late_slots += 1
+                        taken_slots += 1
+                    else:
+                        missed_slots += 1
+                        medicine_name = (
+                            (medication.custom_medicine_name or "").strip()
+                            or ("Medicine" if preferred_language == "en" else "Лекарство")
+                        )
+                        top_missed[medicine_name] += 1
+                        continue
+
+                    bucket_label = self._timeline_bucket_label(
+                        normalized_period,
+                        day_cursor,
+                        start_date,
+                        preferred_language,
+                    )
+                    if bucket_label in timeline_counts:
+                        timeline_counts[bucket_label] += 1
+                day_cursor += timedelta(days=1)
 
         adherence_rate = round(taken_slots / scheduled_slots, 3) if scheduled_slots > 0 else 0.0
         on_time_rate = round(on_time_slots / taken_slots, 3) if taken_slots > 0 else 0.0
         top_missed_items = sorted(top_missed.items(), key=lambda item: item[1], reverse=True)[:3]
 
         return PillboxHistorySummaryDto(
+            plan_id=str(plan.id),
+            plan_title=plan.title,
+            plan_status=plan.status,
+            member_count=len(plan.member_account_ids),
             period=normalized_period,
-            total_plans=total_plans,
-            active_plans=active_plans,
-            paused_plans=paused_plans,
-            archived_plans=archived_plans,
             total_medications=total_medications,
             scheduled_slots=scheduled_slots,
             taken_slots=taken_slots,

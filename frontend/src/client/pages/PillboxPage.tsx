@@ -294,6 +294,8 @@ const actionCompactDangerClass =
 const flowShellClass =
   "app-section-surface soft-panel w-full rounded-[24px] sm:rounded-[26px] lg:px-6 lg:py-6";
 const flowShellSpacingClass = "space-y-3 sm:space-y-3.5 lg:space-y-4";
+const PILLBOX_ON_TIME_WINDOW_MS = 30 * 60_000;
+const PILLBOX_LATE_WINDOW_MS = 6 * 60 * 60_000;
 
 function tPillbox(
   language: AppLanguage,
@@ -652,12 +654,17 @@ function formatMealRule(mealRule: PillboxMealRule, language: AppLanguage) {
 }
 
 function canMarkGroupDose(group: PillboxGroup) {
-  return Boolean(
-    group.status === "active" &&
-    group.nextMedicationId &&
-    group.nextDoseAt &&
-    new Date(group.nextDoseAt).getTime() <= Date.now()
-  );
+  if (
+    group.status !== "active" ||
+    !group.nextMedicationId ||
+    !group.nextDoseAt ||
+    Number.isNaN(new Date(group.nextDoseAt).getTime())
+  ) {
+    return false;
+  }
+  const now = Date.now();
+  const scheduledAt = new Date(group.nextDoseAt).getTime();
+  return now >= scheduledAt && now <= scheduledAt + PILLBOX_LATE_WINDOW_MS;
 }
 
 function isOverdueDose(nextDoseAt: string | null, status: PillboxGroup["status"]) {
@@ -668,8 +675,7 @@ function isOverdueDose(nextDoseAt: string | null, status: PillboxGroup["status"]
   if (Number.isNaN(scheduledAt.getTime())) {
     return false;
   }
-  const overdueAfterMs = 3 * 60_000;
-  return Date.now() - scheduledAt.getTime() >= overdueAfterMs;
+  return Date.now() - scheduledAt.getTime() > PILLBOX_LATE_WINDOW_MS;
 }
 
 function isLateDose(nextDoseAt: string | null, status: PillboxGroup["status"]) {
@@ -681,7 +687,7 @@ function isLateDose(nextDoseAt: string | null, status: PillboxGroup["status"]) {
     return false;
   }
   const diffMs = Date.now() - scheduledAt.getTime();
-  return diffMs > 0 && diffMs < 3 * 60_000;
+  return diffMs > PILLBOX_ON_TIME_WINDOW_MS && diffMs <= PILLBOX_LATE_WINDOW_MS;
 }
 
 function getPlanStateCompact(
@@ -876,6 +882,8 @@ export function PillboxPage() {
       return leftRank - rightRank;
     });
   }, [highlightedPlanId, language, planSummaries]);
+  const selectedPlanIdForAnalytics =
+    selectedPlanId && groups.some((item) => item.id === selectedPlanId) ? selectedPlanId : null;
 
   const createPlanMutation = useMutation({
     mutationFn: createPillboxPlan,
@@ -1307,11 +1315,20 @@ export function PillboxPage() {
   };
 
   const openAnalytics = () => {
-    navigate("/pillbox?mode=analytics");
+    const targetPlanId = selectedPlanIdForAnalytics ?? groups[0]?.id ?? null;
+    navigate(`/pillbox?mode=analytics${targetPlanId ? `&plan=${targetPlanId}` : ""}`);
   };
 
   if (screen === "analytics") {
-    return <PillboxAnalyticsScreen language={language} onBack={goToHub} />;
+    return (
+      <PillboxAnalyticsScreen
+        language={language}
+        groups={groups}
+        selectedPlanId={selectedPlanIdForAnalytics}
+        onBack={goToHub}
+        onSelectPlan={(planId) => navigate(`/pillbox?mode=analytics&plan=${planId}`)}
+      />
+    );
   }
 
   if (screen === "hub" && plansLoading) {
@@ -2362,10 +2379,16 @@ export function PillboxPage() {
 
 function PillboxAnalyticsScreen({
   language,
+  groups,
+  selectedPlanId,
   onBack,
+  onSelectPlan,
 }: {
   language: AppLanguage;
+  groups: PillboxGroup[];
+  selectedPlanId: string | null;
   onBack: () => void;
+  onSelectPlan: (planId: string) => void;
 }) {
   const periodOptions = [
     { key: "month", label: language === "ru" ? "Месяц" : "Month", short: "1m" },
@@ -2376,9 +2399,11 @@ function PillboxAnalyticsScreen({
   ] as const;
   const [selectedPeriod, setSelectedPeriod] =
     useState<(typeof periodOptions)[number]["key"]>("half_year");
+  const activePlanId = selectedPlanId ?? groups[0]?.id ?? null;
   const { data: summary, isLoading } = useQuery({
-    queryKey: ["pillbox-history-summary", selectedPeriod],
-    queryFn: () => fetchPillboxHistorySummary(selectedPeriod),
+    queryKey: ["pillbox-history-summary", activePlanId, selectedPeriod],
+    queryFn: () => fetchPillboxHistorySummary(activePlanId!, selectedPeriod),
+    enabled: Boolean(activePlanId),
   });
 
   return (
@@ -2394,6 +2419,26 @@ function PillboxAnalyticsScreen({
             ? "Сводка по выполнению приёмов и рискам пропусков."
             : "Summary of dose logging and missed-dose risks."}
         </p>
+        <div className="mt-4">
+          <p className="text-xs tracking-[0.08em] text-muted">
+            {language === "ru" ? "План" : "Plan"}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {groups.map((group) => (
+              <button
+                key={group.id}
+                type="button"
+                onClick={() => onSelectPlan(group.id)}
+                className={[
+                  group.id === activePlanId ? "soft-tab-active" : "soft-tab",
+                  "min-h-[2.5rem] rounded-full px-3.5 text-sm",
+                ].join(" ")}
+              >
+                {displayPillboxText(group.title)}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="sticky top-2 z-10 -mx-1 mt-4 overflow-x-auto px-1 pb-1 sm:static sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
           <div className="inline-flex min-w-full gap-2 sm:flex sm:min-w-0 sm:flex-wrap">
             {periodOptions.map((item) => (
@@ -2414,7 +2459,13 @@ function PillboxAnalyticsScreen({
         </div>
       </section>
 
-      {isLoading || !summary ? (
+      {!activePlanId ? (
+        <div className="soft-empty rounded-[22px] px-4 py-5 text-sm text-muted">
+          {language === "ru"
+            ? "Нет планов для аналитики. Создайте хотя бы один план."
+            : "No plans for analytics yet. Create at least one plan."}
+        </div>
+      ) : isLoading || !summary ? (
         <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
           {language === "ru" ? "Готовим сводку…" : "Preparing summary…"}
         </div>
@@ -2452,26 +2503,43 @@ function PillboxAnalyticsContent({
   ];
   const planCards = [
     {
-      label: language === "ru" ? "Планы" : "Plans",
-      value: String(summary.totalPlans),
+      label: language === "ru" ? "Статус" : "Status",
+      value:
+        summary.planStatus === "active"
+          ? language === "ru"
+            ? "Активен"
+            : "Active"
+          : summary.planStatus === "paused"
+            ? language === "ru"
+              ? "На паузе"
+              : "Paused"
+            : language === "ru"
+              ? "В архиве"
+              : "Archived",
     },
     {
-      label: language === "ru" ? "Активные" : "Active",
-      value: String(summary.activePlans),
+      label: language === "ru" ? "Участники" : "Members",
+      value: String(summary.memberCount),
     },
     {
-      label: language === "ru" ? "На паузе" : "Paused",
-      value: String(summary.pausedPlans),
+      label: language === "ru" ? "Лекарства" : "Medicines",
+      value: String(summary.totalMedications),
     },
     {
-      label: language === "ru" ? "В архиве" : "Archived",
-      value: String(summary.archivedPlans),
+      label: language === "ru" ? "С опозданием" : "Late",
+      value: String(summary.lateSlots),
     },
   ];
 
   return (
     <div className="space-y-4">
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="soft-panel-muted rounded-[22px] px-4 py-4 sm:col-span-2 xl:col-span-4">
+          <p className="text-sm text-muted">
+            {language === "ru" ? "План:" : "Plan:"}{" "}
+            <span className="font-semibold text-foreground">{summary.planTitle}</span>
+          </p>
+        </div>
         {kpiCards.map((item) => (
           <div key={item.label} className="soft-card rounded-[22px] px-4 py-4 sm:px-5">
             <p className="text-[0.82rem] leading-5 text-muted sm:text-sm">{item.label}</p>
@@ -2504,7 +2572,7 @@ function PillboxAnalyticsContent({
       <section className="grid gap-3 lg:grid-cols-2">
         <div className="soft-panel rounded-[28px] p-4 sm:p-5">
           <h3 className="app-card-title">
-            {language === "ru" ? "Статус планов" : "Plan statuses"}
+            {language === "ru" ? "Параметры плана" : "Plan details"}
           </h3>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {planCards.map((item) => (

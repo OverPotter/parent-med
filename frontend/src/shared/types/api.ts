@@ -241,11 +241,11 @@ export interface PillboxTopMedication {
 }
 
 export interface PillboxHistorySummary {
+  planId: string;
+  planTitle: string;
+  planStatus: string;
+  memberCount: number;
   period: string;
-  totalPlans: number;
-  activePlans: number;
-  pausedPlans: number;
-  archivedPlans: number;
   totalMedications: number;
   scheduledSlots: number;
   takenSlots: number;

@@ -121,14 +121,14 @@ class PillboxTopMedicationDto(BaseModel):
 
 
 class PillboxHistorySummaryDto(BaseModel):
-    """Сводка по приёмам таблетницы за период."""
+    """Сводка по приёмам конкретного плана таблетницы за период."""
 
+    plan_id: str = Field(..., description="ID плана")
+    plan_title: str = Field(..., description="Название плана")
+    plan_status: str = Field(..., description="Статус плана")
+    member_count: int = Field(..., description="Сколько участников у плана")
     period: str = Field(..., description="Выбранный период аналитики")
-    total_plans: int = Field(..., description="Всего планов в семье")
-    active_plans: int = Field(..., description="Активных планов")
-    paused_plans: int = Field(..., description="Планов на паузе")
-    archived_plans: int = Field(..., description="Архивных планов")
-    total_medications: int = Field(..., description="Всего лекарств в учитываемых планах")
+    total_medications: int = Field(..., description="Всего лекарств в плане")
     scheduled_slots: int = Field(..., description="Сколько слотов было по расписанию")
     taken_slots: int = Field(..., description="Сколько слотов отмечено")
     missed_slots: int = Field(..., description="Сколько слотов пропущено")

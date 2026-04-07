@@ -63,11 +63,11 @@ interface RawPillboxTopMedication {
 }
 
 interface RawPillboxHistorySummary {
+  plan_id: string;
+  plan_title: string;
+  plan_status: string;
+  member_count: number;
   period: string;
-  total_plans: number;
-  active_plans: number;
-  paused_plans: number;
-  archived_plans: number;
   total_medications: number;
   scheduled_slots: number;
   taken_slots: number;
@@ -148,11 +148,11 @@ function toPillboxTopMedication(raw: RawPillboxTopMedication): PillboxTopMedicat
 
 function toPillboxHistorySummary(raw: RawPillboxHistorySummary): PillboxHistorySummary {
   return {
+    planId: raw.plan_id,
+    planTitle: raw.plan_title,
+    planStatus: raw.plan_status,
+    memberCount: raw.member_count,
     period: raw.period,
-    totalPlans: raw.total_plans,
-    activePlans: raw.active_plans,
-    pausedPlans: raw.paused_plans,
-    archivedPlans: raw.archived_plans,
     totalMedications: raw.total_medications,
     scheduledSlots: raw.scheduled_slots,
     takenSlots: raw.taken_slots,
@@ -198,11 +198,15 @@ export async function fetchPillboxPlan(planId: string): Promise<PillboxPlan> {
 }
 
 export async function fetchPillboxHistorySummary(
+  planId: string,
   period: "month" | "quarter" | "half_year" | "year" | "all"
 ): Promise<PillboxHistorySummary> {
-  const res = await apiClient.get<RawPillboxHistorySummary>("/pillbox-plans/history-summary", {
-    params: { period },
-  });
+  const res = await apiClient.get<RawPillboxHistorySummary>(
+    `/pillbox-plans/${planId}/history-summary`,
+    {
+      params: { period },
+    }
+  );
   return toPillboxHistorySummary(res.data);
 }
 

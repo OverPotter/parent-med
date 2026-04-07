@@ -32,14 +32,16 @@ async def list_pillbox_plans(
     )
 
 
-@router.get("/history-summary", response_model=PillboxHistorySummaryDto)
+@router.get("/{plan_id}/history-summary", response_model=PillboxHistorySummaryDto)
 async def get_history_summary(
+    plan_id: UUID,
     period: str = "half_year",
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: PillboxService = Depends(get_pillbox_service),
 ) -> PillboxHistorySummaryDto:
     """Сводка по выполнению приёмов в таблетнице."""
-    return await service.get_history_summary(
+    return await service.get_plan_history_summary(
+        plan_id,
         current_account.family_id,
         period,
         current_account.preferred_language,
