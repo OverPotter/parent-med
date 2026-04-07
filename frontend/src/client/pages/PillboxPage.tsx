@@ -295,7 +295,7 @@ const flowShellClass =
   "app-section-surface soft-panel w-full rounded-[24px] sm:rounded-[26px] lg:px-6 lg:py-6";
 const flowShellSpacingClass = "space-y-3 sm:space-y-3.5 lg:space-y-4";
 const PILLBOX_ON_TIME_WINDOW_MS = 30 * 60_000;
-const PILLBOX_LATE_WINDOW_MS = 6 * 60 * 60_000;
+const PILLBOX_LATE_WINDOW_MS = 4 * 60 * 60_000;
 
 function tPillbox(
   language: AppLanguage,

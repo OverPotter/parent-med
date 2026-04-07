@@ -29,7 +29,7 @@ from src.domain.repositories.pillbox_repository import PillboxRepository
 class PillboxService:
     """CRUD и вычислительная логика семейной таблетницы."""
     _ON_TIME_WINDOW = timedelta(minutes=30)
-    _LATE_WINDOW = timedelta(hours=6)
+    _LATE_WINDOW = timedelta(hours=4)
 
     def __init__(
         self,
@@ -118,33 +118,57 @@ class PillboxService:
             and local_scheduled_for.timetz().replace(tzinfo=None) in medication.times
         )
 
+    def _build_medication_slots(
+        self,
+        medication: PillboxMedication,
+        start_day: date,
+        end_day: date,
+    ) -> list[datetime]:
+        slots: list[datetime] = []
+        day_cursor = start_day
+        while day_cursor <= end_day:
+            if (
+                self._is_medication_active_on(medication, day_cursor)
+                and day_cursor.isoweekday() in medication.repeat_days
+            ):
+                for dose_time in medication.times:
+                    local_scheduled_for = self._build_local_scheduled_at(day_cursor, dose_time)
+                    slots.append(local_scheduled_for.astimezone(UTC))
+            day_cursor += timedelta(days=1)
+        return sorted(slots)
+
+    def _get_slot_deadline(
+        self,
+        scheduled_for: datetime,
+        next_scheduled_for: datetime | None,
+    ) -> datetime:
+        late_deadline = scheduled_for + self._LATE_WINDOW
+        if next_scheduled_for is None:
+            return late_deadline
+        return min(late_deadline, next_scheduled_for)
+
     def _get_next_dose_details(
         self, plan: PillboxPlan, now: datetime
     ) -> tuple[datetime | None, PillboxMedication | None]:
-        candidates: list[tuple[datetime, PillboxMedication]] = []
         local_now = self._to_local(now)
-        for offset in range(0, 21):
-            target_day = (local_now + timedelta(days=offset)).date()
-            weekday = target_day.isoweekday()
-            for medication in plan.medications:
-                if not self._is_medication_active_on(medication, target_day):
+        start_day = local_now.date()
+        end_day = (local_now + timedelta(days=21)).date()
+
+        actionable: list[tuple[datetime, PillboxMedication]] = []
+        for medication in plan.medications:
+            slots = self._build_medication_slots(medication, start_day, end_day)
+            for index, scheduled_for in enumerate(slots):
+                if self._is_candidate_already_taken(plan, medication, scheduled_for):
                     continue
-                if weekday not in medication.repeat_days:
+                next_scheduled_for = slots[index + 1] if index + 1 < len(slots) else None
+                deadline = self._get_slot_deadline(scheduled_for, next_scheduled_for)
+                if now > deadline:
                     continue
-                for dose_time in medication.times:
-                    candidate = self._build_local_scheduled_at(target_day, dose_time).astimezone(
-                        UTC
-                    )
-                    if self._is_candidate_already_taken(plan, medication, candidate):
-                        continue
-                    if offset == 0 or candidate >= now:
-                        candidates.append((candidate, medication))
-            if candidates:
-                break
-        if not candidates:
+                actionable.append((scheduled_for, medication))
+
+        if not actionable:
             return None, None
-        next_dose_at, medication = min(candidates, key=lambda item: item[0])
-        return next_dose_at, medication
+        return min(actionable, key=lambda item: item[0])
 
     def _get_course_progress(
         self, plan: PillboxPlan, language: str
@@ -505,62 +529,52 @@ class PillboxService:
                 logs_by_slot[(log.medication_id, log.scheduled_for)] = log.taken_at
 
         for medication in plan.medications:
-            day_cursor = start_date
-            while day_cursor <= today_local:
-                if not self._is_medication_active_on(medication, day_cursor):
-                    day_cursor += timedelta(days=1)
+            slots = self._build_medication_slots(medication, start_date, today_local)
+            for index, scheduled_for in enumerate(slots):
+                if scheduled_for > now_utc:
                     continue
-                if day_cursor.isoweekday() not in medication.repeat_days:
-                    day_cursor += timedelta(days=1)
+                next_scheduled_for = slots[index + 1] if index + 1 < len(slots) else None
+                slot_deadline = self._get_slot_deadline(scheduled_for, next_scheduled_for)
+                taken_at = logs_by_slot.get((medication.id, scheduled_for))
+                is_finalized_slot = taken_at is not None or now_utc >= slot_deadline
+                if not is_finalized_slot:
                     continue
 
-                for dose_time in medication.times:
-                    local_scheduled_for = self._build_local_scheduled_at(day_cursor, dose_time)
-                    scheduled_for = local_scheduled_for.astimezone(UTC)
-                    if scheduled_for > now_utc:
-                        continue
-
-                    taken_at = logs_by_slot.get((medication.id, scheduled_for))
-                    slot_deadline = scheduled_for + self._LATE_WINDOW
-                    is_finalized_slot = taken_at is not None or now_utc >= slot_deadline
-                    if not is_finalized_slot:
-                        continue
-
-                    scheduled_slots += 1
-                    if taken_at is None:
-                        missed_slots += 1
-                        medicine_name = (
-                            (medication.custom_medicine_name or "").strip()
-                            or ("Medicine" if preferred_language == "en" else "Лекарство")
-                        )
-                        top_missed[medicine_name] += 1
-                        continue
-
-                    delay = taken_at - scheduled_for
-                    if delay <= self._ON_TIME_WINDOW:
-                        on_time_slots += 1
-                        taken_slots += 1
-                    elif delay <= self._LATE_WINDOW:
-                        late_slots += 1
-                        taken_slots += 1
-                    else:
-                        missed_slots += 1
-                        medicine_name = (
-                            (medication.custom_medicine_name or "").strip()
-                            or ("Medicine" if preferred_language == "en" else "Лекарство")
-                        )
-                        top_missed[medicine_name] += 1
-                        continue
-
-                    bucket_label = self._timeline_bucket_label(
-                        normalized_period,
-                        day_cursor,
-                        start_date,
-                        preferred_language,
+                scheduled_slots += 1
+                if taken_at is None:
+                    missed_slots += 1
+                    medicine_name = (
+                        (medication.custom_medicine_name or "").strip()
+                        or ("Medicine" if preferred_language == "en" else "Лекарство")
                     )
-                    if bucket_label in timeline_counts:
-                        timeline_counts[bucket_label] += 1
-                day_cursor += timedelta(days=1)
+                    top_missed[medicine_name] += 1
+                    continue
+
+                delay = taken_at - scheduled_for
+                if delay <= self._ON_TIME_WINDOW:
+                    on_time_slots += 1
+                    taken_slots += 1
+                elif taken_at <= slot_deadline:
+                    late_slots += 1
+                    taken_slots += 1
+                else:
+                    missed_slots += 1
+                    medicine_name = (
+                        (medication.custom_medicine_name or "").strip()
+                        or ("Medicine" if preferred_language == "en" else "Лекарство")
+                    )
+                    top_missed[medicine_name] += 1
+                    continue
+
+                slot_day = self._to_local(scheduled_for).date()
+                bucket_label = self._timeline_bucket_label(
+                    normalized_period,
+                    slot_day,
+                    start_date,
+                    preferred_language,
+                )
+                if bucket_label in timeline_counts:
+                    timeline_counts[bucket_label] += 1
 
         adherence_rate = round(taken_slots / scheduled_slots, 3) if scheduled_slots > 0 else 0.0
         on_time_rate = round(on_time_slots / taken_slots, 3) if taken_slots > 0 else 0.0
