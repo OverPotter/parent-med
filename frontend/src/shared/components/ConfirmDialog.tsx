@@ -28,7 +28,8 @@ export function ConfirmDialog({
   const isEnglishUi =
     typeof document !== "undefined" && document.documentElement.lang.toLowerCase().startsWith("en");
   const resolvedCancelLabel = cancelLabel ?? (isEnglishUi ? "Cancel" : "Отмена");
-  const resolvedCloseAriaLabel = closeAriaLabel ?? (isEnglishUi ? "Close confirmation" : "Закрыть подтверждение");
+  const resolvedCloseAriaLabel =
+    closeAriaLabel ?? (isEnglishUi ? "Close confirmation" : "Закрыть подтверждение");
 
   useEffect(() => {
     if (!isOpen) {

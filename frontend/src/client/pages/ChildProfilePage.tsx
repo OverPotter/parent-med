@@ -419,9 +419,7 @@ function EditChildProfileForm({
             >
               {isSaving ? copy.form.saving : copy.form.save}
             </button>
-            <p className="w-full text-xs leading-5 text-muted sm:order-3">
-              {copy.form.deleteHint}
-            </p>
+            <p className="w-full text-xs leading-5 text-muted sm:order-3">{copy.form.deleteHint}</p>
             <button
               type="button"
               onClick={onRequestDeleteConfirm}

@@ -178,11 +178,7 @@ function ProfileMenu({
   );
 }
 
-export function Layout({
-  children,
-  navLinks = [],
-  mobileNavLinks = [],
-}: LayoutProps) {
+export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutProps) {
   const { copy } = useI18n();
   const { effectiveTheme, toggleTheme, accountLogin, accountDisplayName, clearSession } =
     useAppStore();
@@ -331,7 +327,11 @@ export function Layout({
           <div className="hidden md:block md:py-2">
             <div className="soft-nav-shell relative z-20 rounded-[32px] px-4 py-3.5">
               <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-5">
-                <Link to="/" className="inline-flex items-center" aria-label={copy.common.brandName}>
+                <Link
+                  to="/"
+                  className="inline-flex items-center"
+                  aria-label={copy.common.brandName}
+                >
                   <img src="/pwa-icon.png" alt="" className="h-10 w-10 rounded-[1.15rem]" />
                 </Link>
 

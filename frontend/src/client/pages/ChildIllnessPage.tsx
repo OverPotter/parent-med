@@ -106,7 +106,8 @@ function normalizeChildIllnessSearchParams(
     return next;
   }
 
-  const canKeepCreateMode = mode === "create" && (!options.isActiveEpisodeFetched || !options.hasActiveEpisode);
+  const canKeepCreateMode =
+    mode === "create" && (!options.isActiveEpisodeFetched || !options.hasActiveEpisode);
   if (canKeepCreateMode) {
     next.set("mode", "create");
     return next;

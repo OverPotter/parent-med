@@ -853,7 +853,8 @@ function MemberCard({
               onClick={async () => {
                 const normalizedEmail = email.trim().toLowerCase();
                 const isValidEmail =
-                  normalizedEmail.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+                  normalizedEmail.length === 0 ||
+                  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
                 if (!isValidEmail) {
                   setEmailError(tFamily(language, "invalidEmail"));
                   return;
