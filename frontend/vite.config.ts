@@ -146,4 +146,8 @@ export default defineConfig({
         }
       : undefined,
   },
+  build: {
+    outDir: "www",
+    emptyOutDir: true,
+  },
 });

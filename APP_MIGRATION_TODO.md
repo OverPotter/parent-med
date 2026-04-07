@@ -11,8 +11,8 @@
 - [ ] Подготовить стабильный release tag для ветки, от которой начнем мобильную сборку.
 
 ## 1. Базовая iOS-обертка (Capacitor)
-- [ ] Добавить Capacitor в `frontend` (`init`, `add ios`).
-- [ ] Настроить сборку Vite в `www` для Capacitor.
+- [x] Добавить Capacitor в `frontend` (`init`, `add ios`).
+- [x] Настроить сборку Vite в `www` для Capacitor.
 - [ ] Подключить iOS-проект в Xcode и проверить запуск на реальном iPhone.
 - [ ] Настроить окружения (`dev`/`stage`/`prod`) для API URL.
 

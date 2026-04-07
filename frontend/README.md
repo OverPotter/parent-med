@@ -38,6 +38,29 @@ npm run preview
 
 После сборки в `dist/` — статика и service worker для установки на устройство.
 
+## iOS-обертка (Capacitor)
+
+Проект уже инициализирован: `capacitor.config.ts`, платформа `ios/`, web assets в `www/`.
+
+```bash
+# из frontend/
+npm run build:mobile      # build + npx cap sync ios
+npm run cap:open:ios      # открыть Xcode проект
+```
+
+Ручные команды (если нужно):
+
+```bash
+npx cap sync ios
+npx cap open ios
+```
+
+В Xcode:
+
+1. Открыть `frontend/ios/App/App.xcodeproj` (или через `cap:open:ios`).
+2. Выбрать Team в Signing & Capabilities.
+3. Подключить iPhone и нажать Run.
+
 ## Аналитика (HitKeep)
 
 Код: `src/shared/analytics/`. Без `VITE_HITKEEP_SCRIPT_URL` в `.env` скрипт не грузится.
