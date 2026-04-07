@@ -8,6 +8,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_settings.sources.types import NoDecode
 
 _DEFAULT_CORS_ORIGINS: list[str] = [
+    "capacitor://localhost",
+    "http://localhost",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
