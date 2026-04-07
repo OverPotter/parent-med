@@ -178,6 +178,10 @@ export interface Translations {
       extraProfileCopy: string;
       invitationNote: string;
       passwordsMismatch: string;
+      legalConsentPrefix: string;
+      legalConsentTerms: string;
+      legalConsentAnd: string;
+      legalConsentPrivacy: string;
     };
     fields: {
       login: string;
@@ -210,6 +214,7 @@ export interface Translations {
       loginFailed: string;
       registerFailed: string;
       passwordsMismatch: string;
+      legalConsentRequired: string;
     };
   };
   more: {

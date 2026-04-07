@@ -205,6 +205,7 @@ export function AuthPage() {
   const [relationshipLabel, setRelationshipLabel] = useState("");
   const [phone, setPhone] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
+  const [acceptLegal, setAcceptLegal] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
@@ -269,6 +270,10 @@ export function AuthPage() {
     }
     if (mode === "register" && password !== passwordConfirm) {
       setError(copy.auth.errors.passwordsMismatch);
+      return;
+    }
+    if (mode === "register" && !acceptLegal) {
+      setError(copy.auth.errors.legalConsentRequired);
       return;
     }
     if (mode === "login") {
@@ -518,6 +523,31 @@ export function AuthPage() {
                       {copy.auth.page.forgotPassword}
                     </button>
                   </div>
+                  {isRegisterMode ? (
+                    <label className="auth-v3-checkbox">
+                      <span className="auth-v3-checkbox-box">
+                        <input
+                          type="checkbox"
+                          checked={acceptLegal}
+                          onChange={(event) => setAcceptLegal(event.target.checked)}
+                          className="peer absolute inset-0 cursor-pointer opacity-0"
+                        />
+                        <span className="auth-v3-checkbox-mark">
+                          <CheckIcon />
+                        </span>
+                      </span>
+                      <span className="text-sm leading-6 text-muted">
+                        {copy.auth.page.legalConsentPrefix}{" "}
+                        <Link to="/legal/terms" className="underline">
+                          {copy.auth.page.legalConsentTerms}
+                        </Link>{" "}
+                        {copy.auth.page.legalConsentAnd}{" "}
+                        <Link to="/legal/privacy" className="underline">
+                          {copy.auth.page.legalConsentPrivacy}
+                        </Link>
+                      </span>
+                    </label>
+                  ) : null}
                 </div>
               </div>
 
@@ -580,7 +610,8 @@ export function AuthPage() {
                   isPending ||
                   !loginValue.trim() ||
                   password.length < 6 ||
-                  (isRegisterMode && (!passwordConfirm || password !== passwordConfirm))
+                  (isRegisterMode &&
+                    (!passwordConfirm || password !== passwordConfirm || !acceptLegal))
                 }
                 className="auth-v3-submit"
               >

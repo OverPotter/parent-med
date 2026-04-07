@@ -20,20 +20,24 @@ export function LegalPage() {
       title: language === "ru" ? "Политика конфиденциальности" : "Privacy Policy",
       description:
         language === "ru"
-          ? "Как обрабатываются и защищаются данные."
+          ? "Как обрабатываются и защищаются данные (версия РБ)."
           : "How data is processed and protected.",
     },
     {
       href: getTermsOfUseUrl(),
       title: language === "ru" ? "Условия использования" : "Terms of Use",
       description:
-        language === "ru" ? "Условия использования сервиса." : "Terms for using the service.",
+        language === "ru"
+          ? "Правила использования сервиса (версия РБ)."
+          : "Terms for using the service.",
     },
     {
       href: getSupportUrl(),
       title: language === "ru" ? "Поддержка / Контакты" : "Support / Contact",
       description:
-        language === "ru" ? "Канал связи с командой." : "A contact channel with the team.",
+        language === "ru"
+          ? "Канал связи и запросы по персональным данным."
+          : "A contact channel with the team.",
     },
   ];
 

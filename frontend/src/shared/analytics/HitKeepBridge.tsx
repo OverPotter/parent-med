@@ -10,11 +10,15 @@ import {
   trackSessionIdentify,
 } from "./hitkeep";
 import { useAppStore } from "@shared/store/useAppStore";
+import { getCookieConsentDecision } from "@shared/privacy/cookieConsent";
 
 const SCRIPT_ID = "hitkeep-tracker";
 
 function HitKeepScriptLoader() {
   useEffect(() => {
+    if (getCookieConsentDecision() !== "accepted") {
+      return;
+    }
     const url = import.meta.env.VITE_HITKEEP_SCRIPT_URL?.trim();
     if (!url) {
       if (import.meta.env.PROD) {
@@ -54,6 +58,9 @@ function HitKeepPageViews() {
   const prevPath = useRef<string | null>(null);
 
   useEffect(() => {
+    if (getCookieConsentDecision() !== "accepted") {
+      return;
+    }
     if (!isHitKeepConfigured()) {
       return;
     }
@@ -78,6 +85,9 @@ function HitKeepIdentify() {
   const lastSent = useRef<string | null>(null);
 
   useEffect(() => {
+    if (getCookieConsentDecision() !== "accepted") {
+      return;
+    }
     if (!isHitKeepConfigured() || !accountId) {
       if (!accountId) {
         lastSent.current = null;

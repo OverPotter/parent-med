@@ -11,6 +11,7 @@ import type {
   PillboxHistorySummary,
   PillboxTopMedication,
 } from "@shared/types/api";
+import type { AppLanguage } from "@shared/i18n";
 
 interface RawPillboxMedication {
   id: string;
@@ -199,12 +200,13 @@ export async function fetchPillboxPlan(planId: string): Promise<PillboxPlan> {
 
 export async function fetchPillboxHistorySummary(
   planId: string,
-  period: "month" | "quarter" | "half_year" | "year" | "all"
+  period: "month" | "quarter" | "half_year" | "year" | "all",
+  language: AppLanguage
 ): Promise<PillboxHistorySummary> {
   const res = await apiClient.get<RawPillboxHistorySummary>(
     `/pillbox-plans/${planId}/history-summary`,
     {
-      params: { period },
+      params: { period, language },
     }
   );
   return toPillboxHistorySummary(res.data);

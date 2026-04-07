@@ -352,6 +352,10 @@ export const en: Translations = {
       invitationNote:
         "If you were already invited into a family, open the invite link from the message. It will lead you into the right flow automatically.",
       passwordsMismatch: "Passwords must match.",
+      legalConsentPrefix: "I accept the",
+      legalConsentTerms: "Terms of Use",
+      legalConsentAnd: "and",
+      legalConsentPrivacy: "Privacy Policy",
     },
     fields: {
       login: "Login",
@@ -385,6 +389,7 @@ export const en: Translations = {
       loginFailed: "Login failed",
       registerFailed: "Registration failed",
       passwordsMismatch: "Passwords do not match",
+      legalConsentRequired: "Please accept the terms and privacy policy.",
     },
   },
   more: {

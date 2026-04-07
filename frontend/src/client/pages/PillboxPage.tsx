@@ -29,7 +29,6 @@ import { fetchMyFamilyMembers } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { DateField } from "@shared/components/DateField";
-import { MedicalDisclaimer } from "@shared/components/MedicalDisclaimer";
 import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { AppLanguage } from "@shared/i18n";
@@ -1378,7 +1377,6 @@ export function PillboxPage() {
         <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
           {language === "ru" ? "Загружаем планы приёма..." : "Loading medication plans..."}
         </div>
-        <MedicalDisclaimer />
       </div>
     );
   }
@@ -2240,7 +2238,6 @@ export function PillboxPage() {
           </button>
         </div>
       </div>
-      <MedicalDisclaimer />
 
       <ul className="grid gap-3.5">
         {groups.map((group) => {
@@ -2404,8 +2401,8 @@ function PillboxAnalyticsScreen({
     useState<(typeof periodOptions)[number]["key"]>("half_year");
   const activePlanId = selectedPlanId ?? groups[0]?.id ?? null;
   const { data: summary, isLoading } = useQuery({
-    queryKey: ["pillbox-history-summary", activePlanId, selectedPeriod],
-    queryFn: () => fetchPillboxHistorySummary(activePlanId!, selectedPeriod),
+    queryKey: ["pillbox-history-summary", activePlanId, selectedPeriod, language],
+    queryFn: () => fetchPillboxHistorySummary(activePlanId!, selectedPeriod, language),
     enabled: Boolean(activePlanId),
   });
 
@@ -2475,7 +2472,6 @@ function PillboxAnalyticsScreen({
       ) : (
         <PillboxAnalyticsContent summary={summary} language={language} />
       )}
-      <MedicalDisclaimer />
     </div>
   );
 }

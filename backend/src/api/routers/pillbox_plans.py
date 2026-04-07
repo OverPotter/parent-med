@@ -36,15 +36,17 @@ async def list_pillbox_plans(
 async def get_history_summary(
     plan_id: UUID,
     period: str = "half_year",
+    language: str | None = None,
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: PillboxService = Depends(get_pillbox_service),
 ) -> PillboxHistorySummaryDto:
     """Сводка по выполнению приёмов в таблетнице."""
+    preferred_language = language if language in {"ru", "en"} else current_account.preferred_language
     return await service.get_plan_history_summary(
         plan_id,
         current_account.family_id,
         period,
-        current_account.preferred_language,
+        preferred_language,
     )
 
 

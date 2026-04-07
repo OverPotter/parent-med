@@ -348,6 +348,10 @@ export const ru: Translations = {
       invitationNote:
         "Если вас уже пригласили в семью, откройте ссылку приглашения из сообщения. Она сама приведёт в нужный сценарий.",
       passwordsMismatch: "Пароли должны совпадать.",
+      legalConsentPrefix: "Я принимаю",
+      legalConsentTerms: "Условия использования",
+      legalConsentAnd: "и",
+      legalConsentPrivacy: "Политику конфиденциальности",
     },
     fields: {
       login: "Логин",
@@ -381,6 +385,7 @@ export const ru: Translations = {
       loginFailed: "Ошибка входа",
       registerFailed: "Ошибка регистрации",
       passwordsMismatch: "Пароли не совпадают",
+      legalConsentRequired: "Подтвердите согласие с условиями и политикой.",
     },
   },
   more: {

@@ -7,6 +7,11 @@ import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { setBearerToken, setRefreshHandler } from "@shared/api/client";
 import { useAppStore } from "@shared/store/useAppStore";
+import { CookieConsentBanner } from "@shared/components/CookieConsentBanner";
+import {
+  getCookieConsentDecision,
+  type CookieConsentDecision,
+} from "@shared/privacy/cookieConsent";
 import {
   getExistingPushSubscription,
   isPushSupported,
@@ -80,6 +85,17 @@ const FeedbackPage = lazy(() =>
 );
 const LegalPage = lazy(() =>
   import("@client/pages/LegalPage").then((module) => ({ default: module.LegalPage }))
+);
+const PrivacyPolicyPage = lazy(() =>
+  import("@client/pages/PrivacyPolicyPage").then((module) => ({
+    default: module.PrivacyPolicyPage,
+  }))
+);
+const TermsOfUsePage = lazy(() =>
+  import("@client/pages/TermsOfUsePage").then((module) => ({ default: module.TermsOfUsePage }))
+);
+const SupportPage = lazy(() =>
+  import("@client/pages/SupportPage").then((module) => ({ default: module.SupportPage }))
 );
 const AdminLayout = lazy(() =>
   import("@admin/layout/AdminLayout").then((module) => ({ default: module.AdminLayout }))
@@ -175,6 +191,9 @@ function RouteScrollReset() {
       "/about",
       "/feedback",
       "/legal",
+      "/legal/privacy",
+      "/legal/terms",
+      "/legal/support",
     ].some((path) => location.pathname === path);
 
     if (!isMobileViewport || !isPrimaryMenuRoute) {
@@ -448,6 +467,24 @@ export default function App() {
   const authToken = useAppStore((s) => s.authToken);
   const accountId = useAppStore((s) => s.accountId);
   const hydrated = useAppStore((s) => s.hydrated);
+  const [cookieConsent, setCookieConsent] = useState<CookieConsentDecision | null>(() =>
+    getCookieConsentDecision()
+  );
+
+  useEffect(() => {
+    const handleConsentChanged = (event: Event) => {
+      const detail = (event as CustomEvent<CookieConsentDecision>).detail;
+      if (detail === "accepted" || detail === "rejected") {
+        setCookieConsent(detail);
+        return;
+      }
+      setCookieConsent(getCookieConsentDecision());
+    };
+
+    window.addEventListener("cookie-consent:changed", handleConsentChanged as EventListener);
+    return () =>
+      window.removeEventListener("cookie-consent:changed", handleConsentChanged as EventListener);
+  }, []);
 
   if (!hydrated) {
     return null;
@@ -456,7 +493,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <BootLog />
-      <HitKeepBridge />
+      {cookieConsent === "accepted" ? <HitKeepBridge /> : null}
       <ThemeSync />
       <DisplayModeSync />
       <RouteScrollReset />
@@ -471,6 +508,10 @@ export default function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/join-family" element={<JoinFamilyPage />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/legal" element={<LegalPage />} />
+              <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+              <Route path="/legal/terms" element={<TermsOfUsePage />} />
+              <Route path="/legal/support" element={<SupportPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           ) : role === "admin" ? (
@@ -499,6 +540,9 @@ export default function App() {
                 <Route path="more" element={<MorePage />} />
                 <Route path="feedback" element={<FeedbackPage />} />
                 <Route path="legal" element={<LegalPage />} />
+                <Route path="legal/privacy" element={<PrivacyPolicyPage />} />
+                <Route path="legal/terms" element={<TermsOfUsePage />} />
+                <Route path="legal/support" element={<SupportPage />} />
                 <Route path="account" element={<AccountPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="about" element={<AboutPage />} />
@@ -509,6 +553,7 @@ export default function App() {
           )}
         </Routes>
       </Suspense>
+      {cookieConsent === null ? <CookieConsentBanner /> : null}
     </BrowserRouter>
   );
 }

@@ -13,7 +13,6 @@ import {
 import { searchMedicineCatalog } from "@shared/api/medicineCatalog";
 import { DateField } from "@shared/components/DateField";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { MedicalDisclaimer } from "@shared/components/MedicalDisclaimer";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { trackHouseholdMedicineAdded } from "@shared/analytics";
@@ -310,7 +309,6 @@ export function MedicineCabinetPage() {
         compactOnMobile
         hideOnMobile
       />
-      <MedicalDisclaimer />
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button

@@ -40,7 +40,6 @@ import {
 import { DateField } from "@shared/components/DateField";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { DisclosureHeader } from "@shared/components/DisclosureHeader";
-import { MedicalDisclaimer } from "@shared/components/MedicalDisclaimer";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
@@ -379,7 +378,6 @@ export function ChildIllnessPage() {
       <Link to={backHref} className="inline-flex text-sm text-primary hover:underline">
         {backLabel}
       </Link>
-      <MedicalDisclaimer />
 
       {((!activeEpisode && !createMode) || historyOnlyView) && (
         <section
