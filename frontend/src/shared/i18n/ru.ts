@@ -413,6 +413,11 @@ export const ru: Translations = {
         title: "Обратная связь",
         description: "Сообщение команде о проблеме или идее.",
       },
+      {
+        to: "/legal",
+        title: "Privacy · Terms · Support",
+        description: "Политика, условия использования и контакты.",
+      },
     ],
   },
   feedback: {

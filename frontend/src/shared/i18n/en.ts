@@ -417,6 +417,11 @@ export const en: Translations = {
         title: "Feedback",
         description: "Send the team a bug report or suggestion.",
       },
+      {
+        to: "/legal",
+        title: "Privacy · Terms · Support",
+        description: "Policy, terms of use and support links.",
+      },
     ],
   },
   feedback: {

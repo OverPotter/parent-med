@@ -16,6 +16,7 @@ import { fetchIllnessEpisodesByChildId, updateIllnessEpisode } from "@shared/api
 import { trackMedicationAdministered } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
+import { MedicalDisclaimer } from "@shared/components/MedicalDisclaimer";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
@@ -116,6 +117,7 @@ export function ActiveIllnessesPage() {
   return (
     <div className="space-y-7">
       <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
+      <MedicalDisclaimer />
 
       {(isLoading || isActiveEpisodesLoading) && <p className="text-muted">{common.loading}</p>}
 

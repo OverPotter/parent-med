@@ -78,6 +78,9 @@ const MorePage = lazy(() =>
 const FeedbackPage = lazy(() =>
   import("@client/pages/FeedbackPage").then((module) => ({ default: module.FeedbackPage }))
 );
+const LegalPage = lazy(() =>
+  import("@client/pages/LegalPage").then((module) => ({ default: module.LegalPage }))
+);
 const AdminLayout = lazy(() =>
   import("@admin/layout/AdminLayout").then((module) => ({ default: module.AdminLayout }))
 );
@@ -171,6 +174,7 @@ function RouteScrollReset() {
       "/settings",
       "/about",
       "/feedback",
+      "/legal",
     ].some((path) => location.pathname === path);
 
     if (!isMobileViewport || !isPrimaryMenuRoute) {
@@ -494,6 +498,7 @@ export default function App() {
                 <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
                 <Route path="more" element={<MorePage />} />
                 <Route path="feedback" element={<FeedbackPage />} />
+                <Route path="legal" element={<LegalPage />} />
                 <Route path="account" element={<AccountPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="about" element={<AboutPage />} />
