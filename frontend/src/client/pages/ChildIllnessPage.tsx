@@ -63,7 +63,7 @@ import {
   getPrioritizedMedicationPlanItems,
   type MedicationPlanPriorityItem,
 } from "../utils/medicationPlans";
-import { formatDate, formatDateTime } from "@shared/utils/date";
+import { formatDate, formatDateTime, getLocalIsoDate } from "@shared/utils/date";
 import { formatChildAgeLabel } from "@client/i18n/children";
 
 const appBtnPrimaryClass =
@@ -73,10 +73,67 @@ const appBtnSecondaryClass =
 const appBtnDangerClass =
   "app-btn-danger-md soft-button-danger inline-flex items-center justify-center px-4";
 
+const QUICK_FOCUS_VALUES = new Set([
+  "temperature",
+  "administration",
+  "comment",
+  "timeline",
+  "reminders",
+  "reminder-create",
+  "reminder-detail",
+]);
+
+function normalizeChildIllnessSearchParams(
+  source: URLSearchParams,
+  options: { isActiveEpisodeFetched: boolean; hasActiveEpisode: boolean }
+): URLSearchParams {
+  const next = new URLSearchParams();
+  const view = source.get("view");
+  const mode = source.get("mode");
+  const episodeId = source.get("episodeId");
+  const focus = source.get("focus") ?? source.get("compose");
+  const plan = source.get("plan");
+
+  if (view === "history") {
+    next.set("view", "history");
+    if (episodeId) {
+      next.set("episodeId", episodeId);
+      return next;
+    }
+    if (mode === "analytics") {
+      next.set("mode", "analytics");
+    }
+    return next;
+  }
+
+  const canKeepCreateMode = mode === "create" && (!options.isActiveEpisodeFetched || !options.hasActiveEpisode);
+  if (canKeepCreateMode) {
+    next.set("mode", "create");
+    return next;
+  }
+
+  if (!focus || !QUICK_FOCUS_VALUES.has(focus)) {
+    return next;
+  }
+
+  if (focus === "reminder-detail") {
+    if (!plan) {
+      next.set("focus", "reminders");
+      return next;
+    }
+    next.set("focus", "reminder-detail");
+    next.set("plan", plan);
+    return next;
+  }
+
+  next.set("focus", focus);
+  return next;
+}
+
 export function ChildIllnessPage() {
   const { language } = useI18n();
   const { childId } = useParams<{ childId: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const queryClient = useQueryClient();
@@ -123,12 +180,22 @@ export function ChildIllnessPage() {
     ...liveQueryOptions,
   });
 
-  const { data: activeEpisode } = useQuery({
+  const { data: activeEpisode, isFetched: isActiveEpisodeFetched } = useQuery({
     queryKey: ["illness-episode-active", childId],
     queryFn: () => fetchActiveIllnessEpisodeByChildId(childId!),
     enabled: !!childId,
     ...liveQueryOptions,
   });
+
+  useEffect(() => {
+    const normalized = normalizeChildIllnessSearchParams(searchParams, {
+      isActiveEpisodeFetched,
+      hasActiveEpisode: Boolean(activeEpisode),
+    });
+    if (normalized.toString() !== searchParams.toString()) {
+      setSearchParams(normalized, { replace: true });
+    }
+  }, [activeEpisode, isActiveEpisodeFetched, searchParams, setSearchParams]);
 
   const { data: familyMedicines = [] } = useQuery({
     queryKey: ["household-medicines", currentFamilyId],
@@ -1060,8 +1127,8 @@ function HistoryEpisodeCard({
               ? "Удаляем…"
               : "Deleting…"
             : language === "ru"
-              ? "Удалить из истории"
-              : "Delete from history"
+              ? "Да, удалить из истории"
+              : "Yes, delete from history"
         }
         confirmTone="danger"
         isPending={deleteEpisodeMutation.isPending}
@@ -2436,7 +2503,7 @@ function EpisodeActivationCard({
   onCancel: () => void;
 }) {
   const { language } = useI18n();
-  const [startedAt, setStartedAt] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startedAt, setStartedAt] = useState(() => getLocalIsoDate());
   const [title, setTitle] = useState("");
 
   return (
@@ -2465,7 +2532,7 @@ function EpisodeActivationCard({
             value={startedAt}
             onChange={setStartedAt}
             language={language}
-            max={new Date().toISOString().slice(0, 10)}
+            max={getLocalIsoDate()}
             className=""
           />
         </label>
@@ -3641,8 +3708,8 @@ function MedicationPlanDetail({
               ? "Удаляем…"
               : "Deleting…"
             : language === "ru"
-              ? "Удалить"
-              : "Delete"
+              ? "Да, удалить напоминание"
+              : "Yes, delete reminder"
         }
         confirmTone="danger"
         isPending={isDeleting}

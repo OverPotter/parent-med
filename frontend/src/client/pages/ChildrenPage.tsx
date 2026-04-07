@@ -19,7 +19,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child, WeightEntry } from "@shared/types/api";
-import { formatDate } from "@shared/utils/date";
+import { formatDate, getLocalIsoDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
@@ -326,7 +326,7 @@ function AddChildForm({
                 setValidationError(null);
               }}
               language={language}
-              max={new Date().toISOString().slice(0, 10)}
+              max={getLocalIsoDate()}
               className="mt-1"
             />
           </label>

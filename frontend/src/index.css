@@ -473,8 +473,7 @@ p {
       border-color 180ms ease,
       box-shadow 180ms ease,
       background 180ms ease,
-      color 180ms ease,
-      transform 180ms ease;
+      color 180ms ease;
   }
 
   input.soft-input,
@@ -511,7 +510,6 @@ p {
       0 0 0 4px rgba(138, 123, 191, 0.12),
       0 14px 30px -22px color-mix(in srgb, var(--color-primary) 22%, transparent),
       inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    transform: translateY(-1px);
   }
 
   input.soft-input:not(:placeholder-shown),
