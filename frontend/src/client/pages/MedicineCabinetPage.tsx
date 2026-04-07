@@ -20,7 +20,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import type { AppLanguage } from "@shared/i18n";
 import type { HouseholdMedicine, MedicineCatalogItem } from "@shared/types/api";
-import { formatDate } from "@shared/utils/date";
+import { formatDate, getLocalIsoDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
 import { useAppStore } from "@shared/store/useAppStore";
 
@@ -75,6 +75,7 @@ const cabinetCopy = {
     openedShelfDaysUnknown: "Если не знаете, оставьте пустым",
     openedShelfDaysAuto:
       "Если у препарата есть срок после вскрытия в справочнике, он подставится автоматически.",
+    openedShelfDaysError: "Срок после вскрытия укажите числом от 1 до 3650 дней.",
     expiredWarning:
       "Срок годности уже истёк. Препарат можно сохранить в аптечку для учёта, но Safety Engine не даст использовать его в приёмах.",
     openedUnknownWarning:
@@ -161,6 +162,7 @@ const cabinetCopy = {
     openedShelfDaysUnknown: "Leave empty if you do not know it",
     openedShelfDaysAuto:
       "If the catalog already has a shelf life after opening, it will be filled in automatically.",
+    openedShelfDaysError: "Shelf life after opening must be a number from 1 to 3650 days.",
     expiredWarning:
       "The expiry date has already passed. You can still keep the medicine in the first aid kit for reference, but the Safety Engine will not allow it in medication plans.",
     openedUnknownWarning:
@@ -379,7 +381,7 @@ export function MedicineCabinetPage() {
                   language={language}
                   medicine={m}
                   onDelete={(id) => deleteMutation.mutate(id)}
-                  isDeleting={deleteMutation.isPending}
+                  isDeleting={deleteMutation.isPending && deleteMutation.variables === m.id}
                   compact={isSearchMode}
                 />
               ))}
@@ -393,8 +395,18 @@ export function MedicineCabinetPage() {
 
 function isExpiredDate(value: string): boolean {
   if (!value) return false;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalIsoDate();
   return value < today;
+}
+
+function toOpenedShelfDaysOrNull(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) return null;
+  const rounded = Math.floor(parsed);
+  if (rounded < 1 || rounded > 3650) return null;
+  return rounded;
 }
 
 function hasUnknownOpenedShelfLife(openedAt: string, openedShelfDays: string): boolean {
@@ -484,11 +496,12 @@ function AddHouseholdMedicineForm({
   const medicineFormOptions = getMedicineFormOptions(language);
   const isExpired = isExpiredDate(expiryDate);
   const hasUnknownAfterOpening = hasUnknownOpenedShelfLife(openedAt, openedShelfDays);
+  const normalizedCatalogSearch = searchName.trim();
 
   const { data: catalogItems = [], isLoading: searchLoading } = useQuery({
-    queryKey: ["medicine-catalog-search", searchName],
-    queryFn: () => searchMedicineCatalog(searchName, 10),
-    enabled: searchName.length >= 2,
+    queryKey: ["medicine-catalog-search", normalizedCatalogSearch],
+    queryFn: () => searchMedicineCatalog(normalizedCatalogSearch, 10),
+    enabled: normalizedCatalogSearch.length >= 2,
   });
 
   const createHouseholdMutation = useMutation({
@@ -534,6 +547,8 @@ function AddHouseholdMedicineForm({
     const normalizedExpiryDate = normalizeIsoDateInput(expiryDate);
     const normalizedOpenedAt = normalizeIsoDateInput(openedAt);
 
+    const parsedOpenedShelfDays = toOpenedShelfDaysOrNull(openedShelfDays);
+
     if (!newMedicineName.trim()) return;
     if (!normalizedExpiryDate) {
       setFormError(tCabinet(language, "expiryDateError"));
@@ -541,6 +556,10 @@ function AddHouseholdMedicineForm({
     }
     if (openedAt && !normalizedOpenedAt) {
       setFormError(tCabinet(language, "openedAtError"));
+      return;
+    }
+    if (openedShelfDays.trim() && parsedOpenedShelfDays === null) {
+      setFormError(tCabinet(language, "openedShelfDaysError"));
       return;
     }
 
@@ -553,7 +572,7 @@ function AddHouseholdMedicineForm({
       medicine_dosage: newMedicineDosage.trim() || null,
       expiry_date: normalizedExpiryDate,
       opened_at: normalizedOpenedAt,
-      opened_shelf_days: openedShelfDays ? Number(openedShelfDays) : null,
+      opened_shelf_days: parsedOpenedShelfDays,
       comment: comment.trim() || null,
     });
   };
@@ -561,6 +580,8 @@ function AddHouseholdMedicineForm({
   const handleAddSelected = () => {
     const normalizedExpiryDate = normalizeIsoDateInput(expiryDate);
     const normalizedOpenedAt = normalizeIsoDateInput(openedAt);
+
+    const parsedOpenedShelfDays = toOpenedShelfDaysOrNull(openedShelfDays);
 
     if (!catalogItem) return;
     if (!normalizedExpiryDate) {
@@ -571,13 +592,17 @@ function AddHouseholdMedicineForm({
       setFormError(tCabinet(language, "openedAtError"));
       return;
     }
+    if (openedShelfDays.trim() && parsedOpenedShelfDays === null) {
+      setFormError(tCabinet(language, "openedShelfDaysError"));
+      return;
+    }
 
     setFormError(null);
     createHouseholdMutation.mutate({
       catalog_item_id: catalogItem.id,
       expiry_date: normalizedExpiryDate,
       opened_at: normalizedOpenedAt,
-      opened_shelf_days: openedShelfDays ? Number(openedShelfDays) : null,
+      opened_shelf_days: parsedOpenedShelfDays,
       comment: comment.trim() || null,
     });
   };
@@ -603,7 +628,7 @@ function AddHouseholdMedicineForm({
           </label>
         </div>
         {searchLoading && <p className="text-sm text-muted">{tCabinet(language, "searching")}</p>}
-        {!catalogItem && catalogItems.length > 0 && (
+        {!catalogItem && normalizedCatalogSearch.length >= 2 && catalogItems.length > 0 && (
           <ul className="grid gap-2">
             {catalogItems.map((item) => (
               <li key={item.id}>
@@ -928,6 +953,7 @@ function MedicineItemCard({
     medicine.medicineDescription ?? ""
   );
   const [medicineDosage, setMedicineDosage] = useState(medicine.medicineDosage ?? "");
+  const [editFormError, setEditFormError] = useState<string | null>(null);
   const isExpired = isExpiredDate(expiryDate);
   const hasUnknownAfterOpening = hasUnknownOpenedShelfLife(openedAt, openedShelfDays);
   const isOwnMedicine = medicine.catalogItemId === null;
@@ -980,12 +1006,13 @@ function MedicineItemCard({
           : {}),
         expiry_date: expiryDate,
         opened_at: openedAt || null,
-        opened_shelf_days: openedShelfDays ? Number(openedShelfDays) : null,
+        opened_shelf_days: toOpenedShelfDaysOrNull(openedShelfDays),
         comment: comment.trim() || null,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] });
       setIsEditing(false);
+      setEditFormError(null);
     },
   });
 
@@ -1003,7 +1030,10 @@ function MedicineItemCard({
           isPending={isDeleting}
           cancelLabel={tCabinet(language, "close")}
           onCancel={() => setIsDeleteConfirmOpen(false)}
-          onConfirm={() => onDelete(medicine.id)}
+          onConfirm={() => {
+            setIsDeleteConfirmOpen(false);
+            onDelete(medicine.id);
+          }}
         />
         <RowSurface
           className={`min-w-0 px-4 py-4 sm:px-5 sm:py-4 ${STATUS_CARD_STYLES[medicine.status] ?? ""}`}
@@ -1113,7 +1143,10 @@ function MedicineItemCard({
         isPending={isDeleting}
         cancelLabel={tCabinet(language, "close")}
         onCancel={() => setIsDeleteConfirmOpen(false)}
-        onConfirm={() => onDelete(medicine.id)}
+        onConfirm={() => {
+          setIsDeleteConfirmOpen(false);
+          onDelete(medicine.id);
+        }}
       />
       <RowSurface className={`min-w-0 ${STATUS_CARD_STYLES[medicine.status] ?? ""}`}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -1324,7 +1357,10 @@ function MedicineItemCard({
                 min="1"
                 max="3650"
                 value={openedShelfDays}
-                onChange={(e) => setOpenedShelfDays(e.target.value)}
+                onChange={(e) => {
+                  setOpenedShelfDays(e.target.value);
+                  setEditFormError(null);
+                }}
                 className="soft-input w-full px-4"
               />
             </label>
@@ -1349,7 +1385,15 @@ function MedicineItemCard({
             <div className="sm:col-span-2">
               <button
                 type="button"
-                onClick={() => updateMutation.mutate()}
+                onClick={() => {
+                  const parsedOpenedShelfDays = toOpenedShelfDaysOrNull(openedShelfDays);
+                  if (openedShelfDays.trim() && parsedOpenedShelfDays === null) {
+                    setEditFormError(tCabinet(language, "openedShelfDaysError"));
+                    return;
+                  }
+                  setEditFormError(null);
+                  updateMutation.mutate();
+                }}
                 disabled={
                   updateMutation.isPending ||
                   (isOwnMedicine && (!medicineName.trim() || !medicineForm.trim()))
@@ -1358,6 +1402,11 @@ function MedicineItemCard({
               >
                 {tCabinet(language, "save")}
               </button>
+              {editFormError ? (
+                <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
+                  {editFormError}
+                </p>
+              ) : null}
             </div>
           </div>
         )}
