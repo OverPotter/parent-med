@@ -251,6 +251,25 @@ class AuthService(BaseAuthService):
     async def logout(self, account_id: UUID) -> None:
         await self._session_repo.delete_by_account_id(account_id)
 
+    async def delete_me(self, account_id: UUID) -> None:
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None:
+            raise UnauthorizedError()
+
+        family_accounts = await self._account_repo.list_by_family_id(account.family_id)
+        owner_count = sum(1 for item in family_accounts if item.family_role == "owner")
+        if account.family_role == "owner" and owner_count <= 1 and len(family_accounts) > 1:
+            raise ValidationError(
+                "Сначала назначьте другого владельца семьи, затем удаляйте аккаунт.",
+                code="LAST_OWNER_REQUIRED",
+            )
+
+        await self._session_repo.delete_by_account_id(account.id)
+        await self._account_repo.delete(account.id)
+
+        if len(family_accounts) == 1:
+            await self._family_repo.delete(account.family_id)
+
     async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
         account = await self._account_repo.get_by_id(account_id)
         if account is None:
@@ -375,7 +394,9 @@ class AuthService(BaseAuthService):
         )
         return self._account_to_response(updated)
 
-    async def update_profile(self, account_id: UUID, dto: UpdateAccountProfileDto) -> AccountResponseDto:
+    async def update_profile(
+        self, account_id: UUID, dto: UpdateAccountProfileDto
+    ) -> AccountResponseDto:
         account = await self._account_repo.get_by_id(account_id)
         if account is None:
             raise UnauthorizedError()

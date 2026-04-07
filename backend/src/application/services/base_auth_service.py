@@ -80,6 +80,10 @@ class BaseAuthService(ABC):
         """Закрыть активные сессии аккаунта."""
 
     @abstractmethod
+    async def delete_me(self, account_id: UUID) -> None:
+        """Удалить текущий аккаунт."""
+
+    @abstractmethod
     async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
         """Сменить пароль текущего аккаунта."""
 

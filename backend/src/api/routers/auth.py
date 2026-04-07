@@ -90,6 +90,17 @@ async def logout(
     clear_auth_cookies(response)
 
 
+@router.delete("/me", status_code=204)
+async def delete_me(
+    response: Response,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: BaseAuthService = Depends(get_auth_service),
+) -> None:
+    logger.info("Удаление аккаунта | account_id={}", current_account.id)
+    await service.delete_me(current_account.id)
+    clear_auth_cookies(response)
+
+
 @router.patch("/password", status_code=204)
 async def change_password(
     dto: ChangePasswordDto,

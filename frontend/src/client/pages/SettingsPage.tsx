@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { changePassword } from "@shared/api/auth";
+import { changePassword, deleteMyAccount } from "@shared/api/auth";
 import {
   deletePushSubscription,
   fetchPushNotificationConfig,
@@ -87,6 +87,17 @@ const settingsCopy = {
     days10: "За 10 дней",
     days7: "За 7 дней",
     days3: "За 3 дня",
+    dangerZone: "Опасная зона",
+    dangerZoneHint:
+      "Удаление аккаунта необратимо. Если вы единственный участник семьи, семейные данные тоже будут удалены.",
+    deleteAccount: "Удалить аккаунт",
+    deleteAccountDescription:
+      "После удаления аккаунта вы сразу выйдете из приложения. Действие нельзя отменить.",
+    deleteAccountConfirmTitle: "Точно удалить аккаунт?",
+    deleteAccountConfirmDescription:
+      "Аккаунт будет удалён без возможности восстановления. Если это последний аккаунт семьи, данные семьи тоже удалятся.",
+    deleteAccountConfirmAction: "Да, удалить аккаунт",
+    deleteAccountFailed: "Не удалось удалить аккаунт.",
   },
   en: {
     title: "Settings",
@@ -148,6 +159,17 @@ const settingsCopy = {
     days10: "10 days before",
     days7: "7 days before",
     days3: "3 days before",
+    dangerZone: "Danger zone",
+    dangerZoneHint:
+      "Account deletion is irreversible. If you are the only family member, family data will be deleted too.",
+    deleteAccount: "Delete account",
+    deleteAccountDescription:
+      "After deletion, you will be signed out immediately. This action cannot be undone.",
+    deleteAccountConfirmTitle: "Delete account permanently?",
+    deleteAccountConfirmDescription:
+      "The account will be removed permanently. If this is the last family account, family data will be removed as well.",
+    deleteAccountConfirmAction: "Yes, delete account",
+    deleteAccountFailed: "Could not delete the account.",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
 
@@ -167,11 +189,13 @@ export function SettingsPage() {
   const [isPushPending, setIsPushPending] = useState(false);
   const [isDisablePushConfirmOpen, setIsDisablePushConfirmOpen] = useState(false);
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
+  const [isDeleteAccountConfirmOpen, setIsDeleteAccountConfirmOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
   const [selectedPillboxReminderMinutes, setSelectedPillboxReminderMinutes] = useState("10");
   const childrenEarlyReminderEnabled = Number(selectedReminderMinutes) > 0;
@@ -280,6 +304,20 @@ export function SettingsPage() {
       setPasswordError(
         (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
           (error instanceof Error ? error.message : tSettings(language, "passwordChangeFailed"))
+      );
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: deleteMyAccount,
+    onSuccess: () => {
+      queryClient.clear();
+      window.dispatchEvent(new CustomEvent("auth:logout"));
+    },
+    onError: (error) => {
+      setDeleteAccountError(
+        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
+          (error instanceof Error ? error.message : tSettings(language, "deleteAccountFailed"))
       );
     },
   });
@@ -833,6 +871,32 @@ export function SettingsPage() {
           </>
         ) : null}
       </Surface>
+      <Surface className="p-5 sm:p-6">
+        <p className="app-card-title text-[color:var(--color-danger)]">
+          {tSettings(language, "dangerZone")}
+        </p>
+        <p className="mt-3 text-sm leading-7 text-muted">{tSettings(language, "dangerZoneHint")}</p>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          {tSettings(language, "deleteAccountDescription")}
+        </p>
+        {deleteAccountError ? (
+          <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
+            {deleteAccountError}
+          </div>
+        ) : null}
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteAccountError(null);
+              setIsDeleteAccountConfirmOpen(true);
+            }}
+            className="app-btn-danger-md soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 sm:min-h-[3.1rem] sm:px-5"
+          >
+            {tSettings(language, "deleteAccount")}
+          </button>
+        </div>
+      </Surface>
       <ConfirmDialog
         isOpen={isDisablePushConfirmOpen}
         title={tSettings(language, "disableNotifications")}
@@ -850,6 +914,21 @@ export function SettingsPage() {
             }
           })();
         }}
+      />
+      <ConfirmDialog
+        isOpen={isDeleteAccountConfirmOpen}
+        title={tSettings(language, "deleteAccountConfirmTitle")}
+        description={tSettings(language, "deleteAccountConfirmDescription")}
+        confirmLabel={
+          deleteAccountMutation.isPending
+            ? tSettings(language, "saving")
+            : tSettings(language, "deleteAccountConfirmAction")
+        }
+        cancelLabel={tSettings(language, "cancel")}
+        confirmTone="danger"
+        isPending={deleteAccountMutation.isPending}
+        onCancel={() => setIsDeleteAccountConfirmOpen(false)}
+        onConfirm={() => deleteAccountMutation.mutate()}
       />
     </div>
   );
