@@ -198,7 +198,7 @@ class AuthService(BaseAuthService):
         account_id = UUID(str(payload["sub"]))
         family_id = UUID(str(payload["family_id"]))
         account = await self._account_repo.get_by_id(account_id)
-        if account is None:
+        if account is None or account.family_role == "deleted":
             raise UnauthorizedError()
         return AuthenticatedAccount(
             id=account.id,
@@ -251,24 +251,92 @@ class AuthService(BaseAuthService):
     async def logout(self, account_id: UUID) -> None:
         await self._session_repo.delete_by_account_id(account_id)
 
+    async def _soft_delete_account(self, account: Account) -> None:
+        deleted_login = f"deleted-{account.id.hex[:12]}"
+        await self._account_repo.update(
+            Account(
+                id=account.id,
+                login=deleted_login,
+                email=None,
+                password_hash=hash_password(uuid4().hex),
+                family_id=account.family_id,
+                display_name="Deleted user",
+                relationship_label=None,
+                phone=None,
+                preferred_language=account.preferred_language,
+                family_role="deleted",
+                push_before_reminder_minutes=account.push_before_reminder_minutes,
+                pillbox_push_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,
+                cabinet_notify_10_days=account.cabinet_notify_10_days,
+                cabinet_notify_7_days=account.cabinet_notify_7_days,
+                cabinet_notify_3_days=account.cabinet_notify_3_days,
+                cabinet_notify_1_day=account.cabinet_notify_1_day,
+                created_at=account.created_at,
+            )
+        )
+
+    async def _promote_owner_if_needed(
+        self,
+        account: Account,
+        family_accounts: list[Account],
+    ) -> None:
+        active_accounts = [item for item in family_accounts if item.family_role != "deleted"]
+        active_others = [item for item in active_accounts if item.id != account.id]
+        if account.family_role != "owner" or not active_others:
+            return
+        active_owners = [item for item in active_others if item.family_role == "owner"]
+        if active_owners:
+            return
+
+        next_owner = min(active_others, key=lambda item: item.created_at)
+        await self._account_repo.update(
+            Account(
+                id=next_owner.id,
+                login=next_owner.login,
+                email=next_owner.email,
+                password_hash=next_owner.password_hash,
+                family_id=next_owner.family_id,
+                display_name=next_owner.display_name,
+                relationship_label=next_owner.relationship_label,
+                phone=next_owner.phone,
+                preferred_language=next_owner.preferred_language,
+                family_role="owner",
+                push_before_reminder_minutes=next_owner.push_before_reminder_minutes,
+                pillbox_push_before_reminder_minutes=next_owner.pillbox_push_before_reminder_minutes,
+                cabinet_notify_10_days=next_owner.cabinet_notify_10_days,
+                cabinet_notify_7_days=next_owner.cabinet_notify_7_days,
+                cabinet_notify_3_days=next_owner.cabinet_notify_3_days,
+                cabinet_notify_1_day=next_owner.cabinet_notify_1_day,
+                created_at=next_owner.created_at,
+            )
+        )
+
     async def delete_me(self, account_id: UUID) -> None:
         account = await self._account_repo.get_by_id(account_id)
         if account is None:
             raise UnauthorizedError()
 
         family_accounts = await self._account_repo.list_by_family_id(account.family_id)
-        owner_count = sum(1 for item in family_accounts if item.family_role == "owner")
-        if account.family_role == "owner" and owner_count <= 1 and len(family_accounts) > 1:
-            raise ValidationError(
-                "Сначала назначьте другого владельца семьи, затем удаляйте аккаунт.",
-                code="LAST_OWNER_REQUIRED",
-            )
+        await self._promote_owner_if_needed(account, family_accounts)
 
         await self._session_repo.delete_by_account_id(account.id)
-        await self._account_repo.delete(account.id)
+        await self._soft_delete_account(account)
 
-        if len(family_accounts) == 1:
-            await self._family_repo.delete(account.family_id)
+    async def delete_family(self, account_id: UUID) -> None:
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None or account.family_role == "deleted":
+            raise UnauthorizedError()
+        if account.family_role != "owner":
+            raise ForbiddenError("Только владелец семьи может удалить семью")
+
+        family_accounts = await self._account_repo.list_by_family_id(account.family_id)
+        active_accounts = [item for item in family_accounts if item.family_role != "deleted"]
+        if not active_accounts:
+            return
+
+        for item in active_accounts:
+            await self._session_repo.delete_by_account_id(item.id)
+            await self._soft_delete_account(item)
 
     async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
         account = await self._account_repo.get_by_id(account_id)

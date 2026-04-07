@@ -84,6 +84,10 @@ class BaseAuthService(ABC):
         """Удалить текущий аккаунт."""
 
     @abstractmethod
+    async def delete_family(self, account_id: UUID) -> None:
+        """Удалить семью текущего owner (мягко деактивировать все аккаунты)."""
+
+    @abstractmethod
     async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
         """Сменить пароль текущего аккаунта."""
 

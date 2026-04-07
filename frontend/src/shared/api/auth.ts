@@ -115,6 +115,10 @@ export async function deleteMyAccount(): Promise<void> {
   await apiClient.delete("/auth/me");
 }
 
+export async function deleteMyFamily(): Promise<void> {
+  await apiClient.delete("/auth/family");
+}
+
 export async function changePassword(payload: {
   current_password: string;
   new_password: string;

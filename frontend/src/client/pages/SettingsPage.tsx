@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { changePassword, deleteMyAccount } from "@shared/api/auth";
+import { changePassword, deleteMyAccount, deleteMyFamily } from "@shared/api/auth";
 import {
   deletePushSubscription,
   fetchPushNotificationConfig,
@@ -92,12 +92,20 @@ const settingsCopy = {
       "Удаление аккаунта необратимо. Если вы единственный участник семьи, семейные данные тоже будут удалены.",
     deleteAccount: "Удалить аккаунт",
     deleteAccountDescription:
-      "После удаления аккаунта вы сразу выйдете из приложения. Действие нельзя отменить.",
+      "После удаления аккаунта вы сразу выйдете из приложения. Если вы единственный owner, права owner автоматически перейдут следующему участнику.",
     deleteAccountConfirmTitle: "Точно удалить аккаунт?",
     deleteAccountConfirmDescription:
-      "Аккаунт будет удалён без возможности восстановления. Если это последний аккаунт семьи, данные семьи тоже удалятся.",
+      "Аккаунт будет деактивирован. Вход в него станет недоступен, восстановление не предусмотрено.",
     deleteAccountConfirmAction: "Да, удалить аккаунт",
     deleteAccountFailed: "Не удалось удалить аккаунт.",
+    deleteFamily: "Удалить семью полностью",
+    deleteFamilyDescription:
+      "Удаляет доступ ко всем аккаунтам семьи. Все участники будут разлогинены и деактивированы.",
+    deleteFamilyConfirmTitle: "Точно удалить семью?",
+    deleteFamilyConfirmDescription:
+      "Все аккаунты семьи будут деактивированы. Действие необратимо.",
+    deleteFamilyConfirmAction: "Да, удалить семью",
+    deleteFamilyFailed: "Не удалось удалить семью.",
   },
   en: {
     title: "Settings",
@@ -164,12 +172,20 @@ const settingsCopy = {
       "Account deletion is irreversible. If you are the only family member, family data will be deleted too.",
     deleteAccount: "Delete account",
     deleteAccountDescription:
-      "After deletion, you will be signed out immediately. This action cannot be undone.",
+      "After deletion, you will be signed out immediately. If you are the only owner, owner rights are reassigned automatically.",
     deleteAccountConfirmTitle: "Delete account permanently?",
     deleteAccountConfirmDescription:
-      "The account will be removed permanently. If this is the last family account, family data will be removed as well.",
+      "The account will be deactivated. Login will no longer be possible.",
     deleteAccountConfirmAction: "Yes, delete account",
     deleteAccountFailed: "Could not delete the account.",
+    deleteFamily: "Delete family completely",
+    deleteFamilyDescription:
+      "Removes access for all family accounts. All members will be signed out and deactivated.",
+    deleteFamilyConfirmTitle: "Delete family completely?",
+    deleteFamilyConfirmDescription:
+      "All family accounts will be deactivated. This action cannot be undone.",
+    deleteFamilyConfirmAction: "Yes, delete family",
+    deleteFamilyFailed: "Could not delete the family.",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
 
@@ -180,6 +196,7 @@ function tSettings(language: AppLanguage, key: keyof (typeof settingsCopy)["ru"]
 export function SettingsPage() {
   const { language } = useI18n();
   const queryClient = useQueryClient();
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const medicationIntervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const setMedicationIntervalUnit = useAppStore((s) => s.setMedicationIntervalUnit);
   const theme = useAppStore((s) => s.theme);
@@ -190,12 +207,14 @@ export function SettingsPage() {
   const [isDisablePushConfirmOpen, setIsDisablePushConfirmOpen] = useState(false);
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
   const [isDeleteAccountConfirmOpen, setIsDeleteAccountConfirmOpen] = useState(false);
+  const [isDeleteFamilyConfirmOpen, setIsDeleteFamilyConfirmOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
+  const [deleteFamilyError, setDeleteFamilyError] = useState<string | null>(null);
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
   const [selectedPillboxReminderMinutes, setSelectedPillboxReminderMinutes] = useState("10");
   const childrenEarlyReminderEnabled = Number(selectedReminderMinutes) > 0;
@@ -318,6 +337,20 @@ export function SettingsPage() {
       setDeleteAccountError(
         (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
           (error instanceof Error ? error.message : tSettings(language, "deleteAccountFailed"))
+      );
+    },
+  });
+
+  const deleteFamilyMutation = useMutation({
+    mutationFn: deleteMyFamily,
+    onSuccess: () => {
+      queryClient.clear();
+      window.dispatchEvent(new CustomEvent("auth:logout"));
+    },
+    onError: (error) => {
+      setDeleteFamilyError(
+        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
+          (error instanceof Error ? error.message : tSettings(language, "deleteFamilyFailed"))
       );
     },
   });
@@ -884,17 +917,43 @@ export function SettingsPage() {
             {deleteAccountError}
           </div>
         ) : null}
+        {accountFamilyRole === "owner" ? (
+          <>
+            <p className="mt-4 text-sm leading-6 text-muted">
+              {tSettings(language, "deleteFamilyDescription")}
+            </p>
+            {deleteFamilyError ? (
+              <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
+                {deleteFamilyError}
+              </div>
+            ) : null}
+          </>
+        ) : null}
         <div className="mt-4">
-          <button
-            type="button"
-            onClick={() => {
-              setDeleteAccountError(null);
-              setIsDeleteAccountConfirmOpen(true);
-            }}
-            className="app-btn-danger-md soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 sm:min-h-[3.1rem] sm:px-5"
-          >
-            {tSettings(language, "deleteAccount")}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteAccountError(null);
+                setIsDeleteAccountConfirmOpen(true);
+              }}
+              className="app-btn-danger-md soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 sm:min-h-[3.1rem] sm:px-5"
+            >
+              {tSettings(language, "deleteAccount")}
+            </button>
+            {accountFamilyRole === "owner" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteFamilyError(null);
+                  setIsDeleteFamilyConfirmOpen(true);
+                }}
+                className="app-btn-danger-md soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 sm:min-h-[3.1rem] sm:px-5"
+              >
+                {tSettings(language, "deleteFamily")}
+              </button>
+            ) : null}
+          </div>
         </div>
       </Surface>
       <ConfirmDialog
@@ -929,6 +988,21 @@ export function SettingsPage() {
         isPending={deleteAccountMutation.isPending}
         onCancel={() => setIsDeleteAccountConfirmOpen(false)}
         onConfirm={() => deleteAccountMutation.mutate()}
+      />
+      <ConfirmDialog
+        isOpen={isDeleteFamilyConfirmOpen}
+        title={tSettings(language, "deleteFamilyConfirmTitle")}
+        description={tSettings(language, "deleteFamilyConfirmDescription")}
+        confirmLabel={
+          deleteFamilyMutation.isPending
+            ? tSettings(language, "saving")
+            : tSettings(language, "deleteFamilyConfirmAction")
+        }
+        cancelLabel={tSettings(language, "cancel")}
+        confirmTone="danger"
+        isPending={deleteFamilyMutation.isPending}
+        onCancel={() => setIsDeleteFamilyConfirmOpen(false)}
+        onConfirm={() => deleteFamilyMutation.mutate()}
       />
     </div>
   );

@@ -101,6 +101,17 @@ async def delete_me(
     clear_auth_cookies(response)
 
 
+@router.delete("/family", status_code=204)
+async def delete_family(
+    response: Response,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: BaseAuthService = Depends(get_auth_service),
+) -> None:
+    logger.info("Удаление семьи | account_id={}", current_account.id)
+    await service.delete_family(current_account.id)
+    clear_auth_cookies(response)
+
+
 @router.patch("/password", status_code=204)
 async def change_password(
     dto: ChangePasswordDto,
