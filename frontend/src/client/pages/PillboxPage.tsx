@@ -32,6 +32,7 @@ import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { AppLanguage } from "@shared/i18n";
 import { useAppStore } from "@shared/store/useAppStore";
+import { getLocalIsoDate } from "@shared/utils/date";
 
 type MedicationItem = {
   id: string;
@@ -343,13 +344,20 @@ function isMedicationReady(item: MedicationItem) {
 }
 
 function getTodayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return getLocalIsoDate();
 }
 
 function addDaysToIso(isoDate: string, days: number) {
-  const date = new Date(`${isoDate}T00:00:00`);
+  const parts = isoDate.split("-");
+  const year = Number(parts[0]);
+  const month = Number(parts[1]);
+  const day = Number(parts[2]);
+  const date =
+    Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)
+      ? new Date(year, month - 1, day)
+      : new Date();
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return getLocalIsoDate(date);
 }
 
 function getCoursePreset(medication: MedicationItem): CoursePreset {
@@ -1480,9 +1488,11 @@ export function PillboxPage() {
                               onClick={() =>
                                 updateMedication(activeMedication.id, {
                                   repeatDays: selected
-                                    ? activeMedication.repeatDays.filter(
-                                        (item) => item !== day.value
-                                      )
+                                    ? activeMedication.repeatDays.length > 1
+                                      ? activeMedication.repeatDays.filter(
+                                          (item) => item !== day.value
+                                        )
+                                      : activeMedication.repeatDays
                                     : [...activeMedication.repeatDays, day.value],
                                 })
                               }
