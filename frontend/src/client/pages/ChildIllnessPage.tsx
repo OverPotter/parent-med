@@ -494,7 +494,7 @@ export function ChildIllnessPage() {
       {historyOnlyView && (
         <section ref={historySectionRef} className="space-y-3">
           <SectionTitle
-            title={`История${child.name ? ` · ${child.name}` : ""}`}
+            title={`${language === "ru" ? "История" : "History"}${child.name ? ` · ${child.name}` : ""}`}
             subtitle={
               historyAnalyticsMode
                 ? language === "ru"
@@ -1212,8 +1212,8 @@ function HistoryEpisodeCard({
             ) : (
               <div className="soft-empty mt-4 rounded-[22px] px-4 py-6 text-sm text-muted">
                 {language === "ru"
-                  ? "Для этого наблюдения ещё нет температур и отмеченных приёмов."
-                  : "There are no temperatures or logged doses for this tracking yet."}
+                  ? "Для этого наблюдения ещё нет записей."
+                  : "There are no records for this tracking yet."}
               </div>
             )}
           </section>
@@ -3714,7 +3714,10 @@ function MedicationPlanDetail({
         confirmTone="danger"
         isPending={isDeleting}
         onCancel={() => setIsDeleteConfirmOpen(false)}
-        onConfirm={() => onDelete(plan.id)}
+        onConfirm={() => {
+          setIsDeleteConfirmOpen(false);
+          onDelete(plan.id);
+        }}
       />
       <div className="space-y-2">
         <div className="flex flex-wrap items-start justify-between gap-3">
