@@ -415,7 +415,7 @@ export const ru: Translations = {
       },
       {
         to: "/legal",
-        title: "Privacy · Terms · Support",
+        title: "Политика · Условия · Поддержка",
         description: "Политика, условия использования и контакты.",
       },
     ],

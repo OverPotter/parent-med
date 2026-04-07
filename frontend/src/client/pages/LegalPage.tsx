@@ -17,7 +17,7 @@ export function LegalPage() {
   const items = [
     {
       href: getPrivacyPolicyUrl(),
-      title: language === "ru" ? "Privacy Policy" : "Privacy Policy",
+      title: language === "ru" ? "Политика конфиденциальности" : "Privacy Policy",
       description:
         language === "ru"
           ? "Как обрабатываются и защищаются данные."
@@ -25,13 +25,13 @@ export function LegalPage() {
     },
     {
       href: getTermsOfUseUrl(),
-      title: language === "ru" ? "Terms of Use" : "Terms of Use",
+      title: language === "ru" ? "Условия использования" : "Terms of Use",
       description:
         language === "ru" ? "Условия использования сервиса." : "Terms for using the service.",
     },
     {
       href: getSupportUrl(),
-      title: language === "ru" ? "Support / Contact" : "Support / Contact",
+      title: language === "ru" ? "Поддержка / Контакты" : "Support / Contact",
       description:
         language === "ru" ? "Канал связи с командой." : "A contact channel with the team.",
     },
