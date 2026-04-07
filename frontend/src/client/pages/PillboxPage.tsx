@@ -13,6 +13,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   createPillboxPlan,
   deletePillboxPlan,
+  fetchPillboxHistorySummary,
   fetchPillboxPlan,
   fetchPillboxPlans,
   takePillboxDose,
@@ -33,6 +34,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import type { AppLanguage } from "@shared/i18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { getLocalIsoDate } from "@shared/utils/date";
+import type { PillboxHistorySummary } from "@shared/types/api";
 
 type MedicationItem = {
   id: string;
@@ -92,10 +94,7 @@ const pillboxCopy = {
     hubSubtitle: "Семейные планы приёма: что принимать, когда напомнить и как идёт курс.",
     createPlan: "+ Создать план",
     analytics: "Аналитика",
-    analyticsSoonTitle: "Аналитика в разработке",
-    analyticsSoonDescription:
-      "Скоро здесь появится сводка по приёмам и прогрессу планов. Пока раздел готовится.",
-    analyticsSoonConfirm: "Понятно",
+    analyticsBack: "← К планам",
     editPlan: "Редактировать",
     pausePlan: "Поставить на паузу",
     resumePlan: "Возобновить план",
@@ -190,10 +189,7 @@ const pillboxCopy = {
       "Family medication plans: what to take, when to remind and how the course is going.",
     createPlan: "+ Create plan",
     analytics: "Analytics",
-    analyticsSoonTitle: "Analytics is in progress",
-    analyticsSoonDescription:
-      "A summary of doses and plan progress will appear here soon. This section is being built.",
-    analyticsSoonConfirm: "Got it",
+    analyticsBack: "← Back to plans",
     editPlan: "Edit plan",
     pausePlan: "Pause plan",
     resumePlan: "Resume plan",
@@ -826,18 +822,19 @@ export function PillboxPage() {
   );
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [savePlanError, setSavePlanError] = useState<string | null>(null);
-  const [isAnalyticsSoonOpen, setIsAnalyticsSoonOpen] = useState(false);
   const screen =
     searchParams.get("mode") === "setup" ||
     searchParams.get("mode") === "medication" ||
-    searchParams.get("mode") === "details"
-      ? (searchParams.get("mode") as "setup" | "medication" | "details")
+    searchParams.get("mode") === "details" ||
+    searchParams.get("mode") === "analytics"
+      ? (searchParams.get("mode") as "setup" | "medication" | "details" | "analytics")
       : "hub";
+  const isEditorScreen = screen === "setup" || screen === "medication" || screen === "details";
   const previousScreenRef = useRef(screen);
   const activeMedicationId = searchParams.get("med");
   const selectedPlanId = searchParams.get("plan");
   const highlightedPlanId = screen === "hub" ? searchParams.get("highlightPlan") : null;
-  const isCreating = selectedPlanId === "new" || (screen !== "hub" && !selectedPlanId);
+  const isCreating = isEditorScreen && (selectedPlanId === "new" || !selectedPlanId);
 
   const isEditing = Boolean(draft?.id);
   const hasReadyMedication = Boolean(draft?.medications.some(isMedicationReady));
@@ -972,7 +969,11 @@ export function PillboxPage() {
   });
 
   useEffect(() => {
-    if (screen !== "hub" && !draft) {
+    if (!isEditorScreen) {
+      return;
+    }
+
+    if (!draft) {
       if (isCreating) {
         setDraft(buildDraft(accountId, undefined));
       } else if (!selectedPlanLoading && !selectedPlanId) {
@@ -990,6 +991,7 @@ export function PillboxPage() {
     accountId,
     activeMedication,
     draft,
+    isEditorScreen,
     isCreating,
     navigate,
     screen,
@@ -998,7 +1000,7 @@ export function PillboxPage() {
   ]);
 
   useEffect(() => {
-    if (screen === "hub") {
+    if (!isEditorScreen) {
       return;
     }
     if (isCreating) {
@@ -1008,7 +1010,7 @@ export function PillboxPage() {
     if (selectedPlan && selectedPlanId && draft?.id !== selectedPlanId) {
       setDraft(buildDraft(accountId, selectedPlan));
     }
-  }, [accountId, draft?.id, isCreating, screen, selectedPlan, selectedPlanId]);
+  }, [accountId, draft?.id, isCreating, isEditorScreen, screen, selectedPlan, selectedPlanId]);
 
   useEffect(() => {
     if (screen !== "medication" || !activeMedicationId) {
@@ -1305,8 +1307,12 @@ export function PillboxPage() {
   };
 
   const openAnalytics = () => {
-    setIsAnalyticsSoonOpen(true);
+    navigate("/pillbox?mode=analytics");
   };
+
+  if (screen === "analytics") {
+    return <PillboxAnalyticsScreen language={language} onBack={goToHub} />;
+  }
 
   if (screen === "hub" && plansLoading) {
     return (
@@ -1354,20 +1360,11 @@ export function PillboxPage() {
         <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
           {language === "ru" ? "Загружаем планы приёма..." : "Loading medication plans..."}
         </div>
-        <ConfirmDialog
-          isOpen={isAnalyticsSoonOpen}
-          title={tPillbox(language, "analyticsSoonTitle")}
-          description={tPillbox(language, "analyticsSoonDescription")}
-          confirmLabel={tPillbox(language, "analyticsSoonConfirm")}
-          cancelLabel={tPillbox(language, "cancel")}
-          onConfirm={() => setIsAnalyticsSoonOpen(false)}
-          onCancel={() => setIsAnalyticsSoonOpen(false)}
-        />
       </div>
     );
   }
 
-  if (screen !== "hub" && !isCreating && selectedPlanLoading && !draft) {
+  if (isEditorScreen && !isCreating && selectedPlanLoading && !draft) {
     return (
       <EditorShell>
         <FlowScreenHeader
@@ -2359,15 +2356,212 @@ export function PillboxPage() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-      <ConfirmDialog
-        isOpen={isAnalyticsSoonOpen}
-        title={tPillbox(language, "analyticsSoonTitle")}
-        description={tPillbox(language, "analyticsSoonDescription")}
-        confirmLabel={tPillbox(language, "analyticsSoonConfirm")}
-        cancelLabel={tPillbox(language, "cancel")}
-        onConfirm={() => setIsAnalyticsSoonOpen(false)}
-        onCancel={() => setIsAnalyticsSoonOpen(false)}
-      />
+    </div>
+  );
+}
+
+function PillboxAnalyticsScreen({
+  language,
+  onBack,
+}: {
+  language: AppLanguage;
+  onBack: () => void;
+}) {
+  const periodOptions = [
+    { key: "month", label: language === "ru" ? "Месяц" : "Month", short: "1m" },
+    { key: "quarter", label: language === "ru" ? "3 месяца" : "3 months", short: "3m" },
+    { key: "half_year", label: language === "ru" ? "6 месяцев" : "6 months", short: "6m" },
+    { key: "year", label: language === "ru" ? "Год" : "Year", short: "1y" },
+    { key: "all", label: language === "ru" ? "Всё время" : "All time", short: "all" },
+  ] as const;
+  const [selectedPeriod, setSelectedPeriod] =
+    useState<(typeof periodOptions)[number]["key"]>("half_year");
+  const { data: summary, isLoading } = useQuery({
+    queryKey: ["pillbox-history-summary", selectedPeriod],
+    queryFn: () => fetchPillboxHistorySummary(selectedPeriod),
+  });
+
+  return (
+    <div className="space-y-5">
+      <BackLinkButton label={tPillbox(language, "analyticsBack")} onClick={onBack} />
+
+      <section className="soft-panel rounded-[28px] p-4 sm:p-5">
+        <h1 className="app-title text-[1.72rem] tracking-[-0.05em] sm:text-[2.1rem]">
+          {language === "ru" ? "Аналитика таблетницы" : "Pillbox analytics"}
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          {language === "ru"
+            ? "Сводка по выполнению приёмов и рискам пропусков."
+            : "Summary of dose logging and missed-dose risks."}
+        </p>
+        <div className="sticky top-2 z-10 -mx-1 mt-4 overflow-x-auto px-1 pb-1 sm:static sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
+          <div className="inline-flex min-w-full gap-2 sm:flex sm:min-w-0 sm:flex-wrap">
+            {periodOptions.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setSelectedPeriod(item.key)}
+                className={[
+                  selectedPeriod === item.key ? "soft-tab-active" : "soft-tab",
+                  "min-h-[2.65rem] shrink-0 rounded-full px-3 text-[0.9rem] tracking-[-0.025em] sm:min-h-[2.95rem] sm:px-4 sm:text-sm",
+                ].join(" ")}
+              >
+                <span className="sm:hidden">{item.short}</span>
+                <span className="hidden sm:inline">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {isLoading || !summary ? (
+        <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
+          {language === "ru" ? "Готовим сводку…" : "Preparing summary…"}
+        </div>
+      ) : (
+        <PillboxAnalyticsContent summary={summary} language={language} />
+      )}
+    </div>
+  );
+}
+
+function PillboxAnalyticsContent({
+  summary,
+  language,
+}: {
+  summary: PillboxHistorySummary;
+  language: AppLanguage;
+}) {
+  const kpiCards = [
+    {
+      label: language === "ru" ? "Соблюдение" : "Adherence",
+      value: `${Math.round(summary.adherenceRate * 100)}%`,
+    },
+    {
+      label: language === "ru" ? "Вовремя" : "On time",
+      value: `${Math.round(summary.onTimeRate * 100)}%`,
+    },
+    {
+      label: language === "ru" ? "Отмечено слотов" : "Logged slots",
+      value: `${summary.takenSlots}/${summary.scheduledSlots}`,
+    },
+    {
+      label: language === "ru" ? "Пропуски" : "Missed slots",
+      value: String(summary.missedSlots),
+    },
+  ];
+  const planCards = [
+    {
+      label: language === "ru" ? "Планы" : "Plans",
+      value: String(summary.totalPlans),
+    },
+    {
+      label: language === "ru" ? "Активные" : "Active",
+      value: String(summary.activePlans),
+    },
+    {
+      label: language === "ru" ? "На паузе" : "Paused",
+      value: String(summary.pausedPlans),
+    },
+    {
+      label: language === "ru" ? "В архиве" : "Archived",
+      value: String(summary.archivedPlans),
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {kpiCards.map((item) => (
+          <div key={item.label} className="soft-card rounded-[22px] px-4 py-4 sm:px-5">
+            <p className="text-[0.82rem] leading-5 text-muted sm:text-sm">{item.label}</p>
+            <p className="app-card-title mt-2 text-[1rem] sm:text-[1.04rem]">{item.value}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="soft-panel rounded-[28px] p-4 sm:p-5">
+        <h3 className="app-card-title">
+          {language === "ru" ? "Динамика отмеченных приёмов" : "Logged doses timeline"}
+        </h3>
+        <p className="mt-1 text-sm leading-6 text-muted">
+          {language === "ru"
+            ? "Сколько слотов было отмечено в каждом периоде."
+            : "How many slots were logged in each period."}
+        </p>
+        <div className="mt-5 space-y-3">
+          {summary.timeline.map((item) => (
+            <SimpleStatRow
+              key={item.label}
+              label={item.label}
+              value={item.value}
+              max={Math.max(...summary.timeline.map((point) => point.value), 1)}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-2">
+        <div className="soft-panel rounded-[28px] p-4 sm:p-5">
+          <h3 className="app-card-title">
+            {language === "ru" ? "Статус планов" : "Plan statuses"}
+          </h3>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {planCards.map((item) => (
+              <div key={item.label} className="soft-panel-muted rounded-[20px] px-4 py-3">
+                <p className="text-xs tracking-[0.08em] text-muted">{item.label}</p>
+                <p className="mt-1 text-base font-semibold text-foreground">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="soft-panel rounded-[28px] p-4 sm:p-5">
+          <h3 className="app-card-title">
+            {language === "ru" ? "Где чаще пропуски" : "Most missed medicines"}
+          </h3>
+          <div className="mt-4 space-y-3">
+            {summary.topMissedMedications.length > 0 ? (
+              summary.topMissedMedications.map((item) => (
+                <div
+                  key={`${item.medicationName}-${item.missedSlots}`}
+                  className="soft-panel-muted flex items-center justify-between gap-3 rounded-[20px] px-4 py-3"
+                >
+                  <p className="text-sm text-foreground">{item.medicationName}</p>
+                  <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
+                    {language === "ru"
+                      ? `Пропусков: ${item.missedSlots}`
+                      : `Missed: ${item.missedSlots}`}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="soft-empty rounded-[20px] px-4 py-5 text-sm text-muted">
+                {language === "ru"
+                  ? "Пропусков за выбранный период не найдено."
+                  : "No missed slots for this period."}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SimpleStatRow({ label, value, max }: { label: string; value: number; max: number }) {
+  const width = Math.max(10, Math.round((value / Math.max(max, 1)) * 100));
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_2rem] sm:items-center">
+      <span className="text-sm text-foreground">{label}</span>
+      <div className="h-2.5 overflow-hidden rounded-full border border-[color:color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_7%,white)]">
+        <div
+          className="h-full rounded-full bg-[linear-gradient(90deg,color-mix(in_srgb,var(--color-primary)_68%,white_20%)_0%,color-mix(in_srgb,var(--color-primary)_88%,black_4%)_100%)]"
+          style={{ width: `${width}%` }}
+        />
+      </div>
+      <span className="text-sm font-medium text-muted">{value}</span>
     </div>
   );
 }

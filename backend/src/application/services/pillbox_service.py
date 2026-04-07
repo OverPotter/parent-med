@@ -1,18 +1,22 @@
 """Сервис семейной таблетницы."""
 
+from collections import defaultdict
 from dataclasses import replace
 from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
 from src.application.dto.pillbox import (
+    PillboxAnalyticsSeriesPointDto,
     PillboxDoseLogCreateDto,
+    PillboxHistorySummaryDto,
     PillboxMedicationResponseDto,
     PillboxMedicationWriteDto,
     PillboxPlanCreateDto,
     PillboxPlanResponseDto,
     PillboxPlanSummaryDto,
     PillboxPlanUpdateDto,
+    PillboxTopMedicationDto,
 )
 from src.core.config import settings
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
@@ -352,6 +356,229 @@ class PillboxService:
     async def get_by_id(self, plan_id: UUID, current_family_id: UUID) -> PillboxPlanResponseDto:
         entity = await self._get_plan_for_family(plan_id, current_family_id)
         return self._to_plan_response(entity)
+
+    def _normalize_period(self, period: str) -> str:
+        normalized_period = period.strip().lower()
+        if normalized_period not in {"month", "quarter", "half_year", "year", "all"}:
+            raise ValidationError("Неизвестный период аналитики")
+        return normalized_period
+
+    def _month_label(self, value: date, language: str) -> str:
+        months_ru = [
+            "янв",
+            "фев",
+            "мар",
+            "апр",
+            "май",
+            "июн",
+            "июл",
+            "авг",
+            "сен",
+            "окт",
+            "ноя",
+            "дек",
+        ]
+        months_en = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+        ]
+        month_name = (
+            months_en[value.month - 1] if language == "en" else months_ru[value.month - 1]
+        )
+        year_short = str(value.year)[-2:]
+        return f"{month_name} {year_short}"
+
+    def _resolve_period_start_date(
+        self,
+        period: str,
+        plans: list[PillboxPlan],
+        today_local: date,
+    ) -> date:
+        if period != "all":
+            days_by_period = {
+                "month": 30,
+                "quarter": 90,
+                "half_year": 180,
+                "year": 365,
+            }
+            return today_local - timedelta(days=days_by_period[period] - 1)
+
+        candidates: list[date] = []
+        for plan in plans:
+            candidates.append(self._to_local(plan.created_at).date())
+            for log in plan.dose_logs:
+                if log.scheduled_for:
+                    candidates.append(self._to_local(log.scheduled_for).date())
+                candidates.append(self._to_local(log.taken_at).date())
+        if not candidates:
+            return today_local - timedelta(days=29)
+        return min(candidates)
+
+    def _build_timeline_labels(
+        self,
+        period: str,
+        start_date: date,
+        end_date: date,
+        language: str,
+    ) -> list[str]:
+        if period == "month":
+            week_count = ((end_date - start_date).days // 7) + 1
+            if language == "en":
+                return [f"W{k + 1}" for k in range(week_count)]
+            return [f"Нед {k + 1}" for k in range(week_count)]
+
+        labels: list[str] = []
+        cursor = date(start_date.year, start_date.month, 1)
+        last = date(end_date.year, end_date.month, 1)
+        while cursor <= last:
+            labels.append(self._month_label(cursor, language))
+            if cursor.month == 12:
+                cursor = date(cursor.year + 1, 1, 1)
+            else:
+                cursor = date(cursor.year, cursor.month + 1, 1)
+        return labels
+
+    def _timeline_bucket_label(
+        self,
+        period: str,
+        slot_day: date,
+        start_date: date,
+        language: str,
+    ) -> str:
+        if period == "month":
+            week_index = ((slot_day - start_date).days // 7) + 1
+            return f"W{week_index}" if language == "en" else f"Нед {week_index}"
+        return self._month_label(slot_day, language)
+
+    async def get_history_summary(
+        self,
+        current_family_id: UUID,
+        period: str,
+        preferred_language: str = "ru",
+    ) -> PillboxHistorySummaryDto:
+        normalized_period = self._normalize_period(period)
+        plans = await self._repo.list_by_family_id(current_family_id)
+        now_utc = datetime.now(UTC)
+        today_local = self._to_local(now_utc).date()
+        start_date = self._resolve_period_start_date(normalized_period, plans, today_local)
+        timeline_labels = self._build_timeline_labels(
+            normalized_period, start_date, today_local, preferred_language
+        )
+        timeline_counts: dict[str, int] = {label: 0 for label in timeline_labels}
+
+        total_plans = len(plans)
+        active_plans = sum(1 for item in plans if item.status == "active")
+        paused_plans = sum(1 for item in plans if item.status == "paused")
+        archived_plans = sum(1 for item in plans if item.status == "archived")
+
+        scheduled_slots = 0
+        taken_slots = 0
+        missed_slots = 0
+        late_slots = 0
+        on_time_slots = 0
+        top_missed: dict[str, int] = defaultdict(int)
+        total_medications = 0
+        late_threshold = timedelta(minutes=3)
+
+        for plan in plans:
+            if plan.status != "active":
+                continue
+            total_medications += len(plan.medications)
+
+            logs_by_slot: dict[tuple[UUID, datetime], datetime] = {}
+            period_start_utc = datetime.combine(
+                start_date,
+                time.min,
+                tzinfo=self._timezone,
+            ).astimezone(UTC)
+            for log in plan.dose_logs:
+                if log.scheduled_for is None:
+                    continue
+                if log.scheduled_for < period_start_utc:
+                    continue
+                previous_taken_at = logs_by_slot.get((log.medication_id, log.scheduled_for))
+                if previous_taken_at is None or log.taken_at < previous_taken_at:
+                    logs_by_slot[(log.medication_id, log.scheduled_for)] = log.taken_at
+
+            for medication in plan.medications:
+                day_cursor = start_date
+                while day_cursor <= today_local:
+                    if not self._is_medication_active_on(medication, day_cursor):
+                        day_cursor += timedelta(days=1)
+                        continue
+                    if day_cursor.isoweekday() not in medication.repeat_days:
+                        day_cursor += timedelta(days=1)
+                        continue
+
+                    for dose_time in medication.times:
+                        scheduled_for = self._build_local_scheduled_at(
+                            day_cursor, dose_time
+                        ).astimezone(UTC)
+                        if scheduled_for > now_utc:
+                            continue
+                        scheduled_slots += 1
+                        taken_at = logs_by_slot.get((medication.id, scheduled_for))
+                        if taken_at is None:
+                            missed_slots += 1
+                            medicine_name = (
+                                (medication.custom_medicine_name or "").strip()
+                                or ("Medicine" if preferred_language == "en" else "Лекарство")
+                            )
+                            top_missed[medicine_name] += 1
+                            continue
+
+                        taken_slots += 1
+                        if taken_at - scheduled_for > late_threshold:
+                            late_slots += 1
+                        else:
+                            on_time_slots += 1
+                        bucket_label = self._timeline_bucket_label(
+                            normalized_period,
+                            day_cursor,
+                            start_date,
+                            preferred_language,
+                        )
+                        if bucket_label in timeline_counts:
+                            timeline_counts[bucket_label] += 1
+                    day_cursor += timedelta(days=1)
+
+        adherence_rate = round(taken_slots / scheduled_slots, 3) if scheduled_slots > 0 else 0.0
+        on_time_rate = round(on_time_slots / taken_slots, 3) if taken_slots > 0 else 0.0
+        top_missed_items = sorted(top_missed.items(), key=lambda item: item[1], reverse=True)[:3]
+
+        return PillboxHistorySummaryDto(
+            period=normalized_period,
+            total_plans=total_plans,
+            active_plans=active_plans,
+            paused_plans=paused_plans,
+            archived_plans=archived_plans,
+            total_medications=total_medications,
+            scheduled_slots=scheduled_slots,
+            taken_slots=taken_slots,
+            missed_slots=missed_slots,
+            late_slots=late_slots,
+            on_time_slots=on_time_slots,
+            adherence_rate=adherence_rate,
+            on_time_rate=on_time_rate,
+            timeline=[
+                PillboxAnalyticsSeriesPointDto(label=label, value=timeline_counts[label])
+                for label in timeline_labels
+            ],
+            top_missed_medications=[
+                PillboxTopMedicationDto(medication_name=name, missed_slots=count)
+                for name, count in top_missed_items
+            ],
+        )
 
     async def create(
         self,

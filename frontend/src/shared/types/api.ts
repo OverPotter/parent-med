@@ -230,6 +230,34 @@ export interface PushNotificationPreferences {
   cabinetNotify3Days: boolean;
 }
 
+export interface PillboxAnalyticsSeriesPoint {
+  label: string;
+  value: number;
+}
+
+export interface PillboxTopMedication {
+  medicationName: string;
+  missedSlots: number;
+}
+
+export interface PillboxHistorySummary {
+  period: string;
+  totalPlans: number;
+  activePlans: number;
+  pausedPlans: number;
+  archivedPlans: number;
+  totalMedications: number;
+  scheduledSlots: number;
+  takenSlots: number;
+  missedSlots: number;
+  lateSlots: number;
+  onTimeSlots: number;
+  adherenceRate: number;
+  onTimeRate: number;
+  timeline: PillboxAnalyticsSeriesPoint[];
+  topMissedMedications: PillboxTopMedication[];
+}
+
 /** Ответ API с ошибкой (detail + code). */
 export interface ApiErrorBody {
   detail: string;

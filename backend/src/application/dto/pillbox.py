@@ -104,3 +104,43 @@ class PillboxDoseLogCreateDto(BaseModel):
     taken_at: datetime | None = None
     source: str = Field("manual", description="manual | reminder")
     notes: str | None = None
+
+
+class PillboxAnalyticsSeriesPointDto(BaseModel):
+    """Точка временного ряда для аналитики таблетницы."""
+
+    label: str = Field(..., description="Подпись периода")
+    value: int = Field(..., description="Количество отмеченных слотов")
+
+
+class PillboxTopMedicationDto(BaseModel):
+    """Проблемное лекарство с наибольшим числом пропусков."""
+
+    medication_name: str = Field(..., description="Название лекарства")
+    missed_slots: int = Field(..., description="Сколько раз слот остался неотмеченным")
+
+
+class PillboxHistorySummaryDto(BaseModel):
+    """Сводка по приёмам таблетницы за период."""
+
+    period: str = Field(..., description="Выбранный период аналитики")
+    total_plans: int = Field(..., description="Всего планов в семье")
+    active_plans: int = Field(..., description="Активных планов")
+    paused_plans: int = Field(..., description="Планов на паузе")
+    archived_plans: int = Field(..., description="Архивных планов")
+    total_medications: int = Field(..., description="Всего лекарств в учитываемых планах")
+    scheduled_slots: int = Field(..., description="Сколько слотов было по расписанию")
+    taken_slots: int = Field(..., description="Сколько слотов отмечено")
+    missed_slots: int = Field(..., description="Сколько слотов пропущено")
+    late_slots: int = Field(..., description="Сколько приёмов отмечено с опозданием")
+    on_time_slots: int = Field(..., description="Сколько приёмов отмечено вовремя")
+    adherence_rate: float = Field(..., description="Доля отмеченных приёмов")
+    on_time_rate: float = Field(..., description="Доля вовремя отмеченных среди отмеченных")
+    timeline: list[PillboxAnalyticsSeriesPointDto] = Field(
+        ...,
+        description="Временной ряд отмеченных слотов",
+    )
+    top_missed_medications: list[PillboxTopMedicationDto] = Field(
+        ...,
+        description="Лекарства с наибольшим числом пропусков",
+    )
