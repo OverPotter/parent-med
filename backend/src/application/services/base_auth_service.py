@@ -12,6 +12,7 @@ from src.application.dto.auth import (
     LoginDto,
     RefreshDto,
     RegisterDto,
+    UpdateAccountProfileDto,
     UpdateLanguageDto,
 )
 from src.application.dto.family import FamilyResponseDto
@@ -79,12 +80,26 @@ class BaseAuthService(ABC):
         """Закрыть активные сессии аккаунта."""
 
     @abstractmethod
+    async def delete_me(self, account_id: UUID) -> None:
+        """Удалить текущий аккаунт."""
+
+    @abstractmethod
+    async def delete_family(self, account_id: UUID) -> None:
+        """Удалить семью текущего owner (мягко деактивировать все аккаунты)."""
+
+    @abstractmethod
     async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
         """Сменить пароль текущего аккаунта."""
 
     @abstractmethod
     async def update_language(self, account_id: UUID, dto: UpdateLanguageDto) -> AccountResponseDto:
         """Обновить предпочитаемый язык аккаунта."""
+
+    @abstractmethod
+    async def update_profile(
+        self, account_id: UUID, dto: UpdateAccountProfileDto
+    ) -> AccountResponseDto:
+        """Обновить профиль текущего аккаунта."""
 
     @abstractmethod
     async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:

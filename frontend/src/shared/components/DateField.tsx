@@ -195,7 +195,33 @@ export function DateField({
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => selectedDate ?? new Date());
   const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const copy = DATE_FIELD_COPY[language];
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px), (pointer: coarse)");
+    const updateMode = () => setIsMobileViewport(mediaQuery.matches);
+
+    updateMode();
+    mediaQuery.addEventListener("change", updateMode);
+    return () => mediaQuery.removeEventListener("change", updateMode);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || !isMobileViewport || typeof document === "undefined") {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen, isMobileViewport]);
 
   useEffect(() => {
     if (selectedDate) {
@@ -234,7 +260,7 @@ export function DateField({
   }, [isOpen]);
 
   useLayoutEffect(() => {
-    if (!isOpen || !rootRef.current) {
+    if (!isOpen || !rootRef.current || isMobileViewport) {
       return;
     }
 
@@ -286,7 +312,7 @@ export function DateField({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [isOpen, viewDate]);
+  }, [isOpen, viewDate, isMobileViewport]);
 
   const monthDays = useMemo(() => buildMonthDays(viewDate), [viewDate]);
   const monthLabel = `${copy.months[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
@@ -296,153 +322,235 @@ export function DateField({
     [selectedDate, minDate, maxDate]
   );
   const panel =
-    isOpen && panelPosition
+    isOpen && (isMobileViewport || panelPosition)
       ? createPortal(
-          <div
-            ref={panelRef}
-            className="soft-panel fixed z-[140] overflow-y-auto rounded-[28px] p-4"
-            style={{
-              top: panelPosition.top,
-              left: panelPosition.left,
-              width: panelPosition.width,
-              maxHeight: panelPosition.maxHeight,
-            }}
-          >
-            <div className="mb-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setViewDate(
-                      (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1)
-                    )
-                  }
-                  className="soft-button-secondary min-h-0 px-3 py-2 text-sm"
-                  aria-label={copy.prevMonth}
-                >
-                  ←
-                </button>
-                <p className="app-card-title text-sm">{monthLabel}</p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setViewDate(
-                      (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1)
-                    )
-                  }
-                  className="soft-button-secondary min-h-0 px-3 py-2 text-sm"
-                  aria-label={copy.nextMonth}
-                >
-                  →
-                </button>
-              </div>
-
-              <div className="grid grid-cols-[minmax(0,1fr)_104px] gap-2">
-                <label className="block">
-                  <span className="soft-field-label mb-1 text-[0.8rem]">{copy.month}</span>
-                  <select
-                    value={viewDate.getMonth()}
-                    onChange={(event) =>
-                      setViewDate(new Date(viewDate.getFullYear(), Number(event.target.value), 1))
-                    }
-                    className="soft-input min-h-[3rem] w-full px-3 text-sm"
-                  >
-                    {copy.months.map((label, index) => (
-                      <option key={label} value={index}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block">
-                  <span className="soft-field-label mb-1 text-[0.8rem]">{copy.year}</span>
-                  <select
-                    value={viewDate.getFullYear()}
-                    onChange={(event) =>
-                      setViewDate(new Date(Number(event.target.value), viewDate.getMonth(), 1))
-                    }
-                    className="soft-input min-h-[3rem] w-full px-3 text-sm"
-                  >
-                    {yearOptions.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] text-muted">
-              {copy.weekdays.map((label) => (
-                <div key={label} className="py-0.5">
-                  {label}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-2 grid grid-cols-7 gap-1.5">
-              {monthDays.map((date) => {
-                const isoValue = toIsoDate(date);
-                const inCurrentMonth = date.getMonth() === viewDate.getMonth();
-                const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
-                const isToday = isSameDay(date, today);
-                const disabledDate = isDateDisabled(date, minDate, maxDate);
-
-                return (
-                  <button
-                    key={isoValue}
-                    type="button"
-                    disabled={disabledDate}
-                    onClick={() => {
-                      onChange(isoValue);
-                      setIsOpen(false);
-                    }}
-                    className={[
-                      "flex h-9 items-center justify-center rounded-2xl text-sm transition-colors",
-                      isSelected
-                        ? "soft-tab-active"
-                        : inCurrentMonth
-                          ? "soft-tab"
-                          : "soft-tab text-muted opacity-60",
-                      isToday && !isSelected ? "ring-1 ring-primary/20" : "",
-                      disabledDate ? "cursor-not-allowed opacity-35" : "",
-                    ].join(" ")}
-                  >
-                    {date.getDate()}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-2">
+          <div className="fixed inset-0 z-[140]">
+            {isMobileViewport ? (
               <button
                 type="button"
-                onClick={() => {
-                  const nextValue = toIsoDate(today);
-                  if (!isDateDisabled(today, minDate, maxDate)) {
-                    onChange(nextValue);
-                    setViewDate(today);
-                    setIsOpen(false);
-                  }
-                }}
-                className="soft-button-secondary min-h-0 px-3.5 py-2 text-sm"
-              >
-                {copy.today}
-              </button>
-              {allowClear && value && (
+                aria-label="Close date picker"
+                className="absolute inset-0 bg-black/35"
+                onClick={() => setIsOpen(false)}
+              />
+            ) : null}
+            <div
+              ref={panelRef}
+              className={[
+                "soft-panel p-4",
+                isMobileViewport
+                  ? "absolute left-1/2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] w-[min(calc(100%-1.5rem),23.5rem)] max-h-[72dvh] -translate-x-1/2 overflow-y-auto rounded-[24px] p-3"
+                  : "fixed overflow-y-auto rounded-[28px]",
+              ].join(" ")}
+              style={
+                isMobileViewport
+                  ? undefined
+                  : {
+                      top: panelPosition!.top,
+                      left: panelPosition!.left,
+                      width: panelPosition!.width,
+                      maxHeight: panelPosition!.maxHeight,
+                    }
+              }
+            >
+              {isMobileViewport ? (
+                <div className="mb-3 space-y-2">
+                  <span className="mx-auto block h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-border)_74%,transparent)]" />
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="app-card-title text-sm">{copy.dateBadge}</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsOpen(false)}
+                      className="soft-button-secondary min-h-0 px-3 py-1.5 text-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              <div className="mb-3 space-y-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setViewDate(
+                        (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1)
+                      )
+                    }
+                    className="soft-button-secondary min-h-0 px-3 py-1.5 text-sm"
+                    aria-label={copy.prevMonth}
+                  >
+                    ←
+                  </button>
+                  <p className="app-card-title text-sm">{monthLabel}</p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setViewDate(
+                        (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1)
+                      )
+                    }
+                    className="soft-button-secondary min-h-0 px-3 py-1.5 text-sm"
+                    aria-label={copy.nextMonth}
+                  >
+                    →
+                  </button>
+                </div>
+
+                {!isMobileViewport ? (
+                  <div className="grid grid-cols-[minmax(0,1fr)_96px] gap-2">
+                    <label className="block">
+                      <span className="soft-field-label mb-1 text-[0.8rem]">{copy.month}</span>
+                      <select
+                        value={viewDate.getMonth()}
+                        onChange={(event) =>
+                          setViewDate(
+                            new Date(viewDate.getFullYear(), Number(event.target.value), 1)
+                          )
+                        }
+                        className="soft-input min-h-[2.8rem] w-full px-3 text-sm"
+                      >
+                        {copy.months.map((label, index) => (
+                          <option key={label} value={index}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block">
+                      <span className="soft-field-label mb-1 text-[0.8rem]">{copy.year}</span>
+                      <select
+                        value={viewDate.getFullYear()}
+                        onChange={(event) =>
+                          setViewDate(new Date(Number(event.target.value), viewDate.getMonth(), 1))
+                        }
+                        className="soft-input min-h-[2.8rem] w-full px-3 text-sm"
+                      >
+                        {yearOptions.map((year) => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-muted">
+                {copy.weekdays.map((label) => (
+                  <div key={label} className="py-0.5">
+                    {label}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-2 grid grid-cols-7 gap-1">
+                {monthDays.map((date) => {
+                  const isoValue = toIsoDate(date);
+                  const inCurrentMonth = date.getMonth() === viewDate.getMonth();
+                  const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
+                  const isToday = isSameDay(date, today);
+                  const disabledDate = isDateDisabled(date, minDate, maxDate);
+
+                  return (
+                    <button
+                      key={isoValue}
+                      type="button"
+                      disabled={disabledDate}
+                      onClick={() => {
+                        onChange(isoValue);
+                        setIsOpen(false);
+                      }}
+                      className={[
+                        "flex h-9 items-center justify-center rounded-2xl text-sm transition-colors",
+                        isSelected
+                          ? "soft-tab-active"
+                          : inCurrentMonth
+                            ? "soft-tab"
+                            : "soft-tab text-muted opacity-60",
+                        isToday && !isSelected ? "ring-1 ring-primary/20" : "",
+                        disabledDate ? "cursor-not-allowed opacity-35" : "",
+                      ].join(" ")}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isMobileViewport ? (
+                <div className="mt-3 grid grid-cols-[minmax(0,1fr)_6.8rem] gap-2">
+                  <label className="relative block">
+                    <span className="sr-only">{copy.month}</span>
+                    <select
+                      value={viewDate.getMonth()}
+                      onChange={(event) =>
+                        setViewDate(new Date(viewDate.getFullYear(), Number(event.target.value), 1))
+                      }
+                      className="soft-input min-h-[2.7rem] w-full appearance-none pr-8 pl-3 text-sm"
+                    >
+                      {copy.months.map((label, index) => (
+                        <option key={label} value={index}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">
+                      ▾
+                    </span>
+                  </label>
+
+                  <label className="relative block">
+                    <span className="sr-only">{copy.year}</span>
+                    <select
+                      value={viewDate.getFullYear()}
+                      onChange={(event) =>
+                        setViewDate(new Date(Number(event.target.value), viewDate.getMonth(), 1))
+                      }
+                      className="soft-input min-h-[2.7rem] w-full appearance-none pr-7 pl-2.5 text-sm"
+                    >
+                      {yearOptions.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted">
+                      ▾
+                    </span>
+                  </label>
+                </div>
+              ) : null}
+
+              <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => {
-                    onChange("");
-                    setIsOpen(false);
+                    const nextValue = toIsoDate(today);
+                    if (!isDateDisabled(today, minDate, maxDate)) {
+                      onChange(nextValue);
+                      setViewDate(today);
+                      setIsOpen(false);
+                    }
                   }}
                   className="soft-button-secondary min-h-0 px-3.5 py-2 text-sm"
                 >
-                  {copy.clear}
+                  {copy.today}
                 </button>
-              )}
+                {allowClear && value && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange("");
+                      setIsOpen(false);
+                    }}
+                    className="soft-button-secondary min-h-0 px-3.5 py-2 text-sm"
+                  >
+                    {copy.clear}
+                  </button>
+                )}
+              </div>
             </div>
           </div>,
           document.body

@@ -352,11 +352,15 @@ export const en: Translations = {
       invitationNote:
         "If you were already invited into a family, open the invite link from the message. It will lead you into the right flow automatically.",
       passwordsMismatch: "Passwords must match.",
+      legalConsentPrefix: "I accept the",
+      legalConsentTerms: "Terms of Use",
+      legalConsentAnd: "and",
+      legalConsentPrivacy: "Privacy Policy",
     },
     fields: {
       login: "Login",
       loginForEntry: "Login",
-      loginPlaceholder: "Email or login",
+      loginPlaceholder: "Login",
       loginPlaceholderRegister: "Create a login",
       loginHint:
         "The login is only used for sign-in. You can set a separate display name for the family.",
@@ -385,6 +389,7 @@ export const en: Translations = {
       loginFailed: "Login failed",
       registerFailed: "Registration failed",
       passwordsMismatch: "Passwords do not match",
+      legalConsentRequired: "Please accept the terms and privacy policy.",
     },
   },
   more: {
@@ -417,6 +422,11 @@ export const en: Translations = {
         title: "Feedback",
         description: "Send the team a bug report or suggestion.",
       },
+      {
+        to: "/legal",
+        title: "Privacy · Terms · Support",
+        description: "Policy, terms of use and support links.",
+      },
     ],
   },
   feedback: {
@@ -431,6 +441,7 @@ export const en: Translations = {
     success: "Thanks! Your message was saved.",
     errors: {
       rateLimited: "Too many messages per hour. Please try again later.",
+      empty: "Please enter a message.",
       generic: "Could not send. Please try again.",
     },
   },

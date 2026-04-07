@@ -55,8 +55,9 @@ export const childrenCopy = {
       loading: "Загрузка…",
       deleteTitle: "Удалить ребёнка · {{name}}",
       deleteDescription:
-        "Профиль ребёнка будет удалён без возможности восстановления. Используй это только если карточка создана ошибочно.",
-      deleteConfirm: "Удалить ребёнка",
+        "Профиль ребёнка будет удалён без возможности восстановления. Это действие нельзя отменить. Точно удалить?",
+      deleteConfirm: "Да, удалить ребёнка",
+      deleteCancel: "Отмена",
       deleting: "Удаляем…",
       subtitle: "Основные данные ребёнка, вес и семейные заметки в одном месте.",
       eyebrow: "Профиль ребёнка",
@@ -94,6 +95,8 @@ export const childrenCopy = {
         save: "Сохранить",
         saving: "Сохраняем…",
         delete: "Удалить ребёнка",
+        deleteHint:
+          "Опасное действие: профиль ребёнка и связанные записи будут удалены без возможности восстановления.",
         validationBirthDate: "Укажите корректную дату рождения через календарь.",
         validationWeight: "Укажите корректный вес в килограммах.",
       },
@@ -190,8 +193,9 @@ export const childrenCopy = {
       loading: "Loading…",
       deleteTitle: "Delete child · {{name}}",
       deleteDescription:
-        "The child profile will be deleted without recovery. Use this only if the card was created by mistake.",
-      deleteConfirm: "Delete child",
+        "The child profile will be deleted permanently. This action cannot be undone. Are you sure you want to delete?",
+      deleteConfirm: "Yes, delete child",
+      deleteCancel: "Cancel",
       deleting: "Deleting…",
       subtitle: "Core child details, weight and family notes in one place.",
       eyebrow: "Child profile",
@@ -229,6 +233,8 @@ export const childrenCopy = {
         save: "Save",
         saving: "Saving…",
         delete: "Delete child",
+        deleteHint:
+          "Dangerous action: the child profile and related records will be removed permanently.",
         validationBirthDate: "Enter a valid birth date using the calendar.",
         validationWeight: "Enter a valid weight in kilograms.",
       },

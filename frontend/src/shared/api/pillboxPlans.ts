@@ -6,6 +6,12 @@ import type {
   PillboxPlanSummary,
   PillboxPlanWrite,
 } from "./pillboxPlans.contract";
+import type {
+  PillboxAnalyticsSeriesPoint,
+  PillboxHistorySummary,
+  PillboxTopMedication,
+} from "@shared/types/api";
+import type { AppLanguage } from "@shared/i18n";
 
 interface RawPillboxMedication {
   id: string;
@@ -45,6 +51,34 @@ interface RawPillboxPlan {
   medications: RawPillboxMedication[];
   created_at: string;
   updated_at: string;
+}
+
+interface RawPillboxAnalyticsSeriesPoint {
+  label: string;
+  value: number;
+}
+
+interface RawPillboxTopMedication {
+  medication_name: string;
+  missed_slots: number;
+}
+
+interface RawPillboxHistorySummary {
+  plan_id: string;
+  plan_title: string;
+  plan_status: string;
+  member_count: number;
+  period: string;
+  total_medications: number;
+  scheduled_slots: number;
+  taken_slots: number;
+  missed_slots: number;
+  late_slots: number;
+  on_time_slots: number;
+  adherence_rate: number;
+  on_time_rate: number;
+  timeline: RawPillboxAnalyticsSeriesPoint[];
+  top_missed_medications: RawPillboxTopMedication[];
 }
 
 function normalizeApiTime(value: string): string {
@@ -99,6 +133,40 @@ function toPillboxPlan(raw: RawPillboxPlan): PillboxPlan {
   };
 }
 
+function toPillboxSeriesPoint(raw: RawPillboxAnalyticsSeriesPoint): PillboxAnalyticsSeriesPoint {
+  return {
+    label: raw.label,
+    value: raw.value,
+  };
+}
+
+function toPillboxTopMedication(raw: RawPillboxTopMedication): PillboxTopMedication {
+  return {
+    medicationName: raw.medication_name,
+    missedSlots: raw.missed_slots,
+  };
+}
+
+function toPillboxHistorySummary(raw: RawPillboxHistorySummary): PillboxHistorySummary {
+  return {
+    planId: raw.plan_id,
+    planTitle: raw.plan_title,
+    planStatus: raw.plan_status,
+    memberCount: raw.member_count,
+    period: raw.period,
+    totalMedications: raw.total_medications,
+    scheduledSlots: raw.scheduled_slots,
+    takenSlots: raw.taken_slots,
+    missedSlots: raw.missed_slots,
+    lateSlots: raw.late_slots,
+    onTimeSlots: raw.on_time_slots,
+    adherenceRate: raw.adherence_rate,
+    onTimeRate: raw.on_time_rate,
+    timeline: (raw.timeline ?? []).map(toPillboxSeriesPoint),
+    topMissedMedications: (raw.top_missed_medications ?? []).map(toPillboxTopMedication),
+  };
+}
+
 function toWritePayload(plan: PillboxPlanWrite) {
   return {
     title: plan.title,
@@ -128,6 +196,20 @@ export async function fetchPillboxPlans(): Promise<PillboxPlanSummary[]> {
 export async function fetchPillboxPlan(planId: string): Promise<PillboxPlan> {
   const res = await apiClient.get<RawPillboxPlan>(`/pillbox-plans/${planId}`);
   return toPillboxPlan(res.data);
+}
+
+export async function fetchPillboxHistorySummary(
+  planId: string,
+  period: "month" | "quarter" | "half_year" | "year" | "all",
+  language: AppLanguage
+): Promise<PillboxHistorySummary> {
+  const res = await apiClient.get<RawPillboxHistorySummary>(
+    `/pillbox-plans/${planId}/history-summary`,
+    {
+      params: { period, language },
+    }
+  );
+  return toPillboxHistorySummary(res.data);
 }
 
 export async function createPillboxPlan(payload: PillboxPlanWrite): Promise<PillboxPlan> {

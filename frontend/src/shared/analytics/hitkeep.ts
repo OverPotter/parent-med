@@ -24,7 +24,7 @@ function sanitizeProps(props?: Record<string, unknown>): Record<string, unknown>
   return Object.keys(out).length ? out : undefined;
 }
 
-let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let flushTimer: number | null = null;
 
 function scheduleFlush(): void {
   if (typeof window === "undefined" || flushTimer !== null) {

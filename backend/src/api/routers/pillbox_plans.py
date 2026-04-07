@@ -9,6 +9,7 @@ from src.api.deps.auth import get_current_account
 from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.pillbox import (
     PillboxDoseLogCreateDto,
+    PillboxHistorySummaryDto,
     PillboxPlanCreateDto,
     PillboxPlanResponseDto,
     PillboxPlanSummaryDto,
@@ -28,6 +29,24 @@ async def list_pillbox_plans(
     return await service.list_by_family_id(
         current_account.family_id,
         current_account.preferred_language,
+    )
+
+
+@router.get("/{plan_id}/history-summary", response_model=PillboxHistorySummaryDto)
+async def get_history_summary(
+    plan_id: UUID,
+    period: str = "half_year",
+    language: str | None = None,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: PillboxService = Depends(get_pillbox_service),
+) -> PillboxHistorySummaryDto:
+    """Сводка по выполнению приёмов в таблетнице."""
+    preferred_language = language if language in {"ru", "en"} else current_account.preferred_language
+    return await service.get_plan_history_summary(
+        plan_id,
+        current_account.family_id,
+        period,
+        preferred_language,
     )
 
 

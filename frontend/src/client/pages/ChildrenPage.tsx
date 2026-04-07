@@ -19,7 +19,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child, WeightEntry } from "@shared/types/api";
-import { formatDate } from "@shared/utils/date";
+import { formatDate, getLocalIsoDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
@@ -326,7 +326,7 @@ function AddChildForm({
                 setValidationError(null);
               }}
               language={language}
-              max={new Date().toISOString().slice(0, 10)}
+              max={getLocalIsoDate()}
               className="mt-1"
             />
           </label>
@@ -434,7 +434,7 @@ function ChildCard({
                 <h2 className="app-card-title">{child.name}</h2>
                 {hasActiveEpisode && (
                   <>
-                    <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
+                    <span className="soft-pill-warning rounded-full px-2.5 py-1 text-xs">
                       {activeEpisodeStartedAt
                         ? t(copy.childCard.activeSince, {
                             date: formatDate(activeEpisodeStartedAt),

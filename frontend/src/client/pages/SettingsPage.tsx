@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { changePassword } from "@shared/api/auth";
+import { changePassword, deleteMyAccount, deleteMyFamily } from "@shared/api/auth";
 import {
   deletePushSubscription,
   fetchPushNotificationConfig,
@@ -43,7 +43,7 @@ const settingsCopy = {
     serverAcceptFailed: "Сервер не принял подписку устройства.",
     enablePushFailed: "Не удалось включить уведомления на этом устройстве.",
     disablePushFailed: "Не удалось отключить уведомления.",
-    fillAllPasswordFields: "Заполни все поля пароля.",
+    fillAllPasswordFields: "Заполните все поля пароля.",
     passwordsMismatch: "Новый пароль и подтверждение не совпадают.",
     passwordTooShort: "Новый пароль должен быть не короче 6 символов.",
     changePassword: "Сменить пароль",
@@ -53,7 +53,7 @@ const settingsCopy = {
     confirmNewPassword: "Повтори новый пароль",
     saving: "Сохраняем…",
     updatePassword: "Обновить пароль",
-    medicationPlans: "Планы лекарства",
+    medicationPlans: "Планы лекарств",
     medicationPlansHint: "Как показывать интервал в планах: в часах или в минутах.",
     hours: "Часы",
     minutes: "Минуты",
@@ -87,6 +87,24 @@ const settingsCopy = {
     days10: "За 10 дней",
     days7: "За 7 дней",
     days3: "За 3 дня",
+    dangerZone: "Опасная зона",
+    dangerZoneHint:
+      "Удаление аккаунта необратимо. Если вы единственный участник семьи, семейные данные тоже будут удалены.",
+    deleteAccount: "Удалить аккаунт",
+    deleteAccountDescription:
+      "После удаления аккаунта вы сразу выйдете из приложения. Если вы единственный owner, права owner автоматически перейдут следующему участнику.",
+    deleteAccountConfirmTitle: "Точно удалить аккаунт?",
+    deleteAccountConfirmDescription:
+      "Аккаунт будет деактивирован. Вход в него станет недоступен, восстановление не предусмотрено.",
+    deleteAccountConfirmAction: "Да, удалить аккаунт",
+    deleteAccountFailed: "Не удалось удалить аккаунт.",
+    deleteFamily: "Удалить семью полностью",
+    deleteFamilyDescription:
+      "Удаляет доступ ко всем аккаунтам семьи. Все участники будут разлогинены и деактивированы.",
+    deleteFamilyConfirmTitle: "Точно удалить семью?",
+    deleteFamilyConfirmDescription: "Все аккаунты семьи будут деактивированы. Действие необратимо.",
+    deleteFamilyConfirmAction: "Да, удалить семью",
+    deleteFamilyFailed: "Не удалось удалить семью.",
   },
   en: {
     title: "Settings",
@@ -148,6 +166,25 @@ const settingsCopy = {
     days10: "10 days before",
     days7: "7 days before",
     days3: "3 days before",
+    dangerZone: "Danger zone",
+    dangerZoneHint:
+      "Account deletion is irreversible. If you are the only family member, family data will be deleted too.",
+    deleteAccount: "Delete account",
+    deleteAccountDescription:
+      "After deletion, you will be signed out immediately. If you are the only owner, owner rights are reassigned automatically.",
+    deleteAccountConfirmTitle: "Delete account permanently?",
+    deleteAccountConfirmDescription:
+      "The account will be deactivated. Login will no longer be possible.",
+    deleteAccountConfirmAction: "Yes, delete account",
+    deleteAccountFailed: "Could not delete the account.",
+    deleteFamily: "Delete family completely",
+    deleteFamilyDescription:
+      "Removes access for all family accounts. All members will be signed out and deactivated.",
+    deleteFamilyConfirmTitle: "Delete family completely?",
+    deleteFamilyConfirmDescription:
+      "All family accounts will be deactivated. This action cannot be undone.",
+    deleteFamilyConfirmAction: "Yes, delete family",
+    deleteFamilyFailed: "Could not delete the family.",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
 
@@ -158,6 +195,7 @@ function tSettings(language: AppLanguage, key: keyof (typeof settingsCopy)["ru"]
 export function SettingsPage() {
   const { language } = useI18n();
   const queryClient = useQueryClient();
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const medicationIntervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const setMedicationIntervalUnit = useAppStore((s) => s.setMedicationIntervalUnit);
   const theme = useAppStore((s) => s.theme);
@@ -167,11 +205,15 @@ export function SettingsPage() {
   const [isPushPending, setIsPushPending] = useState(false);
   const [isDisablePushConfirmOpen, setIsDisablePushConfirmOpen] = useState(false);
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
+  const [isDeleteAccountConfirmOpen, setIsDeleteAccountConfirmOpen] = useState(false);
+  const [isDeleteFamilyConfirmOpen, setIsDeleteFamilyConfirmOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
+  const [deleteFamilyError, setDeleteFamilyError] = useState<string | null>(null);
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
   const [selectedPillboxReminderMinutes, setSelectedPillboxReminderMinutes] = useState("10");
   const childrenEarlyReminderEnabled = Number(selectedReminderMinutes) > 0;
@@ -284,6 +326,34 @@ export function SettingsPage() {
     },
   });
 
+  const deleteAccountMutation = useMutation({
+    mutationFn: deleteMyAccount,
+    onSuccess: () => {
+      queryClient.clear();
+      window.dispatchEvent(new CustomEvent("auth:logout"));
+    },
+    onError: (error) => {
+      setDeleteAccountError(
+        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
+          (error instanceof Error ? error.message : tSettings(language, "deleteAccountFailed"))
+      );
+    },
+  });
+
+  const deleteFamilyMutation = useMutation({
+    mutationFn: deleteMyFamily,
+    onSuccess: () => {
+      queryClient.clear();
+      window.dispatchEvent(new CustomEvent("auth:logout"));
+    },
+    onError: (error) => {
+      setDeleteFamilyError(
+        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
+          (error instanceof Error ? error.message : tSettings(language, "deleteFamilyFailed"))
+      );
+    },
+  });
+
   const handleEnablePush = async () => {
     if (pushSupportIssue) {
       setPushError(pushSupportIssue);
@@ -330,7 +400,7 @@ export function SettingsPage() {
     }
   };
 
-  const handleDisablePush = async () => {
+  const handleDisablePush = async (): Promise<boolean> => {
     setPushError(null);
     setIsPushPending(true);
     try {
@@ -342,8 +412,10 @@ export function SettingsPage() {
       const remainingSubscription = await getExistingPushSubscription();
       setPushStatus(remainingSubscription ? "enabled" : "disabled");
       window.dispatchEvent(new Event("push:subscription-changed"));
+      return true;
     } catch {
       setPushError(tSettings(language, "disablePushFailed"));
+      return false;
     } finally {
       setIsPushPending(false);
     }
@@ -451,7 +523,9 @@ export function SettingsPage() {
 
       <Surface className="p-5 sm:p-6">
         <p className="app-card-title">{tSettings(language, "appSettings")}</p>
-        <p className="mt-3 text-sm leading-7 text-muted">{tSettings(language, "appSettingsHint")}</p>
+        <p className="mt-3 text-sm leading-7 text-muted">
+          {tSettings(language, "appSettingsHint")}
+        </p>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="soft-card rounded-[24px] px-4 py-4 sm:px-5">
@@ -459,9 +533,7 @@ export function SettingsPage() {
               {tSettings(language, "interfaceLanguage")}
             </p>
             <div className="mt-3">
-              <LanguageSwitch
-                triggerClassName="soft-button-secondary min-h-[2.85rem] px-3.5 text-[0.84rem] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]"
-              />
+              <LanguageSwitch triggerClassName="soft-button-secondary min-h-[2.85rem] px-3.5 text-[0.84rem] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]" />
             </div>
           </div>
 
@@ -566,7 +638,9 @@ export function SettingsPage() {
             </span>
           </button>
         </div>
-        <p className="mt-3 text-sm leading-7 text-muted">{tSettings(language, "notificationsHint")}</p>
+        <p className="mt-3 text-sm leading-7 text-muted">
+          {tSettings(language, "notificationsHint")}
+        </p>
         {pushError && (
           <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">{pushError}</div>
         )}
@@ -575,182 +649,186 @@ export function SettingsPage() {
             {tSettings(language, "pushServerMissing")}
           </div>
         )}
-        {isPushEnabled ? <div className="mt-5 border-t border-border/70 pt-4">
-          <div className="soft-card mt-3 rounded-[20px] border border-border/70 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-foreground">
-                {tSettings(language, "childrenReminders")}
-              </p>
-              <button
-                type="button"
-                onClick={() => handleChildrenEarlyReminderToggle(!childrenEarlyReminderEnabled)}
-                disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-                  childrenEarlyReminderEnabled
-                    ? "border-emerald-500/45 bg-emerald-500/25"
-                    : "border-border bg-card-muted"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
-                aria-label={
-                  childrenEarlyReminderEnabled
-                    ? tSettings(language, "reminderOff")
-                    : tSettings(language, "reminderOn")
-                }
-              >
-                <span
-                  className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
+        {isPushEnabled ? (
+          <div className="mt-5 border-t border-border/70 pt-4">
+            <div className="soft-card mt-3 rounded-[20px] border border-border/70 px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-foreground">
+                  {tSettings(language, "childrenReminders")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleChildrenEarlyReminderToggle(!childrenEarlyReminderEnabled)}
+                  disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
+                  className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
                     childrenEarlyReminderEnabled
-                      ? "translate-x-6 text-emerald-600"
-                      : "translate-x-1 text-slate-500"
-                  }`}
+                      ? "border-emerald-500/45 bg-emerald-500/25"
+                      : "border-border bg-card-muted"
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                  aria-label={
+                    childrenEarlyReminderEnabled
+                      ? tSettings(language, "reminderOff")
+                      : tSettings(language, "reminderOn")
+                  }
                 >
-                  {childrenEarlyReminderEnabled ? "✓" : "✕"}
-                </span>
-              </button>
-            </div>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              {tSettings(language, "childrenRemindersSoftText")}
-            </p>
-            {childrenEarlyReminderEnabled ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[5, 10, 15].map((minutes) => (
-                  <button
-                    key={minutes}
-                    type="button"
-                    onClick={() => handleReminderMinutesChange(String(minutes))}
-                    disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                    className={`${
-                      selectedReminderMinutes === String(minutes) ? "soft-tab-active" : "soft-tab"
-                    } inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.02em] disabled:opacity-50`}
+                  <span
+                    className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
+                      childrenEarlyReminderEnabled
+                        ? "translate-x-6 text-emerald-600"
+                        : "translate-x-1 text-slate-500"
+                    }`}
                   >
-                    {minutes} {tSettings(language, "minShort")}
-                  </button>
-                ))}
+                    {childrenEarlyReminderEnabled ? "✓" : "✕"}
+                  </span>
+                </button>
               </div>
-            ) : null}
-          </div>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {tSettings(language, "childrenRemindersSoftText")}
+              </p>
+              {childrenEarlyReminderEnabled ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[5, 10, 15].map((minutes) => (
+                    <button
+                      key={minutes}
+                      type="button"
+                      onClick={() => handleReminderMinutesChange(String(minutes))}
+                      disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
+                      className={`${
+                        selectedReminderMinutes === String(minutes) ? "soft-tab-active" : "soft-tab"
+                      } inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.02em] disabled:opacity-50`}
+                    >
+                      {minutes} {tSettings(language, "minShort")}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
 
-          <div className="soft-card mt-5 rounded-[20px] border border-border/70 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-foreground">
-                {tSettings(language, "pillboxReminders")}
-              </p>
-              <button
-                type="button"
-                onClick={() => handlePillboxEarlyReminderToggle(!pillboxEarlyReminderEnabled)}
-                disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-                  pillboxEarlyReminderEnabled
-                    ? "border-emerald-500/45 bg-emerald-500/25"
-                    : "border-border bg-card-muted"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
-                aria-label={
-                  pillboxEarlyReminderEnabled
-                    ? tSettings(language, "reminderOff")
-                    : tSettings(language, "reminderOn")
-                }
-              >
-                <span
-                  className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
+            <div className="soft-card mt-5 rounded-[20px] border border-border/70 px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-foreground">
+                  {tSettings(language, "pillboxReminders")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handlePillboxEarlyReminderToggle(!pillboxEarlyReminderEnabled)}
+                  disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
+                  className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
                     pillboxEarlyReminderEnabled
-                      ? "translate-x-6 text-emerald-600"
-                      : "translate-x-1 text-slate-500"
-                  }`}
+                      ? "border-emerald-500/45 bg-emerald-500/25"
+                      : "border-border bg-card-muted"
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                  aria-label={
+                    pillboxEarlyReminderEnabled
+                      ? tSettings(language, "reminderOff")
+                      : tSettings(language, "reminderOn")
+                  }
                 >
-                  {pillboxEarlyReminderEnabled ? "✓" : "✕"}
-                </span>
-              </button>
-            </div>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              {tSettings(language, "pillboxRemindersSoftText")}
-            </p>
-            {pillboxEarlyReminderEnabled ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[5, 10, 15].map((minutes) => (
-                  <button
-                    key={minutes}
-                    type="button"
-                    onClick={() => handlePillboxReminderMinutesChange(String(minutes))}
-                    disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                    className={`${
-                      selectedPillboxReminderMinutes === String(minutes)
-                        ? "soft-tab-active"
-                        : "soft-tab"
-                    } inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.02em] disabled:opacity-50`}
+                  <span
+                    className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
+                      pillboxEarlyReminderEnabled
+                        ? "translate-x-6 text-emerald-600"
+                        : "translate-x-1 text-slate-500"
+                    }`}
                   >
-                    {minutes} {tSettings(language, "minShort")}
-                  </button>
-                ))}
+                    {pillboxEarlyReminderEnabled ? "✓" : "✕"}
+                  </span>
+                </button>
               </div>
-            ) : null}
-          </div>
-        </div> : null}
-        {isPushEnabled ? <div className="mt-5 border-t border-border/70 pt-4">
-          <div className="soft-card mt-3 rounded-[20px] border border-border/70 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-foreground">
-                {tSettings(language, "cabinetReminders")}
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {tSettings(language, "pillboxRemindersSoftText")}
               </p>
-              <button
-                type="button"
-                onClick={() => handleCabinetEarlyReminderToggle(!cabinetEarlyReminderEnabled)}
-                disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-                  cabinetEarlyReminderEnabled
-                    ? "border-emerald-500/45 bg-emerald-500/25"
-                    : "border-border bg-card-muted"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
-                aria-label={
-                  cabinetEarlyReminderEnabled
-                    ? tSettings(language, "reminderOff")
-                    : tSettings(language, "reminderOn")
-                }
-              >
-                <span
-                  className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
-                    cabinetEarlyReminderEnabled
-                      ? "translate-x-6 text-emerald-600"
-                      : "translate-x-1 text-slate-500"
-                  }`}
-                >
-                  {cabinetEarlyReminderEnabled ? "✓" : "✕"}
-                </span>
-              </button>
+              {pillboxEarlyReminderEnabled ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[5, 10, 15].map((minutes) => (
+                    <button
+                      key={minutes}
+                      type="button"
+                      onClick={() => handlePillboxReminderMinutesChange(String(minutes))}
+                      disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
+                      className={`${
+                        selectedPillboxReminderMinutes === String(minutes)
+                          ? "soft-tab-active"
+                          : "soft-tab"
+                      } inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.02em] disabled:opacity-50`}
+                    >
+                      {minutes} {tSettings(language, "minShort")}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              {tSettings(language, "cabinetRemindersSoftText")}
-            </p>
-            {cabinetEarlyReminderEnabled ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[
-                  {
-                    key: 10 as const,
-                    label: tSettings(language, "days10"),
-                  },
-                  {
-                    key: 7 as const,
-                    label: tSettings(language, "days7"),
-                  },
-                  {
-                    key: 3 as const,
-                    label: tSettings(language, "days3"),
-                  },
-                ].map((option) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    onClick={() => handleCabinetReminderSelect(option.key)}
-                    disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                    className={`${
-                      selectedCabinetReminderDays === option.key ? "soft-tab-active" : "soft-tab"
-                    } inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.02em] disabled:opacity-50`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
           </div>
-        </div> : null}
+        ) : null}
+        {isPushEnabled ? (
+          <div className="mt-5 border-t border-border/70 pt-4">
+            <div className="soft-card mt-3 rounded-[20px] border border-border/70 px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-foreground">
+                  {tSettings(language, "cabinetReminders")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleCabinetEarlyReminderToggle(!cabinetEarlyReminderEnabled)}
+                  disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
+                  className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
+                    cabinetEarlyReminderEnabled
+                      ? "border-emerald-500/45 bg-emerald-500/25"
+                      : "border-border bg-card-muted"
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                  aria-label={
+                    cabinetEarlyReminderEnabled
+                      ? tSettings(language, "reminderOff")
+                      : tSettings(language, "reminderOn")
+                  }
+                >
+                  <span
+                    className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
+                      cabinetEarlyReminderEnabled
+                        ? "translate-x-6 text-emerald-600"
+                        : "translate-x-1 text-slate-500"
+                    }`}
+                  >
+                    {cabinetEarlyReminderEnabled ? "✓" : "✕"}
+                  </span>
+                </button>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {tSettings(language, "cabinetRemindersSoftText")}
+              </p>
+              {cabinetEarlyReminderEnabled ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[
+                    {
+                      key: 10 as const,
+                      label: tSettings(language, "days10"),
+                    },
+                    {
+                      key: 7 as const,
+                      label: tSettings(language, "days7"),
+                    },
+                    {
+                      key: 3 as const,
+                      label: tSettings(language, "days3"),
+                    },
+                  ].map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => handleCabinetReminderSelect(option.key)}
+                      disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
+                      className={`${
+                        selectedCabinetReminderDays === option.key ? "soft-tab-active" : "soft-tab"
+                      } inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.02em] disabled:opacity-50`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </Surface>
 
       <Surface className="p-5 sm:p-6">
@@ -821,7 +899,9 @@ export function SettingsPage() {
                   ? tSettings(language, "saving")
                   : tSettings(language, "updatePassword")}
               </button>
-              {passwordSuccess ? <p className="soft-text-success text-sm">{passwordSuccess}</p> : null}
+              {passwordSuccess ? (
+                <p className="soft-text-success text-sm">{passwordSuccess}</p>
+              ) : null}
             </div>
             {passwordError ? (
               <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
@@ -830,6 +910,58 @@ export function SettingsPage() {
             ) : null}
           </>
         ) : null}
+      </Surface>
+      <Surface className="p-5 sm:p-6">
+        <p className="app-card-title text-[color:var(--color-danger)]">
+          {tSettings(language, "dangerZone")}
+        </p>
+        <p className="mt-3 text-sm leading-7 text-muted">{tSettings(language, "dangerZoneHint")}</p>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          {tSettings(language, "deleteAccountDescription")}
+        </p>
+        {deleteAccountError ? (
+          <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
+            {deleteAccountError}
+          </div>
+        ) : null}
+        {accountFamilyRole === "owner" ? (
+          <>
+            <p className="mt-4 text-sm leading-6 text-muted">
+              {tSettings(language, "deleteFamilyDescription")}
+            </p>
+            {deleteFamilyError ? (
+              <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
+                {deleteFamilyError}
+              </div>
+            ) : null}
+          </>
+        ) : null}
+        <div className="mt-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteAccountError(null);
+                setIsDeleteAccountConfirmOpen(true);
+              }}
+              className="app-btn-danger-md soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 sm:min-h-[3.1rem] sm:px-5"
+            >
+              {tSettings(language, "deleteAccount")}
+            </button>
+            {accountFamilyRole === "owner" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteFamilyError(null);
+                  setIsDeleteFamilyConfirmOpen(true);
+                }}
+                className="app-btn-danger-md soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 sm:min-h-[3.1rem] sm:px-5"
+              >
+                {tSettings(language, "deleteFamily")}
+              </button>
+            ) : null}
+          </div>
+        </div>
       </Surface>
       <ConfirmDialog
         isOpen={isDisablePushConfirmOpen}
@@ -841,9 +973,43 @@ export function SettingsPage() {
         isPending={isPushPending}
         onCancel={() => setIsDisablePushConfirmOpen(false)}
         onConfirm={() => {
-          void handleDisablePush();
-          setIsDisablePushConfirmOpen(false);
+          void (async () => {
+            const didDisable = await handleDisablePush();
+            if (didDisable) {
+              setIsDisablePushConfirmOpen(false);
+            }
+          })();
         }}
+      />
+      <ConfirmDialog
+        isOpen={isDeleteAccountConfirmOpen}
+        title={tSettings(language, "deleteAccountConfirmTitle")}
+        description={tSettings(language, "deleteAccountConfirmDescription")}
+        confirmLabel={
+          deleteAccountMutation.isPending
+            ? tSettings(language, "saving")
+            : tSettings(language, "deleteAccountConfirmAction")
+        }
+        cancelLabel={tSettings(language, "cancel")}
+        confirmTone="danger"
+        isPending={deleteAccountMutation.isPending}
+        onCancel={() => setIsDeleteAccountConfirmOpen(false)}
+        onConfirm={() => deleteAccountMutation.mutate()}
+      />
+      <ConfirmDialog
+        isOpen={isDeleteFamilyConfirmOpen}
+        title={tSettings(language, "deleteFamilyConfirmTitle")}
+        description={tSettings(language, "deleteFamilyConfirmDescription")}
+        confirmLabel={
+          deleteFamilyMutation.isPending
+            ? tSettings(language, "saving")
+            : tSettings(language, "deleteFamilyConfirmAction")
+        }
+        cancelLabel={tSettings(language, "cancel")}
+        confirmTone="danger"
+        isPending={deleteFamilyMutation.isPending}
+        onCancel={() => setIsDeleteFamilyConfirmOpen(false)}
+        onConfirm={() => deleteFamilyMutation.mutate()}
       />
     </div>
   );

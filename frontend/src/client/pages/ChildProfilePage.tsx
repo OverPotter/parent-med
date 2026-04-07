@@ -9,7 +9,7 @@ import { PageIntro } from "@shared/components/PageIntro";
 import { useI18n } from "@shared/hooks/useI18n";
 import { Surface } from "@shared/components/Surface";
 import type { WeightEntry } from "@shared/types/api";
-import { formatDate } from "@shared/utils/date";
+import { formatDate, getLocalIsoDate } from "@shared/utils/date";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
 type ChildProfileDetails = {
@@ -114,6 +114,7 @@ export function ChildProfilePage() {
         title={t(copy.deleteTitle, { name: child.name })}
         description={copy.deleteDescription}
         confirmLabel={deleteMutation.isPending ? copy.deleting : copy.deleteConfirm}
+        cancelLabel={copy.deleteCancel}
         confirmTone="danger"
         isPending={deleteMutation.isPending}
         onCancel={() => setIsDeleteConfirmOpen(false)}
@@ -337,7 +338,7 @@ function EditChildProfileForm({
               value={draftBirthDate}
               onChange={setDraftBirthDate}
               language={language}
-              max={new Date().toISOString().slice(0, 10)}
+              max={getLocalIsoDate()}
               className="w-full"
             />
           </label>
@@ -418,11 +419,12 @@ function EditChildProfileForm({
             >
               {isSaving ? copy.form.saving : copy.form.save}
             </button>
+            <p className="w-full text-xs leading-5 text-muted sm:order-3">{copy.form.deleteHint}</p>
             <button
               type="button"
               onClick={onRequestDeleteConfirm}
-              disabled={isDeleting}
-              className={`${appBtnDangerClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem]`}
+              disabled={isDeleting || isSaving}
+              className={`${appBtnDangerClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto`}
             >
               {isDeleting ? copy.deleting : copy.form.delete}
             </button>

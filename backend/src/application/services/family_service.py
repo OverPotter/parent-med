@@ -69,6 +69,7 @@ class FamilyService:
 
     async def list_members_for_account(self, current_family_id: UUID) -> list[AccountResponseDto]:
         accounts = await self._account_repo.list_by_family_id(current_family_id)
+        accounts = [account for account in accounts if account.family_role != "deleted"]
         accounts = sorted(
             accounts,
             key=lambda account: (
@@ -92,10 +93,13 @@ class FamilyService:
             raise ValidationError("Можно установить только роли owner или adult")
 
         target = await self._account_repo.get_by_id(member_account_id)
-        if not target or target.family_id != current_family_id:
+        if not target or target.family_id != current_family_id or target.family_role == "deleted":
             raise NotFoundError("Участник семьи не найден", resource="account")
 
         family_accounts = await self._account_repo.list_by_family_id(current_family_id)
+        family_accounts = [
+            account for account in family_accounts if account.family_role != "deleted"
+        ]
         owner_count = sum(1 for account in family_accounts if account.family_role == "owner")
         if target.family_role == "owner" and dto.family_role != "owner" and owner_count <= 1:
             raise ValidationError(
@@ -142,10 +146,13 @@ class FamilyService:
             )
 
         target = await self._account_repo.get_by_id(member_account_id)
-        if not target or target.family_id != current_family_id:
+        if not target or target.family_id != current_family_id or target.family_role == "deleted":
             raise NotFoundError("Участник семьи не найден", resource="account")
 
         family_accounts = await self._account_repo.list_by_family_id(current_family_id)
+        family_accounts = [
+            account for account in family_accounts if account.family_role != "deleted"
+        ]
         owner_count = sum(1 for account in family_accounts if account.family_role == "owner")
         if target.family_role == "owner" and owner_count <= 1:
             raise ValidationError(
@@ -165,7 +172,7 @@ class FamilyService:
         current_family_role: str,
     ) -> AccountResponseDto:
         target = await self._account_repo.get_by_id(member_account_id)
-        if not target or target.family_id != current_family_id:
+        if not target or target.family_id != current_family_id or target.family_role == "deleted":
             raise NotFoundError("Участник семьи не найден", resource="account")
         if current_family_role != "owner" and current_account_id != member_account_id:
             raise ForbiddenError("Можно редактировать только свой профиль в семье")

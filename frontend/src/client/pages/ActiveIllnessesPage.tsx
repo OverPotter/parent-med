@@ -247,12 +247,12 @@ function ActiveIllnessCard({
           closeEpisodeMutation.mutate();
         }}
       />
-      <RowSurface className="soft-card-status-danger rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4.5">
+      <RowSurface className="soft-card-status-warning rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4.5">
         <div className="space-y-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="app-card-title">{child.name}</h2>
-              <span className="soft-pill-danger rounded-full px-2.5 py-1 text-[11px]">
+              <span className="soft-pill-warning rounded-full px-2.5 py-1 text-[11px]">
                 {copy.observationBadge}
               </span>
             </div>

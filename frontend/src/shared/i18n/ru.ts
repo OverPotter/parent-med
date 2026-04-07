@@ -348,11 +348,15 @@ export const ru: Translations = {
       invitationNote:
         "Если вас уже пригласили в семью, откройте ссылку приглашения из сообщения. Она сама приведёт в нужный сценарий.",
       passwordsMismatch: "Пароли должны совпадать.",
+      legalConsentPrefix: "Я принимаю",
+      legalConsentTerms: "Условия использования",
+      legalConsentAnd: "и",
+      legalConsentPrivacy: "Политику конфиденциальности",
     },
     fields: {
       login: "Логин",
       loginForEntry: "Логин для входа",
-      loginPlaceholder: "Email или логин",
+      loginPlaceholder: "Логин",
       loginPlaceholderRegister: "Придумайте логин",
       loginHint:
         "Логин используется только для входа. Отображаемое имя семьи можно задать отдельно.",
@@ -381,6 +385,7 @@ export const ru: Translations = {
       loginFailed: "Ошибка входа",
       registerFailed: "Ошибка регистрации",
       passwordsMismatch: "Пароли не совпадают",
+      legalConsentRequired: "Подтвердите согласие с условиями и политикой.",
     },
   },
   more: {
@@ -413,6 +418,11 @@ export const ru: Translations = {
         title: "Обратная связь",
         description: "Сообщение команде о проблеме или идее.",
       },
+      {
+        to: "/legal",
+        title: "Политика · Условия · Поддержка",
+        description: "Политика, условия использования и контакты.",
+      },
     ],
   },
   feedback: {
@@ -427,6 +437,7 @@ export const ru: Translations = {
     success: "Спасибо! Сообщение сохранено.",
     errors: {
       rateLimited: "Слишком много сообщений за час. Попробуйте позже.",
+      empty: "Введите текст сообщения.",
       generic: "Не удалось отправить. Попробуйте ещё раз.",
     },
   },

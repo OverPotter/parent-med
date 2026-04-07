@@ -111,6 +111,14 @@ export async function logout(): Promise<void> {
   await apiClient.post("/auth/logout");
 }
 
+export async function deleteMyAccount(): Promise<void> {
+  await apiClient.delete("/auth/me");
+}
+
+export async function deleteMyFamily(): Promise<void> {
+  await apiClient.delete("/auth/family");
+}
+
 export async function changePassword(payload: {
   current_password: string;
   new_password: string;
@@ -132,5 +140,20 @@ export async function updateAccountLanguage(preferredLanguage: "ru" | "en") {
   }>("/auth/language", {
     preferred_language: preferredLanguage,
   });
+  return toAccount(res.data);
+}
+
+export async function updateAccountProfile(payload: { email: string | null }) {
+  const res = await apiClient.patch<{
+    id: string;
+    login: string;
+    email: string | null;
+    family_id: string;
+    display_name: string;
+    relationship_label: string | null;
+    phone: string | null;
+    preferred_language: "ru" | "en";
+    family_role: string;
+  }>("/auth/profile", payload);
   return toAccount(res.data);
 }

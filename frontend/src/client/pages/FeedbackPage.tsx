@@ -14,12 +14,18 @@ export function FeedbackPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    const normalizedMessage = message.trim();
+    if (!normalizedMessage) {
+      setError(copy.feedback.errors.empty);
+      setSuccess(false);
+      return;
+    }
     setError(null);
     setSuccess(false);
     setPending(true);
     const clientRequestId = crypto.randomUUID();
     try {
-      await submitFeedback({ message, client_request_id: clientRequestId });
+      await submitFeedback({ message: normalizedMessage, client_request_id: clientRequestId });
       setSuccess(true);
       setMessage("");
     } catch (e: unknown) {
@@ -66,7 +72,7 @@ export function FeedbackPage() {
           </label>
 
           {error ? (
-            <p className="text-sm text-destructive" role="alert">
+            <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm" role="alert">
               {error}
             </p>
           ) : null}
@@ -79,7 +85,7 @@ export function FeedbackPage() {
           <button
             type="submit"
             className="app-btn-primary-md soft-button-primary inline-flex min-w-[12rem] items-center justify-center rounded-[20px] px-5 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={pending}
+            disabled={pending || !message.trim()}
           >
             {pending ? copy.feedback.submitting : copy.feedback.submit}
           </button>

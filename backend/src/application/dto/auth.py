@@ -46,6 +46,12 @@ class UpdateLanguageDto(BaseModel):
     preferred_language: AccountLanguage = Field(..., description="Предпочитаемый язык аккаунта")
 
 
+class UpdateAccountProfileDto(BaseModel):
+    """Частичное обновление профиля аккаунта."""
+
+    email: str | None = Field(None, description="Email аккаунта для связи; null/пусто очищает поле")
+
+
 class RefreshDto(BaseModel):
     """Обновление access token по refresh token."""
 

@@ -54,17 +54,17 @@ export function AccountPage() {
   const theme = useAppStore((s) => s.theme);
 
   const copy = accountCopy[language];
-  const themeLabel =
-    theme === "light" ? copy.light : theme === "dark" ? copy.dark : copy.auto;
+  const themeLabel = theme === "light" ? copy.light : theme === "dark" ? copy.dark : copy.auto;
+  const roleLabel =
+    accountFamilyRole === "owner"
+      ? copy.owner
+      : accountFamilyRole === "adult"
+        ? copy.member
+        : copy.notSet;
 
   return (
     <div className="min-w-0 space-y-6">
-      <PageIntro
-        title={copy.title}
-        subtitle={copy.subtitle}
-        compactOnMobile
-        hideOnMobile
-      />
+      <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
 
       <Surface className="p-5 sm:p-6">
         <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5">
@@ -83,7 +83,7 @@ export function AccountPage() {
             </p>
             <p>
               <span className="font-semibold text-muted">{copy.role}: </span>
-              {accountFamilyRole === "owner" ? copy.owner : copy.member}
+              {roleLabel}
             </p>
             <p>
               <span className="font-semibold text-muted">{copy.language}: </span>
