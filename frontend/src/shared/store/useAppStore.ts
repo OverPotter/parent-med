@@ -86,6 +86,7 @@ interface AppState {
     family: { id: string; name: string };
   }) => void;
   setAccountPreferredLanguage: (language: AppLanguage) => void;
+  setAccountEmail: (email: string | null) => void;
   clearSession: () => void;
   setCurrentFamily: (family: { id: string; name: string } | null) => void;
 }
@@ -181,6 +182,7 @@ export const useAppStore = create<AppState>()(
             language,
           };
         }),
+      setAccountEmail: (email) => set({ accountEmail: email }),
       clearSession: () =>
         set({
           authToken: null,

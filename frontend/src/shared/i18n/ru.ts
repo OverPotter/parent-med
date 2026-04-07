@@ -352,7 +352,7 @@ export const ru: Translations = {
     fields: {
       login: "Логин",
       loginForEntry: "Логин для входа",
-      loginPlaceholder: "Email или логин",
+      loginPlaceholder: "Логин",
       loginPlaceholderRegister: "Придумайте логин",
       loginHint:
         "Логин используется только для входа. Отображаемое имя семьи можно задать отдельно.",
@@ -427,6 +427,7 @@ export const ru: Translations = {
     success: "Спасибо! Сообщение сохранено.",
     errors: {
       rateLimited: "Слишком много сообщений за час. Попробуйте позже.",
+      empty: "Введите текст сообщения.",
       generic: "Не удалось отправить. Попробуйте ещё раз.",
     },
   },

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
+import { updateAccountProfile } from "@shared/api/auth";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import {
   deleteFamilyMember,
   fetchFamilies,
@@ -51,13 +53,13 @@ const familyCopy = {
     inviteTitle: "Приглашение в семью",
     inviteDescription:
       "Новому взрослому отправляется личная ссылка. Он войдёт в ту же семейную базу, но под своим аккаунтом.",
-    ownerOnly: "Только для owner",
-    inviteOnlyOwner: "Приглашать новых участников может только владелец семьи.",
+    ownerOnly: "Только для владельца",
     creatingInvite: "Создаём ссылку…",
     createInvite: "Создать ссылку-приглашение",
     newLink: "Новая ссылка",
     validUntil: "Действует до",
     inviteCopied: "Ссылка скопирована",
+    inviteCopyFailed: "Не удалось скопировать ссылку.",
     copyInvite: "Скопировать ссылку",
     owner: "Владелец",
     member: "Участник",
@@ -67,14 +69,29 @@ const familyCopy = {
     phoneMissing: "Телефон не указан",
     hideProfile: "Скрыть профиль",
     editProfile: "Редактировать профиль",
-    makeOwner: "Сделать owner",
-    makeAdult: "Сделать adult",
+    makeOwner: "Сделать владельцем",
+    makeAdult: "Сделать участником",
     removeFromFamily: "Удалить из семьи",
+    confirmPromoteTitle: "Сделать участника владельцем?",
+    confirmPromoteDescription:
+      "Участник получит права владельца семьи: сможет приглашать и удалять участников, а также менять роли.",
+    confirmPromoteAction: "Да, сделать владельцем",
+    confirmDemoteTitle: "Снять роль владельца?",
+    confirmDemoteDescription:
+      "Участник останется в семье, но потеряет права владельца и станет обычным участником.",
+    confirmDemoteAction: "Да, сделать участником",
+    confirmRemoveTitle: "Удалить участника из семьи?",
+    confirmRemoveDescription:
+      "Участник потеряет доступ к вашей семейной базе. Это действие можно будет вернуть только новым приглашением.",
+    confirmRemoveAction: "Да, удалить",
     displayName: "Имя в семье",
     displayNamePlaceholder: "Например: Оля",
     relationship: "Кто это в семье",
     relationshipPlaceholder: "Например: няня",
     phone: "Телефон",
+    email: "Email",
+    emailPlaceholder: "you@example.com",
+    invalidEmail: "Введите корректный email или оставьте поле пустым.",
     saveProfile: "Сохранить профиль",
   },
   en: {
@@ -110,12 +127,12 @@ const familyCopy = {
     inviteDescription:
       "A new adult gets a personal invite link. They join the same family workspace under their own account.",
     ownerOnly: "Owners only",
-    inviteOnlyOwner: "Only the family owner can invite new members.",
     creatingInvite: "Creating link…",
     createInvite: "Create invite link",
     newLink: "New link",
     validUntil: "Valid until",
     inviteCopied: "Link copied",
+    inviteCopyFailed: "Could not copy the link.",
     copyInvite: "Copy link",
     owner: "Owner",
     member: "Member",
@@ -128,11 +145,26 @@ const familyCopy = {
     makeOwner: "Make owner",
     makeAdult: "Make adult",
     removeFromFamily: "Remove from family",
+    confirmPromoteTitle: "Promote this member to owner?",
+    confirmPromoteDescription:
+      "The member will get family owner permissions: invite/remove members and manage roles.",
+    confirmPromoteAction: "Yes, make owner",
+    confirmDemoteTitle: "Remove owner role?",
+    confirmDemoteDescription:
+      "The member will stay in the family but lose owner permissions and become an adult.",
+    confirmDemoteAction: "Yes, make adult",
+    confirmRemoveTitle: "Remove this member from family?",
+    confirmRemoveDescription:
+      "The member will lose access to your family workspace. Access can be restored only with a new invite.",
+    confirmRemoveAction: "Yes, remove",
     displayName: "Family name",
     displayNamePlaceholder: "Example: Olivia",
     relationship: "Relationship",
     relationshipPlaceholder: "Example: nanny",
     phone: "Phone",
+    email: "Email",
+    emailPlaceholder: "you@example.com",
+    invalidEmail: "Enter a valid email or leave the field empty.",
     saveProfile: "Save profile",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
@@ -146,10 +178,12 @@ function memberCountLabel(language: AppLanguage, count: number) {
     return `${count} ${count === 1 ? tFamily(language, "memberCountOne") : tFamily(language, "memberCountMany")}`;
   }
 
+  const mod10 = count % 10;
+  const mod100 = count % 100;
   const label =
-    count === 1
+    mod10 === 1 && mod100 !== 11
       ? tFamily(language, "memberCountOne")
-      : count < 5
+      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
         ? tFamily(language, "memberCountFew")
         : tFamily(language, "memberCountMany");
   return `${count} ${label}`;
@@ -171,6 +205,7 @@ export function FamilyPage() {
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
   const currentAccountId = useAppStore((s) => s.accountId);
   const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
+  const setAccountEmail = useAppStore((s) => s.setAccountEmail);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const queryClient = useQueryClient();
 
@@ -289,6 +324,18 @@ export function FamilyPage() {
     },
   });
 
+  const updateMyProfileMutation = useMutation({
+    mutationFn: ({ email }: { email: string | null }) => updateAccountProfile({ email }),
+    onSuccess: (account) => {
+      setAccountEmail(account.email);
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
+    },
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
+      setError(err.response?.data?.detail ?? tFamily(language, "updateProfileFailed"));
+    },
+  });
+
   const latestInviteUrl = createInviteMutation.data
     ? `${window.location.origin}${createInviteMutation.data.invitePath}`
     : "";
@@ -306,8 +353,13 @@ export function FamilyPage() {
     if (!latestInviteUrl) {
       return;
     }
-    await navigator.clipboard.writeText(latestInviteUrl);
-    setInviteCopied(true);
+    try {
+      await navigator.clipboard.writeText(latestInviteUrl);
+      setInviteCopied(true);
+      setError(null);
+    } catch {
+      setError(tFamily(language, "inviteCopyFailed"));
+    }
   };
 
   const canManageFamily = currentAccountRole === "owner";
@@ -379,6 +431,7 @@ export function FamilyPage() {
                 isPending={
                   updateMemberRoleMutation.isPending ||
                   updateMemberProfileMutation.isPending ||
+                  updateMyProfileMutation.isPending ||
                   deleteMemberMutation.isPending
                 }
                 onPromote={() =>
@@ -394,14 +447,22 @@ export function FamilyPage() {
                   })
                 }
                 onDelete={() => deleteMemberMutation.mutate(member.id)}
-                onSaveProfile={(payload) =>
-                  updateMemberProfileMutation.mutate({
-                    memberAccountId: member.id,
-                    displayName: payload.displayName,
-                    relationshipLabel: payload.relationshipLabel,
-                    phone: payload.phone,
-                  })
-                }
+                onSaveProfile={async (payload) => {
+                  try {
+                    await updateMemberProfileMutation.mutateAsync({
+                      memberAccountId: member.id,
+                      displayName: payload.displayName,
+                      relationshipLabel: payload.relationshipLabel,
+                      phone: payload.phone,
+                    });
+                    if (member.id === currentAccountId && payload.email !== undefined) {
+                      await updateMyProfileMutation.mutateAsync({ email: payload.email });
+                    }
+                    return true;
+                  } catch {
+                    return false;
+                  }
+                }}
                 onHideForcedEdit={() => {
                   if (!shouldOpenCurrentProfileEditor) {
                     return;
@@ -417,63 +478,59 @@ export function FamilyPage() {
         )}
       </Surface>
 
-      <Surface className="app-section-surface">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="app-card-title">{tFamily(language, "inviteTitle")}</h2>
-            <p className="mt-1.5 text-sm leading-6 text-muted">
-              {tFamily(language, "inviteDescription")}
-            </p>
+      {canManageFamily ? (
+        <Surface className="app-section-surface">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="app-card-title">{tFamily(language, "inviteTitle")}</h2>
+              <p className="mt-1.5 text-sm leading-6 text-muted">
+                {tFamily(language, "inviteDescription")}
+              </p>
+            </div>
+            <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
+              {tFamily(language, "ownerOnly")}
+            </span>
           </div>
-          <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
-            {tFamily(language, "ownerOnly")}
-          </span>
-        </div>
 
-        {!canManageFamily ? (
-          <p className="soft-note-warning mt-4">{tFamily(language, "inviteOnlyOwner")}</p>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => createInviteMutation.mutate()}
-              disabled={createInviteMutation.isPending}
-              className="soft-button-primary app-btn-primary-md mt-4 inline-flex disabled:opacity-50"
-            >
-              {createInviteMutation.isPending
-                ? tFamily(language, "creatingInvite")
-                : tFamily(language, "createInvite")}
-            </button>
+          <button
+            type="button"
+            onClick={() => createInviteMutation.mutate()}
+            disabled={createInviteMutation.isPending}
+            className="soft-button-primary app-btn-primary-md mt-4 inline-flex disabled:opacity-50"
+          >
+            {createInviteMutation.isPending
+              ? tFamily(language, "creatingInvite")
+              : tFamily(language, "createInvite")}
+          </button>
 
-            {createInviteMutation.data && (
-              <div className="soft-panel mt-4 rounded-[24px] p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-muted">
-                  {tFamily(language, "newLink")}
-                </p>
-                <p className="mt-2 break-all text-sm text-foreground">{latestInviteUrl}</p>
-                <p className="mt-2 text-sm text-muted">
-                  {tFamily(language, "validUntil")}{" "}
-                  {new Date(createInviteMutation.data.expiresAt).toLocaleString(
-                    language === "ru" ? "ru-RU" : "en-US"
-                  )}
-                  .
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={handleCopyInvite}
-                    className="soft-button-secondary app-btn-secondary-md inline-flex"
-                  >
-                    {inviteCopied
-                      ? tFamily(language, "inviteCopied")
-                      : tFamily(language, "copyInvite")}
-                  </button>
-                </div>
+          {createInviteMutation.data && (
+            <div className="soft-panel mt-4 rounded-[24px] p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted">
+                {tFamily(language, "newLink")}
+              </p>
+              <p className="mt-2 break-all text-sm text-foreground">{latestInviteUrl}</p>
+              <p className="mt-2 text-sm text-muted">
+                {tFamily(language, "validUntil")}{" "}
+                {new Date(createInviteMutation.data.expiresAt).toLocaleString(
+                  language === "ru" ? "ru-RU" : "en-US"
+                )}
+                .
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyInvite}
+                  className="soft-button-secondary app-btn-secondary-md inline-flex"
+                >
+                  {inviteCopied
+                    ? tFamily(language, "inviteCopied")
+                    : tFamily(language, "copyInvite")}
+                </button>
               </div>
-            )}
-          </>
-        )}
-      </Surface>
+            </div>
+          )}
+        </Surface>
+      ) : null}
 
       <Surface className="app-section-surface">
         <div>
@@ -565,7 +622,8 @@ interface MemberCardProps {
     displayName?: string;
     relationshipLabel?: string | null;
     phone?: string | null;
-  }) => void;
+    email?: string | null;
+  }) => Promise<boolean>;
   onHideForcedEdit: () => void;
 }
 
@@ -591,12 +649,19 @@ function MemberCard({
   const [displayName, setDisplayName] = useState(member.displayName || "");
   const [relationshipLabel, setRelationshipLabel] = useState(member.relationshipLabel || "");
   const [phone, setPhone] = useState(member.phone || "");
+  const [email, setEmail] = useState(member.email || "");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [isPromoteConfirmOpen, setIsPromoteConfirmOpen] = useState(false);
+  const [isDemoteConfirmOpen, setIsDemoteConfirmOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     setDisplayName(member.displayName || "");
     setRelationshipLabel(member.relationshipLabel || "");
     setPhone(member.phone || "");
-  }, [member.displayName, member.relationshipLabel, member.phone]);
+    setEmail(member.email || "");
+    setEmailError(null);
+  }, [member.displayName, member.relationshipLabel, member.phone, member.email]);
 
   useEffect(() => {
     if (forceEdit) {
@@ -606,6 +671,48 @@ function MemberCard({
 
   return (
     <div className="soft-panel rounded-[30px] p-4">
+      <ConfirmDialog
+        isOpen={isPromoteConfirmOpen}
+        title={tFamily(language, "confirmPromoteTitle")}
+        description={tFamily(language, "confirmPromoteDescription")}
+        confirmLabel={tFamily(language, "confirmPromoteAction")}
+        cancelLabel={tFamily(language, "cancel")}
+        confirmTone="danger"
+        isPending={isPending}
+        onCancel={() => setIsPromoteConfirmOpen(false)}
+        onConfirm={() => {
+          onPromote();
+          setIsPromoteConfirmOpen(false);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={isDemoteConfirmOpen}
+        title={tFamily(language, "confirmDemoteTitle")}
+        description={tFamily(language, "confirmDemoteDescription")}
+        confirmLabel={tFamily(language, "confirmDemoteAction")}
+        cancelLabel={tFamily(language, "cancel")}
+        confirmTone="danger"
+        isPending={isPending}
+        onCancel={() => setIsDemoteConfirmOpen(false)}
+        onConfirm={() => {
+          onDemote();
+          setIsDemoteConfirmOpen(false);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        title={tFamily(language, "confirmRemoveTitle")}
+        description={tFamily(language, "confirmRemoveDescription")}
+        confirmLabel={tFamily(language, "confirmRemoveAction")}
+        cancelLabel={tFamily(language, "cancel")}
+        confirmTone="danger"
+        isPending={isPending}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={() => {
+          onDelete();
+          setIsDeleteConfirmOpen(false);
+        }}
+      />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -661,7 +768,7 @@ function MemberCard({
             {canPromote && (
               <button
                 type="button"
-                onClick={onPromote}
+                onClick={() => setIsPromoteConfirmOpen(true)}
                 disabled={isPending}
                 className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
@@ -671,7 +778,7 @@ function MemberCard({
             {canDemote && (
               <button
                 type="button"
-                onClick={onDemote}
+                onClick={() => setIsDemoteConfirmOpen(true)}
                 disabled={isPending}
                 className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
@@ -681,7 +788,7 @@ function MemberCard({
             {canDelete && (
               <button
                 type="button"
-                onClick={onDelete}
+                onClick={() => setIsDeleteConfirmOpen(true)}
                 disabled={isPending}
                 className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
               >
@@ -724,16 +831,42 @@ function MemberCard({
               placeholder="+375 ..."
             />
           </label>
+          {isCurrent ? (
+            <label className="block">
+              <span className="soft-field-label">{tFamily(language, "email")}</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setEmailError(null);
+                }}
+                className="soft-input w-full px-4"
+                placeholder={tFamily(language, "emailPlaceholder")}
+                autoComplete="email"
+              />
+            </label>
+          ) : null}
           <div className="flex items-end">
             <button
               type="button"
-              onClick={() => {
-                onSaveProfile({
+              onClick={async () => {
+                const normalizedEmail = email.trim().toLowerCase();
+                const isValidEmail =
+                  normalizedEmail.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+                if (!isValidEmail) {
+                  setEmailError(tFamily(language, "invalidEmail"));
+                  return;
+                }
+                const isSaved = await onSaveProfile({
                   displayName: displayName.trim() || member.login,
                   relationshipLabel: relationshipLabel.trim() || null,
                   phone: phone.trim() || null,
+                  email: isCurrent ? normalizedEmail || null : undefined,
                 });
-                setIsEditing(false);
+                if (isSaved) {
+                  setIsEditing(false);
+                }
               }}
               disabled={isPending || !displayName.trim()}
               className="app-btn-primary-md soft-button-primary inline-flex min-h-[3rem] items-center justify-center px-4 disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5"
@@ -741,6 +874,11 @@ function MemberCard({
               {isPending ? tFamily(language, "saving") : tFamily(language, "saveProfile")}
             </button>
           </div>
+          {emailError ? (
+            <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm sm:col-span-2">
+              {emailError}
+            </div>
+          ) : null}
         </div>
       )}
     </div>

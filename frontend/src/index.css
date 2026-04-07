@@ -30,8 +30,8 @@
   --color-success-soft: rgba(111, 159, 134, 0.14);
   --color-info: #748dd1;
   --color-info-soft: rgba(116, 141, 209, 0.14);
-  --color-warning: #cc9361;
-  --color-warning-soft: rgba(204, 147, 97, 0.14);
+  --color-warning: #d3a43f;
+  --color-warning-soft: rgba(211, 164, 63, 0.16);
 }
 
 [data-theme="dark"] {
@@ -54,8 +54,8 @@
   --color-success-soft: rgba(153, 210, 176, 0.12);
   --color-info: #b7c1f1;
   --color-info-soft: rgba(183, 193, 241, 0.12);
-  --color-warning: #f3c088;
-  --color-warning-soft: rgba(243, 192, 136, 0.12);
+  --color-warning: #f2cf72;
+  --color-warning-soft: rgba(242, 207, 114, 0.14);
 }
 
 html {
@@ -256,9 +256,9 @@ p {
   }
 
   .children-card-hero--active {
-    border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-border)) !important;
+    border-color: color-mix(in srgb, var(--color-warning) 28%, var(--color-border)) !important;
     box-shadow:
-      0 14px 30px -24px color-mix(in srgb, var(--color-danger) 26%, transparent),
+      0 14px 30px -24px color-mix(in srgb, var(--color-warning) 26%, transparent),
       0 5px 10px -10px rgb(var(--color-shadow) / 0.1);
   }
 

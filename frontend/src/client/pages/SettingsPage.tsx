@@ -43,7 +43,7 @@ const settingsCopy = {
     serverAcceptFailed: "Сервер не принял подписку устройства.",
     enablePushFailed: "Не удалось включить уведомления на этом устройстве.",
     disablePushFailed: "Не удалось отключить уведомления.",
-    fillAllPasswordFields: "Заполни все поля пароля.",
+    fillAllPasswordFields: "Заполните все поля пароля.",
     passwordsMismatch: "Новый пароль и подтверждение не совпадают.",
     passwordTooShort: "Новый пароль должен быть не короче 6 символов.",
     changePassword: "Сменить пароль",
@@ -53,7 +53,7 @@ const settingsCopy = {
     confirmNewPassword: "Повтори новый пароль",
     saving: "Сохраняем…",
     updatePassword: "Обновить пароль",
-    medicationPlans: "Планы лекарства",
+    medicationPlans: "Планы лекарств",
     medicationPlansHint: "Как показывать интервал в планах: в часах или в минутах.",
     hours: "Часы",
     minutes: "Минуты",
@@ -330,7 +330,7 @@ export function SettingsPage() {
     }
   };
 
-  const handleDisablePush = async () => {
+  const handleDisablePush = async (): Promise<boolean> => {
     setPushError(null);
     setIsPushPending(true);
     try {
@@ -342,8 +342,10 @@ export function SettingsPage() {
       const remainingSubscription = await getExistingPushSubscription();
       setPushStatus(remainingSubscription ? "enabled" : "disabled");
       window.dispatchEvent(new Event("push:subscription-changed"));
+      return true;
     } catch {
       setPushError(tSettings(language, "disablePushFailed"));
+      return false;
     } finally {
       setIsPushPending(false);
     }
@@ -841,8 +843,12 @@ export function SettingsPage() {
         isPending={isPushPending}
         onCancel={() => setIsDisablePushConfirmOpen(false)}
         onConfirm={() => {
-          void handleDisablePush();
-          setIsDisablePushConfirmOpen(false);
+          void (async () => {
+            const didDisable = await handleDisablePush();
+            if (didDisable) {
+              setIsDisablePushConfirmOpen(false);
+            }
+          })();
         }}
       />
     </div>

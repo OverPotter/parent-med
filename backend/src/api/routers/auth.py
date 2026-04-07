@@ -14,6 +14,7 @@ from src.application.dto.auth import (
     LoginDto,
     RefreshDto,
     RegisterDto,
+    UpdateAccountProfileDto,
     UpdateLanguageDto,
 )
 from src.application.services.base_auth_service import BaseAuthService
@@ -107,3 +108,13 @@ async def update_language(
 ) -> AccountResponseDto:
     logger.info(f"Смена языка | account_id={current_account.id} language={dto.preferred_language}")
     return await service.update_language(current_account.id, dto)
+
+
+@router.patch("/profile", response_model=AccountResponseDto)
+async def update_profile(
+    dto: UpdateAccountProfileDto,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: BaseAuthService = Depends(get_auth_service),
+) -> AccountResponseDto:
+    logger.info("Обновление профиля | account_id={}", current_account.id)
+    return await service.update_profile(current_account.id, dto)

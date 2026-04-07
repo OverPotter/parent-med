@@ -56,6 +56,12 @@ export function AccountPage() {
   const copy = accountCopy[language];
   const themeLabel =
     theme === "light" ? copy.light : theme === "dark" ? copy.dark : copy.auto;
+  const roleLabel =
+    accountFamilyRole === "owner"
+      ? copy.owner
+      : accountFamilyRole === "adult"
+        ? copy.member
+        : copy.notSet;
 
   return (
     <div className="min-w-0 space-y-6">
@@ -83,7 +89,7 @@ export function AccountPage() {
             </p>
             <p>
               <span className="font-semibold text-muted">{copy.role}: </span>
-              {accountFamilyRole === "owner" ? copy.owner : copy.member}
+              {roleLabel}
             </p>
             <p>
               <span className="font-semibold text-muted">{copy.language}: </span>

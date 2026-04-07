@@ -61,6 +61,24 @@ function SunIcon() {
   );
 }
 
+function FeedbackIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-[1.02rem] w-[1.02rem] fill-none stroke-current"
+    >
+      <path
+        d="M5.5 6.5h13a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-7.2l-3.9 3v-3H5.5A1.5 1.5 0 0 1 4 16V8a1.5 1.5 0 0 1 1.5-1.5Z"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M8.25 11.25h7.5M8.25 14h5.25" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function ProfileMenu({
   accountLabel,
   servicesLabel,
@@ -257,9 +275,12 @@ export function Layout({
                       <>
                         <Link
                           to="/feedback"
-                          className="app-header-utility-button max-w-[5.5rem] truncate sm:max-w-none"
+                          className="app-header-utility-button inline-flex h-[2.72rem] w-[2.72rem] items-center justify-center p-0"
+                          aria-label={copy.feedback.navShort}
+                          title={copy.feedback.navShort}
                         >
-                          {copy.feedback.navShort}
+                          <FeedbackIcon />
+                          <span className="sr-only">{copy.feedback.navShort}</span>
                         </Link>
                         <ProfileMenu
                           accountLabel={accountLabel}
@@ -325,8 +346,14 @@ export function Layout({
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
                   {isAuthenticated ? (
                     <div className="flex min-w-0 items-center gap-2">
-                      <Link to="/feedback" className="app-header-utility-button shrink-0">
-                        {copy.feedback.navShort}
+                      <Link
+                        to="/feedback"
+                        className="app-header-utility-button inline-flex h-[2.72rem] w-[2.72rem] shrink-0 items-center justify-center p-0"
+                        aria-label={copy.feedback.navShort}
+                        title={copy.feedback.navShort}
+                      >
+                        <FeedbackIcon />
+                        <span className="sr-only">{copy.feedback.navShort}</span>
                       </Link>
                       <ProfileMenu
                         accountLabel={accountLabel}

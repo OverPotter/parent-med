@@ -434,7 +434,7 @@ function ChildCard({
                 <h2 className="app-card-title">{child.name}</h2>
                 {hasActiveEpisode && (
                   <>
-                    <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
+                    <span className="soft-pill-warning rounded-full px-2.5 py-1 text-xs">
                       {activeEpisodeStartedAt
                         ? t(copy.childCard.activeSince, {
                             date: formatDate(activeEpisodeStartedAt),

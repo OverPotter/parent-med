@@ -356,7 +356,7 @@ export const en: Translations = {
     fields: {
       login: "Login",
       loginForEntry: "Login",
-      loginPlaceholder: "Email or login",
+      loginPlaceholder: "Login",
       loginPlaceholderRegister: "Create a login",
       loginHint:
         "The login is only used for sign-in. You can set a separate display name for the family.",
@@ -431,6 +431,7 @@ export const en: Translations = {
     success: "Thanks! Your message was saved.",
     errors: {
       rateLimited: "Too many messages per hour. Please try again later.",
+      empty: "Please enter a message.",
       generic: "Could not send. Please try again.",
     },
   },

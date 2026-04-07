@@ -12,6 +12,7 @@ from src.application.dto.auth import (
     LoginDto,
     RefreshDto,
     RegisterDto,
+    UpdateAccountProfileDto,
     UpdateLanguageDto,
 )
 from src.application.dto.family import FamilyResponseDto
@@ -85,6 +86,12 @@ class BaseAuthService(ABC):
     @abstractmethod
     async def update_language(self, account_id: UUID, dto: UpdateLanguageDto) -> AccountResponseDto:
         """Обновить предпочитаемый язык аккаунта."""
+
+    @abstractmethod
+    async def update_profile(
+        self, account_id: UUID, dto: UpdateAccountProfileDto
+    ) -> AccountResponseDto:
+        """Обновить профиль текущего аккаунта."""
 
     @abstractmethod
     async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:

@@ -12,6 +12,7 @@ from src.application.dto.auth import (
     LoginDto,
     RefreshDto,
     RegisterDto,
+    UpdateAccountProfileDto,
     UpdateLanguageDto,
 )
 from src.application.services.base_auth_service import BaseAuthService
@@ -362,6 +363,44 @@ class AuthService(BaseAuthService):
                 relationship_label=account.relationship_label,
                 phone=account.phone,
                 preferred_language=dto.preferred_language,
+                family_role=account.family_role,
+                push_before_reminder_minutes=account.push_before_reminder_minutes,
+                pillbox_push_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,
+                cabinet_notify_10_days=account.cabinet_notify_10_days,
+                cabinet_notify_7_days=account.cabinet_notify_7_days,
+                cabinet_notify_3_days=account.cabinet_notify_3_days,
+                cabinet_notify_1_day=account.cabinet_notify_1_day,
+                created_at=account.created_at,
+            )
+        )
+        return self._account_to_response(updated)
+
+    async def update_profile(self, account_id: UUID, dto: UpdateAccountProfileDto) -> AccountResponseDto:
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None:
+            raise UnauthorizedError()
+
+        email = (dto.email or "").strip().lower() or None
+        if email and email != account.email:
+            existing = await self._account_repo.get_by_email(email)
+            if existing is not None and existing.id != account.id:
+                raise ValidationError(
+                    "Аккаунт с таким email уже существует",
+                    code="ACCOUNT_EMAIL_ALREADY_EXISTS",
+                    status_code=409,
+                )
+
+        updated = await self._account_repo.update(
+            Account(
+                id=account.id,
+                login=account.login,
+                email=email,
+                password_hash=account.password_hash,
+                family_id=account.family_id,
+                display_name=account.display_name,
+                relationship_label=account.relationship_label,
+                phone=account.phone,
+                preferred_language=account.preferred_language,
                 family_role=account.family_role,
                 push_before_reminder_minutes=account.push_before_reminder_minutes,
                 pillbox_push_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,

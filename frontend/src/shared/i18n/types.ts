@@ -240,6 +240,7 @@ export interface Translations {
     success: string;
     errors: {
       rateLimited: string;
+      empty: string;
       generic: string;
     };
   };
