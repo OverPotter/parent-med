@@ -519,10 +519,11 @@ class PillboxService:
             time.min,
             tzinfo=self._timezone,
         ).astimezone(UTC)
+        analytics_start_utc = max(period_start_utc, plan.created_at)
         for log in plan.dose_logs:
             if log.scheduled_for is None:
                 continue
-            if log.scheduled_for < period_start_utc:
+            if log.scheduled_for < analytics_start_utc:
                 continue
             previous_taken_at = logs_by_slot.get((log.medication_id, log.scheduled_for))
             if previous_taken_at is None or log.taken_at < previous_taken_at:
@@ -531,6 +532,8 @@ class PillboxService:
         for medication in plan.medications:
             slots = self._build_medication_slots(medication, start_date, today_local)
             for index, scheduled_for in enumerate(slots):
+                if scheduled_for < analytics_start_utc:
+                    continue
                 if scheduled_for > now_utc:
                     continue
                 next_scheduled_for = slots[index + 1] if index + 1 < len(slots) else None
