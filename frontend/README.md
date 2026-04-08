@@ -48,6 +48,35 @@ npm run build:mobile      # build + npx cap sync ios
 npm run cap:open:ios      # открыть Xcode проект
 ```
 
+### Mobile окружения (`dev` / `stage` / `prod`)
+
+Для мобильной сборки используются отдельные env-файлы:
+
+- `.env.mobile-dev`
+- `.env.mobile-stage`
+- `.env.mobile-prod`
+
+Команды:
+
+```bash
+# dev (локальный backend в LAN)
+npm run build:mobile:dev
+
+# stage
+npm run build:mobile:stage
+
+# prod
+npm run build:mobile:prod
+```
+
+После любой команды выше:
+
+```bash
+npm run cap:open:ios
+```
+
+Примечание: для `dev` используйте IP вашей машины в локальной сети (не `localhost`).
+
 Ручные команды (если нужно):
 
 ```bash

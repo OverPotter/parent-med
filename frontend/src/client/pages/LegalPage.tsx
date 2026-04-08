@@ -20,16 +20,16 @@ export function LegalPage() {
       title: language === "ru" ? "Политика конфиденциальности" : "Privacy Policy",
       description:
         language === "ru"
-          ? "Как обрабатываются и защищаются данные (версия РБ)."
-          : "How data is processed and protected.",
+          ? "Как обрабатываются и защищаются данные для RU / US / EU."
+          : "How data is processed and protected for RU / US / EU.",
     },
     {
       href: getTermsOfUseUrl(),
       title: language === "ru" ? "Условия использования" : "Terms of Use",
       description:
         language === "ru"
-          ? "Правила использования сервиса (версия РБ)."
-          : "Terms for using the service.",
+          ? "Правила использования сервиса для RU / US / EU."
+          : "Terms for using the service in RU / US / EU.",
     },
     {
       href: getSupportUrl(),

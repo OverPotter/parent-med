@@ -11,8 +11,8 @@ export function PrivacyPolicyPage() {
         title={language === "ru" ? "Политика конфиденциальности" : "Privacy Policy"}
         subtitle={
           language === "ru"
-            ? "Версия для пользователей из Республики Беларусь."
-            : "Version for users in the Republic of Belarus."
+            ? "Базовые правила обработки данных для пользователей RU / US / EU."
+            : "Core data processing rules for users in RU / US / EU."
         }
         compactOnMobile
       />
@@ -30,13 +30,18 @@ export function PrivacyPolicyPage() {
         </p>
         <p>
           {language === "ru"
+            ? "Для пользователей из ЕС/ЕЭЗ применяются права GDPR (доступ, исправление, удаление, ограничение обработки, переносимость и возражение). Для пользователей из США доступны запросы в рамках применимого privacy law штата."
+            : "For users in the EU/EEA, GDPR rights apply (access, correction, deletion, restriction, portability and objection). For users in the US, requests are handled under applicable state privacy laws."}
+        </p>
+        <p>
+          {language === "ru"
             ? "Для запросов по персональным данным (доступ, исправление, удаление) используйте раздел «Поддержка / Контакты»."
             : "For personal data requests (access, correction, deletion), use the “Support / Contact” section."}
         </p>
         <p className="text-xs">
           {language === "ru"
-            ? "Примечание: юридические реквизиты оператора и полная редакция политики будут дополнены перед публичным релизом."
-            : "Note: operator legal details and the full policy text will be completed before public release."}
+            ? "Перед релизом проверьте, что внешняя публичная Privacy Policy по ссылке в App Store полностью заполнена и соответствует целевым регионам."
+            : "Before release, ensure the public Privacy Policy URL in App Store is fully completed and aligned with target regions."}
         </p>
       </Surface>
     </div>

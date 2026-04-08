@@ -11,8 +11,8 @@ export function TermsOfUsePage() {
         title={language === "ru" ? "Условия использования" : "Terms of Use"}
         subtitle={
           language === "ru"
-            ? "Базовые правила использования сервиса PillPath."
-            : "Basic rules for using PillPath."
+            ? "Базовые правила использования сервиса для RU / US / EU."
+            : "Core rules for using the service in RU / US / EU."
         }
         compactOnMobile
       />
@@ -30,13 +30,18 @@ export function TermsOfUsePage() {
         </p>
         <p>
           {language === "ru"
+            ? "Используя сервис, пользователь подтверждает, что ознакомился с Privacy Policy и согласен с обработкой данных в объеме, необходимом для работы продукта."
+            : "By using the service, the user confirms they reviewed the Privacy Policy and agree to data processing required for product functionality."}
+        </p>
+        <p>
+          {language === "ru"
             ? "Запрещено использовать сервис в незаконных целях или публиковать чужие персональные данные без правовых оснований."
             : "It is prohibited to use the service for illegal purposes or publish third-party personal data without legal grounds."}
         </p>
         <p className="text-xs">
           {language === "ru"
-            ? "Примечание: перед публичным релизом будет опубликована полная юридическая редакция условий."
-            : "Note: the complete legal text will be published before public release."}
+            ? "Перед релизом проверьте, что внешняя публичная редакция Terms of Use заполнена для целевых регионов."
+            : "Before release, ensure the public Terms of Use version is completed for target regions."}
         </p>
       </Surface>
     </div>
