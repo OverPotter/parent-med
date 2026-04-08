@@ -23,15 +23,17 @@ export async function readSecureAuthTokens(): Promise<{
   }
 
   let existingKeys = new Set<string>();
+  let keysLoaded = false;
   try {
     const keysResult = await SecureStoragePlugin.keys();
     existingKeys = new Set(keysResult.value ?? []);
+    keysLoaded = true;
   } catch {
     // If keys() fails, fallback to best-effort read with catches below.
   }
 
   const read = async (key: string) => {
-    if (existingKeys.size > 0 && !existingKeys.has(key)) {
+    if (keysLoaded && !existingKeys.has(key)) {
       return null;
     }
     try {
@@ -59,16 +61,18 @@ export async function writeSecureAuthTokens(tokens: {
   }
 
   let existingKeys = new Set<string>();
+  let keysLoaded = false;
   try {
     const keysResult = await SecureStoragePlugin.keys();
     existingKeys = new Set(keysResult.value ?? []);
+    keysLoaded = true;
   } catch {
     // Keep empty set and fallback to remove with catch.
   }
 
   const writeOrRemove = async (key: string, value: string | null) => {
     if (!value) {
-      if (existingKeys.size > 0 && !existingKeys.has(key)) {
+      if (keysLoaded && !existingKeys.has(key)) {
         return;
       }
       try {
