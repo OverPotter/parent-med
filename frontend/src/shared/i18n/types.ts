@@ -7,6 +7,7 @@ export interface Translations {
     login: string;
     open: string;
     goHome: string;
+    aboutApp: string;
     logout: string;
     profile: string;
     settings: string;

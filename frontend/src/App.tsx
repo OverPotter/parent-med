@@ -4,10 +4,12 @@ import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { setBearerToken, setRefreshHandler } from "@shared/api/client";
 import { useAppStore } from "@shared/store/useAppStore";
 import { CookieConsentBanner } from "@shared/components/CookieConsentBanner";
+import { NetworkStatusBanner } from "@shared/components/NetworkStatusBanner";
 import {
   getCookieConsentDecision,
   type CookieConsentDecision,
@@ -17,6 +19,11 @@ import {
   isPushSupported,
   toPushSubscriptionPayload,
 } from "@shared/utils/pushNotifications";
+import {
+  getNativePushSubscriptionPayload,
+  isNativePushOptedOut,
+  isNativePushSupported,
+} from "@shared/utils/nativePushNotifications";
 import { HitKeepBridge } from "@shared/analytics";
 import { appLog } from "@shared/utils/appLog";
 
@@ -269,10 +276,7 @@ function PushSubscriptionSync() {
   });
 
   useEffect(() => {
-    if (!authToken || !accountId || !pushConfig?.enabled || !isPushSupported()) {
-      return;
-    }
-    if (Notification.permission !== "granted") {
+    if (!authToken || !accountId || !pushConfig?.enabled) {
       return;
     }
 
@@ -280,11 +284,26 @@ function PushSubscriptionSync() {
 
     const sync = async () => {
       try {
-        const subscription = await getExistingPushSubscription();
-        if (!subscription || isCancelled) {
+        if (isNativePushSupported()) {
+          if (isNativePushOptedOut()) {
+            return;
+          }
+          const nativePayload = await getNativePushSubscriptionPayload({ promptIfNeeded: false });
+          if (!nativePayload || isCancelled) {
+            return;
+          }
+          await upsertPushSubscription(nativePayload);
           return;
         }
-        await upsertPushSubscription(toPushSubscriptionPayload(subscription));
+
+        if (!isPushSupported() || Notification.permission !== "granted") {
+          return;
+        }
+        const webSubscription = await getExistingPushSubscription();
+        if (!webSubscription || isCancelled) {
+          return;
+        }
+        await upsertPushSubscription(toPushSubscriptionPayload(webSubscription));
       } catch (e) {
         appLog.dev("Push: синхронизация подписки пропущена", e);
       }
@@ -316,6 +335,10 @@ function PullToRefreshSync() {
   }, []);
 
   useEffect(() => {
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios") {
+      return;
+    }
+
     if (typeof window === "undefined" || !("ontouchstart" in window)) {
       return;
     }
@@ -346,7 +369,6 @@ function PullToRefreshSync() {
       setIsRefreshing(true);
 
       try {
-        await queryClient.invalidateQueries();
         await queryClient.refetchQueries({ type: "active" });
       } finally {
         refreshTimeoutRef.current = window.setTimeout(() => {
@@ -427,7 +449,6 @@ function MobilePageResumeSync() {
     let lastHiddenAt = Date.now();
 
     const refreshActiveQueries = () => {
-      void queryClient.invalidateQueries();
       void queryClient.refetchQueries({ type: "active" });
     };
 
@@ -462,11 +483,181 @@ function MobilePageResumeSync() {
   return null;
 }
 
+function RuntimePlatformSync() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const isNative = Capacitor.isNativePlatform();
+    const platform = Capacitor.getPlatform();
+    root.setAttribute("data-runtime", isNative ? "native" : "web");
+    root.setAttribute("data-platform", platform);
+    return () => {
+      root.removeAttribute("data-runtime");
+      root.removeAttribute("data-platform");
+    };
+  }, []);
+
+  return null;
+}
+
+function IOSKeyboardViewportSync() {
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
+      return;
+    }
+
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    if (!viewport) {
+      return;
+    }
+
+    const syncKeyboardState = () => {
+      const keyboardHeight = Math.max(0, window.innerHeight - viewport.height);
+      const isKeyboardOpen = keyboardHeight > 140;
+      root.setAttribute("data-keyboard-open", isKeyboardOpen ? "true" : "false");
+    };
+
+    syncKeyboardState();
+    viewport.addEventListener("resize", syncKeyboardState);
+    viewport.addEventListener("scroll", syncKeyboardState);
+
+    return () => {
+      root.removeAttribute("data-keyboard-open");
+      viewport.removeEventListener("resize", syncKeyboardState);
+      viewport.removeEventListener("scroll", syncKeyboardState);
+    };
+  }, []);
+
+  return null;
+}
+
+function IOSSwipeBackSync() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const pathnameRef = useRef(location.pathname);
+
+  useEffect(() => {
+    pathnameRef.current = location.pathname;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
+      return;
+    }
+
+    let tracking = false;
+    let startX = 0;
+    let startY = 0;
+
+    const isInteractiveTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) {
+        return false;
+      }
+      return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) {
+        tracking = false;
+        return;
+      }
+      if (isInteractiveTarget(event.target)) {
+        tracking = false;
+        return;
+      }
+      const touch = event.touches.item(0);
+      if (!touch || touch.clientX > 44) {
+        tracking = false;
+        return;
+      }
+      tracking = true;
+      startX = touch.clientX;
+      startY = touch.clientY;
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!tracking || event.touches.length !== 1) {
+        return;
+      }
+      const touch = event.touches.item(0);
+      if (!touch) {
+        return;
+      }
+      const dx = touch.clientX - startX;
+      const dy = Math.abs(touch.clientY - startY);
+      if (dx < 0 || (dy > 34 && dy > dx)) {
+        tracking = false;
+      }
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (!tracking) {
+        return;
+      }
+      tracking = false;
+      const touch = event.changedTouches.item(0);
+      if (!touch) {
+        return;
+      }
+      const dx = touch.clientX - startX;
+      const dy = Math.abs(touch.clientY - startY);
+      if (pathnameRef.current === "/" || pathnameRef.current === "/home") {
+        return;
+      }
+      if (dx >= 48 && dy <= 56 && dy <= dx * 0.9) {
+        navigate(-1);
+      }
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [navigate]);
+
+  return null;
+}
+
+function IOSLandingGestureGuard() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
+      return;
+    }
+
+    const html = document.documentElement;
+    const body = document.body;
+    const shouldLockHorizontal = location.pathname === "/";
+
+    if (shouldLockHorizontal) {
+      html.classList.add("ios-lock-horizontal");
+      body.classList.add("ios-lock-horizontal");
+    } else {
+      html.classList.remove("ios-lock-horizontal");
+      body.classList.remove("ios-lock-horizontal");
+    }
+
+    return () => {
+      html.classList.remove("ios-lock-horizontal");
+      body.classList.remove("ios-lock-horizontal");
+    };
+  }, [location.pathname]);
+
+  return null;
+}
+
 export default function App() {
   const role = useAppStore((s) => s.role);
   const authToken = useAppStore((s) => s.authToken);
   const accountId = useAppStore((s) => s.accountId);
   const hydrated = useAppStore((s) => s.hydrated);
+  const isNativeRuntime = Capacitor.isNativePlatform();
   const [cookieConsent, setCookieConsent] = useState<CookieConsentDecision | null>(() =>
     getCookieConsentDecision()
   );
@@ -492,11 +683,16 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <RuntimePlatformSync />
+      <IOSKeyboardViewportSync />
       <BootLog />
       {cookieConsent === "accepted" ? <HitKeepBridge /> : null}
       <ThemeSync />
       <DisplayModeSync />
       <RouteScrollReset />
+      <NetworkStatusBanner />
+      <IOSLandingGestureGuard />
+      <IOSSwipeBackSync />
       <AuthSync />
       <PushSubscriptionSync />
       <MobilePageResumeSync />
@@ -505,7 +701,12 @@ export default function App() {
         <Routes>
           {!(authToken || accountId) ? (
             <>
-              <Route path="/" element={<LandingPage />} />
+              <Route
+                path="/"
+                element={
+                  isNativeRuntime ? <Navigate to="/auth?mode=login" replace /> : <LandingPage />
+                }
+              />
               <Route path="/join-family" element={<JoinFamilyPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/legal" element={<LegalPage />} />

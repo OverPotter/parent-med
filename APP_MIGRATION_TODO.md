@@ -35,19 +35,21 @@
 
 ## 3. Push-уведомления для iOS app (нативный канал)
 - [ ] Перейти с web-push сценария на APNs через Capacitor Push Notifications.
-- [ ] Добавить регистрацию device token на backend.
-- [ ] Обновить backend-модель подписок под native-токены (если нужно).
+  - Блокер: для APNs на реальном устройстве нужен платный Apple Developer Program (не Personal Team).
+- [x] Добавить регистрацию device token на backend.
+- [x] Обновить backend-модель подписок под native-токены (если нужно).
 - [ ] Проверить end-to-end: разрешение, получение, открытие deep-link из push.
 
 ## 4. Безопасность и хранение сессии
-- [ ] Убрать хранение refresh/access токена из web storage для iOS-сборки.
-- [ ] Перенести токены в secure storage/keychain.
+- [x] Убрать хранение refresh/access токена из web storage для iOS-сборки.
+- [x] Перенести токены в secure storage/keychain.
 - [ ] Проверить куки/токены в iOS-контейнере и сценарии истечения сессии.
 
 ## 5. Полировка UX под мобильное нативное ощущение
-- [ ] Проверить safe areas, клавиатуру, навигацию, back-жесты.
-- [ ] Добавить обработку offline/slow network состояний.
-- [ ] Проверить accessibility: динамический текст, контраст, VoiceOver.
+- [x] Проверить safe areas, клавиатуру, навигацию, back-жесты.
+- [x] Добавить обработку offline/slow network состояний.
+- [ ] Проверить accessibility: динамический текст, контраст, VoiceOver.  
+  - Прогресс: улучшена mobile-навигация (aria-label для нижнего tab bar), добавлена адаптация поведения при открытой клавиатуре на iOS.
 - [ ] Обновить иконки/launch screen/скриншоты под требования App Store.
 
 ## 6. Тестирование перед публикацией

@@ -5,6 +5,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { Capacitor } from "@capacitor/core";
 import { logout } from "@shared/api/auth";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -185,6 +186,7 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
   const accountLabel = accountDisplayName || accountLogin || copy.common.userFallback;
   const hasMobileNav = mobileNavLinks.length > 0;
   const isAuthenticated = Boolean(accountLogin);
+  const isNativeRuntime = Capacitor.isNativePlatform();
 
   const spinTimeoutRef = useRef<number | null>(null);
   const [isIconSpinning, setIsIconSpinning] = useState(false);
@@ -236,13 +238,13 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
   return (
     <div className="app-shell-auth min-h-screen flex flex-col bg-background text-foreground">
       <div className="app-v3-background" aria-hidden="true">
-        <V3BackgroundDoodles />
+        {!isNativeRuntime ? <V3BackgroundDoodles /> : null}
         <div className="app-v3-decor app-v3-decor-a" />
         <div className="app-v3-decor app-v3-decor-b" />
         <div className="app-v3-decor app-v3-decor-c" />
         <div className="app-v3-noise" />
       </div>
-      <header className="relative z-30 min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
+      <header className="app-safe-top-header relative z-30 min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
         <div className="relative z-30 mx-auto max-w-5xl">
           <div className="md:hidden">
             <div className="soft-nav-shell app-mobile-header rounded-[30px] px-3.5 py-3.5">
@@ -409,7 +411,7 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
       </header>
       <main
         className={[
-          "relative z-[1] mx-auto flex-1 w-full max-w-5xl min-w-0 px-3 py-6 sm:px-6 sm:py-11",
+          "app-main-shell relative z-[1] mx-auto flex-1 w-full max-w-5xl min-w-0 px-3 py-6 sm:px-6 sm:py-11",
           hasMobileNav ? "pb-28 md:pb-11" : "",
         ].join(" ")}
       >

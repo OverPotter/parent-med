@@ -1,4 +1,4 @@
-"""ORM-модель: подписка устройства на web push."""
+"""ORM-модель: подписка устройства на push (web/native)."""
 
 from __future__ import annotations
 
@@ -21,9 +21,12 @@ class PushSubscriptionModel(Base):
     account_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
     )
+    channel: Mapped[str] = mapped_column(String(16), nullable=False, default="web")
     endpoint: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
-    p256dh_key: Mapped[str] = mapped_column(String(255), nullable=False)
-    auth_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    p256dh_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    auth_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    native_token: Mapped[str | None] = mapped_column(Text, nullable=True, unique=True)
+    platform: Mapped[str | None] = mapped_column(String(32), nullable=True)
     expiration_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
     device_label: Mapped[str | None] = mapped_column(String(255), nullable=True)

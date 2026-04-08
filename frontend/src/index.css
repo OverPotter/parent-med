@@ -32,6 +32,8 @@
   --color-info-soft: rgba(116, 141, 209, 0.14);
   --color-warning: #d3a43f;
   --color-warning-soft: rgba(211, 164, 63, 0.16);
+  --app-safe-top: env(safe-area-inset-top);
+  --app-safe-bottom: env(safe-area-inset-bottom);
 }
 
 [data-theme="dark"] {
@@ -4995,6 +4997,165 @@ p {
 #root {
   min-height: 100vh;
   min-height: 100dvh;
+}
+
+html.ios-lock-horizontal,
+body.ios-lock-horizontal {
+  overflow-x: hidden;
+}
+
+html.ios-lock-horizontal #root {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+html.ios-lock-horizontal .landing-page,
+html.ios-lock-horizontal .landing-hero,
+html.ios-lock-horizontal .landing-main {
+  overflow-x: clip;
+  touch-action: pan-y;
+}
+
+[data-runtime="native"][data-platform="ios"] .app-safe-top-header {
+  padding-top: max(0.75rem, var(--app-safe-top));
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-shell {
+  min-height: 100dvh;
+  align-items: flex-start;
+  padding-top: calc(max(0.75rem, var(--app-safe-top)) + 0.5rem);
+  padding-bottom: max(1rem, var(--app-safe-bottom));
+}
+
+[data-runtime="native"][data-platform="ios"] .app-safe-top-standalone {
+  padding-top: max(0.75rem, var(--app-safe-top));
+}
+
+.legal-doc-page {
+  overflow-x: clip;
+}
+
+.legal-doc-surface {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+@media (max-width: 639px) {
+  .legal-doc-page .soft-page-intro {
+    border-radius: 24px;
+  }
+
+  .legal-doc-page .soft-page-intro .app-title {
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+
+  .legal-doc-page .soft-page-intro .app-subtitle {
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .legal-doc-page .legal-doc-surface {
+    border-radius: 24px;
+  }
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-shell {
+  padding-top: calc(max(0.6rem, var(--app-safe-top)) + 0.25rem);
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-hero {
+  margin-top: 0.85rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-title {
+  font-size: clamp(2.25rem, 8vw, 2.8rem);
+  line-height: 0.96;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-subtitle {
+  margin-top: 0.55rem !important;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-panel {
+  margin-top: 1rem;
+  padding: 0.72rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-card,
+[data-runtime="native"][data-platform="ios"]
+  .auth-v3-page.auth-v3-page--login
+  .auth-v3-secondary-card {
+  border-radius: 1.5rem;
+  padding: 0.95rem;
+}
+
+[data-runtime="native"][data-platform="ios"]
+  .auth-v3-page.auth-v3-page--login
+  .auth-v3-toggle-button {
+  min-height: 2.75rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-input {
+  min-height: 3.2rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-submit {
+  min-height: 3.45rem;
+  font-size: 1.05rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-panel {
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 36px rgba(76, 63, 120, 0.12);
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-card,
+[data-runtime="native"][data-platform="ios"] .auth-v3-secondary-card {
+  box-shadow: 0 8px 20px rgba(91, 77, 138, 0.08);
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-header-control,
+[data-runtime="native"][data-platform="ios"]
+  .auth-v3-language-switch
+  .soft-language-dropdown__trigger,
+[data-runtime="native"][data-platform="ios"] .auth-v3-toggle-button,
+[data-runtime="native"][data-platform="ios"] .auth-v3-submit,
+[data-runtime="native"][data-platform="ios"] .auth-v3-input,
+[data-runtime="native"][data-platform="ios"] .auth-v3-input-toggle {
+  transition-duration: 120ms;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-input,
+[data-runtime="native"][data-platform="ios"] .auth-v3-input-toggle,
+[data-runtime="native"][data-platform="ios"] .auth-v3-toggle-button,
+[data-runtime="native"][data-platform="ios"] .auth-v3-submit,
+[data-runtime="native"][data-platform="ios"] .auth-v3-header-actions button,
+[data-runtime="native"][data-platform="ios"] .auth-v3-header-actions a {
+  touch-action: manipulation;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+[data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-bottom-nav-wrap {
+  transform: translate3d(0, calc(100% + env(safe-area-inset-bottom)), 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-main-shell {
+  padding-bottom: 1rem !important;
+}
+
+[data-runtime="native"] #root {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 @media (display-mode: standalone) {

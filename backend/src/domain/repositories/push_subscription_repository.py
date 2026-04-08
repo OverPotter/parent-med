@@ -1,4 +1,4 @@
-"""Интерфейс репозитория web push-подписок."""
+"""Интерфейс репозитория push-подписок."""
 
 from abc import abstractmethod
 from uuid import UUID
@@ -15,6 +15,9 @@ class PushSubscriptionRepository(BaseRepository[PushSubscription]):
 
     @abstractmethod
     async def get_by_endpoint(self, endpoint: str) -> PushSubscription | None: ...
+
+    @abstractmethod
+    async def get_by_native_token(self, native_token: str) -> PushSubscription | None: ...
 
     @abstractmethod
     async def get_by_account_id(self, account_id: UUID) -> list[PushSubscription]: ...

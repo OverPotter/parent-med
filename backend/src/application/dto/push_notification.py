@@ -1,6 +1,7 @@
-"""DTO для web push-подписок и конфигурации."""
+"""DTO для push-подписок и конфигурации."""
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -47,7 +48,7 @@ class PushNotificationPreferencesUpdateDto(BaseModel):
 
 
 class PushSubscriptionKeysDto(BaseModel):
-    """Ключи browser push-подписки."""
+    """Ключи browser push-подписки (web)."""
 
     p256dh: str
     auth: str
@@ -56,9 +57,16 @@ class PushSubscriptionKeysDto(BaseModel):
 class PushSubscriptionUpsertDto(BaseModel):
     """Регистрация или обновление push-подписки устройства."""
 
-    endpoint: str = Field(..., description="Push endpoint браузера")
+    channel: Literal["web", "native"] | None = Field(
+        None, description="Канал подписки: web или native"
+    )
+    endpoint: str = Field(..., description="Идентификатор подписки (web endpoint или native key)")
+    native_token: str | None = Field(None, description="Нативный push token устройства")
+    platform: Literal["ios", "android"] | None = Field(
+        None, description="Платформа нативного токена"
+    )
     expiration_time: datetime | None = Field(None, description="Время истечения подписки браузера")
-    keys: PushSubscriptionKeysDto
+    keys: PushSubscriptionKeysDto | None = None
     user_agent: str | None = Field(None, description="User-Agent устройства")
     device_label: str | None = Field(None, description="Короткая подпись устройства")
 
@@ -74,7 +82,10 @@ class PushSubscriptionResponseDto(ResponseBase):
 
     id: UUID
     account_id: UUID
+    channel: Literal["web", "native"]
     endpoint: str
+    native_token: str | None
+    platform: str | None
     expiration_time: datetime | None
     user_agent: str | None
     device_label: str | None

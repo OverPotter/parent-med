@@ -6,7 +6,7 @@ export function TermsOfUsePage() {
   const { language } = useI18n();
 
   return (
-    <div className="space-y-6">
+    <div className="legal-doc-page app-safe-top-standalone mx-auto w-full max-w-3xl space-y-4 px-3 pb-6 sm:space-y-6 sm:px-0">
       <PageIntro
         title={language === "ru" ? "Условия использования" : "Terms of Use"}
         subtitle={
@@ -17,7 +17,7 @@ export function TermsOfUsePage() {
         compactOnMobile
       />
 
-      <Surface className="space-y-4 p-5 text-sm leading-7 text-muted sm:p-6">
+      <Surface className="legal-doc-surface space-y-4 p-4 text-[0.95rem] leading-6 text-muted sm:p-6 sm:text-sm sm:leading-7">
         <p>
           {language === "ru"
             ? "PillPath — информационный семейный сервис для учета лекарств и событий по уходу."

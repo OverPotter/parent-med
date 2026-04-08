@@ -6,7 +6,7 @@ export function PrivacyPolicyPage() {
   const { language } = useI18n();
 
   return (
-    <div className="space-y-6">
+    <div className="legal-doc-page app-safe-top-standalone mx-auto w-full max-w-3xl space-y-4 px-3 pb-6 sm:space-y-6 sm:px-0">
       <PageIntro
         title={language === "ru" ? "Политика конфиденциальности" : "Privacy Policy"}
         subtitle={
@@ -17,7 +17,7 @@ export function PrivacyPolicyPage() {
         compactOnMobile
       />
 
-      <Surface className="space-y-4 p-5 text-sm leading-7 text-muted sm:p-6">
+      <Surface className="legal-doc-surface space-y-4 p-4 text-[0.95rem] leading-6 text-muted sm:p-6 sm:text-sm sm:leading-7">
         <p>
           {language === "ru"
             ? "Сервис PillPath обрабатывает данные только для работы семейного кабинета: аккаунт, профиль семьи, записи о лекарствах и событиях по уходу."

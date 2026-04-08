@@ -1,4 +1,4 @@
-"""Реализация репозитория web push-подписок."""
+"""Реализация репозитория push-подписок."""
 
 from uuid import UUID
 
@@ -20,9 +20,12 @@ class SqlPushSubscriptionRepository(PushSubscriptionRepository):
         return PushSubscription(
             id=model.id,
             account_id=model.account_id,
+            channel=model.channel,
             endpoint=model.endpoint,
             p256dh_key=model.p256dh_key,
             auth_key=model.auth_key,
+            native_token=model.native_token,
+            platform=model.platform,
             expiration_time=model.expiration_time,
             user_agent=model.user_agent,
             device_label=model.device_label,
@@ -34,9 +37,12 @@ class SqlPushSubscriptionRepository(PushSubscriptionRepository):
         return PushSubscriptionModel(
             id=entity.id,
             account_id=entity.account_id,
+            channel=entity.channel,
             endpoint=entity.endpoint,
             p256dh_key=entity.p256dh_key,
             auth_key=entity.auth_key,
+            native_token=entity.native_token,
+            platform=entity.platform,
             expiration_time=entity.expiration_time,
             user_agent=entity.user_agent,
             device_label=entity.device_label,
@@ -54,6 +60,13 @@ class SqlPushSubscriptionRepository(PushSubscriptionRepository):
     async def get_by_endpoint(self, endpoint: str) -> PushSubscription | None:
         result = await self._session.execute(
             select(PushSubscriptionModel).where(PushSubscriptionModel.endpoint == endpoint)
+        )
+        row = result.scalars().one_or_none()
+        return self._to_entity(row) if row else None
+
+    async def get_by_native_token(self, native_token: str) -> PushSubscription | None:
+        result = await self._session.execute(
+            select(PushSubscriptionModel).where(PushSubscriptionModel.native_token == native_token)
         )
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
@@ -81,9 +94,12 @@ class SqlPushSubscriptionRepository(PushSubscriptionRepository):
         if not row:
             raise ValueError(f"PushSubscription {entity.id} not found")
         row.account_id = entity.account_id
+        row.channel = entity.channel
         row.endpoint = entity.endpoint
         row.p256dh_key = entity.p256dh_key
         row.auth_key = entity.auth_key
+        row.native_token = entity.native_token
+        row.platform = entity.platform
         row.expiration_time = entity.expiration_time
         row.user_agent = entity.user_agent
         row.device_label = entity.device_label

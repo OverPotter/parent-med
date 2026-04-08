@@ -2,8 +2,9 @@
  * Экран авторизации: вход и регистрация без лендингового контента.
  */
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { Capacitor } from "@capacitor/core";
 import { login, register } from "@shared/api/auth";
 import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
@@ -15,6 +16,32 @@ import { useAppStore } from "@shared/store/useAppStore";
 import { Link, useSearchParams } from "react-router-dom";
 
 type Mode = "login" | "register";
+
+async function tryStoreCredentials(login: string, password: string): Promise<void> {
+  if (typeof window === "undefined" || !login || !password) {
+    return;
+  }
+
+  const credentialsApi = navigator.credentials;
+  const PasswordCredentialCtor = (
+    window as Window & { PasswordCredential?: new (data: Record<string, string>) => Credential }
+  ).PasswordCredential;
+
+  if (!credentialsApi?.store || !PasswordCredentialCtor) {
+    return;
+  }
+
+  try {
+    const credential = new PasswordCredentialCtor({
+      id: login,
+      password,
+      name: login,
+    });
+    await credentialsApi.store(credential);
+  } catch {
+    // Some iOS runtimes may not allow storing credentials from WebView.
+  }
+}
 
 function joinClasses(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -145,7 +172,7 @@ function SunIcon() {
   );
 }
 
-function AuthField({
+const AuthField = memo(function AuthField({
   label,
   value,
   onChange,
@@ -156,6 +183,10 @@ function AuthField({
   hint,
   icon,
   action,
+  autoCapitalize,
+  autoCorrect,
+  spellCheck,
+  inputMode,
 }: {
   label: string;
   value: string;
@@ -167,6 +198,10 @@ function AuthField({
   hint?: string;
   icon?: React.ReactNode;
   action?: React.ReactNode;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  autoCorrect?: "on" | "off";
+  spellCheck?: boolean;
+  inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
 }) {
   return (
     <label className="block">
@@ -180,6 +215,10 @@ function AuthField({
           className="auth-v3-input w-full"
           placeholder={placeholder}
           autoComplete={autoComplete}
+          autoCapitalize={autoCapitalize ?? (type === "password" ? "none" : undefined)}
+          autoCorrect={autoCorrect ?? (type === "password" ? "off" : undefined)}
+          spellCheck={spellCheck ?? (type === "password" ? false : undefined)}
+          inputMode={inputMode ?? (type === "password" ? "text" : undefined)}
         />
         {action ? (
           <div className="auth-v3-input-action">{action}</div>
@@ -190,9 +229,13 @@ function AuthField({
       {hint ? <span className="auth-v3-hint">{hint}</span> : null}
     </label>
   );
-}
+});
 
 export function AuthPage() {
+  const isNativeRuntime = Capacitor.isNativePlatform();
+  const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
+  const marketingSiteUrl = import.meta.env.VITE_MARKETING_SITE_URL?.trim() || "";
+  const hasAbsoluteMarketingUrl = /^https?:\/\//i.test(marketingSiteUrl);
   const { copy, language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedMode = searchParams.get("mode");
@@ -219,8 +262,9 @@ export function AuthPage() {
   const loginMutation = useMutation({
     mutationFn: (payload: { login: string; password: string; remember_me: boolean }) =>
       login(payload),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       setSession(data);
+      void tryStoreCredentials(variables.login, variables.password);
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "auth_page" });
     },
@@ -316,12 +360,24 @@ export function AuthPage() {
         ? copy.auth.actions.registerLoading
         : copy.auth.actions.register;
 
+  const openAbout = () => {
+    if (isNativeRuntime && hasAbsoluteMarketingUrl) {
+      window.open(marketingSiteUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+  };
+
   return (
-    <div className="auth-v3-page min-h-screen text-foreground">
-      <V3BackgroundDoodles className="auth-v3-doodle-layer" dense />
-      <div className="auth-v3-orb auth-v3-orb-left" aria-hidden="true" />
-      <div className="auth-v3-orb auth-v3-orb-right" aria-hidden="true" />
-      <div className="auth-v3-noise" aria-hidden="true" />
+    <div
+      className={joinClasses(
+        "auth-v3-page min-h-screen text-foreground",
+        mode === "login" && "auth-v3-page--login"
+      )}
+    >
+      {!isNativeIOS ? <V3BackgroundDoodles className="auth-v3-doodle-layer" dense /> : null}
+      {!isNativeIOS ? <div className="auth-v3-orb auth-v3-orb-left" aria-hidden="true" /> : null}
+      {!isNativeIOS ? <div className="auth-v3-orb auth-v3-orb-right" aria-hidden="true" /> : null}
+      {!isNativeIOS ? <div className="auth-v3-noise" aria-hidden="true" /> : null}
 
       <div className="auth-v3-shell">
         <section className="auth-v3-stage">
@@ -368,23 +424,42 @@ export function AuthPage() {
                   {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
                 </span>
               </button>
-              <Link to="/" className="app-header-utility-button auth-v3-home-link">
-                {copy.common.goHome}
-              </Link>
+              {isNativeRuntime ? (
+                hasAbsoluteMarketingUrl ? (
+                  <button
+                    type="button"
+                    className="app-header-utility-button auth-v3-home-link"
+                    onClick={openAbout}
+                  >
+                    {copy.common.aboutApp}
+                  </button>
+                ) : null
+              ) : (
+                <Link to="/" className="app-header-utility-button auth-v3-home-link">
+                  {copy.common.aboutApp}
+                </Link>
+              )}
             </div>
           </div>
-          <div className="auth-v3-mobile-home-wrap">
-            <Link to="/" className="app-header-utility-button auth-v3-mobile-home-link">
-              {copy.common.goHome}
-            </Link>
-          </div>
+          {!isNativeRuntime ? (
+            <div className="auth-v3-mobile-home-wrap">
+              <Link to="/" className="app-header-utility-button auth-v3-mobile-home-link">
+                {copy.common.aboutApp}
+              </Link>
+            </div>
+          ) : null}
 
           <div className="auth-v3-hero">
             <h1 className="auth-v3-title">{pageTitle}</h1>
             <p className="auth-v3-subtitle mt-4">{pageDescription}</p>
           </div>
 
-          <section className="auth-v3-panel auth-v3-panel-compact">
+          <section
+            className={joinClasses(
+              "auth-v3-panel auth-v3-panel-compact",
+              mode === "login" && "auth-v3-panel-compact-login"
+            )}
+          >
             <div className="auth-v3-toggle" role="tablist" aria-label={copy.auth.page.toggleLabel}>
               <button
                 type="button"
@@ -408,7 +483,12 @@ export function AuthPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <form
+              onSubmit={handleSubmit}
+              className={joinClasses("mt-5 space-y-4", mode === "login" && "mt-4 space-y-3")}
+              method="post"
+              autoComplete="on"
+            >
               <div className="auth-v3-card">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -439,6 +519,9 @@ export function AuthPage() {
                     }
                     name="username"
                     autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     icon={<MailIcon />}
                     hint={isRegisterMode ? copy.auth.fields.loginHint : undefined}
                   />
@@ -450,7 +533,7 @@ export function AuthPage() {
                       onChange={setPassword}
                       placeholder={copy.auth.fields.passwordPlaceholder}
                       type={isPasswordVisible ? "text" : "password"}
-                      name="current-password"
+                      name={isRegisterMode ? "new-password" : "password"}
                       autoComplete={isRegisterMode ? "new-password" : "current-password"}
                       action={
                         <button
@@ -564,6 +647,10 @@ export function AuthPage() {
                       type="email"
                       name="email"
                       autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      inputMode="email"
                     />
                     <AuthField
                       label={copy.auth.fields.displayName}
@@ -590,6 +677,7 @@ export function AuthPage() {
                         type="tel"
                         name="tel"
                         autoComplete="tel"
+                        inputMode="tel"
                       />
                     </div>
                   </div>
