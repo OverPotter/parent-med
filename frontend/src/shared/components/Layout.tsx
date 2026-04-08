@@ -410,6 +410,8 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
         </div>
       </header>
       <main
+        id="app-main-content"
+        tabIndex={-1}
         className={[
           "app-main-shell relative z-[1] mx-auto flex-1 w-full max-w-5xl min-w-0 px-3 py-6 sm:px-6 sm:py-11",
           hasMobileNav ? "pb-28 md:pb-11" : "",

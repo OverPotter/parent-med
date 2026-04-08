@@ -654,6 +654,7 @@ function IOSLandingGestureGuard() {
 
 export default function App() {
   const role = useAppStore((s) => s.role);
+  const language = useAppStore((s) => s.language);
   const authToken = useAppStore((s) => s.authToken);
   const accountId = useAppStore((s) => s.accountId);
   const hydrated = useAppStore((s) => s.hydrated);
@@ -683,6 +684,9 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <a href="#app-route-root" className="a11y-skip-link">
+        {language === "ru" ? "Перейти к содержимому" : "Skip to content"}
+      </a>
       <RuntimePlatformSync />
       <IOSKeyboardViewportSync />
       <BootLog />
@@ -698,61 +702,63 @@ export default function App() {
       <MobilePageResumeSync />
       <PullToRefreshSync />
       <Suspense fallback={<RouteFallback />}>
-        <Routes>
-          {!(authToken || accountId) ? (
-            <>
-              <Route
-                path="/"
-                element={
-                  isNativeRuntime ? <Navigate to="/auth?mode=login" replace /> : <LandingPage />
-                }
-              />
-              <Route path="/join-family" element={<JoinFamilyPage />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/legal" element={<LegalPage />} />
-              <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
-              <Route path="/legal/terms" element={<TermsOfUsePage />} />
-              <Route path="/legal/support" element={<SupportPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </>
-          ) : role === "admin" ? (
-            <>
-              <Route path="/" element={<AdminLayout />}>
-                <Route index element={<AdminHomePage />} />
-                <Route path="auth" element={<Navigate to="/" replace />} />
+        <div id="app-route-root" tabIndex={-1}>
+          <Routes>
+            {!(authToken || accountId) ? (
+              <>
+                <Route
+                  path="/"
+                  element={
+                    isNativeRuntime ? <Navigate to="/auth?mode=login" replace /> : <LandingPage />
+                  }
+                />
+                <Route path="/join-family" element={<JoinFamilyPage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/legal" element={<LegalPage />} />
+                <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+                <Route path="/legal/terms" element={<TermsOfUsePage />} />
+                <Route path="/legal/support" element={<SupportPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
-              </Route>
-            </>
-          ) : (
-            <>
-              <Route path="/" element={<ClientLayout />}>
-                <Route path="auth" element={<Navigate to="/" replace />} />
-                <Route index element={<ClientStartPage />} />
-                <Route path="home" element={<ClientHomePage />} />
-                <Route path="intro" element={<Navigate to="/home" replace />} />
-                <Route path="family" element={<FamilyPage />} />
-                <Route path="join-family" element={<JoinFamilyPage />} />
-                <Route path="children" element={<ChildrenPage />} />
-                <Route path="pillbox" element={<PillboxPage />} />
-                <Route path="children/:childId" element={<ChildProfilePage />} />
-                <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
-                <Route path="illnesses/history" element={<IllnessHistoryPage />} />
-                <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
-                <Route path="more" element={<MorePage />} />
-                <Route path="feedback" element={<FeedbackPage />} />
-                <Route path="legal" element={<LegalPage />} />
-                <Route path="legal/privacy" element={<PrivacyPolicyPage />} />
-                <Route path="legal/terms" element={<TermsOfUsePage />} />
-                <Route path="legal/support" element={<SupportPage />} />
-                <Route path="account" element={<AccountPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="about" element={<AboutPage />} />
-                <Route path="children/:childId/illness" element={<ChildIllnessPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Route>
-            </>
-          )}
-        </Routes>
+              </>
+            ) : role === "admin" ? (
+              <>
+                <Route path="/" element={<AdminLayout />}>
+                  <Route index element={<AdminHomePage />} />
+                  <Route path="auth" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+              </>
+            ) : (
+              <>
+                <Route path="/" element={<ClientLayout />}>
+                  <Route path="auth" element={<Navigate to="/" replace />} />
+                  <Route index element={<ClientStartPage />} />
+                  <Route path="home" element={<ClientHomePage />} />
+                  <Route path="intro" element={<Navigate to="/home" replace />} />
+                  <Route path="family" element={<FamilyPage />} />
+                  <Route path="join-family" element={<JoinFamilyPage />} />
+                  <Route path="children" element={<ChildrenPage />} />
+                  <Route path="pillbox" element={<PillboxPage />} />
+                  <Route path="children/:childId" element={<ChildProfilePage />} />
+                  <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
+                  <Route path="illnesses/history" element={<IllnessHistoryPage />} />
+                  <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
+                  <Route path="more" element={<MorePage />} />
+                  <Route path="feedback" element={<FeedbackPage />} />
+                  <Route path="legal" element={<LegalPage />} />
+                  <Route path="legal/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="legal/terms" element={<TermsOfUsePage />} />
+                  <Route path="legal/support" element={<SupportPage />} />
+                  <Route path="account" element={<AccountPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="about" element={<AboutPage />} />
+                  <Route path="children/:childId/illness" element={<ChildIllnessPage />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+              </>
+            )}
+          </Routes>
+        </div>
       </Suspense>
       {cookieConsent === null ? <CookieConsentBanner /> : null}
     </BrowserRouter>
