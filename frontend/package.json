@@ -10,6 +10,7 @@
     "build:mobile:dev": "npm run build:mobile:web:dev && npx cap sync ios",
     "build:mobile:stage": "npm run build:mobile:web:stage && npx cap sync ios",
     "build:mobile:prod": "npm run build:mobile:web:prod && npx cap sync ios",
+    "build:mobile:prod:local": "npm run build:mobile:prod",
     "build:mobile:web:dev": "tsc -b && vite build --mode mobile-dev",
     "build:mobile:web:stage": "tsc -b && vite build --mode mobile-stage",
     "build:mobile:web:prod": "tsc -b && vite build --mode mobile-prod",

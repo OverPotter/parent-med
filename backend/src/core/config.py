@@ -81,6 +81,7 @@ class Settings(BaseSettings):
     web_push_public_key: str | None = None
     web_push_private_key: str | None = None
     web_push_subject: str = "mailto:dev@example.com"
+    analytics_hash_salt: str = "dev-analytics-salt-change-me"
     feedback_rate_limit_per_hour: int = Field(
         default=5,
         ge=1,

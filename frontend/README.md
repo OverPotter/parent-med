@@ -95,7 +95,7 @@ npx cap open ios
 Код: `src/shared/analytics/`. Без `VITE_HITKEEP_SCRIPT_URL` в `.env` скрипт не грузится.
 
 - **`VITE_HITKEEP_SCRIPT_URL`** — URL `hk.js` (после `make up` HitKeep на :8080: `http://localhost:8080/hk.js`).
-- **`VITE_HITKEEP_USER_HASH_SALT`** — опционально, соль для хешей id в событиях.
+- Соль хеширования id хранится только на backend (`ANALYTICS_HASH_SALT`), во frontend секрет не хранится.
 
 Частые проблемы:
 

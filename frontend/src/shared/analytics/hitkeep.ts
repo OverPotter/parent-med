@@ -1,5 +1,6 @@
 /** HitKeep: очередь до hk.js, sanitize props. */
 
+import { hashIdentifierForAnalytics, type AnalyticsHashKind } from "@shared/api/analytics";
 import { AnalyticsEvents } from "./events";
 
 const queue: Array<[string, Record<string, unknown> | undefined]> = [];
@@ -79,20 +80,29 @@ export function normalizeClientError(err: unknown): string {
   return "unknown";
 }
 
-export async function hashForAnalytics(value: string): Promise<string> {
-  const salt = import.meta.env.VITE_HITKEEP_USER_HASH_SALT ?? "";
-  const input = `${value}\0${salt || "pillpath-dev"}`;
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+export async function hashForAnalytics(
+  kind: AnalyticsHashKind,
+  value: string
+): Promise<string | null> {
+  const normalized = value.trim();
+  if (!normalized) {
+    return null;
+  }
+  try {
+    return await hashIdentifierForAnalytics(kind, normalized);
+  } catch {
+    return null;
+  }
 }
 
 export async function trackSessionIdentify(
   accountId: string,
   familyRole: string | null
 ): Promise<void> {
-  const user_hash = await hashForAnalytics(accountId);
+  const user_hash = await hashForAnalytics("account", accountId);
+  if (!user_hash) {
+    return;
+  }
   trackEvent(AnalyticsEvents.SESSION_IDENTIFY, {
     user_hash,
     family_role: familyRole ?? "unknown",
@@ -100,17 +110,26 @@ export async function trackSessionIdentify(
 }
 
 export async function trackChildCreated(childId: string): Promise<void> {
-  const child_id_hash = await hashForAnalytics(childId);
+  const child_id_hash = await hashForAnalytics("child", childId);
+  if (!child_id_hash) {
+    return;
+  }
   trackEvent(AnalyticsEvents.CHILD_CREATED, { child_id_hash });
 }
 
 export async function trackIllnessEpisodeStarted(episodeId: string): Promise<void> {
-  const episode_id_hash = await hashForAnalytics(episodeId);
+  const episode_id_hash = await hashForAnalytics("episode", episodeId);
+  if (!episode_id_hash) {
+    return;
+  }
   trackEvent(AnalyticsEvents.ILLNESS_EPISODE_STARTED, { episode_id_hash });
 }
 
 export async function trackTemperatureLogged(episodeId: string): Promise<void> {
-  const episode_id_hash = await hashForAnalytics(episodeId);
+  const episode_id_hash = await hashForAnalytics("episode", episodeId);
+  if (!episode_id_hash) {
+    return;
+  }
   trackEvent(AnalyticsEvents.TEMPERATURE_LOGGED, { episode_id_hash });
 }
 

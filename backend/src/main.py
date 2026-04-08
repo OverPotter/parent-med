@@ -9,6 +9,7 @@ from src.api.deps.auth import get_current_account
 from src.api.middleware.http_logging import register_http_logging
 from src.api.routers import (
     administration_events,
+    analytics,
     auth,
     children,
     episode_medication_plans,
@@ -109,6 +110,10 @@ def create_app() -> FastAPI:
         feedback.router,
         prefix="/api/v1",
         dependencies=protected_dependencies,
+    )
+    app.include_router(
+        analytics.router,
+        prefix="/api/v1",
     )
 
     @app.get("/health")
