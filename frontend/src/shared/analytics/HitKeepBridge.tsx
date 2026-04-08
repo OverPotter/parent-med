@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { AnalyticsEvents } from "./events";
 import {
   flushHitKeepQueue,
@@ -29,7 +30,8 @@ function HitKeepScriptLoader() {
       return;
     }
     const host = window.location.hostname;
-    if (host === "localhost" || host === "127.0.0.1") {
+    const isNativeRuntime = Capacitor.isNativePlatform();
+    if (!isNativeRuntime && (host === "localhost" || host === "127.0.0.1")) {
       console.warn(
         "[HitKeep] localhost: трекер не шлёт события — используйте pillpath.localhost:3000 / :5173"
       );
