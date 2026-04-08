@@ -29,7 +29,8 @@
 - [x] Подготовить reviewer-доступ (демо-аккаунт или демо-режим).
   - Шаблон: `APP_STORE_REVIEW_NOTES.md` (заполнить `TBD_*` перед отправкой в review).
 - [ ] Подготовить multi-region legal baseline для RU/US/EU:
-  - [ ] Актуализировать Privacy Policy/Terms под US + EU (включая GDPR-блоки).
+  - [x] Актуализировать Privacy Policy/Terms под US + EU (включая GDPR-блоки).
+    - Примечание: обновлены in-app документы `/legal/privacy` и `/legal/terms` (редакция от 08.04.2026) под модель публикации от физлица и бесплатного сервиса.
   - [x] Проверить, что consent-тексты и ссылки корректны для EN локали.
   - [x] Подготовить EN demo-аккаунт для App Review.
 
