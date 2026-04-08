@@ -1,4 +1,4 @@
-"""Сервис управления web push-подписками устройства."""
+"""Сервис управления push-подписками устройства (web/native)."""
 
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
@@ -130,7 +130,10 @@ class PushNotificationService:
         return PushSubscriptionResponseDto(
             id=entity.id,
             account_id=entity.account_id,
+            channel=entity.channel,
             endpoint=entity.endpoint,
+            native_token=entity.native_token,
+            platform=entity.platform,
             expiration_time=entity.expiration_time,
             user_agent=entity.user_agent,
             device_label=entity.device_label,
@@ -143,15 +146,39 @@ class PushNotificationService:
         account_id: UUID,
         dto: PushSubscriptionUpsertDto,
     ) -> PushSubscriptionResponseDto:
-        existing = await self._repo.get_by_endpoint(dto.endpoint)
+        channel = dto.channel or ("native" if dto.native_token else "web")
+        if channel == "native":
+            native_token = (dto.native_token or dto.endpoint).strip()
+            if not native_token:
+                raise ValidationError("Для native push требуется token устройства")
+            if dto.platform not in {"ios", "android"}:
+                raise ValidationError("Для native push требуется platform: ios или android")
+            endpoint = f"native:{dto.platform}:{native_token}"
+            existing = await self._repo.get_by_native_token(native_token)
+            p256dh_key = None
+            auth_key = None
+        else:
+            if dto.keys is None:
+                raise ValidationError("Для web push обязательны keys")
+            endpoint = dto.endpoint.strip()
+            if not endpoint:
+                raise ValidationError("Для web push требуется endpoint")
+            existing = await self._repo.get_by_endpoint(endpoint)
+            native_token = None
+            p256dh_key = dto.keys.p256dh
+            auth_key = dto.keys.auth
+
         now = datetime.now(UTC)
 
         entity = PushSubscription(
             id=existing.id if existing else uuid4(),
             account_id=account_id,
-            endpoint=dto.endpoint,
-            p256dh_key=dto.keys.p256dh,
-            auth_key=dto.keys.auth,
+            channel=channel,
+            endpoint=endpoint,
+            p256dh_key=p256dh_key,
+            auth_key=auth_key,
+            native_token=native_token,
+            platform=dto.platform if channel == "native" else None,
             expiration_time=dto.expiration_time,
             user_agent=dto.user_agent,
             device_label=dto.device_label,
@@ -168,6 +195,8 @@ class PushNotificationService:
         dto: PushSubscriptionDeleteDto,
     ) -> None:
         existing = await self._repo.get_by_endpoint(dto.endpoint)
+        if existing is None:
+            existing = await self._repo.get_by_native_token(dto.endpoint)
         if not existing or existing.account_id != account_id:
             return
         await self._repo.delete(existing.id)

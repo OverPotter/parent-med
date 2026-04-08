@@ -59,9 +59,12 @@ export async function updatePushNotificationPreferences(body: {
 }
 
 export async function upsertPushSubscription(body: {
+  channel?: "web" | "native";
   endpoint: string;
+  native_token?: string | null;
+  platform?: "ios" | "android";
   expiration_time?: string | null;
-  keys: { p256dh: string; auth: string };
+  keys?: { p256dh: string; auth: string } | null;
   user_agent?: string | null;
   device_label?: string | null;
 }): Promise<void> {

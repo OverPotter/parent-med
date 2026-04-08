@@ -27,6 +27,10 @@ import {
   toPushSubscriptionPayload,
   withTimeout,
 } from "@shared/utils/pushNotifications";
+import {
+  getNativePushSubscriptionPayload,
+  isNativePushSupported,
+} from "@shared/utils/nativePushNotifications";
 import { getPrioritizedMedicationPlanItems } from "../utils/medicationPlans";
 
 export function ClientLayout() {
@@ -208,7 +212,7 @@ export function ClientLayout() {
   }, [accountId]);
 
   useEffect(() => {
-    if (!authToken || !accountId || !pushConfig?.enabled || !isPushSupported()) {
+    if (!authToken || !accountId || !pushConfig?.enabled) {
       setPushStatus("disabled");
       setPushPromptSuccess(null);
       return;
@@ -218,7 +222,19 @@ export function ClientLayout() {
 
     const checkPush = async () => {
       try {
-        if (Notification.permission !== "granted") {
+        if (isNativePushSupported()) {
+          const payload = await getNativePushSubscriptionPayload({ promptIfNeeded: false });
+          if (!isCancelled) {
+            const nextStatus = payload ? "enabled" : "disabled";
+            setPushStatus(nextStatus);
+            if (nextStatus === "disabled") {
+              setPushPromptSuccess(null);
+            }
+          }
+          return;
+        }
+
+        if (!isPushSupported() || Notification.permission !== "granted") {
           if (!isCancelled) {
             setPushStatus("disabled");
             setPushPromptSuccess(null);
@@ -257,7 +273,10 @@ export function ClientLayout() {
   }, [accountId, authToken, pushConfig?.enabled]);
 
   const shouldShowPushPrompt =
-    Boolean(pushConfig?.enabled) && isPushSupported() && pushStatus === "disabled";
+    Boolean(pushConfig?.enabled) &&
+    !isNativePushSupported() &&
+    isPushSupported() &&
+    pushStatus === "disabled";
 
   const handleEnablePush = async () => {
     const pushSupportIssue = getPushSupportIssue();

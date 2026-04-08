@@ -1022,6 +1022,8 @@ class PushNotificationScheduler:
             unique_subscriptions.append(subscription)
 
         for subscription in unique_subscriptions:
+            if subscription.channel != "web" or not subscription.p256dh_key or not subscription.auth_key:
+                continue
             try:
                 await asyncio.to_thread(
                     webpush,

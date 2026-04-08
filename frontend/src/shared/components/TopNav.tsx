@@ -1,4 +1,5 @@
 import { NavLink, matchPath, useLocation } from "react-router-dom";
+import { useI18n } from "@shared/hooks/useI18n";
 import { renderNavIcon } from "./navIcons";
 
 export interface LayoutNavLink {
@@ -12,6 +13,7 @@ export interface LayoutNavLink {
 }
 
 export function TopNav({ links }: { links: LayoutNavLink[] }) {
+  const { language } = useI18n();
   const location = useLocation();
 
   if (links.length === 0) {
@@ -19,7 +21,10 @@ export function TopNav({ links }: { links: LayoutNavLink[] }) {
   }
 
   return (
-    <nav className="hidden md:flex md:justify-center">
+    <nav
+      aria-label={language === "ru" ? "Основная навигация" : "Primary navigation"}
+      className="hidden md:flex md:justify-center"
+    >
       <div
         className="grid w-full max-w-[60rem] gap-2"
         style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}

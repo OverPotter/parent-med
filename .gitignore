@@ -53,6 +53,7 @@ pnpm-lock.yaml
 
 # Build output
 frontend/dist/
+frontend/www/
 frontend/build/
 frontend/dev-dist/
 # TypeScript incremental / project references (tsc -b)

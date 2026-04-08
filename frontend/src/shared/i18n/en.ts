@@ -7,6 +7,7 @@ export const en: Translations = {
     login: "Log in",
     open: "Open",
     goHome: "Home",
+    aboutApp: "About app",
     logout: "Log out",
     profile: "Profile",
     settings: "Settings",

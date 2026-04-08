@@ -3,6 +3,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { applyLanguageToDocument, type AppLanguage } from "@shared/i18n";
+import {
+  clearSecureAuthTokens,
+  isNativeIOSRuntime,
+  migrateLegacyAuthTokensToSecureStorage,
+  readSecureAuthTokens,
+  writeSecureAuthTokens,
+} from "@shared/security/authTokenStorage";
 
 type Theme = "light" | "dark" | "system";
 type ResolvedTheme = "light" | "dark";
@@ -74,6 +81,7 @@ interface AppState {
     };
     family: { id: string; name: string };
   }) => void;
+  setAuthTokens: (tokens: { accessToken: string | null; refreshToken: string | null }) => void;
   setAuthState: (state: {
     account: {
       id: string;
@@ -142,7 +150,7 @@ export const useAppStore = create<AppState>()(
       accountFamilyRole: null,
       currentFamilyId: null,
       currentFamilyName: null,
-      setSession: (session) =>
+      setSession: (session) => {
         set(() => {
           applyLanguageToDocument(session.account.preferredLanguage);
           return {
@@ -158,7 +166,28 @@ export const useAppStore = create<AppState>()(
             currentFamilyId: session.family.id,
             currentFamilyName: session.family.name,
           };
-        }),
+        });
+        if (isNativeIOSRuntime()) {
+          void writeSecureAuthTokens({
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken,
+          });
+        }
+      },
+      setAuthTokens: (tokens) => {
+        set({
+          authToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        });
+        if (!isNativeIOSRuntime()) {
+          return;
+        }
+        if (!tokens.accessToken && !tokens.refreshToken) {
+          void clearSecureAuthTokens();
+          return;
+        }
+        void writeSecureAuthTokens(tokens);
+      },
       setAuthState: (state) =>
         set(() => {
           applyLanguageToDocument(state.account.preferredLanguage);
@@ -183,7 +212,7 @@ export const useAppStore = create<AppState>()(
           };
         }),
       setAccountEmail: (email) => set({ accountEmail: email }),
-      clearSession: () =>
+      clearSession: () => {
         set({
           authToken: null,
           refreshToken: null,
@@ -195,7 +224,11 @@ export const useAppStore = create<AppState>()(
           accountFamilyRole: null,
           currentFamilyId: null,
           currentFamilyName: null,
-        }),
+        });
+        if (isNativeIOSRuntime()) {
+          void clearSecureAuthTokens();
+        }
+      },
       setCurrentFamily: (family) =>
         set({
           currentFamilyId: family?.id ?? null,
@@ -211,8 +244,7 @@ export const useAppStore = create<AppState>()(
         medicationIntervalUnit: s.medicationIntervalUnit,
         role: s.role,
         hasSeenWorkspaceIntro: s.hasSeenWorkspaceIntro,
-        authToken: s.authToken,
-        refreshToken: s.refreshToken,
+        ...(isNativeIOSRuntime() ? {} : { authToken: s.authToken, refreshToken: s.refreshToken }),
         accountId: s.accountId,
         accountLogin: s.accountLogin,
         accountEmail: s.accountEmail,
@@ -230,7 +262,22 @@ export const useAppStore = create<AppState>()(
         if (state?.language) {
           applyLanguageToDocument(state.language);
         }
-        state?.setHydrated(true);
+
+        if (!state) {
+          return;
+        }
+
+        if (!isNativeIOSRuntime()) {
+          state.setHydrated(true);
+          return;
+        }
+
+        void (async () => {
+          await migrateLegacyAuthTokensToSecureStorage();
+          const tokens = await readSecureAuthTokens();
+          state.setAuthTokens(tokens);
+          state.setHydrated(true);
+        })();
       },
     }
   )

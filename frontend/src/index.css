@@ -15,7 +15,7 @@
   --color-primary-focus: #9b8bd0;
   --color-background: #ebe4ff;
   --color-foreground: #2e3550;
-  --color-muted: #697392;
+  --color-muted: #556283;
   --color-border: #d8cfef;
   --color-surface: rgba(255, 255, 255, 0.78);
   --color-surface-soft: rgba(255, 255, 255, 0.94);
@@ -32,6 +32,8 @@
   --color-info-soft: rgba(116, 141, 209, 0.14);
   --color-warning: #d3a43f;
   --color-warning-soft: rgba(211, 164, 63, 0.16);
+  --app-safe-top: env(safe-area-inset-top);
+  --app-safe-bottom: env(safe-area-inset-bottom);
 }
 
 [data-theme="dark"] {
@@ -60,6 +62,8 @@
 
 html {
   font-size: 16px;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -161,6 +165,30 @@ p {
 ::selection {
   background: color-mix(in srgb, var(--color-primary) 24%, transparent);
   color: var(--color-foreground);
+}
+
+.a11y-skip-link {
+  position: fixed;
+  left: 0.75rem;
+  top: calc(max(0.75rem, env(safe-area-inset-top)));
+  z-index: 120;
+  transform: translateY(-180%);
+  border-radius: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 42%, white);
+  background: color-mix(in srgb, var(--color-surface-soft) 96%, white);
+  color: var(--color-foreground);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 14px 30px -24px rgb(var(--color-shadow) / 0.28);
+  transition: transform 140ms ease;
+}
+
+.a11y-skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 58%, white);
+  outline-offset: 2px;
 }
 
 @layer components {
@@ -4625,7 +4653,7 @@ p {
       min-height: 2.72rem;
       max-width: 8.4rem;
       padding: 0.4rem 0.72rem;
-      font-size: 0.68rem;
+      font-size: 0.76rem;
       letter-spacing: -0.01em;
     }
 
@@ -4633,7 +4661,7 @@ p {
       min-height: 2.72rem;
       height: 2.72rem;
       padding: 0 0.72rem;
-      font-size: 0.69rem;
+      font-size: 0.78rem;
     }
 
     .app-profile-menu__panel {
@@ -4717,7 +4745,7 @@ p {
       min-height: 2.72rem;
       padding: 0 0.58rem 0 0.66rem;
       gap: 0.2rem;
-      font-size: 0.69rem;
+      font-size: 0.78rem;
     }
 
     .app-header-theme-toggle {
@@ -4732,7 +4760,7 @@ p {
       height: 2.72rem;
       min-width: 2.95rem;
       padding: 0 0.56rem;
-      font-size: 0.69rem;
+      font-size: 0.78rem;
     }
 
     .soft-language-dropdown__menu {
@@ -4858,7 +4886,7 @@ p {
       min-height: 2.72rem;
       height: 2.72rem;
       padding: 0 0.72rem;
-      font-size: 0.69rem;
+      font-size: 0.78rem;
     }
 
     .auth-v3-ghost-button {
@@ -4871,7 +4899,7 @@ p {
     .auth-v3-header-actions .app-header-language-switch .soft-language-dropdown__trigger {
       min-height: 2.72rem;
       height: 2.72rem;
-      font-size: 0.69rem;
+      font-size: 0.78rem;
     }
 
     .auth-v3-header-actions .app-header-utility-button {
@@ -4997,6 +5025,181 @@ p {
   min-height: 100dvh;
 }
 
+html.ios-lock-horizontal,
+body.ios-lock-horizontal {
+  overflow-x: hidden;
+}
+
+html.ios-lock-horizontal #root {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+html.ios-lock-horizontal .landing-page,
+html.ios-lock-horizontal .landing-hero,
+html.ios-lock-horizontal .landing-main {
+  overflow-x: clip;
+  touch-action: pan-y;
+}
+
+[data-runtime="native"][data-platform="ios"] .app-safe-top-header {
+  padding-top: max(0.75rem, var(--app-safe-top));
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-shell {
+  min-height: 100dvh;
+  align-items: flex-start;
+  padding-top: calc(max(0.75rem, var(--app-safe-top)) + 0.5rem);
+  padding-bottom: max(1rem, var(--app-safe-bottom));
+}
+
+[data-runtime="native"][data-platform="ios"] .app-safe-top-standalone {
+  padding-top: max(0.75rem, var(--app-safe-top));
+}
+
+.legal-doc-page {
+  overflow-x: clip;
+}
+
+.legal-doc-surface {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+@media (max-width: 639px) {
+  .legal-doc-page .soft-page-intro {
+    border-radius: 24px;
+  }
+
+  .legal-doc-page .soft-page-intro .app-title {
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+
+  .legal-doc-page .soft-page-intro .app-subtitle {
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .legal-doc-page .legal-doc-surface {
+    border-radius: 24px;
+  }
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-shell {
+  padding-top: calc(max(0.6rem, var(--app-safe-top)) + 0.25rem);
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-hero {
+  margin-top: 0.85rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-title {
+  font-size: clamp(2.25rem, 8vw, 2.8rem);
+  line-height: 0.96;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-subtitle {
+  margin-top: 0.55rem !important;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-panel {
+  margin-top: 1rem;
+  padding: 0.72rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-card,
+[data-runtime="native"][data-platform="ios"]
+  .auth-v3-page.auth-v3-page--login
+  .auth-v3-secondary-card {
+  border-radius: 1.5rem;
+  padding: 0.95rem;
+}
+
+[data-runtime="native"][data-platform="ios"]
+  .auth-v3-page.auth-v3-page--login
+  .auth-v3-toggle-button {
+  min-height: 2.75rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-input {
+  min-height: 3.2rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-submit {
+  min-height: 3.45rem;
+  font-size: 1.05rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-panel {
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 36px rgba(76, 63, 120, 0.12);
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-card,
+[data-runtime="native"][data-platform="ios"] .auth-v3-secondary-card {
+  box-shadow: 0 8px 20px rgba(91, 77, 138, 0.08);
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-header-control,
+[data-runtime="native"][data-platform="ios"]
+  .auth-v3-language-switch
+  .soft-language-dropdown__trigger,
+[data-runtime="native"][data-platform="ios"] .auth-v3-toggle-button,
+[data-runtime="native"][data-platform="ios"] .auth-v3-submit,
+[data-runtime="native"][data-platform="ios"] .auth-v3-input,
+[data-runtime="native"][data-platform="ios"] .auth-v3-input-toggle {
+  transition-duration: 120ms;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-input,
+[data-runtime="native"][data-platform="ios"] .auth-v3-input-toggle,
+[data-runtime="native"][data-platform="ios"] .auth-v3-toggle-button,
+[data-runtime="native"][data-platform="ios"] .auth-v3-submit,
+[data-runtime="native"][data-platform="ios"] .auth-v3-header-actions button,
+[data-runtime="native"][data-platform="ios"] .auth-v3-header-actions a {
+  touch-action: manipulation;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+[data-runtime="native"][data-platform="ios"] a,
+[data-runtime="native"][data-platform="ios"] button,
+[data-runtime="native"][data-platform="ios"] input,
+[data-runtime="native"][data-platform="ios"] select,
+[data-runtime="native"][data-platform="ios"] textarea {
+  touch-action: manipulation;
+}
+
+[data-runtime="native"][data-platform="ios"] .soft-panel,
+[data-runtime="native"][data-platform="ios"] .soft-card,
+[data-runtime="native"][data-platform="ios"] .soft-nav-shell,
+[data-runtime="native"][data-platform="ios"] .soft-page-intro,
+[data-runtime="native"][data-platform="ios"] .soft-hero {
+  backdrop-filter: blur(10px);
+}
+
+[data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-bottom-nav-wrap {
+  transform: translate3d(0, calc(100% + env(safe-area-inset-bottom)), 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-main-shell {
+  padding-bottom: 1rem !important;
+}
+
+[data-runtime="native"] #root {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
 @media (display-mode: standalone) {
   body {
     overscroll-behavior: none;
@@ -5005,5 +5208,26 @@ p {
   #root {
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .v3-doodle-layer,
+  .app-v3-decor,
+  .soft-refresh-spinner {
+    animation: none !important;
   }
 }

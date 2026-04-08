@@ -7,6 +7,7 @@ export const ru: Translations = {
     login: "Войти",
     open: "Открыть",
     goHome: "На главную",
+    aboutApp: "О приложении",
     logout: "Выйти",
     profile: "Профиль",
     settings: "Настройки",

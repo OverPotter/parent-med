@@ -12,8 +12,8 @@ export function SupportPage() {
         title={language === "ru" ? "Поддержка / Контакты" : "Support / Contact"}
         subtitle={
           language === "ru"
-            ? "Куда писать по вопросам сервиса и персональных данных."
-            : "Where to contact us about service and personal data questions."
+            ? "Куда писать по вопросам сервиса, персональных данных и legal-запросам."
+            : "Where to contact us about service, personal data and legal requests."
         }
         compactOnMobile
       />
@@ -33,8 +33,8 @@ export function SupportPage() {
         </p>
         <p>
           {language === "ru"
-            ? "По юридическим запросам о персональных данных укажите тему обращения и контакт для обратной связи."
-            : "For legal personal-data requests, include the request topic and your contact details."}
+            ? "Для legal/privacy-запросов (RU/US/EU) укажите тему обращения, регион и контакт для обратной связи."
+            : "For legal/privacy requests (RU/US/EU), include the request topic, your region and your contact details."}
         </p>
       </Surface>
     </div>

@@ -25,6 +25,12 @@ import {
   unsubscribeFromPushNotifications,
   withTimeout,
 } from "@shared/utils/pushNotifications";
+import {
+  getNativePushSubscriptionPayload,
+  isNativePushOptedOut,
+  isNativePushSupported,
+  setNativePushOptOut,
+} from "@shared/utils/nativePushNotifications";
 
 const settingsCopy = {
   ru: {
@@ -36,7 +42,7 @@ const settingsCopy = {
     passwordUpdated: "Пароль обновлён.",
     passwordChangeFailed: "Не удалось сменить пароль.",
     pushServerNotReady: "Push-уведомления ещё не настроены на сервере.",
-    pushUnsupported: "На этом устройстве web push недоступен.",
+    pushUnsupported: "На этом устройстве push-уведомления недоступны.",
     permissionTimeout: "Браузер не завершил запрос разрешения на уведомления.",
     permissionDenied: "Браузер не дал разрешение на уведомления.",
     subscribeTimeout: "Не удалось завершить подписку устройства на push.",
@@ -115,7 +121,7 @@ const settingsCopy = {
     passwordUpdated: "Password updated.",
     passwordChangeFailed: "Could not change the password.",
     pushServerNotReady: "Push notifications are not configured on the server yet.",
-    pushUnsupported: "Web push is not available on this device.",
+    pushUnsupported: "Push notifications are not available on this device.",
     permissionTimeout: "The browser did not finish the notification permission request.",
     permissionDenied: "The browser did not grant notification permission.",
     subscribeTimeout: "Could not finish subscribing this device to push.",
@@ -279,7 +285,7 @@ export function SettingsPage() {
   }, [pushPreferences]);
 
   useEffect(() => {
-    if (!isPushSupported()) {
+    if (!isPushSupported() && !isNativePushSupported()) {
       setPushStatus("disabled");
       return;
     }
@@ -287,6 +293,24 @@ export function SettingsPage() {
     let isCancelled = false;
     const loadSubscription = async () => {
       try {
+        if (isNativePushSupported()) {
+          if (isNativePushOptedOut()) {
+            if (!isCancelled) {
+              setPushStatus("disabled");
+            }
+            return;
+          }
+          const payload = await withTimeout(
+            getNativePushSubscriptionPayload({ promptIfNeeded: false }),
+            5000,
+            tSettings(language, "devicePushCheckFailed")
+          );
+          if (!isCancelled) {
+            setPushStatus(payload ? "enabled" : "disabled");
+          }
+          return;
+        }
+
         const subscription = await withTimeout(
           getExistingPushSubscription(),
           5000,
@@ -355,6 +379,37 @@ export function SettingsPage() {
   });
 
   const handleEnablePush = async () => {
+    if (isNativePushSupported()) {
+      setPushError(null);
+      setIsPushPending(true);
+      try {
+        setNativePushOptOut(false);
+        const payload = await withTimeout(
+          getNativePushSubscriptionPayload({ promptIfNeeded: true }),
+          10000,
+          tSettings(language, "subscribeTimeout")
+        );
+        if (!payload) {
+          setPushError(tSettings(language, "permissionDenied"));
+          return;
+        }
+        await withTimeout(
+          upsertPushSubscription(payload),
+          8000,
+          tSettings(language, "serverAcceptFailed")
+        );
+        setPushStatus("enabled");
+        window.dispatchEvent(new Event("push:subscription-changed"));
+      } catch (error) {
+        setPushError(
+          error instanceof Error ? error.message : tSettings(language, "enablePushFailed")
+        );
+      } finally {
+        setIsPushPending(false);
+      }
+      return;
+    }
+
     if (pushSupportIssue) {
       setPushError(pushSupportIssue);
       return;
@@ -363,7 +418,7 @@ export function SettingsPage() {
       setPushError(tSettings(language, "pushServerNotReady"));
       return;
     }
-    if (!isPushSupported()) {
+    if (!isPushSupported() && !isNativePushSupported()) {
       setPushError(tSettings(language, "pushUnsupported"));
       return;
     }
@@ -404,6 +459,17 @@ export function SettingsPage() {
     setPushError(null);
     setIsPushPending(true);
     try {
+      if (isNativePushSupported()) {
+        const payload = await getNativePushSubscriptionPayload({ promptIfNeeded: false });
+        if (payload) {
+          await deletePushSubscription({ endpoint: payload.endpoint });
+        }
+        setNativePushOptOut(true);
+        setPushStatus("disabled");
+        window.dispatchEvent(new Event("push:subscription-changed"));
+        return true;
+      }
+
       const subscription = await getExistingPushSubscription();
       if (subscription) {
         await deletePushSubscription({ endpoint: subscription.endpoint });
@@ -425,7 +491,7 @@ export function SettingsPage() {
     isPushPending ||
     isPushConfigLoading ||
     pushStatus === "checking" ||
-    (!isPushEnabled && (!pushConfig?.enabled || !isPushSupported()));
+    (!isPushEnabled && (!pushConfig?.enabled || (!isPushSupported() && !isNativePushSupported())));
 
   const handleGlobalPushSwitchToggle = () => {
     if (isGlobalPushSwitchDisabled) return;
