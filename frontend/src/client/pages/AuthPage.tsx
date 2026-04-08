@@ -289,8 +289,9 @@ export function AuthPage() {
       phone?: string;
       remember_me: boolean;
     }) => register(payload),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       setSession(data);
+      void tryStoreCredentials(variables.login, variables.password);
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "auth_page" });
     },
@@ -345,7 +346,20 @@ export function AuthPage() {
   const pageDescription = isRegisterMode
     ? copy.auth.page.registerDescription
     : copy.auth.page.loginDescription;
+  const resetAuthFormState = () => {
+    setLoginValue("");
+    setEmail("");
+    setPassword("");
+    setPasswordConfirm("");
+    setDisplayName("");
+    setRelationshipLabel("");
+    setPhone("");
+    setAcceptLegal(false);
+    setIsPasswordVisible(false);
+  };
+
   const switchMode = (nextMode: Mode) => {
+    resetAuthFormState();
     setMode(nextMode);
     setSearchParams(nextMode === "register" ? { mode: "register" } : { mode: "login" });
     setError(null);

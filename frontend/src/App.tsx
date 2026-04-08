@@ -684,9 +684,11 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <a href="#app-route-root" className="a11y-skip-link">
-        {language === "ru" ? "Перейти к содержимому" : "Skip to content"}
-      </a>
+      {!isNativeRuntime ? (
+        <a href="#app-route-root" className="a11y-skip-link">
+          {language === "ru" ? "Перейти к содержимому" : "Skip to content"}
+        </a>
+      ) : null}
       <RuntimePlatformSync />
       <IOSKeyboardViewportSync />
       <BootLog />
