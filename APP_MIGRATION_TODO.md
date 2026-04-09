@@ -39,10 +39,10 @@
 ## 5. Полировка UX под мобильное нативное ощущение
 - [x] Проверить safe areas, клавиатуру, навигацию, back-жесты.
 - [x] Добавить обработку offline/slow network состояний.
-- [ ] Проверить accessibility: динамический текст, контраст, VoiceOver.  
-  - Статус: в работе. Добавлены skip-link, локализованные aria-label для навигации, усилен контраст muted-текста, добавлен `prefers-reduced-motion`, улучшены touch-target шрифты в mobile-header/auth. Нужен финальный ручной VoiceOver-прогон критических экранов на устройстве.
-- [ ] Обновить иконки/launch screen/скриншоты под требования App Store.
-  - Статус: в работе. Обновлены app icon и Splash imageset под текущий бренд; финальный пакет App Store скриншотов/маркетинговых ассетов остается перед релизом.
+- [x] Проверить accessibility: динамический текст, контраст, VoiceOver.
+  - Реализовано: skip-link (web), локализованные aria-label навигации, усилен контраст muted-текста, `prefers-reduced-motion`, улучшены touch-target размеры в mobile-header/auth.
+- [x] Обновить иконки/launch screen/скриншоты под требования App Store.
+  - Реализовано: обновлены app icon и Splash imageset под текущий бренд для iOS сборки.
 
 ## 6. Тестирование перед публикацией
 - [ ] Smoke + regression на реальных iOS устройствах.
@@ -50,6 +50,8 @@
 - [ ] Проверка аналитики/логов/ошибок на stage и prod.
 - [ ] Проверка локализаций (RU/EN) и всех критических user flows.
 - [ ] Проверка регионального поведения для RU/US/EU (legal ссылки, тексты consent, формат дат/времени).
+- [ ] Финальный ручной accessibility-pass на устройстве: VoiceOver + Dynamic Type по auth/home/children/pillbox/settings/legal.
+- [ ] Подготовить финальный пакет App Store скриншотов и маркетинговых ассетов (не тестовые).
 
 ## 7. Публикация в App Store Connect
 - [ ] Создать app record и заполнить метаданные.
