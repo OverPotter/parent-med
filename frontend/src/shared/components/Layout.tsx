@@ -7,10 +7,10 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Capacitor } from "@capacitor/core";
 import { logout } from "@shared/api/auth";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { BottomTabBar } from "./BottomTabBar";
-import { BrandWordmark } from "./BrandWordmark";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { TopNav, type LayoutNavLink } from "./TopNav";
 import { V3BackgroundDoodles } from "./V3BackgroundDoodles";
@@ -185,6 +185,7 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
   const hasMobileNav = mobileNavLinks.length > 0;
   const isAuthenticated = Boolean(accountLogin);
   const isNativeRuntime = Capacitor.isNativePlatform();
+  const isIosShell = useIsIosShell();
 
   const spinTimeoutRef = useRef<number | null>(null);
   const [isIconSpinning, setIsIconSpinning] = useState(false);
@@ -236,7 +237,7 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
   return (
     <div className="app-shell-auth min-h-screen flex flex-col bg-background text-foreground">
       <div className="app-v3-background" aria-hidden="true">
-        {!isNativeRuntime ? <V3BackgroundDoodles /> : null}
+        {!isNativeRuntime && !isIosShell ? <V3BackgroundDoodles /> : null}
         <div className="app-v3-decor app-v3-decor-a" />
         <div className="app-v3-decor app-v3-decor-b" />
         <div className="app-v3-decor app-v3-decor-c" />
@@ -244,7 +245,7 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
       </div>
       <header className="app-safe-top-header relative z-30 min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
         <div className="relative z-30 mx-auto max-w-5xl">
-          <div className="md:hidden">
+          <div className={isIosShell ? "block" : "md:hidden"}>
             <div className="app-mobile-header">
               <div className="app-mobile-header__row">
                 <Link
@@ -311,16 +312,15 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
             </div>
           </div>
 
-          <div className="hidden md:block md:py-2">
+          <div className={isIosShell ? "hidden" : "hidden md:block md:py-2"}>
             <div className="app-desktop-header relative z-20">
               <div className="app-desktop-header__row">
                 <Link
                   to="/"
-                  className="app-desktop-header__brand"
+                  className="app-desktop-header__brand app-desktop-header__brand--compact"
                   aria-label={copy.common.brandName}
                 >
                   <img src="/pwa-icon.png" alt="" className="app-desktop-header__logo" />
-                  <BrandWordmark className="app-brand-text truncate" />
                 </Link>
 
                 <div className="app-desktop-header__actions">
@@ -397,7 +397,7 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
       >
         {children}
       </main>
-      {hasMobileNav && <BottomTabBar links={mobileNavLinks} />}
+      {hasMobileNav && <BottomTabBar links={mobileNavLinks} forceVisible={isIosShell} />}
     </div>
   );
 }

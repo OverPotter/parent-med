@@ -450,6 +450,21 @@ class PillboxService:
             return today_local - timedelta(days=29)
         return min(candidates)
 
+    def _resolve_plan_analytics_bounds(self, plan: PillboxPlan) -> tuple[date | None, date | None]:
+        period_medications = [
+            item
+            for item in plan.medications
+            if item.course_mode == "period" and item.course_start_date and item.course_end_date
+        ]
+        if len(period_medications) != len(plan.medications) or not period_medications:
+            return None, None
+
+        starts = [item.course_start_date for item in period_medications if item.course_start_date]
+        ends = [item.course_end_date for item in period_medications if item.course_end_date]
+        if not starts or not ends:
+            return None, None
+        return min(starts), max(ends)
+
     def _build_timeline_labels(
         self,
         period: str,
@@ -498,9 +513,15 @@ class PillboxService:
         plans = [plan]
         now_utc = datetime.now(UTC)
         today_local = self._to_local(now_utc).date()
+        plan_start_bound, plan_end_bound = self._resolve_plan_analytics_bounds(plan)
         start_date = self._resolve_period_start_date(normalized_period, plans, today_local)
+        if plan_start_bound is not None:
+            start_date = max(start_date, plan_start_bound)
+        end_date = min(today_local, plan_end_bound) if plan_end_bound is not None else today_local
+        if start_date > end_date:
+            start_date = end_date
         timeline_labels = self._build_timeline_labels(
-            normalized_period, start_date, today_local, preferred_language
+            normalized_period, start_date, end_date, preferred_language
         )
         timeline_counts: dict[str, int] = {label: 0 for label in timeline_labels}
 
@@ -530,7 +551,7 @@ class PillboxService:
                 logs_by_slot[(log.medication_id, log.scheduled_for)] = log.taken_at
 
         for medication in plan.medications:
-            slots = self._build_medication_slots(medication, start_date, today_local)
+            slots = self._build_medication_slots(medication, start_date, end_date)
             for index, scheduled_for in enumerate(slots):
                 if scheduled_for < analytics_start_utc:
                     continue

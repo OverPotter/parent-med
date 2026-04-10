@@ -13,6 +13,7 @@ export function PageIntro({
   className,
   compactOnMobile = false,
   hideOnMobile = false,
+  mobileLikeDesktop = false,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -21,11 +22,13 @@ export function PageIntro({
   className?: string;
   compactOnMobile?: boolean;
   hideOnMobile?: boolean;
+  mobileLikeDesktop?: boolean;
 }) {
   return (
     <Surface
       className={joinClasses(
         "soft-page-intro overflow-hidden",
+        mobileLikeDesktop && "soft-page-intro--mobile-like",
         hideOnMobile && "hidden sm:block",
         compactOnMobile ? "p-4 sm:p-6" : "p-5 sm:p-7 lg:p-8",
         className
@@ -34,6 +37,7 @@ export function PageIntro({
       <div
         className={joinClasses(
           "flex flex-col lg:flex-row lg:items-end lg:justify-between",
+          mobileLikeDesktop && "soft-page-intro__inner--mobile-like",
           compactOnMobile ? "gap-3 sm:gap-5" : "gap-4 sm:gap-5"
         )}
       >

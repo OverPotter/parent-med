@@ -25,6 +25,7 @@ import {
   isNativePushSupported,
 } from "@shared/utils/nativePushNotifications";
 import { HitKeepBridge } from "@shared/analytics";
+import { detectIosShell } from "@shared/hooks/useIsIosShell";
 import { appLog } from "@shared/utils/appLog";
 
 const ClientLayout = lazy(() =>
@@ -488,11 +489,14 @@ function RuntimePlatformSync() {
     const root = document.documentElement;
     const isNative = Capacitor.isNativePlatform();
     const platform = Capacitor.getPlatform();
+    const isIosShell = detectIosShell();
     root.setAttribute("data-runtime", isNative ? "native" : "web");
     root.setAttribute("data-platform", platform);
+    root.setAttribute("data-ios-shell", isIosShell ? "true" : "false");
     return () => {
       root.removeAttribute("data-runtime");
       root.removeAttribute("data-platform");
+      root.removeAttribute("data-ios-shell");
     };
   }, []);
 
@@ -501,7 +505,7 @@ function RuntimePlatformSync() {
 
 function IOSKeyboardViewportSync() {
   useEffect(() => {
-    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
+    if (!detectIosShell()) {
       return;
     }
 

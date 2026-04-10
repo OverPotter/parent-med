@@ -4,7 +4,13 @@ import { useI18n } from "@shared/hooks/useI18n";
 import type { LayoutNavLink } from "./TopNav";
 import { renderNavIcon } from "./navIcons";
 
-export function BottomTabBar({ links }: { links: LayoutNavLink[] }) {
+export function BottomTabBar({
+  links,
+  forceVisible = false,
+}: {
+  links: LayoutNavLink[];
+  forceVisible?: boolean;
+}) {
   const { language } = useI18n();
   const location = useLocation();
 
@@ -15,7 +21,7 @@ export function BottomTabBar({ links }: { links: LayoutNavLink[] }) {
   const nav = (
     <nav
       aria-label={language === "ru" ? "Нижняя навигация" : "Bottom navigation"}
-      className="app-bottom-nav-wrap md:hidden"
+      className={forceVisible ? "app-bottom-nav-wrap" : "app-bottom-nav-wrap md:hidden"}
     >
       <div
         className="app-bottom-nav-shell"

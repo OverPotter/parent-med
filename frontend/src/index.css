@@ -5163,6 +5163,10 @@ html.ios-lock-horizontal .landing-main {
   padding-top: max(0.75rem, var(--app-safe-top));
 }
 
+[data-ios-shell="true"] .app-safe-top-header {
+  padding-top: max(0.75rem, var(--app-safe-top));
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-shell {
   min-height: 100dvh;
   align-items: flex-start;
@@ -5170,7 +5174,18 @@ html.ios-lock-horizontal .landing-main {
   padding-bottom: max(1rem, var(--app-safe-bottom));
 }
 
+[data-ios-shell="true"] .auth-v3-shell {
+  min-height: 100dvh;
+  align-items: flex-start;
+  padding-top: calc(max(0.75rem, var(--app-safe-top)) + 0.5rem);
+  padding-bottom: max(1rem, var(--app-safe-bottom));
+}
+
 [data-runtime="native"][data-platform="ios"] .app-safe-top-standalone {
+  padding-top: max(0.75rem, var(--app-safe-top));
+}
+
+[data-ios-shell="true"] .app-safe-top-standalone {
   padding-top: max(0.75rem, var(--app-safe-top));
 }
 
@@ -5208,11 +5223,24 @@ html.ios-lock-horizontal .landing-main {
   padding-top: calc(max(0.6rem, var(--app-safe-top)) + 0.25rem);
 }
 
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-shell {
+  padding-top: calc(max(0.6rem, var(--app-safe-top)) + 0.25rem);
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-hero {
   margin-top: 0.85rem;
 }
 
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-hero {
+  margin-top: 0.85rem;
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-title {
+  font-size: clamp(2.25rem, 8vw, 2.8rem);
+  line-height: 0.96;
+}
+
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-title {
   font-size: clamp(2.25rem, 8vw, 2.8rem);
   line-height: 0.96;
 }
@@ -5223,7 +5251,18 @@ html.ios-lock-horizontal .landing-main {
   line-height: 1.5;
 }
 
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-subtitle {
+  margin-top: 0.55rem !important;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-panel {
+  margin-top: 1rem;
+  padding: 0.72rem;
+}
+
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-panel {
   margin-top: 1rem;
   padding: 0.72rem;
 }
@@ -5236,9 +5275,19 @@ html.ios-lock-horizontal .landing-main {
   padding: 0.95rem;
 }
 
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-card,
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-secondary-card {
+  border-radius: 1.5rem;
+  padding: 0.95rem;
+}
+
 [data-runtime="native"][data-platform="ios"]
   .auth-v3-page.auth-v3-page--login
   .auth-v3-toggle-button {
+  min-height: 2.75rem;
+}
+
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-toggle-button {
   min-height: 2.75rem;
 }
 
@@ -5246,7 +5295,16 @@ html.ios-lock-horizontal .landing-main {
   min-height: 3.2rem;
 }
 
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-input {
+  min-height: 3.2rem;
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-submit {
+  min-height: 3.45rem;
+  font-size: 1.05rem;
+}
+
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-submit {
   min-height: 3.45rem;
   font-size: 1.05rem;
 }
@@ -5256,8 +5314,18 @@ html.ios-lock-horizontal .landing-main {
   box-shadow: 0 18px 36px rgba(76, 63, 120, 0.12);
 }
 
+[data-ios-shell="true"] .auth-v3-panel {
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 36px rgba(76, 63, 120, 0.12);
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-card,
 [data-runtime="native"][data-platform="ios"] .auth-v3-secondary-card {
+  box-shadow: 0 8px 20px rgba(91, 77, 138, 0.08);
+}
+
+[data-ios-shell="true"] .auth-v3-card,
+[data-ios-shell="true"] .auth-v3-secondary-card {
   box-shadow: 0 8px 20px rgba(91, 77, 138, 0.08);
 }
 
@@ -5272,6 +5340,15 @@ html.ios-lock-horizontal .landing-main {
   transition-duration: 120ms;
 }
 
+[data-ios-shell="true"] .auth-v3-header-control,
+[data-ios-shell="true"] .auth-v3-language-switch .soft-language-dropdown__trigger,
+[data-ios-shell="true"] .auth-v3-toggle-button,
+[data-ios-shell="true"] .auth-v3-submit,
+[data-ios-shell="true"] .auth-v3-input,
+[data-ios-shell="true"] .auth-v3-input-toggle {
+  transition-duration: 120ms;
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-input,
 [data-runtime="native"][data-platform="ios"] .auth-v3-input-toggle,
 [data-runtime="native"][data-platform="ios"] .auth-v3-toggle-button,
@@ -5281,7 +5358,21 @@ html.ios-lock-horizontal .landing-main {
   touch-action: manipulation;
 }
 
+[data-ios-shell="true"] .auth-v3-input,
+[data-ios-shell="true"] .auth-v3-input-toggle,
+[data-ios-shell="true"] .auth-v3-toggle-button,
+[data-ios-shell="true"] .auth-v3-submit,
+[data-ios-shell="true"] .auth-v3-header-actions button,
+[data-ios-shell="true"] .auth-v3-header-actions a {
+  touch-action: manipulation;
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+[data-ios-shell="true"] .auth-v3-input {
   -webkit-user-select: text;
   user-select: text;
 }
@@ -5294,11 +5385,27 @@ html.ios-lock-horizontal .landing-main {
   touch-action: manipulation;
 }
 
+[data-ios-shell="true"] a,
+[data-ios-shell="true"] button,
+[data-ios-shell="true"] input,
+[data-ios-shell="true"] select,
+[data-ios-shell="true"] textarea {
+  touch-action: manipulation;
+}
+
 [data-runtime="native"][data-platform="ios"] .soft-panel,
 [data-runtime="native"][data-platform="ios"] .soft-card,
 [data-runtime="native"][data-platform="ios"] .soft-nav-shell,
 [data-runtime="native"][data-platform="ios"] .soft-page-intro,
 [data-runtime="native"][data-platform="ios"] .soft-hero {
+  backdrop-filter: blur(10px);
+}
+
+[data-ios-shell="true"] .soft-panel,
+[data-ios-shell="true"] .soft-card,
+[data-ios-shell="true"] .soft-nav-shell,
+[data-ios-shell="true"] .soft-page-intro,
+[data-ios-shell="true"] .soft-hero {
   backdrop-filter: blur(10px);
 }
 
@@ -5308,13 +5415,127 @@ html.ios-lock-horizontal .landing-main {
   pointer-events: none;
 }
 
+[data-ios-shell="true"][data-keyboard-open="true"] .app-bottom-nav-wrap {
+  transform: translate3d(0, calc(100% + env(safe-area-inset-bottom)), 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
 [data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-main-shell {
+  padding-bottom: 1rem !important;
+}
+
+[data-ios-shell="true"][data-keyboard-open="true"] .app-main-shell {
   padding-bottom: 1rem !important;
 }
 
 [data-runtime="native"] #root {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+}
+
+[data-ios-shell="true"] .app-mobile-header {
+  position: relative;
+  padding: 0.34rem 0 0.42rem;
+}
+
+[data-ios-shell="true"] .app-mobile-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.06) 12%,
+    rgb(255 255 255 / 0.15) 50%,
+    rgb(255 255 255 / 0.06) 88%,
+    transparent 100%
+  );
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.04);
+  pointer-events: none;
+}
+
+[data-ios-shell="true"] .app-mobile-header__logo {
+  height: 3.42rem !important;
+  width: 3.42rem !important;
+  border-radius: 1.5rem !important;
+}
+
+[data-ios-shell="true"] .app-mobile-header__actions {
+  gap: 0.52rem !important;
+}
+
+[data-ios-shell="true"] .app-mobile-header .app-profile-menu__trigger {
+  min-height: 2.92rem !important;
+  height: 2.92rem !important;
+  max-width: 8.6rem;
+  padding: 0.42rem 0.78rem !important;
+  font-size: 0.8rem !important;
+  border-radius: 1.1rem;
+}
+
+[data-ios-shell="true"] .app-mobile-header .app-header-utility-button {
+  min-height: 2.84rem !important;
+  height: 2.84rem !important;
+  min-width: 2.84rem !important;
+  padding: 0 0.72rem !important;
+  font-size: 0.8rem !important;
+  border-radius: 1.1rem;
+}
+
+[data-ios-shell="true"] .app-main-shell {
+  max-width: 42rem;
+  padding-top: 1rem;
+  padding-bottom: calc(max(6.75rem, 6rem + var(--app-safe-bottom))) !important;
+}
+
+[data-ios-shell="true"] .app-bottom-nav-shell {
+  max-width: 42rem;
+}
+
+[data-ios-shell="true"] .app-mobile-section-intro {
+  gap: 0.18rem;
+}
+
+[data-ios-shell="true"] .app-mobile-section-intro__title {
+  font-size: 1.52rem;
+}
+
+[data-ios-shell="true"] .app-mobile-section-intro__hint {
+  max-width: 38ch;
+  font-size: 0.8rem;
+}
+
+[data-ios-shell="true"] .pillbox-segmented-control {
+  width: fit-content;
+  max-width: 100%;
+}
+
+[data-ios-shell="true"][data-theme="light"] .app-mobile-header::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(124 102 181 / 0.12) 12%,
+    rgb(124 102 181 / 0.24) 50%,
+    rgb(124 102 181 / 0.12) 88%,
+    transparent 100%
+  );
+  box-shadow: 0 1px 0 rgb(124 102 181 / 0.08);
+}
+
+[data-ios-shell="true"][data-theme="light"] .app-mobile-header .app-header-utility-button,
+[data-ios-shell="true"][data-theme="light"] .app-mobile-header .app-profile-menu__trigger {
+  border-color: rgb(124 102 181 / 0.16);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.86), rgb(255 255 255 / 0.5) 78%),
+    color-mix(in srgb, var(--color-primary) 3%, white);
+  color: color-mix(in srgb, var(--color-primary) 86%, #564482);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.88),
+    0 8px 18px -18px rgb(124 102 181 / 0.1);
 }
 
 @media (display-mode: standalone) {
@@ -5602,10 +5823,60 @@ html.ios-lock-horizontal .landing-main {
   text-overflow: ellipsis;
 }
 
+.soft-page-intro--mobile-like {
+  position: relative;
+}
+
+.soft-page-intro--mobile-like::after {
+  content: "";
+  position: absolute;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.06) 12%,
+    rgb(255 255 255 / 0.15) 50%,
+    rgb(255 255 255 / 0.06) 88%,
+    transparent 100%
+  );
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.04);
+  pointer-events: none;
+}
+
+.soft-page-intro__inner--mobile-like {
+  gap: 1rem;
+}
+
+.app-desktop-mobile-like-intro {
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.08), transparent 70%),
+    color-mix(in srgb, var(--color-surface-strong, var(--color-surface)) 98%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 16px 32px -28px rgb(var(--color-shadow) / 0.22);
+}
+
+.app-desktop-mobile-like-intro .app-subtitle {
+  max-width: 38rem;
+}
+
+.app-desktop-mobile-like-intro .app-btn-primary-md,
+.app-desktop-mobile-like-intro .app-btn-secondary-md {
+  min-height: 2.8rem;
+  border-radius: 1.1rem;
+  padding-inline: 0.95rem;
+  font-size: 0.82rem;
+  letter-spacing: -0.02em;
+}
+
 @media (min-width: 768px) {
   .app-desktop-header {
     position: relative;
-    padding: 0.18rem 0 0.56rem;
+    padding: 0.08rem 0 0.5rem;
   }
 
   .app-desktop-header::after {
@@ -5643,11 +5914,15 @@ html.ios-lock-horizontal .landing-main {
     text-decoration: none;
   }
 
+  .app-desktop-header__brand--compact {
+    justify-content: flex-start;
+  }
+
   .app-desktop-header__logo {
-    height: 3.05rem;
-    width: 3.05rem;
+    height: 3.34rem;
+    width: 3.34rem;
     flex-shrink: 0;
-    border-radius: 1.24rem;
+    border-radius: 1.42rem;
   }
 
   .app-desktop-header__actions {
@@ -5656,7 +5931,7 @@ html.ios-lock-horizontal .landing-main {
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.65rem;
+    gap: 0.52rem;
   }
 
   .app-desktop-nav {
@@ -5664,15 +5939,22 @@ html.ios-lock-horizontal .landing-main {
   }
 
   .app-desktop-nav__grid {
-    gap: 0;
-    padding-top: 0.18rem;
+    gap: 0.12rem;
+    padding: 0.32rem 0.42rem 0.08rem;
+    border-radius: 1.45rem;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.08), transparent 74%),
+      color-mix(in srgb, var(--color-surface-strong, var(--color-surface)) 98%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 18px 40px -34px rgb(0 0 0 / 0.42);
   }
 
   .app-desktop-nav__item {
     position: relative;
     min-width: 0;
     border: 0;
-    border-radius: 0;
+    border-radius: 1.1rem;
     background: transparent;
     box-shadow: none;
     color: color-mix(in srgb, var(--color-primary) 74%, var(--color-foreground));
@@ -5731,6 +6013,40 @@ html.ios-lock-horizontal .landing-main {
     box-shadow: none;
   }
 
+  .app-desktop-header .app-header-utility-button,
+  .app-desktop-header .app-profile-menu__trigger {
+    min-height: 2.84rem;
+    height: 2.84rem;
+    border-radius: 1.1rem;
+    border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.12), transparent 76%),
+      color-mix(in srgb, var(--color-surface-strong, var(--color-surface)) 98%, transparent);
+    color: color-mix(in srgb, var(--color-primary-focus) 24%, var(--color-foreground));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+    letter-spacing: -0.015em;
+  }
+
+  .app-desktop-header .app-profile-menu__trigger {
+    max-width: 9.5rem;
+    padding: 0.42rem 0.82rem;
+    font-size: 0.8rem;
+  }
+
+  .app-desktop-header .app-header-utility-button {
+    min-width: 2.84rem;
+    padding: 0 0.76rem;
+    font-size: 0.8rem;
+  }
+
+  .app-desktop-header .app-header-utility-button:hover,
+  .app-desktop-header .app-profile-menu__trigger:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 16%, var(--color-border));
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.14), transparent 76%),
+      color-mix(in srgb, var(--color-primary) 4%, var(--color-surface-strong, var(--color-surface)));
+  }
+
   [data-theme="light"] .app-desktop-header::after {
     background: linear-gradient(
       90deg,
@@ -5745,6 +6061,15 @@ html.ios-lock-horizontal .landing-main {
 
   [data-theme="light"] .app-desktop-nav__item {
     color: color-mix(in srgb, #4f3d7a 78%, var(--color-muted) 22%);
+  }
+
+  [data-theme="light"] .app-desktop-nav__grid {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.86), rgb(255 255 255 / 0.52) 78%),
+      color-mix(in srgb, var(--color-primary) 3%, white);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.88),
+      0 18px 34px -30px rgb(124 102 181 / 0.14);
   }
 
   [data-theme="light"] .app-desktop-nav__item::before {
@@ -5770,6 +6095,19 @@ html.ios-lock-horizontal .landing-main {
   [data-theme="light"] .app-desktop-nav__item--active svg {
     color: color-mix(in srgb, var(--color-primary) 90%, #5d4a90);
     filter: drop-shadow(0 0 0.4rem rgb(124 102 181 / 0.12));
+  }
+
+  [data-theme="light"] .app-desktop-header .app-header-utility-button,
+  [data-theme="light"] .app-desktop-header .app-profile-menu__trigger,
+  [data-theme="light"] .app-desktop-mobile-like-intro {
+    border-color: rgb(124 102 181 / 0.16);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.86), rgb(255 255 255 / 0.5) 78%),
+      color-mix(in srgb, var(--color-primary) 3%, white);
+    color: color-mix(in srgb, var(--color-primary) 86%, #564482);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.88),
+      0 8px 18px -18px rgb(124 102 181 / 0.1);
   }
 
   [data-theme="dark"] .app-desktop-nav__item {

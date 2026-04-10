@@ -680,15 +680,6 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
       value: String(summary.episodeCount),
     },
     {
-      label: language === "ru" ? "Последний эпизод" : "Last episode",
-      value:
-        summary.daysSinceLastEpisode !== null
-          ? formatDaysAgo(summary.daysSinceLastEpisode, language)
-          : language === "ru"
-            ? "Нет данных"
-            : "No data",
-    },
-    {
       label: language === "ru" ? "Без болезни" : "Without illness",
       value:
         summary.daysSinceLastEpisode !== null
@@ -726,14 +717,6 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
       label: language === "ru" ? "Самый долгий эпизод" : "Longest episode",
       value: formatDurationValue(summary.longestDurationDays, language),
     },
-    {
-      label: language === "ru" ? "Эпизодов с 38+" : "Episodes with 38+",
-      value: String(summary.episodesWithTemperature38Plus),
-    },
-    {
-      label: language === "ru" ? "Эпизодов с 39+" : "Episodes with 39+",
-      value: String(summary.episodesWithTemperature39Plus),
-    },
   ];
   const behaviorCards = [
     {
@@ -741,18 +724,26 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
       value: String(summary.episodesWithAdministrations),
     },
     {
-      label: language === "ru" ? "Только наблюдение" : "Observation only",
-      value: String(summary.observationOnlyEpisodes),
-    },
-    {
       label: language === "ru" ? "С напоминаниями" : "With reminders",
       value: String(summary.guidedEpisodes),
     },
-    {
-      label: language === "ru" ? "Всего замеров" : "Total readings",
-      value: String(summary.totalTemperatureEntries),
-    },
   ];
+  const overallInsight =
+    summary.daysSinceLastEpisode !== null && summary.daysSinceLastEpisode >= 60
+      ? language === "ru"
+        ? "Сейчас спокойно: новых эпизодов давно не было."
+        : "Things look calm right now: there have been no recent episodes."
+      : summary.averageDurationDays >= 6
+        ? language === "ru"
+          ? "Эпизоды тянутся дольше обычного. Важно следить за длительностью и повторяемостью."
+          : "Episodes are lasting longer than usual. Duration and recurrence deserve attention."
+        : summary.episodeCount >= 3 && selectedPeriod !== "all"
+          ? language === "ru"
+            ? "За выбранный период эпизодов уже заметно много."
+            : "There have already been quite a few episodes in this period."
+          : language === "ru"
+            ? "Сводка выглядит ровно: видно частоту, длительность и общую динамику."
+            : "The summary looks balanced: frequency, duration and overall trend are clear.";
 
   return (
     <div className="space-y-4">
@@ -767,6 +758,7 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
                 ? "Как часто ребёнок болел и как это менялось со временем."
                 : "How often the child got sick and how it changed over time."}
             </p>
+            <p className="mt-3 text-sm font-medium text-foreground">{overallInsight}</p>
           </div>
           <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs font-medium">
             {summary.totalClosedEpisodes}{" "}
@@ -843,7 +835,7 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
               : "How short or long the episodes were."
           }
         />
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2">
           {severityCards.map((item) => (
             <AnalyticsCard key={item.label} label={item.label} value={item.value} tone="accent" />
           ))}
@@ -878,8 +870,8 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
           </h4>
           <p className="mt-1 text-sm leading-6 text-muted">
             {language === "ru"
-              ? "Лекарства, напоминания и замеры за этот период."
-              : "Medication, reminders and readings in this period."}
+              ? "Лекарства и напоминания за этот период."
+              : "Medication and reminders in this period."}
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {behaviorCards.map((item) => (
@@ -1015,28 +1007,6 @@ function getHistoryTimelineMeta(
 function formatDurationValue(days: number, language: "ru" | "en") {
   const normalized = Number.isInteger(days) ? String(days) : days.toFixed(1).replace(".0", "");
   return `${normalized} ${language === "ru" ? "дн." : "days"}`;
-}
-
-function formatDaysAgo(days: number, language: "ru" | "en") {
-  if (language === "en") {
-    if (days === 0) {
-      return "Today";
-    }
-    if (days === 1) {
-      return "1 day ago";
-    }
-    return `${days} days ago`;
-  }
-  if (days === 0) {
-    return "Сегодня";
-  }
-  if (days === 1) {
-    return "1 день назад";
-  }
-  if (days >= 2 && days <= 4) {
-    return `${days} дня назад`;
-  }
-  return `${days} дней назад`;
 }
 
 function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) {

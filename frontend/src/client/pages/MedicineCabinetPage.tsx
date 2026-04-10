@@ -16,6 +16,7 @@ import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { trackHouseholdMedicineAdded } from "@shared/analytics";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import type { AppLanguage } from "@shared/i18n";
@@ -267,6 +268,7 @@ function getLocalizedMedicineForm(value: string, language: AppLanguage): string 
 
 export function MedicineCabinetPage() {
   const { language } = useI18n();
+  const isIosShell = useIsIosShell();
   const queryClient = useQueryClient();
   const [view, setView] = useState<"cabinet" | "add">("cabinet");
   const [cabinetSearch, setCabinetSearch] = useState("");
@@ -310,14 +312,41 @@ export function MedicineCabinetPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <PageIntro
-        title={tCabinet(language, "title")}
-        subtitle={tCabinet(language, "subtitle")}
-        compactOnMobile
-        hideOnMobile
-      />
+      {!isIosShell ? (
+        <PageIntro
+          title={tCabinet(language, "title")}
+          subtitle={tCabinet(language, "subtitle")}
+          compactOnMobile
+          hideOnMobile
+          mobileLikeDesktop
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setView("add")}
+                className={view === "add" ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
+              >
+                {tCabinet(language, "addTab")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setView("cabinet");
+                  setCabinetSearch("");
+                }}
+                className={
+                  view === "cabinet" ? cabinetActionPrimaryClass : cabinetActionSecondaryClass
+                }
+              >
+                {tCabinet(language, "cabinetTab")}
+              </button>
+            </div>
+          }
+          className="app-desktop-mobile-like-intro app-desktop-mobile-like-intro--cabinet [&_.app-title]:text-[1.78rem] [&_.app-title]:tracking-[-0.045em] sm:[&_.app-title]:text-[2rem] [&_.app-subtitle]:text-[0.94rem] sm:[&_.app-subtitle]:text-[0.98rem]"
+        />
+      ) : null}
 
-      <div className="space-y-2.5 sm:hidden">
+      <div className={isIosShell ? "space-y-2.5" : "space-y-2.5 sm:hidden"}>
         <div className="app-mobile-section-intro">
           <h1 className="app-mobile-section-intro__title">{tCabinet(language, "title")}</h1>
           <p className="app-mobile-section-intro__hint app-mobile-section-intro__hint--single-line">
@@ -343,26 +372,6 @@ export function MedicineCabinetPage() {
             {tCabinet(language, "cabinetTab")}
           </button>
         </div>
-      </div>
-
-      <div className="hidden flex-wrap items-center gap-2 sm:flex">
-        <button
-          type="button"
-          onClick={() => setView("add")}
-          className={view === "add" ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
-        >
-          {tCabinet(language, "addTab")}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setView("cabinet");
-            setCabinetSearch("");
-          }}
-          className={view === "cabinet" ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
-        >
-          {tCabinet(language, "cabinetTab")}
-        </button>
       </div>
 
       {view === "add" ? (
