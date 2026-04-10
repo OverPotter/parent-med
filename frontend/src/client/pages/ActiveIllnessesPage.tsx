@@ -47,6 +47,7 @@ export function ActiveIllnessesPage() {
   const { language, t } = useI18n();
   const copy = getChildrenCopy(language).activeIllnesses;
   const common = getChildrenCopy(language).common;
+  const pageTitle = language === "ru" ? "Журнал" : "Health";
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const now = useNow();
   const currentTime = new Date(now);
@@ -107,7 +108,7 @@ export function ActiveIllnessesPage() {
   if (!currentFamilyId) {
     return (
       <Surface className="p-5">
-        <h1 className="app-title text-[1.9rem] sm:text-[2.2rem]">{copy.title}</h1>
+        <h1 className="app-title text-[1.9rem] sm:text-[2.2rem]">{pageTitle}</h1>
         <p className="mt-2 text-muted">{common.familyRequired}</p>
       </Surface>
     );
@@ -115,12 +116,26 @@ export function ActiveIllnessesPage() {
 
   return (
     <div className="space-y-7">
-      <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
+      <PageIntro title={pageTitle} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
+
+      <div className="app-mobile-section-intro sm:hidden">
+        <h1 className="app-mobile-section-intro__title">{pageTitle}</h1>
+        <p className="app-mobile-section-intro__hint">{copy.mobileHint}</p>
+      </div>
 
       {(isLoading || isActiveEpisodesLoading) && <p className="text-muted">{common.loading}</p>}
 
       {!isLoading && !isActiveEpisodesLoading && activeChildren.length === 0 && (
-        <EmptyState>{copy.empty}</EmptyState>
+        <EmptyState>
+          <div className="space-y-2">
+            <p>{copy.empty}</p>
+            <p>
+              {language === "ru"
+                ? "Откройте раздел «Дети», чтобы начать новое наблюдение."
+                : "Open the Children section to start a new tracking session."}
+            </p>
+          </div>
+        </EmptyState>
       )}
 
       {!isLoading && !isActiveEpisodesLoading && activeChildren.length > 0 && (

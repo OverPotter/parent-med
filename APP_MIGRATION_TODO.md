@@ -57,7 +57,7 @@
 - [ ] Создать app record и заполнить метаданные.
 - [ ] Заполнить App Privacy (data collection/use).
 - [ ] Установить age rating.
-- [ ] Загрузить сборку через Xcode / Transporter.
+- [ ] Загрузить сборку через Xcode / Transporter
 - [ ] Подготовить App Review Notes (как войти, как проверить ключевые функции).
 - [ ] Отправить в review.
 

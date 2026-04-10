@@ -83,7 +83,16 @@ export function IllnessHistoryPage() {
       {(isLoading || isEpisodesLoading) && <p className="text-muted">{common.loading}</p>}
 
       {!isLoading && !isEpisodesLoading && childHistory.length === 0 && (
-        <EmptyState>{copy.empty}</EmptyState>
+        <EmptyState>
+          <div className="space-y-2">
+            <p>{copy.empty}</p>
+            <p>
+              {language === "ru"
+                ? "Завершённые наблюдения появятся здесь после закрытия эпизода."
+                : "Completed tracking sessions will appear here after an episode is closed."}
+            </p>
+          </div>
+        </EmptyState>
       )}
 
       {!isLoading && !isEpisodesLoading && childHistory.length > 0 && (

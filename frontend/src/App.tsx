@@ -652,6 +652,124 @@ function IOSLandingGestureGuard() {
   return null;
 }
 
+function GlobalTapGuard() {
+  useEffect(() => {
+    const isMobile =
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.innerWidth < 1024 ||
+      (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios");
+    if (!isMobile) {
+      return;
+    }
+
+    const lastTapByElement = new WeakMap<HTMLElement, number>();
+    const TAP_BLOCK_MS = 320;
+
+    const findActionElement = (target: EventTarget | null): HTMLElement | null => {
+      if (!(target instanceof HTMLElement)) {
+        return null;
+      }
+      return target.closest(
+        "button, a[role='button'], [role='menuitem'], [role='menuitemradio'], .soft-button-primary, .soft-button-secondary, .soft-tab, .soft-tab-active, .app-btn-primary-md, .app-btn-danger-md"
+      );
+    };
+
+    const isElementDisabled = (element: HTMLElement) => {
+      if (element instanceof HTMLButtonElement) {
+        return element.disabled;
+      }
+      return element.getAttribute("aria-disabled") === "true";
+    };
+
+    const handleClickCapture = (event: MouseEvent) => {
+      const actionElement = findActionElement(event.target);
+      if (!actionElement || isElementDisabled(actionElement)) {
+        return;
+      }
+      const now = performance.now();
+      const last = lastTapByElement.get(actionElement) ?? 0;
+      if (now - last < TAP_BLOCK_MS) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      lastTapByElement.set(actionElement, now);
+    };
+
+    document.addEventListener("click", handleClickCapture, true);
+    return () => document.removeEventListener("click", handleClickCapture, true);
+  }, []);
+
+  return null;
+}
+
+function MobileInteractionDiagnostics() {
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    const isMobile =
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.innerWidth < 1024 ||
+      (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios");
+    if (!isMobile) {
+      return;
+    }
+
+    let observer: PerformanceObserver | null = null;
+
+    if (typeof PerformanceObserver !== "undefined") {
+      try {
+        observer = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (entry.duration >= 120) {
+              appLog.warn(`UI long task detected: ${entry.duration.toFixed(0)}ms`);
+            }
+          }
+        });
+        observer.observe({ entryTypes: ["longtask"] });
+      } catch {
+        observer = null;
+      }
+    }
+
+    const findActionElement = (target: EventTarget | null): HTMLElement | null => {
+      if (!(target instanceof HTMLElement)) {
+        return null;
+      }
+      return target.closest(
+        "button, a[role='button'], [role='menuitem'], [role='menuitemradio'], .soft-button-primary, .soft-button-secondary, .soft-tab, .soft-tab-active, .app-btn-primary-md, .app-btn-danger-md"
+      );
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const actionElement = findActionElement(event.target);
+      if (!actionElement) {
+        return;
+      }
+      const startedAt = performance.now();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const delay = performance.now() - startedAt;
+          if (delay >= 140) {
+            const text = actionElement.textContent?.trim()?.slice(0, 60) || "unknown";
+            appLog.warn(`Slow tap reaction: ${delay.toFixed(0)}ms (${text})`);
+          }
+        });
+      });
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+      observer?.disconnect();
+    };
+  }, []);
+
+  return null;
+}
+
 export default function App() {
   const role = useAppStore((s) => s.role);
   const language = useAppStore((s) => s.language);
@@ -696,6 +814,8 @@ export default function App() {
       <ThemeSync />
       <DisplayModeSync />
       <RouteScrollReset />
+      <GlobalTapGuard />
+      <MobileInteractionDiagnostics />
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <IOSSwipeBackSync />

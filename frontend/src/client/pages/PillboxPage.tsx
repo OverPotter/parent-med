@@ -75,7 +75,8 @@ type PillboxDeleteTarget =
   | { kind: "plan" }
   | { kind: "medication"; medicationId: string; medicationName: string };
 
-type PillboxPlanActionTarget = "pause" | "resume" | null;
+type PillboxPlanActionTarget = "pause" | "resume" | "archive" | "restore" | null;
+type PillboxPlanListFilter = "active" | "archive";
 
 const pillboxCopy = {
   ru: {
@@ -92,10 +93,17 @@ const pillboxCopy = {
     eyebrow: "Таблетница",
     hubTitle: "Таблетница",
     hubSubtitle: "Семейные планы приёма: что принимать, когда напомнить и как идёт курс.",
-    createPlan: "+ Создать план",
+    hubMobileHint: "Планы приёма и напоминания для семьи.",
+    hubEmpty:
+      "Планов пока нет. Создайте первый план, чтобы видеть приёмы, напоминания и аналитику.",
+    createPlan: "Создать план",
     analytics: "Аналитика",
+    activeFilter: "Активные",
+    archiveFilter: "Архив",
     analyticsBack: "← К планам",
     editPlan: "Редактировать",
+    archivePlan: "В архив",
+    restorePlan: "Вернуть в активные",
     pausePlan: "Поставить на паузу",
     resumePlan: "Возобновить план",
     save: "Сохранить",
@@ -104,7 +112,7 @@ const pillboxCopy = {
     deletePlan: "Удалить план",
     deleteMedicine: "Удалить лекарство",
     delete: "Удалить",
-    addMedicine: "+ Добавить лекарство",
+    addMedicine: "Добавить лекарство",
     titleLabel: "Название плана",
     titlePlaceholder: "Название плана",
     medsTitle: "Что будем принимать",
@@ -145,7 +153,6 @@ const pillboxCopy = {
     markTaken: "Записать приём",
     taking: "Сохраняем...",
     noDeadline: "Без срока",
-    archiveHint: "Когда курс закончится, план можно будет спокойно убрать в историю.",
     timeMissing: "Время не указано",
     unnamedMedicine: "Лекарство {{index}}",
     amountMissing: "Количество не указано",
@@ -170,6 +177,12 @@ const pillboxCopy = {
       "Напоминания по этому плану временно перестанут приходить всем участникам.",
     confirmResumePlanTitle: "Возобновить план?",
     confirmResumePlanDescription: "Напоминания по этому плану снова начнут приходить участникам.",
+    confirmArchivePlanTitle: "Перенести план в архив?",
+    confirmArchivePlanDescription:
+      "План исчезнет из активного списка, но сохранит историю и останется доступным в аналитике.",
+    confirmRestorePlanTitle: "Вернуть план в активные?",
+    confirmRestorePlanDescription:
+      "План снова появится в рабочем списке и его можно будет продолжить использовать.",
     cancel: "Отмена",
   },
   en: {
@@ -187,10 +200,17 @@ const pillboxCopy = {
     hubTitle: "Pillbox",
     hubSubtitle:
       "Family medication plans: what to take, when to remind and how the course is going.",
-    createPlan: "+ Create plan",
+    hubMobileHint: "Medication plans and reminders for the family.",
+    hubEmpty:
+      "There are no plans yet. Create the first plan to see doses, reminders and analytics.",
+    createPlan: "Create plan",
     analytics: "Analytics",
+    activeFilter: "Active",
+    archiveFilter: "Archive",
     analyticsBack: "← Back to plans",
     editPlan: "Edit plan",
+    archivePlan: "Archive",
+    restorePlan: "Return to active",
     pausePlan: "Pause plan",
     resumePlan: "Resume plan",
     save: "Save",
@@ -199,7 +219,7 @@ const pillboxCopy = {
     deletePlan: "Delete plan",
     deleteMedicine: "Delete medicine",
     delete: "Delete",
-    addMedicine: "+ Add medicine",
+    addMedicine: "Add medicine",
     titleLabel: "Plan name",
     titlePlaceholder: "Plan name",
     medsTitle: "What will be taken",
@@ -240,7 +260,6 @@ const pillboxCopy = {
     markTaken: "Log dose",
     taking: "Saving...",
     noDeadline: "No deadline",
-    archiveHint: "When the course ends, the plan can be moved to history later.",
     timeMissing: "Time not set",
     unnamedMedicine: "Medicine {{index}}",
     amountMissing: "Amount not set",
@@ -267,6 +286,12 @@ const pillboxCopy = {
     confirmResumePlanTitle: "Resume this plan?",
     confirmResumePlanDescription:
       "Reminders for this plan will start coming again for participants.",
+    confirmArchivePlanTitle: "Move this plan to archive?",
+    confirmArchivePlanDescription:
+      "The plan will disappear from the active list, but its history and analytics will stay available.",
+    confirmRestorePlanTitle: "Return this plan to active?",
+    confirmRestorePlanDescription:
+      "The plan will appear in the working list again and can be used further.",
     cancel: "Cancel",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
@@ -291,6 +316,14 @@ const actionCompactSecondaryClass =
   "app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.85rem] shrink-0 items-center justify-center rounded-[18px] px-3.5";
 const actionCompactDangerClass =
   "app-btn-danger-md soft-button-danger inline-flex min-h-[2.85rem] shrink-0 items-center justify-center rounded-[18px] px-3.5";
+const actionFilterClass =
+  "soft-tab inline-flex min-h-[2.25rem] shrink-0 items-center justify-center rounded-full px-3 text-[0.78rem] font-semibold tracking-[-0.02em]";
+const segmentedControlClass =
+  "pillbox-segmented-control inline-grid grid-cols-2 items-center gap-1 rounded-[18px] p-1";
+const segmentedButtonClass =
+  "pillbox-segmented-control__button inline-flex min-h-[2.35rem] items-center justify-center rounded-[14px] px-3.5 text-[0.8rem] font-semibold tracking-[-0.02em]";
+const segmentedButtonActiveClass =
+  "pillbox-segmented-control__button pillbox-segmented-control__button--active inline-flex min-h-[2.35rem] items-center justify-center rounded-[14px] px-3.5 text-[0.8rem] font-semibold tracking-[-0.02em]";
 const flowShellClass =
   "app-section-surface soft-panel w-full rounded-[24px] sm:rounded-[26px] lg:px-6 lg:py-6";
 const flowShellSpacingClass = "space-y-3 sm:space-y-3.5 lg:space-y-4";
@@ -822,6 +855,7 @@ export function PillboxPage() {
   const [editorCoursePreset, setEditorCoursePreset] = useState<CoursePreset>("custom");
   const [deleteTarget, setDeleteTarget] = useState<PillboxDeleteTarget | null>(null);
   const [planActionTarget, setPlanActionTarget] = useState<PillboxPlanActionTarget>(null);
+  const [planActionError, setPlanActionError] = useState<string | null>(null);
   const [pendingNewMedicationId, setPendingNewMedicationId] = useState<string | null>(null);
   const [editorMedicationBaseline, setEditorMedicationBaseline] = useState<MedicationItem | null>(
     null
@@ -839,6 +873,8 @@ export function PillboxPage() {
   const previousScreenRef = useRef(screen);
   const activeMedicationId = searchParams.get("med");
   const selectedPlanId = searchParams.get("plan");
+  const listFilter: PillboxPlanListFilter =
+    searchParams.get("tab") === "archive" ? "archive" : "active";
   const highlightedPlanId = screen === "hub" ? searchParams.get("highlightPlan") : null;
   const isCreating = isEditorScreen && (selectedPlanId === "new" || !selectedPlanId);
 
@@ -871,7 +907,7 @@ export function PillboxPage() {
     enabled: Boolean(selectedPlanId && selectedPlanId !== "new"),
   });
 
-  const groups = useMemo(() => {
+  const allGroups = useMemo(() => {
     const mapped = planSummaries.map((summary) => toGroupSummary(summary, language));
     if (!highlightedPlanId) {
       return mapped;
@@ -882,8 +918,15 @@ export function PillboxPage() {
       return leftRank - rightRank;
     });
   }, [highlightedPlanId, language, planSummaries]);
+  const visibleGroups = useMemo(
+    () =>
+      allGroups.filter((group) =>
+        listFilter === "archive" ? group.status === "archived" : group.status !== "archived"
+      ),
+    [allGroups, listFilter]
+  );
   const selectedPlanIdForAnalytics =
-    selectedPlanId && groups.some((item) => item.id === selectedPlanId) ? selectedPlanId : null;
+    selectedPlanId && allGroups.some((item) => item.id === selectedPlanId) ? selectedPlanId : null;
 
   const createPlanMutation = useMutation({
     mutationFn: createPillboxPlan,
@@ -935,6 +978,8 @@ export function PillboxPage() {
     mutationFn: ({ planId, payload }: { planId: string; payload: PillboxPlanWrite }) =>
       updatePillboxPlan(planId, payload),
     onSuccess: async (plan) => {
+      setPlanActionError(null);
+      setPlanActionTarget(null);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
         queryClient.invalidateQueries({ queryKey: ["pillbox-plan", plan.id] }),
@@ -942,13 +987,56 @@ export function PillboxPage() {
         queryClient.refetchQueries({ queryKey: ["pillbox-plan", plan.id] }),
       ]);
     },
+    onError: (error) => {
+      if (isAxiosError(error)) {
+        const detail =
+          typeof error.response?.data === "object" && error.response?.data
+            ? (error.response.data as { detail?: string }).detail
+            : null;
+        setPlanActionError(
+          detail ||
+            (language === "ru"
+              ? "Не удалось обновить статус плана. Попробуйте ещё раз."
+              : "Could not update the plan status. Please try again.")
+        );
+        return;
+      }
+      setPlanActionError(
+        language === "ru"
+          ? "Не удалось обновить статус плана. Попробуйте ещё раз."
+          : "Could not update the plan status. Please try again."
+      );
+    },
   });
 
   const deletePlanMutation = useMutation({
     mutationFn: deletePillboxPlan,
     onSuccess: async () => {
+      setPlanActionError(null);
+      setDeleteTarget(null);
+      setPlanActionTarget(null);
       await queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
       goToHub();
+    },
+    onError: (error) => {
+      if (isAxiosError(error)) {
+        const detail =
+          typeof error.response?.data === "object" && error.response?.data
+            ? (error.response.data as { detail?: string }).detail
+            : null;
+        setPlanActionError(
+          detail ||
+            (language === "ru"
+              ? "Не удалось удалить план. Попробуйте ещё раз."
+              : "Could not delete the plan. Please try again.")
+        );
+        return;
+      }
+      setPlanActionError(
+        language === "ru"
+          ? "Не удалось удалить план. Попробуйте ещё раз."
+          : "Could not delete the plan. Please try again."
+      );
     },
   });
 
@@ -1095,7 +1183,9 @@ export function PillboxPage() {
 
   const openDetails = (group: PillboxGroup) => {
     setDraft(null);
-    navigate(`/pillbox?mode=details&plan=${group.id}`);
+    navigate(
+      `/pillbox?mode=details&plan=${group.id}${listFilter === "archive" ? "&tab=archive" : ""}`
+    );
   };
 
   const discardUnsavedNewMedication = () => {
@@ -1127,7 +1217,7 @@ export function PillboxPage() {
     setSaveAttempted(false);
     setSavePlanError(null);
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-    navigate("/pillbox");
+    navigate(listFilter === "archive" ? "/pillbox?tab=archive" : "/pillbox");
   };
 
   const goToSetup = () => {
@@ -1258,10 +1348,14 @@ export function PillboxPage() {
   };
 
   const requestDeleteMedication = (medicationId: string, medicationName: string) => {
+    setPlanActionError(null);
+    setPlanActionTarget(null);
     setDeleteTarget({ kind: "medication", medicationId, medicationName });
   };
 
   const requestDeletePlan = () => {
+    setPlanActionError(null);
+    setPlanActionTarget(null);
     setDeleteTarget({ kind: "plan" });
   };
 
@@ -1270,7 +1364,6 @@ export function PillboxPage() {
 
     if (deleteTarget.kind === "plan") {
       deleteGroup();
-      setDeleteTarget(null);
       return;
     }
 
@@ -1293,7 +1386,18 @@ export function PillboxPage() {
     if (!selectedPlan || togglePlanStatusMutation.isPending) {
       return;
     }
+    setPlanActionError(null);
+    setDeleteTarget(null);
     setPlanActionTarget(selectedPlan.status === "active" ? "pause" : "resume");
+  };
+
+  const requestArchiveSelectedPlan = () => {
+    if (!selectedPlan || togglePlanStatusMutation.isPending) {
+      return;
+    }
+    setPlanActionError(null);
+    setDeleteTarget(null);
+    setPlanActionTarget(selectedPlan.status === "archived" ? "restore" : "archive");
   };
 
   const confirmPlanAction = () => {
@@ -1306,27 +1410,54 @@ export function PillboxPage() {
       return;
     }
 
-    const nextStatus = planActionTarget === "pause" ? "paused" : "active";
+    const nextStatus =
+      planActionTarget === "pause"
+        ? "paused"
+        : planActionTarget === "resume" || planActionTarget === "restore"
+          ? "active"
+          : "archived";
     togglePlanStatusMutation.mutate({
       planId: selectedPlanId,
       payload: toPlanWriteFromPlan(selectedPlan, nextStatus),
     });
-    setPlanActionTarget(null);
   };
 
-  const openAnalytics = () => {
-    const targetPlanId = selectedPlanIdForAnalytics ?? groups[0]?.id ?? null;
-    navigate(`/pillbox?mode=analytics${targetPlanId ? `&plan=${targetPlanId}` : ""}`);
+  const setListFilter = (nextFilter: PillboxPlanListFilter) => {
+    if (screen !== "hub") {
+      return;
+    }
+    navigate(nextFilter === "archive" ? "/pillbox?tab=archive" : "/pillbox");
+  };
+
+  const openAnalytics = (
+    targetPlanId?: string | null,
+    targetFilter: PillboxPlanListFilter = listFilter
+  ) => {
+    const resolvedPlanId =
+      targetPlanId ??
+      selectedPlanIdForAnalytics ??
+      (targetFilter === "archive"
+        ? allGroups.find((group) => group.status === "archived")?.id
+        : allGroups.find((group) => group.status !== "archived")?.id) ??
+      null;
+    navigate(
+      `/pillbox?mode=analytics${resolvedPlanId ? `&plan=${resolvedPlanId}` : ""}${targetFilter === "archive" ? "&tab=archive" : ""}`
+    );
   };
 
   if (screen === "analytics") {
     return (
       <PillboxAnalyticsScreen
         language={language}
-        groups={groups}
+        groups={allGroups}
         selectedPlanId={selectedPlanIdForAnalytics}
+        initialFilter={listFilter}
         onBack={goToHub}
-        onSelectPlan={(planId) => navigate(`/pillbox?mode=analytics&plan=${planId}`)}
+        onSelectPlan={(planId, filter) =>
+          navigate(
+            `/pillbox?mode=analytics&plan=${planId}${filter === "archive" ? "&tab=archive" : ""}`
+          )
+        }
       />
     );
   }
@@ -1341,7 +1472,11 @@ export function PillboxPage() {
           hideOnMobile
           action={
             <div className="flex items-center gap-2">
-              <button type="button" onClick={openAnalytics} className={actionSecondaryClass}>
+              <button
+                type="button"
+                onClick={() => openAnalytics(undefined, listFilter)}
+                className={actionSecondaryClass}
+              >
                 {tPillbox(language, "analytics")}
               </button>
               <button type="button" disabled className={actionPrimaryClass}>
@@ -1351,16 +1486,15 @@ export function PillboxPage() {
           }
           className="[&_.app-title]:text-[1.72rem] [&_.app-title]:tracking-[-0.05em] sm:[&_.app-title]:text-[2.1rem] [&_.app-subtitle]:text-[0.93rem] sm:[&_.app-subtitle]:text-[0.98rem]"
         />
-        <div className="flex items-center justify-between gap-3 sm:hidden">
-          <div className="min-w-0">
-            <h1 className="app-title text-[1.52rem] tracking-[-0.045em]">
-              {tPillbox(language, "hubTitle")}
-            </h1>
+        <div className="space-y-2.5 sm:hidden">
+          <div className="app-mobile-section-intro">
+            <h1 className="app-mobile-section-intro__title">{tPillbox(language, "hubTitle")}</h1>
+            <p className="app-mobile-section-intro__hint">{tPillbox(language, "hubMobileHint")}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={openAnalytics}
+              onClick={() => openAnalytics(undefined, listFilter)}
               className="app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]"
             >
               {tPillbox(language, "analytics")}
@@ -1371,6 +1505,28 @@ export function PillboxPage() {
               className="soft-button-primary inline-flex min-h-[2.8rem] shrink-0 items-center justify-center rounded-[18px] px-3.5 text-[0.82rem] font-semibold tracking-[-0.025em] opacity-70"
             >
               {tPillbox(language, "createPlan")}
+            </button>
+          </div>
+          <div className={segmentedControlClass} aria-label={tPillbox(language, "hubTitle")}>
+            <button
+              type="button"
+              onClick={() => setListFilter("active")}
+              className={
+                listFilter === "active" ? segmentedButtonActiveClass : segmentedButtonClass
+              }
+              aria-pressed={listFilter === "active"}
+            >
+              {tPillbox(language, "activeFilter")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setListFilter("archive")}
+              className={
+                listFilter === "archive" ? segmentedButtonActiveClass : segmentedButtonClass
+              }
+              aria-pressed={listFilter === "archive"}
+            >
+              {tPillbox(language, "archiveFilter")}
             </button>
           </div>
         </div>
@@ -1704,23 +1860,23 @@ export function PillboxPage() {
               ? tPillbox(language, "confirmDeletePlanTitle")
               : tPillbox(language, "confirmDeleteMedicineTitle")
           }
-          description={
-            deleteTarget?.kind === "plan"
-              ? tPillbox(language, "confirmDeletePlanDescription")
-              : tPillbox(language, "confirmDeleteMedicineDescription")
-          }
+          description={`${deleteTarget?.kind === "plan" ? tPillbox(language, "confirmDeletePlanDescription") : tPillbox(language, "confirmDeleteMedicineDescription")}${planActionError ? `\n\n${planActionError}` : ""}`}
           confirmLabel={tPillbox(language, "delete")}
           cancelLabel={tPillbox(language, "cancel")}
           confirmTone="danger"
+          isPending={deleteTarget?.kind === "plan" ? deletePlanMutation.isPending : false}
           onConfirm={confirmDelete}
-          onCancel={() => setDeleteTarget(null)}
+          onCancel={() => {
+            setDeleteTarget(null);
+            setPlanActionError(null);
+          }}
         />
       </EditorShell>
     );
   }
 
   if (screen === "details" && selectedPlan && selectedPlanId) {
-    const selectedGroup = groups.find((group) => group.id === selectedPlanId) ?? null;
+    const selectedGroup = allGroups.find((group) => group.id === selectedPlanId) ?? null;
     const selectedGroupOverdue = selectedGroup
       ? isOverdueDose(selectedGroup.nextDoseAt, selectedGroup.status)
       : false;
@@ -1764,31 +1920,33 @@ export function PillboxPage() {
                     {displayPillboxText(selectedPlan.title)}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={toggleSelectedPlanStatus}
-                  disabled={togglePlanStatusMutation.isPending}
-                  className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-                    selectedPlan.status === "active"
-                      ? "border-emerald-500/45 bg-emerald-500/25"
-                      : "border-amber-500/45 bg-amber-500/20"
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
-                  aria-label={
-                    selectedPlan.status === "active"
-                      ? tPillbox(language, "pausePlan")
-                      : tPillbox(language, "resumePlan")
-                  }
-                >
-                  <span
-                    className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
+                {selectedPlan.status !== "archived" ? (
+                  <button
+                    type="button"
+                    onClick={toggleSelectedPlanStatus}
+                    disabled={togglePlanStatusMutation.isPending}
+                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
                       selectedPlan.status === "active"
-                        ? "translate-x-6 text-emerald-600"
-                        : "translate-x-1 text-amber-700"
-                    }`}
+                        ? "border-emerald-500/45 bg-emerald-500/25"
+                        : "border-amber-500/45 bg-amber-500/20"
+                    } disabled:cursor-not-allowed disabled:opacity-60`}
+                    aria-label={
+                      selectedPlan.status === "active"
+                        ? tPillbox(language, "pausePlan")
+                        : tPillbox(language, "resumePlan")
+                    }
                   >
-                    {selectedPlan.status === "active" ? "✓" : "✕"}
-                  </span>
-                </button>
+                    <span
+                      className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
+                        selectedPlan.status === "active"
+                          ? "translate-x-6 text-emerald-600"
+                          : "translate-x-1 text-amber-700"
+                      }`}
+                    >
+                      {selectedPlan.status === "active" ? "✓" : "✕"}
+                    </span>
+                  </button>
+                ) : null}
               </div>
             </div>
             <div className="grid gap-2 border-t border-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] pt-2.5 text-left">
@@ -1883,19 +2041,36 @@ export function PillboxPage() {
           </div>
 
           <div className="border-t border-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] pt-3.5">
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={goToSetup}
-                className={`${actionCompactSecondaryClass} flex-1`}
-              >
-                {tPillbox(language, "editPlan")}
-              </button>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {selectedPlan.status !== "archived" ? (
+                <button type="button" onClick={goToSetup} className={actionCompactSecondaryClass}>
+                  {tPillbox(language, "editPlan")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={requestArchiveSelectedPlan}
+                  disabled={togglePlanStatusMutation.isPending}
+                  className={`${actionCompactSecondaryClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  {tPillbox(language, "restorePlan")}
+                </button>
+              )}
+              {selectedPlan.status !== "archived" ? (
+                <button
+                  type="button"
+                  onClick={requestArchiveSelectedPlan}
+                  disabled={togglePlanStatusMutation.isPending}
+                  className={`${actionFilterClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  {tPillbox(language, "archivePlan")}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={requestDeletePlan}
                 disabled={deletePlanMutation.isPending}
-                className={`${actionCompactDangerClass} flex-1 disabled:cursor-not-allowed disabled:opacity-60`}
+                className={`${actionFilterClass} text-[color:var(--color-danger)] disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {tPillbox(language, "deletePlan")}
               </button>
@@ -1907,23 +2082,30 @@ export function PillboxPage() {
           title={
             planActionTarget === "pause"
               ? tPillbox(language, "confirmPausePlanTitle")
-              : tPillbox(language, "confirmResumePlanTitle")
+              : planActionTarget === "resume"
+                ? tPillbox(language, "confirmResumePlanTitle")
+                : planActionTarget === "archive"
+                  ? tPillbox(language, "confirmArchivePlanTitle")
+                  : tPillbox(language, "confirmRestorePlanTitle")
           }
-          description={
-            planActionTarget === "pause"
-              ? tPillbox(language, "confirmPausePlanDescription")
-              : tPillbox(language, "confirmResumePlanDescription")
-          }
+          description={`${planActionTarget === "pause" ? tPillbox(language, "confirmPausePlanDescription") : planActionTarget === "resume" ? tPillbox(language, "confirmResumePlanDescription") : planActionTarget === "archive" ? tPillbox(language, "confirmArchivePlanDescription") : tPillbox(language, "confirmRestorePlanDescription")}${planActionError ? `\n\n${planActionError}` : ""}`}
           confirmLabel={
             planActionTarget === "pause"
               ? tPillbox(language, "pausePlan")
-              : tPillbox(language, "resumePlan")
+              : planActionTarget === "resume"
+                ? tPillbox(language, "resumePlan")
+                : planActionTarget === "archive"
+                  ? tPillbox(language, "archivePlan")
+                  : tPillbox(language, "restorePlan")
           }
           cancelLabel={tPillbox(language, "cancel")}
           confirmTone="primary"
           isPending={togglePlanStatusMutation.isPending}
           onConfirm={confirmPlanAction}
-          onCancel={() => setPlanActionTarget(null)}
+          onCancel={() => {
+            setPlanActionTarget(null);
+            setPlanActionError(null);
+          }}
         />
         <ConfirmDialog
           isOpen={deleteTarget !== null}
@@ -1932,17 +2114,16 @@ export function PillboxPage() {
               ? tPillbox(language, "confirmDeletePlanTitle")
               : tPillbox(language, "confirmDeleteMedicineTitle")
           }
-          description={
-            deleteTarget?.kind === "plan"
-              ? tPillbox(language, "confirmDeletePlanDescription")
-              : tPillbox(language, "confirmDeleteMedicineDescription")
-          }
+          description={`${deleteTarget?.kind === "plan" ? tPillbox(language, "confirmDeletePlanDescription") : tPillbox(language, "confirmDeleteMedicineDescription")}${planActionError ? `\n\n${planActionError}` : ""}`}
           confirmLabel={tPillbox(language, "delete")}
           cancelLabel={tPillbox(language, "cancel")}
           confirmTone="danger"
           isPending={deletePlanMutation.isPending}
           onConfirm={confirmDelete}
-          onCancel={() => setDeleteTarget(null)}
+          onCancel={() => {
+            setDeleteTarget(null);
+            setPlanActionError(null);
+          }}
         />
       </EditorShell>
     );
@@ -2204,7 +2385,11 @@ export function PillboxPage() {
         hideOnMobile
         action={
           <div className="flex items-center gap-2">
-            <button type="button" onClick={openAnalytics} className={actionSecondaryClass}>
+            <button
+              type="button"
+              onClick={() => openAnalytics(undefined, listFilter)}
+              className={actionSecondaryClass}
+            >
               {tPillbox(language, "analytics")}
             </button>
             <button type="button" onClick={openCreate} className={actionPrimaryClass}>
@@ -2215,16 +2400,15 @@ export function PillboxPage() {
         className="[&_.app-title]:text-[1.72rem] [&_.app-title]:tracking-[-0.05em] sm:[&_.app-title]:text-[2.1rem] [&_.app-subtitle]:text-[0.93rem] sm:[&_.app-subtitle]:text-[0.98rem]"
       />
 
-      <div className="flex items-center justify-between gap-3 sm:hidden">
-        <div className="min-w-0">
-          <h1 className="app-title text-[1.52rem] tracking-[-0.045em]">
-            {tPillbox(language, "hubTitle")}
-          </h1>
+      <div className="space-y-2.5 sm:hidden">
+        <div className="app-mobile-section-intro">
+          <h1 className="app-mobile-section-intro__title">{tPillbox(language, "hubTitle")}</h1>
+          <p className="app-mobile-section-intro__hint">{tPillbox(language, "hubMobileHint")}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={openAnalytics}
+            onClick={() => openAnalytics(undefined, listFilter)}
             className="app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]"
           >
             {tPillbox(language, "analytics")}
@@ -2237,10 +2421,39 @@ export function PillboxPage() {
             {tPillbox(language, "createPlan")}
           </button>
         </div>
+        <div className={segmentedControlClass} aria-label={tPillbox(language, "hubTitle")}>
+          <button
+            type="button"
+            onClick={() => setListFilter("active")}
+            className={listFilter === "active" ? segmentedButtonActiveClass : segmentedButtonClass}
+            aria-pressed={listFilter === "active"}
+          >
+            {tPillbox(language, "activeFilter")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setListFilter("archive")}
+            className={listFilter === "archive" ? segmentedButtonActiveClass : segmentedButtonClass}
+            aria-pressed={listFilter === "archive"}
+          >
+            {tPillbox(language, "archiveFilter")}
+          </button>
+        </div>
       </div>
 
       <ul className="grid gap-3.5">
-        {groups.map((group) => {
+        {visibleGroups.length === 0 ? (
+          <li>
+            <div className="soft-panel-muted rounded-[24px] px-5 py-4 text-sm text-muted">
+              {listFilter === "archive"
+                ? language === "ru"
+                  ? "В архиве пока нет планов."
+                  : "There are no archived plans yet."
+                : tPillbox(language, "hubEmpty")}
+            </div>
+          </li>
+        ) : null}
+        {visibleGroups.map((group) => {
           const canMarkNow = canMarkGroupDose(group);
           const isOverdue = isOverdueDose(group.nextDoseAt, group.status);
           const isLate = isLateDose(group.nextDoseAt, group.status);
@@ -2351,10 +2564,6 @@ export function PillboxPage() {
         })}
       </ul>
 
-      <div className="soft-panel-muted rounded-[22px] px-4 py-3 text-sm text-muted">
-        {tPillbox(language, "archiveHint")}
-      </div>
-
       <ConfirmDialog
         isOpen={deleteTarget !== null}
         title={
@@ -2362,16 +2571,16 @@ export function PillboxPage() {
             ? tPillbox(language, "confirmDeletePlanTitle")
             : tPillbox(language, "confirmDeleteMedicineTitle")
         }
-        description={
-          deleteTarget?.kind === "plan"
-            ? tPillbox(language, "confirmDeletePlanDescription")
-            : tPillbox(language, "confirmDeleteMedicineDescription")
-        }
+        description={`${deleteTarget?.kind === "plan" ? tPillbox(language, "confirmDeletePlanDescription") : tPillbox(language, "confirmDeleteMedicineDescription")}${planActionError ? `\n\n${planActionError}` : ""}`}
         confirmLabel={tPillbox(language, "delete")}
         cancelLabel={tPillbox(language, "cancel")}
         confirmTone="danger"
+        isPending={deleteTarget?.kind === "plan" ? deletePlanMutation.isPending : false}
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => {
+          setDeleteTarget(null);
+          setPlanActionError(null);
+        }}
       />
     </div>
   );
@@ -2381,25 +2590,33 @@ function PillboxAnalyticsScreen({
   language,
   groups,
   selectedPlanId,
+  initialFilter,
   onBack,
   onSelectPlan,
 }: {
   language: AppLanguage;
   groups: PillboxGroup[];
   selectedPlanId: string | null;
+  initialFilter: PillboxPlanListFilter;
   onBack: () => void;
-  onSelectPlan: (planId: string) => void;
+  onSelectPlan: (planId: string, filter: PillboxPlanListFilter) => void;
 }) {
+  const [planFilter, setPlanFilter] = useState<PillboxPlanListFilter>(initialFilter);
   const periodOptions = [
-    { key: "month", label: language === "ru" ? "Месяц" : "Month", short: "1m" },
-    { key: "quarter", label: language === "ru" ? "3 месяца" : "3 months", short: "3m" },
-    { key: "half_year", label: language === "ru" ? "6 месяцев" : "6 months", short: "6m" },
-    { key: "year", label: language === "ru" ? "Год" : "Year", short: "1y" },
+    { key: "month", label: language === "ru" ? "30 дней" : "30 days", short: "30d" },
+    { key: "quarter", label: language === "ru" ? "90 дней" : "90 days", short: "90d" },
+    { key: "half_year", label: language === "ru" ? "180 дней" : "180 days", short: "180d" },
     { key: "all", label: language === "ru" ? "Всё время" : "All time", short: "all" },
   ] as const;
   const [selectedPeriod, setSelectedPeriod] =
     useState<(typeof periodOptions)[number]["key"]>("half_year");
-  const activePlanId = selectedPlanId ?? groups[0]?.id ?? null;
+  const filteredGroups = groups.filter((group) =>
+    planFilter === "archive" ? group.status === "archived" : group.status !== "archived"
+  );
+  const activePlanId =
+    selectedPlanId && filteredGroups.some((group) => group.id === selectedPlanId)
+      ? selectedPlanId
+      : (filteredGroups[0]?.id ?? null);
   const { data: summary, isLoading } = useQuery({
     queryKey: ["pillbox-history-summary", activePlanId, selectedPeriod, language],
     queryFn: () => fetchPillboxHistorySummary(activePlanId!, selectedPeriod, language),
@@ -2416,19 +2633,44 @@ function PillboxAnalyticsScreen({
         </h1>
         <p className="mt-2 text-sm leading-6 text-muted">
           {language === "ru"
-            ? "Сводка по выполнению приёмов и рискам пропусков."
-            : "Summary of dose logging and missed-dose risks."}
+            ? "История выполнения и рисков по выбранному плану."
+            : "History of adherence and missed-dose risks for the selected plan."}
         </p>
         <div className="mt-4">
+          <div
+            className={`${segmentedControlClass} w-full max-w-[16rem]`}
+            aria-label={language === "ru" ? "Фильтр планов" : "Plan filter"}
+          >
+            <button
+              type="button"
+              onClick={() => setPlanFilter("active")}
+              className={
+                planFilter === "active" ? segmentedButtonActiveClass : segmentedButtonClass
+              }
+              aria-pressed={planFilter === "active"}
+            >
+              {tPillbox(language, "activeFilter")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlanFilter("archive")}
+              className={
+                planFilter === "archive" ? segmentedButtonActiveClass : segmentedButtonClass
+              }
+              aria-pressed={planFilter === "archive"}
+            >
+              {tPillbox(language, "archiveFilter")}
+            </button>
+          </div>
           <p className="text-xs tracking-[0.08em] text-muted">
             {language === "ru" ? "План" : "Plan"}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {groups.map((group) => (
+            {filteredGroups.map((group) => (
               <button
                 key={group.id}
                 type="button"
-                onClick={() => onSelectPlan(group.id)}
+                onClick={() => onSelectPlan(group.id, planFilter)}
                 className={[
                   group.id === activePlanId ? "soft-tab-active" : "soft-tab",
                   "min-h-[2.5rem] rounded-full px-3.5 text-sm",
@@ -2461,9 +2703,13 @@ function PillboxAnalyticsScreen({
 
       {!activePlanId ? (
         <div className="soft-empty rounded-[22px] px-4 py-5 text-sm text-muted">
-          {language === "ru"
-            ? "Нет планов для аналитики. Создайте хотя бы один план."
-            : "No plans for analytics yet. Create at least one plan."}
+          {planFilter === "archive"
+            ? language === "ru"
+              ? "В архиве пока нет планов для аналитики."
+              : "There are no archived plans for analytics yet."
+            : language === "ru"
+              ? "Нет планов для аналитики. Создайте хотя бы один план."
+              : "No plans for analytics yet. Create at least one plan."}
         </div>
       ) : isLoading || !summary ? (
         <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
@@ -2554,8 +2800,8 @@ function PillboxAnalyticsContent({
         </h3>
         <p className="mt-1 text-sm leading-6 text-muted">
           {language === "ru"
-            ? "Сколько слотов было отмечено в каждом периоде."
-            : "How many slots were logged in each period."}
+            ? "Сколько приёмов было отмечено в выбранном диапазоне."
+            : "How many doses were logged in the selected range."}
         </p>
         <div className="mt-5 space-y-3">
           {summary.timeline.map((item) => (

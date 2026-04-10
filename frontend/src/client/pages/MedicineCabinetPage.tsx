@@ -32,11 +32,17 @@ const STATUS_CARD_STYLES: Record<string, string> = {
   expired_after_opening: "soft-card-status-danger",
 };
 
+const cabinetActionPrimaryClass =
+  "app-btn-primary-md soft-button-primary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]";
+const cabinetActionSecondaryClass =
+  "app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]";
+
 const cabinetCopy = {
   ru: {
     title: "Аптечка",
     subtitle:
       "Реальные упаковки дома: срок годности, дата вскрытия и можно ли использовать препарат сейчас.",
+    mobileHint: "Домашние лекарства, сроки и статус.",
     addTab: "Добавить препарат",
     cabinetTab: "Наша аптечка",
     loading: "Загрузка…",
@@ -124,6 +130,7 @@ const cabinetCopy = {
     title: "First aid kit",
     subtitle:
       "Real packs at home: expiry dates, opened dates and whether a medicine can be used right now.",
+    mobileHint: "Home medicines, expiry dates and status.",
     addTab: "Add medicine",
     cabinetTab: "Our first aid kit",
     loading: "Loading…",
@@ -310,13 +317,39 @@ export function MedicineCabinetPage() {
         hideOnMobile
       />
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="space-y-2.5 sm:hidden">
+        <div className="app-mobile-section-intro">
+          <h1 className="app-mobile-section-intro__title">{tCabinet(language, "title")}</h1>
+          <p className="app-mobile-section-intro__hint app-mobile-section-intro__hint--single-line">
+            {tCabinet(language, "mobileHint")}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setView("add")}
+            className={view === "add" ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
+          >
+            {tCabinet(language, "addTab")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setView("cabinet");
+              setCabinetSearch("");
+            }}
+            className={view === "cabinet" ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
+          >
+            {tCabinet(language, "cabinetTab")}
+          </button>
+        </div>
+      </div>
+
+      <div className="hidden flex-wrap items-center gap-2 sm:flex">
         <button
           type="button"
           onClick={() => setView("add")}
-          className={`app-tab-md inline-flex w-full items-center justify-center transition-colors ${
-            view === "add" ? "soft-tab-active" : "soft-tab"
-          }`}
+          className={view === "add" ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
         >
           {tCabinet(language, "addTab")}
         </button>
@@ -326,9 +359,7 @@ export function MedicineCabinetPage() {
             setView("cabinet");
             setCabinetSearch("");
           }}
-          className={`app-tab-md inline-flex w-full items-center justify-center transition-colors ${
-            view === "cabinet" ? "soft-tab-active" : "soft-tab"
-          }`}
+          className={view === "cabinet" ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
         >
           {tCabinet(language, "cabinetTab")}
         </button>
@@ -345,9 +376,9 @@ export function MedicineCabinetPage() {
             </p>
           )}
           {!isLoading && !error && medicines.length === 0 && (
-            <p className="soft-panel-muted rounded-[24px] px-5 py-4 text-sm text-muted">
+            <div className="soft-panel-muted rounded-[24px] px-5 py-4 text-sm text-muted">
               {tCabinet(language, "empty")}
-            </p>
+            </div>
           )}
           {medicines.length > 0 && (
             <div className="mt-4 soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5 sm:py-5">

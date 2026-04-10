@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { updateAccountLanguage } from "@shared/api/auth";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -24,7 +24,11 @@ export function LanguageSwitch({
   const accountId = useAppStore((s) => s.accountId);
   const setAccountPreferredLanguage = useAppStore((s) => s.setAccountPreferredLanguage);
   const [isOpen, setIsOpen] = useState(false);
+  const [isPersisting, setIsPersisting] = useState(false);
+  const [isChangingLanguage, startLanguageTransition] = useTransition();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const requestSeqRef = useRef(0);
+  const isBusy = isPersisting || isChangingLanguage;
 
   useEffect(() => {
     if (!isOpen) {
@@ -61,10 +65,12 @@ export function LanguageSwitch({
           triggerClassName,
           isOpen && "soft-language-dropdown__trigger-active"
         )}
+        disabled={isBusy}
         onClick={() => setIsOpen((current) => !current)}
         aria-label={copy.common.languageSwitcherLabel}
         aria-haspopup="menu"
         aria-expanded={isOpen}
+        aria-busy={isBusy}
       >
         <span>{languageLabels[language]}</span>
         <span
@@ -101,15 +107,36 @@ export function LanguageSwitch({
                 "soft-language-dropdown__option",
                 language === option && "soft-language-dropdown__option-active"
               )}
+              disabled={isBusy}
               onClick={async () => {
-                setLanguage(option);
+                if (isBusy) {
+                  return;
+                }
+                if (option === language) {
+                  setIsOpen(false);
+                  return;
+                }
+
+                startLanguageTransition(() => {
+                  setLanguage(option);
+                });
                 setIsOpen(false);
+
                 if (authToken && accountId) {
+                  setIsPersisting(true);
+                  const requestSeq = requestSeqRef.current + 1;
+                  requestSeqRef.current = requestSeq;
                   try {
                     const account = await updateAccountLanguage(option);
-                    setAccountPreferredLanguage(account.preferredLanguage);
+                    if (requestSeq === requestSeqRef.current) {
+                      setAccountPreferredLanguage(account.preferredLanguage);
+                    }
                   } catch {
                     // Keep the local choice even if the server could not persist it yet.
+                  } finally {
+                    if (requestSeq === requestSeqRef.current) {
+                      setIsPersisting(false);
+                    }
                   }
                 }
               }}

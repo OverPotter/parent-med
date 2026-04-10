@@ -15,63 +15,60 @@ export function BottomTabBar({ links }: { links: LayoutNavLink[] }) {
   const nav = (
     <nav
       aria-label={language === "ru" ? "Нижняя навигация" : "Bottom navigation"}
-      className="app-bottom-nav-wrap fixed inset-x-0 bottom-0 z-[90] px-0 pb-0 pt-0 md:hidden"
+      className="app-bottom-nav-wrap md:hidden"
     >
-      <div className="w-full px-0">
-        <div
-          className="app-bottom-nav-shell soft-nav-shell grid gap-1"
-          style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}
-        >
-          {links.map(
-            ({
-              to,
-              label,
-              mobileLabel,
-              activePaths,
-              exactActivePaths,
-              attentionCount,
-              attentionTone,
-            }) => {
-              const exactMatches = exactActivePaths ?? [to];
-              const prefixMatches = activePaths ?? [];
-              const isActive =
-                exactMatches.some((path) => matchPath({ path, end: true }, location.pathname)) ||
-                prefixMatches.some((path) => matchPath({ path, end: false }, location.pathname));
-              const badgeToneClass =
-                attentionTone === "success"
-                  ? "bg-[color:var(--color-success)]"
-                  : attentionTone === "warning"
-                    ? "bg-[color:var(--color-warning)]"
-                    : "bg-[color:var(--color-danger)]";
+      <div
+        className="app-bottom-nav-shell"
+        style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}
+      >
+        {links.map(
+          ({
+            to,
+            label,
+            mobileLabel,
+            activePaths,
+            exactActivePaths,
+            attentionCount,
+            attentionTone,
+          }) => {
+            const exactMatches = exactActivePaths ?? [to];
+            const prefixMatches = activePaths ?? [];
+            const isActive =
+              exactMatches.some((path) => matchPath({ path, end: true }, location.pathname)) ||
+              prefixMatches.some((path) => matchPath({ path, end: false }, location.pathname));
+            const badgeToneClass =
+              attentionTone === "success"
+                ? "app-bottom-nav-badge--success"
+                : attentionTone === "warning"
+                  ? "app-bottom-nav-badge--warning"
+                  : "app-bottom-nav-badge--danger";
 
-              return (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={to === "/"}
-                  className={() =>
-                    [
-                      "app-bottom-nav-link relative flex min-h-[3.55rem] min-w-0 flex-col items-center justify-center rounded-[16px] px-1.5 py-2 text-center text-[10px] font-extrabold leading-[1.05] tracking-[-0.03em] transition-colors",
-                      isActive ? "app-bottom-nav-link--active" : "",
-                    ].join(" ")
-                  }
-                >
-                  <span className="relative mb-1 inline-flex">
-                    <span className="relative z-[1] inline-flex">{renderNavIcon(to)}</span>
-                    {attentionCount && attentionCount > 0 ? (
-                      <span
-                        className={`absolute -right-[0.42rem] -top-[0.42rem] z-0 inline-flex min-h-[1.08rem] min-w-[1.08rem] items-center justify-center rounded-full ${badgeToneClass} px-[0.2rem] text-[9px] font-bold leading-none text-white shadow-sm [clip-path:inset(0_0_2%_2%)]`}
-                      >
-                        {attentionCount > 9 ? "9+" : attentionCount}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="truncate">{mobileLabel ?? label}</span>
-                </NavLink>
-              );
-            }
-          )}
-        </div>
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/"}
+                className={() =>
+                  [
+                    isActive
+                      ? "app-bottom-nav-link app-bottom-nav-link--active"
+                      : "app-bottom-nav-link",
+                  ].join(" ")
+                }
+              >
+                <span className="app-bottom-nav-icon-wrap">
+                  <span className="app-bottom-nav-icon">{renderNavIcon(to, isActive)}</span>
+                  {attentionCount && attentionCount > 0 ? (
+                    <span className={`app-bottom-nav-badge ${badgeToneClass}`}>
+                      {attentionCount > 9 ? "9+" : attentionCount}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="app-bottom-nav-label">{mobileLabel ?? label}</span>
+              </NavLink>
+            );
+          }
+        )}
       </div>
     </nav>
   );

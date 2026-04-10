@@ -10,6 +10,7 @@ export const childrenCopy = {
     childrenPage: {
       title: "Дети",
       subtitle: "Профили детей и быстрый вход в текущее наблюдение.",
+      mobileHint: "Профили детей и быстрый вход в записи.",
       hideForm: "Скрыть форму",
       addChild: "Добавить ребёнка",
       loadError: "Ошибка загрузки",
@@ -104,6 +105,7 @@ export const childrenCopy = {
     activeIllnesses: {
       title: "Активные наблюдения",
       subtitle: "Только текущие наблюдения, где важны ближайшие действия, приёмы и комментарии.",
+      mobileHint: "Текущие записи, приёмы и ближайшие действия.",
       empty: "Сейчас нет активных наблюдений.",
       noReminder: "Нет доступного напоминания.",
       reminderReason: "Отмечено по напоминанию",
@@ -148,6 +150,7 @@ export const childrenCopy = {
     childrenPage: {
       title: "Children",
       subtitle: "Child profiles with quick access to current tracking.",
+      mobileHint: "Child profiles with quick access to records.",
       hideForm: "Hide form",
       addChild: "Add child",
       loadError: "Failed to load",
@@ -242,6 +245,7 @@ export const childrenCopy = {
     activeIllnesses: {
       title: "Active tracking",
       subtitle: "Only current tracking where the next actions, doses and comments matter.",
+      mobileHint: "Current records, doses and next actions.",
       empty: "There is no active tracking right now.",
       noReminder: "No available reminder.",
       reminderReason: "Logged from reminder",

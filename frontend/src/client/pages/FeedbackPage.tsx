@@ -59,7 +59,7 @@ export function FeedbackPage() {
           <label className="block space-y-1.5">
             <span className="sr-only">{copy.feedback.placeholder}</span>
             <textarea
-              className="soft-input min-h-[170px] w-full resize-y rounded-[20px] px-4 py-3 text-[0.94rem] leading-6 sm:min-h-[190px]"
+              className="soft-input min-h-[170px] w-full resize-y rounded-[20px] px-4 py-3 text-base leading-6 sm:min-h-[190px]"
               name="message"
               rows={6}
               maxLength={8000}

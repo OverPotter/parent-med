@@ -67,7 +67,7 @@ function FeedbackIcon() {
     <svg
       viewBox="0 0 24 24"
       aria-hidden="true"
-      className="h-[1.02rem] w-[1.02rem] fill-none stroke-current"
+      className="h-[1.16rem] w-[1.16rem] fill-none stroke-current"
     >
       <path
         d="M5.5 6.5h13a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-7.2l-3.9 3v-3H5.5A1.5 1.5 0 0 1 4 16V8a1.5 1.5 0 0 1 1.5-1.5Z"
@@ -103,7 +103,7 @@ function ProfileMenu({
       return;
     }
 
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
       if (!rootRef.current) {
         return;
       }
@@ -122,13 +122,11 @@ function ProfileMenu({
       }
     };
 
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown);
-    document.addEventListener("keydown", handleEscape);
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleEscape);
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("touchstart", handlePointerDown);
-      document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen]);
 
@@ -247,105 +245,85 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
       <header className="app-safe-top-header relative z-30 min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
         <div className="relative z-30 mx-auto max-w-5xl">
           <div className="md:hidden">
-            <div className="soft-nav-shell app-mobile-header rounded-[30px] px-3.5 py-3.5">
-              <div className="flex flex-col gap-3">
-                <div className="app-mobile-header__row">
-                  <Link
-                    to="/"
-                    className="app-mobile-header__logo-link inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[1.15rem]"
-                    aria-label={copy.common.brandName}
-                  >
-                    <img
-                      src="/pwa-icon.png"
-                      alt=""
-                      className="app-mobile-header__logo h-10 w-10 rounded-[1.15rem]"
-                    />
-                  </Link>
-                  <Link
-                    to="/"
-                    className="app-mobile-header__brand-center inline-flex min-w-0 items-center justify-center"
-                    aria-label={copy.common.brandName}
-                  >
-                    <BrandWordmark className="app-brand-text app-mobile-header__brand-text truncate" />
-                  </Link>
-                  <div className="app-mobile-header__actions flex shrink-0 items-center gap-2">
-                    {isAuthenticated ? (
-                      <>
-                        <Link
-                          to="/feedback"
-                          className="app-header-utility-button inline-flex h-[2.72rem] w-[2.72rem] items-center justify-center p-0"
-                          aria-label={copy.feedback.navShort}
-                          title={copy.feedback.navShort}
+            <div className="app-mobile-header">
+              <div className="app-mobile-header__row">
+                <Link
+                  to="/"
+                  className="app-mobile-header__logo-link inline-flex shrink-0 items-center justify-center"
+                  aria-label={copy.common.brandName}
+                >
+                  <img src="/pwa-icon.png" alt="" className="app-mobile-header__logo" />
+                </Link>
+                <div className="app-mobile-header__actions flex shrink-0 items-center">
+                  {isAuthenticated ? (
+                    <>
+                      <Link
+                        to="/feedback"
+                        className="app-header-utility-button inline-flex items-center justify-center p-0"
+                        aria-label={copy.feedback.navShort}
+                        title={copy.feedback.navShort}
+                      >
+                        <FeedbackIcon />
+                        <span className="sr-only">{copy.feedback.navShort}</span>
+                      </Link>
+                      <ProfileMenu
+                        accountLabel={accountLabel}
+                        servicesLabel={copy.clientLayout.nav.more}
+                        settingsLabel={copy.common.settings}
+                        logoutLabel={copy.common.logoutFromAccount}
+                        menuLabel={copy.common.profileMenuLabel}
+                        onLogout={handleLogout}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <LanguageSwitch className="app-header-language-switch" />
+                      <button
+                        type="button"
+                        className="soft-theme-toggle app-header-theme-toggle"
+                        onClick={handleThemeToggle}
+                        aria-label={themeToggleLabel}
+                        title={themeToggleLabel}
+                      >
+                        <span
+                          className={[
+                            "soft-theme-toggle__icon",
+                            effectiveTheme === "light"
+                              ? "soft-theme-toggle__icon--moon"
+                              : "soft-theme-toggle__icon--sun",
+                            isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          aria-hidden="true"
+                          style={iconStyle}
                         >
-                          <FeedbackIcon />
-                          <span className="sr-only">{copy.feedback.navShort}</span>
-                        </Link>
-                        <ProfileMenu
-                          accountLabel={accountLabel}
-                          servicesLabel={copy.clientLayout.nav.more}
-                          settingsLabel={copy.common.settings}
-                          logoutLabel={copy.common.logoutFromAccount}
-                          menuLabel={copy.common.profileMenuLabel}
-                          onLogout={handleLogout}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <LanguageSwitch className="app-header-language-switch" />
-                        <button
-                          type="button"
-                          className="soft-theme-toggle app-header-theme-toggle"
-                          onClick={handleThemeToggle}
-                          aria-label={themeToggleLabel}
-                          title={themeToggleLabel}
-                        >
-                          <span
-                            className={[
-                              "soft-theme-toggle__icon",
-                              effectiveTheme === "light"
-                                ? "soft-theme-toggle__icon--moon"
-                                : "soft-theme-toggle__icon--sun",
-                              isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
-                            ]
-                              .filter(Boolean)
-                              .join(" ")}
-                            aria-hidden="true"
-                            style={iconStyle}
-                          >
-                            {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
-                          </span>
-                        </button>
-                        <Link to="/auth?mode=login" className="app-header-utility-button">
-                          {copy.common.login}
-                        </Link>
-                      </>
-                    )}
-                  </div>
+                          {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
+                        </span>
+                      </button>
+                      <Link to="/auth?mode=login" className="app-header-utility-button">
+                        {copy.common.login}
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
           <div className="hidden md:block md:py-2">
-            <div className="soft-nav-shell relative z-20 rounded-[32px] px-4 py-3.5">
-              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-5">
+            <div className="app-desktop-header relative z-20">
+              <div className="app-desktop-header__row">
                 <Link
                   to="/"
-                  className="inline-flex items-center"
+                  className="app-desktop-header__brand"
                   aria-label={copy.common.brandName}
                 >
-                  <img src="/pwa-icon.png" alt="" className="h-10 w-10 rounded-[1.15rem]" />
-                </Link>
-
-                <Link
-                  to="/"
-                  className="inline-flex min-w-0 items-center justify-center"
-                  aria-label={copy.common.brandName}
-                >
+                  <img src="/pwa-icon.png" alt="" className="app-desktop-header__logo" />
                   <BrandWordmark className="app-brand-text truncate" />
                 </Link>
 
-                <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                <div className="app-desktop-header__actions">
                   {isAuthenticated ? (
                     <div className="flex min-w-0 items-center gap-2">
                       <Link

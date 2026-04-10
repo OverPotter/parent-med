@@ -130,6 +130,11 @@ export function ChildrenPage() {
         }
       />
 
+      <div className="app-mobile-section-intro sm:hidden">
+        <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
+        <p className="app-mobile-section-intro__hint">{copy.mobileHint}</p>
+      </div>
+
       {isCreateFormOpen && (
         <AddChildForm
           onSubmit={(name, birthDate, details) =>

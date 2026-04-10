@@ -594,7 +594,7 @@ export function SettingsPage() {
         </p>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="soft-card rounded-[24px] px-4 py-4 sm:px-5">
+          <div className="soft-card relative z-20 overflow-visible rounded-[24px] px-4 py-4 sm:px-5">
             <p className="text-xs font-semibold tracking-[0.08em] text-muted">
               {tSettings(language, "interfaceLanguage")}
             </p>
@@ -603,7 +603,7 @@ export function SettingsPage() {
             </div>
           </div>
 
-          <div className="soft-card rounded-[24px] px-4 py-4 sm:px-5">
+          <div className="soft-card relative z-10 rounded-[24px] px-4 py-4 sm:px-5">
             <p className="text-xs font-semibold tracking-[0.08em] text-muted">
               {tSettings(language, "interfaceTheme")}
             </p>

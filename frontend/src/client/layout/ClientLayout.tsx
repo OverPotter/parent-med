@@ -157,10 +157,25 @@ export function ClientLayout() {
     return { count: 0, tone: "danger" as const };
   }, [now, pillboxPlans]);
 
+  const mobileNavLabels =
+    language === "ru"
+      ? {
+          observations: "Журнал",
+          children: "Дети",
+          pillbox: "Таблетница",
+          cabinet: "Аптечка",
+        }
+      : {
+          observations: "Health",
+          children: "Kids",
+          pillbox: "Meds",
+          cabinet: "Cabinet",
+        };
+
   const activeObservationsNavItem = {
     to: "/illnesses/active",
     label: copy.clientLayout.nav.observations,
-    mobileLabel: copy.clientLayout.nav.observations,
+    mobileLabel: mobileNavLabels.observations,
     exactActivePaths: ["/illnesses/active", "/children/:childId/illness"],
     attentionCount: observationsAttention.count > 0 ? observationsAttention.count : undefined,
     attentionTone: observationsAttention.tone,
@@ -168,7 +183,7 @@ export function ClientLayout() {
   const childrenNavItem = {
     to: "/children",
     label: copy.clientLayout.nav.children,
-    mobileLabel: copy.clientLayout.nav.children,
+    mobileLabel: mobileNavLabels.children,
     exactActivePaths: ["/children", "/children/:childId"],
   };
   const baseDesktopNavLinks = [
@@ -177,7 +192,7 @@ export function ClientLayout() {
     {
       to: "/pillbox",
       label: copy.clientLayout.nav.pillbox,
-      mobileLabel: copy.clientLayout.nav.pillbox,
+      mobileLabel: mobileNavLabels.pillbox,
       exactActivePaths: ["/pillbox"],
       attentionCount: pillboxAttention.count > 0 ? pillboxAttention.count : undefined,
       attentionTone: pillboxAttention.tone,
@@ -185,7 +200,7 @@ export function ClientLayout() {
     {
       to: "/medicine-cabinet",
       label: copy.clientLayout.nav.cabinet,
-      mobileLabel: copy.clientLayout.nav.cabinet,
+      mobileLabel: mobileNavLabels.cabinet,
     },
   ];
   const baseMobileNavLinks = [...baseDesktopNavLinks];
