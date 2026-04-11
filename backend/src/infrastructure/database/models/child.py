@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from uuid import uuid4
 
-from sqlalchemy import Date, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,6 +23,7 @@ class ChildModel(Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    baby_mode_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     institution_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     institution_phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     doctor_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -33,6 +34,21 @@ class ChildModel(Base):
     family: Mapped["FamilyModel"] = relationship("FamilyModel", back_populates="children")
     weight_entries: Mapped[list] = relationship(
         "WeightEntryModel",
+        back_populates="child",
+        passive_deletes=True,
+    )
+    height_entries: Mapped[list] = relationship(
+        "HeightEntryModel",
+        back_populates="child",
+        passive_deletes=True,
+    )
+    sleep_sessions: Mapped[list] = relationship(
+        "SleepSessionModel",
+        back_populates="child",
+        passive_deletes=True,
+    )
+    feeding_records: Mapped[list] = relationship(
+        "FeedingRecordModel",
         back_populates="child",
         passive_deletes=True,
     )

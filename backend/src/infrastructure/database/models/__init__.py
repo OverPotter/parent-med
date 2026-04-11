@@ -8,6 +8,8 @@ from src.infrastructure.database.models.child import ChildModel
 from src.infrastructure.database.models.episode_medication_plan import EpisodeMedicationPlanModel
 from src.infrastructure.database.models.family import FamilyModel
 from src.infrastructure.database.models.family_invite import FamilyInviteModel
+from src.infrastructure.database.models.feeding_record import FeedingRecordModel
+from src.infrastructure.database.models.height_entry import HeightEntryModel
 from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
 from src.infrastructure.database.models.household_medicine_notification_delivery import (
     HouseholdMedicineNotificationDeliveryModel,
@@ -23,6 +25,7 @@ from src.infrastructure.database.models.pillbox import (
     PillboxPlanModel,
 )
 from src.infrastructure.database.models.push_subscription import PushSubscriptionModel
+from src.infrastructure.database.models.sleep_session import SleepSessionModel
 from src.infrastructure.database.models.temperature_entry import TemperatureEntryModel
 from src.infrastructure.database.models.weight_entry import WeightEntryModel
 
@@ -33,6 +36,8 @@ __all__ = [
     "FamilyModel",
     "FamilyInviteModel",
     "ChildModel",
+    "FeedingRecordModel",
+    "HeightEntryModel",
     "EpisodeMedicationPlanModel",
     "WeightEntryModel",
     "MedicineCatalogItemModel",
@@ -42,6 +47,7 @@ __all__ = [
     "PillboxDoseLogModel",
     "PillboxNotificationDeliveryModel",
     "PushSubscriptionModel",
+    "SleepSessionModel",
     "HouseholdMedicineModel",
     "HouseholdMedicineNotificationDeliveryModel",
     "IllnessEpisodeModel",

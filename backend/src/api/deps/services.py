@@ -11,6 +11,8 @@ from src.api.deps.repositories import (
     get_episode_medication_plan_repo,
     get_family_invite_repo,
     get_family_repo,
+    get_feeding_record_repo,
+    get_height_entry_repo,
     get_household_medicine_repo,
     get_illness_comment_repo,
     get_illness_episode_repo,
@@ -18,6 +20,7 @@ from src.api.deps.repositories import (
     get_parent_repo,
     get_pillbox_repo,
     get_push_subscription_repo,
+    get_sleep_session_repo,
     get_temperature_entry_repo,
     get_weight_entry_repo,
 )
@@ -31,6 +34,8 @@ from src.application.services.episode_medication_plan_service import (
 )
 from src.application.services.family_invite_service import FamilyInviteService
 from src.application.services.family_service import FamilyService
+from src.application.services.feeding_record_service import FeedingRecordService
+from src.application.services.height_entry_service import HeightEntryService
 from src.application.services.household_medicine_service import HouseholdMedicineService
 from src.application.services.illness_comment_service import IllnessCommentService
 from src.application.services.illness_episode_service import IllnessEpisodeService
@@ -38,6 +43,7 @@ from src.application.services.medicine_catalog_service import MedicineCatalogSer
 from src.application.services.parent_service import ParentService
 from src.application.services.pillbox_service import PillboxService
 from src.application.services.push_notification_service import PushNotificationService
+from src.application.services.sleep_session_service import SleepSessionService
 from src.application.services.temperature_entry_service import TemperatureEntryService
 from src.application.services.weight_entry_service import WeightEntryService
 
@@ -94,6 +100,20 @@ def get_child_service(
     return ChildService(child_repo=child_repo, family_repo=family_repo)
 
 
+def get_feeding_record_service(
+    feeding_repo=Depends(get_feeding_record_repo),
+    child_repo=Depends(get_child_repo),
+) -> FeedingRecordService:
+    return FeedingRecordService(feeding_repo=feeding_repo, child_repo=child_repo)
+
+
+def get_height_entry_service(
+    height_repo=Depends(get_height_entry_repo),
+    child_repo=Depends(get_child_repo),
+) -> HeightEntryService:
+    return HeightEntryService(height_repo=height_repo, child_repo=child_repo)
+
+
 def get_episode_medication_plan_service(
     plan_repo=Depends(get_episode_medication_plan_repo),
     episode_repo=Depends(get_illness_episode_repo),
@@ -139,6 +159,13 @@ def get_weight_entry_service(
     child_repo=Depends(get_child_repo),
 ) -> WeightEntryService:
     return WeightEntryService(weight_repo=weight_repo, child_repo=child_repo)
+
+
+def get_sleep_session_service(
+    sleep_repo=Depends(get_sleep_session_repo),
+    child_repo=Depends(get_child_repo),
+) -> SleepSessionService:
+    return SleepSessionService(sleep_repo=sleep_repo, child_repo=child_repo)
 
 
 def get_medicine_catalog_service(

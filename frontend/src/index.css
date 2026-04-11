@@ -3086,6 +3086,53 @@ p {
     color: color-mix(in srgb, var(--color-danger) 76%, var(--color-foreground));
   }
 
+  .feeding-record-date-field .soft-input {
+    min-height: 3.15rem;
+    padding-inline: 0.95rem;
+    font-size: 0.94rem;
+    border-color: color-mix(in srgb, var(--color-primary) 14%, var(--color-border));
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.2), transparent 42%),
+      color-mix(in srgb, var(--color-surface-soft) 92%, var(--color-primary) 8%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.38),
+      0 10px 22px -20px rgb(var(--color-shadow) / 0.14);
+  }
+
+  .feeding-record-date-field .soft-input > span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  .feeding-record-date-field .soft-input > span:last-child {
+    flex-shrink: 0;
+    border: 1px solid color-mix(in srgb, var(--color-primary) 16%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 10%, white);
+    color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  @media (max-width: 767px) {
+    .feeding-record-date-field .soft-input {
+      min-height: 3rem;
+      gap: 0.65rem;
+      padding-inline: 0.85rem;
+      font-size: 0.9rem;
+      border-radius: 1.45rem;
+    }
+
+    .feeding-record-date-field .soft-input > span:last-child {
+      padding-inline: 0.55rem;
+      padding-block: 0.3rem;
+    }
+  }
+
   .landing-feature-card {
     min-height: 100%;
     border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);

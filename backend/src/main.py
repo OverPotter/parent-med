@@ -16,6 +16,8 @@ from src.api.routers import (
     families,
     family_invites,
     feedback,
+    feeding_records,
+    height_entries,
     household_medicines,
     illness_comments,
     illness_episodes,
@@ -23,6 +25,7 @@ from src.api.routers import (
     parents,
     pillbox_plans,
     push_notifications,
+    sleep_sessions,
     temperature_entries,
     weight_entries,
 )
@@ -62,6 +65,11 @@ def create_app() -> FastAPI:
     app.include_router(parents.router, prefix="/api/v1", dependencies=protected_dependencies)
     app.include_router(children.router, prefix="/api/v1", dependencies=protected_dependencies)
     app.include_router(weight_entries.router, prefix="/api/v1", dependencies=protected_dependencies)
+    app.include_router(sleep_sessions.router, prefix="/api/v1", dependencies=protected_dependencies)
+    app.include_router(
+        feeding_records.router, prefix="/api/v1", dependencies=protected_dependencies
+    )
+    app.include_router(height_entries.router, prefix="/api/v1", dependencies=protected_dependencies)
     app.include_router(
         medicine_catalog.router,
         prefix="/api/v1",

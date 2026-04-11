@@ -41,7 +41,9 @@ async def get_history_summary(
     service: PillboxService = Depends(get_pillbox_service),
 ) -> PillboxHistorySummaryDto:
     """Сводка по выполнению приёмов в таблетнице."""
-    preferred_language = language if language in {"ru", "en"} else current_account.preferred_language
+    preferred_language = (
+        language if language in {"ru", "en"} else current_account.preferred_language
+    )
     return await service.get_plan_history_summary(
         plan_id,
         current_account.family_id,

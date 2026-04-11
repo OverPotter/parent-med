@@ -22,6 +22,7 @@ class SqlChildRepository(ChildRepository):
             family_id=m.family_id,
             name=m.name,
             birth_date=m.birth_date,
+            baby_mode_enabled=m.baby_mode_enabled,
             institution_name=m.institution_name,
             institution_phone=m.institution_phone,
             doctor_name=m.doctor_name,
@@ -36,6 +37,7 @@ class SqlChildRepository(ChildRepository):
             family_id=e.family_id,
             name=e.name,
             birth_date=e.birth_date,
+            baby_mode_enabled=e.baby_mode_enabled,
             institution_name=e.institution_name,
             institution_phone=e.institution_phone,
             doctor_name=e.doctor_name,
@@ -69,6 +71,7 @@ class SqlChildRepository(ChildRepository):
             raise ValueError(f"Child {entity.id} not found")
         row.name = entity.name
         row.birth_date = entity.birth_date
+        row.baby_mode_enabled = entity.baby_mode_enabled
         row.institution_name = entity.institution_name
         row.institution_phone = entity.institution_phone
         row.doctor_name = entity.doctor_name

@@ -2,34 +2,46 @@
  * Дети: создание, редактирование, удаление и переход к истории болезней.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createChild, fetchChildrenByFamilyId } from "@shared/api/children";
+import { fetchChildrenByFamilyId } from "@shared/api/children";
 import {
   fetchActiveIllnessEpisodeByChildId,
   fetchIllnessEpisodesByChildId,
 } from "@shared/api/illnessEpisodes";
+import {
+  createFeedingRecord,
+  fetchActiveFeedingRecordByChildId,
+  startFeedingRecord,
+  stopFeedingRecord,
+} from "@shared/api/feedingRecords";
+import {
+  fetchActiveSleepSessionByChildId,
+  startSleepSession,
+  stopSleepSession,
+} from "@shared/api/sleepSessions";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
-import { DateField } from "@shared/components/DateField";
-import { trackChildCreated } from "@shared/analytics";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsDesktop } from "@shared/hooks/useIsDesktop";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
+import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child, WeightEntry } from "@shared/types/api";
-import { formatDate, getLocalIsoDate } from "@shared/utils/date";
-import { normalizeIsoDateInput } from "@shared/utils/dateInput";
+import { formatDate } from "@shared/utils/date";
+import { FeedingRecordForm } from "@client/components/FeedingRecordForm";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
+import {
+  getCurrentLocalDateInputValue,
+  getCurrentLocalTimeInputValue,
+  toApiDateTime,
+} from "@client/utils/feedingRecordForm";
 
-type ChildProfileDetails = {
-  institutionName?: string | null;
-  institutionPhone?: string | null;
-  doctorName?: string | null;
-  doctorPhone?: string | null;
-  allergies?: string | null;
-  notes?: string | null;
+type FeedingDialogState = {
+  child: Child;
 };
 
 export function ChildrenPage() {
@@ -37,10 +49,9 @@ export function ChildrenPage() {
   const copy = getChildrenCopy(language).childrenPage;
   const common = getChildrenCopy(language).common;
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
-  const [createFormResetKey, setCreateFormResetKey] = useState(0);
+  const isDesktop = useIsDesktop();
+  const [feedingDialog, setFeedingDialog] = useState<FeedingDialogState | null>(null);
   const liveQueryOptions = useLiveQueryOptions(10000);
 
   const {
@@ -81,22 +92,22 @@ export function ChildrenPage() {
     })),
   });
 
-  const createMutation = useMutation({
-    mutationFn: ({
-      name,
-      birthDate,
-      details,
-    }: {
-      name: string;
-      birthDate?: string | null;
-      details?: ChildProfileDetails;
-    }) => createChild(currentFamilyId!, name, birthDate, details),
-    onSuccess: (child) => {
-      queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
-      setCreateFormResetKey((current) => current + 1);
-      setIsCreateFormOpen(false);
-      void trackChildCreated(child.id);
-    },
+  const activeSleepQueries = useQueries({
+    queries: children.map((child) => ({
+      queryKey: ["sleep-session-active", child.id],
+      queryFn: () => fetchActiveSleepSessionByChildId(child.id),
+      enabled: !!child.id && child.babyModeEnabled,
+      ...liveQueryOptions,
+    })),
+  });
+
+  const activeFeedingQueries = useQueries({
+    queries: children.map((child) => ({
+      queryKey: ["feeding-record-active", child.id],
+      queryFn: () => fetchActiveFeedingRecordByChildId(child.id),
+      enabled: !!child.id && child.babyModeEnabled,
+      ...liveQueryOptions,
+    })),
   });
 
   if (!currentFamilyId) {
@@ -119,13 +130,13 @@ export function ChildrenPage() {
         action={
           <button
             type="button"
-            onClick={() => setIsCreateFormOpen((current) => !current)}
+            onClick={() => navigate("/children/new")}
             className={[
               "soft-button-primary app-btn-primary-md w-full sm:w-auto",
               children.length > 0 ? "hidden sm:inline-flex" : "inline-flex",
             ].join(" ")}
           >
-            {isCreateFormOpen ? copy.hideForm : copy.addChild}
+            {copy.addChild}
           </button>
         }
       />
@@ -135,25 +146,14 @@ export function ChildrenPage() {
         <p className="app-mobile-section-intro__hint">{copy.mobileHint}</p>
       </div>
 
-      {isCreateFormOpen && (
-        <AddChildForm
-          onSubmit={(name, birthDate, details) =>
-            createMutation.mutate({ name, birthDate, details })
-          }
-          isPending={createMutation.isPending}
-          resetKey={createFormResetKey}
-          errorMessage={
-            (
-              createMutation.error as {
-                response?: { data?: { detail?: string } };
-              }
-            )?.response?.data?.detail ?? null
-          }
-          onCancel={() => setIsCreateFormOpen(false)}
-          copy={copy}
+      {feedingDialog ? (
+        <FeedingRecordDialog
+          child={feedingDialog.child}
+          copy={copy.childCard}
           language={language}
+          onClose={() => setFeedingDialog(null)}
         />
-      )}
+      ) : null}
 
       {isLoading && <p className="text-muted">{common.loading}</p>}
       {error && (
@@ -161,13 +161,13 @@ export function ChildrenPage() {
           {(error as { message?: string }).message ?? copy.loadError}
         </p>
       )}
-      {!isLoading && !error && children.length === 0 && !isCreateFormOpen && (
+      {!isLoading && !error && children.length === 0 && (
         <EmptyState className="text-foreground">
           <div className="space-y-4">
             <p>{copy.empty}</p>
             <button
               type="button"
-              onClick={() => setIsCreateFormOpen(true)}
+              onClick={() => navigate("/children/new")}
               className="soft-button-primary app-btn-primary-md w-full sm:w-auto"
             >
               {copy.addFirstChild}
@@ -190,6 +190,15 @@ export function ChildrenPage() {
                   activeEpisodeStartedAt={activeEpisode?.startedAt ?? null}
                   episodeCount={episodes.length}
                   latestWeightEntry={latestWeightQueries[index]?.data ?? null}
+                  activeSleep={activeSleepQueries[index]?.data ?? null}
+                  activeFeeding={activeFeedingQueries[index]?.data ?? null}
+                  onAddFeeding={() => {
+                    if (isDesktop) {
+                      setFeedingDialog({ child });
+                      return;
+                    }
+                    navigate(`/children/${child.id}/feeding/new`);
+                  }}
                   onStartEpisode={() => {
                     if (activeEpisode) {
                       navigate("/illnesses/active");
@@ -207,190 +216,26 @@ export function ChildrenPage() {
             })}
           </ul>
 
-          {!isCreateFormOpen && (
-            <Surface className="soft-panel-muted p-4 sm:hidden">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="app-card-title">{copy.addAnotherPromptTitle}</p>
-                  {copy.addAnotherPromptText ? (
-                    <p className="mt-1 text-sm text-muted">{copy.addAnotherPromptText}</p>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsCreateFormOpen(true)}
-                  className="soft-button-secondary app-btn-secondary-md"
-                >
-                  {copy.addButtonShort}
-                </button>
+          <Surface className="soft-panel-muted p-4 sm:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="app-card-title">{copy.addAnotherPromptTitle}</p>
+                {copy.addAnotherPromptText ? (
+                  <p className="mt-1 text-sm text-muted">{copy.addAnotherPromptText}</p>
+                ) : null}
               </div>
-            </Surface>
-          )}
+              <button
+                type="button"
+                onClick={() => navigate("/children/new")}
+                className="soft-button-secondary app-btn-secondary-md"
+              >
+                {copy.addButtonShort}
+              </button>
+            </div>
+          </Surface>
         </>
       )}
     </div>
-  );
-}
-
-function AddChildForm({
-  onSubmit,
-  isPending,
-  resetKey,
-  errorMessage,
-  onCancel,
-  copy,
-  language,
-}: {
-  onSubmit: (name: string, birthDate?: string | null, details?: ChildProfileDetails) => void;
-  isPending: boolean;
-  resetKey: number;
-  errorMessage: string | null;
-  onCancel: () => void;
-  copy: ReturnType<typeof getChildrenCopy>["childrenPage"];
-  language: "ru" | "en";
-}) {
-  const [name, setName] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [institutionName, setInstitutionName] = useState("");
-  const [institutionPhone, setInstitutionPhone] = useState("");
-  const [doctorName, setDoctorName] = useState("");
-  const [doctorPhone, setDoctorPhone] = useState("");
-  const [allergies, setAllergies] = useState("");
-  const [notes, setNotes] = useState("");
-  const [validationError, setValidationError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setName("");
-    setBirthDate("");
-    setInstitutionName("");
-    setInstitutionPhone("");
-    setDoctorName("");
-    setDoctorPhone("");
-    setAllergies("");
-    setNotes("");
-    setValidationError(null);
-  }, [resetKey]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-
-    const normalizedBirthDate = normalizeIsoDateInput(birthDate);
-    if (birthDate && !normalizedBirthDate) {
-      setValidationError(copy.validationBirthDate);
-      return;
-    }
-
-    setValidationError(null);
-    onSubmit(name.trim(), normalizedBirthDate ?? undefined, {
-      institutionName: institutionName.trim() || null,
-      institutionPhone: institutionPhone.trim() || null,
-      doctorName: doctorName.trim() || null,
-      doctorPhone: doctorPhone.trim() || null,
-      allergies: allergies.trim() || null,
-      notes: notes.trim() || null,
-    });
-  };
-
-  return (
-    <Surface className="app-section-surface">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="app-card-title">{copy.formTitle}</h2>
-            <p className="mt-1 text-sm text-muted">{copy.formSubtitle}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="soft-button-secondary app-btn-secondary-md w-full sm:w-auto"
-          >
-            {copy.cancel}
-          </button>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
-          <label className="min-w-0 flex-1">
-            <span className="soft-field-label">{copy.nameLabel}</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setValidationError(null);
-              }}
-              className="soft-input w-full px-4"
-              placeholder={copy.namePlaceholder}
-            />
-          </label>
-          <label className="block">
-            <span className="soft-field-label">{copy.birthDateLabel}</span>
-            <DateField
-              value={birthDate}
-              onChange={(nextValue) => {
-                setBirthDate(nextValue);
-                setValidationError(null);
-              }}
-              language={language}
-              max={getLocalIsoDate()}
-              className="mt-1"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={isPending || !name.trim()}
-            className="soft-button-primary app-btn-primary-md inline-flex w-full disabled:opacity-50 sm:w-auto sm:self-end"
-          >
-            {isPending ? copy.saving : copy.addButtonShort}
-          </button>
-        </div>
-        <details className="soft-panel-muted rounded-[22px] p-4">
-          <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
-            {language === "ru" ? "Медицинские и контактные данные" : "Medical and contact details"}
-          </summary>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <InputField
-              label={copy.institutionNameLabel}
-              value={institutionName}
-              onChange={setInstitutionName}
-              placeholder={copy.institutionNamePlaceholder}
-            />
-            <InputField
-              label={copy.institutionPhoneLabel}
-              value={institutionPhone}
-              onChange={setInstitutionPhone}
-              placeholder={copy.institutionPhonePlaceholder}
-            />
-            <InputField
-              label={copy.doctorNameLabel}
-              value={doctorName}
-              onChange={setDoctorName}
-              placeholder={copy.doctorNamePlaceholder}
-            />
-            <InputField
-              label={copy.doctorPhoneLabel}
-              value={doctorPhone}
-              onChange={setDoctorPhone}
-              placeholder={copy.doctorPhonePlaceholder}
-            />
-            <TextField
-              label={copy.allergiesLabel}
-              value={allergies}
-              onChange={setAllergies}
-              placeholder={copy.allergiesPlaceholder}
-            />
-            <TextField
-              label={copy.notesLabel}
-              value={notes}
-              onChange={setNotes}
-              placeholder={copy.notesPlaceholder}
-            />
-          </div>
-        </details>
-        {(validationError || errorMessage) && (
-          <p className="soft-note-danger">{validationError ?? errorMessage}</p>
-        )}
-      </form>
-    </Surface>
   );
 }
 
@@ -399,6 +244,9 @@ function ChildCard({
   activeEpisodeStartedAt,
   episodeCount,
   latestWeightEntry,
+  activeSleep,
+  activeFeeding,
+  onAddFeeding,
   onStartEpisode,
   isStartingEpisode,
   hasActiveEpisode,
@@ -410,6 +258,9 @@ function ChildCard({
   activeEpisodeStartedAt: string | null;
   episodeCount: number;
   latestWeightEntry: WeightEntry | null;
+  activeSleep: import("@shared/types/api").SleepSession | null;
+  activeFeeding: import("@shared/types/api").FeedingRecord | null;
+  onAddFeeding: () => void;
   onStartEpisode: () => void;
   isStartingEpisode: boolean;
   hasActiveEpisode: boolean;
@@ -421,14 +272,75 @@ function ChildCard({
   const latestWeightLabel = latestWeightEntry
     ? formatWeightValue(latestWeightEntry.valueKg, language)
     : null;
+  const now = useNow(activeSleep || activeFeeding ? 1_000 : 60_000);
+  const queryClient = useQueryClient();
+  const [isStopSleepConfirmOpen, setIsStopSleepConfirmOpen] = useState(false);
+  const [isStopFeedingDialogOpen, setIsStopFeedingDialogOpen] = useState(false);
+  const sleepMutation = useMutation({
+    mutationFn: async () => {
+      if (activeSleep) {
+        return stopSleepSession(activeSleep.id);
+      }
+      return startSleepSession(child.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sleep-session-active", child.id] });
+      setIsStopSleepConfirmOpen(false);
+    },
+  });
+  const activeSleepElapsedLabel = activeSleep
+    ? formatElapsedDuration(activeSleep.startedAt, now, language)
+    : null;
+  const activeSleepStartedLabel = activeSleep ? formatTimeOnly(activeSleep.startedAt, language) : "";
+  const activeSleepCurrentTimeLabel = activeSleep ? formatTimeOnly(now, language) : "";
+  const feedingMutation = useMutation({
+    mutationFn: async () => {
+      if (!activeFeeding) {
+        return null;
+      }
+      return stopFeedingRecord(activeFeeding.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
+      queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
+      setIsStopFeedingDialogOpen(false);
+    },
+  });
+  const activeFeedingStartedAt = activeFeeding?.startedAt ?? activeFeeding?.recordedAt ?? null;
+  const activeFeedingElapsedLabel =
+    activeFeedingStartedAt ? formatElapsedDuration(activeFeedingStartedAt, now, language) : null;
+  const historyLabel =
+    episodeCount > 0 ? t(copy.childCard.historyCount, { count: episodeCount }) : null;
   const primaryMeta = [
     ageLabel,
     latestWeightLabel ? `${copy.childCard.weight} ${latestWeightLabel}` : null,
+    historyLabel,
   ].filter(Boolean) as string[];
-  const historyLabel =
-    episodeCount > 0 ? t(copy.childCard.historyCount, { count: episodeCount }) : null;
   return (
     <li>
+      <ConfirmDialog
+        isOpen={isStopSleepConfirmOpen && !!activeSleep}
+        title={copy.childCard.stopSleepConfirmTitle}
+        description={t(copy.childCard.stopSleepConfirmDescription, {
+          startedAt: activeSleepStartedLabel,
+          currentTime: activeSleepCurrentTimeLabel,
+        })}
+        confirmLabel={
+          sleepMutation.isPending ? copy.childCard.sleepStopping : copy.childCard.stopSleepConfirmAction
+        }
+        isPending={sleepMutation.isPending}
+        onCancel={() => setIsStopSleepConfirmOpen(false)}
+        onConfirm={() => sleepMutation.mutate()}
+      />
+      {activeFeeding && isStopFeedingDialogOpen ? (
+        <FeedingStopDialog
+          feeding={activeFeeding}
+          copy={copy.childCard}
+          isPending={feedingMutation.isPending}
+          onClose={() => setIsStopFeedingDialogOpen(false)}
+          onConfirm={() => feedingMutation.mutate()}
+        />
+      ) : null}
       <RowSurface
         className={`children-card-hero ${hasActiveEpisode ? "children-card-hero--active" : ""}`}
       >
@@ -449,24 +361,67 @@ function ChildCard({
                   </>
                 )}
               </div>
-              {historyLabel ? (
-                <span className="landing-child-pill hidden rounded-full px-3.5 py-1.5 text-sm sm:inline-flex">
-                  {historyLabel}
-                </span>
-              ) : null}
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
               {primaryMeta.map((chip) => (
-                <span key={chip} className="landing-child-pill rounded-full px-3.5 py-1.5 text-sm">
+                <span
+                  key={chip}
+                  className="landing-child-pill shrink-0 rounded-full px-3 py-1.5 text-[0.78rem] sm:px-3.5 sm:text-sm"
+                >
                   {chip}
                 </span>
               ))}
-              {historyLabel ? (
-                <span className="landing-child-pill rounded-full px-3.5 py-1.5 text-sm sm:hidden">
-                  {historyLabel}
-                </span>
-              ) : null}
             </div>
+            {child.babyModeEnabled ? (
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-0 sm:flex sm:flex-wrap sm:items-center">
+                <Link
+                  to={`/children/${child.id}/feeding`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    if (activeFeeding) {
+                      setIsStopFeedingDialogOpen(true);
+                      return;
+                    }
+                    onAddFeeding();
+                  }}
+                  className={[
+                    activeFeeding ? "soft-pill-warning" : "soft-pill",
+                    "inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap",
+                  ].join(" ")}
+                >
+                  {activeFeeding
+                    ? t(copy.childCard.feedingInProgress, {
+                        elapsed: activeFeedingElapsedLabel ?? "00:00",
+                      })
+                    : copy.childCard.addFeeding}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeSleep) {
+                      setIsStopSleepConfirmOpen(true);
+                      return;
+                    }
+                    sleepMutation.mutate();
+                  }}
+                  disabled={sleepMutation.isPending}
+                  className={[
+                    activeSleep ? "soft-pill-warning" : "soft-pill",
+                    "inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap disabled:opacity-60",
+                  ].join(" ")}
+                >
+                  {sleepMutation.isPending
+                    ? activeSleep
+                      ? copy.childCard.sleepStopping
+                      : copy.childCard.sleepStarting
+                    : activeSleep
+                      ? t(copy.childCard.sleepInProgress, {
+                          elapsed: activeSleepElapsedLabel ?? "00:00",
+                        })
+                      : copy.childCard.addSleep}
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <div className="grid w-full gap-2 sm:w-[13.75rem] sm:shrink-0">
@@ -504,56 +459,244 @@ function formatWeightValue(valueKg: number, language: "ru" | "en"): string {
   }).format(valueKg)} ${unit}`;
 }
 
-function InputField({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="soft-field-label">{label}</span>
-      <input
-        type="text"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="soft-input w-full px-4"
-        placeholder={placeholder}
-      />
-    </label>
-  );
-}
-
-function TextField({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="soft-field-label">{label}</span>
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        rows={3}
-        className="soft-input w-full px-4"
-        placeholder={placeholder}
-      />
-    </label>
-  );
-}
-
 function commonLoading(language: "ru" | "en") {
   return language === "ru" ? "Открываем…" : "Opening…";
+}
+
+function FeedingRecordDialog({
+  child,
+  copy,
+  language,
+  onClose,
+}: {
+  child: Child;
+  copy: ReturnType<typeof getChildrenCopy>["childrenPage"]["childCard"];
+  language: "ru" | "en";
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [feedingType, setFeedingType] = useState<"breast" | "formula">("breast");
+  const [breastSide, setBreastSide] = useState<"left" | "right" | "both">("left");
+  const [isExpressed, setIsExpressed] = useState(false);
+  const [formulaVolume, setFormulaVolume] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("");
+  const [recordedDate, setRecordedDate] = useState(() => getCurrentLocalDateInputValue());
+  const [recordedTime, setRecordedTime] = useState(() => getCurrentLocalTimeInputValue());
+  const [note, setNote] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      createFeedingRecord({
+        child_id: child.id,
+        feeding_type: feedingType,
+        breast_side: feedingType === "breast" && !isExpressed ? breastSide : null,
+        is_expressed: feedingType === "breast" ? isExpressed : false,
+        formula_volume_ml:
+          feedingType === "formula" ? Number.parseInt(formulaVolume.trim(), 10) || null : null,
+        duration_minutes:
+          feedingType === "breast" && durationMinutes.trim()
+            ? Number.parseInt(durationMinutes.trim(), 10) || null
+            : null,
+        recorded_at: toApiDateTime(recordedDate, recordedTime),
+        note: note.trim() || null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
+      onClose();
+    },
+  });
+
+  const startMutation = useMutation({
+    mutationFn: () =>
+      startFeedingRecord({
+        child_id: child.id,
+        feeding_type: feedingType,
+        breast_side: feedingType === "breast" && !isExpressed ? breastSide : null,
+        is_expressed: feedingType === "breast" ? isExpressed : false,
+        formula_volume_ml:
+          feedingType === "formula" ? Number.parseInt(formulaVolume.trim(), 10) || null : null,
+        note: note.trim() || null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
+      queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
+      onClose();
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label={copy.feedingCancel}
+        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_45%,transparent)] backdrop-blur-sm"
+        onClick={createMutation.isPending ? undefined : onClose}
+      />
+      <div className="soft-panel relative z-[161] w-full max-w-[28rem] rounded-[30px] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
+        <div className="space-y-2">
+          <span className="soft-pill inline-flex rounded-full px-3 py-1 text-[11px] font-semibold tracking-[0.03em]">
+            {child.name}
+          </span>
+          <h2 className="app-card-title text-[1.02rem] sm:text-[1.12rem]">
+            {copy.feedingDialogTitle}
+          </h2>
+          <p className="text-sm leading-5 text-muted">
+            {copy.feedingTypeLabel}
+          </p>
+        </div>
+        <div className="mt-4 space-y-3.5">
+          <FeedingRecordForm
+            copy={copy}
+            language={language}
+            feedingType={feedingType}
+            breastSide={breastSide}
+            isExpressed={isExpressed}
+            formulaVolume={formulaVolume}
+            durationMinutes={durationMinutes}
+            recordedDate={recordedDate}
+            recordedTime={recordedTime}
+            note={note}
+            validationError={validationError}
+            timeInputMode="native"
+            onFeedingTypeChange={(value) => {
+              setFeedingType(value);
+              if (value === "formula") {
+                setIsExpressed(false);
+              }
+            }}
+            onBreastSideChange={setBreastSide}
+            onExpressedChange={setIsExpressed}
+            onFormulaVolumeChange={(value) => {
+              setFormulaVolume(value);
+              setValidationError(null);
+            }}
+            onDurationMinutesChange={setDurationMinutes}
+            onRecordedDateChange={setRecordedDate}
+            onRecordedTimeChange={setRecordedTime}
+            onNoteChange={setNote}
+            onValidationErrorChange={setValidationError}
+          />
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={createMutation.isPending || startMutation.isPending}
+            className="soft-button-secondary inline-flex min-h-[2.95rem] items-center justify-center px-3 text-center text-[0.86rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
+          >
+            {copy.feedingCancel}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!recordedDate || !recordedTime || !toApiDateTime(recordedDate, recordedTime)) {
+                setValidationError(copy.feedingValidationTime);
+                return;
+              }
+              setValidationError(null);
+              createMutation.mutate();
+            }}
+            disabled={createMutation.isPending || startMutation.isPending}
+            className="soft-button-secondary inline-flex min-h-[2.95rem] items-center justify-center px-3 text-center text-[0.86rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
+          >
+            {createMutation.isPending ? copy.feedingSaving : copy.feedingSave}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setValidationError(null);
+              startMutation.mutate();
+            }}
+            disabled={createMutation.isPending || startMutation.isPending}
+            className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-3 text-center text-[0.86rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
+          >
+            {startMutation.isPending ? copy.feedingStarting : copy.feedingStart}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeedingStopDialog({
+  feeding,
+  copy,
+  isPending,
+  onClose,
+  onConfirm,
+}: {
+  feeding: import("@shared/types/api").FeedingRecord;
+  copy: ReturnType<typeof getChildrenCopy>["childrenPage"]["childCard"];
+  isPending: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const typeLabel =
+    feeding.feedingType === "breast" ? copy.feedingTypeBreast : copy.feedingTypeFormula;
+  return (
+    <div className="fixed inset-0 z-[165] flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label={copy.feedingCancel}
+        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_45%,transparent)] backdrop-blur-sm"
+        onClick={isPending ? undefined : onClose}
+      />
+      <div className="soft-panel relative z-[166] w-full max-w-[25rem] rounded-[28px] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
+        <div className="space-y-2">
+          <h2 className="app-card-title text-[1.02rem] sm:text-[1.12rem]">
+            {copy.stopFeedingConfirmTitle}
+          </h2>
+          <p className="text-sm leading-5 text-muted">{copy.stopFeedingConfirmDescription}</p>
+          <span className="soft-pill inline-flex rounded-full px-3 py-1 text-[11px] font-semibold tracking-[0.03em]">
+            {typeLabel}
+          </span>
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isPending}
+            className="soft-button-secondary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.86rem] disabled:opacity-50"
+          >
+            {copy.feedingCancel}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isPending}
+            className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.86rem] disabled:opacity-50"
+          >
+            {isPending ? copy.feedingSaving : copy.stopFeedingConfirmAction}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatTimeOnly(value: string | number, language: "ru" | "en") {
+  const date = typeof value === "number" ? new Date(value) : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatElapsedDuration(
+  startedAt: string,
+  now: number,
+  _language: "ru" | "en"
+) {
+  const startedAtMs = Date.parse(startedAt);
+  if (Number.isNaN(startedAtMs)) {
+    return "00:00";
+  }
+  const totalSeconds = Math.max(0, Math.floor((now - startedAtMs) / 1_000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }

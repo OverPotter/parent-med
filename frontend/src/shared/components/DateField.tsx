@@ -338,7 +338,7 @@ export function DateField({
               className={[
                 "soft-panel p-4",
                 isMobileViewport
-                  ? "absolute left-1/2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] w-[min(calc(100%-1.5rem),23.5rem)] max-h-[72dvh] -translate-x-1/2 overflow-y-auto rounded-[24px] p-3"
+                  ? "absolute left-1/2 bottom-[max(1rem,calc(env(safe-area-inset-bottom)+0.5rem))] w-[min(calc(100%-1.5rem),22.25rem)] max-h-[78dvh] -translate-x-1/2 overflow-y-auto rounded-[22px] p-2.5"
                   : "fixed overflow-y-auto rounded-[28px]",
               ].join(" ")}
               style={
@@ -353,21 +353,21 @@ export function DateField({
               }
             >
               {isMobileViewport ? (
-                <div className="mb-3 space-y-2">
-                  <span className="mx-auto block h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-border)_74%,transparent)]" />
+                <div className="mb-2.5 space-y-1.5">
+                  <span className="mx-auto block h-1 w-10 rounded-full bg-[color:color-mix(in_srgb,var(--color-border)_74%,transparent)]" />
                   <div className="flex items-center justify-between gap-3">
-                    <p className="app-card-title text-sm">{copy.dateBadge}</p>
+                    <p className="app-card-title text-[0.92rem]">{copy.dateBadge}</p>
                     <button
                       type="button"
                       onClick={() => setIsOpen(false)}
-                      className="soft-button-secondary min-h-0 px-3 py-1.5 text-sm"
+                      className="soft-button-secondary min-h-0 px-2.5 py-1 text-[0.82rem]"
                     >
                       ✕
                     </button>
                   </div>
                 </div>
               ) : null}
-              <div className="mb-3 space-y-2.5">
+              <div className="mb-2.5 space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <button
                     type="button"
@@ -381,7 +381,9 @@ export function DateField({
                   >
                     ←
                   </button>
-                  <p className="app-card-title text-sm">{monthLabel}</p>
+                  <p className={`${isMobileViewport ? "app-card-title text-[0.92rem]" : "app-card-title text-sm"}`}>
+                    {monthLabel}
+                  </p>
                   <button
                     type="button"
                     onClick={() =>
@@ -437,7 +439,9 @@ export function DateField({
                 ) : null}
               </div>
 
-              <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-muted">
+              <div
+                className={`grid grid-cols-7 text-center text-muted ${isMobileViewport ? "gap-0.5 text-[10px]" : "gap-1 text-[11px]"}`}
+              >
                 {copy.weekdays.map((label) => (
                   <div key={label} className="py-0.5">
                     {label}
@@ -445,7 +449,7 @@ export function DateField({
                 ))}
               </div>
 
-              <div className="mt-2 grid grid-cols-7 gap-1">
+              <div className={`mt-2 grid grid-cols-7 ${isMobileViewport ? "gap-0.5" : "gap-1"}`}>
                 {monthDays.map((date) => {
                   const isoValue = toIsoDate(date);
                   const inCurrentMonth = date.getMonth() === viewDate.getMonth();
@@ -463,7 +467,9 @@ export function DateField({
                         setIsOpen(false);
                       }}
                       className={[
-                        "flex h-9 items-center justify-center rounded-2xl text-sm transition-colors",
+                        isMobileViewport
+                          ? "flex h-8 items-center justify-center rounded-[1rem] text-[0.82rem] transition-colors"
+                          : "flex h-9 items-center justify-center rounded-2xl text-sm transition-colors",
                         isSelected
                           ? "soft-tab-active"
                           : inCurrentMonth
@@ -480,7 +486,7 @@ export function DateField({
               </div>
 
               {isMobileViewport ? (
-                <div className="mt-3 grid grid-cols-[minmax(0,1fr)_6.8rem] gap-2">
+                <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_5.9rem] gap-1.5">
                   <label className="relative block">
                     <span className="sr-only">{copy.month}</span>
                     <select
@@ -488,7 +494,7 @@ export function DateField({
                       onChange={(event) =>
                         setViewDate(new Date(viewDate.getFullYear(), Number(event.target.value), 1))
                       }
-                      className="soft-input min-h-[2.7rem] w-full appearance-none pr-8 pl-3 text-sm"
+                      className="soft-input min-h-[2.45rem] w-full appearance-none pr-8 pl-3 text-[0.82rem]"
                     >
                       {copy.months.map((label, index) => (
                         <option key={label} value={index}>
@@ -508,7 +514,7 @@ export function DateField({
                       onChange={(event) =>
                         setViewDate(new Date(Number(event.target.value), viewDate.getMonth(), 1))
                       }
-                      className="soft-input min-h-[2.7rem] w-full appearance-none pr-7 pl-2.5 text-sm"
+                      className="soft-input min-h-[2.45rem] w-full appearance-none pr-7 pl-2.5 text-[0.82rem]"
                     >
                       {yearOptions.map((year) => (
                         <option key={year} value={year}>
@@ -523,7 +529,7 @@ export function DateField({
                 </div>
               ) : null}
 
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className={`mt-2.5 flex flex-wrap gap-1.5 ${isMobileViewport ? "pb-0.5" : ""}`}>
                 <button
                   type="button"
                   onClick={() => {
@@ -534,7 +540,7 @@ export function DateField({
                       setIsOpen(false);
                     }
                   }}
-                  className="soft-button-secondary min-h-0 px-3.5 py-2 text-sm"
+                  className={`${isMobileViewport ? "soft-button-secondary min-h-0 px-3 py-1.5 text-[0.82rem]" : "soft-button-secondary min-h-0 px-3.5 py-2 text-sm"}`}
                 >
                   {copy.today}
                 </button>
@@ -545,7 +551,7 @@ export function DateField({
                       onChange("");
                       setIsOpen(false);
                     }}
-                    className="soft-button-secondary min-h-0 px-3.5 py-2 text-sm"
+                    className={`${isMobileViewport ? "soft-button-secondary min-h-0 px-3 py-1.5 text-[0.82rem]" : "soft-button-secondary min-h-0 px-3.5 py-2 text-sm"}`}
                   >
                     {copy.clear}
                   </button>

@@ -28,6 +28,7 @@ from src.domain.repositories.pillbox_repository import PillboxRepository
 
 class PillboxService:
     """CRUD и вычислительная логика семейной таблетницы."""
+
     _ON_TIME_WINDOW = timedelta(minutes=30)
     _LATE_WINDOW = timedelta(hours=4)
 
@@ -418,9 +419,7 @@ class PillboxService:
             "Nov",
             "Dec",
         ]
-        month_name = (
-            months_en[value.month - 1] if language == "en" else months_ru[value.month - 1]
-        )
+        month_name = months_en[value.month - 1] if language == "en" else months_ru[value.month - 1]
         year_short = str(value.year)[-2:]
         return f"{month_name} {year_short}"
 
@@ -567,9 +566,8 @@ class PillboxService:
                 scheduled_slots += 1
                 if taken_at is None:
                     missed_slots += 1
-                    medicine_name = (
-                        (medication.custom_medicine_name or "").strip()
-                        or ("Medicine" if preferred_language == "en" else "Лекарство")
+                    medicine_name = (medication.custom_medicine_name or "").strip() or (
+                        "Medicine" if preferred_language == "en" else "Лекарство"
                     )
                     top_missed[medicine_name] += 1
                     continue
@@ -583,9 +581,8 @@ class PillboxService:
                     taken_slots += 1
                 else:
                     missed_slots += 1
-                    medicine_name = (
-                        (medication.custom_medicine_name or "").strip()
-                        or ("Medicine" if preferred_language == "en" else "Лекарство")
+                    medicine_name = (medication.custom_medicine_name or "").strip() or (
+                        "Medicine" if preferred_language == "en" else "Лекарство"
                     )
                     top_missed[medicine_name] += 1
                     continue

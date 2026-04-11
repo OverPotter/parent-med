@@ -14,6 +14,7 @@ export async function fetchChildrenByFamilyId(familyId: string): Promise<Child[]
       name: string;
       birth_date: string | null;
       age_label: string | null;
+      baby_mode_enabled: boolean;
       institution_name: string | null;
       institution_phone: string | null;
       doctor_name: string | null;
@@ -32,6 +33,7 @@ export async function fetchChild(id: string): Promise<Child> {
     name: string;
     birth_date: string | null;
     age_label: string | null;
+    baby_mode_enabled: boolean;
     institution_name: string | null;
     institution_phone: string | null;
     doctor_name: string | null;
@@ -46,6 +48,7 @@ interface CreateChildBody {
   family_id: string;
   name: string;
   birth_date?: string | null;
+  baby_mode_enabled?: boolean;
   institution_name?: string | null;
   institution_phone?: string | null;
   doctor_name?: string | null;
@@ -59,6 +62,7 @@ export async function createChild(
   name: string,
   birthDate?: string | null,
   details?: {
+    babyModeEnabled?: boolean;
     institutionName?: string | null;
     institutionPhone?: string | null;
     doctorName?: string | null;
@@ -71,6 +75,7 @@ export async function createChild(
     family_id: familyId,
     name,
     birth_date: birthDate ?? null,
+    baby_mode_enabled: details?.babyModeEnabled ?? false,
     institution_name: details?.institutionName ?? null,
     institution_phone: details?.institutionPhone ?? null,
     doctor_name: details?.doctorName ?? null,
@@ -84,6 +89,7 @@ export async function createChild(
     name: string;
     birth_date: string | null;
     age_label: string | null;
+    baby_mode_enabled: boolean;
     institution_name: string | null;
     institution_phone: string | null;
     doctor_name: string | null;
@@ -99,6 +105,7 @@ export async function updateChild(
   name?: string,
   birthDate?: string | null,
   details?: {
+    babyModeEnabled?: boolean;
     institutionName?: string | null;
     institutionPhone?: string | null;
     doctorName?: string | null;
@@ -113,6 +120,7 @@ export async function updateChild(
     name: string;
     birth_date: string | null;
     age_label: string | null;
+    baby_mode_enabled: boolean;
     institution_name: string | null;
     institution_phone: string | null;
     doctor_name: string | null;
@@ -122,6 +130,7 @@ export async function updateChild(
   }>(`/children/${id}`, {
     name,
     birth_date: birthDate,
+    baby_mode_enabled: details?.babyModeEnabled,
     institution_name: details?.institutionName,
     institution_phone: details?.institutionPhone,
     doctor_name: details?.doctorName,

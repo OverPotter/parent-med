@@ -13,6 +13,7 @@ class Child:
     family_id: UUID
     name: str
     birth_date: date | None
+    baby_mode_enabled: bool = False
     institution_name: str | None = None
     institution_phone: str | None = None
     doctor_name: str | None = None
