@@ -26,6 +26,13 @@ export async function fetchLatestWeightEntryByChildId(
   return res.data ? toWeightEntry(res.data) : null;
 }
 
+export async function fetchWeightEntriesByChildId(childId: string): Promise<WeightEntry[]> {
+  const res = await apiClient.get<RawWeightEntry[]>("/weight-entries", {
+    params: { child_id: childId },
+  });
+  return res.data.map(toWeightEntry);
+}
+
 export async function createWeightEntry(payload: CreateWeightEntryPayload): Promise<WeightEntry> {
   const res = await apiClient.post<RawWeightEntry>("/weight-entries", payload);
   return toWeightEntry(res.data);

@@ -8,9 +8,12 @@ import type {
   FamilyMember,
   FamilyInvite,
   FamilyInvitePreview,
+  HeightEntry,
   Parent,
   Child,
+  FeedingRecord,
   WeightEntry,
+  SleepSession,
   MedicineCatalogItem,
   HouseholdMedicine,
   IllnessComment,
@@ -43,6 +46,7 @@ interface RawChild {
   name: string;
   birth_date: string | null;
   age_label: string | null;
+  baby_mode_enabled: boolean;
   institution_name: string | null;
   institution_phone: string | null;
   doctor_name: string | null;
@@ -63,6 +67,39 @@ interface RawWeightEntry {
   child_id: string;
   value_kg: number;
   measured_at: string;
+}
+
+interface RawHeightEntry {
+  id: string;
+  child_id: string;
+  value_cm: number;
+  measured_at: string;
+}
+
+interface RawSleepSession {
+  id: string;
+  child_id: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_minutes: number | null;
+  status: string;
+  created_by_account_id: string | null;
+}
+
+interface RawFeedingRecord {
+  id: string;
+  child_id: string;
+  feeding_type: string;
+  breast_side: string | null;
+  is_expressed: boolean;
+  formula_volume_ml: number | null;
+  recorded_at: string;
+  started_at: string | null;
+  ended_at: string | null;
+  duration_minutes: number | null;
+  status: string;
+  note: string | null;
+  created_by_account_id: string | null;
 }
 
 interface RawMedicineCatalogItem {
@@ -205,6 +242,7 @@ export function toChild(r: RawChild): Child {
     name: r.name,
     birthDate: r.birth_date ?? null,
     ageLabel: r.age_label ?? null,
+    babyModeEnabled: r.baby_mode_enabled ?? false,
     institutionName: r.institution_name ?? null,
     institutionPhone: r.institution_phone ?? null,
     doctorName: r.doctor_name ?? null,
@@ -220,6 +258,45 @@ export function toWeightEntry(r: RawWeightEntry): WeightEntry {
     childId: r.child_id,
     valueKg: r.value_kg,
     measuredAt: r.measured_at,
+  };
+}
+
+export function toHeightEntry(r: RawHeightEntry): HeightEntry {
+  return {
+    id: r.id,
+    childId: r.child_id,
+    valueCm: r.value_cm,
+    measuredAt: r.measured_at,
+  };
+}
+
+export function toSleepSession(r: RawSleepSession): SleepSession {
+  return {
+    id: r.id,
+    childId: r.child_id,
+    startedAt: r.started_at,
+    endedAt: r.ended_at ?? null,
+    durationMinutes: r.duration_minutes ?? null,
+    status: r.status,
+    createdByAccountId: r.created_by_account_id ?? null,
+  };
+}
+
+export function toFeedingRecord(r: RawFeedingRecord): FeedingRecord {
+  return {
+    id: r.id,
+    childId: r.child_id,
+    feedingType: r.feeding_type,
+    breastSide: r.breast_side ?? null,
+    isExpressed: r.is_expressed ?? false,
+    formulaVolumeMl: r.formula_volume_ml ?? null,
+    recordedAt: r.recorded_at,
+    startedAt: r.started_at ?? null,
+    endedAt: r.ended_at ?? null,
+    durationMinutes: r.duration_minutes ?? null,
+    status: r.status,
+    note: r.note ?? null,
+    createdByAccountId: r.created_by_account_id ?? null,
   };
 }
 

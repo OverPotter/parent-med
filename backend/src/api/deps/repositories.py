@@ -12,6 +12,8 @@ from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.episode_medication_plan_repository import (
     EpisodeMedicationPlanRepository,
 )
+from src.domain.repositories.feeding_record_repository import FeedingRecordRepository
+from src.domain.repositories.height_entry_repository import HeightEntryRepository
 from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
@@ -21,6 +23,7 @@ from src.domain.repositories.medicine_catalog_repository import MedicineCatalogR
 from src.domain.repositories.parent_repository import ParentRepository
 from src.domain.repositories.pillbox_repository import PillboxRepository
 from src.domain.repositories.push_subscription_repository import PushSubscriptionRepository
+from src.domain.repositories.sleep_session_repository import SleepSessionRepository
 from src.domain.repositories.temperature_entry_repository import TemperatureEntryRepository
 from src.domain.repositories.weight_entry_repository import WeightEntryRepository
 from src.infrastructure.database.repositories.account_feedback_repository import (
@@ -36,6 +39,12 @@ from src.infrastructure.database.repositories.administration_event_repository im
 from src.infrastructure.database.repositories.child_repository import SqlChildRepository
 from src.infrastructure.database.repositories.episode_medication_plan_repository import (
     SqlEpisodeMedicationPlanRepository,
+)
+from src.infrastructure.database.repositories.feeding_record_repository import (
+    SqlFeedingRecordRepository,
+)
+from src.infrastructure.database.repositories.height_entry_repository import (
+    SqlHeightEntryRepository,
 )
 from src.infrastructure.database.repositories.family_invite_repository import (
     SqlFamilyInviteRepository,
@@ -57,6 +66,9 @@ from src.infrastructure.database.repositories.parent_repository import SqlParent
 from src.infrastructure.database.repositories.pillbox_repository import SqlPillboxRepository
 from src.infrastructure.database.repositories.push_subscription_repository import (
     SqlPushSubscriptionRepository,
+)
+from src.infrastructure.database.repositories.sleep_session_repository import (
+    SqlSleepSessionRepository,
 )
 from src.infrastructure.database.repositories.temperature_entry_repository import (
     SqlTemperatureEntryRepository,
@@ -96,6 +108,18 @@ def get_child_repo(session: AsyncSession = Depends(get_db_session)) -> ChildRepo
     return SqlChildRepository(session)
 
 
+def get_feeding_record_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> FeedingRecordRepository:
+    return SqlFeedingRecordRepository(session)
+
+
+def get_height_entry_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> HeightEntryRepository:
+    return SqlHeightEntryRepository(session)
+
+
 def get_episode_medication_plan_repo(
     session: AsyncSession = Depends(get_db_session),
 ) -> EpisodeMedicationPlanRepository:
@@ -120,6 +144,12 @@ def get_weight_entry_repo(
     session: AsyncSession = Depends(get_db_session),
 ) -> WeightEntryRepository:
     return SqlWeightEntryRepository(session)
+
+
+def get_sleep_session_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> SleepSessionRepository:
+    return SqlSleepSessionRepository(session)
 
 
 def get_medicine_catalog_repo(

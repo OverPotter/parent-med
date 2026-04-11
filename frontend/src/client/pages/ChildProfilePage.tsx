@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteChild, fetchChild, updateChild } from "@shared/api/children";
-import { createWeightEntry, fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
+import { fetchLatestHeightEntryByChildId } from "@shared/api/heightEntries";
+import {
+  createWeightEntry,
+  fetchLatestWeightEntryByChildId,
+} from "@shared/api/weightEntries";
 import { DateField } from "@shared/components/DateField";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PageIntro } from "@shared/components/PageIntro";
@@ -13,6 +17,7 @@ import { formatDate, getLocalIsoDate } from "@shared/utils/date";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
 type ChildProfileDetails = {
+  babyModeEnabled?: boolean;
   institutionName?: string | null;
   institutionPhone?: string | null;
   doctorName?: string | null;
@@ -48,6 +53,12 @@ export function ChildProfilePage() {
   const { data: latestWeight = null } = useQuery({
     queryKey: ["weight-entry-latest", childId],
     queryFn: () => fetchLatestWeightEntryByChildId(childId!),
+    enabled: !!childId,
+  });
+
+  const { data: latestHeight = null } = useQuery({
+    queryKey: ["height-entry-latest", childId],
+    queryFn: () => fetchLatestHeightEntryByChildId(childId!),
     enabled: !!childId,
   });
 
@@ -106,6 +117,11 @@ export function ChildProfilePage() {
     return <p className="text-sm text-muted">{common.loading}</p>;
   }
   const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
+  const babyModeLabel = child.babyModeEnabled ? copy.babyModeEnabled : copy.babyModeDisabled;
+  const primaryActionClass =
+    `${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`;
+  const secondaryActionClass =
+    "soft-panel-muted inline-flex min-h-[2.9rem] w-full items-center justify-center rounded-[22px] border border-white/60 px-4 text-sm font-medium text-foreground shadow-[0_10px_24px_rgba(89,60,154,0.08)] transition hover:border-primary/30 hover:text-primary";
 
   return (
     <div className="min-w-0 space-y-6">
@@ -133,22 +149,39 @@ export function ChildProfilePage() {
         eyebrow={undefined}
         hideOnMobile
         action={
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-            <Link
-              to={`/children/${child.id}/illness?view=history`}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
-            >
-              {copy.history}
-            </Link>
-            <button
-              type="button"
-              onClick={() => setIsEditing((current) => !current)}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-              aria-expanded={isEditing}
-              aria-controls="child-profile-edit-form"
-            >
-              {isEditing ? copy.collapseForm : copy.editProfile}
-            </button>
+          <div className="flex w-full flex-col gap-3 sm:w-auto">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Link
+                to={`/children/${child.id}/illness?view=history`}
+                className={primaryActionClass}
+              >
+                {copy.history}
+              </Link>
+              {child.babyModeEnabled ? (
+                <Link to={`/children/${child.id}/feeding`} className={primaryActionClass}>
+                  {copy.feedingSectionOpen}
+                </Link>
+              ) : null}
+              {child.babyModeEnabled ? (
+                <Link to={`/children/${child.id}/sleep`} className={primaryActionClass}>
+                  {copy.sleepSectionOpen}
+                </Link>
+              ) : null}
+            </div>
+            <div className="rounded-[24px] border border-white/65 bg-white/55 px-3 py-3 shadow-[0_18px_38px_rgba(89,60,154,0.08)] backdrop-blur-md">
+              <div className="mb-3 h-px w-full rounded-full bg-[linear-gradient(90deg,rgba(127,86,217,0.02),rgba(127,86,217,0.18),rgba(127,86,217,0.02))]" />
+              <div className="grid w-full grid-cols-3 gap-2">
+                <Link to={`/children/${child.id}/weight`} className={secondaryActionClass}>
+                  {copy.weightCardTitle}
+                </Link>
+                <Link to={`/children/${child.id}/height`} className={secondaryActionClass}>
+                  {copy.heightCardTitle}
+                </Link>
+                <Link to={`/children/${child.id}/calendar`} className={secondaryActionClass}>
+                  {copy.calendar}
+                </Link>
+              </div>
+            </div>
           </div>
         }
       />
@@ -162,15 +195,35 @@ export function ChildProfilePage() {
             >
               {copy.history}
             </Link>
-            <button
-              type="button"
-              onClick={() => setIsEditing((current) => !current)}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full sm:min-h-[3.05rem]`}
-              aria-expanded={isEditing}
-              aria-controls="child-profile-edit-form"
-            >
-              {isEditing ? copy.collapseForm : copy.editProfile}
-            </button>
+            {child.babyModeEnabled ? (
+              <Link
+                to={`/children/${child.id}/feeding`}
+                className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full sm:min-h-[3.05rem]`}
+              >
+                {copy.feedingSectionOpen}
+              </Link>
+            ) : null}
+            {child.babyModeEnabled ? (
+              <Link
+                to={`/children/${child.id}/sleep`}
+                className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full sm:col-span-2 sm:min-h-[3.05rem]`}
+              >
+                {copy.sleepSectionOpen}
+              </Link>
+            ) : null}
+          </div>
+          <div className="mt-4 border-t border-white/65 pt-4">
+            <div className="grid grid-cols-3 gap-2">
+              <Link to={`/children/${child.id}/weight`} className={secondaryActionClass}>
+                {copy.weightCardTitle}
+              </Link>
+              <Link to={`/children/${child.id}/height`} className={secondaryActionClass}>
+                {copy.heightCardTitle}
+              </Link>
+              <Link to={`/children/${child.id}/calendar`} className={secondaryActionClass}>
+                {copy.calendar}
+              </Link>
+            </div>
           </div>
         </Surface>
       </div>
@@ -202,12 +255,21 @@ export function ChildProfilePage() {
             label={copy.birthDate}
             value={child.birthDate ? formatDate(child.birthDate) : copy.birthDateMissing}
           />
+          <InfoLine label={copy.babyMode} value={babyModeLabel} />
           <InfoLine
             label={copy.latestWeight}
             value={
               latestWeight
                 ? formatWeightValue(latestWeight.valueKg, language)
                 : copy.latestWeightMissing
+            }
+          />
+          <InfoLine
+            label={copy.latestHeight}
+            value={
+              latestHeight
+                ? formatHeightValue(latestHeight.valueCm, language)
+                : copy.latestHeightMissing
             }
           />
         </div>
@@ -233,13 +295,25 @@ export function ChildProfilePage() {
               </div>
             </details>
           )}
-          {!hasProfileDetails(child, latestWeight) && (
+          {!hasProfileDetails(child, latestWeight, latestHeight) && (
             <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:col-span-2">
               <p className="text-sm text-muted">{copy.noExtra}</p>
             </div>
           )}
         </div>
       </Surface>
+
+      <div className="px-1">
+        <button
+          type="button"
+          onClick={() => setIsEditing((current) => !current)}
+          className={`${appBtnSecondaryClass} min-h-[2.95rem] w-full sm:min-h-[3.05rem]`}
+          aria-expanded={isEditing}
+          aria-controls="child-profile-edit-form"
+        >
+          {isEditing ? copy.collapseForm : copy.editProfile}
+        </button>
+      </div>
     </div>
   );
 }
@@ -264,6 +338,7 @@ function EditChildProfileForm({
     doctorPhone: string | null;
     allergies: string | null;
     notes: string | null;
+    babyModeEnabled: boolean;
   };
   latestWeight: WeightEntry | null;
   onSave: (
@@ -287,6 +362,7 @@ function EditChildProfileForm({
   const [doctorPhone, setDoctorPhone] = useState(child.doctorPhone ?? "");
   const [allergies, setAllergies] = useState(child.allergies ?? "");
   const [notes, setNotes] = useState(child.notes ?? "");
+  const [babyModeEnabled, setBabyModeEnabled] = useState(child.babyModeEnabled);
 
   useEffect(() => {
     setDraftName(child.name);
@@ -298,6 +374,7 @@ function EditChildProfileForm({
     setDoctorPhone(child.doctorPhone ?? "");
     setAllergies(child.allergies ?? "");
     setNotes(child.notes ?? "");
+    setBabyModeEnabled(child.babyModeEnabled);
   }, [child, latestWeight]);
 
   const parsedWeight = parseDraftWeight(draftWeight);
@@ -361,6 +438,20 @@ function EditChildProfileForm({
                   : "If you add the weight, it will be saved as the latest entry."}
             </p>
           </label>
+          <label className="soft-panel rounded-[22px] px-4 py-3 sm:col-span-2 xl:col-span-3">
+            <span className="flex items-start justify-between gap-4">
+              <span className="min-w-0">
+                <span className="soft-field-label">{copy.form.babyModeLabel}</span>
+                <span className="mt-1 block text-sm text-muted">{copy.form.babyModeHint}</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={babyModeEnabled}
+                onChange={(event) => setBabyModeEnabled(event.target.checked)}
+                className="mt-1 h-5 w-5 shrink-0 accent-[color:var(--color-primary)]"
+              />
+            </span>
+          </label>
           <div className="sm:col-span-2 xl:col-span-3 grid gap-3 sm:grid-cols-2">
             <TextField label={copy.form.allergiesLabel} value={allergies} onChange={setAllergies} />
             <TextField label={copy.form.notesLabel} value={notes} onChange={setNotes} />
@@ -400,6 +491,7 @@ function EditChildProfileForm({
                   draftName.trim(),
                   draftBirthDate || null,
                   {
+                    babyModeEnabled,
                     institutionName: institutionName.trim() || null,
                     institutionPhone: institutionPhone.trim() || null,
                     doctorName: doctorName.trim() || null,
@@ -458,7 +550,8 @@ function hasProfileDetails(
     allergies: string | null;
     notes: string | null;
   },
-  latestWeight: WeightEntry | null
+  latestWeight: WeightEntry | null,
+  latestHeight: { valueCm: number } | null
 ) {
   return Boolean(
     child.birthDate ||
@@ -468,7 +561,8 @@ function hasProfileDetails(
     child.doctorPhone ||
     child.allergies ||
     child.notes ||
-    latestWeight
+    latestWeight ||
+    latestHeight
   );
 }
 
@@ -490,6 +584,15 @@ function formatWeightValue(valueKg: number, language: "ru" | "en"): string {
     maximumFractionDigits: 1,
   }).format(valueKg)} ${unit}`;
 }
+
+function formatHeightValue(valueCm: number, language: "ru" | "en"): string {
+  const unit = language === "ru" ? "см" : "cm";
+  return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
+    minimumFractionDigits: valueCm % 1 === 0 ? 0 : 1,
+    maximumFractionDigits: 1,
+  }).format(valueCm)} ${unit}`;
+}
+
 
 function InputField({
   label,

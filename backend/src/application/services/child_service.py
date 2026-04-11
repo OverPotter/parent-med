@@ -71,6 +71,7 @@ class ChildService:
             name=entity.name,
             birth_date=entity.birth_date,
             age_label=self._format_age_label(entity.birth_date),
+            baby_mode_enabled=entity.baby_mode_enabled,
             institution_name=entity.institution_name,
             institution_phone=entity.institution_phone,
             doctor_name=entity.doctor_name,
@@ -117,6 +118,7 @@ class ChildService:
             family_id=dto.family_id,
             name=dto.name,
             birth_date=dto.birth_date,
+            baby_mode_enabled=dto.baby_mode_enabled,
             institution_name=(dto.institution_name or "").strip() or None,
             institution_phone=(dto.institution_phone or "").strip() or None,
             doctor_name=(dto.doctor_name or "").strip() or None,
@@ -143,12 +145,18 @@ class ChildService:
         fields_set = dto.model_fields_set
         name = dto.name if "name" in fields_set and dto.name is not None else entity.name
         birth_date = dto.birth_date if "birth_date" in fields_set else entity.birth_date
+        baby_mode_enabled = (
+            dto.baby_mode_enabled
+            if "baby_mode_enabled" in fields_set and dto.baby_mode_enabled is not None
+            else entity.baby_mode_enabled
+        )
         self._validate_birth_date(birth_date)
         entity = Child(
             id=entity.id,
             family_id=entity.family_id,
             name=name,
             birth_date=birth_date,
+            baby_mode_enabled=baby_mode_enabled,
             institution_name=(
                 (dto.institution_name or "").strip() or None
                 if "institution_name" in fields_set

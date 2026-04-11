@@ -63,6 +63,7 @@ export interface Child {
   name: string;
   birthDate: string | null;
   ageLabel: string | null;
+  babyModeEnabled: boolean;
   institutionName: string | null;
   institutionPhone: string | null;
   doctorName: string | null;
@@ -76,6 +77,39 @@ export interface WeightEntry {
   childId: string;
   valueKg: number;
   measuredAt: string;
+}
+
+export interface HeightEntry {
+  id: string;
+  childId: string;
+  valueCm: number;
+  measuredAt: string;
+}
+
+export interface SleepSession {
+  id: string;
+  childId: string;
+  startedAt: string;
+  endedAt: string | null;
+  durationMinutes: number | null;
+  status: string;
+  createdByAccountId: string | null;
+}
+
+export interface FeedingRecord {
+  id: string;
+  childId: string;
+  feedingType: string;
+  breastSide: string | null;
+  isExpressed: boolean;
+  formulaVolumeMl: number | null;
+  recordedAt: string;
+  startedAt: string | null;
+  endedAt: string | null;
+  durationMinutes: number | null;
+  status: string;
+  note: string | null;
+  createdByAccountId: string | null;
 }
 
 export interface MedicineCatalogItem {

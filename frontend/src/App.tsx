@@ -64,6 +64,35 @@ const ChildrenPage = lazy(() =>
 const ChildProfilePage = lazy(() =>
   import("@client/pages/ChildProfilePage").then((module) => ({ default: module.ChildProfilePage }))
 );
+const ChildCreatePage = lazy(() =>
+  import("@client/pages/ChildCreatePage").then((module) => ({ default: module.ChildCreatePage }))
+);
+const ChildSleepPage = lazy(() =>
+  import("@client/pages/ChildSleepPage").then((module) => ({ default: module.ChildSleepPage }))
+);
+const ChildFeedingPage = lazy(() =>
+  import("@client/pages/ChildFeedingPage").then((module) => ({ default: module.ChildFeedingPage }))
+);
+const ChildFeedingCreatePage = lazy(() =>
+  import("@client/pages/ChildFeedingCreatePage").then((module) => ({
+    default: module.ChildFeedingCreatePage,
+  }))
+);
+const ChildWeightPage = lazy(() =>
+  import("@client/pages/ChildWeightPage").then((module) => ({
+    default: module.ChildWeightPage,
+  }))
+);
+const ChildHeightPage = lazy(() =>
+  import("@client/pages/ChildHeightPage").then((module) => ({
+    default: module.ChildHeightPage,
+  }))
+);
+const ChildCalendarPage = lazy(() =>
+  import("@client/pages/ChildCalendarPage").then((module) => ({
+    default: module.ChildCalendarPage,
+  }))
+);
 const MedicineCabinetPage = lazy(() =>
   import("@client/pages/MedicineCabinetPage").then((module) => ({
     default: module.MedicineCabinetPage,
@@ -864,8 +893,15 @@ export default function App() {
                   <Route path="family" element={<FamilyPage />} />
                   <Route path="join-family" element={<JoinFamilyPage />} />
                   <Route path="children" element={<ChildrenPage />} />
+                  <Route path="children/new" element={<ChildCreatePage />} />
                   <Route path="pillbox" element={<PillboxPage />} />
                   <Route path="children/:childId" element={<ChildProfilePage />} />
+                  <Route path="children/:childId/sleep" element={<ChildSleepPage />} />
+                  <Route path="children/:childId/feeding" element={<ChildFeedingPage />} />
+                  <Route path="children/:childId/feeding/new" element={<ChildFeedingCreatePage />} />
+                  <Route path="children/:childId/weight" element={<ChildWeightPage />} />
+                  <Route path="children/:childId/height" element={<ChildHeightPage />} />
+                  <Route path="children/:childId/calendar" element={<ChildCalendarPage />} />
                   <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
                   <Route path="illnesses/history" element={<IllnessHistoryPage />} />
                   <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
