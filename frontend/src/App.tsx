@@ -67,6 +67,9 @@ const ChildProfilePage = lazy(() =>
 const ChildCreatePage = lazy(() =>
   import("@client/pages/ChildCreatePage").then((module) => ({ default: module.ChildCreatePage }))
 );
+const ChildEditPage = lazy(() =>
+  import("@client/pages/ChildEditPage").then((module) => ({ default: module.ChildEditPage }))
+);
 const ChildSleepPage = lazy(() =>
   import("@client/pages/ChildSleepPage").then((module) => ({ default: module.ChildSleepPage }))
 );
@@ -894,6 +897,7 @@ export default function App() {
                   <Route path="join-family" element={<JoinFamilyPage />} />
                   <Route path="children" element={<ChildrenPage />} />
                   <Route path="children/new" element={<ChildCreatePage />} />
+                  <Route path="children/:childId/edit" element={<ChildEditPage />} />
                   <Route path="pillbox" element={<PillboxPage />} />
                   <Route path="children/:childId" element={<ChildProfilePage />} />
                   <Route path="children/:childId/sleep" element={<ChildSleepPage />} />
