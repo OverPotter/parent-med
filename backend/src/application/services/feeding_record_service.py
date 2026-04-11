@@ -3,8 +3,12 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from src.application.dto.feeding_record import FeedingRecordCreateDto, FeedingRecordResponseDto
-from src.application.dto.feeding_record import FeedingRecordStartDto, FeedingRecordStopDto
+from src.application.dto.feeding_record import (
+    FeedingRecordCreateDto,
+    FeedingRecordResponseDto,
+    FeedingRecordStartDto,
+    FeedingRecordStopDto,
+)
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.entities.feeding_record import FeedingRecord
