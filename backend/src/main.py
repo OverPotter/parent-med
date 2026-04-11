@@ -66,7 +66,9 @@ def create_app() -> FastAPI:
     app.include_router(children.router, prefix="/api/v1", dependencies=protected_dependencies)
     app.include_router(weight_entries.router, prefix="/api/v1", dependencies=protected_dependencies)
     app.include_router(sleep_sessions.router, prefix="/api/v1", dependencies=protected_dependencies)
-    app.include_router(feeding_records.router, prefix="/api/v1", dependencies=protected_dependencies)
+    app.include_router(
+        feeding_records.router, prefix="/api/v1", dependencies=protected_dependencies
+    )
     app.include_router(height_entries.router, prefix="/api/v1", dependencies=protected_dependencies)
     app.include_router(
         medicine_catalog.router,

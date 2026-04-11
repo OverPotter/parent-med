@@ -25,7 +25,11 @@ class FeedingRecordService:
 
     def _to_response(self, entity: FeedingRecord) -> FeedingRecordResponseDto:
         duration_minutes = entity.duration_minutes
-        if duration_minutes is None and entity.started_at is not None and entity.ended_at is not None:
+        if (
+            duration_minutes is None
+            and entity.started_at is not None
+            and entity.ended_at is not None
+        ):
             duration_minutes = max(
                 0,
                 int((entity.ended_at - entity.started_at).total_seconds() // 60),
@@ -103,7 +107,9 @@ class FeedingRecordService:
             raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
         return child
 
-    async def _get_record_for_family(self, record_id: UUID, current_family_id: UUID) -> FeedingRecord:
+    async def _get_record_for_family(
+        self, record_id: UUID, current_family_id: UUID
+    ) -> FeedingRecord:
         entity = await self._repo.get_by_id(record_id)
         if not entity:
             raise NotFoundError("Запись кормления не найдена", resource="feeding_record")
@@ -221,7 +227,11 @@ class FeedingRecordService:
             0,
             int((ended_at - (entity.started_at or entity.recorded_at)).total_seconds() // 60),
         )
-        if entity.feeding_type == "formula" and dto.formula_volume_ml is not None and dto.formula_volume_ml <= 0:
+        if (
+            entity.feeding_type == "formula"
+            and dto.formula_volume_ml is not None
+            and dto.formula_volume_ml <= 0
+        ):
             raise ValidationError(
                 "Объём смеси должен быть больше нуля",
                 code="INVALID_FORMULA_VOLUME",
@@ -235,7 +245,9 @@ class FeedingRecordService:
                 breast_side=entity.breast_side,
                 is_expressed=entity.is_expressed,
                 formula_volume_ml=(
-                    dto.formula_volume_ml if entity.feeding_type == "formula" else entity.formula_volume_ml
+                    dto.formula_volume_ml
+                    if entity.feeding_type == "formula"
+                    else entity.formula_volume_ml
                 ),
                 recorded_at=entity.recorded_at,
                 started_at=entity.started_at,
