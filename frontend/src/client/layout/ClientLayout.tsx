@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { Outlet } from "react-router-dom";
+import { matchPath, Outlet, useLocation } from "react-router-dom";
 import { fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
@@ -35,6 +35,7 @@ import { getPrioritizedMedicationPlanItems } from "../utils/medicationPlans";
 
 export function ClientLayout() {
   const { copy, language } = useI18n();
+  const location = useLocation();
   const accountId = useAppStore((s) => s.accountId);
   const authToken = useAppStore((s) => s.authToken);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
@@ -203,7 +204,16 @@ export function ClientLayout() {
       mobileLabel: mobileNavLabels.cabinet,
     },
   ];
-  const baseMobileNavLinks = [...baseDesktopNavLinks];
+  const isObservationsRoute = activeObservationsNavItem.exactActivePaths.some((path) =>
+    matchPath(
+      { path, end: path === "/illnesses/active" },
+      location.pathname
+    )
+  );
+  const baseMobileNavLinks =
+    activeEpisodes.length > 0 || isObservationsRoute
+      ? [...baseDesktopNavLinks]
+      : baseDesktopNavLinks.filter((link) => link.to !== activeObservationsNavItem.to);
   const { data: families = [], isSuccess } = useQuery({
     queryKey: ["families", accountId],
     queryFn: fetchFamilies,

@@ -3,7 +3,6 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { createFeedingRecord, startFeedingRecord } from "@shared/api/feedingRecords";
-import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { FeedingRecordForm } from "@client/components/FeedingRecordForm";
@@ -97,27 +96,15 @@ export function ChildFeedingCreatePage() {
         </Link>
       </div>
 
-      <PageIntro
-        title={copy.feedingDialogTitle}
-        subtitle={child.name}
-        hideOnMobile
-        action={
-          <Link
-            to="/children"
-            className="soft-button-secondary app-btn-secondary-md inline-flex min-h-[2.85rem] items-center justify-center px-4 sm:min-h-[3.05rem]"
-          >
-            {copy.feedingCancel}
-          </Link>
-        }
-      />
-
-      <div className="md:hidden">
-        <Surface className="p-4">
-          <h1 className="app-title mb-2 text-[1.42rem] tracking-[-0.04em]">
-            {copy.feedingDialogTitle}
-          </h1>
-          <p className="text-sm text-muted">{child.name}</p>
-        </Surface>
+      <div className="space-y-1 px-1">
+        <h1 className="app-card-title">
+          {copy.feedingDialogTitle} · {child.name}
+        </h1>
+        <p className="text-sm text-muted">
+          {language === "ru"
+            ? "Заполните детали кормления и сохраните запись."
+            : "Fill in the feeding details and save the record."}
+        </p>
       </div>
 
       <Surface className="p-4 sm:p-6">

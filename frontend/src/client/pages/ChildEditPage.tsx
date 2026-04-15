@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteChild, fetchChild, updateChild } from "@shared/api/children";
 import { DateField } from "@shared/components/DateField";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { getLocalIsoDate } from "@shared/utils/date";
@@ -98,15 +97,6 @@ export function ChildEditPage() {
         </Link>
       </div>
 
-      <PageIntro title={copy.form.title} subtitle={copy.form.subtitle} hideOnMobile />
-
-      <div className="md:hidden">
-        <Surface className="p-4">
-          <h1 className="app-title mb-2 text-[1.42rem] tracking-[-0.04em]">{copy.form.title}</h1>
-          <p className="text-sm text-muted">{copy.form.subtitle}</p>
-        </Surface>
-      </div>
-
       <EditChildProfileForm
         child={child}
         onSave={(name, birthDate, details) =>
@@ -159,7 +149,7 @@ function EditChildProfileForm({
   const [allergies, setAllergies] = useState(child.allergies ?? "");
   const [notes, setNotes] = useState(child.notes ?? "");
   const [babyModeEnabled, setBabyModeEnabled] = useState(child.babyModeEnabled);
-  const [isNotesOpen, setIsNotesOpen] = useState(Boolean(child.allergies || child.notes));
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isContactsOpen, setIsContactsOpen] = useState(
     Boolean(
       child.institutionName || child.institutionPhone || child.doctorName || child.doctorPhone
@@ -204,16 +194,18 @@ function EditChildProfileForm({
               aria-checked={babyModeEnabled}
               onClick={() => setBabyModeEnabled((current) => !current)}
               className={[
-                "relative mt-0.5 inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors",
+                "relative mt-0.5 inline-flex h-8 w-14 shrink-0 items-center rounded-full border shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_8px_18px_rgba(89,60,154,0.08)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 babyModeEnabled
-                  ? "border-primary/30 bg-primary/15"
-                  : "border-border/70 bg-foreground/6",
+                  ? "border-primary/40 bg-[color:color-mix(in_srgb,var(--color-primary)_22%,white)]"
+                  : "border-[color:color-mix(in_srgb,var(--color-border)_88%,white)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.78))]",
               ].join(" ")}
             >
               <span
                 className={[
-                  "absolute left-1 inline-block h-6 w-6 rounded-full shadow-sm transition-transform",
-                  babyModeEnabled ? "translate-x-6 bg-primary" : "translate-x-0 bg-background",
+                  "absolute left-1 inline-block h-6 w-6 rounded-full shadow-[0_6px_16px_rgba(89,60,154,0.18),inset_0_1px_0_rgba(255,255,255,0.72)] transition-transform",
+                  babyModeEnabled
+                    ? "translate-x-6 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-primary)_82%,white),var(--color-primary))]"
+                    : "translate-x-0 bg-[linear-gradient(180deg,white,color-mix(in_srgb,var(--color-surface-soft)_94%,white))]",
                 ].join(" ")}
               />
             </button>
