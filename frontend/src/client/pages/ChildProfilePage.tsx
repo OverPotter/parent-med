@@ -38,7 +38,7 @@ export function ChildProfilePage() {
   const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
   const babyModeLabel = child.babyModeEnabled ? copy.babyModeEnabled : copy.babyModeDisabled;
   const profileNavActionClass =
-    "soft-panel-muted inline-flex min-h-[2.95rem] items-center justify-center rounded-[18px] border border-[color:color-mix(in_srgb,var(--color-border)_68%,transparent)] px-3.5 py-2.5 text-center text-[0.92rem] font-medium tracking-[-0.015em] text-foreground shadow-[0_8px_20px_rgba(89,60,154,0.06)] transition hover:border-primary/24 hover:bg-[color:color-mix(in_srgb,var(--color-primary)_4%,var(--color-surface-soft))] hover:text-primary";
+    "soft-pill inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap";
   const quickLinks = [
     {
       to: `/children/${child.id}/illness?view=history`,
@@ -79,7 +79,7 @@ export function ChildProfilePage() {
           </div>
           <Link
             to={`/children/${child.id}/edit`}
-            className={`${profileNavActionClass} min-h-[2.6rem] shrink-0 px-3.5 text-[0.88rem]`}
+            className={`${profileNavActionClass} shrink-0`}
           >
             {copy.editProfile}
           </Link>
@@ -91,7 +91,7 @@ export function ChildProfilePage() {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`${profileNavActionClass} min-h-[3.05rem]`}
+                className={`${profileNavActionClass} min-h-[2.6rem]`}
               >
                 {item.label}
               </Link>

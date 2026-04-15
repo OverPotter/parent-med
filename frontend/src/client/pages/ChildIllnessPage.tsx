@@ -71,6 +71,8 @@ const appBtnPrimaryClass =
   "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
 const appBtnSecondaryClass =
   "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
+const appPillActionClass =
+  "soft-pill inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap";
 const appBtnDangerClass =
   "app-btn-danger-md soft-button-danger inline-flex items-center justify-center px-4";
 
@@ -527,7 +529,7 @@ export function ChildIllnessPage() {
               <button
                 type="button"
                 onClick={() => setOpenHistoryEpisodeId(null)}
-                className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
+                className={appBtnSecondaryClass}
               >
                 {language === "ru" ? "Показать всю историю" : "Show full history"}
               </button>
@@ -843,7 +845,7 @@ function HistoryEpisodeCard({
         actions={
           <Link
             to={`/children/${childId}/illness?view=history&episodeId=${episode.id}`}
-            className={`${appBtnSecondaryClass} min-h-[2.65rem] px-3 text-[0.82rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]`}
+            className={appPillActionClass}
           >
             {language === "ru" ? "Разбор" : "Insights"}
           </Link>
@@ -1169,7 +1171,7 @@ function HistoryEpisodeInsightsScreen({
       <div className="flex flex-wrap items-center justify-end gap-3">
         <Link
           to={`/children/${childId}/illness?view=history`}
-          className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
+          className={appPillActionClass}
         >
           {language === "ru" ? "Ко всей истории" : "Back to full history"}
         </Link>
@@ -1631,24 +1633,24 @@ function EpisodeBlock({
         </p>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+      <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
         <Link
           to={`/children/${childId}/illness?focus=temperature`}
-          className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
+          className={appPillActionClass}
         >
-          {language === "ru" ? "Записать температуру" : "Log temperature"}
+          {language === "ru" ? "+ Температура" : "+ Temperature"}
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=administration`}
-          className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
+          className={appPillActionClass}
         >
-          {language === "ru" ? "Записать приём" : "Log dose"}
+          {language === "ru" ? "+ Приём" : "+ Dose"}
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=comment`}
-          className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
+          className={appPillActionClass}
         >
-          {language === "ru" ? "Добавить заметку" : "Add note"}
+          {language === "ru" ? "+ Заметка" : "+ Note"}
         </Link>
       </div>
     </section>
@@ -1674,9 +1676,12 @@ function EpisodeBlock({
             {language === "ru" ? "Все записи по времени." : "All entries in time order."}
           </p>
         </div>
+      </div>
+
+      <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
         <Link
           to={`/children/${childId}/illness?focus=timeline`}
-          className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full self-start text-center sm:min-h-[3.05rem] sm:w-auto`}
+          className={appPillActionClass}
         >
           {language === "ru" ? "Открыть" : "Open"}
         </Link>
@@ -1982,13 +1987,13 @@ function EpisodeBlock({
           <div className="flex flex-wrap gap-2">
             <Link
               to={`/children/${childId}/illness?focus=reminders`}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className={appBtnSecondaryClass}
             >
               {language === "ru" ? "К напоминаниям" : "Back to reminders"}
             </Link>
             <Link
               to="/illnesses/active"
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className={appBtnSecondaryClass}
             >
               {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
@@ -2260,13 +2265,13 @@ function EpisodeActivationCard({
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
-              {language === "ru" ? "Записать температуру" : "Log temperature"}
+              {language === "ru" ? "+ Температура" : "+ Temperature"}
             </span>
             <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
-              {language === "ru" ? "Отметить приём" : "Log dose"}
+              {language === "ru" ? "+ Приём" : "+ Dose"}
             </span>
             <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
-              {language === "ru" ? "Добавить комментарий" : "Add comment"}
+              {language === "ru" ? "+ Комментарий" : "+ Comment"}
             </span>
             <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
               {language === "ru" ? "Добавить напоминание" : "Add reminder"}

@@ -38,10 +38,12 @@ import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
 const appBtnPrimaryClass =
   "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
-const appBtnSecondaryClass =
-  "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
-const appBtnDangerClass =
-  "app-btn-danger-md soft-button-danger inline-flex items-center justify-center px-4";
+const appGridPillActionClass =
+  "soft-pill inline-flex min-h-[2.7rem] w-full items-center justify-center rounded-[18px] px-3 py-2 text-center text-[0.82rem] font-semibold leading-4 tracking-[-0.015em] text-foreground transition hover:opacity-90";
+const appWidePillActionClass =
+  "soft-pill inline-flex min-h-[2.8rem] w-full items-center justify-center rounded-[18px] px-3.5 py-2.5 text-center text-[0.84rem] font-semibold leading-4 tracking-[-0.015em] text-foreground transition hover:opacity-90";
+const appHeaderDangerPillActionClass =
+  "soft-pill-danger inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] transition hover:opacity-90 whitespace-nowrap";
 
 export function ActiveIllnessesPage() {
   const { language, t } = useI18n();
@@ -263,13 +265,29 @@ function ActiveIllnessCard({
         }}
       />
       <RowSurface className="soft-card-status-warning rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4.5">
-        <div className="space-y-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="app-card-title">{child.name}</h2>
-              <span className="soft-pill-warning rounded-full px-2.5 py-1 text-[11px]">
-                {copy.observationBadge}
-              </span>
+          <div className="space-y-3">
+            <div className="min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="app-card-title">{child.name}</h2>
+                  <span className="soft-pill-warning rounded-full px-2.5 py-1 text-[11px]">
+                    {copy.observationBadge}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCloseConfirmOpen(true)}
+                disabled={closeEpisodeMutation.isPending}
+                className={`${appHeaderDangerPillActionClass} shrink-0 disabled:opacity-50`}
+              >
+                {closeEpisodeMutation.isPending
+                  ? copy.closing
+                  : language === "ru"
+                    ? "Завершить"
+                    : "Finish"}
+              </button>
             </div>
             <p className="mt-1 text-sm leading-6 text-muted">
               {ageLabel ? `${ageLabel} • ` : ""}
@@ -335,49 +353,43 @@ function ActiveIllnessCard({
             </div>
           )}
 
-          <div className="grid gap-2 pt-0 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 pt-0">
             <Link
               to={`/children/${child.id}/illness?focus=temperature`}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
+              className={appGridPillActionClass}
             >
-              {copy.logTemperature}
+              {language === "ru" ? "+ Температура" : "+ Temperature"}
             </Link>
-            {!availableNowLead && (
-              <Link
-                to={`/children/${child.id}/illness?focus=administration`}
-                className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
-              >
-                {copy.logDose}
-              </Link>
-            )}
+            <Link
+              to={`/children/${child.id}/illness?focus=administration`}
+              className={appGridPillActionClass}
+            >
+              {language === "ru" ? "+ Приём" : "+ Dose"}
+            </Link>
             <Link
               to={`/children/${child.id}/illness?focus=comment`}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
+              className={appGridPillActionClass}
             >
-              {copy.addNote}
-            </Link>
-            <Link
-              to={`/children/${child.id}/illness?focus=timeline`}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
-            >
-              {copy.timeline}
+              {language === "ru" ? "+ Заметка" : "+ Note"}
             </Link>
             <Link
               to={`/children/${child.id}/illness?focus=reminders`}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
+              className={appGridPillActionClass}
             >
-              {plans.length > 0 ? copy.reminders : copy.addReminder}
+              {plans.length > 0
+                ? copy.reminders
+                : language === "ru"
+                  ? "+ Напоминание"
+                  : "+ Reminder"}
             </Link>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsCloseConfirmOpen(true)}
-            disabled={closeEpisodeMutation.isPending}
-            className={`${appBtnDangerClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:min-h-[3.1rem]`}
+          <Link
+            to={`/children/${child.id}/illness?focus=timeline`}
+            className={appWidePillActionClass}
           >
-            {closeEpisodeMutation.isPending ? copy.closing : copy.closeConfirm}
-          </button>
+            {copy.timeline}
+          </Link>
         </div>
       </RowSurface>
     </li>
