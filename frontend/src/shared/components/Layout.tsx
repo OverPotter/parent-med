@@ -26,6 +26,7 @@ interface LayoutProps {
   /** Ссылки для навигации (client или admin). */
   navLinks?: LayoutNavLink[];
   mobileNavLinks?: LayoutNavLink[];
+  hideHeader?: boolean;
 }
 
 function MoonIcon() {
@@ -62,7 +63,7 @@ function SunIcon() {
   );
 }
 
-function FeedbackIcon() {
+export function FeedbackIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -80,13 +81,37 @@ function FeedbackIcon() {
   );
 }
 
-function ProfileMenu({
+function ProfileIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-[1.12rem] w-[1.12rem] fill-none stroke-current"
+    >
+      <path
+        d="M12 12.25a4.05 4.05 0 1 0 0-8.1 4.05 4.05 0 0 0 0 8.1Z"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M4.75 20.1a7.4 7.4 0 0 1 14.5 0"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function ProfileMenu({
   accountLabel,
   servicesLabel,
   settingsLabel,
   logoutLabel,
   menuLabel,
   onLogout,
+  iconOnly = false,
 }: {
   accountLabel: string;
   servicesLabel: string;
@@ -94,6 +119,7 @@ function ProfileMenu({
   logoutLabel: string;
   menuLabel: string;
   onLogout: () => Promise<void>;
+  iconOnly?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -134,13 +160,22 @@ function ProfileMenu({
     <div ref={rootRef} className="app-profile-menu">
       <button
         type="button"
-        className="app-profile-menu__trigger"
+        className={[
+          "app-profile-menu__trigger",
+          iconOnly ? "app-profile-menu__trigger--icon-only" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         aria-label={menuLabel}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        {accountLabel}
+        {iconOnly ? (
+          <ProfileIcon />
+        ) : (
+          accountLabel
+        )}
       </button>
       {isOpen ? (
         <div className="app-profile-menu__panel" role="menu">
@@ -177,7 +212,12 @@ function ProfileMenu({
   );
 }
 
-export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutProps) {
+export function Layout({
+  children,
+  navLinks = [],
+  mobileNavLinks = [],
+  hideHeader = false,
+}: LayoutProps) {
   const { copy } = useI18n();
   const { effectiveTheme, toggleTheme, accountLogin, accountDisplayName, clearSession } =
     useAppStore();
@@ -243,6 +283,7 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
         <div className="app-v3-decor app-v3-decor-c" />
         <div className="app-v3-noise" />
       </div>
+      {!hideHeader ? (
       <header className="app-safe-top-header relative z-30 min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
         <div className="relative z-30 mx-auto max-w-5xl">
           <div className={isIosShell ? "block" : "md:hidden"}>
@@ -387,11 +428,13 @@ export function Layout({ children, navLinks = [], mobileNavLinks = [] }: LayoutP
           </div>
         </div>
       </header>
+      ) : null}
       <main
         id="app-main-content"
         tabIndex={-1}
         className={[
-          "app-main-shell relative z-[1] mx-auto flex-1 w-full max-w-5xl min-w-0 px-3 py-6 sm:px-6 sm:py-11",
+          "app-main-shell relative z-[1] mx-auto flex-1 w-full max-w-5xl min-w-0 px-3 sm:px-6",
+          hideHeader ? "pt-3 pb-6 sm:pt-5 sm:pb-8" : "py-6 sm:py-11",
           hasMobileNav ? "pb-28 md:pb-11" : "",
         ].join(" ")}
       >

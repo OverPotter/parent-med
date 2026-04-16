@@ -1,4 +1,4 @@
-# TODO: Переход к App Store версии (после фикса критических багов)
+2# TODO: Переход к App Store версии (после фикса критических багов)
 
 ## 1. Базовая iOS-обертка (Capacitor)
 - [x] Добавить Capacitor в `frontend` (`init`, `add ios`).
@@ -25,11 +25,13 @@
   - [x] Подготовить EN demo-аккаунт для App Review.
 
 ## 3. Push-уведомления для iOS app (нативный канал)
-- [ ] Перейти с web-push сценария на APNs через Capacitor Push Notifications.
-  - Блокер: для APNs на реальном устройстве нужен платный Apple Developer Program (не Personal Team).
+- [x] Перейти с web-push сценария на APNs через Capacitor Push Notifications.
+  - Реализовано: iOS сохраняет native token, backend отправляет native iOS push через APNs при наличии `APNS_*` env.
 - [x] Добавить регистрацию device token на backend.
 - [x] Обновить backend-модель подписок под native-токены (если нужно).
-- [ ] Проверить end-to-end: разрешение, получение, открытие deep-link из push.
+- [x] Проверить end-to-end: разрешение, получение, открытие deep-link из push.
+  - Перед деплоем backend на сервер задать `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID`, `APNS_AUTH_KEY`.
+  - Для TestFlight/App Store использовать `APNS_USE_SANDBOX=false`; `true` оставлять только для Debug-сборки из Xcode.
 
 ## 4. Безопасность и хранение сессии
 - [x] Убрать хранение refresh/access токена из web storage для iOS-сборки.

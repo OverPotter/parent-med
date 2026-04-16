@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { deleteSleepSession, fetchSleepSessionsByChildId } from "@shared/api/sleepSessions";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { SleepSession } from "@shared/types/api";
@@ -93,42 +92,24 @@ export function ChildSleepPage() {
         </Link>
       </div>
 
-      <PageIntro
-        title={copy.sleepSection}
-        subtitle={copy.sleepSectionSubtitle}
-        hideOnMobile
-        action={
-          <Link
-            to={`/children/${child.id}`}
-            className="soft-button-secondary app-btn-secondary-md inline-flex min-h-[2.85rem] items-center justify-center px-4 sm:min-h-[3.05rem]"
-          >
-            {language === "ru" ? "Профиль" : "Profile"}
-          </Link>
-        }
-      />
-
-      <div className="md:hidden">
-        <Surface className="p-4">
-          <h1 className="app-title mb-2 text-[1.42rem] tracking-[-0.04em]">{copy.sleepSection}</h1>
-          <p className="text-sm text-muted">{copy.sleepSectionSubtitle}</p>
-        </Surface>
-      </div>
-
-      <Surface className="p-5 sm:p-6">
-        <div className="mb-4 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="app-card-title">{child.name}</h2>
-              <p className="mt-1 text-sm text-muted">
-                {isSleepLoading ? common.loading : copy.sleepSectionSubtitle}
-              </p>
-            </div>
-            {hasActiveSleep ? (
-              <span className="soft-pill-warning rounded-full px-3 py-1.5 text-xs">
-                {copy.sleepSectionActive}
-              </span>
-            ) : null}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="app-card-title">
+              {copy.sleepSection} · {child.name}
+            </h1>
+            <p className="mt-1 text-sm text-muted">{copy.sleepSectionSubtitle}</p>
           </div>
+          {hasActiveSleep ? (
+            <span className="soft-pill-warning rounded-full px-3 py-1.5 text-xs">
+              {copy.sleepSectionActive}
+            </span>
+          ) : null}
+        </div>
+
+        <Surface className="p-5 sm:p-6">
+          <div className="mb-4 space-y-4">
+            {isSleepLoading ? <p className="text-sm text-muted">{common.loading}</p> : null}
           <div className="-mx-1 flex flex-nowrap items-center gap-2 overflow-x-auto px-1 pb-1">
             {[
               { key: "today", label: copy.recordsPeriodToday },
@@ -160,57 +141,58 @@ export function ChildSleepPage() {
               value={formatSleepSummaryDuration(averageDuration, language)}
             />
           </div>
-        </div>
-
-        {filteredSessions.length === 0 ? (
-          <p className="text-sm text-muted">{copy.sleepSectionEmpty}</p>
-        ) : (
-          <div className="grid gap-3">
-            {filteredSessions.map((session) => (
-              <div key={session.id} className="soft-panel-muted rounded-[24px] px-4 py-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={
-                          session.status === "active"
-                            ? "soft-pill-warning rounded-full px-3 py-1 text-xs"
-                            : "soft-pill rounded-full px-3 py-1 text-xs"
-                        }
-                      >
-                        {session.status === "active"
-                          ? copy.sleepStatusActive
-                          : copy.sleepStatusCompleted}
-                      </span>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <InfoLine label={copy.sleepStartedAt} value={formatDateTime(session.startedAt)} />
-                      <InfoLine
-                        label={copy.sleepEndedAt}
-                        value={
-                          session.endedAt ? formatDateTime(session.endedAt) : copy.sleepStatusActive
-                        }
-                      />
-                      <InfoLine
-                        label={copy.sleepDuration}
-                        value={formatSleepDuration(session.durationMinutes, language, session.status)}
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSleepToDelete(session)}
-                    disabled={deleteSleepMutation.isPending}
-                    className="soft-button-secondary app-btn-secondary-md inline-flex min-h-[2.75rem] shrink-0 text-center text-danger disabled:opacity-50"
-                  >
-                    {copy.sleepSectionDelete}
-                  </button>
-                </div>
-              </div>
-            ))}
           </div>
-        )}
-      </Surface>
+
+          {filteredSessions.length === 0 ? (
+            <p className="text-sm text-muted">{copy.sleepSectionEmpty}</p>
+          ) : (
+            <div className="grid gap-3">
+              {filteredSessions.map((session) => (
+                <div key={session.id} className="soft-panel-muted rounded-[24px] px-4 py-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={
+                            session.status === "active"
+                              ? "soft-pill-warning rounded-full px-3 py-1 text-xs"
+                              : "soft-pill rounded-full px-3 py-1 text-xs"
+                          }
+                        >
+                          {session.status === "active"
+                            ? copy.sleepStatusActive
+                            : copy.sleepStatusCompleted}
+                        </span>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <InfoLine label={copy.sleepStartedAt} value={formatDateTime(session.startedAt)} />
+                        <InfoLine
+                          label={copy.sleepEndedAt}
+                          value={
+                            session.endedAt ? formatDateTime(session.endedAt) : copy.sleepStatusActive
+                          }
+                        />
+                        <InfoLine
+                          label={copy.sleepDuration}
+                          value={formatSleepDuration(session.durationMinutes, language, session.status)}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSleepToDelete(session)}
+                      disabled={deleteSleepMutation.isPending}
+                      className="soft-button-secondary app-btn-secondary-md inline-flex min-h-[2.75rem] shrink-0 text-center text-danger disabled:opacity-50"
+                    >
+                      {copy.sleepSectionDelete}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Surface>
+      </div>
     </div>
   );
 }

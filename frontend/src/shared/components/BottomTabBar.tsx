@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { useState } from "react";
 import { NavLink, matchPath, useLocation } from "react-router-dom";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { LayoutNavLink } from "./TopNav";
@@ -13,6 +14,7 @@ export function BottomTabBar({
 }) {
   const { language } = useI18n();
   const location = useLocation();
+  const [pressedTab, setPressedTab] = useState<string | null>(null);
 
   if (links.length === 0) {
     return null;
@@ -54,11 +56,26 @@ export function BottomTabBar({
                 key={to}
                 to={to}
                 end={to === "/"}
+                onPointerDown={(event) => {
+                  if (event.pointerType === "mouse") {
+                    return;
+                  }
+                  setPressedTab(to);
+                }}
+                onPointerUp={() => setPressedTab((current) => (current === to ? null : current))}
+                onPointerCancel={() =>
+                  setPressedTab((current) => (current === to ? null : current))
+                }
+                onPointerLeave={() =>
+                  setPressedTab((current) => (current === to ? null : current))
+                }
                 className={() =>
                   [
+                    "app-bottom-nav-link",
                     isActive
-                      ? "app-bottom-nav-link app-bottom-nav-link--active"
-                      : "app-bottom-nav-link",
+                      ? "app-bottom-nav-link--active"
+                      : "",
+                    pressedTab === to ? "app-bottom-nav-link--pressed" : "",
                   ].join(" ")
                 }
               >

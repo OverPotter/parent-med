@@ -40,6 +40,7 @@ import {
 import { DateField } from "@shared/components/DateField";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { DisclosureHeader } from "@shared/components/DisclosureHeader";
+import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
@@ -70,6 +71,8 @@ const appBtnPrimaryClass =
   "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
 const appBtnSecondaryClass =
   "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
+const appPillActionClass =
+  "soft-pill inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap";
 const appBtnDangerClass =
   "app-btn-danger-md soft-button-danger inline-flex items-center justify-center px-4";
 
@@ -99,9 +102,6 @@ function normalizeChildIllnessSearchParams(
     if (episodeId) {
       next.set("episodeId", episodeId);
       return next;
-    }
-    if (mode === "analytics") {
-      next.set("mode", "analytics");
     }
     return next;
   }
@@ -140,8 +140,6 @@ export function ChildIllnessPage() {
   const queryClient = useQueryClient();
   const [openHistoryEpisodeId, setOpenHistoryEpisodeId] = useState<string | null>(null);
   const historyOnlyView = searchParams.get("view") === "history";
-  const historyMode = searchParams.get("mode");
-  const historyAnalyticsMode = historyOnlyView && historyMode === "analytics";
   const historyEpisodeInsightsId = historyOnlyView ? searchParams.get("episodeId") : null;
   const historyEpisodeInsightsMode = Boolean(historyEpisodeInsightsId);
   const createMode = searchParams.get("mode") === "create";
@@ -326,7 +324,7 @@ export function ChildIllnessPage() {
   }, [activeEpisode, createMode, historyOnlyView]);
 
   useEffect(() => {
-    if (!historyOnlyView || (!historyAnalyticsMode && !historyEpisodeInsightsMode)) {
+    if (!historyOnlyView || !historyEpisodeInsightsMode) {
       return;
     }
     if (typeof window === "undefined" || window.innerWidth >= 1024) {
@@ -345,7 +343,7 @@ export function ChildIllnessPage() {
         behavior: "smooth",
       });
     });
-  }, [historyOnlyView, historyAnalyticsMode, historyEpisodeInsightsMode]);
+  }, [historyOnlyView, historyEpisodeInsightsMode]);
 
   if (!childId || childLoading || !child) {
     return (
@@ -459,7 +457,7 @@ export function ChildIllnessPage() {
       {!activeEpisode && createMode && !historyOnlyView && (
         <section className="space-y-3">
           <SectionTitle
-            title={language === "ru" ? "Новое наблюдение" : "New tracking"}
+            title={`${language === "ru" ? "Новое наблюдение" : "New tracking"} · ${child.name}`}
             subtitle={
               language === "ru"
                 ? "Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи."
@@ -468,7 +466,6 @@ export function ChildIllnessPage() {
           />
           <div ref={createModeCardRef}>
             <EpisodeActivationCard
-              childName={child.name}
               isPending={createEpisodeMutation.isPending}
               errorMessage={
                 (
@@ -497,54 +494,31 @@ export function ChildIllnessPage() {
           <SectionTitle
             title={`${language === "ru" ? "История" : "History"}${child.name ? ` · ${child.name}` : ""}`}
             subtitle={
-              historyAnalyticsMode
+              historyEpisodeInsightsMode
                 ? language === "ru"
-                  ? "Сводка по завершённым эпизодам."
-                  : "Summary of completed episodes."
-                : historyEpisodeInsightsMode
+                  ? "Подробный разбор конкретного эпизода."
+                  : "Detailed breakdown of a specific episode."
+                : openHistoryEpisodeId
                   ? language === "ru"
-                    ? "Подробный разбор конкретного эпизода."
-                    : "Detailed breakdown of a specific episode."
-                  : openHistoryEpisodeId
+                    ? "Сверху сводка по завершённым эпизодам, ниже открыта одна запись."
+                    : "Summary is shown above, with one record opened below."
+                  : historyEpisodes.length > 0
                     ? language === "ru"
-                      ? "Открыта одна запись."
-                      : "One record is open."
-                    : historyEpisodes.length > 0
-                      ? language === "ru"
-                        ? "Завершённые наблюдения по ребёнку."
-                        : "Completed tracking records for this child."
-                      : language === "ru"
-                        ? "Завершённых наблюдений пока нет."
-                        : "No completed tracking yet."
+                      ? "Сводка и завершённые наблюдения по ребёнку."
+                      : "Summary and completed tracking records for this child."
+                    : language === "ru"
+                      ? "Сводка появится здесь, когда завершённые наблюдения накопятся."
+                      : "The summary will appear here as completed tracking records build up."
             }
           />
 
-          {!historyEpisodeInsightsMode && (
-            <div className="grid gap-2 sm:grid-cols-2 lg:max-w-[30rem]">
-              <Link
-                to={`/children/${child.id}/illness?view=history`}
-                className={`inline-flex min-h-[3rem] items-center justify-center rounded-[20px] px-4 text-center text-[0.92rem] leading-[1.1] tracking-[-0.025em] sm:min-h-[3.2rem] sm:px-5 sm:text-[0.98rem] ${
-                  historyAnalyticsMode ? "soft-button-secondary" : "soft-button-primary"
-                }`}
-              >
-                {language === "ru" ? "Вся история" : "Full history"}
-              </Link>
-              <Link
-                to={`/children/${child.id}/illness?view=history&mode=analytics`}
-                className={`inline-flex min-h-[3rem] items-center justify-center rounded-[20px] px-4 text-center text-[0.92rem] leading-[1.1] tracking-[-0.025em] sm:min-h-[3.2rem] sm:px-5 sm:text-[0.98rem] ${
-                  historyAnalyticsMode ? "soft-button-primary" : "soft-button-secondary"
-                }`}
-              >
-                {language === "ru" ? "Аналитика" : "Analytics"}
-              </Link>
-            </div>
-          )}
-
           {historyEpisodeInsightsMode && focusedHistoryEpisode ? (
             <HistoryEpisodeInsightsScreen childId={child.id} episode={focusedHistoryEpisode} />
-          ) : historyAnalyticsMode ? (
-            <HistoryInsightsPreview childId={child.id} />
-          ) : openHistoryEpisodeId ? (
+          ) : null}
+
+          {!historyEpisodeInsightsMode && <HistoryInsightsPreview childId={child.id} />}
+
+          {!historyEpisodeInsightsMode && openHistoryEpisodeId ? (
             <div className="soft-panel-muted flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-4 py-3">
               <p className="text-sm text-muted">
                 {language === "ru"
@@ -554,14 +528,14 @@ export function ChildIllnessPage() {
               <button
                 type="button"
                 onClick={() => setOpenHistoryEpisodeId(null)}
-                className="soft-button-secondary rounded-2xl px-3 py-1.5 text-sm"
+                className={appBtnSecondaryClass}
               >
                 {language === "ru" ? "Показать всю историю" : "Show full history"}
               </button>
             </div>
           ) : null}
 
-          {!historyAnalyticsMode && !historyEpisodeInsightsMode && historyEpisodes.length > 0 ? (
+          {!historyEpisodeInsightsMode && historyEpisodes.length > 0 ? (
             <ul className="grid gap-4">
               {visibleHistoryEpisodes.map((episode) => (
                 <HistoryEpisodeCard
@@ -583,7 +557,7 @@ export function ChildIllnessPage() {
                 />
               ))}
             </ul>
-          ) : !historyAnalyticsMode && !historyEpisodeInsightsMode ? (
+          ) : !historyEpisodeInsightsMode ? (
             <div className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
               {language === "ru" ? "История пока пустая." : "History is still empty."}
             </div>
@@ -645,7 +619,6 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
     enabled: !!childId,
     ...liveQueryOptions,
   });
-  const timelineMeta = getHistoryTimelineMeta(selectedPeriod, language);
 
   if (isLoading || !summary) {
     return (
@@ -655,37 +628,16 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
     );
   }
 
-  const frequencyCards = [
+  const summaryPills = [
     {
-      label:
-        selectedPeriod === "month"
-          ? language === "ru"
-            ? "Эпизодов за месяц"
-            : "Episodes this month"
-          : selectedPeriod === "quarter"
-            ? language === "ru"
-              ? "Эпизодов за 3 месяца"
-              : "Episodes in 3 months"
-            : selectedPeriod === "half_year"
-              ? language === "ru"
-                ? "Эпизодов за 6 месяцев"
-                : "Episodes in 6 months"
-              : selectedPeriod === "year"
-                ? language === "ru"
-                  ? "Эпизодов за год"
-                  : "Episodes this year"
-                : language === "ru"
-                  ? "Эпизодов за всё время"
-                  : "Episodes overall",
-      value: String(summary.episodeCount),
+      label: language === "ru" ? "Средняя длительность" : "Average duration",
+      value: formatDurationValue(summary.averageDurationDays, language),
     },
     {
-      label: language === "ru" ? "Без болезни" : "Without illness",
+      label: language === "ru" ? "Самый долгий эпизод" : "Longest episode",
       value:
-        summary.daysSinceLastEpisode !== null
-          ? language === "ru"
-            ? `${summary.daysSinceLastEpisode} дн.`
-            : `${summary.daysSinceLastEpisode} days`
+        summary.longestDurationDays > 0
+          ? formatDurationValue(summary.longestDurationDays, language)
           : language === "ru"
             ? "Нет данных"
             : "No data",
@@ -694,314 +646,86 @@ function HistoryInsightsPreview({ childId }: { childId: string }) {
       label:
         selectedPeriod === "month"
           ? language === "ru"
-            ? "Период наблюдения"
-            : "Observation window"
+            ? "Эпизодов с напоминаниями"
+            : "Episodes with reminders"
           : language === "ru"
             ? "Самый активный период"
             : "Most active period",
       value:
         selectedPeriod === "month"
-          ? language === "ru"
-            ? "30 дней"
-            : "30 days"
+          ? String(summary.guidedEpisodes)
           : (translateAnalyticsLabel(summary.mostActivePeriodLabel, language) ??
             (language === "ru" ? "Нет данных" : "No data")),
     },
-  ];
-  const severityCards = [
-    {
-      label: language === "ru" ? "Средняя длительность" : "Average duration",
-      value: formatDurationValue(summary.averageDurationDays, language),
-    },
-    {
-      label: language === "ru" ? "Самый долгий эпизод" : "Longest episode",
-      value: formatDurationValue(summary.longestDurationDays, language),
-    },
-  ];
-  const behaviorCards = [
     {
       label: language === "ru" ? "Эпизодов с лекарствами" : "Episodes with medication",
       value: String(summary.episodesWithAdministrations),
     },
-    {
-      label: language === "ru" ? "С напоминаниями" : "With reminders",
-      value: String(summary.guidedEpisodes),
-    },
   ];
-  const overallInsight =
-    summary.daysSinceLastEpisode !== null && summary.daysSinceLastEpisode >= 60
-      ? language === "ru"
-        ? "Сейчас спокойно: новых эпизодов давно не было."
-        : "Things look calm right now: there have been no recent episodes."
-      : summary.averageDurationDays >= 6
-        ? language === "ru"
-          ? "Эпизоды тянутся дольше обычного. Важно следить за длительностью и повторяемостью."
-          : "Episodes are lasting longer than usual. Duration and recurrence deserve attention."
-        : summary.episodeCount >= 3 && selectedPeriod !== "all"
-          ? language === "ru"
-            ? "За выбранный период эпизодов уже заметно много."
-            : "There have already been quite a few episodes in this period."
-          : language === "ru"
-            ? "Сводка выглядит ровно: видно частоту, длительность и общую динамику."
-            : "The summary looks balanced: frequency, duration and overall trend are clear.";
+
+  const selectedPeriodLabel =
+    periodOptions.find((item) => item.key === selectedPeriod)?.label ??
+    (language === "ru" ? "Период" : "Period");
 
   return (
-    <div className="space-y-4">
-      <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="app-card-title">
-              {language === "ru" ? "Общая сводка" : "Overall summary"}
-            </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-              {language === "ru"
-                ? "Как часто ребёнок болел и как это менялось со временем."
-                : "How often the child got sick and how it changed over time."}
-            </p>
-            <p className="mt-3 text-sm font-medium text-foreground">{overallInsight}</p>
-          </div>
-          <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs font-medium">
-            {summary.totalClosedEpisodes}{" "}
-            {language === "ru" ? "эпизодов в архиве" : "episodes in archive"}
-          </span>
-        </div>
-
-        <div className="sticky top-2 z-10 -mx-1 mt-4 overflow-x-auto px-1 pb-1 sm:static sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
-          <div className="inline-flex min-w-full gap-2 sm:flex sm:min-w-0 sm:flex-wrap">
+    <Surface className="p-5 sm:p-6">
+      <div className="mb-4 space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="-mx-1 flex flex-nowrap items-center gap-2 overflow-x-auto px-1 pb-1">
             {periodOptions.map((item) => (
               <button
                 key={item.key}
                 type="button"
                 onClick={() => setSelectedPeriod(item.key)}
-                className={[
-                  selectedPeriod === item.key ? "soft-tab-active" : "soft-tab",
-                  "min-h-[2.65rem] shrink-0 rounded-full px-3 text-[0.9rem] tracking-[-0.025em] sm:min-h-[2.95rem] sm:px-4 sm:text-sm",
-                ].join(" ")}
+                className={
+                  selectedPeriod === item.key
+                    ? "soft-tab-active min-h-[2.2rem] shrink-0 px-3 text-xs"
+                    : "soft-tab min-h-[2.2rem] shrink-0 px-3 text-xs"
+                }
               >
                 <span className="sm:hidden">{item.shortLabel}</span>
                 <span className="hidden sm:inline">{item.label}</span>
               </button>
             ))}
           </div>
-        </div>
-      </div>
-
-      <section className="space-y-3">
-        <SectionTitle
-          title={language === "ru" ? "Частота" : "Frequency"}
-          subtitle={
-            language === "ru"
-              ? "Сколько эпизодов было за выбранный период."
-              : "How many episodes happened in the selected period."
-          }
-        />
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {frequencyCards.map((item) => (
-            <AnalyticsCard key={item.label} label={item.label} value={item.value} tone="default" />
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <SectionTitle title={timelineMeta.sectionTitle} subtitle={timelineMeta.sectionSubtitle} />
-
-        <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h4 className="app-card-title">{timelineMeta.chartTitle}</h4>
-              <p className="mt-1 text-sm leading-6 text-muted">{timelineMeta.chartDescription}</p>
-            </div>
-            <span className="soft-pill rounded-full px-3 py-1 text-xs">
-              {periodOptions.find((item) => item.key === selectedPeriod)?.label}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="soft-pill inline-flex w-fit rounded-full px-3.5 py-1.5 text-xs font-medium">
+              {summary.episodeCount}{" "}
+              {language === "ru" ? `за ${selectedPeriodLabel.toLowerCase()}` : `in ${selectedPeriodLabel.toLowerCase()}`}
+            </span>
+            <span className="soft-pill inline-flex w-fit rounded-full px-3.5 py-1.5 text-xs font-medium">
+              {summary.totalClosedEpisodes}{" "}
+              {language === "ru" ? "в истории" : "in history"}
             </span>
           </div>
-          <div className="mt-5">
-            <MiniHistoryBars
-              items={summary.timeline.map((item) => ({
-                ...item,
-                label: translateAnalyticsLabel(item.label, language) ?? item.label,
-              }))}
-            />
-          </div>
         </div>
-      </section>
-
-      <section className="space-y-3">
-        <SectionTitle
-          title={language === "ru" ? "Как проходили эпизоды" : "How episodes went"}
-          subtitle={
-            language === "ru"
-              ? "Насколько короткими или длительными они были."
-              : "How short or long the episodes were."
-          }
-        />
-        <div className="grid gap-3 sm:grid-cols-2">
-          {severityCards.map((item) => (
-            <AnalyticsCard key={item.label} label={item.label} value={item.value} tone="accent" />
+        <div className="grid grid-cols-2 gap-2">
+          {summaryPills.map((item) => (
+            <SummaryPill key={item.label} label={item.label} value={item.value} />
           ))}
         </div>
-      </section>
-
-      <section className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-          <h4 className="app-card-title">
-            {language === "ru" ? "Сколько обычно длилось" : "Typical duration"}
-          </h4>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            {language === "ru"
-              ? "Короткие, средние и более длительные эпизоды за этот период."
-              : "Short, medium and longer episodes in this period."}
-          </p>
-          <div className="mt-5 space-y-3">
-            {summary.durationBuckets.map((item) => (
-              <StatRow
-                key={item.label}
-                label={translateAnalyticsLabel(item.label, language) ?? item.label}
-                value={item.value}
-                max={Math.max(...summary.durationBuckets.map((bucket) => bucket.value), 1)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-          <h4 className="app-card-title">
-            {language === "ru" ? "Что обычно делали" : "What usually happened"}
-          </h4>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            {language === "ru"
-              ? "Лекарства и напоминания за этот период."
-              : "Medication and reminders in this period."}
-          </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {behaviorCards.map((item) => (
-              <AnalyticsCard key={item.label} label={item.label} value={item.value} tone="soft" />
-            ))}
-          </div>
-        </div>
-      </section>
-    </div>
+      </div>
+    </Surface>
   );
 }
 
-function AnalyticsCard({
+function SummaryPill({
   label,
   value,
-  tone,
 }: {
   label: string;
   value: string;
-  tone: "default" | "accent" | "soft";
 }) {
-  const toneClass =
-    tone === "accent" ? "soft-panel" : tone === "soft" ? "soft-panel-muted" : "soft-card";
-
   return (
-    <div className={`${toneClass} rounded-[22px] px-4 py-4 sm:px-5`}>
-      <p className="text-[0.82rem] leading-5 text-muted sm:text-sm">{label}</p>
-      <p className="app-card-title mt-2 text-[1rem] sm:text-[1.04rem]">{value}</p>
+    <div className="soft-panel-muted flex min-h-[5.35rem] w-full flex-col items-start justify-between rounded-[1.15rem] border border-[color:color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-3.5 py-3">
+      <span className="text-[11px] font-medium leading-4 tracking-[0.02em] text-muted">
+        {label}
+      </span>
+      <span className="mt-2 text-[0.98rem] font-semibold leading-5 tracking-[-0.025em] text-foreground sm:text-[1.02rem]">
+        {value}
+      </span>
     </div>
   );
-}
-
-function MiniHistoryBars({ items }: { items: Array<{ label: string; value: number }> }) {
-  const rawMaxValue = Math.max(...items.map((item) => item.value), 1);
-  const scaleMax = Math.max(3, rawMaxValue);
-
-  return (
-    <div className="space-y-3">
-      {items.map((item) => {
-        const isEmpty = item.value === 0;
-        const width = isEmpty ? 0 : Math.max(10, Math.round((item.value / scaleMax) * 100));
-
-        return (
-          <div
-            key={item.label}
-            className="grid grid-cols-[3rem_minmax(0,1fr)_2rem] items-center gap-3 sm:grid-cols-[3.5rem_minmax(0,1fr)_2.5rem]"
-          >
-            <span className="text-sm font-medium text-foreground">{item.label}</span>
-            <div className="relative h-3 overflow-hidden rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_7%,white)]">
-              <div className="pointer-events-none absolute inset-0 rounded-full border border-[color:color-mix(in_srgb,var(--color-border)_78%,transparent)]" />
-              {isEmpty ? (
-                <div className="absolute left-1.5 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[color:color-mix(in_srgb,var(--color-border)_70%,transparent)]" />
-              ) : (
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,color-mix(in_srgb,var(--color-primary)_66%,white_22%)_0%,color-mix(in_srgb,var(--color-primary)_88%,black_4%)_100%)]"
-                  style={{ width: `${width}%` }}
-                />
-              )}
-            </div>
-            <span className="text-right text-sm font-medium text-muted">{item.value}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function StatRow({ label, value, max }: { label: string; value: number; max: number }) {
-  const width = Math.max(10, Math.round((value / Math.max(max, 1)) * 100));
-
-  return (
-    <div className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_2rem] sm:items-center">
-      <span className="text-sm text-foreground">{label}</span>
-      <div className="h-2.5 overflow-hidden rounded-full border border-[color:color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_7%,white)]">
-        <div
-          className="h-full rounded-full bg-[linear-gradient(90deg,color-mix(in_srgb,var(--color-primary)_68%,white_20%)_0%,color-mix(in_srgb,var(--color-primary)_88%,black_4%)_100%)]"
-          style={{ width: `${width}%` }}
-        />
-      </div>
-      <span className="text-sm font-medium text-muted">{value}</span>
-    </div>
-  );
-}
-
-function getHistoryTimelineMeta(
-  period: "month" | "quarter" | "half_year" | "year" | "all",
-  language: "ru" | "en"
-) {
-  if (period === "month") {
-    return {
-      sectionTitle: language === "ru" ? "За месяц" : "This month",
-      sectionSubtitle:
-        language === "ru"
-          ? "На каких неделях за последние 30 дней были эпизоды."
-          : "Which weeks in the last 30 days had episodes.",
-      chartTitle: language === "ru" ? "Распределение по неделям" : "Weekly distribution",
-      chartDescription:
-        language === "ru"
-          ? "Сколько эпизодов пришлось на каждую неделю последних 30 дней."
-          : "How many episodes fell into each week of the last 30 days.",
-    };
-  }
-
-  if (period === "all") {
-    return {
-      sectionTitle: language === "ru" ? "По годам" : "By year",
-      sectionSubtitle:
-        language === "ru"
-          ? "Как менялась частота болезней по годам."
-          : "How illness frequency changed by year.",
-      chartTitle: language === "ru" ? "Динамика по годам" : "Yearly trend",
-      chartDescription:
-        language === "ru"
-          ? "Каждая полоса показывает, сколько эпизодов было за год."
-          : "Each bar shows how many episodes happened in a year.",
-    };
-  }
-
-  return {
-    sectionTitle: language === "ru" ? "По месяцам" : "By month",
-    sectionSubtitle:
-      language === "ru"
-        ? "Когда ребёнок болел чаще, а когда реже."
-        : "When the child was sick more often and when less often.",
-    chartTitle: language === "ru" ? "Динамика по месяцам" : "Monthly trend",
-    chartDescription:
-      language === "ru"
-        ? "Каждая полоса показывает, сколько эпизодов пришлось на месяц."
-        : "Each bar shows how many episodes fell into a month.",
-  };
 }
 
 function formatDurationValue(days: number, language: "ru" | "en") {
@@ -1120,7 +844,7 @@ function HistoryEpisodeCard({
         actions={
           <Link
             to={`/children/${childId}/illness?view=history&episodeId=${episode.id}`}
-            className={`${appBtnSecondaryClass} min-h-[2.65rem] px-3 sm:min-h-[2.9rem]`}
+            className={appPillActionClass}
           >
             {language === "ru" ? "Разбор" : "Insights"}
           </Link>
@@ -1446,7 +1170,7 @@ function HistoryEpisodeInsightsScreen({
       <div className="flex flex-wrap items-center justify-end gap-3">
         <Link
           to={`/children/${childId}/illness?view=history`}
-          className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
+          className={appPillActionClass}
         >
           {language === "ru" ? "Ко всей истории" : "Back to full history"}
         </Link>
@@ -1908,24 +1632,24 @@ function EpisodeBlock({
         </p>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+      <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
         <Link
           to={`/children/${childId}/illness?focus=temperature`}
-          className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
+          className={appPillActionClass}
         >
-          {language === "ru" ? "Записать температуру" : "Log temperature"}
+          {language === "ru" ? "+ Температура" : "+ Temperature"}
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=administration`}
-          className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
+          className={appPillActionClass}
         >
-          {language === "ru" ? "Записать приём" : "Log dose"}
+          {language === "ru" ? "+ Приём" : "+ Dose"}
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=comment`}
-          className={`${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`}
+          className={appPillActionClass}
         >
-          {language === "ru" ? "Добавить заметку" : "Add note"}
+          {language === "ru" ? "+ Заметка" : "+ Note"}
         </Link>
       </div>
     </section>
@@ -1951,9 +1675,12 @@ function EpisodeBlock({
             {language === "ru" ? "Все записи по времени." : "All entries in time order."}
           </p>
         </div>
+      </div>
+
+      <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
         <Link
           to={`/children/${childId}/illness?focus=timeline`}
-          className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full self-start text-center sm:min-h-[3.05rem] sm:w-auto`}
+          className={appPillActionClass}
         >
           {language === "ru" ? "Открыть" : "Open"}
         </Link>
@@ -2259,13 +1986,13 @@ function EpisodeBlock({
           <div className="flex flex-wrap gap-2">
             <Link
               to={`/children/${childId}/illness?focus=reminders`}
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className={appBtnSecondaryClass}
             >
               {language === "ru" ? "К напоминаниям" : "Back to reminders"}
             </Link>
             <Link
               to="/illnesses/active"
-              className="soft-button-secondary rounded-2xl px-4 py-2.5 text-sm"
+              className={appBtnSecondaryClass}
             >
               {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
@@ -2439,13 +2166,11 @@ function EpisodeBlock({
 }
 
 function EpisodeActivationCard({
-  childName,
   isPending,
   errorMessage,
   onActivate,
   onCancel,
 }: {
-  childName: string;
   isPending: boolean;
   errorMessage: string | null;
   onActivate: (payload: {
@@ -2479,18 +2204,6 @@ function EpisodeActivationCard({
 
   return (
     <div className="soft-panel rounded-[30px]">
-      <div className="soft-hero rounded-t-[30px] px-5 py-6 sm:px-6 sm:py-7">
-        <p className="text-xs tracking-[0.1em] text-muted">
-          {language === "ru" ? "Старт наблюдения" : "Start tracking"}
-        </p>
-        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{childName}</h3>
-        <p className="mt-3 text-sm text-muted">
-          {language === "ru"
-            ? "Создайте запись о болезни, а дальше просто отмечайте температуру, приёмы и важные изменения."
-            : "Create an illness record, then simply log temperature, doses and important changes."}
-        </p>
-      </div>
-
       <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
         {errorMessage && (
           <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{errorMessage}</div>
@@ -2537,13 +2250,13 @@ function EpisodeActivationCard({
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
-              {language === "ru" ? "Записать температуру" : "Log temperature"}
+              {language === "ru" ? "+ Температура" : "+ Temperature"}
             </span>
             <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
-              {language === "ru" ? "Отметить приём" : "Log dose"}
+              {language === "ru" ? "+ Приём" : "+ Dose"}
             </span>
             <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
-              {language === "ru" ? "Добавить комментарий" : "Add comment"}
+              {language === "ru" ? "+ Комментарий" : "+ Comment"}
             </span>
             <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
               {language === "ru" ? "Добавить напоминание" : "Add reminder"}

@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { deleteFeedingRecord, fetchFeedingRecordsByChildId } from "@shared/api/feedingRecords";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { FeedingRecord } from "@shared/types/api";
@@ -97,33 +96,17 @@ export function ChildFeedingPage() {
         </Link>
       </div>
 
-      <PageIntro
-        title={copy.feedingSection}
-        subtitle={copy.feedingSectionSubtitle}
-        hideOnMobile
-        action={
-          <Link
-            to={`/children/${child.id}`}
-            className="soft-button-secondary app-btn-secondary-md inline-flex min-h-[2.85rem] items-center justify-center px-4 sm:min-h-[3.05rem]"
-          >
-            {language === "ru" ? "Профиль" : "Profile"}
-          </Link>
-        }
-      />
+      <div className="space-y-3">
+        <div>
+          <h1 className="app-card-title">
+            {copy.feedingSection} · {child.name}
+          </h1>
+          <p className="mt-1 text-sm text-muted">{copy.feedingSectionSubtitle}</p>
+        </div>
 
-      <div className="md:hidden">
-        <Surface className="p-4">
-          <h1 className="app-title mb-2 text-[1.42rem] tracking-[-0.04em]">{copy.feedingSection}</h1>
-          <p className="text-sm text-muted">{copy.feedingSectionSubtitle}</p>
-        </Surface>
-      </div>
-
-      <Surface className="p-5 sm:p-6">
-        <div className="mb-4 space-y-4">
-          <h2 className="app-card-title">{child.name}</h2>
-          <p className="mt-1 text-sm text-muted">
-            {isFeedingLoading ? common.loading : copy.feedingSectionSubtitle}
-          </p>
+        <Surface className="p-5 sm:p-6">
+          <div className="mb-4 space-y-4">
+            {isFeedingLoading ? <p className="text-sm text-muted">{common.loading}</p> : null}
           <div className="-mx-1 flex flex-nowrap items-center gap-2 overflow-x-auto px-1 pb-1">
             {[
               { key: "today", label: copy.recordsPeriodToday },
@@ -163,54 +146,55 @@ export function ChildFeedingPage() {
               value={formatVolume(averageVolume, language)}
             />
           </div>
-        </div>
-
-        {filteredRecords.length === 0 ? (
-          <p className="text-sm text-muted">{copy.feedingSectionEmpty}</p>
-        ) : (
-          <div className="grid gap-3">
-            {filteredRecords.map((item) => (
-              <div key={item.id} className="soft-panel-muted rounded-[24px] px-4 py-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                        {item.feedingType === "breast"
-                          ? copy.feedingTypeBreastLabel
-                          : copy.feedingTypeFormulaLabel}
-                      </span>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      <InfoLine label={copy.feedingRecordedAt} value={formatDateTime(item.recordedAt)} />
-                      <InfoLine
-                        label={copy.feedingSide}
-                        value={formatBreastSide(item.breastSide, language)}
-                      />
-                      <InfoLine
-                        label={copy.feedingVolume}
-                        value={item.formulaVolumeMl ? `${item.formulaVolumeMl} мл` : "—"}
-                      />
-                      <InfoLine
-                        label={copy.feedingDuration}
-                        value={formatFeedingDuration(item.durationMinutes, language)}
-                      />
-                    </div>
-                    {item.note ? <InfoLine label={copy.feedingNote} value={item.note} /> : null}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setRecordToDelete(item)}
-                    disabled={deleteMutation.isPending}
-                    className="soft-button-secondary app-btn-secondary-md inline-flex min-h-[2.75rem] shrink-0 text-center text-danger disabled:opacity-50"
-                  >
-                    {copy.feedingSectionDelete}
-                  </button>
-                </div>
-              </div>
-            ))}
           </div>
-        )}
-      </Surface>
+
+          {filteredRecords.length === 0 ? (
+            <p className="text-sm text-muted">{copy.feedingSectionEmpty}</p>
+          ) : (
+            <div className="grid gap-3">
+              {filteredRecords.map((item) => (
+                <div key={item.id} className="soft-panel-muted rounded-[24px] px-4 py-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                          {item.feedingType === "breast"
+                            ? copy.feedingTypeBreastLabel
+                            : copy.feedingTypeFormulaLabel}
+                        </span>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <InfoLine label={copy.feedingRecordedAt} value={formatDateTime(item.recordedAt)} />
+                        <InfoLine
+                          label={copy.feedingSide}
+                          value={formatBreastSide(item.breastSide, language)}
+                        />
+                        <InfoLine
+                          label={copy.feedingVolume}
+                          value={item.formulaVolumeMl ? `${item.formulaVolumeMl} мл` : "—"}
+                        />
+                        <InfoLine
+                          label={copy.feedingDuration}
+                          value={formatFeedingDuration(item.durationMinutes, language)}
+                        />
+                      </div>
+                      {item.note ? <InfoLine label={copy.feedingNote} value={item.note} /> : null}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setRecordToDelete(item)}
+                      disabled={deleteMutation.isPending}
+                      className="soft-button-secondary app-btn-secondary-md inline-flex min-h-[2.75rem] shrink-0 text-center text-danger disabled:opacity-50"
+                    >
+                      {copy.feedingSectionDelete}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Surface>
+      </div>
     </div>
   );
 }

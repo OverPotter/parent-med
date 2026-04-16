@@ -128,6 +128,32 @@ body details > summary::-webkit-details-marker {
   min-height: 100vh;
   min-height: 100dvh;
   background:
+    radial-gradient(
+      circle at 10% 50%,
+      color-mix(in srgb, var(--color-primary) 18%, transparent),
+      transparent 22%
+    ),
+    radial-gradient(
+      circle at 90% 50%,
+      color-mix(in srgb, var(--color-primary) 16%, transparent),
+      transparent 22%
+    ),
+    radial-gradient(circle at top left, var(--color-surface-hero), transparent 34%),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--color-primary) 12%, transparent),
+      transparent 26%
+    ),
+    linear-gradient(
+      180deg,
+      #f3efff 0%,
+      color-mix(in srgb, var(--color-background) 96%, white) 44%,
+      #e8e1ff 100%
+    );
+}
+
+[data-theme="dark"] .soft-app-bg {
+  background:
     radial-gradient(circle at 10% 50%, rgba(138, 123, 191, 0.16), transparent 24%),
     radial-gradient(circle at 90% 50%, rgba(138, 123, 191, 0.18), transparent 24%),
     linear-gradient(180deg, #26203a 0%, #1e1b2e 42%, #181427 100%);
@@ -768,6 +794,13 @@ p {
     transform: translateY(-1px);
   }
 
+  .app-profile-menu__trigger--icon-only {
+    min-height: 2.35rem;
+    height: 2.35rem;
+    width: 2.35rem;
+    padding: 0;
+  }
+
   .app-profile-menu__trigger:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
@@ -888,11 +921,12 @@ p {
   }
 
   .app-bottom-nav-shell {
+    position: relative;
     display: grid;
     width: 100%;
     max-width: 48rem;
     margin: 0 auto;
-    gap: 0.2rem;
+    gap: 0;
     padding: 0.42rem 0.72rem 0.18rem;
   }
 
@@ -922,29 +956,34 @@ p {
   .app-bottom-nav-link:not(:first-child)::before {
     content: "";
     position: absolute;
-    left: -0.1rem;
+    left: 0;
     top: 50%;
-    height: 2.08rem;
+    height: 1.86rem;
     width: 1px;
     transform: translateY(-50%);
     background: linear-gradient(
       180deg,
       transparent 0%,
-      rgb(255 255 255 / 0.1) 18%,
-      rgb(255 255 255 / 0.16) 50%,
-      rgb(255 255 255 / 0.1) 82%,
+      rgb(255 255 255 / 0.08) 10%,
+      rgb(255 255 255 / 0.16) 26%,
+      rgb(255 255 255 / 0.24) 50%,
+      rgb(255 255 255 / 0.16) 74%,
+      rgb(255 255 255 / 0.08) 90%,
       transparent 100%
     );
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.02);
     opacity: 0.68;
     pointer-events: none;
+    z-index: 1;
   }
 
-  .app-bottom-nav-icon-wrap {
-    position: relative;
-    display: inline-flex;
-    margin-bottom: 0;
-    transform: translateY(-0.01rem);
-  }
+.app-bottom-nav-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: 0;
+  transform: translateY(-0.01rem);
+  z-index: 1;
+}
 
   .app-bottom-nav-icon {
     position: relative;
@@ -1021,19 +1060,21 @@ p {
     background: color-mix(in srgb, #ea8ca1 88%, #c56a7f);
   }
 
-  .app-bottom-nav-label {
-    display: block;
-    max-width: 100%;
-    overflow: visible;
-    text-overflow: clip;
+.app-bottom-nav-label {
+  display: block;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
     white-space: nowrap;
     font-size: 0.76rem;
     font-weight: 600;
-    line-height: 1.2;
-    letter-spacing: -0.005em;
-    transform: none;
-    opacity: 0.9;
-  }
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  transform: none;
+  opacity: 0.9;
+  position: relative;
+  z-index: 1;
+}
 
   .app-bottom-nav-link:hover {
     background: transparent;
@@ -2540,17 +2581,36 @@ p {
   }
 
   [data-theme="dark"] .app-bottom-nav-link {
-    color: color-mix(in srgb, #cdbef3 56%, var(--color-foreground));
+    color: color-mix(in srgb, var(--color-foreground) 82%, var(--color-primary) 18%);
+  }
+
+  [data-theme="dark"] .app-bottom-nav-icon,
+  [data-theme="dark"] .app-bottom-nav-label,
+  [data-theme="dark"] .app-nav-icon {
+    color: inherit;
+    opacity: 1;
   }
 
   [data-theme="dark"] .app-bottom-nav-link:hover {
     background: color-mix(in srgb, var(--color-primary) 14%, transparent);
   }
 
+  [data-theme="dark"] .app-bottom-nav-link--pressed {
+    color: color-mix(in srgb, var(--color-foreground) 88%, var(--color-primary) 12%);
+  }
+
   [data-theme="dark"] .app-bottom-nav-link--active {
     background: transparent;
-    color: var(--color-foreground);
+    color: color-mix(in srgb, var(--color-foreground) 92%, var(--color-primary) 8%);
     box-shadow: none;
+  }
+
+  [data-theme="dark"] .app-bottom-nav-link--active .app-nav-icon--active {
+    color: color-mix(in srgb, #f6f2ff 92%, var(--color-primary) 8%);
+  }
+
+  [data-theme="dark"] .app-bottom-nav-link--active .app-bottom-nav-label {
+    color: color-mix(in srgb, #f8f5ff 88%, var(--color-primary) 12%);
   }
 
   [data-theme="dark"] .soft-tab-active {
@@ -5671,16 +5731,6 @@ html.ios-lock-horizontal .landing-main {
   }
 }
 
-.app-bottom-nav-shell {
-  position: relative;
-  padding: 0.42rem 0.72rem 0.18rem;
-}
-
-.app-bottom-nav-link:not(:first-child)::before {
-  height: 2.22rem;
-  opacity: 0.78;
-}
-
 .app-bottom-nav-link--active,
 [data-theme="light"] .app-bottom-nav-link--active,
 [data-theme="dark"] .app-bottom-nav-link--active {
@@ -5741,6 +5791,7 @@ html.ios-lock-horizontal .landing-main {
 .app-bottom-nav-link {
   min-height: 4.08rem;
   padding: 0.48rem 0.24rem 0.52rem;
+  isolation: isolate;
 }
 
 .app-nav-icon {
@@ -5756,6 +5807,113 @@ html.ios-lock-horizontal .landing-main {
 .app-bottom-nav-link--active .app-bottom-nav-label {
   font-weight: 800;
   letter-spacing: 0.008em;
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link {
+  overflow: hidden;
+  border-radius: 1.2rem;
+  transition:
+    background-color 140ms ease,
+    box-shadow 180ms ease,
+    color 160ms ease,
+    transform 140ms ease;
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0.28rem;
+  right: 0.28rem;
+  top: 0.32rem;
+  bottom: 0.26rem;
+  border-radius: 1.05rem;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.04) 72%),
+    color-mix(in srgb, var(--color-primary) 14%, transparent);
+  opacity: 0;
+  transform: scale(0.94);
+  transition:
+    opacity 140ms ease,
+    transform 180ms ease,
+    background 180ms ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link--pressed {
+  transform: scale(0.972);
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link--pressed::after {
+  opacity: 0.9;
+  transform: scale(1);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0.08) 74%),
+    color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link--pressed .app-bottom-nav-icon,
+[data-ios-shell="true"] .app-bottom-nav-link--pressed .app-bottom-nav-label {
+  transform: translateY(0.01rem);
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link--active {
+  color: color-mix(in srgb, var(--color-primary) 54%, var(--color-foreground));
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link--active::after {
+  opacity: 1;
+  transform: scale(1);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0.05) 74%),
+    color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 16%, transparent),
+    0 8px 20px -18px color-mix(in srgb, var(--color-primary) 28%, transparent);
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link--active .app-bottom-nav-icon {
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link--active .app-nav-icon--active {
+  transform: translateY(-0.02rem) scale(1.04);
+  color: color-mix(in srgb, var(--color-primary) 78%, var(--color-foreground));
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link--active .app-bottom-nav-label {
+  color: color-mix(in srgb, var(--color-primary) 82%, var(--color-foreground));
+  text-shadow: none;
+}
+
+[data-ios-shell="true"][data-theme="dark"] .app-bottom-nav-link {
+  color: color-mix(in srgb, var(--color-foreground) 82%, var(--color-primary) 18%);
+}
+
+[data-ios-shell="true"][data-theme="dark"] .app-bottom-nav-link--pressed {
+  color: color-mix(in srgb, var(--color-foreground) 88%, var(--color-primary) 12%);
+}
+
+[data-ios-shell="true"][data-theme="dark"] .app-bottom-nav-link--active {
+  color: color-mix(in srgb, var(--color-foreground) 92%, var(--color-primary) 8%);
+}
+
+[data-ios-shell="true"][data-theme="dark"] .app-bottom-nav-link--active .app-nav-icon--active {
+  color: color-mix(in srgb, #f6f2ff 92%, var(--color-primary) 8%);
+}
+
+[data-ios-shell="true"][data-theme="dark"] .app-bottom-nav-link--active .app-bottom-nav-label {
+  color: color-mix(in srgb, #f8f5ff 88%, var(--color-primary) 12%);
+}
+
+[data-ios-shell="true"][data-theme="dark"] .app-bottom-nav-link--active .app-bottom-nav-icon {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.04) 78%),
+    color-mix(in srgb, var(--color-primary) 22%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, rgb(255 255 255 / 0.14) 42%, transparent),
+    0 10px 18px -16px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 .app-mobile-header .app-header-utility-button,
@@ -5793,12 +5951,35 @@ html.ios-lock-horizontal .landing-main {
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgb(124 102 181 / 0.12) 18%,
-    rgb(124 102 181 / 0.24) 50%,
-    rgb(124 102 181 / 0.12) 82%,
+    rgb(124 102 181 / 0.06) 12%,
+    rgb(124 102 181 / 0.12) 30%,
+    rgb(124 102 181 / 0.2) 50%,
+    rgb(124 102 181 / 0.12) 70%,
+    rgb(124 102 181 / 0.06) 88%,
     transparent 100%
   );
-  opacity: 0.9;
+  box-shadow: 0 0 0 1px rgb(124 102 181 / 0.02);
+  opacity: 0.76;
+}
+
+[data-theme="dark"] .app-bottom-nav-link:not(:first-child)::before {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.035) 12%,
+    rgb(166 149 207 / 0.1) 30%,
+    rgb(166 149 207 / 0.18) 50%,
+    rgb(166 149 207 / 0.1) 70%,
+    rgb(255 255 255 / 0.035) 88%,
+    transparent 100%
+  );
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.015);
+  opacity: 0.76;
+}
+
+[data-ios-shell="true"] .app-bottom-nav-link:not(:first-child)::before {
+  left: 0;
+  height: 1.82rem;
 }
 
 [data-theme="light"] .app-bottom-nav-link--active .app-bottom-nav-icon {

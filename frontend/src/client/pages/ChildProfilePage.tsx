@@ -3,19 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { fetchLatestHeightEntryByChildId } from "@shared/api/heightEntries";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
-import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { formatDate } from "@shared/utils/date";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
-const appBtnSecondaryClass =
-  "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
-
 export function ChildProfilePage() {
   const { language } = useI18n();
   const copy = getChildrenCopy(language).childProfile;
-  const common = getChildrenCopy(language).common;
   const { childId } = useParams<{ childId: string }>();
 
   const { data: child, isLoading } = useQuery({
@@ -37,15 +32,34 @@ export function ChildProfilePage() {
   });
 
   if (!childId || isLoading || !child) {
-    return <p className="text-sm text-muted">{common.loading}</p>;
+    return <p className="text-sm text-muted">{copy.loading}</p>;
   }
 
   const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
   const babyModeLabel = child.babyModeEnabled ? copy.babyModeEnabled : copy.babyModeDisabled;
-  const primaryActionClass =
-    `${appBtnSecondaryClass} min-h-[2.85rem] text-center sm:min-h-[3.05rem]`;
-  const secondaryActionClass =
-    "soft-panel-muted inline-flex min-h-[2.9rem] w-full items-center justify-center rounded-[22px] border border-white/60 px-4 text-sm font-medium text-foreground shadow-[0_10px_24px_rgba(89,60,154,0.08)] transition hover:border-primary/30 hover:text-primary";
+  const profileNavActionClass =
+    "soft-pill inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap";
+  const quickLinks = [
+    {
+      to: `/children/${child.id}/illness?view=history`,
+      label: copy.history,
+    },
+    ...(child.babyModeEnabled
+      ? [
+          {
+            to: `/children/${child.id}/feeding`,
+            label: copy.feedingSection,
+          },
+          {
+            to: `/children/${child.id}/sleep`,
+            label: copy.sleepSection,
+          },
+        ]
+      : []),
+    { to: `/children/${child.id}/weight`, label: copy.weightCardTitle },
+    { to: `/children/${child.id}/height`, label: copy.heightCardTitle },
+    { to: `/children/${child.id}/calendar`, label: copy.calendar },
+  ];
 
   return (
     <div className="min-w-0 space-y-6">
@@ -55,86 +69,33 @@ export function ChildProfilePage() {
         </Link>
       </div>
 
-      <PageIntro
-        title={child.name}
-        hideOnMobile
-        action={
-          <div className="flex w-full flex-col gap-3 sm:w-auto">
-            <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <Link
-                to={`/children/${child.id}/illness?view=history`}
-                className={primaryActionClass}
-              >
-                {copy.history}
-              </Link>
-              {child.babyModeEnabled ? (
-                <Link to={`/children/${child.id}/feeding`} className={primaryActionClass}>
-                  {copy.feedingSectionOpen}
-                </Link>
-              ) : null}
-              {child.babyModeEnabled ? (
-                <Link to={`/children/${child.id}/sleep`} className={primaryActionClass}>
-                  {copy.sleepSectionOpen}
-                </Link>
-              ) : null}
-            </div>
-            <div className="rounded-[24px] border border-white/65 bg-white/55 px-3 py-3 shadow-[0_18px_38px_rgba(89,60,154,0.08)] backdrop-blur-md">
-              <div className="mb-3 h-px w-full rounded-full bg-[linear-gradient(90deg,rgba(127,86,217,0.02),rgba(127,86,217,0.18),rgba(127,86,217,0.02))]" />
-              <div className="grid w-full grid-cols-3 gap-2">
-                <Link to={`/children/${child.id}/weight`} className={secondaryActionClass}>
-                  {copy.weightCardTitle}
-                </Link>
-                <Link to={`/children/${child.id}/height`} className={secondaryActionClass}>
-                  {copy.heightCardTitle}
-                </Link>
-                <Link to={`/children/${child.id}/calendar`} className={secondaryActionClass}>
-                  {copy.calendar}
-                </Link>
-              </div>
-            </div>
+      <div className="space-y-3 px-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="app-card-title">
+              {copy.eyebrow} · {child.name}
+            </h1>
+            <p className="mt-1 text-sm text-muted">{copy.subtitle}</p>
           </div>
-        }
-      />
+          <Link
+            to={`/children/${child.id}/edit`}
+            className={`${profileNavActionClass} shrink-0`}
+          >
+            {copy.editProfile}
+          </Link>
+        </div>
 
-      <div className="md:hidden">
-        <Surface className="p-4">
-          <h1 className="app-title mb-3 text-[1.42rem] tracking-[-0.04em]">{child.name}</h1>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Link
-              to={`/children/${child.id}/illness?view=history`}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full text-center sm:min-h-[3.05rem]`}
-            >
-              {copy.history}
-            </Link>
-            {child.babyModeEnabled ? (
+        <Surface className="p-3 sm:p-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+            {quickLinks.map((item) => (
               <Link
-                to={`/children/${child.id}/feeding`}
-                className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full sm:min-h-[3.05rem]`}
+                key={item.to}
+                to={item.to}
+                className={`${profileNavActionClass} min-h-[2.6rem]`}
               >
-                {copy.feedingSectionOpen}
+                {item.label}
               </Link>
-            ) : null}
-            {child.babyModeEnabled ? (
-              <Link
-                to={`/children/${child.id}/sleep`}
-                className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full sm:col-span-2 sm:min-h-[3.05rem]`}
-              >
-                {copy.sleepSectionOpen}
-              </Link>
-            ) : null}
-          </div>
-          <div className="mt-4 border-t border-white/65 pt-4">
-            <div className="grid grid-cols-3 gap-2">
-              <Link to={`/children/${child.id}/weight`} className={secondaryActionClass}>
-                {copy.weightCardTitle}
-              </Link>
-              <Link to={`/children/${child.id}/height`} className={secondaryActionClass}>
-                {copy.heightCardTitle}
-              </Link>
-              <Link to={`/children/${child.id}/calendar`} className={secondaryActionClass}>
-                {copy.calendar}
-              </Link>
-            </div>
+            ))}
           </div>
         </Surface>
       </div>
@@ -205,15 +166,6 @@ export function ChildProfilePage() {
           )}
         </div>
       </Surface>
-
-      <div className="px-1">
-        <Link
-          to={`/children/${child.id}/edit`}
-          className={`${appBtnSecondaryClass} min-h-[2.95rem] w-full sm:min-h-[3.05rem]`}
-        >
-          {copy.editProfile}
-        </Link>
-      </div>
     </div>
   );
 }

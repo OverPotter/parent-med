@@ -6,10 +6,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
-import {
-  fetchActiveIllnessEpisodeByChildId,
-  fetchIllnessEpisodesByChildId,
-} from "@shared/api/illnessEpisodes";
+import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
 import {
   createFeedingRecord,
   fetchActiveFeedingRecordByChildId,
@@ -69,15 +66,6 @@ export function ChildrenPage() {
     queries: children.map((child) => ({
       queryKey: ["illness-episode-active", child.id],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
-      enabled: !!child.id,
-      ...liveQueryOptions,
-    })),
-  });
-
-  const historyQueries = useQueries({
-    queries: children.map((child) => ({
-      queryKey: ["illness-episodes", child.id],
-      queryFn: () => fetchIllnessEpisodesByChildId(child.id),
       enabled: !!child.id,
       ...liveQueryOptions,
     })),
@@ -181,14 +169,12 @@ export function ChildrenPage() {
           <ul className="grid gap-4">
             {children.map((child, index) => {
               const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
-              const episodes = historyQueries[index]?.data ?? [];
 
               return (
                 <ChildCard
                   key={child.id}
                   child={child}
                   activeEpisodeStartedAt={activeEpisode?.startedAt ?? null}
-                  episodeCount={episodes.length}
                   latestWeightEntry={latestWeightQueries[index]?.data ?? null}
                   activeSleep={activeSleepQueries[index]?.data ?? null}
                   activeFeeding={activeFeedingQueries[index]?.data ?? null}
@@ -242,7 +228,6 @@ export function ChildrenPage() {
 function ChildCard({
   child,
   activeEpisodeStartedAt,
-  episodeCount,
   latestWeightEntry,
   activeSleep,
   activeFeeding,
@@ -256,7 +241,6 @@ function ChildCard({
 }: {
   child: Child;
   activeEpisodeStartedAt: string | null;
-  episodeCount: number;
   latestWeightEntry: WeightEntry | null;
   activeSleep: import("@shared/types/api").SleepSession | null;
   activeFeeding: import("@shared/types/api").FeedingRecord | null;
@@ -309,13 +293,14 @@ function ChildCard({
   const activeFeedingStartedAt = activeFeeding?.startedAt ?? activeFeeding?.recordedAt ?? null;
   const activeFeedingElapsedLabel =
     activeFeedingStartedAt ? formatElapsedDuration(activeFeedingStartedAt, now, language) : null;
-  const historyLabel =
-    episodeCount > 0 ? t(copy.childCard.historyCount, { count: episodeCount }) : null;
   const primaryMeta = [
     ageLabel,
     latestWeightLabel ? `${copy.childCard.weight} ${latestWeightLabel}` : null,
-    historyLabel,
   ].filter(Boolean) as string[];
+  const quickActionClass =
+    "soft-pill inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap";
+  const activeQuickActionClass =
+    "soft-pill-warning inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap";
   return (
     <li>
       <ConfirmDialog
@@ -344,23 +329,27 @@ function ChildCard({
       <RowSurface
         className={`children-card-hero ${hasActiveEpisode ? "children-card-hero--active" : ""}`}
       >
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <div className="grid gap-4">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-2">
                 <h2 className="app-card-title">{child.name}</h2>
-                {hasActiveEpisode && (
-                  <>
-                    <span className="soft-pill-warning rounded-full px-2.5 py-1 text-xs">
-                      {activeEpisodeStartedAt
-                        ? t(copy.childCard.activeSince, {
-                            date: formatDate(activeEpisodeStartedAt),
-                          })
-                        : copy.childCard.activeObservation}
-                    </span>
-                  </>
-                )}
+                {hasActiveEpisode ? (
+                  <span className="soft-pill-warning inline-flex rounded-full px-2.5 py-1 text-xs">
+                    {activeEpisodeStartedAt
+                      ? t(copy.childCard.activeSince, {
+                          date: formatDate(activeEpisodeStartedAt),
+                        })
+                      : copy.childCard.activeObservation}
+                  </span>
+                ) : null}
               </div>
+              <Link
+                to={`/children/${child.id}`}
+                className={`${quickActionClass} shrink-0`}
+              >
+                {copy.childCard.profile}
+              </Link>
             </div>
             <div className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
               {primaryMeta.map((chip) => (
@@ -372,8 +361,11 @@ function ChildCard({
                 </span>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-2.5">
             {child.babyModeEnabled ? (
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-0 sm:flex sm:flex-wrap sm:items-center">
+              <div className="grid grid-cols-2 gap-2">
                 <Link
                   to={`/children/${child.id}/feeding`}
                   onClick={(event) => {
@@ -384,10 +376,7 @@ function ChildCard({
                     }
                     onAddFeeding();
                   }}
-                  className={[
-                    activeFeeding ? "soft-pill-warning" : "soft-pill",
-                    "inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap",
-                  ].join(" ")}
+                  className={activeFeeding ? activeQuickActionClass : quickActionClass}
                 >
                   {activeFeeding
                     ? t(copy.childCard.feedingInProgress, {
@@ -405,10 +394,7 @@ function ChildCard({
                     sleepMutation.mutate();
                   }}
                   disabled={sleepMutation.isPending}
-                  className={[
-                    activeSleep ? "soft-pill-warning" : "soft-pill",
-                    "inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap disabled:opacity-60",
-                  ].join(" ")}
+                  className={`${activeSleep ? activeQuickActionClass : quickActionClass} disabled:opacity-60`}
                 >
                   {sleepMutation.isPending
                     ? activeSleep
@@ -422,28 +408,20 @@ function ChildCard({
                 </button>
               </div>
             ) : null}
-          </div>
-
-          <div className="grid w-full gap-2 sm:w-[13.75rem] sm:shrink-0">
-            <button
-              type="button"
-              onClick={onStartEpisode}
-              disabled={isStartingEpisode}
-              className="soft-button-primary app-btn-primary-md inline-flex w-full text-center leading-[1.05] disabled:opacity-50"
-            >
-              {hasActiveEpisode
-                ? copy.childCard.openObservation
-                : isStartingEpisode
-                  ? commonLoading(language)
-                  : copy.childCard.startObservation}
-            </button>
-
-            <Link
-              to={`/children/${child.id}`}
-              className="soft-button-secondary app-btn-secondary-md inline-flex text-center leading-[1.05]"
-            >
-              {copy.childCard.profile}
-            </Link>
+            <div>
+              <button
+                type="button"
+                onClick={onStartEpisode}
+                disabled={isStartingEpisode}
+                className={`${hasActiveEpisode ? activeQuickActionClass : quickActionClass} w-full disabled:opacity-50`}
+              >
+                {hasActiveEpisode
+                  ? copy.childCard.openObservation
+                  : isStartingEpisode
+                    ? commonLoading(language)
+                    : copy.childCard.startObservation}
+              </button>
+            </div>
           </div>
         </div>
       </RowSurface>

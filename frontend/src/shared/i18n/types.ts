@@ -34,6 +34,9 @@ export interface Translations {
     pushPrompt: {
       title: string;
       description: string;
+      nativeBlockedTitle: string;
+      nativeBlockedDescription: string;
+      openSettings: string;
       enable: string;
       enabling: string;
       hide: string;

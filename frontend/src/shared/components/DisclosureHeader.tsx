@@ -58,9 +58,16 @@ export function DisclosureHeader({
           {actions}
           {!disabled && (
             <>
-              <span className="soft-pill rounded-full px-3 py-1 text-xs sm:hidden">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggle();
+                }}
+                className={`inline-flex min-h-[2.65rem] items-center justify-center px-3 text-[0.82rem] tracking-[-0.025em] sm:hidden ${desktopButtonClassName}`.trim()}
+              >
                 {isOpen ? mobileOpenLabel : mobileClosedLabel}
-              </span>
+              </button>
               <button
                 type="button"
                 onClick={(event) => {

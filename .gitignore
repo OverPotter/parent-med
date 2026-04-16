@@ -75,6 +75,8 @@ frontend/*.tsbuildinfo
 .env.local
 .env.*.local
 *.env
+AuthKey_*.p8
+*.p8
 
 # Keep example files
 !.env.example
@@ -113,3 +115,4 @@ temp/
 # ========== Data ==========
 backend/data/
 !backend/data/.gitkeep
+.aider*
