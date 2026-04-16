@@ -101,10 +101,7 @@ class Settings(BaseSettings):
     @property
     def apns_enabled(self) -> bool:
         return bool(
-            self.apns_key_id
-            and self.apns_team_id
-            and self.apns_bundle_id
-            and self.apns_auth_key
+            self.apns_key_id and self.apns_team_id and self.apns_bundle_id and self.apns_auth_key
         )
 
     @property
