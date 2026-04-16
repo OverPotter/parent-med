@@ -457,7 +457,7 @@ export function ChildIllnessPage() {
       {!activeEpisode && createMode && !historyOnlyView && (
         <section className="space-y-3">
           <SectionTitle
-            title={language === "ru" ? "Новое наблюдение" : "New tracking"}
+            title={`${language === "ru" ? "Новое наблюдение" : "New tracking"} · ${child.name}`}
             subtitle={
               language === "ru"
                 ? "Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи."
@@ -466,7 +466,6 @@ export function ChildIllnessPage() {
           />
           <div ref={createModeCardRef}>
             <EpisodeActivationCard
-              childName={child.name}
               isPending={createEpisodeMutation.isPending}
               errorMessage={
                 (
@@ -2167,13 +2166,11 @@ function EpisodeBlock({
 }
 
 function EpisodeActivationCard({
-  childName,
   isPending,
   errorMessage,
   onActivate,
   onCancel,
 }: {
-  childName: string;
   isPending: boolean;
   errorMessage: string | null;
   onActivate: (payload: {
@@ -2207,18 +2204,6 @@ function EpisodeActivationCard({
 
   return (
     <div className="soft-panel rounded-[30px]">
-      <div className="soft-hero rounded-t-[30px] px-5 py-6 sm:px-6 sm:py-7">
-        <p className="text-xs tracking-[0.1em] text-muted">
-          {language === "ru" ? "Старт наблюдения" : "Start tracking"}
-        </p>
-        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{childName}</h3>
-        <p className="mt-3 text-sm text-muted">
-          {language === "ru"
-            ? "Создайте запись о болезни, а дальше просто отмечайте температуру, приёмы и важные изменения."
-            : "Create an illness record, then simply log temperature, doses and important changes."}
-        </p>
-      </div>
-
       <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
         {errorMessage && (
           <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{errorMessage}</div>

@@ -26,9 +26,11 @@ import {
   withTimeout,
 } from "@shared/utils/pushNotifications";
 import {
+  getNativePushPermissionStatus,
   getNativePushSubscriptionPayload,
   isNativePushOptedOut,
   isNativePushSupported,
+  openNativeNotificationSettings,
   setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
 
@@ -45,6 +47,12 @@ const settingsCopy = {
     pushUnsupported: "На этом устройстве push-уведомления недоступны.",
     permissionTimeout: "Браузер не завершил запрос разрешения на уведомления.",
     permissionDenied: "Браузер не дал разрешение на уведомления.",
+    nativePermissionBlockedTitle: "Уведомления выключены в iOS",
+    nativePermissionBlockedDescription:
+      "PillPath больше не может показать системный запрос. Откройте настройки iPhone и включите уведомления для приложения.",
+    openSystemSettings: "Открыть настройки",
+    nativePermissionManualHint:
+      "Если настройки не открылись автоматически: iPhone → Настройки → PillPath → Уведомления.",
     subscribeTimeout: "Не удалось завершить подписку устройства на push.",
     serverAcceptFailed: "Сервер не принял подписку устройства.",
     enablePushFailed: "Не удалось включить уведомления на этом устройстве.",
@@ -124,6 +132,12 @@ const settingsCopy = {
     pushUnsupported: "Push notifications are not available on this device.",
     permissionTimeout: "The browser did not finish the notification permission request.",
     permissionDenied: "The browser did not grant notification permission.",
+    nativePermissionBlockedTitle: "Notifications are off in iOS",
+    nativePermissionBlockedDescription:
+      "PillPath cannot show the system prompt again. Open iPhone settings and enable notifications for the app.",
+    openSystemSettings: "Open Settings",
+    nativePermissionManualHint:
+      "If Settings did not open automatically: iPhone → Settings → PillPath → Notifications.",
     subscribeTimeout: "Could not finish subscribing this device to push.",
     serverAcceptFailed: "The server did not accept the device subscription.",
     enablePushFailed: "Could not enable notifications on this device.",
@@ -210,6 +224,8 @@ export function SettingsPage() {
   const [pushError, setPushError] = useState<string | null>(null);
   const [isPushPending, setIsPushPending] = useState(false);
   const [isDisablePushConfirmOpen, setIsDisablePushConfirmOpen] = useState(false);
+  const [isNativePushBlocked, setIsNativePushBlocked] = useState(false);
+  const [isNativePushSettingsDialogOpen, setIsNativePushSettingsDialogOpen] = useState(false);
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
   const [isDeleteAccountConfirmOpen, setIsDeleteAccountConfirmOpen] = useState(false);
   const [isDeleteFamilyConfirmOpen, setIsDeleteFamilyConfirmOpen] = useState(false);
@@ -287,6 +303,8 @@ export function SettingsPage() {
   useEffect(() => {
     if (!isPushSupported() && !isNativePushSupported()) {
       setPushStatus("disabled");
+      setIsNativePushBlocked(false);
+      setIsNativePushSettingsDialogOpen(false);
       return;
     }
     setPushStatus("checking");
@@ -297,6 +315,17 @@ export function SettingsPage() {
           if (isNativePushOptedOut()) {
             if (!isCancelled) {
               setPushStatus("disabled");
+              setIsNativePushBlocked(false);
+              setIsNativePushSettingsDialogOpen(false);
+            }
+            return;
+          }
+          const permission = await getNativePushPermissionStatus();
+          if (permission === "denied") {
+            if (!isCancelled) {
+              setPushStatus("disabled");
+              setIsNativePushBlocked(true);
+              setIsNativePushSettingsDialogOpen(true);
             }
             return;
           }
@@ -307,6 +336,8 @@ export function SettingsPage() {
           );
           if (!isCancelled) {
             setPushStatus(payload ? "enabled" : "disabled");
+            setIsNativePushBlocked(false);
+            setIsNativePushSettingsDialogOpen(false);
           }
           return;
         }
@@ -322,12 +353,31 @@ export function SettingsPage() {
       } catch {
         if (!isCancelled) {
           setPushStatus("disabled");
+          setIsNativePushBlocked(false);
+          setIsNativePushSettingsDialogOpen(false);
         }
       }
     };
     void loadSubscription();
+
+    const refreshSubscription = () => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
+      void loadSubscription();
+    };
+
+    window.addEventListener("push:subscription-changed", refreshSubscription);
+    window.addEventListener("focus", refreshSubscription);
+    window.addEventListener("pageshow", refreshSubscription);
+    document.addEventListener("visibilitychange", refreshSubscription);
+
     return () => {
       isCancelled = true;
+      window.removeEventListener("push:subscription-changed", refreshSubscription);
+      window.removeEventListener("focus", refreshSubscription);
+      window.removeEventListener("pageshow", refreshSubscription);
+      document.removeEventListener("visibilitychange", refreshSubscription);
     };
   }, [language]);
 
@@ -390,7 +440,14 @@ export function SettingsPage() {
           tSettings(language, "subscribeTimeout")
         );
         if (!payload) {
-          setPushError(tSettings(language, "permissionDenied"));
+          const permission = await getNativePushPermissionStatus();
+          if (permission === "denied") {
+            setIsNativePushBlocked(true);
+            setIsNativePushSettingsDialogOpen(true);
+            setPushError(null);
+          } else {
+            setPushError(tSettings(language, "permissionDenied"));
+          }
           return;
         }
         await withTimeout(
@@ -399,6 +456,8 @@ export function SettingsPage() {
           tSettings(language, "serverAcceptFailed")
         );
         setPushStatus("enabled");
+        setIsNativePushBlocked(false);
+        setIsNativePushSettingsDialogOpen(false);
         window.dispatchEvent(new Event("push:subscription-changed"));
       } catch (error) {
         setPushError(
@@ -465,6 +524,8 @@ export function SettingsPage() {
           await deletePushSubscription({ endpoint: payload.endpoint });
         }
         setNativePushOptOut(true);
+        setIsNativePushBlocked(false);
+        setIsNativePushSettingsDialogOpen(false);
         setPushStatus("disabled");
         window.dispatchEvent(new Event("push:subscription-changed"));
         return true;
@@ -710,6 +771,25 @@ export function SettingsPage() {
         {pushError && (
           <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">{pushError}</div>
         )}
+        {isNativePushBlocked && !pushError ? (
+          <div className="soft-note-warning mt-4 space-y-3 rounded-2xl px-4 py-3 text-sm">
+            <p className="font-semibold text-foreground">
+              {tSettings(language, "nativePermissionBlockedTitle")}
+            </p>
+            <p className="leading-6 text-muted">
+              {tSettings(language, "nativePermissionBlockedDescription")}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsNativePushSettingsDialogOpen(true);
+              }}
+              className="soft-button-secondary inline-flex min-h-[2.55rem] items-center justify-center px-4 text-[0.84rem]"
+            >
+              {tSettings(language, "openSystemSettings")}
+            </button>
+          </div>
+        ) : null}
         {!isPushConfigLoading && pushConfig && !pushConfig.enabled && (
           <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
             {tSettings(language, "pushServerMissing")}
@@ -1045,6 +1125,21 @@ export function SettingsPage() {
               setIsDisablePushConfirmOpen(false);
             }
           })();
+        }}
+      />
+      <ConfirmDialog
+        isOpen={isNativePushSettingsDialogOpen}
+        title={tSettings(language, "nativePermissionBlockedTitle")}
+        description={`${tSettings(language, "nativePermissionBlockedDescription")} ${tSettings(
+          language,
+          "nativePermissionManualHint"
+        )}`}
+        confirmLabel={tSettings(language, "openSystemSettings")}
+        cancelLabel={tSettings(language, "cancel")}
+        onCancel={() => setIsNativePushSettingsDialogOpen(false)}
+        onConfirm={() => {
+          openNativeNotificationSettings();
+          setIsNativePushSettingsDialogOpen(false);
         }}
       />
       <ConfirmDialog

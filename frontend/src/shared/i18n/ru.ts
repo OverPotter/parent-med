@@ -34,6 +34,10 @@ export const ru: Translations = {
     pushPrompt: {
       title: "Включите уведомления",
       description: "Так проще не пропустить напоминания по наблюдениям и аптечке.",
+      nativeBlockedTitle: "Уведомления выключены в iOS",
+      nativeBlockedDescription:
+        "Напоминания не будут приходить, пока уведомления для PillPath выключены в настройках iPhone.",
+      openSettings: "Открыть настройки",
       enable: "Включить уведомления",
       enabling: "Подключаем…",
       hide: "Скрыть пока",

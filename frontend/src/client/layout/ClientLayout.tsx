@@ -28,8 +28,12 @@ import {
   withTimeout,
 } from "@shared/utils/pushNotifications";
 import {
+  getNativePushPermissionStatus,
   getNativePushSubscriptionPayload,
+  isNativePushOptedOut,
   isNativePushSupported,
+  openNativeNotificationSettings,
+  setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
 import { getPrioritizedMedicationPlanItems } from "../utils/medicationPlans";
 
@@ -46,6 +50,7 @@ export function ClientLayout() {
   const [isPushPending, setIsPushPending] = useState(false);
   const [pushPromptError, setPushPromptError] = useState<string | null>(null);
   const [pushPromptSuccess, setPushPromptSuccess] = useState<string | null>(null);
+  const [nativePushIssue, setNativePushIssue] = useState<"system" | "app" | null>(null);
   const now = useNow(15_000);
   const { data: navChildren = [] } = useQuery({
     queryKey: ["children", currentFamilyId, "nav-attention"],
@@ -205,10 +210,7 @@ export function ClientLayout() {
     },
   ];
   const isObservationsRoute = activeObservationsNavItem.exactActivePaths.some((path) =>
-    matchPath(
-      { path, end: path === "/illnesses/active" },
-      location.pathname
-    )
+    matchPath({ path, end: path === "/illnesses/active" }, location.pathname)
   );
   const baseMobileNavLinks =
     activeEpisodes.length > 0 || isObservationsRoute
@@ -229,6 +231,9 @@ export function ClientLayout() {
 
   const desktopNavLinks = baseDesktopNavLinks;
   const mobileNavLinks = baseMobileNavLinks;
+  const shouldHideHeader = Boolean(
+    matchPath({ path: "/children/:childId/calendar", end: true }, location.pathname)
+  );
 
   useEffect(() => {
     setIsPushPromptActionsHidden(false);
@@ -240,6 +245,7 @@ export function ClientLayout() {
     if (!authToken || !accountId || !pushConfig?.enabled) {
       setPushStatus("disabled");
       setPushPromptSuccess(null);
+      setNativePushIssue(null);
       return;
     }
 
@@ -248,10 +254,28 @@ export function ClientLayout() {
     const checkPush = async () => {
       try {
         if (isNativePushSupported()) {
+          if (isNativePushOptedOut()) {
+            if (!isCancelled) {
+              setPushStatus("disabled");
+              setPushPromptSuccess(null);
+              setNativePushIssue("app");
+            }
+            return;
+          }
+          const permission = await getNativePushPermissionStatus();
+          if (permission === "denied") {
+            if (!isCancelled) {
+              setPushStatus("disabled");
+              setPushPromptSuccess(null);
+              setNativePushIssue("system");
+            }
+            return;
+          }
           const payload = await getNativePushSubscriptionPayload({ promptIfNeeded: false });
           if (!isCancelled) {
             const nextStatus = payload ? "enabled" : "disabled";
             setPushStatus(nextStatus);
+            setNativePushIssue(nextStatus === "disabled" ? "app" : null);
             if (nextStatus === "disabled") {
               setPushPromptSuccess(null);
             }
@@ -263,6 +287,7 @@ export function ClientLayout() {
           if (!isCancelled) {
             setPushStatus("disabled");
             setPushPromptSuccess(null);
+            setNativePushIssue(null);
           }
           return;
         }
@@ -274,11 +299,13 @@ export function ClientLayout() {
           if (nextStatus === "disabled") {
             setPushPromptSuccess(null);
           }
+          setNativePushIssue(null);
         }
       } catch {
         if (!isCancelled) {
           setPushStatus("disabled");
           setPushPromptSuccess(null);
+          setNativePushIssue(null);
         }
       }
     };
@@ -290,10 +317,16 @@ export function ClientLayout() {
     };
 
     window.addEventListener("push:subscription-changed", handlePushSubscriptionChanged);
+    window.addEventListener("focus", handlePushSubscriptionChanged);
+    window.addEventListener("pageshow", handlePushSubscriptionChanged);
+    document.addEventListener("visibilitychange", handlePushSubscriptionChanged);
 
     return () => {
       isCancelled = true;
       window.removeEventListener("push:subscription-changed", handlePushSubscriptionChanged);
+      window.removeEventListener("focus", handlePushSubscriptionChanged);
+      window.removeEventListener("pageshow", handlePushSubscriptionChanged);
+      document.removeEventListener("visibilitychange", handlePushSubscriptionChanged);
     };
   }, [accountId, authToken, pushConfig?.enabled]);
 
@@ -302,8 +335,56 @@ export function ClientLayout() {
     !isNativePushSupported() &&
     isPushSupported() &&
     pushStatus === "disabled";
+  const shouldShowNativePushPrompt = Boolean(pushConfig?.enabled) && nativePushIssue !== null;
 
   const handleEnablePush = async () => {
+    if (isNativePushSupported()) {
+      if (!pushConfig?.enabled) {
+        setPushPromptError(copy.clientLayout.pushErrors.serverNotReady);
+        return;
+      }
+
+      setPushPromptError(null);
+      setPushPromptSuccess(null);
+      setIsPushPending(true);
+
+      try {
+        setNativePushOptOut(false);
+        const permission = await getNativePushPermissionStatus();
+        if (permission === "denied") {
+          setNativePushIssue("system");
+          return;
+        }
+
+        const payload = await withTimeout(
+          getNativePushSubscriptionPayload({ promptIfNeeded: true }),
+          10000,
+          copy.clientLayout.pushErrors.subscribeTimeout
+        );
+        if (!payload) {
+          setNativePushIssue("app");
+          return;
+        }
+
+        await withTimeout(
+          upsertPushSubscription(payload),
+          8000,
+          copy.clientLayout.pushErrors.acceptTimeout
+        );
+        setPushStatus("enabled");
+        setNativePushIssue(null);
+        setPushPromptSuccess(copy.clientLayout.pushErrors.enabled);
+        window.dispatchEvent(new Event("push:subscription-changed"));
+      } catch (error) {
+        setPushPromptError(
+          error instanceof Error ? error.message : copy.clientLayout.pushErrors.enableFailed
+        );
+      } finally {
+        setIsPushPending(false);
+      }
+      return;
+    }
+
     const pushSupportIssue = getPushSupportIssue();
     if (pushSupportIssue) {
       setPushPromptError(copy.clientLayout.pushErrors.supportMissing);
@@ -375,7 +456,57 @@ export function ClientLayout() {
   }, [currentFamilyId, currentFamilyName, families, isSuccess, setCurrentFamily]);
 
   return (
-    <Layout navLinks={desktopNavLinks} mobileNavLinks={mobileNavLinks}>
+    <Layout
+      navLinks={desktopNavLinks}
+      mobileNavLinks={mobileNavLinks}
+      hideHeader={shouldHideHeader}
+    >
+      {shouldShowNativePushPrompt && (
+        <Surface className="soft-panel-muted mb-4 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="app-card-title text-[1rem]">
+                {nativePushIssue === "system"
+                  ? copy.clientLayout.pushPrompt.nativeBlockedTitle
+                  : copy.clientLayout.pushPrompt.title}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                {nativePushIssue === "system"
+                  ? copy.clientLayout.pushPrompt.nativeBlockedDescription
+                  : copy.clientLayout.pushPrompt.description}
+              </p>
+              {pushPromptError && (
+                <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
+                  {pushPromptError}
+                </p>
+              )}
+              {pushPromptSuccess && (
+                <p className="soft-note-success mt-3 rounded-2xl px-4 py-3 text-sm">
+                  {pushPromptSuccess}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (nativePushIssue === "system") {
+                  openNativeNotificationSettings();
+                  return;
+                }
+                void handleEnablePush();
+              }}
+              disabled={isPushPending}
+              className="soft-button-secondary inline-flex min-h-[2.85rem] shrink-0 items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
+            >
+              {nativePushIssue === "system"
+                ? copy.clientLayout.pushPrompt.openSettings
+                : isPushPending
+                  ? copy.clientLayout.pushPrompt.enabling
+                  : copy.clientLayout.pushPrompt.enable}
+            </button>
+          </div>
+        </Surface>
+      )}
       {shouldShowPushPrompt && (
         <Surface className="soft-panel-muted mb-4 p-4 sm:p-5">
           {isPushPromptActionsHidden ? (

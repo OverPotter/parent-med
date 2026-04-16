@@ -34,6 +34,10 @@ export const en: Translations = {
     pushPrompt: {
       title: "Turn on notifications",
       description: "It is easier to catch reminders for tracking and your home medicine cabinet.",
+      nativeBlockedTitle: "Notifications are off in iOS",
+      nativeBlockedDescription:
+        "Reminders will not arrive while notifications for PillPath are disabled in iPhone settings.",
+      openSettings: "Open Settings",
       enable: "Enable notifications",
       enabling: "Enabling…",
       hide: "Hide for now",

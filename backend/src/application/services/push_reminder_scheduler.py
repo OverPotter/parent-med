@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
@@ -60,6 +61,29 @@ try:
     from py_vapid import Vapid01
 except ImportError:  # pragma: no cover - зависит от окружения
     Vapid01 = None  # type: ignore[assignment]
+
+try:
+    import httpx
+except ImportError:  # pragma: no cover - зависит от окружения
+    httpx = None  # type: ignore[assignment]
+
+try:
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import ec, utils
+except ImportError:  # pragma: no cover - зависит от окружения
+    hashes = None  # type: ignore[assignment]
+    serialization = None  # type: ignore[assignment]
+    ec = None  # type: ignore[assignment]
+    utils = None  # type: ignore[assignment]
+
+
+APNS_PRODUCTION_URL = "https://api.push.apple.com/3/device"
+APNS_SANDBOX_URL = "https://api.sandbox.push.apple.com/3/device"
+APNS_STALE_REASONS = {
+    "BadDeviceToken",
+    "DeviceTokenNotForTopic",
+    "Unregistered",
+}
 
 
 def _normalize_language(value: str | None) -> str:
@@ -295,12 +319,14 @@ def _build_cabinet_expired_payload(
 
 
 class PushNotificationScheduler:
-    """Серверный фоновой poller для web push."""
+    """Серверный фоновой poller для web/native push."""
 
     def __init__(self, session_factory: async_sessionmaker) -> None:
         self._session_factory = session_factory
         self._task: asyncio.Task[None] | None = None
         self._vapid_private_key = self._build_vapid_private_key()
+        self._apns_token: str | None = None
+        self._apns_token_issued_at = 0
         try:
             self._timezone = ZoneInfo(settings.app_timezone)
         except Exception:  # pragma: no cover - защита от битой timezone
@@ -308,7 +334,7 @@ class PushNotificationScheduler:
 
     @property
     def is_enabled(self) -> bool:
-        return settings.web_push_enabled and webpush is not None
+        return (settings.web_push_enabled and webpush is not None) or self._apns_available
 
     def _build_vapid_private_key(self) -> str | Any | None:
         private_key = settings.web_push_private_key_pem
@@ -320,12 +346,24 @@ class PushNotificationScheduler:
             return Vapid01.from_pem(private_key.encode("utf-8"))
         return private_key
 
+    @property
+    def _apns_available(self) -> bool:
+        return bool(settings.apns_enabled and httpx is not None and serialization is not None)
+
     def start(self) -> None:
         if not self.is_enabled:
+            reasons: list[str] = []
             if not settings.web_push_enabled:
-                logger.info("push_scheduler_off | reason=no_vapid")
+                reasons.append("no_vapid")
             elif webpush is None:
-                logger.info("push_scheduler_off | reason=no_pywebpush")
+                reasons.append("no_pywebpush")
+            if not settings.apns_enabled:
+                reasons.append("no_apns")
+            elif httpx is None:
+                reasons.append("no_httpx")
+            elif serialization is None:
+                reasons.append("no_cryptography")
+            logger.info(f"push_scheduler_off | reason={','.join(reasons) or 'not_configured'}")
             return
         if self._task is None:
             self._task = asyncio.create_task(self._run(), name="push-reminder-scheduler")
@@ -1022,41 +1060,164 @@ class PushNotificationScheduler:
             unique_subscriptions.append(subscription)
 
         for subscription in unique_subscriptions:
-            if (
-                subscription.channel != "web"
-                or not subscription.p256dh_key
-                or not subscription.auth_key
-            ):
+            if subscription.channel == "web":
+                sent = await self._send_web_push(subscription, subscription_repo, payload) or sent
                 continue
-            try:
-                await asyncio.to_thread(
-                    webpush,
-                    subscription_info={
-                        "endpoint": subscription.endpoint,
-                        "keys": {
-                            "p256dh": subscription.p256dh_key,
-                            "auth": subscription.auth_key,
-                        },
-                    },
-                    data=json.dumps(payload, ensure_ascii=False),
-                    vapid_private_key=self._vapid_private_key,
-                    vapid_claims={"sub": settings.web_push_subject},
-                )
-                sent = True
-            except WebPushException as exc:  # pragma: no branch - статусы зависят от клиента
-                response = getattr(exc, "response", None)
-                status_code = getattr(response, "status_code", None) or getattr(
-                    response, "status", None
-                )
-                if status_code in {404, 410}:
-                    logger.info(f"stale_push_subscription | endpoint={subscription.endpoint}")
-                    await subscription_repo.delete(subscription.id)
-                    continue
-                logger.warning(
-                    f"push_delivery_failed | subscription_id={subscription.id} error={exc!s}"
-                )
-            except Exception as exc:  # pragma: no cover - сеть/SSL/библиотека
-                logger.warning(
-                    f"push_delivery_failed | subscription_id={subscription.id} error={exc!s}"
-                )
+            if subscription.channel == "native" and subscription.platform == "ios":
+                sent = await self._send_apns_push(subscription, subscription_repo, payload) or sent
         return sent
+
+    async def _send_web_push(
+        self,
+        subscription: PushSubscription,
+        subscription_repo: SqlPushSubscriptionRepository,
+        payload: dict[str, Any],
+    ) -> bool:
+        if (
+            webpush is None
+            or not settings.web_push_enabled
+            or not subscription.p256dh_key
+            or not subscription.auth_key
+        ):
+            return False
+        try:
+            await asyncio.to_thread(
+                webpush,
+                subscription_info={
+                    "endpoint": subscription.endpoint,
+                    "keys": {
+                        "p256dh": subscription.p256dh_key,
+                        "auth": subscription.auth_key,
+                    },
+                },
+                data=json.dumps(payload, ensure_ascii=False),
+                vapid_private_key=self._vapid_private_key,
+                vapid_claims={"sub": settings.web_push_subject},
+            )
+            return True
+        except WebPushException as exc:  # pragma: no branch - статусы зависят от клиента
+            response = getattr(exc, "response", None)
+            status_code = getattr(response, "status_code", None) or getattr(
+                response, "status", None
+            )
+            if status_code in {404, 410}:
+                logger.info(f"stale_push_subscription | endpoint={subscription.endpoint}")
+                await subscription_repo.delete(subscription.id)
+                return False
+            logger.warning(
+                f"push_delivery_failed | subscription_id={subscription.id} error={exc!s}"
+            )
+        except Exception as exc:  # pragma: no cover - сеть/SSL/библиотека
+            logger.warning(
+                f"push_delivery_failed | subscription_id={subscription.id} error={exc!s}"
+            )
+        return False
+
+    async def _send_apns_push(
+        self,
+        subscription: PushSubscription,
+        subscription_repo: SqlPushSubscriptionRepository,
+        payload: dict[str, Any],
+    ) -> bool:
+        if not self._apns_available or not subscription.native_token:
+            return False
+        token = self._get_apns_provider_token()
+        if not token:
+            return False
+
+        apns_payload = {
+            "aps": {
+                "alert": {
+                    "title": str(payload.get("title") or settings.app_name),
+                    "body": str(payload.get("body") or ""),
+                },
+                "sound": "default",
+            },
+            "url": payload.get("url"),
+            "tag": payload.get("tag"),
+            "data": payload.get("data") or {},
+        }
+        base_url = APNS_SANDBOX_URL if settings.apns_use_sandbox else APNS_PRODUCTION_URL
+        headers = {
+            "authorization": f"bearer {token}",
+            "apns-topic": settings.apns_bundle_id,
+            "apns-push-type": "alert",
+            "apns-priority": "10",
+            "apns-expiration": "0",
+        }
+
+        try:
+            async with httpx.AsyncClient(http2=True, timeout=10) as client:
+                response = await client.post(
+                    f"{base_url}/{subscription.native_token}",
+                    headers=headers,
+                    json=apns_payload,
+                )
+            if response.status_code == 200:
+                return True
+            reason = self._get_apns_error_reason(response)
+            if response.status_code == 410 or reason in APNS_STALE_REASONS:
+                logger.info(
+                    f"stale_native_push_subscription | subscription_id={subscription.id} "
+                    f"reason={reason or response.status_code}"
+                )
+                await subscription_repo.delete(subscription.id)
+                return False
+            logger.warning(
+                f"apns_delivery_failed | subscription_id={subscription.id} "
+                f"status={response.status_code} reason={reason or response.text[:120]}"
+            )
+        except Exception as exc:  # pragma: no cover - сеть/SSL/библиотека
+            logger.warning(
+                f"apns_delivery_failed | subscription_id={subscription.id} error={exc!s}"
+            )
+        return False
+
+    def _get_apns_provider_token(self) -> str | None:
+        now = int(datetime.now(UTC).timestamp())
+        if self._apns_token and now - self._apns_token_issued_at < 50 * 60:
+            return self._apns_token
+        if serialization is None or ec is None or hashes is None or utils is None:
+            return None
+        auth_key = settings.apns_auth_key_pem
+        if not auth_key or not settings.apns_key_id or not settings.apns_team_id:
+            return None
+        try:
+            private_key = serialization.load_pem_private_key(
+                auth_key.encode("utf-8"),
+                password=None,
+            )
+            header = {"alg": "ES256", "kid": settings.apns_key_id}
+            claims = {"iss": settings.apns_team_id, "iat": now}
+            signing_input = (
+                f"{self._base64url_json(header)}.{self._base64url_json(claims)}"
+            ).encode("ascii")
+            signature = private_key.sign(signing_input, ec.ECDSA(hashes.SHA256()))
+            r, s = utils.decode_dss_signature(signature)
+            raw_signature = r.to_bytes(32, "big") + s.to_bytes(32, "big")
+            token = f"{signing_input.decode('ascii')}.{self._base64url(raw_signature)}"
+            self._apns_token = token
+            self._apns_token_issued_at = now
+            return token
+        except Exception as exc:  # pragma: no cover - неверный ключ/криптография
+            logger.warning(f"apns_provider_token_failed | error={exc!s}")
+            return None
+
+    @staticmethod
+    def _base64url_json(value: dict[str, Any]) -> str:
+        return PushNotificationScheduler._base64url(
+            json.dumps(value, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+        )
+
+    @staticmethod
+    def _base64url(value: bytes) -> str:
+        return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
+
+    @staticmethod
+    def _get_apns_error_reason(response: Any) -> str | None:
+        try:
+            data = response.json()
+        except Exception:
+            return None
+        reason = data.get("reason") if isinstance(data, dict) else None
+        return str(reason) if reason else None

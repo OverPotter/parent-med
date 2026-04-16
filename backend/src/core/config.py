@@ -81,6 +81,11 @@ class Settings(BaseSettings):
     web_push_public_key: str | None = None
     web_push_private_key: str | None = None
     web_push_subject: str = "mailto:dev@example.com"
+    apns_key_id: str | None = None
+    apns_team_id: str | None = None
+    apns_bundle_id: str = "com.overpotter.pillpath"
+    apns_auth_key: str | None = None
+    apns_use_sandbox: bool = False
     analytics_hash_salt: str = "dev-analytics-salt-change-me"
     feedback_rate_limit_per_hour: int = Field(
         default=5,
@@ -94,10 +99,25 @@ class Settings(BaseSettings):
         return bool(self.web_push_public_key and self.web_push_private_key)
 
     @property
+    def apns_enabled(self) -> bool:
+        return bool(
+            self.apns_key_id
+            and self.apns_team_id
+            and self.apns_bundle_id
+            and self.apns_auth_key
+        )
+
+    @property
     def web_push_private_key_pem(self) -> str | None:
         if not self.web_push_private_key:
             return None
         return self.web_push_private_key.replace("\\n", "\n")
+
+    @property
+    def apns_auth_key_pem(self) -> str | None:
+        if not self.apns_auth_key:
+            return None
+        return self.apns_auth_key.replace("\\n", "\n")
 
 
 settings = Settings()

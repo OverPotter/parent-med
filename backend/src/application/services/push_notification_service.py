@@ -35,7 +35,7 @@ class PushNotificationService:
 
     def get_config(self) -> PushNotificationConfigResponseDto:
         return PushNotificationConfigResponseDto(
-            enabled=settings.web_push_enabled,
+            enabled=settings.web_push_enabled or settings.apns_enabled,
             vapid_public_key=settings.web_push_public_key,
         )
 

@@ -95,6 +95,7 @@ interface AppState {
   }) => void;
   setAccountPreferredLanguage: (language: AppLanguage) => void;
   setAccountEmail: (email: string | null) => void;
+  setAccountProfile: (profile: { displayName?: string | null; email?: string | null }) => void;
   clearSession: () => void;
   setCurrentFamily: (family: { id: string; name: string } | null) => void;
 }
@@ -212,6 +213,12 @@ export const useAppStore = create<AppState>()(
           };
         }),
       setAccountEmail: (email) => set({ accountEmail: email }),
+      setAccountProfile: (profile) =>
+        set((state) => ({
+          accountDisplayName:
+            profile.displayName !== undefined ? profile.displayName : state.accountDisplayName,
+          accountEmail: profile.email !== undefined ? profile.email : state.accountEmail,
+        })),
       clearSession: () => {
         set({
           authToken: null,

@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { PushNotifications, Token, PermissionStatus } from "@capacitor/push-notifications";
 
 type NativePushPlatform = "ios" | "android";
+export type NativePushPermissionStatus = PermissionStatus["receive"];
 
 const NATIVE_PUSH_OPT_OUT_KEY = "pm_native_push_opt_out";
 const NATIVE_PUSH_TOKEN_KEY = "pm_native_push_token";
@@ -58,6 +59,14 @@ function attachListeners() {
       pendingTokenResolver = null;
       pendingTokenRejecter = null;
     }
+  });
+
+  PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
+    const url = event.notification.data?.url;
+    if (typeof url !== "string" || !url.startsWith("/")) {
+      return;
+    }
+    window.location.assign(url);
   });
 }
 
@@ -117,6 +126,28 @@ async function requestToken(promptIfNeeded: boolean): Promise<string | null> {
 
 export function isNativePushSupported(): boolean {
   return Capacitor.isNativePlatform() && Boolean(getNativePlatform());
+}
+
+export async function getNativePushPermissionStatus(): Promise<NativePushPermissionStatus | null> {
+  if (!isNativePushSupported()) {
+    return null;
+  }
+  attachListeners();
+  const permission = await PushNotifications.checkPermissions();
+  return permission.receive;
+}
+
+export function openNativeNotificationSettings(): boolean {
+  if (!isNativePushSupported() || typeof window === "undefined") {
+    return false;
+  }
+
+  if (Capacitor.getPlatform() === "ios") {
+    window.location.href = "app-settings:";
+    return true;
+  }
+
+  return false;
 }
 
 export function isNativePushOptedOut(): boolean {
