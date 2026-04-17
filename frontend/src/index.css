@@ -977,13 +977,13 @@ p {
     z-index: 1;
   }
 
-.app-bottom-nav-icon-wrap {
-  position: relative;
-  display: inline-flex;
-  margin-bottom: 0;
-  transform: translateY(-0.01rem);
-  z-index: 1;
-}
+  .app-bottom-nav-icon-wrap {
+    position: relative;
+    display: inline-flex;
+    margin-bottom: 0;
+    transform: translateY(-0.01rem);
+    z-index: 1;
+  }
 
   .app-bottom-nav-icon {
     position: relative;
@@ -1060,21 +1060,21 @@ p {
     background: color-mix(in srgb, #ea8ca1 88%, #c56a7f);
   }
 
-.app-bottom-nav-label {
-  display: block;
-  max-width: 100%;
-  overflow: visible;
-  text-overflow: clip;
+  .app-bottom-nav-label {
+    display: block;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: clip;
     white-space: nowrap;
     font-size: 0.76rem;
     font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.005em;
-  transform: none;
-  opacity: 0.9;
-  position: relative;
-  z-index: 1;
-}
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+    transform: none;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+  }
 
   .app-bottom-nav-link:hover {
     background: transparent;
@@ -5290,6 +5290,10 @@ html.ios-lock-horizontal .landing-main {
 
 [data-runtime="native"][data-platform="ios"] .app-safe-top-standalone {
   padding-top: max(0.75rem, var(--app-safe-top));
+}
+
+[data-runtime="native"][data-platform="ios"] .child-overview-page {
+  padding-top: max(1.25rem, calc(var(--app-safe-top) + 0.4rem));
 }
 
 [data-ios-shell="true"] .app-safe-top-standalone {
