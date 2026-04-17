@@ -6,6 +6,7 @@ import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { formatDate } from "@shared/utils/date";
+import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
 export function ChildProfilePage() {
@@ -37,8 +38,7 @@ export function ChildProfilePage() {
 
   const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
   const babyModeLabel = child.babyModeEnabled ? copy.babyModeEnabled : copy.babyModeDisabled;
-  const profileNavActionClass =
-    "soft-pill inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap";
+  const profileNavActionClass = "soft-pill app-profile-action";
   const quickLinks = [
     {
       to: `/children/${child.id}/illness?view=history`,
@@ -63,11 +63,10 @@ export function ChildProfilePage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="px-1">
-        <Link to="/children" className="inline-flex text-sm text-primary hover:underline">
-          {language === "ru" ? "← К детям" : "← Back to children"}
-        </Link>
-      </div>
+      <ChildSectionTopBar
+        backHref="/children"
+        backLabel={language === "ru" ? "← К детям" : "← Back to children"}
+      />
 
       <div className="space-y-3 px-1">
         <div className="flex items-start justify-between gap-3">
@@ -79,7 +78,7 @@ export function ChildProfilePage() {
           </div>
           <Link
             to={`/children/${child.id}/edit`}
-            className={`${profileNavActionClass} shrink-0`}
+            className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
           >
             {copy.editProfile}
           </Link>
@@ -101,51 +100,49 @@ export function ChildProfilePage() {
       </div>
 
       <Surface className="p-5 sm:p-6">
-        <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="mb-4 flex items-start justify-between gap-3 px-1">
           <h2 className="app-card-title">{copy.basic}</h2>
-          <span
-            className={[
-              "soft-pill inline-flex rounded-full px-3 py-1 text-xs font-medium",
-              child.babyModeEnabled
-                ? "border-primary/25 bg-primary/10 text-primary"
-                : "text-muted",
-            ].join(" ")}
-          >
-            {copy.babyMode}: {babyModeLabel}
-          </span>
         </div>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-          <BasicMetricCard label={copy.age} value={ageLabel ?? copy.ageMissing} />
-          <BasicMetricCard
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+          <BasicMetricPill
+            label={copy.babyMode}
+            value={babyModeLabel}
+            tone={child.babyModeEnabled ? "bg-teal-500" : "bg-slate-400"}
+          />
+          <BasicMetricPill label={copy.age} value={ageLabel ?? copy.ageMissing} tone="bg-sky-500" />
+          <BasicMetricPill
             label={copy.birthDate}
             value={child.birthDate ? formatDate(child.birthDate) : copy.birthDateMissing}
+            tone="bg-violet-500"
           />
-          <BasicMetricCard
+          <BasicMetricPill
             label={copy.latestWeight}
             value={
               latestWeight
                 ? formatWeightValue(latestWeight.valueKg, language)
                 : copy.latestWeightMissing
             }
+            tone="bg-emerald-500"
           />
-          <BasicMetricCard
+          <BasicMetricPill
             label={copy.latestHeight}
             value={
               latestHeight
                 ? formatHeightValue(latestHeight.valueCm, language)
                 : copy.latestHeightMissing
             }
+            tone="bg-lime-500"
           />
         </div>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
           {child.allergies && <InfoLine label={copy.allergies} value={child.allergies} />}
           {child.notes && <InfoLine label={copy.notes} value={child.notes} fullWidth />}
           {hasExtraContacts(child) && (
-            <details className="soft-panel-muted rounded-[24px] px-4 py-4 sm:col-span-2">
-              <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
+            <details className="rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-4 py-3 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)] sm:col-span-2">
+              <summary className="cursor-pointer list-none text-sm font-extrabold tracking-[-0.02em] text-foreground">
                 {copy.contactsSummary}
               </summary>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
                 {child.institutionName && (
                   <InfoLine label={copy.institution} value={child.institutionName} />
                 )}
@@ -160,7 +157,7 @@ export function ChildProfilePage() {
             </details>
           )}
           {!hasProfileDetails(child, latestWeight, latestHeight) && (
-            <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:col-span-2">
+            <div className="rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-4 py-4 sm:col-span-2">
               <p className="text-sm text-muted">{copy.noExtra}</p>
             </div>
           )}
@@ -185,14 +182,14 @@ function hasProfileDetails(
 ) {
   return Boolean(
     child.birthDate ||
-      child.institutionName ||
-      child.institutionPhone ||
-      child.doctorName ||
-      child.doctorPhone ||
-      child.allergies ||
-      child.notes ||
-      latestWeight ||
-      latestHeight
+    child.institutionName ||
+    child.institutionPhone ||
+    child.doctorName ||
+    child.doctorPhone ||
+    child.allergies ||
+    child.notes ||
+    latestWeight ||
+    latestHeight
   );
 }
 
@@ -234,7 +231,7 @@ function InfoLine({
 }) {
   return (
     <div
-      className={`soft-panel-muted rounded-[24px] px-4 py-4 ${
+      className={`rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-4 py-3 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)] ${
         fullWidth ? "sm:col-span-2 xl:col-span-3" : ""
       }`}
     >
@@ -246,19 +243,18 @@ function InfoLine({
   );
 }
 
-function BasicMetricCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function BasicMetricPill({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
-    <div className="soft-panel-muted rounded-[22px] px-4 py-3.5">
-      <p className="soft-field-label">{label}</p>
-      <p className="mt-1 text-[1rem] font-semibold leading-6 tracking-[-0.025em] text-foreground">
-        {value}
-      </p>
+    <div className="inline-flex min-h-[3.15rem] min-w-0 items-start gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-2 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]">
+      <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${tone}`} aria-hidden="true" />
+      <span className="min-w-0 flex-1">
+        <span className="block break-words text-[0.68rem] font-extrabold leading-4 tracking-[-0.02em] text-foreground">
+          {label}
+        </span>
+        <span className="mt-0.5 block break-words text-[0.68rem] font-semibold leading-4 tracking-[-0.015em] text-muted">
+          {value}
+        </span>
+      </span>
     </div>
   );
 }

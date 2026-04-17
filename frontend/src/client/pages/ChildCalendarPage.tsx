@@ -133,7 +133,7 @@ const copy = {
     chartFeedingHint: "Частота кормлений и объем смеси по дням.",
     chartIllnessHint: "Дни, где были события по наблюдениям.",
     chartMeasurementsHint: "Последние замеры за выбранный период.",
-    noChartData: "Недостаточно данных для графика.",
+    noChartData: "Для этого нет данных.",
     sleepStarted: "Сон",
     feedingRecorded: "Кормление",
     illnessStarted: "Начато наблюдение",
@@ -216,7 +216,7 @@ const copy = {
     chartFeedingHint: "Feeding frequency and formula volume by day.",
     chartIllnessHint: "Days with observation events.",
     chartMeasurementsHint: "Latest measurements in the selected period.",
-    noChartData: "Not enough data for a chart.",
+    noChartData: "No data for this yet.",
     sleepStarted: "Sleep",
     feedingRecorded: "Feeding",
     illnessStarted: "Tracking started",
@@ -527,7 +527,7 @@ export function ChildCalendarPage() {
             <button
               type="button"
               onClick={() => setIsPeriodMenuOpen((current) => !current)}
-              className="soft-button-secondary inline-flex min-h-[2.45rem] w-full items-center justify-between gap-2 rounded-[18px] px-3 text-left text-xs font-extrabold"
+              className="soft-pill app-profile-action app-profile-action--split min-h-[2.45rem] w-full gap-2 rounded-[18px] text-left text-xs font-extrabold"
               aria-haspopup="listbox"
               aria-expanded={isPeriodMenuOpen}
             >
@@ -572,7 +572,7 @@ export function ChildCalendarPage() {
             <button
               type="button"
               onClick={openCustomPeriodDialog}
-              className="soft-button-secondary inline-flex min-h-[2.45rem] items-center justify-center rounded-[18px] px-4 text-xs font-extrabold"
+              className="soft-pill app-profile-action min-h-[2.45rem] rounded-[18px] px-4 text-xs font-extrabold"
             >
               {text.editCustomPeriod}
             </button>
@@ -793,14 +793,14 @@ function CustomPeriodDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="soft-button-secondary inline-flex min-h-[2.9rem] items-center justify-center px-4 text-sm font-extrabold"
+            className="soft-pill app-profile-action min-h-[2.9rem] px-4 text-sm font-extrabold"
           >
             {text.cancel}
           </button>
           <button
             type="button"
             onClick={onApply}
-            className="soft-button-primary inline-flex min-h-[2.9rem] items-center justify-center px-4 text-sm font-extrabold"
+            className="soft-pill-warning app-profile-action app-profile-action--active min-h-[2.9rem] px-4 text-sm font-extrabold"
           >
             {text.apply}
           </button>
@@ -905,7 +905,7 @@ function CalendarPickerDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="soft-button-secondary inline-flex h-9 min-h-0 w-9 shrink-0 items-center justify-center rounded-full p-0 text-sm"
+            className="app-header-icon-button h-9 min-h-0 w-9 shrink-0 text-sm"
           >
             ✕
           </button>
@@ -916,7 +916,7 @@ function CalendarPickerDialog({
             <button
               type="button"
               onClick={() => shiftViewMonth(-1)}
-              className="soft-button-secondary inline-flex h-9 min-h-0 w-9 items-center justify-center rounded-full p-0 text-sm"
+              className="app-header-icon-button h-9 min-h-0 w-9 text-sm"
             >
               ←
             </button>
@@ -926,7 +926,7 @@ function CalendarPickerDialog({
             <button
               type="button"
               onClick={() => shiftViewMonth(1)}
-              className="soft-button-secondary inline-flex h-9 min-h-0 w-9 items-center justify-center rounded-full p-0 text-sm"
+              className="app-header-icon-button h-9 min-h-0 w-9 text-sm"
             >
               →
             </button>
@@ -1430,9 +1430,7 @@ function ChartsView({
     <Surface className="p-4 sm:p-5">
       <p className="text-sm leading-6 text-muted">{text.hint}</p>
       <div className="mt-4 divide-y divide-border/70">
-        {visibleSections === 0 ? (
-          <p className="py-3 text-sm text-muted">{text.noChartData}</p>
-        ) : null}
+        {visibleSections === 0 ? <EmptyChartMessage text={text.noChartData} /> : null}
         {showSleep ? (
           <MiniBarChart
             title={text.sleepTotal}
@@ -1442,7 +1440,7 @@ function ChartsView({
                 label: text.average,
                 value: sleepDays
                   ? formatDuration(Math.round(totalSleep / sleepDays), language)
-                  : text.noChartData,
+                  : "—",
               },
               { label: text.total, value: formatDuration(totalSleep, language) },
             ]}
@@ -1463,7 +1461,7 @@ function ChartsView({
                 { label: text.total, value: `${totalFormula} мл` },
                 {
                   label: text.average,
-                  value: `${feedingDays ? Math.round(totalFormula / feedingDays) : 0} мл`,
+                  value: feedingDays ? `${Math.round(totalFormula / feedingDays)} мл` : "—",
                 },
               ]}
               days={days}
@@ -1532,7 +1530,7 @@ function ChartsView({
                 ) : null}
               </>
             ) : (
-              <p className="py-3 text-sm text-muted">{text.noChartData}</p>
+              <EmptyChartMessage text={text.noChartData} />
             )}
           </>
         ) : null}
@@ -1570,13 +1568,13 @@ function MiniBarChart({
           {subtitle ? <p className="mt-1 text-xs leading-5 text-muted">{subtitle}</p> : null}
         </div>
         {stats?.length ? (
-          <div className="grid shrink-0 grid-cols-2 gap-1 text-right">
+          <div className="grid max-w-[46%] shrink-0 grid-cols-2 gap-1 text-right">
             {stats.map((item) => (
-              <span key={item.label} className="rounded-full bg-surface-muted px-2 py-1">
-                <span className="block text-[0.6rem] font-bold uppercase tracking-[0.08em] text-muted">
+              <span key={item.label} className="min-w-0 rounded-full bg-surface-muted px-2 py-1">
+                <span className="block truncate text-[0.6rem] font-bold uppercase tracking-[0.08em] text-muted">
                   {item.label}
                 </span>
-                <span className="block text-[0.72rem] font-extrabold text-foreground">
+                <span className="block truncate text-[0.72rem] font-extrabold text-foreground">
                   {item.value}
                 </span>
               </span>
@@ -1627,9 +1625,17 @@ function MiniBarChart({
           </div>
         </>
       ) : (
-        <p className="text-sm text-muted">{emptyText}</p>
+        <EmptyChartMessage text={emptyText} />
       )}
     </section>
+  );
+}
+
+function EmptyChartMessage({ text }: { text: string }) {
+  return (
+    <div className="my-1 rounded-[20px] border border-border bg-surface-muted px-3 py-2.5">
+      <p className="break-words text-sm leading-5 text-muted">{text}</p>
+    </div>
   );
 }
 
@@ -1655,13 +1661,13 @@ function IllnessTimelineChart({
           <p className="text-sm font-extrabold tracking-[-0.02em] text-foreground">{title}</p>
           <p className="mt-1 text-xs leading-5 text-muted">{subtitle}</p>
         </div>
-        <div className="grid shrink-0 grid-cols-2 gap-1 text-right">
+        <div className="grid max-w-[46%] shrink-0 grid-cols-2 gap-1 text-right">
           {stats.map((item) => (
-            <span key={item.label} className="rounded-full bg-surface-muted px-2 py-1">
-              <span className="block text-[0.6rem] font-bold uppercase tracking-[0.08em] text-muted">
+            <span key={item.label} className="min-w-0 rounded-full bg-surface-muted px-2 py-1">
+              <span className="block truncate text-[0.6rem] font-bold uppercase tracking-[0.08em] text-muted">
                 {item.label}
               </span>
-              <span className="block text-[0.72rem] font-extrabold text-foreground">
+              <span className="block truncate text-[0.72rem] font-extrabold text-foreground">
                 {item.value}
               </span>
             </span>
@@ -1705,7 +1711,7 @@ function IllnessTimelineChart({
           </div>
         </>
       ) : (
-        <p className="text-sm text-muted">{emptyText}</p>
+        <EmptyChartMessage text={emptyText} />
       )}
     </section>
   );
@@ -1736,7 +1742,7 @@ function MetricLineChart({
   if (!points.length) {
     return (
       <section className="py-4 first:pt-0 last:pb-0">
-        <p className="text-sm text-muted">{emptyText}</p>
+        <EmptyChartMessage text={emptyText} />
       </section>
     );
   }

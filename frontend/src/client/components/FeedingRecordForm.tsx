@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { DateField } from "@shared/components/DateField";
 import { getLocalIsoDate } from "@shared/utils/date";
-import {
-  finalizeTimeInput,
-  normalizeTimeInput,
-} from "@client/utils/feedingRecordForm";
+import { finalizeTimeInput, normalizeTimeInput } from "@client/utils/feedingRecordForm";
 import { getChildrenCopy } from "@client/i18n/children";
 
 type FeedingType = "breast" | "formula";
 type BreastSide = "left" | "right" | "both";
 
 type FeedingCopy = ReturnType<typeof getChildrenCopy>["childrenPage"]["childCard"];
+
+const choiceClass = "soft-pill app-profile-action min-h-[2.7rem] w-full text-sm";
+const activeChoiceClass =
+  "soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.7rem] w-full text-sm";
 
 export function FeedingRecordForm({
   copy,
@@ -66,7 +67,7 @@ export function FeedingRecordForm({
 
   return (
     <div className="space-y-4">
-      <div className="soft-panel-muted rounded-[22px] px-4 py-3">
+      <div className="rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-4 py-3 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
         <p className="text-sm leading-5 text-muted">{copy.feedingModeHint}</p>
       </div>
 
@@ -77,7 +78,7 @@ export function FeedingRecordForm({
             onFeedingTypeChange("breast");
             onValidationErrorChange(null);
           }}
-          className={`${feedingType === "breast" ? "soft-tab-active" : "soft-tab"} min-h-[2.7rem] text-sm`}
+          className={feedingType === "breast" ? activeChoiceClass : choiceClass}
         >
           {copy.feedingTypeBreast}
         </button>
@@ -87,7 +88,7 @@ export function FeedingRecordForm({
             onFeedingTypeChange("formula");
             onValidationErrorChange(null);
           }}
-          className={`${feedingType === "formula" ? "soft-tab-active" : "soft-tab"} min-h-[2.7rem] text-sm`}
+          className={feedingType === "formula" ? activeChoiceClass : choiceClass}
         >
           {copy.feedingTypeFormula}
         </button>
@@ -95,13 +96,13 @@ export function FeedingRecordForm({
 
       {feedingType === "breast" ? (
         <>
-          <div className="soft-panel-muted rounded-[24px] px-3.5 py-3">
+          <div className="rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-3.5 py-3 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
             <label
               className={[
-                "inline-flex cursor-pointer items-center gap-2.5 rounded-full px-3.5 py-2 text-sm font-medium transition",
+                "app-profile-action inline-flex min-h-[2.7rem] cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition",
                 isExpressed
-                  ? "soft-pill border border-[color:color-mix(in_srgb,var(--color-primary)_22%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary-soft)_84%,white)] text-[color:color-mix(in_srgb,var(--color-primary)_78%,var(--color-foreground))]"
-                  : "soft-pill border border-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface-soft)_88%,white)] text-foreground",
+                  ? "soft-pill-primary app-profile-action--selected"
+                  : "soft-pill text-foreground",
               ].join(" ")}
             >
               <span
@@ -144,7 +145,7 @@ export function FeedingRecordForm({
                         onBreastSideChange(option.key as BreastSide);
                         onValidationErrorChange(null);
                       }}
-                      className={`${breastSide === option.key ? "soft-tab-active" : "soft-tab"} min-h-[2.55rem] text-sm`}
+                      className={breastSide === option.key ? activeChoiceClass : choiceClass}
                     >
                       {option.label}
                     </button>
@@ -176,13 +177,15 @@ export function FeedingRecordForm({
         <button
           type="button"
           onClick={() => setIsManualDetailsOpen((current) => !current)}
-          className="soft-panel-muted flex w-full items-center justify-between rounded-[20px] px-4 py-3 text-left"
+          className="flex w-full items-center justify-between rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-4 py-3 text-left shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]"
           aria-expanded={isManualDetailsOpen}
         >
           <span className="text-sm font-medium text-foreground">
             {copy.feedingManualDetailsToggle}
           </span>
-          <span className="text-xs text-muted">{isManualDetailsOpen ? "−" : "+"}</span>
+          <span className="soft-pill app-profile-action min-h-[2.1rem] px-3 py-1 text-xs">
+            {isManualDetailsOpen ? "−" : "+"}
+          </span>
         </button>
         {isManualDetailsOpen ? (
           <div className="space-y-3">

@@ -120,7 +120,7 @@ export function ChildrenPage() {
             type="button"
             onClick={() => navigate("/children/new")}
             className={[
-              "soft-button-primary app-btn-primary-md w-full sm:w-auto",
+              "soft-pill-warning app-profile-action app-profile-action--active min-h-[2.65rem] w-full sm:w-auto",
               children.length > 0 ? "hidden sm:inline-flex" : "inline-flex",
             ].join(" ")}
           >
@@ -156,7 +156,7 @@ export function ChildrenPage() {
             <button
               type="button"
               onClick={() => navigate("/children/new")}
-              className="soft-button-primary app-btn-primary-md w-full sm:w-auto"
+              className="soft-pill-warning app-profile-action app-profile-action--active min-h-[2.65rem] w-full sm:w-auto"
             >
               {copy.addFirstChild}
             </button>
@@ -213,7 +213,7 @@ export function ChildrenPage() {
               <button
                 type="button"
                 onClick={() => navigate("/children/new")}
-                className="soft-button-secondary app-btn-secondary-md"
+                className="soft-pill app-profile-action min-h-[2.45rem]"
               >
                 {copy.addButtonShort}
               </button>
@@ -275,7 +275,9 @@ function ChildCard({
   const activeSleepElapsedLabel = activeSleep
     ? formatElapsedDuration(activeSleep.startedAt, now, language)
     : null;
-  const activeSleepStartedLabel = activeSleep ? formatTimeOnly(activeSleep.startedAt, language) : "";
+  const activeSleepStartedLabel = activeSleep
+    ? formatTimeOnly(activeSleep.startedAt, language)
+    : "";
   const activeSleepCurrentTimeLabel = activeSleep ? formatTimeOnly(now, language) : "";
   const feedingMutation = useMutation({
     mutationFn: async () => {
@@ -291,16 +293,16 @@ function ChildCard({
     },
   });
   const activeFeedingStartedAt = activeFeeding?.startedAt ?? activeFeeding?.recordedAt ?? null;
-  const activeFeedingElapsedLabel =
-    activeFeedingStartedAt ? formatElapsedDuration(activeFeedingStartedAt, now, language) : null;
+  const activeFeedingElapsedLabel = activeFeedingStartedAt
+    ? formatElapsedDuration(activeFeedingStartedAt, now, language)
+    : null;
   const primaryMeta = [
     ageLabel,
     latestWeightLabel ? `${copy.childCard.weight} ${latestWeightLabel}` : null,
   ].filter(Boolean) as string[];
-  const quickActionClass =
-    "soft-pill inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap";
-  const activeQuickActionClass =
-    "soft-pill-warning inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 whitespace-nowrap";
+  const quickActionClass = "soft-pill app-profile-action";
+  const activeQuickActionClass = "soft-pill-warning app-profile-action app-profile-action--active";
+  const activeSleepActionClass = "soft-pill-success app-profile-action app-profile-action--active";
   return (
     <li>
       <ConfirmDialog
@@ -311,7 +313,9 @@ function ChildCard({
           currentTime: activeSleepCurrentTimeLabel,
         })}
         confirmLabel={
-          sleepMutation.isPending ? copy.childCard.sleepStopping : copy.childCard.stopSleepConfirmAction
+          sleepMutation.isPending
+            ? copy.childCard.sleepStopping
+            : copy.childCard.stopSleepConfirmAction
         }
         isPending={sleepMutation.isPending}
         onCancel={() => setIsStopSleepConfirmOpen(false)}
@@ -344,10 +348,7 @@ function ChildCard({
                   </span>
                 ) : null}
               </div>
-              <Link
-                to={`/children/${child.id}`}
-                className={`${quickActionClass} shrink-0`}
-              >
+              <Link to={`/children/${child.id}`} className={`${quickActionClass} shrink-0`}>
                 {copy.childCard.profile}
               </Link>
             </div>
@@ -394,7 +395,7 @@ function ChildCard({
                     sleepMutation.mutate();
                   }}
                   disabled={sleepMutation.isPending}
-                  className={`${activeSleep ? activeQuickActionClass : quickActionClass} disabled:opacity-60`}
+                  className={`${activeSleep ? activeSleepActionClass : quickActionClass} disabled:opacity-60`}
                 >
                   {sleepMutation.isPending
                     ? activeSleep
@@ -519,9 +520,7 @@ function FeedingRecordDialog({
           <h2 className="app-card-title text-[1.02rem] sm:text-[1.12rem]">
             {copy.feedingDialogTitle}
           </h2>
-          <p className="text-sm leading-5 text-muted">
-            {copy.feedingTypeLabel}
-          </p>
+          <p className="text-sm leading-5 text-muted">{copy.feedingTypeLabel}</p>
         </div>
         <div className="mt-4 space-y-3.5">
           <FeedingRecordForm
@@ -561,7 +560,7 @@ function FeedingRecordDialog({
             type="button"
             onClick={onClose}
             disabled={createMutation.isPending || startMutation.isPending}
-            className="soft-button-secondary inline-flex min-h-[2.95rem] items-center justify-center px-3 text-center text-[0.86rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
+            className="soft-pill app-profile-action min-h-[2.95rem] px-3 text-center text-[0.86rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
           >
             {copy.feedingCancel}
           </button>
@@ -576,7 +575,7 @@ function FeedingRecordDialog({
               createMutation.mutate();
             }}
             disabled={createMutation.isPending || startMutation.isPending}
-            className="soft-button-secondary inline-flex min-h-[2.95rem] items-center justify-center px-3 text-center text-[0.86rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
+            className="soft-pill app-profile-action min-h-[2.95rem] px-3 text-center text-[0.86rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
           >
             {createMutation.isPending ? copy.feedingSaving : copy.feedingSave}
           </button>
@@ -587,7 +586,7 @@ function FeedingRecordDialog({
               startMutation.mutate();
             }}
             disabled={createMutation.isPending || startMutation.isPending}
-            className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-3 text-center text-[0.86rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
+            className="soft-pill-success app-profile-action app-profile-action--active min-h-[2.95rem] px-3 text-center text-[0.86rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
           >
             {startMutation.isPending ? copy.feedingStarting : copy.feedingStart}
           </button>
@@ -635,7 +634,7 @@ function FeedingStopDialog({
             type="button"
             onClick={onClose}
             disabled={isPending}
-            className="soft-button-secondary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.86rem] disabled:opacity-50"
+            className="soft-pill app-profile-action min-h-[2.95rem] px-4 text-[0.86rem] disabled:opacity-50"
           >
             {copy.feedingCancel}
           </button>
@@ -643,7 +642,7 @@ function FeedingStopDialog({
             type="button"
             onClick={onConfirm}
             disabled={isPending}
-            className="soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.86rem] disabled:opacity-50"
+            className="soft-pill-warning app-profile-action app-profile-action--active min-h-[2.95rem] px-4 text-[0.86rem] disabled:opacity-50"
           >
             {isPending ? copy.feedingSaving : copy.stopFeedingConfirmAction}
           </button>
@@ -664,11 +663,7 @@ function formatTimeOnly(value: string | number, language: "ru" | "en") {
   }).format(date);
 }
 
-function formatElapsedDuration(
-  startedAt: string,
-  now: number,
-  _language: "ru" | "en"
-) {
+function formatElapsedDuration(startedAt: string, now: number, _language: "ru" | "en") {
   const startedAtMs = Date.parse(startedAt);
   if (Number.isNaN(startedAtMs)) {
     return "00:00";

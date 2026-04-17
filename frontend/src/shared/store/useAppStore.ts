@@ -16,12 +16,39 @@ type ResolvedTheme = "light" | "dark";
 type Role = "client" | "admin";
 export type MedicationIntervalUnit = "hours" | "minutes";
 
+function readInitialTheme(): Theme {
+  if (typeof window === "undefined") {
+    return "system";
+  }
+
+  try {
+    const raw = window.localStorage.getItem("pillpath-app");
+    if (!raw) {
+      return "system";
+    }
+    const parsed = JSON.parse(raw) as { state?: { theme?: unknown } };
+    const storedTheme = parsed.state?.theme;
+    if (storedTheme === "light" || storedTheme === "dark" || storedTheme === "system") {
+      return storedTheme;
+    }
+  } catch {
+    return "system";
+  }
+
+  return "system";
+}
+
 function resolveTheme(theme: Theme): ResolvedTheme {
+  if (typeof window === "undefined") {
+    return theme === "dark" ? "dark" : "light";
+  }
   if (theme === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
   return theme;
 }
+
+const initialTheme = readInitialTheme();
 
 function applyThemeToDocument(theme: Theme): ResolvedTheme {
   const resolvedTheme = resolveTheme(theme);
@@ -107,8 +134,8 @@ export const useAppStore = create<AppState>()(
       setHydrated: (value) => set({ hydrated: value }),
       hasSeenWorkspaceIntro: false,
       markWorkspaceIntroSeen: () => set({ hasSeenWorkspaceIntro: true }),
-      theme: "system",
-      effectiveTheme: "light",
+      theme: initialTheme,
+      effectiveTheme: resolveTheme(initialTheme),
       setTheme: (theme) => {
         const effectiveTheme = applyThemeToDocument(theme);
         set({ theme, effectiveTheme });

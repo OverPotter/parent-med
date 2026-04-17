@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteChild, fetchChild, updateChild } from "@shared/api/children";
 import { DateField } from "@shared/components/DateField";
@@ -7,6 +7,7 @@ import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { getLocalIsoDate } from "@shared/utils/date";
+import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
 
 type ChildProfileDetails = {
@@ -19,12 +20,8 @@ type ChildProfileDetails = {
   notes?: string | null;
 };
 
-const appBtnPrimaryClass =
-  "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
-const appBtnSecondaryClass =
-  "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
-const appBtnDangerClass =
-  "app-btn-danger-md soft-button-danger inline-flex items-center justify-center px-4";
+const appBtnPrimaryClass = "soft-pill-warning app-profile-action app-profile-action--active";
+const appBtnDangerClass = "soft-pill-danger app-profile-action";
 
 export function ChildEditPage() {
   const { language } = useI18n();
@@ -76,7 +73,9 @@ export function ChildEditPage() {
     <div className="min-w-0 space-y-6">
       <ConfirmDialog
         isOpen={isDeleteConfirmOpen}
-        title={language === "ru" ? `Удалить ребёнка · ${child.name}` : `Delete child · ${child.name}`}
+        title={
+          language === "ru" ? `Удалить ребёнка · ${child.name}` : `Delete child · ${child.name}`
+        }
         description={copy.deleteDescription}
         confirmLabel={deleteMutation.isPending ? copy.deleting : copy.deleteConfirm}
         cancelLabel={copy.deleteCancel}
@@ -88,14 +87,10 @@ export function ChildEditPage() {
         }
       />
 
-      <div className="px-1">
-        <Link
-          to={`/children/${child.id}`}
-          className="inline-flex text-sm text-primary hover:underline"
-        >
-          {language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
-        </Link>
-      </div>
+      <ChildSectionTopBar
+        backHref={`/children/${child.id}`}
+        backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
+      />
 
       <EditChildProfileForm
         child={child}
@@ -194,25 +189,21 @@ function EditChildProfileForm({
               aria-checked={babyModeEnabled}
               onClick={() => setBabyModeEnabled((current) => !current)}
               className={[
-                "relative mt-0.5 inline-flex h-8 w-14 shrink-0 items-center rounded-full border shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_8px_18px_rgba(89,60,154,0.08)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                babyModeEnabled
-                  ? "border-primary/40 bg-[color:color-mix(in_srgb,var(--color-primary)_22%,white)]"
-                  : "border-[color:color-mix(in_srgb,var(--color-border)_88%,white)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.78))]",
+                "baby-mode-switch relative mt-0.5 inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                babyModeEnabled ? "baby-mode-switch--active" : "",
               ].join(" ")}
             >
               <span
                 className={[
-                  "absolute left-1 inline-block h-6 w-6 rounded-full shadow-[0_6px_16px_rgba(89,60,154,0.18),inset_0_1px_0_rgba(255,255,255,0.72)] transition-transform",
-                  babyModeEnabled
-                    ? "translate-x-6 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-primary)_82%,white),var(--color-primary))]"
-                    : "translate-x-0 bg-[linear-gradient(180deg,white,color-mix(in_srgb,var(--color-surface-soft)_94%,white))]",
+                  "baby-mode-switch__thumb absolute left-1 inline-block h-6 w-6 rounded-full transition-transform",
+                  babyModeEnabled ? "translate-x-6" : "translate-x-0",
                 ].join(" ")}
               />
             </button>
           </div>
         </div>
 
-        <div className="soft-panel-muted rounded-[22px] p-4">
+        <div className="rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-4 py-3 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
           <button
             type="button"
             onClick={() => setIsNotesOpen((current) => !current)}
@@ -222,7 +213,7 @@ function EditChildProfileForm({
             <span className="text-sm font-medium text-foreground">
               {language === "ru" ? "Аллергии и заметки" : "Allergies and notes"}
             </span>
-            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+            <span className="soft-pill app-profile-action min-h-[2.1rem] px-3 py-1 text-xs">
               {isNotesOpen
                 ? language === "ru"
                   ? "Свернуть"
@@ -234,13 +225,17 @@ function EditChildProfileForm({
           </button>
           {isNotesOpen ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <TextField label={copy.form.allergiesLabel} value={allergies} onChange={setAllergies} />
+              <TextField
+                label={copy.form.allergiesLabel}
+                value={allergies}
+                onChange={setAllergies}
+              />
               <TextField label={copy.form.notesLabel} value={notes} onChange={setNotes} />
             </div>
           ) : null}
         </div>
 
-        <div className="soft-panel-muted rounded-[22px] p-4">
+        <div className="rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-4 py-3 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
           <button
             type="button"
             onClick={() => setIsContactsOpen((current) => !current)}
@@ -248,7 +243,7 @@ function EditChildProfileForm({
             aria-expanded={isContactsOpen}
           >
             <span className="text-sm font-medium text-foreground">{copy.contactsSummary}</span>
-            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+            <span className="soft-pill app-profile-action min-h-[2.1rem] px-3 py-1 text-xs">
               {isContactsOpen
                 ? language === "ru"
                   ? "Свернуть"
@@ -303,12 +298,6 @@ function EditChildProfileForm({
           >
             {isSaving ? copy.form.saving : copy.form.save}
           </button>
-          <Link
-            to={`/children/${child.id}`}
-            className={`${appBtnSecondaryClass} min-h-[2.95rem] w-full sm:w-auto`}
-          >
-            {copy.deleteCancel}
-          </Link>
           <button
             type="button"
             onClick={onRequestDeleteConfirm}

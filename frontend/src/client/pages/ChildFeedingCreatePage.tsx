@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { createFeedingRecord, startFeedingRecord } from "@shared/api/feedingRecords";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { FeedingRecordForm } from "@client/components/FeedingRecordForm";
 import { getChildrenCopy } from "@client/i18n/children";
 import {
@@ -90,11 +91,10 @@ export function ChildFeedingCreatePage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="px-1">
-        <Link to="/children" className="inline-flex text-sm text-primary hover:underline">
-          {language === "ru" ? "← К детям" : "← Back to children"}
-        </Link>
-      </div>
+      <ChildSectionTopBar
+        backHref={`/children/${child.id}`}
+        backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
+      />
 
       <div className="space-y-1 px-1">
         <h1 className="app-card-title">
@@ -107,7 +107,7 @@ export function ChildFeedingCreatePage() {
         </p>
       </div>
 
-      <Surface className="p-4 sm:p-6">
+      <Surface className="children-card-hero p-4 sm:p-6">
         <FeedingRecordForm
           copy={copy}
           language={language}
@@ -140,7 +140,7 @@ export function ChildFeedingCreatePage() {
 
       <div className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] z-20">
         <div className="mx-auto max-w-3xl px-1">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="soft-panel grid grid-cols-2 gap-2 rounded-[24px] p-2">
             <button
               type="button"
               onClick={() => {
@@ -152,7 +152,7 @@ export function ChildFeedingCreatePage() {
                 createMutation.mutate();
               }}
               disabled={createMutation.isPending || startMutation.isPending}
-              className="soft-button-secondary app-btn-secondary-md inline-flex min-h-[3rem] w-full items-center justify-center px-3 text-center disabled:opacity-50"
+              className="soft-pill app-profile-action min-h-[3rem] w-full text-center disabled:opacity-50"
             >
               {createMutation.isPending ? copy.feedingSaving : copy.feedingSave}
             </button>
@@ -163,7 +163,7 @@ export function ChildFeedingCreatePage() {
                 startMutation.mutate();
               }}
               disabled={createMutation.isPending || startMutation.isPending}
-              className="soft-button-primary app-btn-primary-md inline-flex min-h-[3rem] w-full items-center justify-center px-3 text-center disabled:opacity-50"
+              className="soft-pill-success app-profile-action app-profile-action--active min-h-[3rem] w-full text-center disabled:opacity-50"
             >
               {startMutation.isPending ? copy.feedingStarting : copy.feedingStart}
             </button>

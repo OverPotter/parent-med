@@ -7,6 +7,7 @@ export type NativePushPermissionStatus = PermissionStatus["receive"];
 const NATIVE_PUSH_OPT_OUT_KEY = "pm_native_push_opt_out";
 const NATIVE_PUSH_TOKEN_KEY = "pm_native_push_token";
 const NATIVE_PUSH_TIMEOUT_MS = 10_000;
+const NATIVE_PUSH_NAVIGATION_EVENT = "native-push:navigate";
 
 let listenersAttached = false;
 let pendingTokenResolver: ((value: string) => void) | null = null;
@@ -62,13 +63,26 @@ function attachListeners() {
   });
 
   PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
-    const url = event.notification.data?.url;
+    const data = event.notification.data ?? {};
+    const nestedData = typeof data.data === "object" && data.data !== null ? data.data : {};
+    const url = data.url ?? (nestedData as { url?: unknown }).url;
     if (typeof url !== "string" || !url.startsWith("/")) {
       return;
     }
-    window.location.assign(url);
+    window.dispatchEvent(
+      new CustomEvent(NATIVE_PUSH_NAVIGATION_EVENT, {
+        detail: { url },
+      })
+    );
+    window.setTimeout(() => {
+      if (window.location.pathname + window.location.search !== url) {
+        window.location.assign(url);
+      }
+    }, 120);
   });
 }
+
+export { NATIVE_PUSH_NAVIGATION_EVENT };
 
 async function ensurePermission(promptIfNeeded: boolean): Promise<PermissionStatus["receive"]> {
   const initial = await PushNotifications.checkPermissions();

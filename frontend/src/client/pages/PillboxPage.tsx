@@ -878,6 +878,7 @@ export function PillboxPage() {
   const listFilter: PillboxPlanListFilter =
     searchParams.get("tab") === "archive" ? "archive" : "active";
   const highlightedPlanId = screen === "hub" ? searchParams.get("highlightPlan") : null;
+  const highlightedAction = screen === "hub" ? searchParams.get("action") : null;
   const isCreating = isEditorScreen && (selectedPlanId === "new" || !selectedPlanId);
 
   const isEditing = Boolean(draft?.id);
@@ -929,6 +930,17 @@ export function PillboxPage() {
   );
   const selectedPlanIdForAnalytics =
     selectedPlanId && allGroups.some((item) => item.id === selectedPlanId) ? selectedPlanId : null;
+
+  useEffect(() => {
+    if (!highlightedPlanId || plansLoading) {
+      return;
+    }
+    window.setTimeout(() => {
+      document
+        .getElementById(`pillbox-plan-${highlightedPlanId}`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 120);
+  }, [highlightedAction, highlightedPlanId, plansLoading, visibleGroups.length]);
 
   const createPlanMutation = useMutation({
     mutationFn: createPillboxPlan,
@@ -2482,6 +2494,7 @@ export function PillboxPage() {
           return (
             <li key={group.id}>
               <div
+                id={`pillbox-plan-${group.id}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => openDetails(group)}
@@ -2893,9 +2906,7 @@ function PillboxAnalyticsContent({
             <span className="font-semibold text-foreground">{summary.planTitle}</span>
           </p>
           <div className="mt-2">
-            <span className={`soft-pill-info ${kpiHintClass}`}>
-              {formattedPlanContext}
-            </span>
+            <span className={`soft-pill-info ${kpiHintClass}`}>{formattedPlanContext}</span>
           </div>
           <p className="mt-3 text-sm font-medium leading-5 text-foreground">{planInsight}</p>
         </div>
@@ -2943,9 +2954,7 @@ function PillboxAnalyticsContent({
             </span>
           ) : null}
           <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
-            {language === "ru"
-              ? `В среднем: ${timelineAverage}`
-              : `Average: ${timelineAverage}`}
+            {language === "ru" ? `В среднем: ${timelineAverage}` : `Average: ${timelineAverage}`}
           </span>
           <span className="soft-pill-info rounded-full px-3 py-1.5 text-xs">
             {language === "ru" ? `Всего: ${timelineTotal}` : `Total: ${timelineTotal}`}
@@ -2966,7 +2975,9 @@ function PillboxAnalyticsContent({
 
       <section className="grid gap-3 lg:grid-cols-2">
         <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-          <h3 className="app-card-title">{language === "ru" ? "Что важно по плану" : "What matters about this plan"}</h3>
+          <h3 className="app-card-title">
+            {language === "ru" ? "Что важно по плану" : "What matters about this plan"}
+          </h3>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="soft-panel-muted rounded-[20px] px-4 py-3">
               <p className="text-xs tracking-[0.08em] text-muted">
@@ -2978,9 +2989,7 @@ function PillboxAnalyticsContent({
               <p className="text-xs tracking-[0.08em] text-muted">
                 {language === "ru" ? "Период плана" : "Plan period"}
               </p>
-              <p className="mt-1 text-base font-semibold text-foreground">
-                {formattedPlanContext}
-              </p>
+              <p className="mt-1 text-base font-semibold text-foreground">{formattedPlanContext}</p>
             </div>
           </div>
         </div>
@@ -3079,12 +3088,8 @@ function filterTimelineByPlanBounds(
     }
 
     const pointDate = new Date(fullYear, monthIndex, 1);
-    const isAfterStart =
-      !start ||
-      pointDate >= new Date(start.getFullYear(), start.getMonth(), 1);
-    const isBeforeEnd =
-      !end ||
-      pointDate <= new Date(end.getFullYear(), end.getMonth(), 1);
+    const isAfterStart = !start || pointDate >= new Date(start.getFullYear(), start.getMonth(), 1);
+    const isBeforeEnd = !end || pointDate <= new Date(end.getFullYear(), end.getMonth(), 1);
     return isAfterStart && isBeforeEnd;
   });
 

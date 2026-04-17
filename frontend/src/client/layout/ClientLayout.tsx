@@ -182,7 +182,7 @@ export function ClientLayout() {
     to: "/illnesses/active",
     label: copy.clientLayout.nav.observations,
     mobileLabel: mobileNavLabels.observations,
-    exactActivePaths: ["/illnesses/active", "/children/:childId/illness"],
+    exactActivePaths: ["/illnesses/active"],
     attentionCount: observationsAttention.count > 0 ? observationsAttention.count : undefined,
     attentionTone: observationsAttention.tone,
   };
@@ -191,6 +191,7 @@ export function ClientLayout() {
     label: copy.clientLayout.nav.children,
     mobileLabel: mobileNavLabels.children,
     exactActivePaths: ["/children", "/children/:childId"],
+    activePaths: ["/children"],
   };
   const baseDesktopNavLinks = [
     activeObservationsNavItem,
@@ -231,8 +232,20 @@ export function ClientLayout() {
 
   const desktopNavLinks = baseDesktopNavLinks;
   const mobileNavLinks = baseMobileNavLinks;
-  const shouldHideHeader = Boolean(
-    matchPath({ path: "/children/:childId/calendar", end: true }, location.pathname)
+  const mainMenuPaths = [
+    "/",
+    "/start",
+    "/children",
+    "/pillbox",
+    "/medicine-cabinet",
+    "/illnesses/active",
+    "/more",
+  ];
+  const shouldHideHeader = !mainMenuPaths.some((path) =>
+    matchPath({ path, end: true }, location.pathname)
+  );
+  const shouldHideMobileNav = Boolean(
+    matchPath({ path: "/children/:childId/illness", end: false }, location.pathname)
   );
 
   useEffect(() => {
@@ -458,7 +471,7 @@ export function ClientLayout() {
   return (
     <Layout
       navLinks={desktopNavLinks}
-      mobileNavLinks={mobileNavLinks}
+      mobileNavLinks={shouldHideMobileNav ? [] : mobileNavLinks}
       hideHeader={shouldHideHeader}
     >
       {shouldShowNativePushPrompt && (
