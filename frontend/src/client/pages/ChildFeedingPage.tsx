@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { deleteFeedingRecord, fetchFeedingRecordsByChildId } from "@shared/api/feedingRecords";
@@ -8,9 +8,15 @@ import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { FeedingRecord } from "@shared/types/api";
 import { formatDateTime } from "@shared/utils/date";
+import {
+  ChildRecordsPeriodSelector,
+  getChildRecordsPeriodDayCount,
+  getShiftedLocalIsoDate,
+  matchesChildRecordsPeriod,
+  type ChildRecordsPeriod,
+} from "@client/components/ChildRecordsPeriodSelector";
+import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
-
-type RecordsPeriod = "today" | "week" | "month" | "all";
 
 export function ChildFeedingPage() {
   const { language } = useI18n();
@@ -19,7 +25,9 @@ export function ChildFeedingPage() {
   const { childId } = useParams<{ childId: string }>();
   const queryClient = useQueryClient();
   const [recordToDelete, setRecordToDelete] = useState<FeedingRecord | null>(null);
-  const [period, setPeriod] = useState<RecordsPeriod>("today");
+  const [period, setPeriod] = useState<ChildRecordsPeriod>("week");
+  const [customStartDate, setCustomStartDate] = useState(() => getShiftedLocalIsoDate(-6));
+  const [customEndDate, setCustomEndDate] = useState(() => getShiftedLocalIsoDate(0));
 
   const { data: child, isLoading: isChildLoading } = useQuery({
     queryKey: ["child", childId],
@@ -50,11 +58,13 @@ export function ChildFeedingPage() {
   }
 
   const filteredRecords = feedingRecords.filter((record) =>
-    matchesPeriod(record.recordedAt, period)
+    matchesChildRecordsPeriod(record.recordedAt, period, customStartDate, customEndDate)
   );
   const averagePerDay = getAveragePerDay(
     filteredRecords.map((record) => record.recordedAt),
-    period
+    period,
+    customStartDate,
+    customEndDate
   );
   const averageTime = getAverageTimeLabel(
     filteredRecords.map((record) => record.recordedAt),
@@ -66,7 +76,6 @@ export function ChildFeedingPage() {
   const averageVolume = getAverage(
     filteredRecords.map((record) => record.formulaVolumeMl).filter(isNumber)
   );
-
   return (
     <div className="min-w-0 space-y-6">
       <ConfirmDialog
@@ -87,14 +96,10 @@ export function ChildFeedingPage() {
         }}
       />
 
-      <div className="px-1">
-        <Link
-          to={`/children/${child.id}`}
-          className="inline-flex text-sm text-primary hover:underline"
-        >
-          {language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
-        </Link>
-      </div>
+      <ChildSectionTopBar
+        backHref={`/children/${child.id}`}
+        backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
+      />
 
       <div className="space-y-3">
         <div>
@@ -104,121 +109,87 @@ export function ChildFeedingPage() {
           <p className="mt-1 text-sm text-muted">{copy.feedingSectionSubtitle}</p>
         </div>
 
-        <Surface className="p-5 sm:p-6">
-          <div className="mb-4 space-y-4">
+        <Surface className="relative z-30 overflow-visible p-4 sm:p-5">
+          <div className="space-y-4">
             {isFeedingLoading ? <p className="text-sm text-muted">{common.loading}</p> : null}
-          <div className="-mx-1 flex flex-nowrap items-center gap-2 overflow-x-auto px-1 pb-1">
-            {[
-              { key: "today", label: copy.recordsPeriodToday },
-              { key: "week", label: copy.recordsPeriodWeek },
-              { key: "month", label: copy.recordsPeriodMonth },
-              { key: "all", label: copy.recordsPeriodAll },
-            ].map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                onClick={() => setPeriod(option.key as RecordsPeriod)}
-                className={
-                  period === option.key
-                    ? "soft-tab-active min-h-[2.2rem] shrink-0 px-3 text-xs"
-                    : "soft-tab min-h-[2.2rem] shrink-0 px-3 text-xs"
-                }
+            <ChildRecordsPeriodSelector
+              language={language}
+              period={period}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onPeriodChange={setPeriod}
+              onCustomRangeChange={(startDate, endDate) => {
+                setCustomStartDate(startDate);
+                setCustomEndDate(endDate);
+              }}
+            />
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+              <SummaryPill
+                label={copy.feedingSummaryAvgPerDay}
+                value={formatPerDay(averagePerDay, language)}
+              />
+              <SummaryPill label={copy.feedingSummaryAvgTime} value={averageTime} />
+              <SummaryPill
+                label={copy.feedingSummaryAvgDuration}
+                value={formatMinutes(averageDuration, language)}
+              />
+              <SummaryPill
+                label={copy.feedingSummaryAvgVolume}
+                value={formatVolume(averageVolume, language)}
+              />
+            </div>
+          </div>
+        </Surface>
+
+        {filteredRecords.length === 0 ? (
+          <Surface className="p-5 sm:p-6">
+            <p className="text-sm text-muted">{copy.feedingSectionEmpty}</p>
+          </Surface>
+        ) : (
+          <div className="overflow-hidden rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
+            {filteredRecords.map((item) => (
+              <div
+                key={item.id}
+                className="grid grid-cols-[4.6rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:grid-cols-[8.4rem_minmax(0,1fr)_auto] sm:px-4"
               >
-                {option.label}
-              </button>
+                <span className="truncate text-xs font-semibold tabular-nums text-muted">
+                  {formatDateTime(item.recordedAt)}
+                </span>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-teal-500" />
+                    <p className="truncate text-sm font-semibold leading-5 text-foreground">
+                      {item.feedingType === "breast"
+                        ? copy.feedingTypeBreastLabel
+                        : copy.feedingTypeFormulaLabel}
+                    </p>
+                  </div>
+                  <p className="mt-0.5 truncate text-xs leading-5 text-muted">
+                    {[
+                      formatBreastSide(item.breastSide, language),
+                      item.formulaVolumeMl ? `${item.formulaVolumeMl} мл` : null,
+                      formatFeedingDuration(item.durationMinutes, language),
+                      item.note,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRecordToDelete(item)}
+                  disabled={deleteMutation.isPending}
+                  className="soft-pill app-profile-action shrink-0 text-danger disabled:opacity-50"
+                >
+                  {copy.feedingSectionDelete}
+                </button>
+              </div>
             ))}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <SummaryPill
-              label={copy.feedingSummaryAvgPerDay}
-              value={formatPerDay(averagePerDay, language)}
-            />
-            <SummaryPill
-              label={copy.feedingSummaryAvgTime}
-              value={averageTime}
-            />
-            <SummaryPill
-              label={copy.feedingSummaryAvgDuration}
-              value={formatMinutes(averageDuration, language)}
-            />
-            <SummaryPill
-              label={copy.feedingSummaryAvgVolume}
-              value={formatVolume(averageVolume, language)}
-            />
-          </div>
-          </div>
-
-          {filteredRecords.length === 0 ? (
-            <p className="text-sm text-muted">{copy.feedingSectionEmpty}</p>
-          ) : (
-            <div className="grid gap-3">
-              {filteredRecords.map((item) => (
-                <div key={item.id} className="soft-panel-muted rounded-[24px] px-4 py-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0 space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                          {item.feedingType === "breast"
-                            ? copy.feedingTypeBreastLabel
-                            : copy.feedingTypeFormulaLabel}
-                        </span>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <InfoLine label={copy.feedingRecordedAt} value={formatDateTime(item.recordedAt)} />
-                        <InfoLine
-                          label={copy.feedingSide}
-                          value={formatBreastSide(item.breastSide, language)}
-                        />
-                        <InfoLine
-                          label={copy.feedingVolume}
-                          value={item.formulaVolumeMl ? `${item.formulaVolumeMl} мл` : "—"}
-                        />
-                        <InfoLine
-                          label={copy.feedingDuration}
-                          value={formatFeedingDuration(item.durationMinutes, language)}
-                        />
-                      </div>
-                      {item.note ? <InfoLine label={copy.feedingNote} value={item.note} /> : null}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setRecordToDelete(item)}
-                      disabled={deleteMutation.isPending}
-                      className="soft-button-secondary app-btn-secondary-md inline-flex min-h-[2.75rem] shrink-0 text-center text-danger disabled:opacity-50"
-                    >
-                      {copy.feedingSectionDelete}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Surface>
+        )}
       </div>
     </div>
   );
-}
-
-function matchesPeriod(value: string, period: RecordsPeriod) {
-  if (period === "all") {
-    return true;
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return false;
-  }
-
-  const now = new Date();
-  if (period === "today") {
-    return date.toDateString() === now.toDateString();
-  }
-
-  const days = period === "week" ? 7 : 30;
-  const threshold = new Date(now);
-  threshold.setHours(0, 0, 0, 0);
-  threshold.setDate(threshold.getDate() - (days - 1));
-  return date >= threshold;
 }
 
 function formatBreastSide(side: string | null, language: "ru" | "en") {
@@ -276,37 +247,17 @@ function getAverage(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function getAveragePerDay(values: string[], period: RecordsPeriod) {
+function getAveragePerDay(
+  values: string[],
+  period: ChildRecordsPeriod,
+  customStartDate: string,
+  customEndDate: string
+) {
   if (values.length === 0) {
     return null;
   }
 
-  const uniqueDays = new Set(
-    values
-      .map((value) => {
-        const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
-      })
-      .filter(Boolean)
-  ).size;
-
-  if (uniqueDays === 0) {
-    return null;
-  }
-
-  if (period === "today") {
-    return values.length;
-  }
-
-  if (period === "week") {
-    return values.length / 7;
-  }
-
-  if (period === "month") {
-    return values.length / 30;
-  }
-
-  return values.length / uniqueDays;
+  return values.length / getChildRecordsPeriodDayCount(period, customStartDate, customEndDate);
 }
 
 function getAverageTimeLabel(values: string[], language: "ru" | "en") {
@@ -338,35 +289,13 @@ function isNumber(value: number | null): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function InfoLine({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function SummaryPill({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 leading-6 text-foreground">{value}</p>
-    </div>
-  );
-}
-
-function SummaryPill({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="soft-panel-muted inline-flex min-h-[3.1rem] min-w-[8.2rem] flex-col items-start justify-center rounded-[1.15rem] border border-[color:color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-3.5 py-2.5">
-      <span className="text-[11px] font-medium leading-4 tracking-[0.02em] text-muted">
-        {label}
-      </span>
-      <span className="mt-0.5 text-[0.95rem] font-semibold leading-5 tracking-[-0.025em] text-foreground">
-        {value}
+    <div className="inline-flex min-h-[2.05rem] min-w-0 items-center gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-1 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]">
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-500" aria-hidden="true" />
+      <span className="min-w-0 flex-1 truncate text-[0.72rem] font-extrabold tracking-[-0.02em] text-foreground">
+        {label}:{" "}
+        <span className="text-[0.68rem] font-semibold tracking-[-0.015em] text-muted">{value}</span>
       </span>
     </div>
   );

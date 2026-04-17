@@ -187,7 +187,7 @@ export function DateField({
   max,
   allowClear = true,
   className = "",
-  panelPortalClassName = "fixed inset-0 z-[140]",
+  panelPortalClassName = "fixed inset-0 z-[940]",
 }: DateFieldProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -352,16 +352,16 @@ export function DateField({
               <button
                 type="button"
                 aria-label="Close date picker"
-                className="absolute inset-0 bg-black/35"
+                className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_82%,transparent)] backdrop-blur-md"
                 onClick={() => setIsOpen(false)}
               />
             ) : null}
             <div
               ref={panelRef}
               className={[
-                "soft-panel border border-border bg-surface p-4 shadow-[0_28px_70px_rgba(15,23,42,0.22)]",
+                "soft-panel border border-[color:color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_94%,var(--color-background)_6%)] p-4 shadow-[0_28px_70px_rgba(15,23,42,0.22)]",
                 isMobileViewport
-                  ? "absolute left-1/2 bottom-[max(1rem,calc(env(safe-area-inset-bottom)+0.5rem))] w-[min(calc(100%-1.5rem),22.25rem)] max-h-[78dvh] -translate-x-1/2 overflow-y-auto rounded-[26px] p-3"
+                  ? "absolute left-1/2 top-1/2 w-[min(calc(100%-1.5rem),22.25rem)] max-h-[calc(100dvh-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[30px] p-4"
                   : "fixed overflow-y-auto rounded-[28px]",
               ].join(" ")}
               style={
@@ -385,7 +385,7 @@ export function DateField({
                     <button
                       type="button"
                       onClick={() => setIsOpen(false)}
-                      className="soft-button-secondary inline-flex h-8 w-8 min-h-0 items-center justify-center rounded-full p-0 text-[0.82rem]"
+                      className="app-header-icon-button h-8 min-h-0 w-8 text-[0.82rem]"
                     >
                       ✕
                     </button>
@@ -393,11 +393,11 @@ export function DateField({
                 </div>
               ) : null}
               <div className="mb-2.5 space-y-2">
-                <div className="grid grid-cols-[2.3rem_minmax(0,1fr)_2.3rem] items-center gap-2 rounded-[20px] bg-surface-muted p-1.5">
+                <div className="grid grid-cols-[2.3rem_minmax(0,1fr)_2.3rem] items-center gap-2 rounded-[20px] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] p-1.5 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_42%,transparent)]">
                   <button
                     type="button"
                     onClick={() => shiftViewMonth(-1)}
-                    className="soft-button-secondary inline-flex h-9 min-h-0 w-9 items-center justify-center rounded-full p-0 text-sm"
+                    className="app-header-icon-button h-9 min-h-0 w-9 text-sm"
                     aria-label={copy.prevMonth}
                   >
                     ←
@@ -410,7 +410,7 @@ export function DateField({
                   <button
                     type="button"
                     onClick={() => shiftViewMonth(1)}
-                    className="soft-button-secondary inline-flex h-9 min-h-0 w-9 items-center justify-center rounded-full p-0 text-sm"
+                    className="app-header-icon-button h-9 min-h-0 w-9 text-sm"
                     aria-label={copy.nextMonth}
                   >
                     →
@@ -459,7 +459,7 @@ export function DateField({
               </div>
 
               <div
-                className="touch-pan-y select-none rounded-[22px] bg-surface-muted/70 p-2"
+                className="touch-pan-y select-none rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] p-2 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_48%,transparent)]"
                 onTouchStart={handleCalendarTouchStart}
                 onTouchEnd={handleCalendarTouchEnd}
               >
@@ -565,7 +565,7 @@ export function DateField({
                       setIsOpen(false);
                     }
                   }}
-                  className={`${isMobileViewport ? "soft-button-secondary min-h-0 px-3 py-1.5 text-[0.82rem]" : "soft-button-secondary min-h-0 px-3.5 py-2 text-sm"}`}
+                  className={`${isMobileViewport ? "soft-pill app-profile-action min-h-0 px-3 py-1.5 text-[0.82rem]" : "soft-pill app-profile-action min-h-0 px-3.5 py-2 text-sm"}`}
                 >
                   {copy.today}
                 </button>
@@ -576,7 +576,7 @@ export function DateField({
                       onChange("");
                       setIsOpen(false);
                     }}
-                    className={`${isMobileViewport ? "soft-button-secondary min-h-0 px-3 py-1.5 text-[0.82rem]" : "soft-button-secondary min-h-0 px-3.5 py-2 text-sm"}`}
+                    className={`${isMobileViewport ? "soft-pill app-profile-action min-h-0 px-3 py-1.5 text-[0.82rem]" : "soft-pill app-profile-action min-h-0 px-3.5 py-2 text-sm"}`}
                   >
                     {copy.clear}
                   </button>

@@ -347,7 +347,11 @@ class IllnessEpisodeService:
             "year": 365,
         }
         start_date = today - timedelta(days=days_by_period[period] - 1)
-        return [episode for episode in episodes if episode.started_at >= start_date]
+        return [
+            episode
+            for episode in episodes
+            if (episode.closed_at or datetime.now(UTC)).date() >= start_date
+        ]
 
     def _episode_duration_days(self, episode: IllnessEpisode) -> int:
         end_date = (episode.closed_at or datetime.now(UTC)).date()

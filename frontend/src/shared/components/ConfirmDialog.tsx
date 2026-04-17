@@ -91,7 +91,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="soft-button-secondary inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.86rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
+            className="soft-pill app-profile-action min-h-[2.95rem] px-4 text-[0.86rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
           >
             {resolvedCancelLabel}
           </button>
@@ -99,8 +99,10 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={isPending}
-            className={`inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.86rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem] ${
-              confirmTone === "danger" ? "soft-button-danger" : "soft-button-primary"
+            className={`app-profile-action min-h-[2.95rem] px-4 text-[0.86rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem] ${
+              confirmTone === "danger"
+                ? "soft-pill-danger"
+                : "soft-pill-success app-profile-action--active"
             }`}
           >
             {confirmLabel}

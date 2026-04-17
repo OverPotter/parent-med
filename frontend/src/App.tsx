@@ -1,6 +1,6 @@
 /** Роутинг: admin / client. */
 
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
@@ -23,6 +23,7 @@ import {
   getNativePushSubscriptionPayload,
   isNativePushOptedOut,
   isNativePushSupported,
+  NATIVE_PUSH_NAVIGATION_EVENT,
 } from "@shared/utils/nativePushNotifications";
 import { HitKeepBridge } from "@shared/analytics";
 import { detectIosShell } from "@shared/hooks/useIsIosShell";
@@ -158,7 +159,7 @@ function BootLog() {
 
 function ThemeSync() {
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.setAttribute("data-theme", effectiveTheme);
     document.documentElement.style.colorScheme = effectiveTheme;
     const background = effectiveTheme === "dark" ? "#1e1b2e" : "#ebe4ff";
@@ -168,6 +169,27 @@ function ThemeSync() {
     document
       .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
       ?.setAttribute("content", effectiveTheme === "dark" ? "black-translucent" : "default");
+  }, [effectiveTheme]);
+
+  useEffect(() => {
+    const syncThemeAfterRestore = () => {
+      const background = effectiveTheme === "dark" ? "#1e1b2e" : "#ebe4ff";
+      document.documentElement.setAttribute("data-theme", effectiveTheme);
+      document.documentElement.style.colorScheme = effectiveTheme;
+      document.documentElement.style.background = background;
+      document.body.style.background = background;
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
+      document
+        .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+        ?.setAttribute("content", effectiveTheme === "dark" ? "black-translucent" : "default");
+    };
+
+    window.addEventListener("pageshow", syncThemeAfterRestore);
+    document.addEventListener("visibilitychange", syncThemeAfterRestore);
+    return () => {
+      window.removeEventListener("pageshow", syncThemeAfterRestore);
+      document.removeEventListener("visibilitychange", syncThemeAfterRestore);
+    };
   }, [effectiveTheme]);
   return null;
 }
@@ -348,6 +370,26 @@ function PushSubscriptionSync() {
       isCancelled = true;
     };
   }, [accountId, authToken, pushConfig?.enabled]);
+
+  return null;
+}
+
+function NativePushNavigationSync() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleNavigate = (event: Event) => {
+      const detail = (event as CustomEvent<{ url?: unknown }>).detail;
+      const url = detail?.url;
+      if (typeof url !== "string" || !url.startsWith("/")) {
+        return;
+      }
+      navigate(url, { replace: false });
+    };
+
+    window.addEventListener(NATIVE_PUSH_NAVIGATION_EVENT, handleNavigate);
+    return () => window.removeEventListener(NATIVE_PUSH_NAVIGATION_EVENT, handleNavigate);
+  }, [navigate]);
 
   return null;
 }
@@ -857,6 +899,7 @@ export default function App() {
       <IOSSwipeBackSync />
       <AuthSync />
       <PushSubscriptionSync />
+      <NativePushNavigationSync />
       <MobilePageResumeSync />
       <PullToRefreshSync />
       <Suspense fallback={<RouteFallback />}>
@@ -902,7 +945,10 @@ export default function App() {
                   <Route path="children/:childId" element={<ChildProfilePage />} />
                   <Route path="children/:childId/sleep" element={<ChildSleepPage />} />
                   <Route path="children/:childId/feeding" element={<ChildFeedingPage />} />
-                  <Route path="children/:childId/feeding/new" element={<ChildFeedingCreatePage />} />
+                  <Route
+                    path="children/:childId/feeding/new"
+                    element={<ChildFeedingCreatePage />}
+                  />
                   <Route path="children/:childId/weight" element={<ChildWeightPage />} />
                   <Route path="children/:childId/height" element={<ChildHeightPage />} />
                   <Route path="children/:childId/calendar" element={<ChildCalendarPage />} />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@shared/api/weightEntries";
 import { useI18n } from "@shared/hooks/useI18n";
 import { formatDate } from "@shared/utils/date";
+import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { MeasurementCard } from "@client/components/MeasurementCard";
 import { getChildrenCopy } from "@client/i18n/children";
 import { buildMeasurementTrend, formatDecimal, parseMeasurement } from "./measurementUtils";
@@ -60,14 +61,10 @@ export function ChildWeightPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="px-1">
-        <Link
-          to={`/children/${child.id}`}
-          className="inline-flex text-sm text-primary hover:underline"
-        >
-          {language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
-        </Link>
-      </div>
+      <ChildSectionTopBar
+        backHref={`/children/${child.id}`}
+        backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
+      />
 
       <div className="space-y-3">
         <div>

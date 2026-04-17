@@ -198,6 +198,49 @@ async def test_get_history_summary_returns_period_aggregates() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_history_summary_includes_episode_closed_inside_period() -> None:
+    child = Child(id=uuid4(), family_id=uuid4(), name="Антон", birth_date=date(2021, 4, 10))
+    now = datetime.now(UTC)
+    overlapping_episode = IllnessEpisode(
+        id=uuid4(),
+        child_id=child.id,
+        started_at=(now - timedelta(days=35)).date(),
+        title="Долгий эпизод",
+        status="closed",
+        medication_mode="manual",
+        note=None,
+        closed_at=now - timedelta(days=5),
+        deleted_at=None,
+    )
+    old_episode = IllnessEpisode(
+        id=uuid4(),
+        child_id=child.id,
+        started_at=(now - timedelta(days=70)).date(),
+        title="Старый эпизод",
+        status="closed",
+        medication_mode="manual",
+        note=None,
+        closed_at=now - timedelta(days=60),
+        deleted_at=None,
+    )
+
+    service = make_service(
+        child=child,
+        episodes=[overlapping_episode, old_episode],
+        temperatures_by_episode={overlapping_episode.id: [], old_episode.id: []},
+        administrations_by_episode={overlapping_episode.id: [], old_episode.id: []},
+        comments_by_episode={overlapping_episode.id: [], old_episode.id: []},
+    )
+
+    result = await service.get_history_summary(child.id, child.family_id, "month")
+
+    assert result.period == "month"
+    assert result.total_closed_episodes == 2
+    assert result.episode_count == 1
+    assert result.average_duration_days == 31
+
+
+@pytest.mark.asyncio
 async def test_get_episode_insights_returns_peak_and_counts() -> None:
     child = Child(id=uuid4(), family_id=uuid4(), name="Антон", birth_date=date(2021, 4, 10))
     now = datetime.now(UTC)

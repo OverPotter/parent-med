@@ -297,7 +297,7 @@ export function Layout({
                       <>
                         <Link
                           to="/feedback"
-                          className="app-header-utility-button inline-flex items-center justify-center p-0"
+                          className="app-header-utility-button app-header-icon-button inline-flex items-center justify-center p-0"
                           aria-label={copy.feedback.navShort}
                           title={copy.feedback.navShort}
                         >
@@ -366,7 +366,7 @@ export function Layout({
                       <div className="flex min-w-0 items-center gap-2">
                         <Link
                           to="/feedback"
-                          className="app-header-utility-button inline-flex h-[2.72rem] w-[2.72rem] shrink-0 items-center justify-center p-0"
+                          className="app-header-utility-button app-header-icon-button inline-flex shrink-0 items-center justify-center p-0"
                           aria-label={copy.feedback.navShort}
                           title={copy.feedback.navShort}
                         >

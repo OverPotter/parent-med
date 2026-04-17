@@ -812,9 +812,7 @@ class PushNotificationScheduler:
                 }
             ]
 
-            pillbox_url = (
-                f"/pillbox?mode=details&plan={first_plan.id}&highlightPlan={first_plan.id}"
-            )
+            pillbox_url = f"/pillbox?plan={first_plan.id}&highlightPlan={first_plan.id}&action=take"
 
             remind_at = scheduled_for - timedelta(minutes=pillbox_before_minutes)
             if remind_at <= now < scheduled_for and not await slot_delivered("before"):

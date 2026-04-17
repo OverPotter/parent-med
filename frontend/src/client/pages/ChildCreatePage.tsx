@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createChild } from "@shared/api/children";
 import { createHeightEntry } from "@shared/api/heightEntries";
 import { createWeightEntry } from "@shared/api/weightEntries";
 import { trackChildCreated } from "@shared/analytics";
 import { DateField } from "@shared/components/DateField";
-import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { getLocalIsoDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
+import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
 
 type ChildProfileDetails = {
@@ -140,25 +140,21 @@ export function ChildCreatePage() {
   };
 
   const apiError =
-    ((createMutation.error as { response?: { data?: { detail?: string } } })?.response?.data
-      ?.detail ??
-      null);
+    (createMutation.error as { response?: { data?: { detail?: string } } })?.response?.data
+      ?.detail ?? null;
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="px-1">
-        <Link to="/children" className="inline-flex text-sm text-primary hover:underline">
-          {language === "ru" ? "← К детям" : "← Back to children"}
-        </Link>
-      </div>
+      <ChildSectionTopBar
+        backHref="/children"
+        backLabel={language === "ru" ? "← К детям" : "← Back to children"}
+      />
 
-      <PageIntro title={copy.formTitle} subtitle={copy.formSubtitle} hideOnMobile />
-
-      <div className="md:hidden">
-        <Surface className="p-4">
-          <h1 className="app-title mb-2 text-[1.42rem] tracking-[-0.04em]">{copy.formTitle}</h1>
-          <p className="text-sm text-muted">{copy.formSubtitle}</p>
-        </Surface>
+      <div className="space-y-1 px-1">
+        <h1 className="app-card-title">
+          {copy.formTitle} · {copy.title}
+        </h1>
+        <p className="text-sm leading-6 text-muted">{copy.formSubtitle}</p>
       </div>
 
       <Surface className="app-section-surface">
@@ -245,18 +241,14 @@ export function ChildCreatePage() {
                 aria-checked={babyModeEnabled}
                 onClick={() => setBabyModeEnabled((current) => !current)}
                 className={[
-                  "relative mt-0.5 inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors",
-                  babyModeEnabled
-                    ? "border-primary/30 bg-primary/15"
-                    : "border-border/70 bg-foreground/6",
+                  "baby-mode-switch relative mt-0.5 inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors",
+                  babyModeEnabled ? "baby-mode-switch--active" : "",
                 ].join(" ")}
               >
                 <span
                   className={[
-                    "absolute left-1 inline-block h-6 w-6 rounded-full shadow-sm transition-transform",
-                    babyModeEnabled
-                      ? "translate-x-6 bg-primary"
-                      : "translate-x-0 bg-background",
+                    "baby-mode-switch__thumb absolute left-1 inline-block h-6 w-6 rounded-full transition-transform",
+                    babyModeEnabled ? "translate-x-6" : "translate-x-0",
                   ].join(" ")}
                 />
               </button>
@@ -265,9 +257,7 @@ export function ChildCreatePage() {
               <span
                 className={[
                   "soft-pill inline-flex rounded-full px-3 py-1 text-xs font-medium",
-                  babyModeEnabled
-                    ? "border-primary/25 bg-primary/10 text-primary"
-                    : "text-muted",
+                  babyModeEnabled ? "border-primary/25 bg-primary/10 text-primary" : "text-muted",
                 ].join(" ")}
               >
                 {babyModeEnabled
@@ -281,7 +271,7 @@ export function ChildCreatePage() {
             </div>
           </div>
 
-          <div className="soft-panel-muted rounded-[22px] p-4">
+          <div className="rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-4 py-3 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
             <button
               type="button"
               onClick={() => setIsDetailsOpen((current) => !current)}
@@ -289,9 +279,11 @@ export function ChildCreatePage() {
               aria-expanded={isDetailsOpen}
             >
               <span className="text-sm font-medium text-foreground">
-                {language === "ru" ? "Медицинские и контактные данные" : "Medical and contact details"}
+                {language === "ru"
+                  ? "Медицинские и контактные данные"
+                  : "Medical and contact details"}
               </span>
-              <span className="soft-pill rounded-full px-3 py-1 text-xs">
+              <span className="soft-pill app-profile-action min-h-[2.1rem] px-3 py-1 text-xs">
                 {isDetailsOpen
                   ? language === "ru"
                     ? "Свернуть"
@@ -348,14 +340,14 @@ export function ChildCreatePage() {
             <button
               type="button"
               onClick={() => navigate("/children")}
-              className="soft-button-secondary app-btn-secondary-md w-full sm:w-auto"
+              className="soft-pill app-profile-action min-h-[2.5rem] w-full sm:w-auto"
             >
               {copy.cancel}
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending || !name.trim()}
-              className="soft-button-primary app-btn-primary-md inline-flex w-full disabled:opacity-50 sm:w-auto"
+              className="soft-pill-warning app-profile-action app-profile-action--active min-h-[2.5rem] w-full disabled:opacity-50 sm:w-auto"
             >
               {createMutation.isPending ? copy.saving : copy.addButtonShort}
             </button>
