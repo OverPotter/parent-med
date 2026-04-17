@@ -27,7 +27,7 @@ export function ChildSectionTopBar({ backHref, backLabel }: ChildSectionTopBarPr
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 px-1 pt-1">
+    <div className="child-section-top-bar flex items-center justify-between gap-3 px-1 pt-1">
       <Link
         to={backHref}
         className="inline-flex min-h-[2.35rem] items-center text-sm text-primary hover:underline"
