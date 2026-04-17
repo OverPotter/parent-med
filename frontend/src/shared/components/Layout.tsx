@@ -171,11 +171,7 @@ export function ProfileMenu({
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        {iconOnly ? (
-          <ProfileIcon />
-        ) : (
-          accountLabel
-        )}
+        {iconOnly ? <ProfileIcon /> : accountLabel}
       </button>
       {isOpen ? (
         <div className="app-profile-menu__panel" role="menu">
@@ -284,150 +280,152 @@ export function Layout({
         <div className="app-v3-noise" />
       </div>
       {!hideHeader ? (
-      <header className="app-safe-top-header relative z-30 min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
-        <div className="relative z-30 mx-auto max-w-5xl">
-          <div className={isIosShell ? "block" : "md:hidden"}>
-            <div className="app-mobile-header">
-              <div className="app-mobile-header__row">
-                <Link
-                  to="/"
-                  className="app-mobile-header__logo-link inline-flex shrink-0 items-center justify-center"
-                  aria-label={copy.common.brandName}
-                >
-                  <img src="/pwa-icon.png" alt="" className="app-mobile-header__logo" />
-                </Link>
-                <div className="app-mobile-header__actions flex shrink-0 items-center">
-                  {isAuthenticated ? (
-                    <>
-                      <Link
-                        to="/feedback"
-                        className="app-header-utility-button inline-flex items-center justify-center p-0"
-                        aria-label={copy.feedback.navShort}
-                        title={copy.feedback.navShort}
-                      >
-                        <FeedbackIcon />
-                        <span className="sr-only">{copy.feedback.navShort}</span>
-                      </Link>
-                      <ProfileMenu
-                        accountLabel={accountLabel}
-                        servicesLabel={copy.clientLayout.nav.more}
-                        settingsLabel={copy.common.settings}
-                        logoutLabel={copy.common.logoutFromAccount}
-                        menuLabel={copy.common.profileMenuLabel}
-                        onLogout={handleLogout}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <LanguageSwitch className="app-header-language-switch" />
-                      <button
-                        type="button"
-                        className="soft-theme-toggle app-header-theme-toggle"
-                        onClick={handleThemeToggle}
-                        aria-label={themeToggleLabel}
-                        title={themeToggleLabel}
-                      >
-                        <span
-                          className={[
-                            "soft-theme-toggle__icon",
-                            effectiveTheme === "light"
-                              ? "soft-theme-toggle__icon--moon"
-                              : "soft-theme-toggle__icon--sun",
-                            isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" ")}
-                          aria-hidden="true"
-                          style={iconStyle}
+        <header className="app-safe-top-header relative z-30 min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
+          <div className="relative z-30 mx-auto max-w-5xl">
+            <div className={isIosShell ? "block" : "md:hidden"}>
+              <div className="app-mobile-header">
+                <div className="app-mobile-header__row">
+                  <Link
+                    to="/"
+                    className="app-mobile-header__logo-link inline-flex shrink-0 items-center justify-center"
+                    aria-label={copy.common.brandName}
+                  >
+                    <img src="/pwa-icon.png" alt="" className="app-mobile-header__logo" />
+                  </Link>
+                  <div className="app-mobile-header__actions flex shrink-0 items-center">
+                    {isAuthenticated ? (
+                      <>
+                        <Link
+                          to="/feedback"
+                          className="app-header-utility-button inline-flex items-center justify-center p-0"
+                          aria-label={copy.feedback.navShort}
+                          title={copy.feedback.navShort}
                         >
-                          {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
-                        </span>
-                      </button>
-                      <Link to="/auth?mode=login" className="app-header-utility-button">
-                        {copy.common.login}
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className={isIosShell ? "hidden" : "hidden md:block md:py-2"}>
-            <div className="app-desktop-header relative z-20">
-              <div className="app-desktop-header__row">
-                <Link
-                  to="/"
-                  className="app-desktop-header__brand app-desktop-header__brand--compact"
-                  aria-label={copy.common.brandName}
-                >
-                  <img src="/pwa-icon.png" alt="" className="app-desktop-header__logo" />
-                </Link>
-
-                <div className="app-desktop-header__actions">
-                  {isAuthenticated ? (
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Link
-                        to="/feedback"
-                        className="app-header-utility-button inline-flex h-[2.72rem] w-[2.72rem] shrink-0 items-center justify-center p-0"
-                        aria-label={copy.feedback.navShort}
-                        title={copy.feedback.navShort}
-                      >
-                        <FeedbackIcon />
-                        <span className="sr-only">{copy.feedback.navShort}</span>
-                      </Link>
-                      <ProfileMenu
-                        accountLabel={accountLabel}
-                        servicesLabel={copy.clientLayout.nav.more}
-                        settingsLabel={copy.common.settings}
-                        logoutLabel={copy.common.logoutFromAccount}
-                        menuLabel={copy.common.profileMenuLabel}
-                        onLogout={handleLogout}
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      <Link to="/auth?mode=login" className="app-header-utility-button">
-                        {copy.common.login}
-                      </Link>
-                      <LanguageSwitch className="app-header-language-switch" />
-                      <button
-                        type="button"
-                        className="soft-theme-toggle app-header-theme-toggle"
-                        onClick={handleThemeToggle}
-                        aria-label={themeToggleLabel}
-                        title={themeToggleLabel}
-                      >
-                        <span
-                          className={[
-                            "soft-theme-toggle__icon",
-                            effectiveTheme === "light"
-                              ? "soft-theme-toggle__icon--moon"
-                              : "soft-theme-toggle__icon--sun",
-                            isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" ")}
-                          aria-hidden="true"
-                          style={iconStyle}
+                          <FeedbackIcon />
+                          <span className="sr-only">{copy.feedback.navShort}</span>
+                        </Link>
+                        <ProfileMenu
+                          accountLabel={accountLabel}
+                          servicesLabel={copy.clientLayout.nav.more}
+                          settingsLabel={copy.common.settings}
+                          logoutLabel={copy.common.logoutFromAccount}
+                          menuLabel={copy.common.profileMenuLabel}
+                          onLogout={handleLogout}
+                          iconOnly
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <LanguageSwitch className="app-header-language-switch" />
+                        <button
+                          type="button"
+                          className="soft-theme-toggle app-header-theme-toggle"
+                          onClick={handleThemeToggle}
+                          aria-label={themeToggleLabel}
+                          title={themeToggleLabel}
                         >
-                          {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
-                        </span>
-                      </button>
-                    </>
-                  )}
+                          <span
+                            className={[
+                              "soft-theme-toggle__icon",
+                              effectiveTheme === "light"
+                                ? "soft-theme-toggle__icon--moon"
+                                : "soft-theme-toggle__icon--sun",
+                              isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            aria-hidden="true"
+                            style={iconStyle}
+                          >
+                            {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
+                          </span>
+                        </button>
+                        <Link to="/auth?mode=login" className="app-header-utility-button">
+                          {copy.common.login}
+                        </Link>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {navLinks.length > 0 && (
-              <div className="relative z-10 mt-3 px-2">
-                <TopNav links={navLinks} />
+            <div className={isIosShell ? "hidden" : "hidden md:block md:py-2"}>
+              <div className="app-desktop-header relative z-20">
+                <div className="app-desktop-header__row">
+                  <Link
+                    to="/"
+                    className="app-desktop-header__brand app-desktop-header__brand--compact"
+                    aria-label={copy.common.brandName}
+                  >
+                    <img src="/pwa-icon.png" alt="" className="app-desktop-header__logo" />
+                  </Link>
+
+                  <div className="app-desktop-header__actions">
+                    {isAuthenticated ? (
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Link
+                          to="/feedback"
+                          className="app-header-utility-button inline-flex h-[2.72rem] w-[2.72rem] shrink-0 items-center justify-center p-0"
+                          aria-label={copy.feedback.navShort}
+                          title={copy.feedback.navShort}
+                        >
+                          <FeedbackIcon />
+                          <span className="sr-only">{copy.feedback.navShort}</span>
+                        </Link>
+                        <ProfileMenu
+                          accountLabel={accountLabel}
+                          servicesLabel={copy.clientLayout.nav.more}
+                          settingsLabel={copy.common.settings}
+                          logoutLabel={copy.common.logoutFromAccount}
+                          menuLabel={copy.common.profileMenuLabel}
+                          onLogout={handleLogout}
+                          iconOnly
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <Link to="/auth?mode=login" className="app-header-utility-button">
+                          {copy.common.login}
+                        </Link>
+                        <LanguageSwitch className="app-header-language-switch" />
+                        <button
+                          type="button"
+                          className="soft-theme-toggle app-header-theme-toggle"
+                          onClick={handleThemeToggle}
+                          aria-label={themeToggleLabel}
+                          title={themeToggleLabel}
+                        >
+                          <span
+                            className={[
+                              "soft-theme-toggle__icon",
+                              effectiveTheme === "light"
+                                ? "soft-theme-toggle__icon--moon"
+                                : "soft-theme-toggle__icon--sun",
+                              isIconSpinning ? "soft-theme-toggle__icon--spin" : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            aria-hidden="true"
+                            style={iconStyle}
+                          >
+                            {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
+                          </span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+
+              {navLinks.length > 0 && (
+                <div className="relative z-10 mt-3 px-2">
+                  <TopNav links={navLinks} />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
       ) : null}
       <main
         id="app-main-content"
