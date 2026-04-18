@@ -28,9 +28,9 @@ import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child, WeightEntry } from "@shared/types/api";
-import { formatDate } from "@shared/utils/date";
 import { FeedingRecordForm } from "@client/components/FeedingRecordForm";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
+import { formatChildDate } from "@client/utils/childDateFormat";
 import {
   getCurrentLocalDateInputValue,
   getCurrentLocalTimeInputValue,
@@ -342,7 +342,7 @@ function ChildCard({
                   <span className="soft-pill-warning inline-flex rounded-full px-2.5 py-1 text-xs">
                     {activeEpisodeStartedAt
                       ? t(copy.childCard.activeSince, {
-                          date: formatDate(activeEpisodeStartedAt),
+                          date: formatChildDate(activeEpisodeStartedAt, language),
                         })
                       : copy.childCard.activeObservation}
                   </span>

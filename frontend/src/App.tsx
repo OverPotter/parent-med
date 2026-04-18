@@ -955,6 +955,12 @@ export default function App() {
                   <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
                   <Route path="illnesses/history" element={<IllnessHistoryPage />} />
                   <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
+                  <Route path="medicine-cabinet/add" element={<MedicineCabinetPage />} />
+                  <Route path="medicine-cabinet/add/:mode" element={<MedicineCabinetPage />} />
+                  <Route
+                    path="medicine-cabinet/:medicineId/new-pack"
+                    element={<MedicineCabinetPage />}
+                  />
                   <Route path="more" element={<MorePage />} />
                   <Route path="feedback" element={<FeedbackPage />} />
                   <Route path="legal" element={<LegalPage />} />

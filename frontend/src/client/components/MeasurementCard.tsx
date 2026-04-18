@@ -47,7 +47,7 @@ export function MeasurementCard({
     <div className="space-y-3">
       <Surface className="p-4 sm:p-5">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2">
+          <div className="grid grid-cols-1 gap-1.5 xs:grid-cols-2 sm:grid-cols-3 sm:gap-2">
             <SummaryPill label={latestLabel} value={latestValue} tone="bg-emerald-500" />
             <SummaryPill label={trendLabel} value={trendValue} tone="bg-lime-500" />
             <SummaryPill
@@ -103,11 +103,15 @@ export function MeasurementCard({
 
 function SummaryPill({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
-    <div className="inline-flex min-h-[2.05rem] min-w-0 items-center gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-1 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]">
-      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${tone}`} aria-hidden="true" />
-      <span className="min-w-0 flex-1 truncate text-[0.72rem] font-extrabold tracking-[-0.02em] text-foreground">
-        {label}:{" "}
-        <span className="text-[0.68rem] font-semibold tracking-[-0.015em] text-muted">{value}</span>
+    <div className="inline-flex min-h-[2.55rem] min-w-0 items-start gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-1.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]">
+      <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${tone}`} aria-hidden="true" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[0.68rem] font-extrabold leading-4 tracking-[-0.02em] text-foreground">
+          {label}
+        </span>
+        <span className="block whitespace-normal break-words text-[0.72rem] font-semibold leading-4 tracking-[-0.015em] text-muted">
+          {value}
+        </span>
       </span>
     </div>
   );

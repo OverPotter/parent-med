@@ -8,10 +8,10 @@ import {
   fetchLatestHeightEntryByChildId,
 } from "@shared/api/heightEntries";
 import { useI18n } from "@shared/hooks/useI18n";
-import { formatDate } from "@shared/utils/date";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { MeasurementCard } from "@client/components/MeasurementCard";
 import { getChildrenCopy } from "@client/i18n/children";
+import { formatChildDate } from "@client/utils/childDateFormat";
 import { buildMeasurementTrend, formatDecimal, parseMeasurement } from "./measurementUtils";
 
 export function ChildHeightPage() {
@@ -82,7 +82,7 @@ export function ChildHeightPage() {
               ? `${formatDecimal(latestHeight.valueCm)} ${language === "ru" ? "см" : "cm"}`
               : copy.measurementMissing
           }
-          latestDate={latestHeight ? formatDate(latestHeight.measuredAt) : null}
+          latestDate={latestHeight ? formatChildDate(latestHeight.measuredAt, language) : null}
           trendLabel={language === "ru" ? "С прошлого" : "Since last"}
           trendValue={buildMeasurementTrend(
             heightHistory.map((entry) => entry.valueCm),
@@ -101,7 +101,7 @@ export function ChildHeightPage() {
           history={heightHistory.map((entry) => ({
             id: entry.id,
             value: `${formatDecimal(entry.valueCm)} ${language === "ru" ? "см" : "cm"}`,
-            date: formatDate(entry.measuredAt),
+            date: formatChildDate(entry.measuredAt, language),
           }))}
           historyTitle={copy.measurementHistory}
           emptyText={copy.measurementEmpty}

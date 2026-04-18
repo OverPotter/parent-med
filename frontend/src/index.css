@@ -5621,6 +5621,11 @@ html.ios-lock-horizontal .landing-main {
   padding-top: max(0.75rem, var(--app-safe-top));
 }
 
+[data-runtime="native"][data-platform="ios"] .child-section-top-bar,
+[data-ios-shell="true"] .child-section-top-bar {
+  padding-top: max(0.85rem, calc(var(--app-safe-top) + 0.45rem));
+}
+
 .legal-doc-page {
   overflow-x: clip;
 }
@@ -6822,4 +6827,15 @@ html.ios-lock-horizontal .landing-main {
   text-shadow:
     0 1px 12px color-mix(in srgb, var(--color-primary) 10%, transparent),
     0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+.cabinet-compact-date-field > .soft-input {
+  min-height: 3.05rem;
+  padding-inline: 0.875rem;
+  font-size: 0.94rem;
+}
+
+.cabinet-compact-date-field > .soft-input .soft-pill {
+  padding: 0.2rem 0.55rem;
+  font-size: 10px;
 }

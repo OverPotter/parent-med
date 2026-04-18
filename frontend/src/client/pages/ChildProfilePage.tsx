@@ -5,9 +5,9 @@ import { fetchLatestHeightEntryByChildId } from "@shared/api/heightEntries";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
-import { formatDate } from "@shared/utils/date";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
+import { formatChildDatePlain } from "@client/utils/childDateFormat";
 
 export function ChildProfilePage() {
   const { language } = useI18n();
@@ -112,7 +112,11 @@ export function ChildProfilePage() {
           <BasicMetricPill label={copy.age} value={ageLabel ?? copy.ageMissing} tone="bg-sky-500" />
           <BasicMetricPill
             label={copy.birthDate}
-            value={child.birthDate ? formatDate(child.birthDate) : copy.birthDateMissing}
+            value={
+              child.birthDate
+                ? formatChildDatePlain(child.birthDate, language, { forceYear: true })
+                : copy.birthDateMissing
+            }
             tone="bg-violet-500"
           />
           <BasicMetricPill

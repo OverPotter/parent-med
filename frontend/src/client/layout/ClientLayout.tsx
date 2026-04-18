@@ -244,7 +244,13 @@ export function ClientLayout() {
   const shouldHideHeader = !mainMenuPaths.some((path) =>
     matchPath({ path, end: true }, location.pathname)
   );
+  const isMedicineCabinetAddRoute = Boolean(
+    matchPath({ path: "/medicine-cabinet/add", end: true }, location.pathname) ||
+    matchPath({ path: "/medicine-cabinet/add/:mode", end: true }, location.pathname) ||
+    matchPath({ path: "/medicine-cabinet/:medicineId/new-pack", end: true }, location.pathname)
+  );
   const shouldHideMobileNav = Boolean(
+    isMedicineCabinetAddRoute ||
     matchPath({ path: "/children/:childId/illness", end: false }, location.pathname)
   );
 
@@ -472,7 +478,7 @@ export function ClientLayout() {
     <Layout
       navLinks={desktopNavLinks}
       mobileNavLinks={shouldHideMobileNav ? [] : mobileNavLinks}
-      hideHeader={shouldHideHeader}
+      hideHeader={shouldHideHeader || isMedicineCabinetAddRoute}
     >
       {shouldShowNativePushPrompt && (
         <Surface className="soft-panel-muted mb-4 p-4 sm:p-5">
