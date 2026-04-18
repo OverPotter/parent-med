@@ -7,7 +7,6 @@ import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { SleepSession } from "@shared/types/api";
-import { formatDateTime } from "@shared/utils/date";
 import {
   ChildRecordsPeriodSelector,
   getChildRecordsPeriodDayCount,
@@ -17,6 +16,11 @@ import {
 } from "@client/components/ChildRecordsPeriodSelector";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
+import {
+  formatChildDate,
+  formatChildDateTime,
+  formatChildTime,
+} from "@client/utils/childDateFormat";
 
 export function ChildSleepPage() {
   const { language } = useI18n();
@@ -150,10 +154,15 @@ export function ChildSleepPage() {
             {filteredSessions.map((session) => (
               <div
                 key={session.id}
-                className="grid grid-cols-[4.6rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:grid-cols-[8.4rem_minmax(0,1fr)_auto] sm:px-4"
+                className="grid grid-cols-[4.1rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:px-4"
               >
-                <span className="truncate text-xs font-semibold tabular-nums text-muted">
-                  {formatDateTime(session.startedAt)}
+                <span className="min-w-0 text-xs font-semibold tabular-nums text-muted">
+                  <span className="block leading-4 text-foreground">
+                    {formatChildTime(session.startedAt)}
+                  </span>
+                  <span className="block truncate text-[0.68rem] leading-4">
+                    {formatChildDate(session.startedAt, language, { month: "short" })}
+                  </span>
                 </span>
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
@@ -171,7 +180,11 @@ export function ChildSleepPage() {
                   <p className="mt-0.5 truncate text-xs leading-5 text-muted">
                     {[
                       session.endedAt
-                        ? `${copy.sleepEndedAt}: ${formatDateTime(session.endedAt)}`
+                        ? `${copy.sleepEndedAt}: ${formatSleepEndLabel(
+                            session.startedAt,
+                            session.endedAt,
+                            language
+                          )}`
                         : copy.sleepStatusActive,
                       formatSleepDuration(session.durationMinutes, language, session.status),
                     ].join(" · ")}
@@ -263,13 +276,24 @@ function isNumber(value: number | null): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function formatSleepEndLabel(startedAt: string, endedAt: string, language: "ru" | "en") {
+  if (startedAt.slice(0, 10) === endedAt.slice(0, 10)) {
+    return formatChildTime(endedAt);
+  }
+  return formatChildDateTime(endedAt, language);
+}
+
 function SummaryPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="inline-flex min-h-[2.05rem] min-w-0 items-center gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-1 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]">
+    <div className="inline-flex min-h-[2.35rem] min-w-0 items-start gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-1.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]">
       <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" aria-hidden="true" />
-      <span className="min-w-0 flex-1 truncate text-[0.72rem] font-extrabold tracking-[-0.02em] text-foreground">
-        {label}:{" "}
-        <span className="text-[0.68rem] font-semibold tracking-[-0.015em] text-muted">{value}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[0.7rem] font-extrabold leading-4 tracking-[-0.02em] text-foreground">
+          {label}
+        </span>
+        <span className="block truncate text-[0.68rem] font-semibold leading-4 tracking-[-0.015em] text-muted">
+          {value}
+        </span>
       </span>
     </div>
   );

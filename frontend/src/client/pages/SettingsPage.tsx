@@ -9,12 +9,8 @@ import {
   upsertPushSubscription,
 } from "@shared/api/pushNotifications";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { DisclosureHeader } from "@shared/components/DisclosureHeader";
-import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { PageIntro } from "@shared/components/PageIntro";
-import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
-import type { AppLanguage } from "@shared/i18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import {
   getPushSupportIssue,
@@ -33,184 +29,10 @@ import {
   openNativeNotificationSettings,
   setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
-
-const settingsCopy = {
-  ru: {
-    title: "Настройки",
-    subtitle: "Язык, тема, уведомления и безопасность.",
-    pushConfigCheckFailed: "Не удалось быстро проверить настройки push на сервере.",
-    reminderSaveFailed: "Не удалось сохранить время дополнительного напоминания.",
-    devicePushCheckFailed: "Не удалось быстро проверить push на этом устройстве.",
-    passwordUpdated: "Пароль обновлён.",
-    passwordChangeFailed: "Не удалось сменить пароль.",
-    pushServerNotReady: "Push-уведомления ещё не настроены на сервере.",
-    pushUnsupported: "На этом устройстве push-уведомления недоступны.",
-    permissionTimeout: "Браузер не завершил запрос разрешения на уведомления.",
-    permissionDenied: "Браузер не дал разрешение на уведомления.",
-    nativePermissionBlockedTitle: "Уведомления выключены в iOS",
-    nativePermissionBlockedDescription:
-      "PillPath больше не может показать системный запрос. Откройте настройки iPhone и включите уведомления для приложения.",
-    openSystemSettings: "Открыть настройки",
-    nativePermissionManualHint:
-      "Если настройки не открылись автоматически: iPhone → Настройки → PillPath → Уведомления.",
-    subscribeTimeout: "Не удалось завершить подписку устройства на push.",
-    serverAcceptFailed: "Сервер не принял подписку устройства.",
-    enablePushFailed: "Не удалось включить уведомления на этом устройстве.",
-    disablePushFailed: "Не удалось отключить уведомления.",
-    fillAllPasswordFields: "Заполните все поля пароля.",
-    passwordsMismatch: "Новый пароль и подтверждение не совпадают.",
-    passwordTooShort: "Новый пароль должен быть не короче 6 символов.",
-    changePassword: "Сменить пароль",
-    changePasswordHint: "Открывается только когда нужно, чтобы не перегружать экран.",
-    currentPassword: "Текущий пароль",
-    newPassword: "Новый пароль",
-    confirmNewPassword: "Повтори новый пароль",
-    saving: "Сохраняем…",
-    updatePassword: "Обновить пароль",
-    medicationPlans: "Планы лекарств",
-    medicationPlansHint: "Как показывать интервал в планах: в часах или в минутах.",
-    hours: "Часы",
-    minutes: "Минуты",
-    appSettings: "Настройки приложения",
-    appSettingsHint: "Язык интерфейса и тема для вашего аккаунта.",
-    interfaceLanguage: "Язык",
-    interfaceTheme: "Тема",
-    themeLight: "Светлая",
-    themeDark: "Тёмная",
-    themeAuto: "Авто",
-    notifications: "Уведомления",
-    notificationsHint:
-      "Пуш в момент события приходит всегда. Здесь вы настраиваете дополнительные уведомления.",
-    childrenReminders: "Уведомление по детям",
-    pillboxReminders: "Уведомление по таблетнице",
-    childrenRemindersSoftText: "Мягкое напоминание заранее, чтобы спокойно подготовиться.",
-    pillboxRemindersSoftText: "Короткий сигнал заранее, чтобы не держать всё в голове.",
-    pushServerMissing: "Серверная отправка push пока не настроена.",
-    disableNotifications: "Выключить уведомления",
-    enableNotifications: "Включить уведомления",
-    reminderOn: "Вкл",
-    reminderOff: "Выкл",
-    minShort: "мин",
-    cabinetReminders: "Уведомление по аптечке",
-    cabinetRemindersSoftText: "Напомним заранее, чтобы вы успели проверить аптечку дома.",
-    notificationsStatusOn: "Активно",
-    notificationsStatusOff: "Неактивно",
-    confirmDisableNotifications: "Точно выключить push-уведомления на этом устройстве?",
-    cancel: "Отмена",
-    confirmDisable: "Да, выключить",
-    days10: "За 10 дней",
-    days7: "За 7 дней",
-    days3: "За 3 дня",
-    dangerZone: "Опасная зона",
-    dangerZoneHint:
-      "Удаление аккаунта необратимо. Если вы единственный участник семьи, семейные данные тоже будут удалены.",
-    deleteAccount: "Удалить аккаунт",
-    deleteAccountDescription:
-      "После удаления аккаунта вы сразу выйдете из приложения. Если вы единственный owner, права owner автоматически перейдут следующему участнику.",
-    deleteAccountConfirmTitle: "Точно удалить аккаунт?",
-    deleteAccountConfirmDescription:
-      "Аккаунт будет деактивирован. Вход в него станет недоступен, восстановление не предусмотрено.",
-    deleteAccountConfirmAction: "Да, удалить аккаунт",
-    deleteAccountFailed: "Не удалось удалить аккаунт.",
-    deleteFamily: "Удалить семью полностью",
-    deleteFamilyDescription:
-      "Удаляет доступ ко всем аккаунтам семьи. Все участники будут разлогинены и деактивированы.",
-    deleteFamilyConfirmTitle: "Точно удалить семью?",
-    deleteFamilyConfirmDescription: "Все аккаунты семьи будут деактивированы. Действие необратимо.",
-    deleteFamilyConfirmAction: "Да, удалить семью",
-    deleteFamilyFailed: "Не удалось удалить семью.",
-  },
-  en: {
-    title: "Settings",
-    subtitle: "Language, theme, reminders and security.",
-    pushConfigCheckFailed: "Could not quickly verify push settings on the server.",
-    reminderSaveFailed: "Could not save the advance reminder time.",
-    devicePushCheckFailed: "Could not quickly verify push on this device.",
-    passwordUpdated: "Password updated.",
-    passwordChangeFailed: "Could not change the password.",
-    pushServerNotReady: "Push notifications are not configured on the server yet.",
-    pushUnsupported: "Push notifications are not available on this device.",
-    permissionTimeout: "The browser did not finish the notification permission request.",
-    permissionDenied: "The browser did not grant notification permission.",
-    nativePermissionBlockedTitle: "Notifications are off in iOS",
-    nativePermissionBlockedDescription:
-      "PillPath cannot show the system prompt again. Open iPhone settings and enable notifications for the app.",
-    openSystemSettings: "Open Settings",
-    nativePermissionManualHint:
-      "If Settings did not open automatically: iPhone → Settings → PillPath → Notifications.",
-    subscribeTimeout: "Could not finish subscribing this device to push.",
-    serverAcceptFailed: "The server did not accept the device subscription.",
-    enablePushFailed: "Could not enable notifications on this device.",
-    disablePushFailed: "Could not disable notifications.",
-    fillAllPasswordFields: "Fill in all password fields.",
-    passwordsMismatch: "New password and confirmation do not match.",
-    passwordTooShort: "The new password must be at least 6 characters long.",
-    changePassword: "Change password",
-    changePasswordHint: "Keep this collapsed until needed.",
-    currentPassword: "Current password",
-    newPassword: "New password",
-    confirmNewPassword: "Repeat new password",
-    saving: "Saving…",
-    updatePassword: "Update password",
-    medicationPlans: "Medication plans",
-    medicationPlansHint: "How to show interval values in plans: hours or minutes.",
-    hours: "Hours",
-    minutes: "Minutes",
-    appSettings: "App settings",
-    appSettingsHint: "Interface language and app theme for your account.",
-    interfaceLanguage: "Language",
-    interfaceTheme: "Theme",
-    themeLight: "Light",
-    themeDark: "Dark",
-    themeAuto: "Auto",
-    notifications: "Notifications",
-    notificationsHint:
-      "The push at the event time is always sent. Here you configure additional reminders.",
-    childrenReminders: "Child reminders",
-    pillboxReminders: "Pillbox reminders",
-    childrenRemindersSoftText: "A gentle early reminder so you can prepare calmly.",
-    pillboxRemindersSoftText: "A short early heads-up, so you do not keep everything in mind.",
-    pushServerMissing: "Server-side push delivery is not configured yet.",
-    disableNotifications: "Turn off notifications",
-    enableNotifications: "Turn on notifications",
-    reminderOn: "On",
-    reminderOff: "Off",
-    minShort: "min",
-    cabinetReminders: "Cabinet reminders",
-    cabinetRemindersSoftText: "An early reminder so you have time to review your home cabinet.",
-    notificationsStatusOn: "On",
-    notificationsStatusOff: "Inactive",
-    confirmDisableNotifications: "Turn off push notifications on this device?",
-    cancel: "Cancel",
-    confirmDisable: "Yes, turn off",
-    days10: "10 days before",
-    days7: "7 days before",
-    days3: "3 days before",
-    dangerZone: "Danger zone",
-    dangerZoneHint:
-      "Account deletion is irreversible. If you are the only family member, family data will be deleted too.",
-    deleteAccount: "Delete account",
-    deleteAccountDescription:
-      "After deletion, you will be signed out immediately. If you are the only owner, owner rights are reassigned automatically.",
-    deleteAccountConfirmTitle: "Delete account permanently?",
-    deleteAccountConfirmDescription:
-      "The account will be deactivated. Login will no longer be possible.",
-    deleteAccountConfirmAction: "Yes, delete account",
-    deleteAccountFailed: "Could not delete the account.",
-    deleteFamily: "Delete family completely",
-    deleteFamilyDescription:
-      "Removes access for all family accounts. All members will be signed out and deactivated.",
-    deleteFamilyConfirmTitle: "Delete family completely?",
-    deleteFamilyConfirmDescription:
-      "All family accounts will be deactivated. This action cannot be undone.",
-    deleteFamilyConfirmAction: "Yes, delete family",
-    deleteFamilyFailed: "Could not delete the family.",
-  },
-} satisfies Record<AppLanguage, Record<string, string>>;
-
-function tSettings(language: AppLanguage, key: keyof (typeof settingsCopy)["ru"]) {
-  return settingsCopy[language][key];
-}
+import { SettingsAppPreferencesSection } from "./settings/SettingsAppPreferencesSection";
+import { tSettings } from "./settings/copy";
+import { SettingsNotificationsSection } from "./settings/SettingsNotificationsSection";
+import { SettingsSecuritySection } from "./settings/SettingsSecuritySection";
 
 export function SettingsPage() {
   const { language } = useI18n();
@@ -647,468 +469,76 @@ export function SettingsPage() {
         compactOnMobile
         hideOnMobile
       />
-
-      <Surface className="p-5 sm:p-6">
-        <p className="app-card-title">{tSettings(language, "appSettings")}</p>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          {tSettings(language, "appSettingsHint")}
-        </p>
-
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="soft-card relative z-20 overflow-visible rounded-[24px] px-4 py-4 sm:px-5">
-            <p className="text-xs font-semibold tracking-[0.08em] text-muted">
-              {tSettings(language, "interfaceLanguage")}
-            </p>
-            <div className="mt-3">
-              <LanguageSwitch triggerClassName="soft-button-secondary min-h-[2.85rem] px-3.5 text-[0.84rem] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]" />
-            </div>
-          </div>
-
-          <div className="soft-card relative z-10 rounded-[24px] px-4 py-4 sm:px-5">
-            <p className="text-xs font-semibold tracking-[0.08em] text-muted">
-              {tSettings(language, "interfaceTheme")}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(
-                [
-                  { value: "light", label: tSettings(language, "themeLight") },
-                  { value: "dark", label: tSettings(language, "themeDark") },
-                  { value: "system", label: tSettings(language, "themeAuto") },
-                ] as const
-              ).map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setTheme(option.value)}
-                  className={`${
-                    theme === option.value ? "soft-tab-active" : "soft-tab"
-                  } inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Surface>
-
-      <Surface className="p-5 sm:p-6">
-        <p className="app-card-title">{tSettings(language, "medicationPlans")}</p>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          {tSettings(language, "medicationPlansHint")}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {(
-            [
-              { value: "hours", label: tSettings(language, "hours") },
-              { value: "minutes", label: tSettings(language, "minutes") },
-            ] as const
-          ).map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => setMedicationIntervalUnit(option.value)}
-              className={`${
-                medicationIntervalUnit === option.value ? "soft-tab-active" : "soft-tab"
-              } inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </Surface>
-
-      <Surface className="p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <p className="app-card-title">{tSettings(language, "notifications")}</p>
-            <span
-              className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border text-[0.68rem] font-semibold ${
-                isPushEnabled
-                  ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-600 dark:text-emerald-300"
-                  : "border-amber-500/40 bg-amber-500/20 text-amber-700 dark:text-amber-300"
-              }`}
-            >
-              {isPushEnabled ? "✓" : "✕"}
-            </span>
-            <span
-              className={`text-xs ${
-                isPushEnabled ? "text-muted" : "text-amber-700 dark:text-amber-300"
-              }`}
-            >
-              {isPushEnabled
-                ? tSettings(language, "notificationsStatusOn")
-                : tSettings(language, "notificationsStatusOff")}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={handleGlobalPushSwitchToggle}
-            disabled={isGlobalPushSwitchDisabled}
-            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-              isPushEnabled
-                ? "border-emerald-500/45 bg-emerald-500/25"
-                : "border-amber-500/45 bg-amber-500/20"
-            } disabled:cursor-not-allowed disabled:opacity-60`}
-            aria-label={
-              isPushEnabled
-                ? tSettings(language, "disableNotifications")
-                : tSettings(language, "enableNotifications")
-            }
-          >
-            <span
-              className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
-                isPushEnabled ? "translate-x-6 text-emerald-600" : "translate-x-1 text-amber-700"
-              }`}
-            >
-              {isPushEnabled ? "✓" : "✕"}
-            </span>
-          </button>
-        </div>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          {tSettings(language, "notificationsHint")}
-        </p>
-        {pushError && (
-          <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">{pushError}</div>
-        )}
-        {isNativePushBlocked && !pushError ? (
-          <div className="soft-note-warning mt-4 space-y-3 rounded-2xl px-4 py-3 text-sm">
-            <p className="font-semibold text-foreground">
-              {tSettings(language, "nativePermissionBlockedTitle")}
-            </p>
-            <p className="leading-6 text-muted">
-              {tSettings(language, "nativePermissionBlockedDescription")}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setIsNativePushSettingsDialogOpen(true);
-              }}
-              className="soft-button-secondary inline-flex min-h-[2.55rem] items-center justify-center px-4 text-[0.84rem]"
-            >
-              {tSettings(language, "openSystemSettings")}
-            </button>
-          </div>
-        ) : null}
-        {!isPushConfigLoading && pushConfig && !pushConfig.enabled && (
-          <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
-            {tSettings(language, "pushServerMissing")}
-          </div>
-        )}
-        {isPushEnabled ? (
-          <div className="mt-5 border-t border-border/70 pt-4">
-            <div className="soft-card mt-3 rounded-[20px] border border-border/70 px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-foreground">
-                  {tSettings(language, "childrenReminders")}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleChildrenEarlyReminderToggle(!childrenEarlyReminderEnabled)}
-                  disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                  className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-                    childrenEarlyReminderEnabled
-                      ? "border-emerald-500/45 bg-emerald-500/25"
-                      : "border-border bg-card-muted"
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
-                  aria-label={
-                    childrenEarlyReminderEnabled
-                      ? tSettings(language, "reminderOff")
-                      : tSettings(language, "reminderOn")
-                  }
-                >
-                  <span
-                    className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
-                      childrenEarlyReminderEnabled
-                        ? "translate-x-6 text-emerald-600"
-                        : "translate-x-1 text-slate-500"
-                    }`}
-                  >
-                    {childrenEarlyReminderEnabled ? "✓" : "✕"}
-                  </span>
-                </button>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-muted">
-                {tSettings(language, "childrenRemindersSoftText")}
-              </p>
-              {childrenEarlyReminderEnabled ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[5, 10, 15].map((minutes) => (
-                    <button
-                      key={minutes}
-                      type="button"
-                      onClick={() => handleReminderMinutesChange(String(minutes))}
-                      disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                      className={`${
-                        selectedReminderMinutes === String(minutes) ? "soft-tab-active" : "soft-tab"
-                      } inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.02em] disabled:opacity-50`}
-                    >
-                      {minutes} {tSettings(language, "minShort")}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="soft-card mt-5 rounded-[20px] border border-border/70 px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-foreground">
-                  {tSettings(language, "pillboxReminders")}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handlePillboxEarlyReminderToggle(!pillboxEarlyReminderEnabled)}
-                  disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                  className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-                    pillboxEarlyReminderEnabled
-                      ? "border-emerald-500/45 bg-emerald-500/25"
-                      : "border-border bg-card-muted"
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
-                  aria-label={
-                    pillboxEarlyReminderEnabled
-                      ? tSettings(language, "reminderOff")
-                      : tSettings(language, "reminderOn")
-                  }
-                >
-                  <span
-                    className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
-                      pillboxEarlyReminderEnabled
-                        ? "translate-x-6 text-emerald-600"
-                        : "translate-x-1 text-slate-500"
-                    }`}
-                  >
-                    {pillboxEarlyReminderEnabled ? "✓" : "✕"}
-                  </span>
-                </button>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-muted">
-                {tSettings(language, "pillboxRemindersSoftText")}
-              </p>
-              {pillboxEarlyReminderEnabled ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[5, 10, 15].map((minutes) => (
-                    <button
-                      key={minutes}
-                      type="button"
-                      onClick={() => handlePillboxReminderMinutesChange(String(minutes))}
-                      disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                      className={`${
-                        selectedPillboxReminderMinutes === String(minutes)
-                          ? "soft-tab-active"
-                          : "soft-tab"
-                      } inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.02em] disabled:opacity-50`}
-                    >
-                      {minutes} {tSettings(language, "minShort")}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-        {isPushEnabled ? (
-          <div className="mt-5 border-t border-border/70 pt-4">
-            <div className="soft-card mt-3 rounded-[20px] border border-border/70 px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-foreground">
-                  {tSettings(language, "cabinetReminders")}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleCabinetEarlyReminderToggle(!cabinetEarlyReminderEnabled)}
-                  disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                  className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-                    cabinetEarlyReminderEnabled
-                      ? "border-emerald-500/45 bg-emerald-500/25"
-                      : "border-border bg-card-muted"
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
-                  aria-label={
-                    cabinetEarlyReminderEnabled
-                      ? tSettings(language, "reminderOff")
-                      : tSettings(language, "reminderOn")
-                  }
-                >
-                  <span
-                    className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
-                      cabinetEarlyReminderEnabled
-                        ? "translate-x-6 text-emerald-600"
-                        : "translate-x-1 text-slate-500"
-                    }`}
-                  >
-                    {cabinetEarlyReminderEnabled ? "✓" : "✕"}
-                  </span>
-                </button>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-muted">
-                {tSettings(language, "cabinetRemindersSoftText")}
-              </p>
-              {cabinetEarlyReminderEnabled ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[
-                    {
-                      key: 10 as const,
-                      label: tSettings(language, "days10"),
-                    },
-                    {
-                      key: 7 as const,
-                      label: tSettings(language, "days7"),
-                    },
-                    {
-                      key: 3 as const,
-                      label: tSettings(language, "days3"),
-                    },
-                  ].map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      onClick={() => handleCabinetReminderSelect(option.key)}
-                      disabled={isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
-                      className={`${
-                        selectedCabinetReminderDays === option.key ? "soft-tab-active" : "soft-tab"
-                      } inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.02em] disabled:opacity-50`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-      </Surface>
-
-      <Surface className="p-5 sm:p-6">
-        <DisclosureHeader
-          isOpen={isPasswordFormOpen}
-          onToggle={() => setIsPasswordFormOpen((current) => !current)}
-        >
-          <>
-            <p className="app-card-title">{tSettings(language, "changePassword")}</p>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              {tSettings(language, "changePasswordHint")}
-            </p>
-          </>
-        </DisclosureHeader>
-        {isPasswordFormOpen ? (
-          <>
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <label className="block space-y-1.5">
-                <span className="soft-field-label">{tSettings(language, "currentPassword")}</span>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(event) => {
-                    setCurrentPassword(event.target.value);
-                    setPasswordError(null);
-                    setPasswordSuccess(null);
-                  }}
-                  className="soft-input w-full px-4"
-                />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="soft-field-label">{tSettings(language, "newPassword")}</span>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(event) => {
-                    setNewPassword(event.target.value);
-                    setPasswordError(null);
-                    setPasswordSuccess(null);
-                  }}
-                  className="soft-input w-full px-4"
-                />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="soft-field-label">
-                  {tSettings(language, "confirmNewPassword")}
-                </span>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => {
-                    setConfirmPassword(event.target.value);
-                    setPasswordError(null);
-                    setPasswordSuccess(null);
-                  }}
-                  className="soft-input w-full px-4"
-                />
-              </label>
-            </div>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={handleSubmitPasswordChange}
-                disabled={changePasswordMutation.isPending}
-                className="app-btn-primary-md soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5"
-              >
-                {changePasswordMutation.isPending
-                  ? tSettings(language, "saving")
-                  : tSettings(language, "updatePassword")}
-              </button>
-              {passwordSuccess ? (
-                <p className="soft-text-success text-sm">{passwordSuccess}</p>
-              ) : null}
-            </div>
-            {passwordError ? (
-              <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
-                {passwordError}
-              </div>
-            ) : null}
-          </>
-        ) : null}
-      </Surface>
-      <Surface className="p-5 sm:p-6">
-        <p className="app-card-title text-[color:var(--color-danger)]">
-          {tSettings(language, "dangerZone")}
-        </p>
-        <p className="mt-3 text-sm leading-7 text-muted">{tSettings(language, "dangerZoneHint")}</p>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {tSettings(language, "deleteAccountDescription")}
-        </p>
-        {deleteAccountError ? (
-          <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
-            {deleteAccountError}
-          </div>
-        ) : null}
-        {accountFamilyRole === "owner" ? (
-          <>
-            <p className="mt-4 text-sm leading-6 text-muted">
-              {tSettings(language, "deleteFamilyDescription")}
-            </p>
-            {deleteFamilyError ? (
-              <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
-                {deleteFamilyError}
-              </div>
-            ) : null}
-          </>
-        ) : null}
-        <div className="mt-4">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setDeleteAccountError(null);
-                setIsDeleteAccountConfirmOpen(true);
-              }}
-              className="app-btn-danger-md soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 sm:min-h-[3.1rem] sm:px-5"
-            >
-              {tSettings(language, "deleteAccount")}
-            </button>
-            {accountFamilyRole === "owner" ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setDeleteFamilyError(null);
-                  setIsDeleteFamilyConfirmOpen(true);
-                }}
-                className="app-btn-danger-md soft-button-danger inline-flex min-h-[2.95rem] items-center justify-center px-4 sm:min-h-[3.1rem] sm:px-5"
-              >
-                {tSettings(language, "deleteFamily")}
-              </button>
-            ) : null}
-          </div>
-        </div>
-      </Surface>
+      <SettingsAppPreferencesSection
+        language={language}
+        theme={theme}
+        setTheme={setTheme}
+        medicationIntervalUnit={medicationIntervalUnit}
+        setMedicationIntervalUnit={setMedicationIntervalUnit}
+      />
+      <SettingsNotificationsSection
+        language={language}
+        isPushEnabled={isPushEnabled}
+        pushError={pushError}
+        isNativePushBlocked={isNativePushBlocked}
+        isPushConfigLoading={isPushConfigLoading}
+        pushConfigEnabled={pushConfig?.enabled}
+        isGlobalPushSwitchDisabled={isGlobalPushSwitchDisabled}
+        onGlobalPushSwitchToggle={handleGlobalPushSwitchToggle}
+        onOpenSystemSettingsDialog={() => setIsNativePushSettingsDialogOpen(true)}
+        childrenEarlyReminderEnabled={childrenEarlyReminderEnabled}
+        pillboxEarlyReminderEnabled={pillboxEarlyReminderEnabled}
+        cabinetEarlyReminderEnabled={cabinetEarlyReminderEnabled}
+        selectedReminderMinutes={selectedReminderMinutes}
+        selectedPillboxReminderMinutes={selectedPillboxReminderMinutes}
+        selectedCabinetReminderDays={selectedCabinetReminderDays}
+        isPushPreferencesLoading={isPushPreferencesLoading}
+        isUpdatePending={updatePushPreferencesMutation.isPending}
+        onChildrenToggle={handleChildrenEarlyReminderToggle}
+        onPillboxToggle={handlePillboxEarlyReminderToggle}
+        onCabinetToggle={handleCabinetEarlyReminderToggle}
+        onChildrenMinutesChange={handleReminderMinutesChange}
+        onPillboxMinutesChange={handlePillboxReminderMinutesChange}
+        onCabinetReminderSelect={handleCabinetReminderSelect}
+      />
+      <SettingsSecuritySection
+        language={language}
+        isPasswordFormOpen={isPasswordFormOpen}
+        onTogglePasswordForm={() => setIsPasswordFormOpen((current) => !current)}
+        currentPassword={currentPassword}
+        newPassword={newPassword}
+        confirmPassword={confirmPassword}
+        onCurrentPasswordChange={(value) => {
+          setCurrentPassword(value);
+          setPasswordError(null);
+          setPasswordSuccess(null);
+        }}
+        onNewPasswordChange={(value) => {
+          setNewPassword(value);
+          setPasswordError(null);
+          setPasswordSuccess(null);
+        }}
+        onConfirmPasswordChange={(value) => {
+          setConfirmPassword(value);
+          setPasswordError(null);
+          setPasswordSuccess(null);
+        }}
+        onSubmitPasswordChange={handleSubmitPasswordChange}
+        isPasswordPending={changePasswordMutation.isPending}
+        passwordSuccess={passwordSuccess}
+        passwordError={passwordError}
+        accountFamilyRole={accountFamilyRole}
+        deleteAccountError={deleteAccountError}
+        deleteFamilyError={deleteFamilyError}
+        onDeleteAccount={() => {
+          setDeleteAccountError(null);
+          setIsDeleteAccountConfirmOpen(true);
+        }}
+        onDeleteFamily={() => {
+          setDeleteFamilyError(null);
+          setIsDeleteFamilyConfirmOpen(true);
+        }}
+      />
       <ConfirmDialog
         isOpen={isDisablePushConfirmOpen}
         title={tSettings(language, "disableNotifications")}

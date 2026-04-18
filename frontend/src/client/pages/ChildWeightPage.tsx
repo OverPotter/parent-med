@@ -8,10 +8,10 @@ import {
   fetchWeightEntriesByChildId,
 } from "@shared/api/weightEntries";
 import { useI18n } from "@shared/hooks/useI18n";
-import { formatDate } from "@shared/utils/date";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { MeasurementCard } from "@client/components/MeasurementCard";
 import { getChildrenCopy } from "@client/i18n/children";
+import { formatChildDate } from "@client/utils/childDateFormat";
 import { buildMeasurementTrend, formatDecimal, parseMeasurement } from "./measurementUtils";
 
 export function ChildWeightPage() {
@@ -82,7 +82,7 @@ export function ChildWeightPage() {
               ? `${formatDecimal(latestWeight.valueKg)} ${language === "ru" ? "кг" : "kg"}`
               : copy.measurementMissing
           }
-          latestDate={latestWeight ? formatDate(latestWeight.measuredAt) : null}
+          latestDate={latestWeight ? formatChildDate(latestWeight.measuredAt, language) : null}
           trendLabel={language === "ru" ? "С прошлого" : "Since last"}
           trendValue={buildMeasurementTrend(
             weightHistory.map((entry) => entry.valueKg),
@@ -101,7 +101,7 @@ export function ChildWeightPage() {
           history={weightHistory.map((entry) => ({
             id: entry.id,
             value: `${formatDecimal(entry.valueKg)} ${language === "ru" ? "кг" : "kg"}`,
-            date: formatDate(entry.measuredAt),
+            date: formatChildDate(entry.measuredAt, language),
           }))}
           historyTitle={copy.measurementHistory}
           emptyText={copy.measurementEmpty}
