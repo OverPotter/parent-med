@@ -81,8 +81,8 @@ class IllnessCommentService:
         self,
         dto: IllnessCommentCreateDto,
         current_family_id: UUID,
-        created_by_account_id: UUID,
-        created_by_name_snapshot: str,
+        created_by_account_id: UUID | None = None,
+        created_by_name_snapshot: str | None = None,
     ) -> IllnessCommentResponseDto:
         episode = await self._get_episode_for_account(dto.episode_id, current_family_id)
         if episode.status != "active":
@@ -96,7 +96,7 @@ class IllnessCommentService:
             created_at=dto.created_at or datetime.now(UTC),
             text=text,
             created_by_account_id=created_by_account_id,
-            created_by_name_snapshot=created_by_name_snapshot.strip() or None,
+            created_by_name_snapshot=(created_by_name_snapshot or "").strip() or None,
         )
         created = await self._repo.add(entity)
         return self._to_response(created)
