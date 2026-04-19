@@ -90,7 +90,7 @@ export function ChildFeedingCreatePage() {
   }
 
   return (
-    <div className="-mx-3 min-w-0 space-y-6 bg-background px-3 sm:-mx-6 sm:px-6">
+    <div className="child-profile-shell space-y-6">
       <ChildSectionTopBar
         backHref={`/children/${child.id}`}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}

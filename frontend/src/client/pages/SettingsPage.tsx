@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { changePassword, deleteMyAccount, deleteMyFamily } from "@shared/api/auth";
@@ -491,22 +490,14 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
         title={tSettings(language, "title")}
         subtitle={tSettings(language, "subtitle")}
+        eyebrow={language === "ru" ? "Еще / Настройки" : "More / Settings"}
         compactOnMobile
-        hideOnMobile
+        className="app-safe-top-standalone"
       />
-      <div className="px-1">
-        <Link to="/more" className="inline-flex text-sm text-primary hover:underline">
-          {language === "ru" ? "← К разделам" : "← Back to more"}
-        </Link>
-      </div>
-      <div className="app-mobile-section-intro sm:hidden">
-        <h1 className="app-mobile-section-intro__title">{tSettings(language, "title")}</h1>
-        <p className="app-mobile-section-intro__hint">{tSettings(language, "subtitle")}</p>
-      </div>
       <SettingsAppPreferencesSection
         language={language}
         theme={theme}

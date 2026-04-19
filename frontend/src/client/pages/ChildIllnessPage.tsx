@@ -376,7 +376,7 @@ export function ChildIllnessPage() {
         : undefined;
 
   return (
-    <div className="-mx-3 min-w-0 space-y-7 bg-background px-3 sm:-mx-6 sm:px-6">
+    <div className="child-profile-shell space-y-7">
       <ChildSectionTopBar
         backHref={backHref}
         backLabel={backLabel}

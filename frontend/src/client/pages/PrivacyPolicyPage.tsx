@@ -1,4 +1,5 @@
 import { PageIntro } from "@shared/components/PageIntro";
+import { SectionPathHeader } from "@shared/components/SectionPathHeader";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 
@@ -7,7 +8,7 @@ export function PrivacyPolicyPage() {
   const updatedAt = "08.04.2026";
 
   return (
-    <div className="legal-doc-page app-safe-top-standalone mx-auto w-full max-w-3xl space-y-4 px-3 pb-6 sm:space-y-6 sm:px-0">
+    <div className="legal-doc-page app-safe-top-standalone mx-auto w-full max-w-3xl space-y-6 sm:space-y-8 px-3 pb-6 sm:px-0">
       <PageIntro
         title={language === "ru" ? "Политика конфиденциальности" : "Privacy Policy"}
         subtitle={
@@ -16,6 +17,22 @@ export function PrivacyPolicyPage() {
             : "How we process and protect data in PillPath."
         }
         compactOnMobile
+        hideOnMobile
+      />
+      <SectionPathHeader
+        backTo="/legal"
+        backLabel={language === "ru" ? "← К правовой информации" : "← Back to legal"}
+        pathLabel={
+          language === "ru"
+            ? "Еще / Правовая информация / Политика конфиденциальности"
+            : "More / Legal / Privacy Policy"
+        }
+        title={language === "ru" ? "Политика конфиденциальности" : "Privacy Policy"}
+        hint={
+          language === "ru"
+            ? "Как мы обрабатываем и защищаем данные в PillPath."
+            : "How we process and protect data in PillPath."
+        }
       />
 
       <Surface className="legal-doc-surface space-y-4 p-4 text-[0.95rem] leading-6 text-muted sm:p-6 sm:text-sm sm:leading-7">

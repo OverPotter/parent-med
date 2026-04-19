@@ -77,7 +77,7 @@ export function ChildFeedingPage() {
     filteredRecords.map((record) => record.formulaVolumeMl).filter(isNumber)
   );
   return (
-    <div className="-mx-3 min-w-0 space-y-6 bg-background px-3 sm:-mx-6 sm:px-6">
+    <div className="child-profile-shell space-y-6">
       <ConfirmDialog
         isOpen={!!recordToDelete}
         title={copy.feedingSectionDeleteTitle}

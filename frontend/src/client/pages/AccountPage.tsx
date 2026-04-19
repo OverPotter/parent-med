@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { updateAccountProfile } from "@shared/api/auth";
 import { fetchMyFamilyMembers, updateFamilyMemberProfile } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
+import { SectionPathHeader } from "@shared/components/SectionPathHeader";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -12,6 +13,8 @@ const accountCopy = {
   ru: {
     title: "Профиль",
     subtitle: "Личные данные аккаунта.",
+    path: "Еще / Профиль",
+    backToMore: "← К разделу «Еще»",
     name: "Имя",
     login: "Логин",
     email: "Email",
@@ -43,6 +46,8 @@ const accountCopy = {
   en: {
     title: "Profile",
     subtitle: "Personal account details.",
+    path: "More / Profile",
+    backToMore: "← Back to more",
     name: "Name",
     login: "Login",
     email: "Email",
@@ -150,15 +155,23 @@ export function AccountPage() {
 
   if (isEditingProfile) {
     return (
-      <div className="min-w-0 space-y-6">
-        <div className="px-1">
+      <div className="min-w-0 space-y-6 sm:space-y-8">
+        <div className="app-section-path hidden sm:flex">
           <button
             type="button"
             onClick={() => setIsEditingProfile(false)}
-            className="inline-flex text-sm text-primary hover:underline"
+            className="app-section-path__back"
           >
             {language === "ru" ? "← К профилю" : "← Back to profile"}
           </button>
+          <span className="app-section-path__label">
+            {language === "ru" ? "Профиль / Редактирование" : "Profile / Edit"}
+          </span>
+        </div>
+
+        <div className="app-mobile-section-intro sm:hidden">
+          <h1 className="app-mobile-section-intro__title">{copy.editTitle}</h1>
+          <p className="app-mobile-section-intro__hint">{copy.editHint}</p>
         </div>
 
         <div className="space-y-1 px-1">
@@ -246,17 +259,15 @@ export function AccountPage() {
   }
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
-      <div className="px-1">
-        <Link to="/more" className="inline-flex text-sm text-primary hover:underline">
-          {language === "ru" ? "← К разделам" : "← Back to more"}
-        </Link>
-      </div>
-      <div className="app-mobile-section-intro sm:hidden">
-        <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
-        <p className="app-mobile-section-intro__hint">{copy.subtitle}</p>
-      </div>
+      <SectionPathHeader
+        backTo="/more"
+        backLabel={copy.backToMore}
+        pathLabel={copy.path}
+        title={copy.title}
+        hint={copy.subtitle}
+      />
 
       <Surface className="p-5 sm:p-6">
         <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5">

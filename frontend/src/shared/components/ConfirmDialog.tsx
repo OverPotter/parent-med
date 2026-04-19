@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { blurActiveField } from "@shared/utils/focus";
 
 type ConfirmDialogProps = {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export function ConfirmDialog({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !isPending) {
+        blurActiveField();
         onCancel();
       }
     };
@@ -62,7 +64,14 @@ export function ConfirmDialog({
         type="button"
         aria-label={resolvedCloseAriaLabel}
         className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_82%,var(--color-surface-soft)_18%)]"
-        onClick={isPending ? undefined : onCancel}
+        onClick={
+          isPending
+            ? undefined
+            : () => {
+                blurActiveField();
+                onCancel();
+              }
+        }
       />
       <div
         className={`soft-panel relative z-[161] w-full max-w-md rounded-[30px] p-5 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-6 ${
@@ -95,7 +104,10 @@ export function ConfirmDialog({
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={() => {
+              blurActiveField();
+              onCancel();
+            }}
             disabled={isPending}
             className="soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
           >
@@ -103,7 +115,10 @@ export function ConfirmDialog({
           </button>
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={() => {
+              blurActiveField();
+              onConfirm();
+            }}
             disabled={isPending}
             className={`app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem] ${
               confirmTone === "danger"

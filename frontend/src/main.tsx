@@ -55,6 +55,16 @@ appLog.info(
   `Старт UI: ${import.meta.env.MODE}, host=${typeof window !== "undefined" ? window.location.host : ""}`
 );
 
+if (typeof window !== "undefined") {
+  window.addEventListener("error", (event) => {
+    const source = event.filename ? ` @ ${event.filename}:${event.lineno}:${event.colno}` : "";
+    appLog.error(`Runtime error: ${event.message}${source}`, event.error);
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    appLog.error("Unhandled promise rejection", event.reason);
+  });
+}
+
 createRoot(document.getElementById("root")!).render(
   Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios" ? (
     <QueryClientProvider client={queryClient}>

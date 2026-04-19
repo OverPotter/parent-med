@@ -171,6 +171,35 @@ function RouteFallback() {
   return isBootReady ? null : <AppBootSplash />;
 }
 
+function IOSRouteSnapshotSync() {
+  const location = useLocation();
+
+  useLayoutEffect(() => {
+    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
+      return;
+    }
+
+    return () => {
+      const frame = document.querySelector(".app-shell-frame");
+      if (!(frame instanceof HTMLElement)) {
+        return;
+      }
+      const clone = frame.cloneNode(true);
+      if (!(clone instanceof HTMLElement)) {
+        return;
+      }
+      clone.classList.remove("app-shell-frame");
+      clone.classList.add("app-shell-auth", "ios-back-swipe-underlay-screen__content");
+      clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+      (
+        window as Window & { __PM_IOS_PREVIOUS_SCREEN_HTML?: string }
+      ).__PM_IOS_PREVIOUS_SCREEN_HTML = clone.outerHTML;
+    };
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+
 function useGlobalBootReady() {
   const [isBootReady, setIsBootReady] = useState(() => {
     if (typeof window === "undefined") {
@@ -690,6 +719,76 @@ function RuntimePlatformSync() {
   return null;
 }
 
+function IosSafeAreaSync() {
+  useLayoutEffect(() => {
+    if (!detectIosShell()) {
+      return;
+    }
+
+    const root = document.documentElement;
+    const probe = document.createElement("div");
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.position = "fixed";
+    probe.style.top = "0";
+    probe.style.left = "0";
+    probe.style.width = "0";
+    probe.style.height = "0";
+    probe.style.opacity = "0";
+    probe.style.pointerEvents = "none";
+    probe.style.paddingTop = "env(safe-area-inset-top)";
+    probe.style.paddingBottom = "env(safe-area-inset-bottom)";
+    document.body.appendChild(probe);
+
+    let rafId = 0;
+    let timeoutId: number | null = null;
+
+    const applySafeArea = () => {
+      const styles = window.getComputedStyle(probe);
+      const top = Number.parseFloat(styles.paddingTop || "0");
+      const bottom = Number.parseFloat(styles.paddingBottom || "0");
+      root.style.setProperty("--app-safe-top-runtime", `${Math.max(0, top)}px`);
+      root.style.setProperty("--app-safe-bottom-runtime", `${Math.max(0, bottom)}px`);
+    };
+
+    const scheduleApply = () => {
+      window.cancelAnimationFrame(rafId);
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      rafId = window.requestAnimationFrame(() => {
+        applySafeArea();
+        timeoutId = window.setTimeout(applySafeArea, 180);
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        scheduleApply();
+      }
+    };
+
+    scheduleApply();
+    window.addEventListener("resize", scheduleApply);
+    window.addEventListener("pageshow", scheduleApply);
+    window.addEventListener("orientationchange", scheduleApply);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      window.removeEventListener("resize", scheduleApply);
+      window.removeEventListener("pageshow", scheduleApply);
+      window.removeEventListener("orientationchange", scheduleApply);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      probe.remove();
+    };
+  }, []);
+
+  return null;
+}
+
 function IOSKeyboardViewportSync() {
   useEffect(() => {
     if (!detectIosShell()) {
@@ -707,6 +806,32 @@ function IOSKeyboardViewportSync() {
 function IOSBackSwipeZone() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [previousScreenHtml, setPreviousScreenHtml] = useState(() => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+    return (
+      (window as Window & { __PM_IOS_PREVIOUS_SCREEN_HTML?: string })
+        .__PM_IOS_PREVIOUS_SCREEN_HTML ?? ""
+    );
+  });
+  const swipeStateRef = useRef<{
+    startX: number;
+    startY: number;
+    latestDx: number;
+    renderedDx: number;
+    horizontalLocked: boolean;
+    active: boolean;
+    resetTimeoutId: number | null;
+  }>({
+    startX: 0,
+    startY: 0,
+    latestDx: 0,
+    renderedDx: 0,
+    horizontalLocked: false,
+    active: false,
+    resetTimeoutId: null,
+  });
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
@@ -715,9 +840,27 @@ function IOSBackSwipeZone() {
 
     document.documentElement.setAttribute("data-ios-back-swipe-zone", "true");
     return () => {
+      if (swipeStateRef.current.resetTimeoutId !== null) {
+        window.clearTimeout(swipeStateRef.current.resetTimeoutId);
+      }
+      document.documentElement.style.removeProperty("--ios-back-swipe-offset");
+      document.documentElement.style.removeProperty("--ios-back-swipe-progress");
+      document.documentElement.removeAttribute("data-ios-back-swipe-active");
+      document.documentElement.removeAttribute("data-ios-back-swipe-commit");
+      document.documentElement.removeAttribute("data-ios-back-swipe-cancel");
       document.documentElement.removeAttribute("data-ios-back-swipe-zone");
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    setPreviousScreenHtml(
+      (window as Window & { __PM_IOS_PREVIOUS_SCREEN_HTML?: string })
+        .__PM_IOS_PREVIOUS_SCREEN_HTML ?? ""
+    );
+  }, [location.pathname, location.search]);
 
   const pillboxMode = new URLSearchParams(location.search).get("mode");
   const shouldDisableSwipeBack =
@@ -727,67 +870,152 @@ function IOSBackSwipeZone() {
     location.pathname === "/children" ||
     location.pathname === "/medicine-cabinet" ||
     location.pathname === "/illnesses/active" ||
-    location.pathname === "/more" ||
     (location.pathname === "/pillbox" && !pillboxMode);
 
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios" || shouldDisableSwipeBack) {
+  if (
+    !Capacitor.isNativePlatform() ||
+    Capacitor.getPlatform() !== "ios" ||
+    shouldDisableSwipeBack
+  ) {
     return null;
   }
 
   return (
-    <div
-      aria-hidden="true"
-      style={{
-        position: "fixed",
-        left: 0,
-        top: 0,
-        bottom: 0,
-        width: 22,
-        zIndex: 160,
-        touchAction: "pan-y",
-      }}
-      onTouchStart={(event) => {
-        const touch = event.touches.item(0);
-        if (!touch) {
-          return;
-        }
-        const target = event.target as HTMLDivElement & {
-          dataset: DOMStringMap & {
-            startX?: string;
-            startY?: string;
-          };
-        };
-        target.dataset.startX = String(touch.clientX);
-        target.dataset.startY = String(touch.clientY);
-      }}
-      onTouchEnd={(event) => {
-        const touch = event.changedTouches.item(0);
-        const target = event.currentTarget as HTMLDivElement & {
-          dataset: DOMStringMap & {
-            startX?: string;
-            startY?: string;
-          };
-        };
-        if (!touch) {
-          return;
-        }
-        const startX = Number(target.dataset.startX ?? "0");
-        const startY = Number(target.dataset.startY ?? "0");
-        const dx = touch.clientX - startX;
-        const dy = Math.abs(touch.clientY - startY);
-        if (dx >= 52 && dy <= 56 && dy <= dx * 0.9) {
-          const activeElement = document.activeElement;
-          if (
-            activeElement instanceof HTMLElement &&
-            activeElement.closest("input, textarea, select, [contenteditable='true']")
-          ) {
-            blurActiveField();
+    <>
+      <div aria-hidden="true" className="ios-back-swipe-underlay">
+        {previousScreenHtml ? (
+          <div
+            className="ios-back-swipe-underlay-screen"
+            dangerouslySetInnerHTML={{ __html: previousScreenHtml }}
+          />
+        ) : null}
+      </div>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 30,
+          zIndex: 160,
+          touchAction: "pan-y",
+        }}
+        onTouchStart={(event) => {
+          const touch = event.touches.item(0);
+          if (!touch) {
             return;
           }
-          navigate(-1);
-        }
-      }}
-    />
+          const root = document.documentElement;
+          if (swipeStateRef.current.resetTimeoutId !== null) {
+            window.clearTimeout(swipeStateRef.current.resetTimeoutId);
+            swipeStateRef.current.resetTimeoutId = null;
+          }
+          swipeStateRef.current.startX = touch.clientX;
+          swipeStateRef.current.startY = touch.clientY;
+          swipeStateRef.current.latestDx = 0;
+          swipeStateRef.current.renderedDx = 0;
+          swipeStateRef.current.horizontalLocked = false;
+          swipeStateRef.current.active = true;
+          root.removeAttribute("data-ios-back-swipe-commit");
+          root.removeAttribute("data-ios-back-swipe-cancel");
+          root.setAttribute("data-ios-back-swipe-active", "true");
+          root.style.setProperty("--ios-back-swipe-offset", "0px");
+          root.style.setProperty("--ios-back-swipe-progress", "0");
+        }}
+        onTouchMove={(event) => {
+          const touch = event.touches.item(0);
+          if (!touch || !swipeStateRef.current.active) {
+            return;
+          }
+          const root = document.documentElement;
+          const dx = Math.max(0, touch.clientX - swipeStateRef.current.startX);
+          const dy = Math.abs(touch.clientY - swipeStateRef.current.startY);
+          swipeStateRef.current.latestDx = dx;
+          if (!swipeStateRef.current.horizontalLocked && dx >= 18 && dx >= dy * 1.08) {
+            swipeStateRef.current.horizontalLocked = true;
+          }
+          const verticalCancelThreshold = swipeStateRef.current.horizontalLocked ? 132 : 84;
+          if (dy > verticalCancelThreshold) {
+            swipeStateRef.current.active = false;
+            root.removeAttribute("data-ios-back-swipe-active");
+            root.setAttribute("data-ios-back-swipe-cancel", "true");
+            root.style.setProperty("--ios-back-swipe-offset", "0px");
+            root.style.setProperty("--ios-back-swipe-progress", "0");
+            swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
+              root.removeAttribute("data-ios-back-swipe-cancel");
+              swipeStateRef.current.resetTimeoutId = null;
+            }, 220);
+            return;
+          }
+          const previousOffset = swipeStateRef.current.renderedDx;
+          const targetOffset = Math.min(swipeStateRef.current.latestDx, window.innerWidth);
+          const offset =
+            targetOffset >= previousOffset
+              ? targetOffset
+              : previousOffset + (targetOffset - previousOffset) * 0.38;
+          swipeStateRef.current.renderedDx = Math.max(0, offset);
+          const progress = Math.min(1, offset / Math.max(window.innerWidth, 1));
+          root.style.setProperty("--ios-back-swipe-offset", `${offset}px`);
+          root.style.setProperty("--ios-back-swipe-progress", `${progress}`);
+        }}
+        onTouchEnd={(event) => {
+          const touch = event.changedTouches.item(0);
+          if (!touch) {
+            return;
+          }
+          const root = document.documentElement;
+          const startX = swipeStateRef.current.startX;
+          const startY = swipeStateRef.current.startY;
+          const dx = Math.max(0, touch.clientX - startX);
+          const dy = Math.abs(touch.clientY - startY);
+          swipeStateRef.current.active = false;
+          const canCommit =
+            dx >= 40 && (swipeStateRef.current.horizontalLocked || (dy <= 88 && dy <= dx * 1.35));
+          if (canCommit) {
+            const activeElement = document.activeElement;
+            if (
+              activeElement instanceof HTMLElement &&
+              activeElement.closest("input, textarea, select, [contenteditable='true']")
+            ) {
+              blurActiveField();
+              root.removeAttribute("data-ios-back-swipe-active");
+              root.setAttribute("data-ios-back-swipe-cancel", "true");
+              root.style.setProperty("--ios-back-swipe-offset", "0px");
+              root.style.setProperty("--ios-back-swipe-progress", "0");
+              swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
+                root.removeAttribute("data-ios-back-swipe-cancel");
+                swipeStateRef.current.resetTimeoutId = null;
+              }, 220);
+              return;
+            }
+            root.removeAttribute("data-ios-back-swipe-active");
+            root.setAttribute("data-ios-back-swipe-commit", "true");
+            root.style.setProperty(
+              "--ios-back-swipe-offset",
+              `${Math.min(dx, window.innerWidth)}px`
+            );
+            root.style.setProperty("--ios-back-swipe-progress", "1");
+            swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
+              root.removeAttribute("data-ios-back-swipe-commit");
+              root.style.removeProperty("--ios-back-swipe-offset");
+              root.style.removeProperty("--ios-back-swipe-progress");
+              swipeStateRef.current.resetTimeoutId = null;
+              navigate(-1);
+            }, 150);
+            return;
+          }
+          root.removeAttribute("data-ios-back-swipe-active");
+          root.setAttribute("data-ios-back-swipe-cancel", "true");
+          root.style.setProperty("--ios-back-swipe-offset", "0px");
+          root.style.setProperty("--ios-back-swipe-progress", "0");
+          swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
+            root.removeAttribute("data-ios-back-swipe-cancel");
+            swipeStateRef.current.resetTimeoutId = null;
+          }, 220);
+        }}
+      />
+    </>
   );
 }
 
@@ -814,79 +1042,6 @@ function IOSLandingGestureGuard() {
     return () => {
       html.classList.remove("ios-lock-horizontal");
       body.classList.remove("ios-lock-horizontal");
-    };
-  }, [location.pathname]);
-
-  return null;
-}
-
-function IOSInputSessionGuard() {
-  const location = useLocation();
-
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
-      return;
-    }
-
-    const isAuthLikeRoute =
-      location.pathname === "/auth" ||
-      location.pathname === "/join-family" ||
-      location.pathname.startsWith("/legal");
-    if (isAuthLikeRoute) {
-      return;
-    }
-
-    const applyInputGuard = (target: HTMLInputElement | HTMLTextAreaElement) => {
-      if (target.dataset.pmIosInputGuard === "true") {
-        return;
-      }
-
-      target.dataset.pmIosInputGuard = "true";
-      target.setAttribute("autocorrect", "off");
-      target.setAttribute("autocapitalize", "none");
-      target.setAttribute("autocomplete", "off");
-      target.setAttribute("data-gramm", "false");
-      target.setAttribute("data-gramm_editor", "false");
-      target.setAttribute("data-enable-grammarly", "false");
-      target.spellcheck = false;
-      if (target instanceof HTMLInputElement && target.type !== "password") {
-        target.setAttribute("autocapitalize", "none");
-      }
-    };
-
-    const guardRoot = (root: ParentNode) => {
-      root.querySelectorAll("input, textarea").forEach((node) => {
-        if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
-          applyInputGuard(node);
-        }
-      });
-    };
-
-    const guardVisibleInputs = () => {
-      const mainRoot =
-        document.getElementById("app-route-root") ??
-        document.querySelector("main") ??
-        document.body;
-      guardRoot(mainRoot);
-    };
-
-    guardVisibleInputs();
-    const timeoutId = window.setTimeout(guardVisibleInputs, 260);
-
-    const handlePointerStart = (event: Event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) {
-        return;
-      }
-      applyInputGuard(target);
-    };
-
-    document.addEventListener("pointerdown", handlePointerStart, true);
-    document.addEventListener("touchstart", handlePointerStart, true);
-    return () => {
-      window.clearTimeout(timeoutId);
-      document.removeEventListener("pointerdown", handlePointerStart, true);
-      document.removeEventListener("touchstart", handlePointerStart, true);
     };
   }, [location.pathname]);
 
@@ -1021,9 +1176,16 @@ function WarmRouteChunks() {
   const accountId = useAppStore((s) => s.accountId);
   const isBootReady = useGlobalBootReady();
   const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  const firstNativeLaunchStorageKey = "pm_native_ios_first_launch_completed_v2";
+  const [isInitialNativeLaunch] = useState(() => {
+    if (!isNativeIos || typeof window === "undefined") {
+      return false;
+    }
+    return window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
+  });
 
   useEffect(() => {
-    if (!(authToken || accountId) || role === "admin" || isNativeIos) {
+    if (!(authToken || accountId) || role === "admin") {
       return;
     }
 
@@ -1070,7 +1232,7 @@ function WarmRouteChunks() {
 
     const scheduleWarmRoutes = () => {
       if (!isBootReady) {
-        timeoutId = window.setTimeout(warmRoutes, 120);
+        timeoutId = window.setTimeout(warmRoutes, isNativeIos ? 900 : 120);
         return;
       }
 
@@ -1079,15 +1241,26 @@ function WarmRouteChunks() {
           () => {
             warmRoutes();
           },
-          { timeout: 3200 }
+          { timeout: isNativeIos ? 4600 : 3200 }
         );
         return;
       }
 
-      timeoutId = window.setTimeout(warmRoutes, 2200);
+      timeoutId = window.setTimeout(warmRoutes, isNativeIos ? 3400 : 2200);
     };
 
-    timeoutId = window.setTimeout(scheduleWarmRoutes, isBootReady ? 1800 : 220);
+    timeoutId = window.setTimeout(
+      scheduleWarmRoutes,
+      isBootReady
+        ? isNativeIos
+          ? isInitialNativeLaunch
+            ? 4200
+            : 2400
+          : 1800
+        : isNativeIos
+          ? 900
+          : 220
+    );
 
     return () => {
       cancelled = true;
@@ -1098,7 +1271,7 @@ function WarmRouteChunks() {
         windowWithIdleApi.cancelIdleCallback(idleId);
       }
     };
-  }, [accountId, authToken, isBootReady, isNativeIos, role]);
+  }, [accountId, authToken, isBootReady, isInitialNativeLaunch, isNativeIos, role]);
 
   return null;
 }
@@ -1142,6 +1315,8 @@ export default function App() {
         </a>
       ) : null}
       <RuntimePlatformSync />
+      <IOSRouteSnapshotSync />
+      <IosSafeAreaSync />
       <IOSKeyboardViewportSync />
       <IOSBackSwipeZone />
       <BootLog />
@@ -1154,7 +1329,6 @@ export default function App() {
       <WarmRouteChunks />
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
-      <IOSInputSessionGuard />
       <AuthSync />
       {isNonCriticalStartupReady ? <PushSubscriptionSync /> : null}
       {isNonCriticalStartupReady ? <NativePushNavigationSync /> : null}

@@ -10,8 +10,8 @@ import { fetchFamilies } from "@shared/api/families";
 import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
 import { fetchPillboxPlans } from "@shared/api/pillboxPlans";
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Layout } from "@shared/components/Layout";
-import { Surface } from "@shared/components/Surface";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useNow } from "@shared/hooks/useNow";
@@ -34,6 +34,7 @@ import {
   setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
 import { AppBootSplash } from "./AppBootSplash";
+import { PushPromptControlProvider } from "./PushPromptControlContext";
 
 const IOS_FIRST_LAUNCH_PUSH_UI_DELAY_MS = 3000;
 const IOS_REPEAT_LAUNCH_PUSH_UI_DELAY_MS = 1200;
@@ -50,7 +51,6 @@ const IOS_FIRST_LAUNCH_SPLASH_SETTLE_MS = 900;
 const IOS_REPEAT_LAUNCH_SPLASH_SETTLE_MS = 220;
 const IOS_FIRST_INTERACTION_DEFER_MS = 1800;
 const IOS_REPEAT_INTERACTION_DEFER_MS = 700;
-
 export function ClientLayout() {
   const globalBootWindow =
     typeof window === "undefined" ? undefined : (window as Window & { __PM_BOOT_READY?: boolean });
@@ -65,11 +65,11 @@ export function ClientLayout() {
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const isIosShell = useIsIosShell();
   const [pushStatus, setPushStatus] = useState<"checking" | "enabled" | "disabled">("checking");
-  const [isPushPromptActionsHidden, setIsPushPromptActionsHidden] = useState(false);
   const [isPushPending, setIsPushPending] = useState(false);
   const [pushPromptError, setPushPromptError] = useState<string | null>(null);
   const [pushPromptSuccess, setPushPromptSuccess] = useState<string | null>(null);
   const [nativePushIssue, setNativePushIssue] = useState<"system" | "app" | null>(null);
+  const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
   const [isDeferredBootReady, setIsDeferredBootReady] = useState(!isIosShell);
   const [isDeferredShellWorkReady, setIsDeferredShellWorkReady] = useState(!isIosShell);
   const [isInitialBootSettled, setIsInitialBootSettled] = useState(wasBootReadyOnMount);
@@ -359,32 +359,38 @@ export function ClientLayout() {
     queryFn: fetchPushNotificationConfig,
     enabled: Boolean(
       authToken &&
-        accountId &&
-        isDeferredShellWorkReady &&
-        isIosPushUiReady &&
-        isInteractiveDataReady
+      accountId &&
+      isDeferredShellWorkReady &&
+      isIosPushUiReady &&
+      isInteractiveDataReady
     ),
     staleTime: 5 * 60 * 1000,
   });
 
   const desktopNavLinks = baseDesktopNavLinks;
   const mobileNavLinks = baseDesktopNavLinks;
-  const mainMenuPaths = [
-    "/",
-    "/start",
-    "/children",
-    "/pillbox",
-    "/medicine-cabinet",
-    "/illnesses/active",
-    "/more",
-  ];
+  const mainMenuPathMatchers = [
+    { path: "/", end: true },
+    { path: "/start", end: true },
+    { path: "/children", end: true },
+    { path: "/pillbox", end: true },
+    { path: "/medicine-cabinet", end: true },
+    { path: "/illnesses/active", end: true },
+    { path: "/more", end: true },
+    { path: "/settings", end: true },
+    { path: "/feedback", end: true },
+    { path: "/account", end: true },
+    { path: "/family", end: true },
+    { path: "/about", end: true },
+    { path: "/legal", end: false },
+  ] as const;
   const pillboxMode = new URLSearchParams(location.search).get("mode");
   const isPillboxInnerRoute =
     location.pathname === "/pillbox" &&
     ["setup", "medication", "details", "analytics"].includes(pillboxMode ?? "");
   const shouldHideHeader =
     isPillboxInnerRoute ||
-    !mainMenuPaths.some((path) => matchPath({ path, end: true }, location.pathname));
+    !mainMenuPathMatchers.some((matcher) => matchPath(matcher, location.pathname));
   const isMedicineCabinetAddRoute = Boolean(
     matchPath({ path: "/medicine-cabinet/add", end: true }, location.pathname) ||
     matchPath({ path: "/medicine-cabinet/add/:mode", end: true }, location.pathname) ||
@@ -395,11 +401,11 @@ export function ClientLayout() {
     isMedicineCabinetAddRoute ||
     matchPath({ path: "/children/:childId/illness", end: false }, location.pathname)
   );
+  const isCompactNestedChrome = shouldHideHeader || isMedicineCabinetAddRoute;
   const isPushPromptReady = Boolean(
     authToken && accountId && isDeferredShellWorkReady && isIosPushUiReady && pushConfig?.enabled
   );
   useEffect(() => {
-    setIsPushPromptActionsHidden(false);
     setPushPromptError(null);
     setPushPromptSuccess(null);
   }, [accountId]);
@@ -501,6 +507,8 @@ export function ClientLayout() {
   const shouldShowPushPrompt =
     isPushPromptReady && !isNativePushSupported() && isPushSupported() && pushStatus === "disabled";
   const shouldShowNativePushPrompt = isPushPromptReady && nativePushIssue !== null;
+  const shouldShowNotificationPrompt = shouldShowNativePushPrompt || shouldShowPushPrompt;
+  const isNotificationBellActive = shouldShowNotificationPrompt;
 
   const handleEnablePush = async () => {
     if (isNativePushSupported()) {
@@ -599,6 +607,22 @@ export function ClientLayout() {
     }
   };
 
+  const handleHidePushPrompt = () => {
+    setIsPushDialogOpen(false);
+  };
+
+  useEffect(() => {
+    if (!shouldShowNotificationPrompt) {
+      setIsPushDialogOpen(false);
+    }
+  }, [shouldShowNotificationPrompt]);
+
+  useEffect(() => {
+    if (pushStatus === "enabled" && !nativePushIssue) {
+      setIsPushDialogOpen(false);
+    }
+  }, [nativePushIssue, pushStatus]);
+
   useEffect(() => {
     if (!isSuccess) {
       return;
@@ -693,117 +717,64 @@ export function ClientLayout() {
 
   return (
     <>
-      <Layout
-        navLinks={desktopNavLinks}
-        mobileNavLinks={shouldHideMobileNav ? [] : mobileNavLinks}
-        hideHeader={shouldHideHeader || isMedicineCabinetAddRoute}
-        compactHiddenChrome={shouldHideHeader || isMedicineCabinetAddRoute}
+      <PushPromptControlProvider
+        value={{
+          showNotificationBell: shouldShowNotificationPrompt,
+          isNotificationBellActive,
+          onNotificationBellClick: shouldShowNotificationPrompt
+            ? () => setIsPushDialogOpen(true)
+            : null,
+        }}
       >
-        {shouldShowNativePushPrompt && (
-          <Surface className="soft-panel-muted mb-4 p-4 sm:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="app-card-title text-[1rem]">
-                  {nativePushIssue === "system"
-                    ? copy.clientLayout.pushPrompt.nativeBlockedTitle
-                    : copy.clientLayout.pushPrompt.title}
-                </p>
-                <p className="mt-1 text-sm leading-6 text-muted">
-                  {nativePushIssue === "system"
-                    ? copy.clientLayout.pushPrompt.nativeBlockedDescription
-                    : copy.clientLayout.pushPrompt.description}
-                </p>
-                {pushPromptError && (
-                  <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
-                    {pushPromptError}
-                  </p>
-                )}
-                {pushPromptSuccess && (
-                  <p className="soft-note-success mt-3 rounded-2xl px-4 py-3 text-sm">
-                    {pushPromptSuccess}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (nativePushIssue === "system") {
-                    openNativeNotificationSettings();
-                    return;
-                  }
-                  void handleEnablePush();
-                }}
-                disabled={isPushPending}
-                className="soft-button-secondary inline-flex min-h-[2.85rem] shrink-0 items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
-              >
-                {nativePushIssue === "system"
-                  ? copy.clientLayout.pushPrompt.openSettings
-                  : isPushPending
-                    ? copy.clientLayout.pushPrompt.enabling
-                    : copy.clientLayout.pushPrompt.enable}
-              </button>
-            </div>
-          </Surface>
-        )}
-        {shouldShowPushPrompt && (
-          <Surface className="soft-panel-muted mb-4 p-4 sm:p-5">
-            {isPushPromptActionsHidden ? (
-              <button
-                type="button"
-                onClick={() => setIsPushPromptActionsHidden(false)}
-                className="flex w-full flex-wrap items-center justify-between gap-2 rounded-[20px] text-left transition hover:opacity-95"
-              >
-                <p className="app-card-title text-[0.96rem]">
-                  {copy.clientLayout.pushPrompt.title}
-                </p>
-                <span className="soft-button-secondary inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.025em]">
-                  {copy.common.open}
-                </span>
-              </button>
-            ) : (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="app-card-title text-[1rem]">{copy.clientLayout.pushPrompt.title}</p>
-                  <p className="mt-1 text-sm leading-6 text-muted">
-                    {copy.clientLayout.pushPrompt.description}
-                  </p>
-                  {pushPromptError && (
-                    <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
-                      {pushPromptError}
-                    </p>
-                  )}
-                  {pushPromptSuccess && (
-                    <p className="soft-note-success mt-3 rounded-2xl px-4 py-3 text-sm">
-                      {pushPromptSuccess}
-                    </p>
-                  )}
-                </div>
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={handleEnablePush}
-                    disabled={isPushPending}
-                    className="soft-button-primary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
-                  >
-                    {isPushPending
-                      ? copy.clientLayout.pushPrompt.enabling
-                      : copy.clientLayout.pushPrompt.enable}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsPushPromptActionsHidden(true)}
-                    disabled={isPushPending}
-                    className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
-                  >
-                    {copy.clientLayout.pushPrompt.hide}
-                  </button>
-                </div>
-              </div>
-            )}
-          </Surface>
-        )}
-        <Outlet />
-      </Layout>
+        <Layout
+          navLinks={desktopNavLinks}
+          mobileNavLinks={shouldHideMobileNav ? [] : mobileNavLinks}
+          hideHeader={isCompactNestedChrome}
+          compactHiddenChrome={isCompactNestedChrome}
+          showNotificationBell={shouldShowNotificationPrompt}
+          isNotificationBellActive={isNotificationBellActive}
+          onNotificationBellClick={
+            shouldShowNotificationPrompt ? () => setIsPushDialogOpen(true) : null
+          }
+        >
+          <Outlet />
+        </Layout>
+      </PushPromptControlProvider>
+      <ConfirmDialog
+        isOpen={isPushDialogOpen && shouldShowNotificationPrompt}
+        title={
+          shouldShowNativePushPrompt && nativePushIssue === "system"
+            ? copy.clientLayout.pushPrompt.nativeBlockedTitle
+            : copy.clientLayout.pushPrompt.title
+        }
+        description={[
+          shouldShowNativePushPrompt && nativePushIssue === "system"
+            ? copy.clientLayout.pushPrompt.nativeBlockedDescription
+            : copy.clientLayout.pushPrompt.description,
+          pushPromptError,
+          pushPromptSuccess,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        confirmLabel={
+          shouldShowNativePushPrompt && nativePushIssue === "system"
+            ? copy.clientLayout.pushPrompt.openSettings
+            : isPushPending
+              ? copy.clientLayout.pushPrompt.enabling
+              : copy.clientLayout.pushPrompt.enable
+        }
+        cancelLabel={copy.clientLayout.pushPrompt.hide}
+        isPending={isPushPending}
+        onCancel={handleHidePushPrompt}
+        onConfirm={() => {
+          if (shouldShowNativePushPrompt && nativePushIssue === "system") {
+            openNativeNotificationSettings();
+            setIsPushDialogOpen(false);
+            return;
+          }
+          void handleEnablePush();
+        }}
+      />
       {isBootSplashMounted ? (
         <AppBootSplash className="app-boot-splash--overlay" isClosing={isBootSplashClosing} />
       ) : null}

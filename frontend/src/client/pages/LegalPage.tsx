@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { PageIntro } from "@shared/components/PageIntro";
+import { SectionPathHeader } from "@shared/components/SectionPathHeader";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { getPrivacyPolicyUrl, getSupportUrl, getTermsOfUseUrl } from "@shared/config/legal";
@@ -42,7 +43,7 @@ export function LegalPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-8">
       <PageIntro
         title={language === "ru" ? "Правовая информация" : "Legal information"}
         subtitle={
@@ -53,16 +54,17 @@ export function LegalPage() {
         compactOnMobile
         hideOnMobile
       />
-      <div className="app-mobile-section-intro sm:hidden">
-        <h1 className="app-mobile-section-intro__title">
-          {language === "ru" ? "Правовая информация" : "Legal information"}
-        </h1>
-        <p className="app-mobile-section-intro__hint">
-          {language === "ru"
+      <SectionPathHeader
+        backTo="/more"
+        backLabel={language === "ru" ? "← К разделу «Еще»" : "← Back to more"}
+        pathLabel={language === "ru" ? "Еще / Правовая информация" : "More / Legal"}
+        title={language === "ru" ? "Правовая информация" : "Legal information"}
+        hint={
+          language === "ru"
             ? "Политика конфиденциальности, условия использования и контакты."
-            : "Privacy policy, terms of use and support contacts."}
-        </p>
-      </div>
+            : "Privacy policy, terms of use and support contacts."
+        }
+      />
 
       <Surface className="p-5 sm:p-6">
         <div className="space-y-3">

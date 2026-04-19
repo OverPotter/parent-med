@@ -1,18 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { logout } from "@shared/api/auth";
 import { fetchChild } from "@shared/api/children";
 import { fetchFeedingRecordsByChildId } from "@shared/api/feedingRecords";
 import { fetchHeightEntriesByChildId } from "@shared/api/heightEntries";
 import { fetchIllnessEpisodesByChildId } from "@shared/api/illnessEpisodes";
 import { fetchSleepSessionsByChildId } from "@shared/api/sleepSessions";
 import { fetchWeightEntriesByChildId } from "@shared/api/weightEntries";
-import { FeedbackIcon, ProfileMenu } from "@shared/components/Layout";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
-import { useAppStore } from "@shared/store/useAppStore";
 import { getLocalIsoDate } from "@shared/utils/date";
+import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { childCalendarCopy } from "./child-calendar/copy";
 import type { EventKind, PeriodKey, ViewMode } from "./child-calendar/types";
 import {
@@ -43,12 +41,9 @@ import {
 } from "./child-calendar/views";
 
 export function ChildCalendarPage() {
-  const { copy: sharedCopy, language } = useI18n();
+  const { language } = useI18n();
   const text = childCalendarCopy[language];
   const { childId } = useParams<{ childId: string }>();
-  const accountLogin = useAppStore((s) => s.accountLogin);
-  const accountDisplayName = useAppStore((s) => s.accountDisplayName);
-  const clearSession = useAppStore((s) => s.clearSession);
   const [mode, setMode] = useState<ViewMode>("feed");
   const [period, setPeriod] = useState<PeriodKey>("week");
   const [anchorDate, setAnchorDate] = useState(getLocalIsoDate());
@@ -154,8 +149,6 @@ export function ChildCalendarPage() {
     () => buildChartDays(dateRange.start, dateRange.end, visibleEvents),
     [dateRange.end, dateRange.start, visibleEvents]
   );
-  const accountLabel = accountDisplayName || accountLogin || sharedCopy.common.userFallback;
-
   useEffect(() => {
     if (!isPeriodMenuOpen) return;
 
@@ -236,55 +229,17 @@ export function ChildCalendarPage() {
     setAnchorDate(getLocalIsoDate());
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch {
-      // Локальный выход всё равно должен отработать, даже если сессия уже истекла.
-    } finally {
-      clearSession();
-    }
-  };
-
   return (
-    <div className="child-overview-page min-w-0 space-y-4 sm:space-y-5">
-      <div className="flex items-center justify-between gap-3 px-1 pt-1">
-        <Link
-          to={`/children/${child.id}`}
-          className="inline-flex min-h-[2.35rem] items-center text-sm text-primary hover:underline"
-        >
-          {text.back}
-        </Link>
-        <div className="flex shrink-0 items-center gap-2">
-          <Link
-            to="/feedback"
-            className="app-header-utility-button inline-flex h-[2.35rem] min-h-[2.35rem] w-[2.35rem] items-center justify-center p-0"
-            aria-label={sharedCopy.feedback.navShort}
-            title={sharedCopy.feedback.navShort}
-          >
-            <FeedbackIcon />
-            <span className="sr-only">{sharedCopy.feedback.navShort}</span>
-          </Link>
-          <ProfileMenu
-            accountLabel={accountLabel}
-            servicesLabel={sharedCopy.clientLayout.nav.more}
-            settingsLabel={sharedCopy.common.settings}
-            logoutLabel={sharedCopy.common.logoutFromAccount}
-            menuLabel={sharedCopy.common.profileMenuLabel}
-            onLogout={handleLogout}
-            iconOnly
-          />
-        </div>
-      </div>
+    <div className="child-profile-shell child-overview-page space-y-4 sm:space-y-5">
+      <ChildSectionTopBar
+        backHref={`/children/${child.id}`}
+        backLabel={text.back}
+        title={`${text.title} · ${child.name}`}
+        hint={text.hint}
+        containerClassName="max-w-5xl"
+      />
 
-      <div className="space-y-1 px-1">
-        <h1 className="app-card-title">
-          {text.title} · {child.name}
-        </h1>
-        <p className="text-sm text-muted">{text.hint}</p>
-      </div>
-
-      <Surface className="space-y-2 p-2">
+      <Surface className="mx-auto w-full max-w-5xl space-y-2 p-2">
         <div className="flex items-center justify-between gap-2 px-1">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.08em] text-muted">
             {text.summaryPeriodPrefix}
@@ -316,7 +271,7 @@ export function ChildCalendarPage() {
         </div>
       </Surface>
 
-      <Surface className="relative z-30 space-y-3 overflow-visible p-3 sm:p-4">
+      <Surface className="relative z-30 mx-auto w-full max-w-5xl space-y-3 overflow-visible p-3 sm:p-4">
         <div className="grid grid-cols-3 gap-2">
           <button type="button" onClick={() => setMode("feed")} className={tabClass("feed")}>
             {text.feed}

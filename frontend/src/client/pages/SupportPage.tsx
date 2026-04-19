@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { PageIntro } from "@shared/components/PageIntro";
+import { SectionPathHeader } from "@shared/components/SectionPathHeader";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 
@@ -7,7 +8,7 @@ export function SupportPage() {
   const { language } = useI18n();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-8">
       <PageIntro
         title={language === "ru" ? "Поддержка / Контакты" : "Support / Contact"}
         subtitle={
@@ -18,16 +19,17 @@ export function SupportPage() {
         compactOnMobile
         hideOnMobile
       />
-      <div className="app-mobile-section-intro sm:hidden">
-        <h1 className="app-mobile-section-intro__title">
-          {language === "ru" ? "Поддержка / Контакты" : "Support / Contact"}
-        </h1>
-        <p className="app-mobile-section-intro__hint">
-          {language === "ru"
+      <SectionPathHeader
+        backTo="/more"
+        backLabel={language === "ru" ? "← К разделу «Еще»" : "← Back to more"}
+        pathLabel={language === "ru" ? "Еще / Поддержка" : "More / Support"}
+        title={language === "ru" ? "Поддержка / Контакты" : "Support / Contact"}
+        hint={
+          language === "ru"
             ? "Куда писать по вопросам сервиса, персональных данных и legal-запросам."
-            : "Where to contact us about service, personal data and legal requests."}
-        </p>
-      </div>
+            : "Where to contact us about service, personal data and legal requests."
+        }
+      />
 
       <Surface className="space-y-3 p-5 text-sm leading-7 text-muted sm:p-6">
         <p>

@@ -309,7 +309,10 @@ export const useAppStore = create<AppState>()(
         void (async () => {
           await migrateLegacyAuthTokensToSecureStorage();
           const tokens = await readSecureAuthTokens();
-          state.setAuthTokens(tokens);
+          useAppStore.setState({
+            authToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+          });
           state.setHydrated(true);
         })();
       },
