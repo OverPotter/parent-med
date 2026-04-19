@@ -1,4 +1,5 @@
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
+import { RowSurface } from "@shared/components/Surface";
 import type { AppLanguage } from "@shared/i18n";
 import {
   actionPrimaryClass,
@@ -12,9 +13,6 @@ import {
   PillboxDeleteTarget,
   PillboxGroup,
   PillboxPlanListFilter,
-  segmentedButtonActiveClass,
-  segmentedButtonClass,
-  segmentedControlClass,
   tPillbox,
 } from "./shared";
 
@@ -63,6 +61,9 @@ export function PillboxHubScreen({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button type="button" onClick={openCreate} className={actionPrimaryClass}>
+            {tPillbox(language, "createPlan")}
+          </button>
           <button
             type="button"
             onClick={() => openAnalytics(undefined, listFilter)}
@@ -70,38 +71,55 @@ export function PillboxHubScreen({
           >
             {tPillbox(language, "analytics")}
           </button>
-          <button type="button" onClick={openCreate} className={actionPrimaryClass}>
-            {tPillbox(language, "createPlan")}
-          </button>
         </div>
-        <div className={segmentedControlClass} aria-label={tPillbox(language, "hubTitle")}>
+        <div className="flex items-center justify-between gap-4 px-1">
+          <div className="min-w-0">
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-muted">
+              {language === "ru" ? "Показывать" : "Show"}
+            </p>
+            <div className="mt-1 flex items-center gap-2 text-[0.88rem] font-medium tracking-[-0.02em]">
+              <span className={listFilter === "active" ? "text-foreground" : "text-muted"}>
+                {tPillbox(language, "activeFilter")}
+              </span>
+              <span className="text-muted/60">/</span>
+              <span className={listFilter === "completed" ? "text-foreground" : "text-muted"}>
+                {tPillbox(language, "archiveFilter")}
+              </span>
+            </div>
+          </div>
           <button
             type="button"
-            onClick={() => setListFilter("active")}
-            className={listFilter === "active" ? segmentedButtonActiveClass : segmentedButtonClass}
-            aria-pressed={listFilter === "active"}
+            role="switch"
+            aria-checked={listFilter === "completed"}
+            aria-label={
+              listFilter === "completed"
+                ? tPillbox(language, "archiveFilter")
+                : tPillbox(language, "activeFilter")
+            }
+            onClick={() => setListFilter(listFilter === "completed" ? "active" : "completed")}
+            className={[
+              "baby-mode-switch relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors",
+              listFilter === "completed" ? "baby-mode-switch--active" : "",
+            ].join(" ")}
           >
-            {tPillbox(language, "activeFilter")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setListFilter("archive")}
-            className={listFilter === "archive" ? segmentedButtonActiveClass : segmentedButtonClass}
-            aria-pressed={listFilter === "archive"}
-          >
-            {tPillbox(language, "archiveFilter")}
+            <span
+              className={[
+                "baby-mode-switch__thumb absolute left-1 inline-block h-6 w-6 rounded-full transition-transform",
+                listFilter === "completed" ? "translate-x-6" : "translate-x-0",
+              ].join(" ")}
+            />
           </button>
         </div>
       </div>
 
-      <ul className="soft-panel divide-y divide-[color:color-mix(in_srgb,var(--color-border)_62%,transparent)] overflow-hidden rounded-[28px]">
+      <ul className="grid gap-3">
         {visibleGroups.length === 0 ? (
           <li>
-            <div className="px-5 py-4 text-sm text-muted">
-              {listFilter === "archive"
+            <div className="soft-panel rounded-[28px] px-5 py-4 text-sm text-muted">
+              {listFilter === "completed"
                 ? language === "ru"
-                  ? "В архиве пока нет планов."
-                  : "There are no archived plans yet."
+                  ? "Завершённых планов пока нет."
+                  : "There are no completed plans yet."
                 : tPillbox(language, "hubEmpty")}
             </div>
           </li>
@@ -120,23 +138,20 @@ export function PillboxHubScreen({
           );
           return (
             <li key={group.id}>
-              <div
-                id={`pillbox-plan-${group.id}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => openDetails(group)}
-                onKeyDown={(event) => handleCardKeyDown(event, () => openDetails(group))}
-                className="block w-full cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-              >
-                <div
-                  className={`px-4 py-3 transition hover:bg-[color:color-mix(in_srgb,var(--color-surface-glare-soft)_26%,transparent)] sm:px-5 ${
-                    isHighlighted
-                      ? "bg-[color:color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
-                      : ""
+              <div id={`pillbox-plan-${group.id}`}>
+                <RowSurface
+                  className={`children-card-hero cursor-pointer text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
+                    isHighlighted ? "pillbox-next-medication-outline" : ""
                   }`}
                 >
-                  <div className="grid gap-2.5">
-                    <div className="min-w-0">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openDetails(group)}
+                    onKeyDown={(event) => handleCardKeyDown(event, () => openDetails(group))}
+                    className="grid gap-4"
+                  >
+                    <div className="min-w-0 space-y-1.5">
                       <div className="flex min-w-0 items-center gap-2">
                         <span
                           className={`inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${
@@ -144,7 +159,7 @@ export function PillboxHubScreen({
                               ? "bg-[color:var(--color-success)]"
                               : group.status === "paused"
                                 ? "bg-[color:var(--color-warning)]"
-                                : "bg-[color:var(--color-danger)]"
+                                : "bg-sky-500"
                           }`}
                           aria-hidden="true"
                         />
@@ -152,24 +167,48 @@ export function PillboxHubScreen({
                           {displayPillboxText(group.title)}
                         </h2>
                       </div>
-                      <p className="mt-1 text-[0.82rem] leading-5 text-muted">
-                        {planStateCompact}
-                        <span className="mx-1.5">—</span>
-                        {tPillbox(language, "nextDoseShort").toLowerCase()}
-                        <span className="mx-1.5">—</span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5 text-muted">
                         <span
-                          className={
-                            group.status === "paused" || group.status === "archived"
-                              ? "text-muted"
-                              : isOverdue || isLate
-                                ? "font-semibold text-[color:var(--color-warning)]"
-                                : canMarkNow
-                                  ? "font-semibold text-[color:var(--color-success)]"
-                                  : "font-semibold text-foreground"
-                          }
+                          className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] ${
+                            group.status === "active"
+                              ? "bg-[color:color-mix(in_srgb,var(--color-success)_14%,transparent)] text-[color:color-mix(in_srgb,var(--color-success)_78%,var(--color-foreground))]"
+                              : group.status === "paused"
+                                ? "bg-[color:color-mix(in_srgb,var(--color-warning)_14%,transparent)] text-[color:color-mix(in_srgb,var(--color-warning)_78%,var(--color-foreground))]"
+                                : "bg-[color:color-mix(in_srgb,skyblue_18%,transparent)] text-[color:color-mix(in_srgb,skyblue_74%,var(--color-foreground))]"
+                          }`}
                         >
-                          {group.nextDose}
+                          {planStateCompact}
                         </span>
+                        <span
+                          aria-hidden="true"
+                          className="h-1 w-1 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_30%,transparent)]"
+                        />
+                        <span>{formatPlanCountLabel(group.activeCount, language)}</span>
+                      </div>
+                      <p className="text-[0.82rem] leading-5 text-muted">
+                        {group.status === "completed" || group.status === "archived" ? (
+                          <span>
+                            {language === "ru" ? "Курс уже завершён" : "Course is completed"}
+                          </span>
+                        ) : (
+                          <>
+                            {tPillbox(language, "nextDoseShort")}
+                            {" · "}
+                            <span
+                              className={
+                                group.status === "paused"
+                                  ? "text-muted"
+                                  : isOverdue || isLate
+                                    ? "font-semibold text-[color:var(--color-warning)]"
+                                    : canMarkNow
+                                      ? "font-semibold text-[color:var(--color-success)]"
+                                      : "font-semibold text-foreground"
+                              }
+                            >
+                              {group.nextDose}
+                            </span>
+                          </>
+                        )}
                       </p>
                     </div>
 
@@ -183,7 +222,7 @@ export function PillboxHubScreen({
                             markNextDoseTaken(group);
                           }}
                           disabled={takeDosePending}
-                          className={`${actionPrimaryClass} w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto`}
+                          className={`${actionPrimaryClass} min-h-[2.42rem] w-full px-3.5 text-[0.8rem] sm:min-h-[2.5rem] sm:w-auto sm:text-[0.82rem] disabled:cursor-not-allowed disabled:opacity-60`}
                         >
                           {takeDosePending
                             ? tPillbox(language, "taking")
@@ -191,12 +230,12 @@ export function PillboxHubScreen({
                         </button>
                       </div>
                     ) : (
-                      <p className="text-[0.76rem] leading-5 text-muted">
+                      <p className="text-[0.76rem] leading-5 text-muted/88">
                         {tPillbox(language, "tapToOpen")}
                       </p>
                     )}
                   </div>
-                </div>
+                </RowSurface>
               </div>
             </li>
           );
@@ -220,4 +259,16 @@ export function PillboxHubScreen({
       />
     </div>
   );
+}
+
+function formatPlanCountLabel(count: number, language: AppLanguage) {
+  if (language === "en") {
+    return count === 1 ? "1 medicine" : `${count} medicines`;
+  }
+
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} лекарство`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} лекарства`;
+  return `${count} лекарств`;
 }

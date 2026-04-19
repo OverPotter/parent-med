@@ -17,6 +17,7 @@ export function BottomTabBar({
   const location = useLocation();
   const isIosShell = useIsIosShell();
   const [pressedTab, setPressedTab] = useState<string | null>(null);
+  const enablePressedState = !isIosShell;
 
   if (links.length === 0) {
     return null;
@@ -63,7 +64,7 @@ export function BottomTabBar({
                 to={to}
                 end={to === "/"}
                 onPointerDown={(event) => {
-                  if (isIosShell) {
+                  if (!enablePressedState) {
                     return;
                   }
                   if (event.pointerType === "mouse") {
@@ -72,32 +73,32 @@ export function BottomTabBar({
                   setPressedTab(to);
                 }}
                 onPointerUp={() => {
-                  if (isIosShell) {
+                  if (!enablePressedState) {
                     return;
                   }
                   setPressedTab((current) => (current === to ? null : current));
                 }}
                 onPointerCancel={() =>
-                  isIosShell
+                  !enablePressedState
                     ? undefined
                     : setPressedTab((current) => (current === to ? null : current))
                 }
                 onPointerLeave={() =>
-                  isIosShell
+                  !enablePressedState
                     ? undefined
                     : setPressedTab((current) => (current === to ? null : current))
                 }
                 aria-label={
                   attentionCount && attentionCount > 0
                     ? `${mobileLabel ?? label}: ${attentionCount}`
-                    : mobileLabel ?? label
+                    : (mobileLabel ?? label)
                 }
                 className={() =>
                   [
                     "app-bottom-nav-link",
                     isActive ? "app-bottom-nav-link--active" : "",
                     attentionToneClass,
-                    pressedTab === to ? "app-bottom-nav-link--pressed" : "",
+                    enablePressedState && pressedTab === to ? "app-bottom-nav-link--pressed" : "",
                   ].join(" ")
                 }
               >

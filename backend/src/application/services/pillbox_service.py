@@ -171,6 +171,34 @@ class PillboxService:
             return None, None
         return min(actionable, key=lambda item: item[0])
 
+    def _get_effective_status(self, plan: PillboxPlan) -> str:
+        if plan.status != "active":
+            return plan.status
+
+        period_medications = [item for item in plan.medications if item.course_mode == "period"]
+        if not period_medications:
+            return "active"
+
+        if any(item.course_mode == "continuous" for item in plan.medications):
+            return "active"
+
+        if any(
+            not item.course_start_date or not item.course_end_date for item in period_medications
+        ):
+            return "active"
+
+        now = datetime.now(UTC)
+        today = now.astimezone(self._timezone).date()
+        if all(
+            item.course_end_date is not None and item.course_end_date <= today
+            for item in period_medications
+        ):
+            next_dose_at, _ = self._get_next_dose_details(plan, now)
+            if next_dose_at is None:
+                return "completed"
+
+        return "active"
+
     def _get_course_progress(
         self, plan: PillboxPlan, language: str
     ) -> tuple[str | None, float | None, str | None]:
@@ -213,6 +241,7 @@ class PillboxService:
         language: str = "ru",
     ) -> PillboxPlanSummaryDto:
         now = datetime.now(UTC)
+        effective_status = self._get_effective_status(entity)
         next_dose_at, next_medication = self._get_next_dose_details(entity, now)
         course_summary_kind, course_progress_ratio, course_day_label = self._get_course_progress(
             entity, language
@@ -229,7 +258,7 @@ class PillboxService:
         return PillboxPlanSummaryDto(
             id=entity.id,
             title=entity.title,
-            status=entity.status,
+            status=effective_status,
             member_account_ids=list(entity.member_account_ids),
             active_medication_count=len(entity.medications),
             next_dose_at=next_dose_at,
@@ -248,7 +277,7 @@ class PillboxService:
             id=entity.id,
             family_id=entity.family_id,
             title=entity.title,
-            status=entity.status,
+            status=self._get_effective_status(entity),
             member_account_ids=list(entity.member_account_ids),
             medications=[self._to_medication_response(item) for item in entity.medications],
             created_at=entity.created_at,
@@ -604,7 +633,7 @@ class PillboxService:
         return PillboxHistorySummaryDto(
             plan_id=str(plan.id),
             plan_title=plan.title,
-            plan_status=plan.status,
+            plan_status=self._get_effective_status(plan),
             member_count=len(plan.member_account_ids),
             period=normalized_period,
             total_medications=total_medications,

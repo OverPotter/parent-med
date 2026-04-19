@@ -79,7 +79,9 @@ export function PillboxPage() {
   const activeMedicationId = searchParams.get("med");
   const selectedPlanId = searchParams.get("plan");
   const listFilter: PillboxPlanListFilter =
-    searchParams.get("tab") === "archive" ? "archive" : "active";
+    searchParams.get("tab") === "archive" || searchParams.get("tab") === "completed"
+      ? "completed"
+      : "active";
   const highlightedPlanId = screen === "hub" ? searchParams.get("highlightPlan") : null;
   const highlightedAction = screen === "hub" ? searchParams.get("action") : null;
   const isCreating = isEditorScreen && (selectedPlanId === "new" || !selectedPlanId);
@@ -127,7 +129,9 @@ export function PillboxPage() {
   const visibleGroups = useMemo(
     () =>
       allGroups.filter((group) =>
-        listFilter === "archive" ? group.status === "archived" : group.status !== "archived"
+        listFilter === "completed"
+          ? group.status === "archived" || group.status === "completed"
+          : group.status !== "archived" && group.status !== "completed"
       ),
     [allGroups, listFilter]
   );
@@ -401,7 +405,7 @@ export function PillboxPage() {
   const openDetails = (group: PillboxGroup) => {
     setDraft(null);
     navigate(
-      `/pillbox?mode=details&plan=${group.id}${listFilter === "archive" ? "&tab=archive" : ""}`
+      `/pillbox?mode=details&plan=${group.id}${listFilter === "completed" ? "&tab=completed" : ""}`
     );
   };
 
@@ -434,7 +438,7 @@ export function PillboxPage() {
     setSaveAttempted(false);
     setSavePlanError(null);
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-    navigate(listFilter === "archive" ? "/pillbox?tab=archive" : "/pillbox");
+    navigate(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
   };
 
   const goToSetup = () => {
@@ -600,21 +604,17 @@ export function PillboxPage() {
   };
 
   const toggleSelectedPlanStatus = () => {
-    if (!selectedPlan || togglePlanStatusMutation.isPending) {
+    if (
+      !selectedPlan ||
+      togglePlanStatusMutation.isPending ||
+      selectedPlan.status === "archived" ||
+      selectedPlan.status === "completed"
+    ) {
       return;
     }
     setPlanActionError(null);
     setDeleteTarget(null);
     setPlanActionTarget(selectedPlan.status === "active" ? "pause" : "resume");
-  };
-
-  const requestArchiveSelectedPlan = () => {
-    if (!selectedPlan || togglePlanStatusMutation.isPending) {
-      return;
-    }
-    setPlanActionError(null);
-    setDeleteTarget(null);
-    setPlanActionTarget(selectedPlan.status === "archived" ? "restore" : "archive");
   };
 
   const confirmPlanAction = () => {
@@ -627,12 +627,7 @@ export function PillboxPage() {
       return;
     }
 
-    const nextStatus =
-      planActionTarget === "pause"
-        ? "paused"
-        : planActionTarget === "resume" || planActionTarget === "restore"
-          ? "active"
-          : "archived";
+    const nextStatus = planActionTarget === "pause" ? "paused" : "active";
     togglePlanStatusMutation.mutate({
       planId: selectedPlanId,
       payload: toPlanWriteFromPlan(selectedPlan, nextStatus),
@@ -643,7 +638,7 @@ export function PillboxPage() {
     if (screen !== "hub") {
       return;
     }
-    navigate(nextFilter === "archive" ? "/pillbox?tab=archive" : "/pillbox");
+    navigate(nextFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
   };
 
   const openAnalytics = (
@@ -653,12 +648,13 @@ export function PillboxPage() {
     const resolvedPlanId =
       targetPlanId ??
       selectedPlanIdForAnalytics ??
-      (targetFilter === "archive"
-        ? allGroups.find((group) => group.status === "archived")?.id
-        : allGroups.find((group) => group.status !== "archived")?.id) ??
+      (targetFilter === "completed"
+        ? allGroups.find((group) => group.status === "archived" || group.status === "completed")?.id
+        : allGroups.find((group) => group.status !== "archived" && group.status !== "completed")
+            ?.id) ??
       null;
     navigate(
-      `/pillbox?mode=analytics${resolvedPlanId ? `&plan=${resolvedPlanId}` : ""}${targetFilter === "archive" ? "&tab=archive" : ""}`
+      `/pillbox?mode=analytics${resolvedPlanId ? `&plan=${resolvedPlanId}` : ""}${targetFilter === "completed" ? "&tab=completed" : ""}`
     );
   };
 
@@ -692,7 +688,7 @@ export function PillboxPage() {
         onBack={goToHub}
         onSelectPlan={(planId, filter) =>
           navigate(
-            `/pillbox?mode=analytics&plan=${planId}${filter === "archive" ? "&tab=archive" : ""}`
+            `/pillbox?mode=analytics&plan=${planId}${filter === "completed" ? "&tab=completed" : ""}`
           )
         }
       />
@@ -750,7 +746,6 @@ export function PillboxPage() {
         onBack={goToHub}
         onToggleStatus={toggleSelectedPlanStatus}
         onGoToSetup={goToSetup}
-        onRequestArchive={requestArchiveSelectedPlan}
         onRequestDelete={requestDeletePlan}
         onConfirmPlanAction={confirmPlanAction}
         onClosePlanAction={() => {

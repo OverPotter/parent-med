@@ -5,6 +5,7 @@ import type {
   PillboxPlan,
   PillboxPlanSummary,
   PillboxPlanWrite,
+  PillboxPlanWritableStatus,
 } from "@shared/api/pillboxPlans.contract";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import type { AppLanguage } from "@shared/i18n";
@@ -49,8 +50,8 @@ export type PillboxDeleteTarget =
   | { kind: "plan" }
   | { kind: "medication"; medicationId: string; medicationName: string };
 
-export type PillboxPlanActionTarget = "pause" | "resume" | "archive" | "restore" | null;
-export type PillboxPlanListFilter = "active" | "archive";
+export type PillboxPlanActionTarget = "pause" | "resume" | null;
+export type PillboxPlanListFilter = "active" | "completed";
 
 export const pillboxCopy = {
   ru: {
@@ -73,11 +74,9 @@ export const pillboxCopy = {
     createPlan: "Создать план",
     analytics: "Аналитика",
     activeFilter: "Активные",
-    archiveFilter: "Архив",
+    archiveFilter: "Завершённые",
     analyticsBack: "← К планам",
     editPlan: "Редактировать",
-    archivePlan: "В архив",
-    restorePlan: "Вернуть в активные",
     pausePlan: "Поставить на паузу",
     resumePlan: "Возобновить план",
     save: "Сохранить",
@@ -131,7 +130,8 @@ export const pillboxCopy = {
     dueNowState: "Пора отметить приём",
     planActiveState: "Приём по графику",
     pausedPlanState: "План на паузе",
-    archivedPlanState: "План в архиве",
+    completedPlanState: "Курс завершён",
+    archivedPlanState: "Завершённый план",
     savePlanFailed: "Не удалось сохранить план. Попробуйте ещё раз.",
     confirmDeletePlanTitle: "Точно удалить план?",
     confirmDeletePlanDescription:
@@ -143,12 +143,6 @@ export const pillboxCopy = {
       "Напоминания по этому плану временно перестанут приходить всем участникам.",
     confirmResumePlanTitle: "Возобновить план?",
     confirmResumePlanDescription: "Напоминания по этому плану снова начнут приходить участникам.",
-    confirmArchivePlanTitle: "Перенести план в архив?",
-    confirmArchivePlanDescription:
-      "План исчезнет из активного списка, но сохранит историю и останется доступным в аналитике.",
-    confirmRestorePlanTitle: "Вернуть план в активные?",
-    confirmRestorePlanDescription:
-      "План снова появится в рабочем списке и его можно будет продолжить использовать.",
     cancel: "Отмена",
   },
   en: {
@@ -172,11 +166,9 @@ export const pillboxCopy = {
     createPlan: "Create plan",
     analytics: "Analytics",
     activeFilter: "Active",
-    archiveFilter: "Archive",
+    archiveFilter: "Completed",
     analyticsBack: "← Back to plans",
     editPlan: "Edit plan",
-    archivePlan: "Archive",
-    restorePlan: "Return to active",
     pausePlan: "Pause plan",
     resumePlan: "Resume plan",
     save: "Save",
@@ -230,7 +222,8 @@ export const pillboxCopy = {
     dueNowState: "Time to log dose",
     planActiveState: "On schedule",
     pausedPlanState: "Plan is paused",
-    archivedPlanState: "Plan is archived",
+    completedPlanState: "Course completed",
+    archivedPlanState: "Completed plan",
     savePlanFailed: "Could not save the plan. Please try again.",
     confirmDeletePlanTitle: "Delete this plan?",
     confirmDeletePlanDescription:
@@ -243,12 +236,6 @@ export const pillboxCopy = {
     confirmResumePlanTitle: "Resume this plan?",
     confirmResumePlanDescription:
       "Reminders for this plan will start coming again for participants.",
-    confirmArchivePlanTitle: "Move this plan to archive?",
-    confirmArchivePlanDescription:
-      "The plan will disappear from the active list, but its history and analytics will stay available.",
-    confirmRestorePlanTitle: "Return this plan to active?",
-    confirmRestorePlanDescription:
-      "The plan will appear in the working list again and can be used further.",
     cancel: "Cancel",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
@@ -669,7 +656,8 @@ export function getPlanStateCompact(
   language: AppLanguage
 ) {
   if (status === "paused") return language === "ru" ? "На паузе" : "Paused";
-  if (status === "archived") return language === "ru" ? "В архиве" : "Archived";
+  if (status === "completed") return language === "ru" ? "Завершён" : "Completed";
+  if (status === "archived") return language === "ru" ? "Завершён" : "Completed";
   if (isOverdue || isLate) return language === "ru" ? "Пропущен" : "Missed";
   if (canMarkNow) return language === "ru" ? "Пора отметить" : "Ready to log";
   return language === "ru" ? "Активен" : "Active";
@@ -731,7 +719,7 @@ export function toPlanWrite(draft: SetupDraft): PillboxPlanWrite {
 
 export function toPlanWriteFromPlan(
   plan: PillboxPlan,
-  status?: PillboxPlan["status"]
+  status?: PillboxPlanWritableStatus
 ): PillboxPlanWrite {
   return {
     title: plan.title,

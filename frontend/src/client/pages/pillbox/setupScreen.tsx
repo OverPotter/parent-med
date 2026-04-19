@@ -77,8 +77,24 @@ export function PillboxSetupScreen({
         backLabel={tPillbox(language, "setupBack")}
         onBack={onBack}
         eyebrow=""
-        title={tPillbox(language, "setupTitle")}
-        subtitle={tPillbox(language, "setupSubtitle")}
+        title={
+          isEditing
+            ? language === "ru"
+              ? "Приёмы · Редактировать план"
+              : "Pillbox · Edit plan"
+            : language === "ru"
+              ? "Приёмы · Создать план"
+              : "Pillbox · Create plan"
+        }
+        subtitle={
+          isEditing
+            ? language === "ru"
+              ? "Обновите лекарства, название и участников плана."
+              : "Update medicines, plan name and participants."
+            : language === "ru"
+              ? "Сначала добавьте лекарства, потом дайте плану имя и выберите участников."
+              : "Add medicines first, then name the plan and choose participants."
+        }
       />
 
       <div className="space-y-4">

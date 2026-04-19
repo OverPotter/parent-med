@@ -11,6 +11,8 @@ import type { MedicationPlanPriorityItem } from "../../utils/medicationPlans";
 import { AdministrationForm, TemperatureForm, illnessCompactTextareaClass } from "./forms";
 import { MedicationPlanComposer, MedicationPlanDetail, MedicationPlanList } from "./reminders";
 import {
+  appBtnFilledClass,
+  appBtnSecondaryClass,
   SectionTitle,
   illnessCompactPrimaryButtonClass,
   illnessCompactSecondaryButtonClass,
@@ -411,12 +413,12 @@ export function TimelineQuickView(props: {
 
       <section className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
         <div className="grid gap-2">
-          <div className="grid grid-cols-4 gap-2">
+          <div className="flex flex-wrap gap-2">
             {(
               [
                 ["all", language === "ru" ? "Все" : "All", null],
-                ["temperature", language === "ru" ? "Темп." : "Temp", "bg-rose-500"],
-                ["administration", language === "ru" ? "Приемы" : "Doses", "bg-sky-500"],
+                ["temperature", language === "ru" ? "Замеры" : "Readings", "bg-rose-500"],
+                ["administration", language === "ru" ? "Приёмы" : "Doses", "bg-sky-500"],
                 ["comment", language === "ru" ? "Заметки" : "Notes", "bg-sky-500"],
               ] as const
             ).map(([key, label, dotClass]) => {
@@ -426,16 +428,12 @@ export function TimelineQuickView(props: {
                   key={key}
                   type="button"
                   onClick={() => setTimelineFilter(key)}
-                  className={`app-profile-action inline-flex min-h-[2.45rem] w-full min-w-0 items-center justify-center gap-1.5 rounded-full px-3.5 py-1 text-[0.76rem] font-bold tracking-[-0.02em] leading-none transition sm:min-h-[2.5rem] sm:text-[0.78rem] ${
-                    isActiveFilter
-                      ? "app-profile-action--active soft-pill-warning"
-                      : "soft-pill bg-[color:color-mix(in_srgb,var(--color-card)_90%,transparent)] text-foreground/80 shadow-none"
-                  }`}
+                  className={`${isActiveFilter ? appBtnFilledClass : appBtnSecondaryClass} inline-flex min-h-[2.45rem] min-w-0 items-center justify-center gap-1.5 px-3.5 py-1 text-[0.76rem] font-bold tracking-[-0.02em] leading-none sm:min-h-[2.5rem] sm:text-[0.78rem]`}
                 >
                   {dotClass ? (
                     <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
                   ) : null}
-                  <span className="min-w-0 truncate text-center">{label}</span>
+                  <span className="text-center">{label}</span>
                 </button>
               );
             })}
@@ -445,7 +443,7 @@ export function TimelineQuickView(props: {
               <p className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted/85">
                 {language === "ru" ? "Кто записал" : "Who logged it"}
               </p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="flex flex-wrap gap-2">
                 {["all", ...timelineActorOptions].map((actor) => {
                   const isAll = actor === "all";
                   const isActiveActor = timelineActorFilter === actor;
@@ -454,11 +452,7 @@ export function TimelineQuickView(props: {
                       key={actor}
                       type="button"
                       onClick={() => setTimelineActorFilter(actor)}
-                      className={`inline-flex min-h-[2.28rem] min-w-0 items-center justify-center gap-1.5 rounded-full px-3.5 py-1 text-[0.74rem] font-semibold leading-none transition sm:min-h-[2.34rem] sm:text-[0.76rem] ${
-                        isActiveActor
-                          ? "soft-pill-warning text-foreground shadow-[0_12px_28px_-22px_rgba(242,163,72,0.85)]"
-                          : "soft-pill text-foreground/75 shadow-none"
-                      }`}
+                      className={`${isActiveActor ? appBtnFilledClass : appBtnSecondaryClass} inline-flex min-h-[2.28rem] min-w-0 max-w-full items-center justify-center gap-1.5 px-3.5 py-1 text-[0.74rem] font-semibold leading-none sm:min-h-[2.34rem] sm:text-[0.76rem]`}
                     >
                       {isAll ? null : <span className="h-2 w-2 shrink-0 rounded-full bg-sky-500" />}
                       <span className="min-w-0 truncate text-center">

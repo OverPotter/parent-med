@@ -61,7 +61,7 @@ export function ConfirmDialog({
       <button
         type="button"
         aria-label={resolvedCloseAriaLabel}
-        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_45%,transparent)] backdrop-blur-sm"
+        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_82%,var(--color-surface-soft)_18%)]"
         onClick={isPending ? undefined : onCancel}
       />
       <div

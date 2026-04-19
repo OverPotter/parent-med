@@ -159,6 +159,117 @@ body details > summary::-webkit-details-marker {
     linear-gradient(180deg, #26203a 0%, #1e1b2e 42%, #181427 100%);
 }
 
+.app-boot-splash {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.app-boot-splash--overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  transition:
+    opacity 260ms ease,
+    visibility 260ms ease;
+}
+
+.app-boot-splash--closing {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.app-boot-splash__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: max(2rem, env(safe-area-inset-top)) 1.5rem max(2rem, env(safe-area-inset-bottom));
+}
+
+.app-boot-splash__logo {
+  width: 5.9rem;
+  height: 5.9rem;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 28px rgba(93, 77, 152, 0.16));
+  animation: app-boot-splash-logo 3600ms cubic-bezier(0.4, 0.08, 0.2, 0.96) infinite;
+}
+
+.app-boot-splash__wordmark {
+  font-size: clamp(2.2rem, 6vw, 3rem);
+  letter-spacing: -0.06em;
+  animation: app-boot-splash-wordmark 3600ms cubic-bezier(0.4, 0.08, 0.2, 0.96) infinite;
+}
+
+.app-boot-splash__glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(24px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.app-boot-splash__glow--primary {
+  top: 18%;
+  left: 50%;
+  width: 14rem;
+  height: 14rem;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  animation: app-boot-splash-glow 4200ms cubic-bezier(0.4, 0.08, 0.2, 0.96) infinite;
+}
+
+.app-boot-splash__glow--secondary {
+  bottom: 16%;
+  left: 50%;
+  width: 11rem;
+  height: 11rem;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--color-info) 18%, transparent);
+  animation: app-boot-splash-glow 4600ms cubic-bezier(0.4, 0.08, 0.2, 0.96) infinite reverse;
+}
+
+@keyframes app-boot-splash-wordmark {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.985;
+  }
+  50% {
+    transform: translate3d(0, -1px, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes app-boot-splash-logo {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -1px, 0) scale(1.008);
+  }
+}
+
+@keyframes app-boot-splash-glow {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(0.97);
+    opacity: 0.42;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.01);
+    opacity: 0.56;
+  }
+}
+
 button,
 input,
 textarea,
@@ -5820,12 +5931,48 @@ html.ios-lock-horizontal .landing-main {
   touch-action: manipulation;
 }
 
+[data-runtime="native"][data-platform="ios"] .soft-input,
+[data-ios-shell="true"] .soft-input {
+  transition:
+    border-color 90ms ease,
+    background 90ms ease,
+    color 90ms ease;
+  box-shadow: none;
+}
+
+[data-runtime="native"][data-platform="ios"] .soft-input:hover,
+[data-ios-shell="true"] .soft-input:hover {
+  box-shadow: none;
+}
+
+[data-runtime="native"][data-platform="ios"] .soft-input:focus,
+[data-ios-shell="true"] .soft-input:focus {
+  box-shadow: 0 0 0 2px rgba(138, 123, 191, 0.08);
+}
+
+[data-runtime="native"][data-platform="ios"] .illness-fast-input,
+[data-ios-shell="true"] .illness-fast-input {
+  transition:
+    border-color 100ms ease,
+    background 100ms ease,
+    color 100ms ease;
+  box-shadow: none;
+}
+
+[data-runtime="native"][data-platform="ios"] .illness-fast-input:hover,
+[data-runtime="native"][data-platform="ios"] .illness-fast-input:focus,
+[data-ios-shell="true"] .illness-fast-input:hover,
+[data-ios-shell="true"] .illness-fast-input:focus {
+  box-shadow: 0 0 0 1px rgba(138, 123, 191, 0.07);
+}
+
 [data-runtime="native"][data-platform="ios"] .soft-panel,
 [data-runtime="native"][data-platform="ios"] .soft-card,
 [data-runtime="native"][data-platform="ios"] .soft-nav-shell,
 [data-runtime="native"][data-platform="ios"] .soft-page-intro,
 [data-runtime="native"][data-platform="ios"] .soft-hero {
-  backdrop-filter: blur(10px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 [data-ios-shell="true"] .soft-panel,
@@ -5833,7 +5980,18 @@ html.ios-lock-horizontal .landing-main {
 [data-ios-shell="true"] .soft-nav-shell,
 [data-ios-shell="true"] .soft-page-intro,
 [data-ios-shell="true"] .soft-hero {
-  backdrop-filter: blur(10px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-runtime="native"][data-platform="ios"] .backdrop-blur-sm,
+[data-runtime="native"][data-platform="ios"] .backdrop-blur-md,
+[data-runtime="native"][data-platform="ios"] .backdrop-blur-lg,
+[data-ios-shell="true"] .backdrop-blur-sm,
+[data-ios-shell="true"] .backdrop-blur-md,
+[data-ios-shell="true"] .backdrop-blur-lg {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 [data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-bottom-nav-wrap {
@@ -6175,57 +6333,18 @@ html.ios-lock-horizontal .landing-main {
 [data-ios-shell="true"] .app-bottom-nav-link {
   border-radius: 1.05rem;
   transition:
-    background-color 140ms ease,
-    box-shadow 180ms ease,
-    color 160ms ease,
-    transform 140ms ease;
+    background-color 120ms ease,
+    color 120ms ease;
 }
 
 [data-ios-shell="true"] .app-bottom-nav-link::after {
-  content: "";
-  position: absolute;
-  left: 0.18rem;
-  right: 0.18rem;
-  top: 0.08rem;
-  bottom: 0.08rem;
-  border-radius: 0.92rem;
-  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface));
-  opacity: 0;
-  transform: scale(0.96);
-  transition:
-    opacity 140ms ease,
-    transform 180ms ease,
-    background 180ms ease;
-  pointer-events: none;
-  z-index: 0;
-}
-
-[data-ios-shell="true"] .app-bottom-nav-link--pressed {
-  transform: scale(0.972);
-}
-
-[data-ios-shell="true"] .app-bottom-nav-link--pressed::after {
-  opacity: 0.68;
-  transform: scale(1);
-  background: color-mix(in srgb, var(--color-primary) 11%, var(--color-surface));
-}
-
-[data-ios-shell="true"] .app-bottom-nav-link--pressed .app-bottom-nav-icon,
-[data-ios-shell="true"] .app-bottom-nav-link--pressed .app-bottom-nav-label {
-  transform: translateY(0.01rem);
+  display: none;
 }
 
 [data-ios-shell="true"] .app-bottom-nav-link--active {
   color: color-mix(in srgb, var(--color-primary) 74%, var(--color-foreground));
-}
-
-[data-ios-shell="true"] .app-bottom-nav-link--active::after {
-  opacity: 1;
-  transform: scale(1);
-  background: color-mix(in srgb, var(--color-primary) 13%, var(--color-surface));
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 16%, transparent),
-    0 6px 18px -20px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 11%, var(--color-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 16%, transparent);
 }
 
 [data-ios-shell="true"] .app-bottom-nav-link--active .app-bottom-nav-icon {
@@ -6247,12 +6366,9 @@ html.ios-lock-horizontal .landing-main {
   color: color-mix(in srgb, var(--color-foreground) 78%, var(--color-muted) 22%);
 }
 
-[data-ios-shell="true"][data-theme="dark"] .app-bottom-nav-link--pressed {
-  color: color-mix(in srgb, var(--color-foreground) 84%, var(--color-primary) 16%);
-}
-
 [data-ios-shell="true"][data-theme="dark"] .app-bottom-nav-link--active {
   color: color-mix(in srgb, #f5f1ff 90%, var(--color-primary) 10%);
+  background: color-mix(in srgb, var(--color-primary) 13%, var(--color-surface));
 }
 
 [data-ios-shell="true"][data-theme="dark"] .app-bottom-nav-link--active .app-nav-icon--active {

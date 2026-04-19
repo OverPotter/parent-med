@@ -26,6 +26,7 @@ import {
   NATIVE_PUSH_NAVIGATION_EVENT,
 } from "@shared/utils/nativePushNotifications";
 import { HitKeepBridge } from "@shared/analytics";
+import { AppBootSplash } from "@client/layout/AppBootSplash";
 import { detectIosShell } from "@shared/hooks/useIsIosShell";
 import { appLog } from "@shared/utils/appLog";
 
@@ -146,7 +147,24 @@ const AdminHomePage = lazy(() =>
 );
 
 function RouteFallback() {
-  return <div className="min-h-screen soft-app-bg" aria-hidden="true" />;
+  const [isBootReady, setIsBootReady] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return Boolean((window as Window & { __PM_BOOT_READY?: boolean }).__PM_BOOT_READY);
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || isBootReady) {
+      return;
+    }
+
+    const handleBootReady = () => setIsBootReady(true);
+    window.addEventListener("app:boot-ready", handleBootReady, { once: true });
+    return () => window.removeEventListener("app:boot-ready", handleBootReady);
+  }, [isBootReady]);
+
+  return isBootReady ? null : <AppBootSplash />;
 }
 
 function BootLog() {
@@ -612,11 +630,11 @@ function IOSKeyboardViewportSync() {
 function IOSSwipeBackSync() {
   const location = useLocation();
   const navigate = useNavigate();
-  const pathnameRef = useRef(location.pathname);
+  const locationRef = useRef({ pathname: location.pathname, search: location.search });
 
   useEffect(() => {
-    pathnameRef.current = location.pathname;
-  }, [location.pathname]);
+    locationRef.current = { pathname: location.pathname, search: location.search };
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
@@ -679,7 +697,18 @@ function IOSSwipeBackSync() {
       }
       const dx = touch.clientX - startX;
       const dy = Math.abs(touch.clientY - startY);
-      if (pathnameRef.current === "/" || pathnameRef.current === "/home") {
+      const { pathname: currentPath, search: currentSearch } = locationRef.current;
+      const pillboxMode = new URLSearchParams(currentSearch).get("mode");
+      const shouldDisableSwipeBack =
+        currentPath === "/" ||
+        currentPath === "/home" ||
+        currentPath === "/start" ||
+        currentPath === "/children" ||
+        currentPath === "/medicine-cabinet" ||
+        currentPath === "/illnesses/active" ||
+        currentPath === "/more" ||
+        (currentPath === "/pillbox" && !pillboxMode);
+      if (shouldDisableSwipeBack) {
         return;
       }
       if (dx >= 48 && dy <= 56 && dy <= dx * 0.9) {
@@ -848,6 +877,39 @@ function MobileInteractionDiagnostics() {
   return null;
 }
 
+function WarmRouteChunks() {
+  const role = useAppStore((s) => s.role);
+  const authToken = useAppStore((s) => s.authToken);
+  const accountId = useAppStore((s) => s.accountId);
+
+  useEffect(() => {
+    if (!(authToken || accountId) || role === "admin") {
+      return;
+    }
+
+    let frameId: number | null = null;
+    frameId = window.requestAnimationFrame(() => {
+      void Promise.allSettled([
+        import("@client/pages/ChildrenPage"),
+        import("@client/pages/PillboxPage"),
+        import("@client/pages/MedicineCabinetPage"),
+        import("@client/pages/ActiveIllnessesPage"),
+        import("@client/pages/MorePage"),
+        import("@client/pages/SettingsPage"),
+        import("@client/pages/FamilyPage"),
+      ]);
+    });
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, [accountId, authToken, role]);
+
+  return null;
+}
+
 export default function App() {
   const role = useAppStore((s) => s.role);
   const language = useAppStore((s) => s.language);
@@ -888,12 +950,13 @@ export default function App() {
       <RuntimePlatformSync />
       <IOSKeyboardViewportSync />
       <BootLog />
-      {cookieConsent === "accepted" ? <HitKeepBridge /> : null}
+      <HitKeepBridge />
       <ThemeSync />
       <DisplayModeSync />
       <RouteScrollReset />
       <GlobalTapGuard />
       <MobileInteractionDiagnostics />
+      <WarmRouteChunks />
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <IOSSwipeBackSync />

@@ -88,7 +88,7 @@ export function FeedingRecordDialog({
       <button
         type="button"
         aria-label={copy.feedingCancel}
-        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_45%,transparent)] backdrop-blur-sm"
+        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_82%,var(--color-surface-soft)_18%)]"
         onClick={createMutation.isPending ? undefined : onClose}
       />
       <div className="soft-panel relative z-[161] w-full max-w-[28rem] rounded-[30px] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
@@ -201,7 +201,7 @@ export function FeedingStopDialog({
       <button
         type="button"
         aria-label={copy.feedingCancel}
-        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_45%,transparent)] backdrop-blur-sm"
+        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_82%,var(--color-surface-soft)_18%)]"
         onClick={isPending ? undefined : onClose}
       />
       <div className="soft-panel relative z-[166] w-full max-w-[25rem] rounded-[28px] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
