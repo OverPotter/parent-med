@@ -1,0 +1,1004 @@
+import { createPortal } from "react-dom";
+import { type TouchEvent, useEffect, useMemo, useRef, useState } from "react";
+import type { AppLanguage } from "@shared/i18n/types";
+import {
+  actionPrimaryClass,
+  addDaysToIso,
+  ChoiceButtons,
+  CoursePreset,
+  DayChip,
+  editorSectionCardClass,
+  EditorShell,
+  FieldIcon,
+  FlowScreenHeader,
+  getMedicationDayLabel,
+  getTodayIso,
+  MedicationItem,
+  medicationDays,
+  tPillbox,
+  TintedField,
+  UtensilsBadge,
+} from "./shared";
+
+type PillboxMedicationScreenProps = {
+  language: AppLanguage;
+  activeMedication: MedicationItem;
+  editorTitle: string;
+  editorDose: string;
+  editorTimes: string[];
+  editorCoursePreset: CoursePreset;
+  canSaveMedication: boolean;
+  onBack: () => void;
+  onTitleChange: (value: string) => void;
+  onDoseChange: (value: string) => void;
+  onUpdateEditorTimeAt: (index: number, value: string) => void;
+  onFinalizeEditorTimeAt: (index: number) => void;
+  onAddEditorTime: () => void;
+  onRemoveEditorTime: (index: number) => void;
+  onUpdateMedication: (id: string, patch: Partial<MedicationItem>) => void;
+  onCoursePresetChange: (preset: CoursePreset) => void;
+  onSaveMedication: () => void;
+};
+
+export function PillboxMedicationScreen({
+  language,
+  activeMedication,
+  editorTitle,
+  editorDose,
+  editorTimes,
+  editorCoursePreset,
+  canSaveMedication,
+  onBack,
+  onTitleChange,
+  onDoseChange,
+  onUpdateEditorTimeAt,
+  onFinalizeEditorTimeAt,
+  onAddEditorTime,
+  onRemoveEditorTime,
+  onUpdateMedication,
+  onCoursePresetChange,
+  onSaveMedication,
+}: PillboxMedicationScreenProps) {
+  const editorFieldWrapClass = "mx-auto w-full max-w-[36rem]";
+  const [isCourseDialogOpen, setIsCourseDialogOpen] = useState(false);
+  const [draftCoursePreset, setDraftCoursePreset] = useState<CoursePreset>(editorCoursePreset);
+  const [draftCourseStartDate, setDraftCourseStartDate] = useState(
+    activeMedication.courseStartDate
+  );
+  const [draftCourseEndDate, setDraftCourseEndDate] = useState(activeMedication.courseEndDate);
+
+  useEffect(() => {
+    setDraftCoursePreset(editorCoursePreset);
+  }, [editorCoursePreset]);
+
+  useEffect(() => {
+    setDraftCourseStartDate(activeMedication.courseStartDate);
+    setDraftCourseEndDate(activeMedication.courseEndDate);
+  }, [activeMedication.courseEndDate, activeMedication.courseStartDate]);
+
+  const openCourseDialog = () => {
+    const today = getTodayIso();
+    const startDate = activeMedication.courseStartDate || today;
+    const endDate = activeMedication.courseEndDate || addDaysToIso(startDate, 13);
+    setDraftCoursePreset(activeMedication.courseMode === "period" ? editorCoursePreset : "14");
+    setDraftCourseStartDate(startDate);
+    setDraftCourseEndDate(endDate);
+    setIsCourseDialogOpen(true);
+  };
+
+  const applyCourseDialog = () => {
+    const startDate = draftCourseStartDate || getTodayIso();
+    const endDate = draftCourseEndDate || startDate;
+    onCoursePresetChange(draftCoursePreset);
+    onUpdateMedication(activeMedication.id, {
+      courseMode: "period",
+      courseStartDate: startDate <= endDate ? startDate : endDate,
+      courseEndDate: startDate <= endDate ? endDate : startDate,
+    });
+    setIsCourseDialogOpen(false);
+  };
+
+  const courseSummary = useMemo(() => {
+    if (activeMedication.courseMode !== "period") return null;
+    if (editorCoursePreset === "7") return language === "ru" ? "Курс на 7 дней" : "7-day course";
+    if (editorCoursePreset === "14") return language === "ru" ? "Курс на 14 дней" : "14-day course";
+    if (editorCoursePreset === "30") return language === "ru" ? "Курс на 30 дней" : "30-day course";
+    if (!activeMedication.courseStartDate || !activeMedication.courseEndDate) {
+      return language === "ru" ? "Выберите даты курса" : "Choose course dates";
+    }
+    return language === "ru"
+      ? `С ${activeMedication.courseStartDate} по ${activeMedication.courseEndDate}`
+      : `From ${activeMedication.courseStartDate} to ${activeMedication.courseEndDate}`;
+  }, [
+    activeMedication.courseEndDate,
+    activeMedication.courseMode,
+    activeMedication.courseStartDate,
+    editorCoursePreset,
+    language,
+  ]);
+
+  const sectionTitleClass =
+    "text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground/88 sm:text-[0.94rem]";
+
+  return (
+    <EditorShell>
+      <FlowScreenHeader
+        backLabel={tPillbox(language, "medicationBack")}
+        onBack={onBack}
+        eyebrow=""
+        title={
+          language === "ru"
+            ? `${tPillbox(language, "eyebrow")} · ${tPillbox(language, "medicationTitle")}`
+            : `${tPillbox(language, "eyebrow")} · ${tPillbox(language, "medicationTitle")}`
+        }
+        subtitle={tPillbox(language, "medicationSubtitle")}
+      />
+
+      <div className="space-y-4">
+        <div className={editorSectionCardClass}>
+          <div className="space-y-4.5">
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+                <TintedField
+                  label={tPillbox(language, "whatName")}
+                  icon={<FieldIcon kind="pill" />}
+                  placeholder={tPillbox(language, "whatNamePlaceholder")}
+                  value={editorTitle}
+                  onChange={onTitleChange}
+                />
+                <TintedField
+                  label={tPillbox(language, "howMuch")}
+                  icon={<FieldIcon kind="dose" />}
+                  placeholder={tPillbox(language, "howMuchPlaceholder")}
+                  value={editorDose}
+                  onChange={onDoseChange}
+                  inputMode="decimal"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-5">
+              <div className="space-y-1">
+                <h2 className={sectionTitleClass}>
+                  {language === "ru" ? "Когда напоминать" : "When to remind"}
+                </h2>
+              </div>
+              <div className={editorFieldWrapClass}>
+                <div className="space-y-1.5">
+                  {editorTimes.map((timeValue, index) => (
+                    <div
+                      key={`${activeMedication.id}-time-${index}`}
+                      className="flex items-center gap-2"
+                    >
+                      <div className="relative min-w-0 flex-1">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={timeValue}
+                          onChange={(event) => onUpdateEditorTimeAt(index, event.target.value)}
+                          onBlur={() => onFinalizeEditorTimeAt(index)}
+                          placeholder="08:30"
+                          className="soft-input min-h-[2.82rem] w-full px-4 pr-11 text-left text-[16px] font-semibold tracking-[-0.03em] text-foreground placeholder:text-muted sm:min-h-[2.92rem] sm:pr-12 sm:text-[1rem]"
+                        />
+                        <span className="pointer-events-none absolute right-3 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[color:var(--color-primary)] sm:right-4">
+                          <span className="inline-flex h-4.5 w-4.5 items-center justify-center">
+                            <FieldIcon kind="time" />
+                          </span>
+                        </span>
+                      </div>
+                      {editorTimes.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => onRemoveEditorTime(index)}
+                          className="inline-flex !min-h-[2.82rem] !min-w-[2.82rem] !h-[2.82rem] !w-[2.82rem] shrink-0 self-center items-center justify-center px-0 text-[0.82rem] text-muted transition hover:text-foreground sm:!min-h-[2.92rem] sm:!min-w-[2.92rem] sm:!h-[2.92rem] sm:!w-[2.92rem]"
+                          aria-label={tPillbox(language, "removeTimeAria", {
+                            index: index + 1,
+                          })}
+                        >
+                          ✕
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={onAddEditorTime}
+                    className="soft-pill app-profile-action inline-flex min-h-[2.36rem] w-full items-center justify-center px-3 text-[0.77rem] font-medium tracking-[-0.02em] text-foreground/84 sm:min-h-[2.46rem] sm:text-[0.8rem]"
+                  >
+                    {tPillbox(language, "addTime")}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-5">
+              <div className="space-y-1">
+                <h2 className={sectionTitleClass}>
+                  {language === "ru" ? "В какие дни" : "Which days"}
+                </h2>
+              </div>
+              <div className={editorFieldWrapClass}>
+                <div className="grid grid-cols-7 gap-2 sm:gap-2.5 lg:gap-2">
+                  {medicationDays.map((day) => {
+                    const selected = activeMedication.repeatDays.includes(day.value);
+                    return (
+                      <DayChip
+                        key={day.value}
+                        label={getMedicationDayLabel(day, language)}
+                        selected={selected}
+                        onClick={() =>
+                          onUpdateMedication(activeMedication.id, {
+                            repeatDays: selected
+                              ? activeMedication.repeatDays.length > 1
+                                ? activeMedication.repeatDays.filter((item) => item !== day.value)
+                                : activeMedication.repeatDays
+                              : [...activeMedication.repeatDays, day.value],
+                          })
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-5">
+              <div className="space-y-1">
+                <h2 className={sectionTitleClass}>
+                  {language === "ru" ? "Как долго принимать" : "How long to take it"}
+                </h2>
+              </div>
+              <div
+                className={`${editorFieldWrapClass} ${activeMedication.courseMode === "period" ? "space-y-3.5" : "space-y-3.5"}`}
+              >
+                <ChoiceButtons
+                  value={activeMedication.courseMode}
+                  onChange={(value) => {
+                    if (value === "period") {
+                      openCourseDialog();
+                      return;
+                    }
+
+                    onUpdateMedication(activeMedication.id, {
+                      courseMode: "continuous",
+                      courseStartDate: "",
+                      courseEndDate: "",
+                    });
+                    onCoursePresetChange("custom");
+                  }}
+                  columnsClassName="grid-cols-2"
+                  options={[
+                    { value: "continuous", label: tPillbox(language, "continuous") },
+                    { value: "period", label: tPillbox(language, "course") },
+                  ]}
+                />
+                {activeMedication.courseMode === "period" ? (
+                  <button
+                    type="button"
+                    onClick={openCourseDialog}
+                    className="soft-input inline-flex min-h-[3.08rem] w-full items-center justify-between gap-3 rounded-[22px] px-3.5 py-2.5 text-left tracking-[-0.02em] sm:min-h-[3.16rem]"
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-[0.61rem] font-medium uppercase tracking-[0.06em] text-muted/70">
+                        {language === "ru" ? "Период курса" : "Course period"}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[0.82rem] font-medium leading-[1.18] text-foreground/90 sm:text-[0.84rem]">
+                        {courseSummary}
+                      </span>
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-surface)_76%,var(--color-background)_24%)] text-muted shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_38%,transparent)]"
+                    >
+                      ▾
+                    </span>
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-5">
+              <div className="mx-auto flex w-full max-w-[36rem] flex-col gap-3.5">
+                <div className="space-y-1">
+                  <h2 className={sectionTitleClass}>
+                    {language === "ru" ? "Как связать с едой" : "How it relates to meals"}
+                  </h2>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <MealRuleChip
+                    label={tPillbox(language, "beforeMeal")}
+                    selected={activeMedication.mealRule === "before_meal"}
+                    onClick={() =>
+                      onUpdateMedication(activeMedication.id, {
+                        mealRule: "before_meal",
+                      })
+                    }
+                  />
+                  <MealRuleChip
+                    label={tPillbox(language, "duringMeal")}
+                    selected={activeMedication.mealRule === "with_meal"}
+                    onClick={() =>
+                      onUpdateMedication(activeMedication.id, {
+                        mealRule: "with_meal",
+                      })
+                    }
+                  />
+                  <MealRuleChip
+                    label={tPillbox(language, "afterMeal")}
+                    selected={activeMedication.mealRule === "after_meal"}
+                    onClick={() =>
+                      onUpdateMedication(activeMedication.id, {
+                        mealRule: "after_meal",
+                      })
+                    }
+                  />
+                </div>
+                <div className="pt-3">
+                  <button
+                    type="button"
+                    onClick={onSaveMedication}
+                    disabled={!canSaveMedication}
+                    className={`${actionPrimaryClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
+                    {tPillbox(language, "saveMedication")}
+                  </button>
+                  {!canSaveMedication ? (
+                    <p className="mt-1.5 text-[0.73rem] leading-5 text-muted/88">
+                      {tPillbox(language, "saveMedicationRequiresTitle")}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <CoursePeriodDialog
+        isOpen={isCourseDialogOpen}
+        language={language}
+        preset={draftCoursePreset}
+        startDate={draftCourseStartDate}
+        endDate={draftCourseEndDate}
+        onPresetChange={(value) => {
+          if (value === "custom") {
+            setDraftCoursePreset("custom");
+            return;
+          }
+          const today = getTodayIso();
+          const durationDays = value === "7" ? 7 : value === "14" ? 14 : 30;
+          setDraftCoursePreset(value);
+          setDraftCourseStartDate(today);
+          setDraftCourseEndDate(addDaysToIso(today, durationDays - 1));
+        }}
+        onStartDateChange={(nextValue) => {
+          setDraftCourseStartDate(nextValue);
+          if (draftCourseEndDate && nextValue && draftCourseEndDate < nextValue) {
+            setDraftCourseEndDate(nextValue);
+          }
+        }}
+        onEndDateChange={setDraftCourseEndDate}
+        onCancel={() => setIsCourseDialogOpen(false)}
+        onApply={applyCourseDialog}
+      />
+    </EditorShell>
+  );
+}
+
+function CoursePeriodDialog({
+  isOpen,
+  language,
+  preset,
+  startDate,
+  endDate,
+  onPresetChange,
+  onStartDateChange,
+  onEndDateChange,
+  onCancel,
+  onApply,
+}: {
+  isOpen: boolean;
+  language: AppLanguage;
+  preset: CoursePreset;
+  startDate: string;
+  endDate: string;
+  onPresetChange: (value: CoursePreset) => void;
+  onStartDateChange: (value: string) => void;
+  onEndDateChange: (value: string) => void;
+  onCancel: () => void;
+  onApply: () => void;
+}) {
+  const [calendarEdge, setCalendarEdge] = useState<"start" | "end" | null>(null);
+  const [isCustomDatesOpen, setIsCustomDatesOpen] = useState(false);
+  const [calendarSource, setCalendarSource] = useState<"custom" | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setCalendarEdge(null);
+    setIsCustomDatesOpen(false);
+    setCalendarSource(null);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onCancel]);
+
+  if (!isOpen) return null;
+
+  const selectDate = (date: string) => {
+    if (calendarEdge === "start") {
+      onStartDateChange(date);
+      if (parseLocalDate(date) > parseLocalDate(endDate)) onEndDateChange(date);
+      setCalendarEdge(null);
+      if (calendarSource === "custom") setIsCustomDatesOpen(true);
+      return;
+    }
+    onEndDateChange(date);
+    if (parseLocalDate(date) < parseLocalDate(startDate)) onStartDateChange(date);
+    setCalendarEdge(null);
+    if (calendarSource === "custom") setIsCustomDatesOpen(true);
+  };
+
+  return createPortal(
+    <>
+      <div className="fixed inset-0 z-[180] flex items-center justify-center bg-background p-4 sm:p-6">
+        <button type="button" onClick={onCancel} className="absolute inset-0 bg-background" />
+        <div className="soft-panel relative z-10 w-full max-w-md rounded-[30px] border border-border bg-surface p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
+          <div className="mb-4 h-1.5 w-14 rounded-full bg-primary/55" aria-hidden="true" />
+          <div className="space-y-1.5">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
+              {language === "ru" ? "Приёмы" : "Meds"}
+            </p>
+            <h2 className="app-card-title text-[1.15rem]">
+              {language === "ru" ? "Период курса" : "Course period"}
+            </h2>
+            <p className="text-sm leading-5 text-muted">
+              {language === "ru"
+                ? "Выберите длительность курса или задайте свои даты."
+                : "Choose course length or set custom dates."}
+            </p>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <CoursePresetChip
+                label={tPillbox(language, "sevenDays")}
+                selected={preset === "7"}
+                onClick={() => onPresetChange("7")}
+              />
+              <CoursePresetChip
+                label={tPillbox(language, "fourteenDays")}
+                selected={preset === "14"}
+                onClick={() => onPresetChange("14")}
+              />
+              <CoursePresetChip
+                label={tPillbox(language, "thirtyDays")}
+                selected={preset === "30"}
+                onClick={() => onPresetChange("30")}
+              />
+              <CoursePresetChip
+                label={tPillbox(language, "customDates")}
+                selected={preset === "custom"}
+                onClick={() => {
+                  onPresetChange("custom");
+                  setIsCustomDatesOpen(true);
+                  setCalendarSource(null);
+                }}
+              />
+            </div>
+
+            {preset === "custom" ? (
+              <button
+                type="button"
+                onClick={() => setIsCustomDatesOpen(true)}
+                className="soft-input inline-flex min-h-[3.08rem] w-full items-center justify-between gap-3 rounded-[22px] px-3.5 py-2.5 text-left tracking-[-0.02em] sm:min-h-[3.16rem]"
+              >
+                <span className="min-w-0">
+                  <span className="block text-[0.62rem] font-semibold uppercase tracking-[0.07em] text-muted/72">
+                    {language === "ru" ? "Свои даты" : "Custom dates"}
+                  </span>
+                  <span className="mt-1 block truncate text-[0.84rem] font-semibold leading-[1.18] text-foreground/92 sm:text-[0.86rem]">
+                    {`${formatShortDate(parseLocalDate(startDate || getTodayIso()), language)} — ${formatShortDate(parseLocalDate(endDate || startDate || getTodayIso()), language)}`}
+                  </span>
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-surface)_76%,var(--color-background)_24%)] text-muted shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_38%,transparent)]"
+                >
+                  ▾
+                </span>
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="soft-pill app-profile-action min-h-[2.9rem] px-4 text-sm font-extrabold"
+            >
+              {language === "ru" ? "Отмена" : "Cancel"}
+            </button>
+            <button
+              type="button"
+              onClick={onApply}
+              className="soft-pill-success app-profile-action app-profile-action--active min-h-[2.9rem] px-4 text-sm font-extrabold"
+            >
+              {language === "ru" ? "Применить" : "Apply"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <CalendarPickerDialog
+        isOpen={calendarEdge !== null}
+        title={
+          calendarEdge === "start"
+            ? language === "ru"
+              ? "Дата начала"
+              : "Start date"
+            : language === "ru"
+              ? "Дата окончания"
+              : "End date"
+        }
+        language={language}
+        startDate={startDate || getTodayIso()}
+        endDate={endDate || startDate || getTodayIso()}
+        selectedDate={
+          calendarEdge === "start"
+            ? startDate || getTodayIso()
+            : endDate || startDate || getTodayIso()
+        }
+        onSelectDate={selectDate}
+        onCancel={() => {
+          setCalendarEdge(null);
+          if (calendarSource === "custom") setIsCustomDatesOpen(true);
+        }}
+        onCloseComplete={() => {
+          if (calendarSource !== "custom") return;
+          setCalendarSource(null);
+        }}
+      />
+      <CustomCourseDatesDialog
+        isOpen={isCustomDatesOpen}
+        language={language}
+        startDate={startDate || getTodayIso()}
+        endDate={endDate || startDate || getTodayIso()}
+        onCancel={() => {
+          setIsCustomDatesOpen(false);
+          setCalendarEdge(null);
+          setCalendarSource(null);
+        }}
+        onOpenEdge={(edge) => {
+          setIsCustomDatesOpen(false);
+          setCalendarSource("custom");
+          setCalendarEdge(edge);
+        }}
+      />
+    </>,
+    document.body
+  );
+}
+
+function CustomCourseDatesDialog({
+  isOpen,
+  language,
+  startDate,
+  endDate,
+  onCancel,
+  onOpenEdge,
+}: {
+  isOpen: boolean;
+  language: "ru" | "en";
+  startDate: string;
+  endDate: string;
+  onCancel: () => void;
+  onOpenEdge: (edge: "start" | "end") => void;
+}) {
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[260] flex items-center justify-center bg-background p-4 sm:p-6">
+      <button
+        type="button"
+        aria-label={language === "ru" ? "Закрыть свои даты" : "Close custom dates"}
+        onClick={onCancel}
+        className="absolute inset-0 bg-background"
+      />
+      <div className="soft-panel relative z-10 w-full max-w-md rounded-[30px] border border-border bg-surface p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
+        <div className="mb-4 h-1.5 w-14 rounded-full bg-primary/55" aria-hidden="true" />
+        <div className="space-y-1.5">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
+            {language === "ru" ? "Приёмы" : "Meds"}
+          </p>
+          <h2 className="app-card-title text-[1.15rem]">
+            {language === "ru" ? "Свои даты" : "Custom dates"}
+          </h2>
+          <p className="text-sm leading-5 text-muted">
+            {language === "ru"
+              ? "Выберите начало и конец курса."
+              : "Choose course start and end dates."}
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-2">
+          <DateRangeButton
+            label={language === "ru" ? "Дата начала" : "Start date"}
+            value={formatShortDate(parseLocalDate(startDate), language)}
+            onClick={() => onOpenEdge("start")}
+          />
+          <DateRangeButton
+            label={language === "ru" ? "Дата окончания" : "End date"}
+            value={formatShortDate(parseLocalDate(endDate), language)}
+            onClick={() => onOpenEdge("end")}
+          />
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="soft-pill app-profile-action min-h-[2.9rem] px-4 text-sm font-extrabold"
+          >
+            {language === "ru" ? "Назад" : "Back"}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function MealRuleChip({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex min-h-[2.5rem] w-full items-center justify-center rounded-[20px] px-3 py-2 text-center text-[0.8rem] font-semibold leading-tight tracking-[-0.025em] transition sm:min-h-[2.6rem] sm:text-[0.82rem] ${
+        selected
+          ? "soft-pill-success app-profile-action app-profile-action--active"
+          : "soft-pill app-profile-action"
+      }`}
+    >
+      {selected ? (
+        <span className="mr-1.5 inline-flex items-center justify-center" aria-hidden="true">
+          <UtensilsBadge />
+        </span>
+      ) : null}
+      {label}
+    </button>
+  );
+}
+
+function CoursePresetChip({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex min-h-[2.5rem] w-full items-center justify-center rounded-[20px] px-3 py-2 text-center text-[0.8rem] font-semibold leading-tight tracking-[-0.025em] transition sm:min-h-[2.6rem] sm:text-[0.82rem] ${
+        selected
+          ? "soft-pill-primary app-profile-action app-profile-action--selected"
+          : "soft-pill app-profile-action"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function DateRangeButton({
+  label,
+  value,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-[3.25rem] items-center justify-between gap-3 rounded-[22px] border border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-3.5 py-2.5 text-left text-foreground shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_48%,transparent)] transition hover:border-primary/30"
+    >
+      <span className="min-w-0">
+        <span className="block text-[0.65rem] font-bold uppercase tracking-[0.08em] opacity-70">
+          {label}
+        </span>
+        <span className="mt-1 block text-sm font-extrabold">{value}</span>
+      </span>
+      <span
+        aria-hidden="true"
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-muted shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_48%,transparent)]"
+      >
+        ▾
+      </span>
+    </button>
+  );
+}
+
+function CalendarPickerDialog({
+  isOpen,
+  title,
+  language,
+  startDate,
+  endDate,
+  selectedDate,
+  onSelectDate,
+  onCancel,
+  onCloseComplete,
+}: {
+  isOpen: boolean;
+  title: string;
+  language: "ru" | "en";
+  startDate: string;
+  endDate: string;
+  selectedDate: string;
+  onSelectDate: (value: string) => void;
+  onCancel: () => void;
+  onCloseComplete?: () => void;
+}) {
+  const [viewDate, setViewDate] = useState(() => parseLocalDate(selectedDate || getTodayIso()));
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const calendarDays = useMemo(() => buildPlainCalendarDays(viewDate), [viewDate]);
+  const normalizedRange = useMemo(
+    () => buildCustomDateRange(startDate, endDate),
+    [endDate, startDate]
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setViewDate(parseLocalDate(selectedDate || getTodayIso()));
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onCancel, selectedDate]);
+
+  useEffect(() => {
+    if (isOpen) return;
+    onCloseComplete?.();
+  }, [isOpen, onCloseComplete]);
+
+  if (!isOpen) return null;
+
+  const shiftViewMonth = (offset: number) => {
+    setViewDate((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
+  };
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const start = swipeStartRef.current;
+    const touch = event.changedTouches[0];
+    swipeStartRef.current = null;
+    if (!start || !touch) return;
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.4) return;
+    shiftViewMonth(deltaX < 0 ? 1 : -1);
+  };
+  const yearOptions = buildCalendarYearOptions(viewDate);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[920] flex items-center justify-center bg-[color:color-mix(in_srgb,var(--color-background)_84%,transparent)] p-4 backdrop-blur-md sm:p-6">
+      <button
+        type="button"
+        aria-label={language === "ru" ? "Закрыть календарь" : "Close calendar"}
+        onClick={onCancel}
+        className="absolute inset-0"
+      />
+      <div className="soft-panel relative z-10 max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-[30px] border border-[color:color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_94%,var(--color-background)_6%)] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)]">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="app-card-title truncate text-[1.02rem]">{title}</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="app-header-icon-button h-9 min-h-0 w-9 shrink-0 text-sm"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="rounded-[26px] border border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] p-2 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_48%,transparent)]">
+          <div className="grid grid-cols-[2.35rem_minmax(0,1fr)_2.35rem] items-center gap-2 rounded-[20px] bg-surface p-1.5 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_42%,transparent)]">
+            <button
+              type="button"
+              onClick={() => shiftViewMonth(-1)}
+              className="app-header-icon-button h-9 min-h-0 w-9 text-sm"
+            >
+              ←
+            </button>
+            <p className="app-card-title min-w-0 truncate text-center text-[0.95rem]">
+              {formatMonthTitle(viewDate, language)}
+            </p>
+            <button
+              type="button"
+              onClick={() => shiftViewMonth(1)}
+              className="app-header-icon-button h-9 min-h-0 w-9 text-sm"
+            >
+              →
+            </button>
+          </div>
+          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_6.6rem] gap-2">
+            <label className="relative block">
+              <span className="sr-only">{language === "ru" ? "Месяц" : "Month"}</span>
+              <select
+                value={viewDate.getMonth()}
+                onChange={(event) =>
+                  setViewDate(new Date(viewDate.getFullYear(), Number(event.target.value), 1))
+                }
+                className="soft-input min-h-[1.96rem] w-full appearance-none rounded-[14px] px-2.5 pr-7 text-[0.74rem] font-bold sm:min-h-[2.02rem] sm:text-[0.76rem]"
+              >
+                {getMonthLabels(language).map((label, index) => (
+                  <option key={label} value={index}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">
+                ▾
+              </span>
+            </label>
+            <label className="relative block">
+              <span className="sr-only">{language === "ru" ? "Год" : "Year"}</span>
+              <select
+                value={viewDate.getFullYear()}
+                onChange={(event) =>
+                  setViewDate(new Date(Number(event.target.value), viewDate.getMonth(), 1))
+                }
+                className="soft-input min-h-[1.96rem] w-full appearance-none rounded-[14px] px-2.5 pr-6 text-[0.74rem] font-bold sm:min-h-[2.02rem] sm:text-[0.76rem]"
+              >
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted">
+                ▾
+              </span>
+            </label>
+          </div>
+
+          <div
+            className="touch-pan-y select-none px-1 pb-1 pt-2"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-bold text-muted">
+              {getWeekdayLabels(language).map((label) => (
+                <div key={label} className="py-0.5">
+                  {label}
+                </div>
+              ))}
+            </div>
+            <div className="mt-1.5 grid grid-cols-7 gap-0.5">
+              {calendarDays.map((day) => {
+                const date = parseLocalDate(day.date);
+                const isSelected =
+                  day.date === startDate ||
+                  day.date === endDate ||
+                  isDateInsideRange(date, normalizedRange);
+                const isEdge = day.date === startDate || day.date === endDate;
+                const isToday = day.date === getTodayIso();
+                return (
+                  <button
+                    key={day.date}
+                    type="button"
+                    onClick={() => onSelectDate(day.date)}
+                    className={[
+                      "flex h-8 items-center justify-center rounded-[1rem] text-[0.82rem] font-bold transition",
+                      isEdge
+                        ? "bg-primary text-primary-foreground shadow-[0_8px_20px_color-mix(in_srgb,var(--color-primary)_22%,transparent)]"
+                        : isSelected
+                          ? "bg-primary/12 text-foreground"
+                          : day.inMonth
+                            ? "bg-surface text-foreground"
+                            : "bg-surface text-muted opacity-45",
+                      isToday && !isEdge ? "ring-1 ring-primary/25" : "",
+                    ].join(" ")}
+                  >
+                    {date.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function parseLocalDate(value: string) {
+  const parts = value.split("-").map(Number);
+  return new Date(parts[0] ?? 1970, ((parts[1] ?? 1) || 1) - 1, (parts[2] ?? 1) || 1);
+}
+
+function formatShortDate(date: Date, language: "ru" | "en") {
+  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
+    day: "2-digit",
+    month: "short",
+  }).format(date);
+}
+
+function formatMonthTitle(date: Date, language: "ru" | "en") {
+  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function getMonthLabels(language: "ru" | "en") {
+  return Array.from({ length: 12 }, (_, index) =>
+    new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", { month: "long" }).format(
+      new Date(2024, index, 1)
+    )
+  );
+}
+
+function getWeekdayLabels(language: "ru" | "en") {
+  return language === "ru"
+    ? ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+    : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+}
+
+function buildCalendarYearOptions(date: Date) {
+  const currentYear = new Date().getFullYear();
+  const center = Math.max(currentYear, date.getFullYear());
+  return Array.from({ length: 9 }, (_, index) => center - 6 + index).filter((year) => year >= 2000);
+}
+
+function buildPlainCalendarDays(viewDate: Date) {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const gridStart = new Date(firstDay);
+  gridStart.setDate(firstDay.getDate() - ((firstDay.getDay() + 6) % 7));
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + index);
+    return { date: toIsoDate(date), inMonth: date.getMonth() === month };
+  });
+}
+
+function buildCustomDateRange(startDate: string, endDate: string) {
+  const first = parseLocalDate(startDate);
+  const second = parseLocalDate(endDate);
+  return first <= second ? { start: first, end: second } : { start: second, end: first };
+}
+
+function isDateInsideRange(date: Date, range: { start: Date; end: Date }) {
+  return date >= range.start && date <= range.end;
+}
+
+function toIsoDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}

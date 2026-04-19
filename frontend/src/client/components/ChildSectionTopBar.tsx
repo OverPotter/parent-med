@@ -6,7 +6,8 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 
 type ChildSectionTopBarProps = {
-  backHref: string;
+  backHref?: string;
+  onBack?: () => void;
   backLabel: string;
   title?: ReactNode;
   hint?: ReactNode;
@@ -16,6 +17,7 @@ type ChildSectionTopBarProps = {
 
 export function ChildSectionTopBar({
   backHref,
+  onBack,
   backLabel,
   title,
   hint,
@@ -42,12 +44,22 @@ export function ChildSectionTopBar({
     <div className="app-safe-top-header shrink-0 -mx-3 bg-background px-3 pb-3 sm:-mx-6 sm:px-6">
       <div className={`mx-auto w-full ${containerClassName}`}>
         <div className="child-section-top-bar flex flex-wrap items-center justify-between gap-2 px-1 pt-1 sm:flex-nowrap">
-          <Link
-            to={backHref}
-            className="inline-flex min-h-[2.35rem] min-w-0 flex-1 items-center text-sm text-primary hover:underline"
-          >
-            <span className="truncate">{backLabel}</span>
-          </Link>
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex min-h-[2.35rem] min-w-0 flex-1 items-center text-sm text-primary hover:underline"
+            >
+              <span className="truncate">{backLabel}</span>
+            </button>
+          ) : (
+            <Link
+              to={backHref ?? "#"}
+              className="inline-flex min-h-[2.35rem] min-w-0 flex-1 items-center text-sm text-primary hover:underline"
+            >
+              <span className="truncate">{backLabel}</span>
+            </Link>
+          )}
           <div className="flex shrink-0 items-center gap-2">
             <Link
               to="/feedback"

@@ -27,7 +27,7 @@ export const en: Translations = {
     nav: {
       observations: "Tracking",
       children: "Children",
-      pillbox: "Pillbox",
+      pillbox: "Meds",
       cabinet: "Cabinet",
       more: "More",
     },

@@ -46,12 +46,16 @@ export function BottomTabBar({
             const isActive =
               exactMatches.some((path) => matchPath({ path, end: true }, location.pathname)) ||
               prefixMatches.some((path) => matchPath({ path, end: false }, location.pathname));
-            const badgeToneClass =
-              attentionTone === "success"
-                ? "app-bottom-nav-badge--success"
-                : attentionTone === "warning"
-                  ? "app-bottom-nav-badge--warning"
-                  : "app-bottom-nav-badge--danger";
+            const attentionToneClass =
+              attentionCount && attentionCount > 0
+                ? attentionTone === "success"
+                  ? "app-bottom-nav-link--attention-success"
+                  : attentionTone === "info"
+                    ? "app-bottom-nav-link--attention-info"
+                    : attentionTone === "warning"
+                      ? "app-bottom-nav-link--attention-warning"
+                      : "app-bottom-nav-link--attention-danger"
+                : "";
 
             return (
               <NavLink
@@ -83,21 +87,22 @@ export function BottomTabBar({
                     ? undefined
                     : setPressedTab((current) => (current === to ? null : current))
                 }
+                aria-label={
+                  attentionCount && attentionCount > 0
+                    ? `${mobileLabel ?? label}: ${attentionCount}`
+                    : mobileLabel ?? label
+                }
                 className={() =>
                   [
                     "app-bottom-nav-link",
                     isActive ? "app-bottom-nav-link--active" : "",
+                    attentionToneClass,
                     pressedTab === to ? "app-bottom-nav-link--pressed" : "",
                   ].join(" ")
                 }
               >
                 <span className="app-bottom-nav-icon-wrap">
                   <span className="app-bottom-nav-icon">{renderNavIcon(to, isActive)}</span>
-                  {attentionCount && attentionCount > 0 ? (
-                    <span className={`app-bottom-nav-badge ${badgeToneClass}`}>
-                      {attentionCount > 9 ? "9+" : attentionCount}
-                    </span>
-                  ) : null}
                 </span>
                 <span className="app-bottom-nav-label">{mobileLabel ?? label}</span>
               </NavLink>

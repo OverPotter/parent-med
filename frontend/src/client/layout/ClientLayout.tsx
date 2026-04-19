@@ -5,11 +5,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { matchPath, Outlet, useLocation } from "react-router-dom";
-import { fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
-import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
 import { fetchFamilies } from "@shared/api/families";
-import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
 import { fetchPillboxPlans } from "@shared/api/pillboxPlans";
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
@@ -19,7 +16,6 @@ import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
-import type { IllnessEpisode } from "@shared/types/api";
 import {
   getExistingPushSubscription,
   getPushSupportIssue,
@@ -36,7 +32,6 @@ import {
   openNativeNotificationSettings,
   setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
-import { getPrioritizedMedicationPlanItems } from "../utils/medicationPlans";
 
 export function ClientLayout() {
   const { copy, language } = useI18n();
@@ -55,6 +50,28 @@ export function ClientLayout() {
   const [nativePushIssue, setNativePushIssue] = useState<"system" | "app" | null>(null);
   const [isDeferredBootReady, setIsDeferredBootReady] = useState(!isIosShell);
   const now = useNow(15_000);
+  const { data: navChildren = [] } = useQuery({
+    queryKey: ["children", currentFamilyId, "nav-observations"],
+    queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
+    enabled: Boolean(currentFamilyId && isDeferredBootReady),
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+
+  const activeEpisodeQueries = useQueries({
+    queries: navChildren.map((child) => ({
+      queryKey: ["illness-episode-active", child.id, "nav-observations"],
+      queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
+      enabled: Boolean(currentFamilyId && child.id && isDeferredBootReady),
+      staleTime: 15_000,
+      refetchInterval: 30_000,
+    })),
+  });
+
+  const activeEpisodesCount = useMemo(
+    () => activeEpisodeQueries.reduce((total, query) => total + (query.data ? 1 : 0), 0),
+    [activeEpisodeQueries]
+  );
 
   useEffect(() => {
     if (!isIosShell) {
@@ -82,60 +99,6 @@ export function ClientLayout() {
     };
   }, [isIosShell, authToken, accountId]);
 
-  const { data: navChildren = [] } = useQuery({
-    queryKey: ["children", currentFamilyId, "nav-attention"],
-    queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
-    enabled: Boolean(currentFamilyId && isDeferredBootReady),
-    staleTime: 15_000,
-    refetchInterval: 30_000,
-  });
-
-  const activeEpisodeQueries = useQueries({
-    queries: navChildren.map((child) => ({
-      queryKey: ["illness-episode-active", child.id, "nav-attention"],
-      queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
-      enabled: Boolean(currentFamilyId && child.id && isDeferredBootReady),
-      staleTime: 15_000,
-      refetchInterval: 30_000,
-    })),
-  });
-
-  const activeEpisodes = useMemo(
-    () =>
-      activeEpisodeQueries
-        .map((query) => query.data)
-        .filter((episode): episode is IllnessEpisode => Boolean(episode)),
-    [activeEpisodeQueries]
-  );
-
-  const episodePlansQueries = useQueries({
-    queries: activeEpisodes.map((episode) => ({
-      queryKey: ["episode-medication-plans", episode.id, "nav-attention"],
-      queryFn: () => fetchEpisodeMedicationPlansByEpisodeId(episode.id),
-      enabled: Boolean(episode.id && isDeferredBootReady),
-      staleTime: 15_000,
-      refetchInterval: 30_000,
-    })),
-  });
-
-  const administrationQueries = useQueries({
-    queries: activeEpisodes.map((episode) => ({
-      queryKey: ["administration-events", episode.id, "nav-attention"],
-      queryFn: () => fetchAdministrationEventsByEpisodeId(episode.id),
-      enabled: Boolean(episode.id && isDeferredBootReady),
-      staleTime: 15_000,
-      refetchInterval: 30_000,
-    })),
-  });
-
-  const { data: householdMedicines = [] } = useQuery({
-    queryKey: ["household-medicines", currentFamilyId, "nav-attention"],
-    queryFn: fetchHouseholdMedicines,
-    enabled: Boolean(currentFamilyId && isDeferredBootReady),
-    staleTime: 15_000,
-    refetchInterval: 30_000,
-  });
-
   const { data: pillboxPlans = [] } = useQuery({
     queryKey: ["pillbox-plans", currentFamilyId, language, "nav-attention"],
     queryFn: fetchPillboxPlans,
@@ -143,36 +106,6 @@ export function ClientLayout() {
     staleTime: 15_000,
     refetchInterval: 30_000,
   });
-
-  const observationsAttention = useMemo(() => {
-    const currentDate = new Date(now);
-    const actionableCount = activeEpisodes.reduce((total, _episode, index) => {
-      const plans = episodePlansQueries[index]?.data ?? [];
-      const administrations = administrationQueries[index]?.data ?? [];
-      const actionable = getPrioritizedMedicationPlanItems(
-        plans,
-        administrations,
-        householdMedicines,
-        currentDate
-      ).filter((item) => !item.isUnavailable && !item.stats.isBlocked).length;
-      return total + actionable;
-    }, 0);
-    if (actionableCount > 0) {
-      return { count: actionableCount, tone: "danger" as const };
-    }
-
-    const episodesWithPlans = activeEpisodes.reduce((total, _episode, index) => {
-      const plans = episodePlansQueries[index]?.data ?? [];
-      return total + (plans.length > 0 ? 1 : 0);
-    }, 0);
-    if (episodesWithPlans > 0) {
-      return { count: episodesWithPlans, tone: "warning" as const };
-    }
-    if (activeEpisodes.length > 0) {
-      return { count: activeEpisodes.length, tone: "warning" as const };
-    }
-    return { count: 0, tone: "danger" as const };
-  }, [activeEpisodes, administrationQueries, episodePlansQueries, householdMedicines, now]);
 
   const pillboxAttention = useMemo(() => {
     const threshold = now + 60_000;
@@ -184,13 +117,13 @@ export function ClientLayout() {
       return Number.isFinite(nextDoseTime) && nextDoseTime <= threshold;
     }).length;
     if (dueNowCount > 0) {
-      return { count: dueNowCount, tone: "danger" as const };
+      return { count: dueNowCount, tone: "info" as const };
     }
     const activePlansCount = pillboxPlans.filter((plan) => plan.status === "active").length;
     if (activePlansCount > 0) {
       return { count: activePlansCount, tone: "success" as const };
     }
-    return { count: 0, tone: "danger" as const };
+    return { count: 0, tone: "info" as const };
   }, [now, pillboxPlans]);
 
   const mobileNavLabels =
@@ -198,23 +131,23 @@ export function ClientLayout() {
       ? {
           observations: "Журнал",
           children: "Дети",
-          pillbox: "Таблетница",
+          pillbox: "Приёмы",
           cabinet: "Аптечка",
         }
       : {
-          observations: "Health",
+          observations: "Tracking",
           children: "Kids",
           pillbox: "Meds",
           cabinet: "Cabinet",
         };
 
-  const activeObservationsNavItem = {
+  const observationsNavItem = {
     to: "/illnesses/active",
     label: copy.clientLayout.nav.observations,
     mobileLabel: mobileNavLabels.observations,
     exactActivePaths: ["/illnesses/active"],
-    attentionCount: observationsAttention.count > 0 ? observationsAttention.count : undefined,
-    attentionTone: observationsAttention.tone,
+    attentionCount: activeEpisodesCount > 0 ? activeEpisodesCount : undefined,
+    attentionTone: "info" as const,
   };
   const childrenNavItem = {
     to: "/children",
@@ -223,8 +156,12 @@ export function ClientLayout() {
     exactActivePaths: ["/children", "/children/:childId"],
     activePaths: ["/children"],
   };
+  const isObservationsRoute = observationsNavItem.exactActivePaths.some((path) =>
+    matchPath({ path, end: true }, location.pathname)
+  );
+  const shouldShowObservationsTab = activeEpisodesCount > 0 || isObservationsRoute;
   const baseDesktopNavLinks = [
-    activeObservationsNavItem,
+    ...(shouldShowObservationsTab ? [observationsNavItem] : []),
     childrenNavItem,
     {
       to: "/pillbox",
@@ -240,13 +177,6 @@ export function ClientLayout() {
       mobileLabel: mobileNavLabels.cabinet,
     },
   ];
-  const isObservationsRoute = activeObservationsNavItem.exactActivePaths.some((path) =>
-    matchPath({ path, end: path === "/illnesses/active" }, location.pathname)
-  );
-  const baseMobileNavLinks =
-    activeEpisodes.length > 0 || isObservationsRoute
-      ? [...baseDesktopNavLinks]
-      : baseDesktopNavLinks.filter((link) => link.to !== activeObservationsNavItem.to);
   const { data: families = [], isSuccess } = useQuery({
     queryKey: ["families", accountId],
     queryFn: fetchFamilies,
@@ -261,7 +191,7 @@ export function ClientLayout() {
   });
 
   const desktopNavLinks = baseDesktopNavLinks;
-  const mobileNavLinks = baseMobileNavLinks;
+  const mobileNavLinks = baseDesktopNavLinks;
   const mainMenuPaths = [
     "/",
     "/start",
@@ -271,9 +201,13 @@ export function ClientLayout() {
     "/illnesses/active",
     "/more",
   ];
-  const shouldHideHeader = !mainMenuPaths.some((path) =>
-    matchPath({ path, end: true }, location.pathname)
-  );
+  const pillboxMode = new URLSearchParams(location.search).get("mode");
+  const isPillboxInnerRoute =
+    location.pathname === "/pillbox" &&
+    ["setup", "medication", "details", "analytics"].includes(pillboxMode ?? "");
+  const shouldHideHeader =
+    isPillboxInnerRoute ||
+    !mainMenuPaths.some((path) => matchPath({ path, end: true }, location.pathname));
   const isMedicineCabinetAddRoute = Boolean(
     matchPath({ path: "/medicine-cabinet/add", end: true }, location.pathname) ||
     matchPath({ path: "/medicine-cabinet/add/:mode", end: true }, location.pathname) ||
