@@ -144,20 +144,15 @@ export function ChildCreatePage() {
       ?.detail ?? null;
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="-mx-3 min-w-0 space-y-6 bg-background px-3 sm:-mx-6 sm:px-6">
       <ChildSectionTopBar
         backHref="/children"
         backLabel={language === "ru" ? "← К детям" : "← Back to children"}
+        title={`${copy.formTitle} · ${copy.title}`}
+        hint={copy.formSubtitle}
       />
 
-      <div className="space-y-1 px-1">
-        <h1 className="app-card-title">
-          {copy.formTitle} · {copy.title}
-        </h1>
-        <p className="text-sm leading-6 text-muted">{copy.formSubtitle}</p>
-      </div>
-
-      <Surface className="app-section-surface">
+      <Surface className="app-section-surface mx-auto w-full max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
             <label className="min-w-0">

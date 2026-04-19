@@ -70,7 +70,7 @@ export function ChildEditPage() {
   }
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="-mx-3 min-w-0 space-y-6 bg-background px-3 sm:-mx-6 sm:px-6">
       <ConfirmDialog
         isOpen={isDeleteConfirmOpen}
         title={
@@ -90,6 +90,8 @@ export function ChildEditPage() {
       <ChildSectionTopBar
         backHref={`/children/${child.id}`}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
+        title={`${copy.form.title} · ${child.name}`}
+        hint={copy.form.subtitle}
       />
 
       <EditChildProfileForm
@@ -152,7 +154,7 @@ function EditChildProfileForm({
   );
 
   return (
-    <Surface className="app-section-surface">
+    <Surface className="app-section-surface mx-auto w-full max-w-2xl">
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px]">
           <label className="block min-w-0 space-y-1.5">

@@ -22,6 +22,8 @@ class SqlIllnessCommentRepository(IllnessCommentRepository):
             episode_id=model.episode_id,
             created_at=model.occurred_at,
             text=model.comment or "",
+            created_by_account_id=model.created_by_account_id,
+            created_by_name_snapshot=model.created_by_name_snapshot,
         )
 
     def _to_model(self, entity: IllnessComment) -> IllnessEpisodeEventModel:
@@ -31,6 +33,8 @@ class SqlIllnessCommentRepository(IllnessCommentRepository):
             event_type="comment",
             occurred_at=entity.created_at,
             comment=entity.text,
+            created_by_account_id=entity.created_by_account_id,
+            created_by_name_snapshot=entity.created_by_name_snapshot,
         )
 
     async def get_by_id(self, id: UUID) -> IllnessComment | None:

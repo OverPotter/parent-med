@@ -77,7 +77,7 @@ export function ChildFeedingPage() {
     filteredRecords.map((record) => record.formulaVolumeMl).filter(isNumber)
   );
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="-mx-3 min-w-0 space-y-6 bg-background px-3 sm:-mx-6 sm:px-6">
       <ConfirmDialog
         isOpen={!!recordToDelete}
         title={copy.feedingSectionDeleteTitle}
@@ -99,16 +99,11 @@ export function ChildFeedingPage() {
       <ChildSectionTopBar
         backHref={`/children/${child.id}`}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
+        title={`${copy.feedingSection} · ${child.name}`}
+        hint={copy.feedingSectionSubtitle}
       />
 
-      <div className="space-y-3">
-        <div>
-          <h1 className="app-card-title">
-            {copy.feedingSection} · {child.name}
-          </h1>
-          <p className="mt-1 text-sm text-muted">{copy.feedingSectionSubtitle}</p>
-        </div>
-
+      <div className="mx-auto w-full max-w-2xl space-y-3">
         <Surface className="relative z-30 overflow-visible p-4 sm:p-5">
           <div className="space-y-4">
             {isFeedingLoading ? <p className="text-sm text-muted">{common.loading}</p> : null}

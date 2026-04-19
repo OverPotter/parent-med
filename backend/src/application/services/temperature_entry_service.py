@@ -37,6 +37,8 @@ class TemperatureEntryService:
             measured_at=entity.measured_at,
             method=entity.method,
             comment=entity.comment,
+            created_by_account_id=entity.created_by_account_id,
+            created_by_name_snapshot=entity.created_by_name_snapshot,
         )
 
     async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
@@ -85,6 +87,8 @@ class TemperatureEntryService:
         self,
         dto: TemperatureEntryCreateDto,
         current_family_id: UUID,
+        created_by_account_id: UUID,
+        created_by_name_snapshot: str,
     ) -> TemperatureEntryResponseDto:
         await self._get_episode_for_account(dto.episode_id, current_family_id)
         measured_at = dto.measured_at or datetime.now(UTC)
@@ -95,6 +99,8 @@ class TemperatureEntryService:
             measured_at=measured_at,
             method=dto.method,
             comment=dto.comment,
+            created_by_account_id=created_by_account_id,
+            created_by_name_snapshot=created_by_name_snapshot.strip() or None,
         )
         created = await self._repo.add(entity)
         return self._to_response(created)

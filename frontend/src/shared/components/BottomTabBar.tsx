@@ -1,6 +1,7 @@
 import { createPortal } from "react-dom";
 import { useState } from "react";
 import { NavLink, matchPath, useLocation } from "react-router-dom";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { LayoutNavLink } from "./TopNav";
 import { renderNavIcon } from "./navIcons";
@@ -14,6 +15,7 @@ export function BottomTabBar({
 }) {
   const { language } = useI18n();
   const location = useLocation();
+  const isIosShell = useIsIosShell();
   const [pressedTab, setPressedTab] = useState<string | null>(null);
 
   if (links.length === 0) {
@@ -57,24 +59,34 @@ export function BottomTabBar({
                 to={to}
                 end={to === "/"}
                 onPointerDown={(event) => {
+                  if (isIosShell) {
+                    return;
+                  }
                   if (event.pointerType === "mouse") {
                     return;
                   }
                   setPressedTab(to);
                 }}
-                onPointerUp={() => setPressedTab((current) => (current === to ? null : current))}
+                onPointerUp={() => {
+                  if (isIosShell) {
+                    return;
+                  }
+                  setPressedTab((current) => (current === to ? null : current));
+                }}
                 onPointerCancel={() =>
-                  setPressedTab((current) => (current === to ? null : current))
+                  isIosShell
+                    ? undefined
+                    : setPressedTab((current) => (current === to ? null : current))
                 }
                 onPointerLeave={() =>
-                  setPressedTab((current) => (current === to ? null : current))
+                  isIosShell
+                    ? undefined
+                    : setPressedTab((current) => (current === to ? null : current))
                 }
                 className={() =>
                   [
                     "app-bottom-nav-link",
-                    isActive
-                      ? "app-bottom-nav-link--active"
-                      : "",
+                    isActive ? "app-bottom-nav-link--active" : "",
                     pressedTab === to ? "app-bottom-nav-link--pressed" : "",
                   ].join(" ")
                 }

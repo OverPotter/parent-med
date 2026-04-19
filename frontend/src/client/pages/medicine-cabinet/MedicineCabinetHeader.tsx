@@ -19,7 +19,7 @@ export function MedicineCabinetHeader({
   actionDisabled?: boolean;
 }) {
   return (
-    <div className="app-safe-top-header shrink-0 border-b border-[color:color-mix(in_srgb,var(--color-border)_42%,transparent)] bg-background pb-3">
+    <div className="app-safe-top-header shrink-0 bg-background pb-3">
       <div className="mx-auto w-full max-w-2xl">
         <div className="flex flex-wrap items-center justify-between gap-2 px-1 pt-1">
           <button
@@ -34,12 +34,12 @@ export function MedicineCabinetHeader({
               type="button"
               onClick={onAction}
               disabled={actionDisabled}
-              className={`${cabinetActionSecondaryClass} min-h-9 max-w-full px-3 text-xs disabled:opacity-50`}
+              className={`${cabinetActionSecondaryClass} max-w-full disabled:opacity-50`}
             >
               {actionLabel}
             </button>
           ) : (
-            <div aria-hidden="true" className="min-h-9 min-w-[3.5rem]" />
+            <div aria-hidden="true" className="min-h-[2.5rem] min-w-[3.5rem]" />
           )}
         </div>
         <div className="mt-3 space-y-1 px-1">

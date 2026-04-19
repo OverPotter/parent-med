@@ -5621,11 +5621,6 @@ html.ios-lock-horizontal .landing-main {
   padding-top: max(0.75rem, var(--app-safe-top));
 }
 
-[data-runtime="native"][data-platform="ios"] .child-section-top-bar,
-[data-ios-shell="true"] .child-section-top-bar {
-  padding-top: max(0.85rem, calc(var(--app-safe-top) + 0.45rem));
-}
-
 .legal-doc-page {
   overflow-x: clip;
 }

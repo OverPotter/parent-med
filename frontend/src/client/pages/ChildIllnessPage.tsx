@@ -28,59 +28,54 @@ import {
   fetchTemperatureEntriesByEpisodeId,
   createTemperatureEntry,
 } from "@shared/api/temperatureEntries";
-import { createWeightEntry, fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
+import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import {
   trackIllnessEpisodeStarted,
   trackMedicationAdministered,
   trackTemperatureLogged,
 } from "@shared/analytics";
-import { DateField } from "@shared/components/DateField";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { DisclosureHeader } from "@shared/components/DisclosureHeader";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
-import type {
-  AdministrationEvent,
-  EpisodeMedicationPlan,
-  HouseholdMedicine,
-  IllnessEpisode,
-  WeightEntry,
-} from "@shared/types/api";
-import {
-  buildPlanAdministrationStats,
-  buildWeightDoseHint,
-  formatRelativeDateTime,
-  formatIntervalForDisplay,
-  getAdministrationActorLabel,
-  getPrioritizedMedicationPlanItems,
-  type MedicationPlanPriorityItem,
-} from "../utils/medicationPlans";
-import { formatDate, getLocalIsoDate } from "@shared/utils/date";
+import type { IllnessEpisode, WeightEntry } from "@shared/types/api";
+import { getPrioritizedMedicationPlanItems } from "../utils/medicationPlans";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { formatChildAgeLabel } from "@client/i18n/children";
 import {
   formatChildDate,
   formatChildDatePlain,
-  formatChildDateTime,
+  formatChildTime,
 } from "@client/utils/childDateFormat";
 import {
-  DetailRow,
   SectionTitle,
   SummaryCard,
   appBtnDangerClass,
-  appBtnPrimaryClass,
-  appBtnSecondaryClass,
   appPillActionClass,
   formatWeightValue,
+  illnessCompactPrimaryButtonClass,
+  illnessCompactSecondaryButtonClass,
+  illnessPanelSoftClass,
+  illnessListClass,
 } from "./child-illness/shared";
+import {
+  AdministrationForm,
+  EpisodeActivationCard,
+  illnessCompactTextareaClass,
+  TemperatureForm,
+} from "./child-illness/forms";
 import {
   HistoryEpisodeCard,
   HistoryEpisodeDetailScreen,
   HistoryEpisodeInsightsScreen,
   HistoryInsightsPreview,
 } from "./child-illness/history";
+import {
+  MedicationPlanComposer,
+  MedicationPlanDetail,
+  MedicationPlanList,
+} from "./child-illness/reminders";
 import { EpisodeTimelineList, buildEpisodeTimeline } from "./child-illness/timeline";
 
 const QUICK_FOCUS_VALUES = new Set([
@@ -104,6 +99,7 @@ function normalizeChildIllnessSearchParams(
   const openEpisodeId = source.get("openEpisodeId");
   const focus = source.get("focus") ?? source.get("compose");
   const plan = source.get("plan");
+  const picker = source.get("picker");
 
   if (view === "history") {
     next.set("view", "history");
@@ -136,10 +132,16 @@ function normalizeChildIllnessSearchParams(
     }
     next.set("focus", "reminder-detail");
     next.set("plan", plan);
+    if (picker === "cabinet") {
+      next.set("picker", "cabinet");
+    }
     return next;
   }
 
   next.set("focus", focus);
+  if (focus === "reminder-create" && picker === "cabinet") {
+    next.set("picker", "cabinet");
+  }
   return next;
 }
 
@@ -383,10 +385,47 @@ export function ChildIllnessPage() {
       : language === "ru"
         ? "← К списку детей"
         : "← Back to children";
+  const topBarTitle =
+    historyOnlyView || (!activeEpisode && !createMode)
+      ? child.name
+      : !activeEpisode && createMode
+        ? `${language === "ru" ? "Новое наблюдение" : "New tracking"} · ${child.name}`
+        : undefined;
+  const topBarHint = historyOnlyView
+    ? historyEpisodeInsightsMode
+      ? language === "ru"
+        ? "Подробный разбор конкретного эпизода."
+        : "Detailed breakdown of a specific episode."
+      : historyEpisodeDetailMode
+        ? language === "ru"
+          ? "Открыта одна запись из истории."
+          : "One history record is opened."
+        : historyEpisodes.length > 0
+          ? language === "ru"
+            ? "Сводка и завершённые наблюдения по ребёнку."
+            : "Summary and completed tracking records for this child."
+          : language === "ru"
+            ? "Сводка появится здесь, когда завершённые наблюдения накопятся."
+            : "The summary will appear here as completed tracking records build up."
+    : !activeEpisode && createMode
+      ? language === "ru"
+        ? "Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи."
+        : "Start with a tracking session first. Temperature, medicines and reminders can be added inside it."
+      : !activeEpisode && !createMode
+        ? language === "ru"
+          ? "Сейчас активного наблюдения нет."
+          : "There is no active tracking right now."
+        : undefined;
 
   return (
-    <div className="min-w-0 space-y-7">
-      <ChildSectionTopBar backHref={backHref} backLabel={backLabel} />
+    <div className="-mx-3 min-w-0 space-y-7 bg-background px-3 sm:-mx-6 sm:px-6">
+      <ChildSectionTopBar
+        backHref={backHref}
+        backLabel={backLabel}
+        title={topBarTitle}
+        hint={topBarHint}
+        containerClassName="max-w-5xl"
+      />
 
       {((!activeEpisode && !createMode) || historyOnlyView) && (
         <section
@@ -395,23 +434,6 @@ export function ChildIllnessPage() {
           }`}
         >
           <div className="relative p-4 sm:p-5">
-            <div className="min-w-0">
-              <h1 className="app-title text-[2rem] sm:text-[2.5rem]">{child.name}</h1>
-              <p className="mt-3 text-sm text-muted lg:hidden">
-                {historyOnlyView
-                  ? language === "ru"
-                    ? "Завершённые наблюдения по ребёнку."
-                    : "Completed tracking for this child."
-                  : createMode
-                    ? language === "ru"
-                      ? "Заполните короткую карточку и начните наблюдение."
-                      : "Fill in a short card and start tracking."
-                    : language === "ru"
-                      ? "Сейчас активного наблюдения нет."
-                      : "There is no active tracking right now."}
-              </p>
-            </div>
-
             <div className="mt-4 hidden gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-4">
               {childAgeLabel ? (
                 <SummaryCard label={language === "ru" ? "Возраст" : "Age"} value={childAgeLabel} />
@@ -467,14 +489,6 @@ export function ChildIllnessPage() {
 
       {!activeEpisode && createMode && !historyOnlyView && (
         <section className="space-y-3">
-          <SectionTitle
-            title={`${language === "ru" ? "Новое наблюдение" : "New tracking"} · ${child.name}`}
-            subtitle={
-              language === "ru"
-                ? "Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи."
-                : "Start with a tracking session first. Temperature, medicines and reminders can be added inside it."
-            }
-          />
           <div ref={createModeCardRef}>
             <EpisodeActivationCard
               isPending={createEpisodeMutation.isPending}
@@ -502,36 +516,16 @@ export function ChildIllnessPage() {
 
       {historyOnlyView && (
         <section ref={historySectionRef} className="space-y-3">
-          <SectionTitle
-            title={`${language === "ru" ? "История" : "History"}${child.name ? ` · ${child.name}` : ""}`}
-            subtitle={
-              historyEpisodeInsightsMode
-                ? language === "ru"
-                  ? "Подробный разбор конкретного эпизода."
-                  : "Detailed breakdown of a specific episode."
-                : historyEpisodeDetailMode
-                  ? language === "ru"
-                    ? "Открыта одна запись из истории."
-                    : "One history record is opened."
-                  : historyEpisodes.length > 0
-                    ? language === "ru"
-                      ? "Сводка и завершённые наблюдения по ребёнку."
-                      : "Summary and completed tracking records for this child."
-                    : language === "ru"
-                      ? "Сводка появится здесь, когда завершённые наблюдения накопятся."
-                      : "The summary will appear here as completed tracking records build up."
-            }
-            action={
-              historyEpisodeInsightsMode ? (
-                <Link
-                  to={`/children/${child.id}/illness?view=history`}
-                  className={`${appPillActionClass} min-h-[2.55rem] px-3 text-[0.8rem] sm:min-h-[2.8rem] sm:px-4 sm:text-[0.86rem]`}
-                >
-                  {language === "ru" ? "Ко всей истории" : "Back to history"}
-                </Link>
-              ) : undefined
-            }
-          />
+          {historyEpisodeInsightsMode ? (
+            <div className="flex justify-end">
+              <Link
+                to={`/children/${child.id}/illness?view=history`}
+                className={appPillActionClass}
+              >
+                {language === "ru" ? "Ко всей истории" : "Back to history"}
+              </Link>
+            </div>
+          ) : null}
 
           {historyEpisodeInsightsMode && focusedHistoryEpisode ? (
             <HistoryEpisodeInsightsScreen episode={focusedHistoryEpisode} />
@@ -615,7 +609,11 @@ function EpisodeBlock({
   const accountId = useAppStore((s) => s.accountId);
   const liveQueryOptions = useLiveQueryOptions(3000);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
+  const [searchParams] = useSearchParams();
   const isActive = episode.status === "active";
+  const isReminderCabinetPickerOpen = searchParams.get("picker") === "cabinet";
+  const [isReminderEditing, setIsReminderEditing] = useState(false);
+  const [editingReminderName, setEditingReminderName] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [quickComposeSuccessMessage, setQuickComposeSuccessMessage] = useState<string | null>(null);
   const composerMode = quickComposeMode ?? initialComposerMode;
@@ -786,6 +784,10 @@ function EpisodeBlock({
   const [tempValue, setTempValue] = useState("");
   const [adminCustomMedicineName, setAdminCustomMedicineName] = useState("");
   const [adminAmount, setAdminAmount] = useState("");
+  const [timelineFilter, setTimelineFilter] = useState<
+    "all" | "temperature" | "administration" | "comment"
+  >("all");
+  const [timelineActorFilter, setTimelineActorFilter] = useState("all");
   const now = useNow();
   const timelineItems = buildEpisodeTimeline(
     temperatureEntries,
@@ -794,6 +796,21 @@ function EpisodeBlock({
     householdMedicines,
     language
   );
+  const filteredTimelineItems =
+    timelineFilter === "all"
+      ? timelineItems
+      : timelineItems.filter((item) => item.kind === timelineFilter);
+  const timelineActorOptions = Array.from(
+    new Map(
+      timelineItems
+        .filter((item) => item.actorName)
+        .map((item) => [item.actorName as string, item.actorName as string])
+    ).values()
+  );
+  const visibleTimelineItems =
+    timelineActorFilter === "all"
+      ? filteredTimelineItems
+      : filteredTimelineItems.filter((item) => item.actorName === timelineActorFilter);
   const reminderItems = getPrioritizedMedicationPlanItems(
     medicationPlans,
     administrations,
@@ -873,7 +890,7 @@ function EpisodeBlock({
                 ? "Например: к вечеру бодрее, после сна снова температура."
                 : "Example: more active by evening, fever came back after sleep."
             }
-            className="soft-input w-full px-4"
+            className={illnessCompactTextareaClass}
           />
           <div className="flex flex-wrap gap-2">
             <button
@@ -883,7 +900,7 @@ function EpisodeBlock({
                 addCommentMutation.mutate();
               }}
               disabled={addCommentMutation.isPending || !commentText.trim()}
-              className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
+              className={illnessCompactPrimaryButtonClass}
             >
               {addCommentMutation.isPending
                 ? language === "ru"
@@ -901,7 +918,7 @@ function EpisodeBlock({
   const manualComposerSection = quickComposeMode ? (
     <section>{composerContent}</section>
   ) : (
-    <section className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_24%,transparent)] px-4 py-5 sm:px-5 sm:py-6">
+    <section className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
       <div className="min-w-0">
         <h4 className="text-base font-semibold text-foreground">
           {language === "ru" ? "Быстрые записи" : "Quick logs"}
@@ -911,34 +928,139 @@ function EpisodeBlock({
         </p>
       </div>
 
-      <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
-        <Link to={`/children/${childId}/illness?focus=temperature`} className={appPillActionClass}>
+      <div className="grid grid-cols-3 gap-2">
+        <Link
+          to={`/children/${childId}/illness?focus=temperature`}
+          className={`${appPillActionClass} w-full`}
+        >
           {language === "ru" ? "+ Температура" : "+ Temperature"}
         </Link>
         <Link
           to={`/children/${childId}/illness?focus=administration`}
-          className={appPillActionClass}
+          className={`${appPillActionClass} w-full`}
         >
           {language === "ru" ? "+ Приём" : "+ Dose"}
         </Link>
-        <Link to={`/children/${childId}/illness?focus=comment`} className={appPillActionClass}>
+        <Link
+          to={`/children/${childId}/illness?focus=comment`}
+          className={`${appPillActionClass} w-full`}
+        >
           {language === "ru" ? "+ Заметка" : "+ Note"}
         </Link>
       </div>
     </section>
   );
+  const timelineTypeButtonBaseClass =
+    "app-profile-action inline-flex min-h-[2.45rem] w-full min-w-0 items-center justify-center gap-1.5 rounded-full px-3.5 py-1 text-[0.76rem] font-bold tracking-[-0.02em] leading-none whitespace-nowrap transition sm:min-h-[2.5rem] sm:text-[0.78rem]";
+  const timelineActorButtonBaseClass =
+    "inline-flex min-h-[2.28rem] min-w-0 items-center gap-1.5 rounded-full px-3.5 py-1 text-[0.74rem] font-semibold leading-none whitespace-nowrap transition sm:min-h-[2.34rem] sm:text-[0.76rem]";
+  const timelineTypeFilters = [
+    {
+      key: "all" as const,
+      label: language === "ru" ? "Все" : "All",
+      dotClass: null,
+    },
+    {
+      key: "temperature" as const,
+      label: language === "ru" ? "Темп." : "Temp",
+      dotClass: "bg-rose-500",
+    },
+    {
+      key: "administration" as const,
+      label: language === "ru" ? "Приемы" : "Doses",
+      dotClass: "bg-amber-500",
+    },
+    {
+      key: "comment" as const,
+      label: language === "ru" ? "Заметки" : "Notes",
+      dotClass: "bg-sky-500",
+    },
+  ];
+  const renderTimelineFilterButton = (
+    key: string,
+    label: string,
+    dotClass: string | null,
+    isActive: boolean,
+    onClick: () => void,
+    variant: "type" | "actor" = "type"
+  ) => (
+    <button
+      key={key}
+      type="button"
+      onClick={onClick}
+      className={`${
+        isActive
+          ? "soft-pill-primary app-profile-action--selected text-foreground"
+          : "soft-pill text-muted hover:text-foreground"
+      } ${variant === "type" ? timelineTypeButtonBaseClass : timelineActorButtonBaseClass}`}
+    >
+      <span className="inline-flex min-w-0 items-center gap-2">
+        {dotClass ? <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} /> : null}
+        <span className="min-w-0">{label}</span>
+      </span>
+    </button>
+  );
   const timelineSection = quickTimelineMode ? (
     <section className="space-y-4">
-      {timelineItems.length > 0 ? (
-        <EpisodeTimelineList items={timelineItems} language={language} />
+      <>
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+          {timelineTypeFilters.map((filter) => {
+            const isActive = timelineFilter === filter.key;
+            return renderTimelineFilterButton(
+              filter.key,
+              filter.label,
+              filter.dotClass,
+              isActive,
+              () => setTimelineFilter(filter.key)
+            );
+          })}
+        </div>
+
+        {timelineActorOptions.length > 1 ? (
+          <div className="space-y-2">
+            <p className="px-1 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-muted">
+              {language === "ru" ? "Кто записал" : "Recorded by"}
+            </p>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {renderTimelineFilterButton(
+                "all-actors",
+                language === "ru" ? "Все" : "All",
+                null,
+                timelineActorFilter === "all",
+                () => setTimelineActorFilter("all"),
+                "actor"
+              )}
+              {timelineActorOptions.map((actorName) =>
+                renderTimelineFilterButton(
+                  actorName,
+                  actorName,
+                  "bg-emerald-500",
+                  timelineActorFilter === actorName,
+                  () => setTimelineActorFilter(actorName),
+                  "actor"
+                )
+              )}
+            </div>
+          </div>
+        ) : null}
+      </>
+
+      {visibleTimelineItems.length > 0 ? (
+        <EpisodeTimelineList items={visibleTimelineItems} language={language} />
       ) : (
         <div className="soft-empty rounded-[22px] px-4 py-6 text-sm text-muted">
-          {language === "ru" ? "Пока записей нет." : "No entries yet."}
+          {timelineFilter === "all" && timelineActorFilter === "all"
+            ? language === "ru"
+              ? "Пока записей нет."
+              : "No entries yet."
+            : language === "ru"
+              ? "Для этих фильтров записей пока нет."
+              : "No entries for these filters yet."}
         </div>
       )}
     </section>
   ) : (
-    <section className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_24%,transparent)] px-4 py-5 sm:px-5 sm:py-6">
+    <section className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
         <div className="min-w-0">
           <h4 className="text-base font-semibold text-foreground">
@@ -950,14 +1072,17 @@ function EpisodeBlock({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
-        <Link to={`/children/${childId}/illness?focus=timeline`} className={appPillActionClass}>
-          {language === "ru" ? "Открыть" : "Open"}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          to={`/children/${childId}/illness?focus=timeline`}
+          className={`${appPillActionClass} px-4`}
+        >
+          {language === "ru" ? "К ленте" : "Open timeline"}
         </Link>
       </div>
 
       {timelineItems.length > 0 ? (
-        <div className="mt-4">
+        <div>
           <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
             {language === "ru" ? "Записей" : "Entries"}: {timelineItems.length}
           </span>
@@ -967,7 +1092,7 @@ function EpisodeBlock({
   );
   const reminderOverviewSection =
     episode.medicationMode === "guided" ? (
-      <section className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_22%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_28%,transparent)] px-4 py-5 sm:px-5 sm:py-6">
+      <section className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
           <div className="min-w-0">
             <h4 className="text-base font-semibold text-foreground">
@@ -985,7 +1110,7 @@ function EpisodeBlock({
                 ? `/children/${childId}/illness?focus=reminders`
                 : `/children/${childId}/illness?focus=reminder-create`
             }
-            className={`${appBtnSecondaryClass} min-h-[2.85rem] w-full self-start text-center sm:min-h-[3.05rem] sm:w-auto`}
+            className={`${illnessCompactSecondaryButtonClass} w-full self-start sm:w-auto`}
           >
             {medicationPlans.length > 0
               ? language === "ru"
@@ -998,10 +1123,17 @@ function EpisodeBlock({
         </div>
 
         {reminderLead ? (
-          <div className="mt-4">
-            <span className="soft-pill-success rounded-full px-3 py-1.5 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+            <span>
               {language === "ru" ? "Активных напоминаний" : "Active reminders"}:{" "}
-              {medicationPlans.length}
+              <span className="font-semibold text-foreground">{medicationPlans.length}</span>
+            </span>
+            <span className="text-foreground/80">
+              {language === "ru" ? "Ближайшее" : "Next"}:{" "}
+              {reminderLead.plan.customMedicineName ??
+                reminderLead.medicine?.medicineName ??
+                (language === "ru" ? "Лекарство" : "Medicine")}
             </span>
           </div>
         ) : null}
@@ -1009,6 +1141,338 @@ function EpisodeBlock({
     ) : null;
 
   if (quickComposeMode) {
+    if (composerMode === "temperature") {
+      return (
+        <div className="min-w-0 space-y-5">
+          <SectionTitle
+            title={`${language === "ru" ? "Температура" : "Temperature"} · ${childName}`}
+            subtitle={
+              language === "ru"
+                ? "Сохраните новый замер и сразу сверяйтесь с последними значениями."
+                : "Save a new reading and immediately check the latest values."
+            }
+          />
+
+          {quickComposeSuccessMessage ? (
+            <div className="soft-note-info rounded-[20px] px-4 py-3 text-sm">
+              {quickComposeSuccessMessage}
+            </div>
+          ) : null}
+
+          <section className="soft-panel rounded-[28px] p-4 sm:p-5">
+            <div>
+              <TemperatureForm
+                value={tempValue}
+                onChange={setTempValue}
+                onSubmit={() => {
+                  const parsed = parseFloat(tempValue);
+                  if (Number.isNaN(parsed)) return;
+                  addTempMutation.mutate(parsed);
+                  setTempValue("");
+                }}
+                isPending={addTempMutation.isPending}
+              />
+            </div>
+          </section>
+
+          <section className="space-y-2.5">
+            <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+              <div>
+                <h2 className="app-card-title text-[1.05rem] sm:text-[1.15rem]">
+                  {language === "ru" ? "Последние замеры" : "Recent readings"}
+                </h2>
+              </div>
+              <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+                {temperatureEntries.length}{" "}
+                {language === "ru"
+                  ? temperatureEntries.length === 1
+                    ? "запись"
+                    : temperatureEntries.length < 5
+                      ? "записи"
+                      : "записей"
+                  : temperatureEntries.length === 1
+                    ? "entry"
+                    : "entries"}
+              </span>
+            </div>
+
+            {temperatureEntries.length > 0 ? (
+              <div className={illnessListClass}>
+                {temperatureEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="grid grid-cols-[4.4rem_minmax(0,1fr)] items-center gap-3 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:grid-cols-[5rem_minmax(0,1fr)] sm:px-4"
+                  >
+                    <span className="min-w-0 text-xs font-semibold tabular-nums text-muted">
+                      <span className="block leading-4 text-foreground">
+                        {formatChildTime(entry.measuredAt)}
+                      </span>
+                      <span className="block truncate text-[0.68rem] leading-4">
+                        {formatChildDate(entry.measuredAt, language, { month: "short" })}
+                      </span>
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${
+                            entry.valueCelsius >= 38 ? "bg-rose-500" : "bg-emerald-500"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <p className="truncate text-sm font-semibold leading-5 text-foreground">
+                          {entry.valueCelsius.toFixed(1)}°C
+                        </p>
+                      </div>
+                      <p className="mt-0.5 truncate text-xs leading-5 text-muted">
+                        {entry.valueCelsius >= 38
+                          ? language === "ru"
+                            ? "Нужен контроль температуры"
+                            : "Keep an eye on temperature"
+                          : language === "ru"
+                            ? "Замер сохранён"
+                            : "Reading saved"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
+                {language === "ru"
+                  ? "Пока нет ни одного замера температуры."
+                  : "No temperature readings yet."}
+              </div>
+            )}
+          </section>
+        </div>
+      );
+    }
+
+    if (composerMode === "administration") {
+      return (
+        <div className="min-w-0 space-y-5">
+          <SectionTitle
+            title={language === "ru" ? "Приём" : "Dose"}
+            subtitle={
+              language === "ru"
+                ? "Быстро отметьте лекарство и дозу, если она известна."
+                : "Quickly log the medicine and dose if you know it."
+            }
+          />
+
+          {quickComposeSuccessMessage ? (
+            <div className="soft-note-info rounded-[20px] px-4 py-3 text-sm">
+              {quickComposeSuccessMessage}
+            </div>
+          ) : null}
+
+          <section className="soft-panel rounded-[28px] p-4 sm:p-5">
+            <div className="space-y-4">
+              <AdministrationForm
+                customMedicineName={adminCustomMedicineName}
+                amount={adminAmount}
+                onCustomMedicineNameChange={setAdminCustomMedicineName}
+                onAmountChange={setAdminAmount}
+                onSubmit={() => {
+                  if (!adminCustomMedicineName.trim()) {
+                    return;
+                  }
+                  addAdminMutation.mutate({
+                    custom_medicine_name: adminCustomMedicineName.trim(),
+                    amount: adminAmount.trim(),
+                  });
+                  setAdminCustomMedicineName("");
+                  setAdminAmount("");
+                }}
+                isPending={addAdminMutation.isPending}
+              />
+              {addAdminMutation.isError ? (
+                <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+                  {(addAdminMutation.error as { response?: { data?: { detail?: string } } })
+                    .response?.data?.detail ??
+                    (language === "ru"
+                      ? "Ошибка записи. Проверь срок годности и срок после вскрытия."
+                      : "Failed to save. Check the expiry date and the after-opening limit.")}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="space-y-2.5">
+            <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+              <div>
+                <h2 className="app-card-title text-[1.05rem] sm:text-[1.15rem]">
+                  {language === "ru" ? "Последние приёмы" : "Recent doses"}
+                </h2>
+              </div>
+              <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+                {administrations.length}{" "}
+                {language === "ru"
+                  ? administrations.length === 1
+                    ? "запись"
+                    : administrations.length < 5
+                      ? "записи"
+                      : "записей"
+                  : administrations.length === 1
+                    ? "entry"
+                    : "entries"}
+              </span>
+            </div>
+
+            {administrations.length > 0 ? (
+              <div className={illnessListClass}>
+                {administrations.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="grid grid-cols-[4.4rem_minmax(0,1fr)] items-center gap-3 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:grid-cols-[5rem_minmax(0,1fr)] sm:px-4"
+                  >
+                    <span className="min-w-0 text-xs font-semibold tabular-nums text-muted">
+                      <span className="block leading-4 text-foreground">
+                        {formatChildTime(entry.administeredAt)}
+                      </span>
+                      <span className="block truncate text-[0.68rem] leading-4">
+                        {formatChildDate(entry.administeredAt, language, { month: "short" })}
+                      </span>
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-sky-500" />
+                        <p className="truncate text-sm font-semibold leading-5 text-foreground">
+                          {entry.customMedicineName ??
+                            (language === "ru" ? "Приём лекарства" : "Dose logged")}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 truncate text-xs leading-5 text-muted">
+                        {[entry.amount || null, entry.reason || null].filter(Boolean).join(" · ") ||
+                          (language === "ru" ? "Запись сохранена" : "Dose saved")}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
+                {language === "ru" ? "Пока нет ни одного приёма." : "No doses logged yet."}
+              </div>
+            )}
+          </section>
+        </div>
+      );
+    }
+
+    if (composerMode === "comment") {
+      return (
+        <div className="min-w-0 space-y-5">
+          <SectionTitle
+            title={language === "ru" ? "Заметка" : "Note"}
+            subtitle={
+              language === "ru"
+                ? "Добавьте короткое наблюдение о состоянии ребёнка."
+                : "Add a short note about the child's current condition."
+            }
+          />
+
+          {quickComposeSuccessMessage ? (
+            <div className="soft-note-info rounded-[20px] px-4 py-3 text-sm">
+              {quickComposeSuccessMessage}
+            </div>
+          ) : null}
+
+          <section className="soft-panel rounded-[28px] p-4 sm:p-5">
+            <div className="space-y-4">
+              <div className="grid gap-3">
+                <textarea
+                  rows={3}
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder={
+                    language === "ru"
+                      ? "Например: к вечеру бодрее, после сна снова температура."
+                      : "Example: more active by evening, fever came back after sleep."
+                  }
+                  className={illnessCompactTextareaClass}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!commentText.trim()) return;
+                      addCommentMutation.mutate();
+                    }}
+                    disabled={addCommentMutation.isPending || !commentText.trim()}
+                    className={illnessCompactPrimaryButtonClass}
+                  >
+                    {addCommentMutation.isPending
+                      ? language === "ru"
+                        ? "Сохраняем…"
+                        : "Saving…"
+                      : language === "ru"
+                        ? "Добавить заметку"
+                        : "Add note"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-2.5">
+            <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+              <div>
+                <h2 className="app-card-title text-[1.05rem] sm:text-[1.15rem]">
+                  {language === "ru" ? "Последние заметки" : "Recent notes"}
+                </h2>
+              </div>
+              <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+                {comments.length}{" "}
+                {language === "ru"
+                  ? comments.length === 1
+                    ? "запись"
+                    : comments.length < 5
+                      ? "записи"
+                      : "записей"
+                  : comments.length === 1
+                    ? "entry"
+                    : "entries"}
+              </span>
+            </div>
+
+            {comments.length > 0 ? (
+              <div className={illnessListClass}>
+                {comments.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="grid grid-cols-[4.4rem_minmax(0,1fr)] items-start gap-3 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:grid-cols-[5rem_minmax(0,1fr)] sm:px-4"
+                  >
+                    <span className="min-w-0 pt-0.5 text-xs font-semibold tabular-nums text-muted">
+                      <span className="block leading-4 text-foreground">
+                        {formatChildTime(entry.createdAt)}
+                      </span>
+                      <span className="block truncate text-[0.68rem] leading-4">
+                        {formatChildDate(entry.createdAt, language, { month: "short" })}
+                      </span>
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-sky-500" />
+                        <p className="truncate text-sm font-semibold leading-5 text-foreground">
+                          {language === "ru" ? "Наблюдение" : "Observation"}
+                        </p>
+                      </div>
+                      <p className="mt-1 break-words text-sm leading-6 text-muted">{entry.text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
+                {language === "ru" ? "Пока нет ни одной заметки." : "No notes yet."}
+              </div>
+            )}
+          </section>
+        </div>
+      );
+    }
+
     return (
       <div className="soft-panel rounded-[30px]">
         <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
@@ -1030,15 +1494,12 @@ function EpisodeBlock({
           )}
           {manualComposerSection}
           <div className="flex flex-wrap gap-2">
-            <Link
-              to="/illnesses/active"
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-            >
+            <Link to="/illnesses/active" className={illnessCompactSecondaryButtonClass}>
               {language === "ru" ? "К наблюдениям" : "Back to tracking"}
             </Link>
             <Link
               to={`/children/${childId}/illness?focus=timeline`}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
+              className={illnessCompactSecondaryButtonClass}
             >
               {language === "ru" ? "К ленте" : "Open timeline"}
             </Link>
@@ -1050,56 +1511,38 @@ function EpisodeBlock({
 
   if (quickTimelineMode) {
     return (
-      <div className="soft-panel rounded-[30px]">
-        <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-              {childName}
-              <span className="mx-2 text-muted">·</span>
-              <span className="text-muted">
-                {language === "ru" ? "Лента наблюдения" : "Tracking timeline"}
-              </span>
-            </p>
-            <p className="mt-1 text-sm text-muted">
-              {language === "ru" ? "Все записи по времени." : "All entries in time order."}
-            </p>
-          </div>
-        </div>
+      <div className="min-w-0 space-y-5">
+        <SectionTitle
+          title={`${language === "ru" ? "Лента" : "Timeline"} · ${childName}`}
+          subtitle={language === "ru" ? "Все записи по времени." : "All entries in time order."}
+        />
 
-        <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
-          {timelineSection}
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/illnesses/active"
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-            >
-              {language === "ru" ? "К наблюдениям" : "Back to tracking"}
-            </Link>
-          </div>
-        </div>
+        {timelineSection}
       </div>
     );
   }
 
   if (quickReminderMode) {
     return (
-      <div className="soft-panel rounded-[30px]">
-        <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-              {childName}
-              <span className="mx-2 text-muted">·</span>
-              <span className="text-muted">{language === "ru" ? "Напоминания" : "Reminders"}</span>
-            </p>
-            <p className="mt-1 text-sm text-muted">
-              {language === "ru"
-                ? "Активные напоминания по приёмам."
-                : "Active medication reminders."}
-            </p>
-          </div>
-        </div>
+      <div className="min-w-0 space-y-5">
+        <SectionTitle
+          title={language === "ru" ? "Напоминания" : "Reminders"}
+          subtitle={
+            language === "ru"
+              ? "Все напоминания по этому наблюдению."
+              : "All reminders for this tracking session."
+          }
+          action={
+            <Link
+              to={`/children/${childId}/illness?focus=reminder-create`}
+              className={illnessCompactPrimaryButtonClass}
+            >
+              {language === "ru" ? "Добавить" : "Add"}
+            </Link>
+          }
+        />
 
-        <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+        <div className="space-y-4">
           {medicationPlans.length > 0 ? (
             <MedicationPlanList
               plans={medicationPlans}
@@ -1139,21 +1582,6 @@ function EpisodeBlock({
               }
             </div>
           ) : null}
-
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/illnesses/active"
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-            >
-              {language === "ru" ? "К наблюдениям" : "Back to tracking"}
-            </Link>
-            <Link
-              to={`/children/${childId}/illness?focus=reminder-create`}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-            >
-              {language === "ru" ? "Добавить напоминание" : "Add reminder"}
-            </Link>
-          </div>
         </div>
       </div>
     );
@@ -1162,24 +1590,24 @@ function EpisodeBlock({
   if (quickReminderDetailMode) {
     if (!selectedReminderItem) {
       return (
-        <div className="soft-panel rounded-[30px]">
-          <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
-            <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
-              {language === "ru" ? "Напоминание не найдено." : "Reminder not found."}
-            </div>
-            <div className="flex flex-wrap gap-2">
+        <div className="min-w-0 space-y-5">
+          <SectionTitle
+            title={language === "ru" ? "Напоминание" : "Reminder"}
+            subtitle={
+              language === "ru" ? "Не удалось найти запись." : "The selected entry was not found."
+            }
+            action={
               <Link
                 to={`/children/${childId}/illness?focus=reminders`}
-                className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
+                className={illnessCompactSecondaryButtonClass}
               >
-                {language === "ru" ? "К напоминаниям" : "Back to reminders"}
+                {language === "ru" ? "К списку" : "Back"}
               </Link>
-              <Link
-                to="/illnesses/active"
-                className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-              >
-                {language === "ru" ? "К наблюдениям" : "Back to tracking"}
-              </Link>
+            }
+          />
+          <div className="space-y-4">
+            <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
+              {language === "ru" ? "Напоминание не найдено." : "Reminder not found."}
             </div>
           </div>
         </div>
@@ -1187,20 +1615,41 @@ function EpisodeBlock({
     }
 
     return (
-      <div className="soft-panel rounded-[30px]">
-        <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-              {childName}
-              <span className="mx-2 text-muted">·</span>
-              <span className="text-muted">
-                {language === "ru" ? "Напоминание о приёме" : "Dose reminder"}
-              </span>
-            </p>
-          </div>
-        </div>
+      <div
+        className={isReminderCabinetPickerOpen ? "min-w-0 overflow-hidden" : "min-w-0 space-y-5"}
+      >
+        {!isReminderCabinetPickerOpen ? (
+          <SectionTitle
+            title={
+              isReminderEditing
+                ? language === "ru"
+                  ? `${editingReminderName ?? selectedReminderItem.plan.customMedicineName ?? selectedReminderItem.medicine?.medicineName ?? "Лекарство"} · Изменить`
+                  : `${editingReminderName ?? selectedReminderItem.plan.customMedicineName ?? selectedReminderItem.medicine?.medicineName ?? "Medicine"} · Edit`
+                : language === "ru"
+                  ? "Напоминание"
+                  : "Reminder"
+            }
+            subtitle={
+              isReminderEditing
+                ? language === "ru"
+                  ? "Обновите схему приёма и упаковку."
+                  : "Update the schedule and the selected pack."
+                : language === "ru"
+                  ? "Параметры и история выбранного напоминания."
+                  : "Selected reminder details and history."
+            }
+            action={
+              <Link
+                to={`/children/${childId}/illness?focus=reminders`}
+                className={illnessCompactSecondaryButtonClass}
+              >
+                {language === "ru" ? "К списку" : "Back"}
+              </Link>
+            }
+          />
+        ) : null}
 
-        <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+        <div className="space-y-4">
           <MedicationPlanDetail
             item={selectedReminderItem}
             childId={childId}
@@ -1209,6 +1658,10 @@ function EpisodeBlock({
             isUpdating={updatePlanMutation.isPending}
             isDeleting={deletePlanMutation.isPending}
             medicines={householdMedicines}
+            onEditingChange={(nextIsEditing, planName) => {
+              setIsReminderEditing(nextIsEditing);
+              setEditingReminderName(nextIsEditing ? planName : null);
+            }}
             onTakeDose={(plan) =>
               addAdminMutation.mutate({
                 household_medicine_id: plan.householdMedicineId,
@@ -1253,17 +1706,6 @@ function EpisodeBlock({
               }
             </div>
           ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to={`/children/${childId}/illness?focus=reminders`}
-              className={appBtnSecondaryClass}
-            >
-              {language === "ru" ? "К напоминаниям" : "Back to reminders"}
-            </Link>
-            <Link to="/illnesses/active" className={appBtnSecondaryClass}>
-              {language === "ru" ? "К наблюдениям" : "Back to tracking"}
-            </Link>
-          </div>
         </div>
       </div>
     );
@@ -1271,23 +1713,25 @@ function EpisodeBlock({
 
   if (quickReminderCreateMode) {
     return (
-      <div className="soft-panel rounded-[30px]">
-        <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <p className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-              {childName}
-              <span className="mx-2 text-muted">·</span>
-              <span className="text-muted">
-                {language === "ru" ? "Новое напоминание" : "New reminder"}
-              </span>
-            </p>
-            <p className="mt-1 text-sm text-muted">
-              {language === "ru" ? "Настройте интервал и сохраните." : "Set the interval and save."}
-            </p>
-          </div>
-        </div>
+      <div
+        className={isReminderCabinetPickerOpen ? "min-w-0 overflow-hidden" : "min-w-0 space-y-5"}
+      >
+        {!isReminderCabinetPickerOpen ? (
+          <SectionTitle
+            title={language === "ru" ? "Новое напоминание" : "New reminder"}
+            subtitle={language === "ru" ? "Настройте схему приёма." : "Set up the dosing schedule."}
+            action={
+              <Link
+                to={`/children/${childId}/illness?focus=reminders`}
+                className={illnessCompactSecondaryButtonClass}
+              >
+                {language === "ru" ? "К списку" : "Back"}
+              </Link>
+            }
+          />
+        ) : null}
 
-        <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+        <div className="space-y-4">
           <MedicationPlanComposer
             childId={childId}
             medicines={householdMedicines.filter(
@@ -1326,20 +1770,6 @@ function EpisodeBlock({
               }
             </div>
           ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to={`/children/${childId}/illness?focus=reminders`}
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-            >
-              {language === "ru" ? "К напоминаниям" : "Back to reminders"}
-            </Link>
-            <Link
-              to="/illnesses/active"
-              className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-            >
-              {language === "ru" ? "К наблюдениям" : "Back to tracking"}
-            </Link>
-          </div>
         </div>
       </div>
     );
@@ -1386,7 +1816,7 @@ function EpisodeBlock({
             <button
               type="button"
               onClick={() => setIsCloseConfirmOpen(true)}
-              className={`${appBtnDangerClass} hidden min-h-[2.95rem] sm:inline-flex`}
+              className={`${appBtnDangerClass} hidden sm:inline-flex`}
             >
               {language === "ru" ? "Закрыть наблюдение" : "Close tracking"}
             </button>
@@ -1421,7 +1851,7 @@ function EpisodeBlock({
             <button
               type="button"
               onClick={() => setIsCloseConfirmOpen(true)}
-              className={`${appBtnDangerClass} min-h-[2.95rem] w-full`}
+              className={`${appBtnDangerClass} w-full`}
             >
               {language === "ru" ? "Закрыть наблюдение" : "Close tracking"}
             </button>
@@ -1430,1386 +1860,4 @@ function EpisodeBlock({
       </div>
     </div>
   );
-}
-
-function EpisodeActivationCard({
-  isPending,
-  errorMessage,
-  onActivate,
-  onCancel,
-}: {
-  isPending: boolean;
-  errorMessage: string | null;
-  onActivate: (payload: {
-    started_at: string;
-    title?: string | null;
-    medication_mode: string;
-    note?: string | null;
-    temperatures: Array<{ value_celsius: number }>;
-    administrations: Array<{
-      household_medicine_id?: string | null;
-      custom_medicine_name?: string | null;
-      amount: string;
-    }>;
-    comments: Array<{ text: string }>;
-    medication_plans: Array<{
-      household_medicine_id?: string | null;
-      custom_medicine_name?: string | null;
-      dose_amount: string;
-      min_interval_minutes: number;
-      max_doses_per_day?: number | null;
-      weight_kg?: number | null;
-      dose_mg_per_kg?: number | null;
-      notes?: string | null;
-    }>;
-  }) => void;
-  onCancel: () => void;
-}) {
-  const { language } = useI18n();
-  const [startedAt, setStartedAt] = useState(() => getLocalIsoDate());
-  const [title, setTitle] = useState("");
-
-  return (
-    <div className="soft-panel rounded-[30px]">
-      <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
-        {errorMessage && (
-          <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{errorMessage}</div>
-        )}
-        <label className="block space-y-1.5">
-          <span className="soft-field-label">
-            {language === "ru" ? "Дата начала" : "Start date"}
-          </span>
-          <DateField
-            value={startedAt}
-            onChange={setStartedAt}
-            language={language}
-            max={getLocalIsoDate()}
-            className=""
-          />
-        </label>
-        <label className="block space-y-1.5">
-          <span className="soft-field-label">
-            {language === "ru" ? "Что случилось?" : "What happened?"}
-          </span>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={
-              language === "ru" ? "Например: температура и кашель" : "Example: fever and cough"
-            }
-            className="soft-input w-full px-4"
-          />
-        </label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() =>
-              onActivate({
-                started_at: startedAt,
-                title: title.trim() ? title.trim() : null,
-                medication_mode: "guided",
-                note: null,
-                temperatures: [],
-                administrations: [],
-                comments: [],
-                medication_plans: [],
-              })
-            }
-            disabled={isPending || !startedAt}
-            className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
-          >
-            {isPending
-              ? language === "ru"
-                ? "Запускаем…"
-                : "Starting…"
-              : language === "ru"
-                ? "Начать наблюдение"
-                : "Start tracking"}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isPending}
-            className={`${appBtnSecondaryClass} min-h-[2.85rem] disabled:opacity-50 sm:min-h-[3.05rem]`}
-          >
-            {language === "ru" ? "Назад" : "Back"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function InlineHint({ text }: { text: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const showTouchHint = () => {
-    setIsOpen(true);
-    window.setTimeout(() => {
-      setIsOpen(false);
-    }, 1400);
-  };
-
-  return (
-    <span className="relative inline-flex">
-      <button
-        type="button"
-        title={text}
-        aria-label={text}
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}
-        onFocus={() => setIsOpen(true)}
-        onBlur={() => setIsOpen(false)}
-        onTouchStart={(event) => {
-          event.preventDefault();
-          showTouchHint();
-        }}
-        className="soft-pill-warning inline-flex h-5 w-5 items-center justify-center rounded-full px-0 text-[11px] font-semibold leading-none"
-      >
-        !
-      </button>
-      {isOpen && (
-        <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-56 -translate-x-1/2 rounded-2xl border border-border/80 bg-[color:var(--color-surface-soft)] px-3 py-2 text-xs font-normal leading-5 text-foreground shadow-lg shadow-black/10">
-          {text}
-        </span>
-      )}
-    </span>
-  );
-}
-
-function TemperatureForm({
-  value,
-  onChange,
-  onSubmit,
-  isPending,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  onSubmit: () => void;
-  isPending: boolean;
-}) {
-  const { language } = useI18n();
-  return (
-    <div className="grid gap-4 sm:grid-cols-[minmax(0,168px)_auto] sm:items-end">
-      <label className="block max-w-[11rem] space-y-1.5">
-        <span className="soft-field-label">
-          {language === "ru" ? "Температура" : "Temperature"}
-        </span>
-        <input
-          type="number"
-          step={0.1}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={language === "ru" ? "36.6" : "98.6 / 37.0"}
-          className="soft-input w-full px-4"
-        />
-      </label>
-      <button
-        type="button"
-        onClick={onSubmit}
-        disabled={isPending || !value}
-        className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:w-auto sm:px-5`}
-      >
-        {isPending
-          ? language === "ru"
-            ? "Сохраняем…"
-            : "Saving…"
-          : language === "ru"
-            ? "Добавить"
-            : "Add"}
-      </button>
-    </div>
-  );
-}
-
-function CabinetMedicinePicker({
-  medicines,
-  value,
-  onChange,
-  label,
-}: {
-  medicines: HouseholdMedicine[];
-  value: string;
-  onChange: (value: string) => void;
-  label?: string;
-}) {
-  const { language } = useI18n();
-  const resolvedLabel = label ?? (language === "ru" ? "Упаковка" : "Pack");
-  const [query, setQuery] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedMedicine = medicines.find((medicine) => medicine.id === value) ?? null;
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredMedicines = normalizedQuery
-    ? medicines.filter((medicine) =>
-        [
-          medicine.medicineName,
-          medicine.medicineConcentration ?? "",
-          medicine.medicineForm ?? "",
-          getMedicineStatusLabel(medicine, language),
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery)
-      )
-    : medicines;
-
-  const selectMedicine = (medicineId: string) => {
-    onChange(medicineId);
-    setIsOpen(false);
-    setQuery("");
-  };
-
-  useEffect(() => {
-    if (!value) {
-      return;
-    }
-    setIsOpen(false);
-    setQuery("");
-  }, [value]);
-
-  return (
-    <>
-      <div className="block min-w-0">
-        <span className="soft-field-label">{resolvedLabel}</span>
-        <div className="mt-2">
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            aria-expanded={isOpen}
-            className={`${appBtnSecondaryClass} flex min-h-[2.95rem] w-full justify-between gap-3 px-4 text-left sm:min-h-[3.1rem]`}
-          >
-            <span className="min-w-0">
-              {selectedMedicine ? (
-                <>
-                  <span className="block truncate text-sm font-semibold text-foreground">
-                    {selectedMedicine.medicineName}
-                    {selectedMedicine.medicineConcentration
-                      ? ` · ${selectedMedicine.medicineConcentration}`
-                      : ""}
-                  </span>
-                  <span className="mt-1 block text-xs text-muted">
-                    {getMedicineStatusLabel(selectedMedicine, language)} ·{" "}
-                    {language === "ru" ? "до" : "until"} {formatDate(selectedMedicine.expiryDate)}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="block text-sm font-semibold text-foreground">
-                    {language === "ru" ? "Выбрать из аптечки" : "Choose from first aid kit"}
-                  </span>
-                  <span className="mt-1 block text-xs text-muted">
-                    {medicines.length}{" "}
-                    {language === "ru"
-                      ? formatMedicineCountLabel(medicines.length)
-                      : medicines.length === 1
-                        ? "medicine"
-                        : "medicines"}
-                  </span>
-                </>
-              )}
-            </span>
-            <span className="soft-choice-check" aria-hidden="true">
-              {language === "ru" ? "Выбрать" : "Choose"}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {isOpen && (
-        <div className="fixed inset-0 z-[140] flex items-end bg-black/28 p-3 sm:items-center sm:justify-center sm:p-6">
-          <button
-            type="button"
-            aria-label={language === "ru" ? "Закрыть выбор лекарства" : "Close medicine picker"}
-            onClick={() => setIsOpen(false)}
-            className="absolute inset-0"
-          />
-          <div className="soft-panel relative z-10 w-full max-w-xl rounded-[28px]">
-            <div className="soft-hero rounded-t-[28px] px-5 py-5 sm:px-6">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs tracking-[0.1em] text-muted">
-                    {language === "ru" ? "Аптечка" : "First aid kit"}
-                  </p>
-                  <h4 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
-                    {language === "ru" ? "Выбрать препарат" : "Choose medicine"}
-                  </h4>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3rem]`}
-                >
-                  {language === "ru" ? "Закрыть" : "Close"}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3 px-5 py-5 sm:px-6 sm:py-6">
-              {medicines.length > 6 && (
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={language === "ru" ? "Поиск по аптечке" : "Search first aid kit"}
-                  className="soft-input w-full px-4"
-                />
-              )}
-              <div className="soft-choice-list max-h-[min(55vh,28rem)] overflow-y-auto pr-1">
-                {filteredMedicines.map((medicine) => {
-                  const isActive = medicine.id === value;
-
-                  return (
-                    <button
-                      key={medicine.id}
-                      type="button"
-                      onClick={() => selectMedicine(medicine.id)}
-                      aria-pressed={isActive}
-                      className={[
-                        "soft-choice-row text-left",
-                        isActive ? "soft-choice-row-active" : "",
-                      ].join(" ")}
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-foreground">
-                          {medicine.medicineName}
-                          {medicine.medicineConcentration
-                            ? ` · ${medicine.medicineConcentration}`
-                            : ""}
-                        </span>
-                        <span className="mt-1 block text-xs text-muted">
-                          {getMedicineStatusLabel(medicine, language)} ·{" "}
-                          {language === "ru" ? "до" : "until"} {formatDate(medicine.expiryDate)}
-                        </span>
-                      </span>
-                      <span className="soft-choice-check" aria-hidden="true">
-                        {isActive
-                          ? language === "ru"
-                            ? "Выбрано"
-                            : "Selected"
-                          : language === "ru"
-                            ? "Выбрать"
-                            : "Choose"}
-                      </span>
-                    </button>
-                  );
-                })}
-                {filteredMedicines.length === 0 && (
-                  <div className="rounded-2xl bg-[color:color-mix(in_srgb,var(--color-surface-soft)_92%,transparent)] px-4 py-3 text-sm text-muted">
-                    {language === "ru" ? "Ничего не найдено." : "Nothing found."}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-function formatMedicineCountLabel(count: number) {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-
-  if (mod10 === 1 && mod100 !== 11) {
-    return "препарат";
-  }
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-    return "препарата";
-  }
-  return "препаратов";
-}
-
-function getMedicineStatusLabel(
-  medicine: Pick<HouseholdMedicine, "status" | "statusLabel">,
-  language: "ru" | "en"
-) {
-  if (language === "ru") {
-    return medicine.statusLabel;
-  }
-
-  const labels: Record<string, string> = {
-    expired: "Expired",
-    expired_after_opening: "Expired after opening",
-    expiring_after_opening: "Expiring after opening",
-    expiring_soon: "Expiring soon",
-    ok: "Ready to use",
-  };
-
-  return labels[medicine.status] ?? medicine.statusLabel;
-}
-
-function AdministrationForm({
-  customMedicineName,
-  amount,
-  onCustomMedicineNameChange,
-  onAmountChange,
-  onSubmit,
-  isPending,
-}: {
-  customMedicineName: string;
-  amount: string;
-  onCustomMedicineNameChange: (value: string) => void;
-  onAmountChange: (value: string) => void;
-  onSubmit: () => void;
-  isPending: boolean;
-}) {
-  const { language } = useI18n();
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)_auto] md:items-end">
-        <label className="block min-w-0 space-y-1.5">
-          <span className="soft-field-label">
-            {language === "ru" ? "Что дали" : "What was given"}
-          </span>
-          <input
-            type="text"
-            value={customMedicineName}
-            onChange={(e) => onCustomMedicineNameChange(e.target.value)}
-            placeholder={language === "ru" ? "Например: Уголь" : "Example: charcoal"}
-            className="soft-input w-full px-4"
-          />
-        </label>
-
-        <label className="block space-y-1.5">
-          <span className="soft-field-label">
-            {language === "ru" ? "Доза, если нужно" : "Dose, if needed"}
-          </span>
-          <input
-            type="text"
-            value={amount}
-            onChange={(e) => onAmountChange(e.target.value)}
-            placeholder={language === "ru" ? "Например: 5 мл или 1 таб." : "Example: 5 ml or 1 tab"}
-            className="soft-input w-full px-4"
-          />
-        </label>
-
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={isPending || !customMedicineName.trim()}
-            className={`${appBtnPrimaryClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
-          >
-            {isPending
-              ? language === "ru"
-                ? "Сохраняем…"
-                : "Saving…"
-              : language === "ru"
-                ? "Отметить приём"
-                : "Log dose"}
-          </button>
-        </div>
-      </div>
-      <p className="text-xs text-muted">
-        {language === "ru"
-          ? "Дозу можно не указывать для быстрой записи."
-          : "The dose can be left empty for a quick entry."}
-      </p>
-    </div>
-  );
-}
-
-type MedicationPlanPayload = {
-  householdMedicineId: string | null;
-  customMedicineName: string | null;
-  doseAmount: string;
-  minIntervalMinutes: number;
-  maxDosesPerDay: number | null;
-  weightKg: number | null;
-  doseMgPerKg: number | null;
-  notes: string | null;
-};
-
-function intervalMinutesToInputValue(intervalMinutes: number, unit: "hours" | "minutes") {
-  if (unit === "minutes") {
-    return String(intervalMinutes);
-  }
-  const hours = intervalMinutes / 60;
-  return Number.isInteger(hours) ? String(hours) : String(Number(hours.toFixed(2)));
-}
-
-function parseIntervalInputToMinutes(value: string, unit: "hours" | "minutes"): number | null {
-  const parsed = Number.parseFloat(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return null;
-  }
-  return unit === "minutes" ? Math.round(parsed) : Math.round(parsed * 60);
-}
-
-function MedicationPlanComposer({
-  childId,
-  medicines,
-  latestWeight,
-  onSubmit,
-  submitLabel,
-  isPending,
-  initialValue,
-  onCancel,
-}: {
-  childId: string;
-  medicines: HouseholdMedicine[];
-  latestWeight: WeightEntry | null;
-  onSubmit: (payload: MedicationPlanPayload) => void;
-  submitLabel: string;
-  isPending: boolean;
-  initialValue?: MedicationPlanPayload | null;
-  onCancel?: () => void;
-}) {
-  const { language } = useI18n();
-  const queryClient = useQueryClient();
-  const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
-  const defaultPlanMode: "cabinet" | "manual" = initialValue?.householdMedicineId
-    ? "cabinet"
-    : medicines.length > 0
-      ? "cabinet"
-      : "manual";
-  const hasAdvancedInitialValue = Boolean(
-    initialValue?.maxDosesPerDay || initialValue?.weightKg || initialValue?.doseMgPerKg
-  );
-  const [planMode, setPlanMode] = useState<"cabinet" | "manual">(defaultPlanMode);
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(hasAdvancedInitialValue);
-  const [selectedMedicineId, setSelectedMedicineId] = useState(
-    initialValue?.householdMedicineId ?? ""
-  );
-  const [customMedicineName, setCustomMedicineName] = useState(
-    initialValue?.customMedicineName ?? ""
-  );
-  const [doseAmount, setDoseAmount] = useState(initialValue?.doseAmount ?? "");
-  const [minIntervalInput, setMinIntervalInput] = useState(
-    initialValue
-      ? intervalMinutesToInputValue(initialValue.minIntervalMinutes, intervalUnit)
-      : intervalUnit === "minutes"
-        ? "180"
-        : "3"
-  );
-  const [maxDosesPerDay, setMaxDosesPerDay] = useState(
-    initialValue?.maxDosesPerDay ? String(initialValue.maxDosesPerDay) : ""
-  );
-  const [weightKg, setWeightKg] = useState(
-    initialValue?.weightKg
-      ? String(initialValue.weightKg)
-      : latestWeight
-        ? String(latestWeight.valueKg)
-        : ""
-  );
-  const [doseMgPerKg, setDoseMgPerKg] = useState(
-    initialValue?.doseMgPerKg ? String(initialValue.doseMgPerKg) : ""
-  );
-  const selectedMedicine = medicines.find((medicine) => medicine.id === selectedMedicineId) ?? null;
-  const parsedWeightKg = parseNullableNumber(weightKg);
-  const weightHint = buildWeightDoseHint(
-    selectedMedicine,
-    parsedWeightKg,
-    parseNullableNumber(doseMgPerKg)
-  );
-  const hasDoseUnitHint = doseAmount.trim().length > 0 && !/[A-Za-zА-Яа-я]/.test(doseAmount);
-  const hasInvalidDose = doseAmount.trim().length > 0 && hasDoseUnitHint;
-  const parsedIntervalMinutes = parseIntervalInputToMinutes(minIntervalInput, intervalUnit);
-  const latestWeightValue = latestWeight?.valueKg ?? null;
-  const shouldOfferWeightSync =
-    parsedWeightKg !== null &&
-    (latestWeightValue === null || Math.abs(parsedWeightKg - latestWeightValue) >= 0.1);
-
-  const syncWeightMutation = useMutation({
-    mutationFn: (valueKg: number) =>
-      createWeightEntry({
-        child_id: childId,
-        value_kg: valueKg,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["weight-entry-latest", childId] });
-    },
-  });
-
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-3 xl:grid-cols-2">
-        <div className="min-w-0">
-          {planMode === "cabinet" ? (
-            <div className="space-y-2">
-              <CabinetMedicinePicker
-                medicines={medicines}
-                value={selectedMedicineId}
-                onChange={setSelectedMedicineId}
-                label={language === "ru" ? "Лекарство" : "Medicine"}
-              />
-              {medicines.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setPlanMode("manual")}
-                  className="text-sm font-medium text-muted transition hover:text-foreground"
-                >
-                  {language === "ru"
-                    ? "Нет в аптечке? Вписать вручную"
-                    : "Not in the first aid kit? Enter manually"}
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <label className="block min-w-0 space-y-1.5">
-                <span className="soft-field-label">
-                  {language === "ru" ? "Лекарство" : "Medicine"}
-                </span>
-                <input
-                  type="text"
-                  value={customMedicineName}
-                  onChange={(event) => setCustomMedicineName(event.target.value)}
-                  placeholder={language === "ru" ? "Например: Ибуклин" : "Example: Ibuklin"}
-                  className="soft-input w-full px-4"
-                />
-              </label>
-              {medicines.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setPlanMode("cabinet")}
-                  className="text-sm font-medium text-muted transition hover:text-foreground"
-                >
-                  {language === "ru" ? "Выбрать из аптечки" : "Choose from first aid kit"}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div>
-          <label className="block space-y-1.5">
-            <span className="soft-field-label">
-              {language === "ru"
-                ? "Сколько дать сейчас (разовая доза)"
-                : "Dose for now (single dose)"}
-            </span>
-            <input
-              type="text"
-              value={doseAmount}
-              onChange={(e) => setDoseAmount(e.target.value)}
-              placeholder={
-                language === "ru" ? "Например: 10 мл или 1 таб." : "Example: 10 ml or 1 tab"
-              }
-              className="soft-input w-full px-4"
-            />
-            {hasDoseUnitHint && (
-              <p className="mt-2 text-xs text-muted">
-                {language === "ru"
-                  ? "Лучше добавить единицу: мл, таб., кап. и т.д."
-                  : "Better add a unit: ml, tab, drops, etc."}
-              </p>
-            )}
-            {hasInvalidDose && (
-              <p className="soft-text-danger mt-2 text-xs">
-                {language === "ru"
-                  ? "Укажи единицу дозы: мл, таб., мг, кап. и т.д."
-                  : "Add a dose unit: ml, tab, mg, drops, etc."}
-              </p>
-            )}
-          </label>
-        </div>
-
-        <div>
-          <label className="block space-y-1.5">
-            <span className="soft-field-label">
-              {language === "ru" ? "Интервал напоминания" : "Reminder interval"},{" "}
-              {intervalUnit === "minutes"
-                ? language === "ru"
-                  ? "минут"
-                  : "minutes"
-                : language === "ru"
-                  ? "часов"
-                  : "hours"}
-            </span>
-            <input
-              type="number"
-              min="1"
-              max={intervalUnit === "minutes" ? "1440" : "24"}
-              step={intervalUnit === "minutes" ? "1" : "0.5"}
-              value={minIntervalInput}
-              onChange={(e) => setMinIntervalInput(e.target.value)}
-              className="soft-input w-full px-4"
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className="mt-3">
-        <div className="border-t border-border/60 pt-4">
-          <DisclosureHeader
-            isOpen={isAdvancedOpen}
-            onToggle={() => setIsAdvancedOpen((current) => !current)}
-            desktopClosedLabel={language === "ru" ? "Дополнительно" : "Advanced"}
-            desktopOpenLabel={language === "ru" ? "Скрыть" : "Hide"}
-            mobileClosedLabel={language === "ru" ? "Доп." : "More"}
-            mobileOpenLabel={language === "ru" ? "Скрыть" : "Hide"}
-          >
-            <div>
-              <h5 className="text-sm font-semibold text-foreground">
-                {language === "ru" ? "Дополнительные настройки" : "Advanced settings"}
-              </h5>
-              <p className="mt-1 text-sm text-muted">
-                {language === "ru"
-                  ? "Опционально: лимит в сутки и проверка по весу."
-                  : "Optional: daily limit and a weight-based check."}
-              </p>
-            </div>
-          </DisclosureHeader>
-
-          {isAdvancedOpen && (
-            <div className="mt-4 grid gap-3 xl:grid-cols-2">
-              <div>
-                <label className="block space-y-1.5">
-                  <span className="soft-field-label">
-                    {language === "ru" ? "Максимум в сутки" : "Max per day"}
-                  </span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="24"
-                    value={maxDosesPerDay}
-                    onChange={(e) => setMaxDosesPerDay(e.target.value)}
-                    placeholder={language === "ru" ? "Необязательно" : "Optional"}
-                    className="soft-input w-full px-4"
-                  />
-                </label>
-              </div>
-
-              <div>
-                <label className="block space-y-1.5">
-                  <span className="flex items-center gap-2 soft-field-label">
-                    {language === "ru"
-                      ? "Вес ребёнка для проверки, кг"
-                      : "Child weight for check, kg"}
-                    <InlineHint
-                      text={
-                        language === "ru"
-                          ? "Нужен только для проверки по мг/кг. Если доза уже известна, поле можно пропустить."
-                          : "Needed only for the mg/kg check. If the dose is already known, you can skip this field."
-                      }
-                    />
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={weightKg}
-                    onChange={(e) => setWeightKg(e.target.value)}
-                    placeholder={
-                      latestWeight
-                        ? String(latestWeight.valueKg)
-                        : language === "ru"
-                          ? "Необязательно"
-                          : "Optional"
-                    }
-                    className="soft-input w-full px-4"
-                  />
-                  {latestWeight && (
-                    <p className="mt-2 text-xs text-muted">
-                      Последний вес: {latestWeight.valueKg} кг от{" "}
-                      {formatChildDate(latestWeight.measuredAt, language)}
-                    </p>
-                  )}
-                  {shouldOfferWeightSync && (
-                    <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">
-                      <p>
-                        {language === "ru"
-                          ? `В плане указан вес ${parsedWeightKg} кг. Обновить его и в карточке ребёнка?`
-                          : `The plan uses ${parsedWeightKg} kg. Update it in the child profile too?`}
-                      </p>
-                      <div className="mt-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (parsedWeightKg === null) {
-                              return;
-                            }
-                            syncWeightMutation.mutate(parsedWeightKg);
-                          }}
-                          disabled={syncWeightMutation.isPending}
-                          className={`${appBtnSecondaryClass} min-h-[2.85rem] disabled:opacity-50 sm:min-h-[3.05rem]`}
-                        >
-                          {syncWeightMutation.isPending
-                            ? language === "ru"
-                              ? "Сохраняем вес…"
-                              : "Saving weight…"
-                            : language === "ru"
-                              ? "Обновить вес ребёнка"
-                              : "Update child weight"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </label>
-              </div>
-
-              <div className="xl:col-span-2">
-                <label className="block space-y-1.5">
-                  <span className="flex items-center gap-2 soft-field-label">
-                    {language === "ru" ? "Проверка по весу, мг/кг" : "Weight check, mg/kg"}
-                    <InlineHint
-                      text={
-                        language === "ru"
-                          ? "Если врач указал дозу в мг/кг, введи значение. Это проверка, основная доза задаётся выше."
-                          : "If the doctor gave the dose in mg/kg, enter it here. This is a check, the main dose is set above."
-                      }
-                    />
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={doseMgPerKg}
-                    onChange={(e) => setDoseMgPerKg(e.target.value)}
-                    placeholder={language === "ru" ? "Введите дозировку, мг" : "Optional"}
-                    className="soft-input w-full px-4"
-                  />
-                  <p className="mt-2 text-xs text-muted">
-                    {language === "ru"
-                      ? "Покажем ориентир по мг и мл. Решение о приёме — по назначению врача."
-                      : "Shows an approximate mg/ml estimate. Follow your clinician's instructions for dosing."}
-                  </p>
-                </label>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {weightHint && (
-        <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">{weightHint}</div>
-      )}
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            if (
-              parsedIntervalMinutes === null ||
-              hasInvalidDose ||
-              (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim())
-            ) {
-              return;
-            }
-
-            onSubmit({
-              householdMedicineId: planMode === "cabinet" ? selectedMedicineId : null,
-              customMedicineName: planMode === "manual" ? customMedicineName.trim() : null,
-              doseAmount: doseAmount.trim(),
-              minIntervalMinutes: parsedIntervalMinutes,
-              maxDosesPerDay: parseNullableInteger(maxDosesPerDay),
-              weightKg: parseNullableNumber(weightKg),
-              doseMgPerKg: parseNullableNumber(doseMgPerKg),
-              notes: null,
-            });
-
-            if (!initialValue) {
-              setPlanMode("cabinet");
-              setSelectedMedicineId("");
-              setCustomMedicineName("");
-              setDoseAmount("");
-              setMinIntervalInput(intervalUnit === "minutes" ? "180" : "3");
-              setMaxDosesPerDay("");
-              setDoseMgPerKg("");
-            }
-            onCancel?.();
-          }}
-          disabled={
-            isPending ||
-            (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim()) ||
-            !minIntervalInput ||
-            hasInvalidDose ||
-            parsedIntervalMinutes === null
-          }
-          className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
-        >
-          {isPending ? (language === "ru" ? "Сохраняем…" : "Saving…") : submitLabel}
-        </button>
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isPending}
-            className={`${appBtnSecondaryClass} min-h-[2.85rem] disabled:opacity-50 sm:min-h-[3.05rem]`}
-          >
-            {language === "ru" ? "Отмена" : "Cancel"}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function MedicationPlanList({
-  plans,
-  medicines,
-  administrations,
-  onOpen,
-  onTakeDose,
-  isSubmittingAdministration = false,
-}: {
-  plans: EpisodeMedicationPlan[];
-  medicines: HouseholdMedicine[];
-  administrations?: AdministrationEvent[];
-  onOpen: (planId: string) => void;
-  onTakeDose?: (plan: EpisodeMedicationPlan) => void;
-  isSubmittingAdministration?: boolean;
-}) {
-  const { language } = useI18n();
-  const now = useNow();
-  const currentTime = new Date(now);
-  const prioritizedPlans = administrations
-    ? getPrioritizedMedicationPlanItems(plans, administrations, medicines, currentTime)
-    : plans.map((plan) => ({
-        plan,
-        medicine: medicines.find((item) => item.id === plan.householdMedicineId) ?? null,
-        stats: buildPlanAdministrationStats(plan, [], currentTime),
-        isUnavailable: false,
-      }));
-
-  return (
-    <div className="grid gap-3">
-      {prioritizedPlans.map(({ plan, medicine, stats, isUnavailable }) => {
-        const planName =
-          plan.customMedicineName ??
-          medicine?.medicineName ??
-          (language === "ru" ? "Лекарство" : "Medicine");
-        const nextDoseLabel = isUnavailable
-          ? language === "ru"
-            ? "Упаковка сейчас недоступна"
-            : "This pack is currently unavailable"
-          : stats?.blockedByDailyLimit
-            ? language === "ru"
-              ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
-              : `${planName}: today's dose limit is already reached`
-            : stats?.nextAllowedAt
-              ? stats.nextAllowedAt <= currentTime
-                ? language === "ru"
-                  ? "Следующий приём: можно сейчас"
-                  : "Next dose: available now"
-                : language === "ru"
-                  ? `Следующий приём: ${formatRelativeDateTime(stats.nextAllowedAt, currentTime)}`
-                  : `Next dose: ${formatRelativeDateTime(stats.nextAllowedAt, currentTime)}`
-              : language === "ru"
-                ? "Следующий приём: можно сейчас"
-                : "Next dose: available now";
-        const nextDoseToneClass = isUnavailable
-          ? "soft-pill-danger"
-          : stats?.blockedByDailyLimit
-            ? "soft-pill-danger"
-            : stats?.nextAllowedAt
-              ? stats.nextAllowedAt <= currentTime
-                ? "soft-pill-success"
-                : "soft-pill-warning"
-              : "soft-pill-info";
-
-        return (
-          <article
-            key={plan.id}
-            className="soft-section-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success-soft)_24%,transparent)] px-4 py-4"
-          >
-            <div className="flex flex-col gap-4">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-base font-semibold text-foreground">{planName}</p>
-                  <span className={`${nextDoseToneClass} rounded-full px-2.5 py-1 text-[11px]`}>
-                    {stats?.nextAllowedAt &&
-                    stats.nextAllowedAt <= currentTime &&
-                    !stats.blockedByDailyLimit &&
-                    !isUnavailable
-                      ? language === "ru"
-                        ? "Сейчас"
-                        : "Now"
-                      : isUnavailable
-                        ? language === "ru"
-                          ? "Недоступно"
-                          : "Unavailable"
-                        : stats?.blockedByDailyLimit
-                          ? language === "ru"
-                            ? "Лимит"
-                            : "Limit"
-                          : language === "ru"
-                            ? "По графику"
-                            : "Scheduled"}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-muted">{nextDoseLabel}</p>
-                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
-                  {plan.doseAmount ? (
-                    <span>
-                      {language === "ru" ? "Доза" : "Dose"}: {plan.doseAmount}
-                    </span>
-                  ) : null}
-                  {plan.maxDosesPerDay ? (
-                    <span>
-                      {language === "ru" ? "Сегодня отмечено" : "Logged today"}:{" "}
-                      {stats?.todayCount ?? 0} {language === "ru" ? "из" : "of"}{" "}
-                      {plan.maxDosesPerDay}
-                    </span>
-                  ) : (stats?.todayCount ?? 0) > 0 ? (
-                    <span>
-                      {language === "ru" ? "Сегодня отмечено" : "Logged today"}:{" "}
-                      {stats?.todayCount ?? 0}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-2">
-                {onTakeDose && (
-                  <button
-                    type="button"
-                    onClick={() => onTakeDose(plan)}
-                    disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
-                    className={`inline-flex min-h-[2.95rem] items-center justify-center px-4 text-[0.88rem] tracking-[-0.03em] transition disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5 sm:text-[0.92rem] ${
-                      isUnavailable || stats?.isBlocked
-                        ? `${appBtnSecondaryClass} text-muted`
-                        : appBtnPrimaryClass
-                    }`}
-                  >
-                    {isSubmittingAdministration
-                      ? language === "ru"
-                        ? "Отмечаем…"
-                        : "Logging…"
-                      : isUnavailable
-                        ? language === "ru"
-                          ? "Недоступно"
-                          : "Unavailable"
-                        : stats?.isBlocked
-                          ? language === "ru"
-                            ? "Пока рано"
-                            : "Too early"
-                          : language === "ru"
-                            ? "Отметить"
-                            : "Log dose"}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => onOpen(plan.id)}
-                  className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-                >
-                  {language === "ru" ? "Открыть" : "Open"}
-                </button>
-              </div>
-            </div>
-          </article>
-        );
-      })}
-    </div>
-  );
-}
-
-function MedicationPlanDetail({
-  item,
-  childId,
-  medicines,
-  latestWeight,
-  onUpdate,
-  onDelete,
-  onTakeDose,
-  isSubmittingAdministration = false,
-  isUpdating = false,
-  isDeleting = false,
-}: {
-  item: MedicationPlanPriorityItem<EpisodeMedicationPlan>;
-  childId: string;
-  medicines: HouseholdMedicine[];
-  latestWeight: WeightEntry | null;
-  onUpdate: (planId: string, payload: MedicationPlanPayload) => void;
-  onDelete: (planId: string) => void;
-  onTakeDose?: (plan: EpisodeMedicationPlan) => void;
-  isSubmittingAdministration?: boolean;
-  isUpdating?: boolean;
-  isDeleting?: boolean;
-}) {
-  const { language } = useI18n();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
-  const { plan, medicine, stats, isUnavailable } = item;
-  const planName =
-    plan.customMedicineName ??
-    medicine?.medicineName ??
-    (language === "ru" ? "Лекарство" : "Medicine");
-  const doseBadge = plan.doseAmount?.trim() ?? "";
-  const weightHint = buildWeightDoseHint(medicine, plan.weightKg, plan.doseMgPerKg);
-  const editableMedicines = Array.from(
-    new Map(
-      medicines
-        .filter(
-          (entry) =>
-            entry.id === plan.householdMedicineId ||
-            (entry.status !== "expired" && entry.status !== "expired_after_opening")
-        )
-        .map((entry) => [entry.id, entry])
-    ).values()
-  );
-
-  if (isEditing) {
-    return (
-      <section className="space-y-4">
-        <div>
-          <h4 className="text-base font-semibold text-foreground">{planName}</h4>
-          <p className="mt-1 text-sm text-muted">
-            {language === "ru"
-              ? "Измените интервал и параметры напоминания."
-              : "Adjust the interval and reminder settings."}
-          </p>
-        </div>
-        <MedicationPlanComposer
-          key={plan.id}
-          childId={childId}
-          medicines={editableMedicines}
-          latestWeight={latestWeight}
-          initialValue={{
-            householdMedicineId: plan.householdMedicineId,
-            customMedicineName: plan.customMedicineName,
-            doseAmount: plan.doseAmount,
-            minIntervalMinutes: plan.minIntervalMinutes,
-            maxDosesPerDay: plan.maxDosesPerDay,
-            weightKg: plan.weightKg,
-            doseMgPerKg: plan.doseMgPerKg,
-            notes: plan.notes,
-          }}
-          onSubmit={(payload) => {
-            onUpdate(plan.id, payload);
-            setIsEditing(false);
-          }}
-          submitLabel={language === "ru" ? "Сохранить напоминание" : "Save reminder"}
-          isPending={isUpdating}
-          onCancel={() => setIsEditing(false)}
-        />
-      </section>
-    );
-  }
-
-  return (
-    <section className="space-y-5">
-      <ConfirmDialog
-        isOpen={isDeleteConfirmOpen}
-        title={
-          language === "ru" ? `Удалить напоминание · ${planName}` : `Delete reminder · ${planName}`
-        }
-        description={
-          language === "ru"
-            ? "Напоминание будет удалено из текущего наблюдения. История уже отмеченных приёмов останется."
-            : "The reminder will be removed from the current tracking session. Logged dose history will stay."
-        }
-        confirmLabel={
-          isDeleting
-            ? language === "ru"
-              ? "Удаляем…"
-              : "Deleting…"
-            : language === "ru"
-              ? "Да, удалить напоминание"
-              : "Yes, delete reminder"
-        }
-        confirmTone="danger"
-        isPending={isDeleting}
-        onCancel={() => setIsDeleteConfirmOpen(false)}
-        onConfirm={() => {
-          setIsDeleteConfirmOpen(false);
-          onDelete(plan.id);
-        }}
-      />
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h4 className="min-w-0 text-xl font-semibold tracking-tight text-foreground">
-              {planName}
-            </h4>
-            {doseBadge ? (
-              <span className="soft-note-info rounded-full px-2.5 py-1 text-xs font-medium">
-                {doseBadge}
-              </span>
-            ) : null}
-          </div>
-          <span
-            className={`rounded-full px-3 py-1 text-xs ${
-              isUnavailable
-                ? "soft-pill-danger"
-                : stats?.blockedByDailyLimit
-                  ? "soft-pill-danger"
-                  : stats?.isBlocked
-                    ? "soft-pill-warning"
-                    : "soft-pill-success"
-            }`}
-          >
-            {isUnavailable
-              ? language === "ru"
-                ? "Недоступно"
-                : "Unavailable"
-              : stats?.blockedByDailyLimit
-                ? language === "ru"
-                  ? "Лимит"
-                  : "Limit"
-                : stats?.isBlocked
-                  ? language === "ru"
-                    ? "По графику"
-                    : "Scheduled"
-                  : language === "ru"
-                    ? "Можно сейчас"
-                    : "Available now"}
-          </span>
-        </div>
-        <p className="text-sm leading-6 text-foreground/78">
-          {isUnavailable
-            ? language === "ru"
-              ? "Упаковка недоступна для приёма."
-              : "This pack is unavailable for use."
-            : stats?.blockedByDailyLimit
-              ? language === "ru"
-                ? "Лимит приёмов на сегодня уже достигнут."
-                : "Today's dose limit has already been reached."
-              : stats?.nextAllowedAt
-                ? stats.nextAllowedAt <= new Date()
-                  ? language === "ru"
-                    ? "Приём можно отметить сейчас."
-                    : "A dose can be logged now."
-                  : language === "ru"
-                    ? `Следующий приём ${formatRelativeDateTime(stats.nextAllowedAt, new Date())}.`
-                    : `Next dose ${formatRelativeDateTime(stats.nextAllowedAt, new Date())}.`
-                : language === "ru"
-                  ? "Приём можно отметить сейчас."
-                  : "A dose can be logged now."}
-        </p>
-      </div>
-
-      <div className="space-y-6">
-        <section className="space-y-3">
-          <h5 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-            {language === "ru" ? "Схема" : "Schedule"}
-          </h5>
-          <DetailRow
-            label={language === "ru" ? "Интервал" : "Interval"}
-            value={formatIntervalForDisplay(plan.minIntervalMinutes, intervalUnit)}
-          />
-          {plan.maxDosesPerDay ? (
-            <DetailRow
-              label={language === "ru" ? "Ограничение" : "Limit"}
-              value={
-                language === "ru"
-                  ? `До ${plan.maxDosesPerDay} раз в сутки`
-                  : `Up to ${plan.maxDosesPerDay} times per day`
-              }
-            />
-          ) : null}
-          {medicine && (medicine.medicineForm || medicine.medicineConcentration) ? (
-            <DetailRow
-              label={language === "ru" ? "Форма" : "Form"}
-              value={[medicine.medicineForm ?? null, medicine.medicineConcentration ?? null]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-          ) : null}
-          {weightHint ? (
-            <DetailRow label={language === "ru" ? "По весу" : "Weight based"} value={weightHint} />
-          ) : null}
-        </section>
-
-        <section className="space-y-3">
-          <h5 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-            {language === "ru" ? "История" : "History"}
-          </h5>
-          {stats?.lastAdministration ? (
-            <DetailRow
-              label={language === "ru" ? "Последний приём" : "Last dose"}
-              value={[
-                formatChildDateTime(stats.lastAdministration.administeredAt, language),
-                getAdministrationActorLabel(stats.lastAdministration, language),
-              ]
-                .filter(Boolean)
-                .join(" • ")}
-            />
-          ) : null}
-          {(stats?.todayCount ?? 0) > 0 ? (
-            <DetailRow
-              label={language === "ru" ? "Сегодня" : "Today"}
-              value={
-                plan.maxDosesPerDay
-                  ? language === "ru"
-                    ? `Отмечено ${stats?.todayCount ?? 0} из ${plan.maxDosesPerDay}`
-                    : `Logged ${stats?.todayCount ?? 0} of ${plan.maxDosesPerDay}`
-                  : language === "ru"
-                    ? `Отмечено ${stats?.todayCount ?? 0}`
-                    : `Logged ${stats?.todayCount ?? 0}`
-              }
-            />
-          ) : null}
-          {plan.notes?.trim() ? (
-            <DetailRow label={language === "ru" ? "Заметка" : "Note"} value={plan.notes.trim()} />
-          ) : null}
-        </section>
-      </div>
-
-      <div className="space-y-2">
-        <div className="grid gap-2 sm:grid-cols-2">
-          {onTakeDose && (
-            <button
-              type="button"
-              onClick={() => onTakeDose(plan)}
-              disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
-              className={`${appBtnPrimaryClass} min-h-[2.95rem] disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
-            >
-              {isSubmittingAdministration
-                ? language === "ru"
-                  ? "Отмечаем…"
-                  : "Logging…"
-                : isUnavailable
-                  ? language === "ru"
-                    ? "Недоступно"
-                    : "Unavailable"
-                  : stats?.isBlocked
-                    ? language === "ru"
-                      ? "Рано"
-                      : "Too early"
-                    : language === "ru"
-                      ? "Отметить приём"
-                      : "Log dose"}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-          >
-            {language === "ru" ? "Изменить" : "Edit"}
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={() => setIsDeleteConfirmOpen(true)}
-          disabled={isDeleting}
-          className={`${appBtnDangerClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5`}
-        >
-          {isDeleting
-            ? language === "ru"
-              ? "Удаляем…"
-              : "Deleting…"
-            : language === "ru"
-              ? "Удалить"
-              : "Delete"}
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function parseNullableInteger(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  const parsed = parseInt(trimmed, 10);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-function parseNullableNumber(value: string) {
-  const trimmed = value.trim().replace(",", ".");
-  if (!trimmed) {
-    return null;
-  }
-
-  const parsed = parseFloat(trimmed);
-  return Number.isNaN(parsed) ? null : parsed;
 }

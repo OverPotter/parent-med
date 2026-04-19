@@ -150,6 +150,8 @@ interface RawIllnessComment {
   episode_id: string;
   created_at: string;
   text: string;
+  created_by_account_id: string | null;
+  created_by_name_snapshot: string | null;
 }
 
 interface RawTemperatureEntry {
@@ -159,6 +161,8 @@ interface RawTemperatureEntry {
   measured_at: string;
   method: string | null;
   comment: string | null;
+  created_by_account_id: string | null;
+  created_by_name_snapshot: string | null;
 }
 
 interface RawAdministrationEvent {
@@ -355,6 +359,8 @@ export function toIllnessComment(r: RawIllnessComment): IllnessComment {
     episodeId: r.episode_id,
     createdAt: r.created_at,
     text: r.text,
+    createdByAccountId: r.created_by_account_id ?? null,
+    createdByNameSnapshot: r.created_by_name_snapshot ?? null,
   };
 }
 
@@ -366,6 +372,8 @@ export function toTemperatureEntry(r: RawTemperatureEntry): TemperatureEntry {
     measuredAt: r.measured_at,
     method: r.method ?? null,
     comment: r.comment ?? null,
+    createdByAccountId: r.created_by_account_id ?? null,
+    createdByNameSnapshot: r.created_by_name_snapshot ?? null,
   };
 }
 

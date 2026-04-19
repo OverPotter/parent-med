@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import { formatChildDateRange } from "@client/utils/childDateFormat";
 
-export const appBtnPrimaryClass = "soft-pill-warning app-profile-action app-profile-action--active";
+export const appBtnFilledClass =
+  "soft-pill-primary app-profile-action app-profile-action--selected";
 export const appBtnSecondaryClass = "soft-pill app-profile-action";
-export const appPillActionClass = "soft-pill app-profile-action";
+export const appPillActionClass =
+  "soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]";
 export const appBtnDangerClass = "soft-pill-danger app-profile-action";
 export const illnessPanelClass =
   "rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]";
@@ -13,14 +15,16 @@ export const illnessListClass =
   "overflow-hidden rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]";
 export const illnessListRowClass =
   "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:px-4";
-
-export function InfoPill({ label }: { label: string }) {
-  return (
-    <span className="soft-pill max-w-[7.5rem] rounded-full px-3 py-1 text-sm leading-4 whitespace-normal sm:max-w-none">
-      {label}
-    </span>
-  );
-}
+export const appBtnJournalPrimaryClass =
+  "soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]";
+export const appBtnJournalSecondaryClass =
+  "soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]";
+export const appBtnJournalDangerClass =
+  "soft-pill-danger app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]";
+export const illnessCompactInputClass =
+  "soft-input min-h-[2.82rem] w-full px-4 py-0 text-left text-[16px] leading-[1.15] placeholder:text-left sm:min-h-[2.92rem]";
+export const illnessCompactPrimaryButtonClass = appBtnJournalPrimaryClass;
+export const illnessCompactSecondaryButtonClass = appBtnJournalSecondaryClass;
 
 export function SummaryCard({ label, value }: { label: string; value: string }) {
   return (

@@ -201,7 +201,7 @@ export function ChildCalendarPage() {
 
   const tabClass = (tab: ViewMode) =>
     [
-      "inline-flex min-h-[2.55rem] flex-1 items-center justify-center rounded-full border px-3 py-1.5 text-center text-xs font-extrabold tracking-[-0.015em] transition",
+      "inline-flex min-h-[2.5rem] flex-1 items-center justify-center rounded-full border px-3.25 py-1 text-center text-[0.8rem] font-bold tracking-[-0.025em] transition sm:min-h-[2.6rem] sm:text-[0.82rem]",
       mode === tab
         ? "border-primary bg-primary text-primary-foreground shadow-[0_10px_26px_color-mix(in_srgb,var(--color-primary)_28%,transparent)]"
         : "border-border bg-surface-muted text-muted hover:border-primary/35 hover:text-foreground",
@@ -209,7 +209,7 @@ export function ChildCalendarPage() {
   const periodLabel = getPeriodLabel(period, dateRange, text, language);
   const filterClass = (kind: EventKind) =>
     [
-      "soft-pill inline-flex min-h-[2.2rem] items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition",
+      "soft-pill inline-flex min-h-[2.3rem] items-center gap-1.5 rounded-full px-3 py-1 text-[0.76rem] font-semibold tracking-[-0.02em] transition sm:min-h-[2.38rem] sm:text-[0.78rem]",
       enabledKinds.includes(kind) ? "text-foreground" : "opacity-45",
     ].join(" ");
 
@@ -338,7 +338,7 @@ export function ChildCalendarPage() {
             <button
               type="button"
               onClick={() => setIsPeriodMenuOpen((current) => !current)}
-              className="soft-pill app-profile-action app-profile-action--split min-h-[2.45rem] w-full gap-2 rounded-[18px] text-left text-xs font-extrabold"
+              className="soft-pill app-profile-action app-profile-action--split min-h-[2.5rem] w-full gap-2 rounded-[18px] px-3.25 text-left text-[0.8rem] font-bold tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]"
               aria-haspopup="listbox"
               aria-expanded={isPeriodMenuOpen}
             >
@@ -365,7 +365,7 @@ export function ChildCalendarPage() {
                       aria-selected={isActive}
                       onClick={() => handlePeriodChange(option)}
                       className={[
-                        "flex min-h-[2.45rem] w-full items-center justify-between rounded-[17px] px-3 text-left text-sm font-extrabold tracking-[-0.02em] transition",
+                        "flex min-h-[2.5rem] w-full items-center justify-between rounded-[17px] px-3.25 text-left text-[0.82rem] font-bold tracking-[-0.025em] transition sm:min-h-[2.6rem]",
                         isActive
                           ? "bg-primary text-primary-foreground shadow-[0_10px_24px_color-mix(in_srgb,var(--color-primary)_22%,transparent)]"
                           : "bg-surface text-foreground hover:bg-surface-muted",
@@ -383,7 +383,7 @@ export function ChildCalendarPage() {
             <button
               type="button"
               onClick={openCustomPeriodDialog}
-              className="soft-pill app-profile-action min-h-[2.45rem] rounded-[18px] px-4 text-xs font-extrabold"
+              className="soft-pill app-profile-action min-h-[2.5rem] rounded-[18px] px-3.25 text-[0.8rem] font-bold tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]"
             >
               {text.editCustomPeriod}
             </button>

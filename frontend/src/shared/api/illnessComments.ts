@@ -11,6 +11,8 @@ interface RawIllnessComment {
   episode_id: string;
   created_at: string;
   text: string;
+  created_by_account_id: string | null;
+  created_by_name_snapshot: string | null;
 }
 
 export async function fetchIllnessCommentsByEpisodeId(

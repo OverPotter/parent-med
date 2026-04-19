@@ -24,6 +24,8 @@ class SqlTemperatureEntryRepository(TemperatureEntryRepository):
             measured_at=m.occurred_at,
             method=m.method,
             comment=m.comment,
+            created_by_account_id=m.created_by_account_id,
+            created_by_name_snapshot=m.created_by_name_snapshot,
         )
 
     def _to_model(self, e: TemperatureEntry) -> IllnessEpisodeEventModel:
@@ -35,6 +37,8 @@ class SqlTemperatureEntryRepository(TemperatureEntryRepository):
             value_celsius=e.value_celsius,
             method=e.method,
             comment=e.comment,
+            created_by_account_id=e.created_by_account_id,
+            created_by_name_snapshot=e.created_by_name_snapshot,
         )
 
     async def get_by_id(self, id: UUID) -> TemperatureEntry | None:

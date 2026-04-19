@@ -212,6 +212,8 @@ export interface IllnessComment {
   episodeId: string;
   createdAt: string;
   text: string;
+  createdByAccountId: string | null;
+  createdByNameSnapshot: string | null;
 }
 
 export interface TemperatureEntry {
@@ -221,6 +223,8 @@ export interface TemperatureEntry {
   measuredAt: string;
   method: string | null;
   comment: string | null;
+  createdByAccountId: string | null;
+  createdByNameSnapshot: string | null;
 }
 
 export interface AdministrationEvent {

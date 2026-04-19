@@ -1,7 +1,6 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchFamilies } from "@shared/api/families";
-import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
 import { useAppStore } from "@shared/store/useAppStore";
 
 interface ClientStartRouteResult {
@@ -30,31 +29,19 @@ export function useClientStartRoute(): ClientStartRouteResult {
     enabled: !!familyId,
   });
 
-  const activeEpisodeQueries = useQueries({
-    queries: children.map((child) => ({
-      queryKey: ["illness-episode-active", child.id],
-      queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
-      enabled: !!child.id,
-    })),
-  });
-
-  const isActiveEpisodesLoading =
-    children.length > 0 && activeEpisodeQueries.some((query) => query.isLoading || query.isPending);
-  const hasActiveEpisode = activeEpisodeQueries.some((query) => Boolean(query.data));
   const hasFamily = Boolean(familyId);
   const hasChildren = children.length > 0;
+  const hasActiveEpisode = false;
 
   let startRoute = "/family";
   if (hasFamily && !hasChildren) {
     startRoute = "/children";
-  } else if (hasFamily && hasActiveEpisode) {
-    startRoute = "/illnesses/active";
   } else if (hasFamily) {
     startRoute = "/children";
   }
 
   return {
-    isResolving: isFamiliesLoading || (hasFamily && isChildrenLoading) || isActiveEpisodesLoading,
+    isResolving: isFamiliesLoading || (hasFamily && isChildrenLoading),
     startRoute,
     hasFamily,
     hasChildren,

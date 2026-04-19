@@ -10,7 +10,7 @@ import {
   fetchIllnessEpisodesByChildId,
 } from "@shared/api/illnessEpisodes";
 import { PageIntro } from "@shared/components/PageIntro";
-import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
+import { EmptyState, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child, IllnessEpisode } from "@shared/types/api";
@@ -18,7 +18,7 @@ import { formatDate, formatDateTime } from "@shared/utils/date";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
 const appBtnSecondaryClass =
-  "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center px-3.5";
+  "soft-pill app-profile-action inline-flex min-h-[2.65rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.75rem] sm:text-[0.84rem]";
 
 export function IllnessHistoryPage() {
   const { language, t } = useI18n();
@@ -77,8 +77,17 @@ export function IllnessHistoryPage() {
     .sort((left, right) => right.episodes.length - left.episodes.length);
 
   return (
-    <div className="space-y-7">
-      <PageIntro title={copy.title} subtitle={copy.subtitle} hideOnMobile />
+    <div className="-mx-3 space-y-7 bg-background px-3 sm:-mx-6 sm:px-6">
+      <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
+
+      <div className="app-mobile-section-intro sm:hidden">
+        <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
+        <p className="app-mobile-section-intro__hint">
+          {language === "ru"
+            ? "Завершённые наблюдения по детям семьи."
+            : "Completed tracking sessions for the children in your family."}
+        </p>
+      </div>
 
       {(isLoading || isEpisodesLoading) && <p className="text-muted">{common.loading}</p>}
 
@@ -132,12 +141,13 @@ function HistoryCard({
 
   return (
     <li>
-      <RowSurface>
+      <Surface className="rounded-[24px] px-4 py-4 sm:px-5 sm:py-4.5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500" />
               <h2 className="app-card-title">{child.name}</h2>
-              <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+              <span className="soft-pill px-3 py-1.5 text-xs">
                 {episodes.length} {copy.inArchive}
               </span>
             </div>
@@ -148,7 +158,10 @@ function HistoryCard({
                 : copy.historyEmpty}
             </p>
             {hasActiveEpisode && (
-              <p className="soft-text-success mt-1 text-sm">{copy.activeOutsideArchive}</p>
+              <p className="mt-1 text-sm text-muted">
+                <span className="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                {copy.activeOutsideArchive}
+              </p>
             )}
             {lastEpisode?.closedAt && (
               <p className="mt-1 text-sm text-muted">
@@ -157,14 +170,11 @@ function HistoryCard({
             )}
           </div>
 
-          <Link
-            to={`/children/${child.id}/illness?view=history`}
-            className={`${appBtnSecondaryClass} min-h-[2.85rem] sm:min-h-[3.05rem]`}
-          >
+          <Link to={`/children/${child.id}/illness?view=history`} className={appBtnSecondaryClass}>
             {copy.historyLink}
           </Link>
         </div>
-      </RowSurface>
+      </Surface>
     </li>
   );
 }

@@ -43,7 +43,12 @@ async def create_temperature_entry(
     service: TemperatureEntryService = Depends(get_temperature_entry_service),
 ) -> TemperatureEntryResponseDto:
     """Добавить запись температуры."""
-    return await service.create(dto, current_account.family_id)
+    return await service.create(
+        dto,
+        current_account.family_id,
+        current_account.id,
+        current_account.display_name,
+    )
 
 
 @router.delete("/{entry_id}", status_code=204)

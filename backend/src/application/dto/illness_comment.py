@@ -23,3 +23,5 @@ class IllnessCommentResponseDto(ResponseBase):
     episode_id: UUID
     created_at: datetime
     text: str
+    created_by_account_id: UUID | None
+    created_by_name_snapshot: str | None

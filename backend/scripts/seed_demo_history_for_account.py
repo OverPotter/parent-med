@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID, uuid4
@@ -20,8 +21,7 @@ from src.infrastructure.database.models import (
     WeightEntryModel,
 )
 
-
-TARGET_EMAIL = "a.khmialev@gmail.com"
+TARGET_EMAIL = os.getenv("TARGET_EMAIL", "a.khmialev@gmail.com")
 
 
 @dataclass
@@ -47,9 +47,19 @@ class ChildSeed:
     episodes: list[EpisodeSeed]
 
 
+@dataclass
+class EventAuthorSeed:
+    account_id: UUID
+    display_name: str
+
+
 def _dt_days_ago(days_ago: int, hour: int = 9, minute: int = 0) -> datetime:
     base = datetime.now(UTC) - timedelta(days=days_ago)
     return base.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+
+def pick_author(authors: list[EventAuthorSeed], seed_index: int) -> EventAuthorSeed:
+    return authors[seed_index % len(authors)]
 
 
 def build_children() -> list[ChildSeed]:
@@ -251,10 +261,23 @@ async def main() -> None:
             raise RuntimeError(f"Account with email {TARGET_EMAIL} not found")
 
         family_id = account.family_id
+        family_accounts = (
+            await session.execute(
+                select(AccountModel.id, AccountModel.display_name)
+                .where(AccountModel.family_id == family_id)
+                .order_by(AccountModel.created_at.asc())
+            )
+        ).all()
+        authors = [
+            EventAuthorSeed(account_id=row.id, display_name=row.display_name)
+            for row in family_accounts
+        ] or [EventAuthorSeed(account_id=account.id, display_name=account.display_name)]
 
         existing_child_ids = (
-            await session.execute(select(ChildModel.id).where(ChildModel.family_id == family_id))
-        ).scalars().all()
+            (await session.execute(select(ChildModel.id).where(ChildModel.family_id == family_id)))
+            .scalars()
+            .all()
+        )
 
         if existing_child_ids:
             await session.execute(
@@ -276,7 +299,9 @@ async def main() -> None:
                 )
             )
             await session.execute(
-                delete(IllnessEpisodeModel).where(IllnessEpisodeModel.child_id.in_(existing_child_ids))
+                delete(IllnessEpisodeModel).where(
+                    IllnessEpisodeModel.child_id.in_(existing_child_ids)
+                )
             )
             await session.execute(
                 delete(WeightEntryModel).where(WeightEntryModel.child_id.in_(existing_child_ids))
@@ -285,7 +310,7 @@ async def main() -> None:
 
         children = build_children()
 
-        for child_seed in children:
+        for child_index, child_seed in enumerate(children):
             child = ChildModel(
                 id=uuid4(),
                 family_id=family_id,
@@ -306,8 +331,10 @@ async def main() -> None:
                     )
                 )
 
-            for episode_seed in child_seed.episodes:
-                started_at = (datetime.now(UTC) - timedelta(days=episode_seed.started_days_ago)).date()
+            for episode_index, episode_seed in enumerate(child_seed.episodes):
+                started_at = (
+                    datetime.now(UTC) - timedelta(days=episode_seed.started_days_ago)
+                ).date()
                 closed_at = _dt_days_ago(
                     max(0, episode_seed.started_days_ago - episode_seed.duration_days + 1),
                     18,
@@ -327,7 +354,10 @@ async def main() -> None:
                 session.add(episode)
                 await session.flush()
 
-                for days_ago, value_celsius, comment in episode_seed.temperatures:
+                for event_index, (days_ago, value_celsius, comment) in enumerate(
+                    episode_seed.temperatures
+                ):
+                    author = pick_author(authors, child_index + episode_index + event_index)
                     session.add(
                         IllnessEpisodeEventModel(
                             id=uuid4(),
@@ -337,10 +367,15 @@ async def main() -> None:
                             value_celsius=value_celsius,
                             method="axillary",
                             comment=comment,
+                            created_by_account_id=author.account_id,
+                            created_by_name_snapshot=author.display_name,
                         )
                     )
 
-                for days_ago, medicine_name, amount, reason in episode_seed.administrations:
+                for event_index, (days_ago, medicine_name, amount, reason) in enumerate(
+                    episode_seed.administrations
+                ):
+                    author = pick_author(authors, child_index + episode_index + event_index + 3)
                     session.add(
                         IllnessEpisodeEventModel(
                             id=uuid4(),
@@ -348,8 +383,10 @@ async def main() -> None:
                             event_type="administration",
                             occurred_at=_dt_days_ago(days_ago, 21, 5),
                             household_medicine_id=None,
-                            administered_by_account_id=account.id,
-                            administered_by_name_snapshot=account.display_name,
+                            created_by_account_id=author.account_id,
+                            created_by_name_snapshot=author.display_name,
+                            administered_by_account_id=author.account_id,
+                            administered_by_name_snapshot=author.display_name,
                             amount=amount,
                             unit="мл",
                             reason=reason,
@@ -357,7 +394,8 @@ async def main() -> None:
                         )
                     )
 
-                for days_ago, text in episode_seed.comments:
+                for event_index, (days_ago, text) in enumerate(episode_seed.comments):
+                    author = pick_author(authors, child_index + episode_index + event_index + 7)
                     session.add(
                         IllnessEpisodeEventModel(
                             id=uuid4(),
@@ -365,10 +403,18 @@ async def main() -> None:
                             event_type="comment",
                             occurred_at=_dt_days_ago(days_ago, 13, 20),
                             comment=text,
+                            created_by_account_id=author.account_id,
+                            created_by_name_snapshot=author.display_name,
                         )
                     )
 
-                for medicine_name, dose_amount, min_interval, max_doses, notes in episode_seed.plans:
+                for (
+                    medicine_name,
+                    dose_amount,
+                    min_interval,
+                    max_doses,
+                    notes,
+                ) in episode_seed.plans:
                     session.add(
                         EpisodeMedicationPlanModel(
                             id=uuid4(),

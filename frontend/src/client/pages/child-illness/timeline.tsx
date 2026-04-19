@@ -1,13 +1,11 @@
-import { useI18n } from "@shared/hooks/useI18n";
 import type {
   AdministrationEvent,
   HouseholdMedicine,
   IllnessComment,
   TemperatureEntry,
 } from "@shared/types/api";
-import { getAdministrationActorLabel } from "../../utils/medicationPlans";
-import { formatChildDateTime } from "@client/utils/childDateFormat";
-import { InfoPill, illnessListClass, illnessListRowClass } from "./shared";
+import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
+import { illnessListClass } from "./shared";
 
 export type EpisodeTimelineItem = {
   id: string;
@@ -15,6 +13,8 @@ export type EpisodeTimelineItem = {
   kind: "temperature" | "administration" | "comment";
   title: string;
   description: string;
+  actorName: string | null;
+  actorAccountId: string | null;
 };
 
 export function EpisodeTimelineList({
@@ -29,46 +29,54 @@ export function EpisodeTimelineList({
       {items.map((item) => (
         <li
           key={item.id}
-          className={`${illnessListRowClass} grid-cols-[minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_auto]`}
+          className="grid grid-cols-[4.4rem_minmax(0,1fr)] items-start gap-3 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:grid-cols-[5rem_minmax(0,1fr)] sm:px-4"
         >
+          <span className="min-w-0 pt-0.5 text-xs font-semibold tabular-nums text-muted">
+            <span className="block leading-4 text-foreground">{formatChildTime(item.at)}</span>
+            <span className="block truncate text-[0.68rem] leading-4">
+              {formatChildDate(item.at, language, { month: "short" })}
+            </span>
+          </span>
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <TimelineKindPill kind={item.kind} />
-              <p className="truncate text-sm font-semibold text-foreground">{item.title}</p>
+              <span
+                className={`h-2 w-2 shrink-0 rounded-full ${getTimelineDotClass(item.kind)}`}
+                aria-hidden="true"
+              />
+              <p className="truncate text-sm font-semibold leading-5 text-foreground">
+                {item.title}
+              </p>
             </div>
-            <p className="mt-1 whitespace-pre-line text-sm leading-6 text-muted">
-              {item.description}
+            <p className="mt-0.5 text-xs leading-5 text-muted">
+              {getTimelineKindLabel(item.kind, language)}
+              {item.actorName ? ` · ${item.actorName}` : ""}
+              {item.description.trim() ? ` · ${item.description.replace(/\n+/g, " · ")}` : ""}
             </p>
           </div>
-          <InfoPill label={formatChildDateTime(item.at, language)} />
         </li>
       ))}
     </ul>
   );
 }
 
-function TimelineKindPill({ kind }: { kind: EpisodeTimelineItem["kind"] }) {
-  const { language } = useI18n();
-  const config: Record<EpisodeTimelineItem["kind"], { label: string; className: string }> = {
-    temperature: {
-      label: language === "ru" ? "Температура" : "Temperature",
-      className: "soft-note-danger",
-    },
-    administration: {
-      label: language === "ru" ? "Лекарство" : "Medicine",
-      className: "soft-note-info",
-    },
-    comment: {
-      label: language === "ru" ? "Комментарий" : "Comment",
-      className: "soft-note-warning",
-    },
+function getTimelineKindLabel(kind: EpisodeTimelineItem["kind"], language: "ru" | "en") {
+  const labels: Record<EpisodeTimelineItem["kind"], string> = {
+    temperature: language === "ru" ? "Замер" : "Reading",
+    administration: language === "ru" ? "Приём" : "Dose",
+    comment: language === "ru" ? "Заметка" : "Note",
   };
 
-  return (
-    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] ${config[kind].className}`}>
-      {config[kind].label}
-    </span>
-  );
+  return labels[kind];
+}
+
+function getTimelineDotClass(kind: EpisodeTimelineItem["kind"]) {
+  const classes: Record<EpisodeTimelineItem["kind"], string> = {
+    temperature: "bg-rose-500",
+    administration: "bg-amber-500",
+    comment: "bg-sky-500",
+  };
+
+  return classes[kind];
 }
 
 export function formatEntrySummary(
@@ -100,6 +108,8 @@ export function buildEpisodeTimeline(
     title: `${entry.valueCelsius} °C`,
     description:
       entry.comment?.trim() || (language === "ru" ? "Замер температуры" : "Temperature reading"),
+    actorName: entry.createdByNameSnapshot?.trim() || null,
+    actorAccountId: entry.createdByAccountId,
   }));
 
   const administrationItems = administrations.map((entry) => {
@@ -107,7 +117,6 @@ export function buildEpisodeTimeline(
       ? medicines.find((item) => item.id === entry.householdMedicineId)
       : null;
     const reason = entry.reason?.trim();
-    const actorLabel = getAdministrationActorLabel(entry, language);
     const doseLabel = entry.amount?.trim();
     const descriptionLines: string[] = [];
 
@@ -115,9 +124,6 @@ export function buildEpisodeTimeline(
       descriptionLines.push(`${language === "ru" ? "Доза" : "Dose"}: ${doseLabel}`);
     }
 
-    if (actorLabel) {
-      descriptionLines.push(actorLabel);
-    }
     if (reason) {
       descriptionLines.push(reason);
     }
@@ -131,6 +137,8 @@ export function buildEpisodeTimeline(
         medicine?.medicineName ??
         (language === "ru" ? "Приём лекарства" : "Dose logged"),
       description: descriptionLines.join("\n"),
+      actorName: entry.administeredByNameSnapshot?.trim() || null,
+      actorAccountId: entry.administeredByAccountId,
     };
   });
 
@@ -140,6 +148,8 @@ export function buildEpisodeTimeline(
     kind: "comment" as const,
     title: language === "ru" ? "Комментарий" : "Comment",
     description: entry.text,
+    actorName: entry.createdByNameSnapshot?.trim() || null,
+    actorAccountId: entry.createdByAccountId,
   }));
 
   return [...temperatureItems, ...administrationItems, ...commentItems].sort((left, right) =>

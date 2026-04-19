@@ -61,7 +61,6 @@ export function NewPackPage({
     <div
       className="flex min-h-[100dvh] flex-col bg-background px-3 text-foreground sm:px-6"
       style={{
-        paddingTop: "max(0.75rem, env(safe-area-inset-top, 0px))",
         paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))",
       }}
     >

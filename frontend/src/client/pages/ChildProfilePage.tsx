@@ -62,28 +62,23 @@ export function ChildProfilePage() {
   ];
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="-mx-3 min-w-0 space-y-6 bg-background px-3 sm:-mx-6 sm:px-6">
       <ChildSectionTopBar
         backHref="/children"
         backLabel={language === "ru" ? "← К детям" : "← Back to children"}
-      />
-
-      <div className="space-y-3 px-1">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="app-card-title">
-              {copy.eyebrow} · {child.name}
-            </h1>
-            <p className="mt-1 text-sm text-muted">{copy.subtitle}</p>
-          </div>
+        title={`${copy.eyebrow} · ${child.name}`}
+        hint={copy.subtitle}
+        action={
           <Link
             to={`/children/${child.id}/edit`}
             className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
           >
             {copy.editProfile}
           </Link>
-        </div>
+        }
+      />
 
+      <div className="mx-auto w-full max-w-2xl space-y-3">
         <Surface className="p-3 sm:p-4">
           <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
             {quickLinks.map((item) => (
@@ -99,7 +94,7 @@ export function ChildProfilePage() {
         </Surface>
       </div>
 
-      <Surface className="p-5 sm:p-6">
+      <Surface className="mx-auto w-full max-w-2xl p-5 sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3 px-1">
           <h2 className="app-card-title">{copy.basic}</h2>
         </div>
