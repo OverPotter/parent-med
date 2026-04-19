@@ -117,7 +117,7 @@ export function ActiveIllnessesPage() {
   }
 
   return (
-    <div className="-mx-3 space-y-7 bg-background px-3 sm:-mx-6 sm:px-6">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro title={pageTitle} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
 
       <div className="app-mobile-section-intro sm:hidden">

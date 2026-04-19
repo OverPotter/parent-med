@@ -77,7 +77,7 @@ export function IllnessHistoryPage() {
     .sort((left, right) => right.episodes.length - left.episodes.length);
 
   return (
-    <div className="-mx-3 space-y-7 bg-background px-3 sm:-mx-6 sm:px-6">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
 
       <div className="app-mobile-section-intro sm:hidden">

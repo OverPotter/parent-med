@@ -384,150 +384,154 @@ export function ChildIllnessPage() {
         hint={topBarHint}
         containerClassName="max-w-5xl"
       />
+      <div className="mx-auto w-full max-w-5xl space-y-7">
+        {((!activeEpisode && !createMode) || historyOnlyView) && (
+          <section
+            className={`soft-panel soft-hero relative overflow-hidden rounded-[28px] ${
+              historyOnlyView ? "hidden lg:block" : ""
+            }`}
+          >
+            <div className="relative p-4 sm:p-5">
+              <div className="mt-4 hidden gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-4">
+                {childAgeLabel ? (
+                  <SummaryCard
+                    label={language === "ru" ? "Возраст" : "Age"}
+                    value={childAgeLabel}
+                  />
+                ) : null}
+                {child.birthDate ? (
+                  <SummaryCard
+                    label={language === "ru" ? "Дата рождения" : "Birth date"}
+                    value={formatChildDatePlain(child.birthDate, language, { forceYear: true })}
+                  />
+                ) : null}
+                {latestWeight ? (
+                  <SummaryCard
+                    label={language === "ru" ? "Вес" : "Weight"}
+                    value={formatWeightValue(latestWeight.valueKg, language)}
+                  />
+                ) : null}
+                <SummaryCard
+                  label={language === "ru" ? "Эпизоды" : "Episodes"}
+                  value={String(episodes.length)}
+                />
+              </div>
 
-      {((!activeEpisode && !createMode) || historyOnlyView) && (
-        <section
-          className={`soft-panel soft-hero relative overflow-hidden rounded-[28px] ${
-            historyOnlyView ? "hidden lg:block" : ""
-          }`}
-        >
-          <div className="relative p-4 sm:p-5">
-            <div className="mt-4 hidden gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-4">
-              {childAgeLabel ? (
-                <SummaryCard label={language === "ru" ? "Возраст" : "Age"} value={childAgeLabel} />
-              ) : null}
-              {child.birthDate ? (
-                <SummaryCard
-                  label={language === "ru" ? "Дата рождения" : "Birth date"}
-                  value={formatChildDatePlain(child.birthDate, language, { forceYear: true })}
-                />
-              ) : null}
-              {latestWeight ? (
-                <SummaryCard
-                  label={language === "ru" ? "Вес" : "Weight"}
-                  value={formatWeightValue(latestWeight.valueKg, language)}
-                />
-              ) : null}
-              <SummaryCard
-                label={language === "ru" ? "Эпизоды" : "Episodes"}
-                value={String(episodes.length)}
+              {!currentFamilyId && (
+                <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
+                  {language === "ru"
+                    ? "Семья не выбрана. Сначала открой страницу «Семья»."
+                    : "No family selected. Open the Family page first."}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeEpisode && !historyOnlyView && (
+          <section>
+            <EpisodeBlock
+              childName={child.name}
+              childId={child.id}
+              episode={activeEpisode}
+              onClose={() => closeEpisodeMutation.mutate(activeEpisode.id)}
+              familyId={currentFamilyId}
+              latestWeight={latestWeight}
+              initialComposerMode={initialComposerMode}
+              quickComposeMode={quickComposeMode}
+              quickTimelineMode={quickTimelineMode}
+              quickReminderMode={quickReminderMode}
+              quickReminderCreateMode={quickReminderCreateMode}
+              quickReminderDetailMode={quickReminderDetailMode}
+              reminderPlanId={reminderPlanId}
+            />
+          </section>
+        )}
+
+        {!activeEpisode && createMode && !historyOnlyView && (
+          <section className="space-y-3">
+            <div ref={createModeCardRef}>
+              <EpisodeActivationCard
+                isPending={createEpisodeMutation.isPending}
+                errorMessage={
+                  (
+                    createEpisodeMutation.error as {
+                      response?: { data?: { detail?: string } };
+                    }
+                  )?.response?.data?.detail ?? null
+                }
+                onActivate={(payload) => createEpisodeMutation.mutate(payload)}
+                onCancel={() => navigate("/children")}
               />
             </div>
+          </section>
+        )}
 
-            {!currentFamilyId && (
-              <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
-                {language === "ru"
-                  ? "Семья не выбрана. Сначала открой страницу «Семья»."
-                  : "No family selected. Open the Family page first."}
+        {!activeEpisode && !createMode && !historyOnlyView && (
+          <section className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
+            {language === "ru"
+              ? "Сейчас ничего не отслеживается. Новое наблюдение можно начать из раздела «Дети»."
+              : "Nothing is being tracked right now. Start a new session from the Children section."}
+          </section>
+        )}
+
+        {historyOnlyView && (
+          <section ref={historySectionRef} className="space-y-3">
+            {historyEpisodeInsightsMode ? (
+              <div className="flex justify-end">
+                <Link
+                  to={`/children/${child.id}/illness?view=history`}
+                  className={appPillActionClass}
+                >
+                  {language === "ru" ? "Ко всей истории" : "Back to history"}
+                </Link>
               </div>
+            ) : null}
+
+            {historyEpisodeInsightsMode && focusedHistoryEpisode ? (
+              <HistoryEpisodeInsightsScreen episode={focusedHistoryEpisode} />
+            ) : null}
+
+            {historyEpisodeDetailMode && focusedHistoryDetailEpisode ? (
+              <HistoryEpisodeDetailScreen
+                childId={child.id}
+                episode={focusedHistoryDetailEpisode}
+                episodeNumber={
+                  historyEpisodes.length -
+                  historyEpisodes.findIndex((item) => item.id === focusedHistoryDetailEpisode.id)
+                }
+                medicines={familyMedicines}
+              />
+            ) : null}
+
+            {!historyEpisodeInsightsMode && !historyEpisodeDetailMode && (
+              <HistoryInsightsPreview childId={child.id} />
             )}
-          </div>
-        </section>
-      )}
 
-      {activeEpisode && !historyOnlyView && (
-        <section>
-          <EpisodeBlock
-            childName={child.name}
-            childId={child.id}
-            episode={activeEpisode}
-            onClose={() => closeEpisodeMutation.mutate(activeEpisode.id)}
-            familyId={currentFamilyId}
-            latestWeight={latestWeight}
-            initialComposerMode={initialComposerMode}
-            quickComposeMode={quickComposeMode}
-            quickTimelineMode={quickTimelineMode}
-            quickReminderMode={quickReminderMode}
-            quickReminderCreateMode={quickReminderCreateMode}
-            quickReminderDetailMode={quickReminderDetailMode}
-            reminderPlanId={reminderPlanId}
-          />
-        </section>
-      )}
-
-      {!activeEpisode && createMode && !historyOnlyView && (
-        <section className="space-y-3">
-          <div ref={createModeCardRef}>
-            <EpisodeActivationCard
-              isPending={createEpisodeMutation.isPending}
-              errorMessage={
-                (
-                  createEpisodeMutation.error as {
-                    response?: { data?: { detail?: string } };
-                  }
-                )?.response?.data?.detail ?? null
-              }
-              onActivate={(payload) => createEpisodeMutation.mutate(payload)}
-              onCancel={() => navigate("/children")}
-            />
-          </div>
-        </section>
-      )}
-
-      {!activeEpisode && !createMode && !historyOnlyView && (
-        <section className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
-          {language === "ru"
-            ? "Сейчас ничего не отслеживается. Новое наблюдение можно начать из раздела «Дети»."
-            : "Nothing is being tracked right now. Start a new session from the Children section."}
-        </section>
-      )}
-
-      {historyOnlyView && (
-        <section ref={historySectionRef} className="space-y-3">
-          {historyEpisodeInsightsMode ? (
-            <div className="flex justify-end">
-              <Link
-                to={`/children/${child.id}/illness?view=history`}
-                className={appPillActionClass}
-              >
-                {language === "ru" ? "Ко всей истории" : "Back to history"}
-              </Link>
-            </div>
-          ) : null}
-
-          {historyEpisodeInsightsMode && focusedHistoryEpisode ? (
-            <HistoryEpisodeInsightsScreen episode={focusedHistoryEpisode} />
-          ) : null}
-
-          {historyEpisodeDetailMode && focusedHistoryDetailEpisode ? (
-            <HistoryEpisodeDetailScreen
-              childId={child.id}
-              episode={focusedHistoryDetailEpisode}
-              episodeNumber={
-                historyEpisodes.length -
-                historyEpisodes.findIndex((item) => item.id === focusedHistoryDetailEpisode.id)
-              }
-              medicines={familyMedicines}
-            />
-          ) : null}
-
-          {!historyEpisodeInsightsMode && !historyEpisodeDetailMode && (
-            <HistoryInsightsPreview childId={child.id} />
-          )}
-
-          {!historyEpisodeInsightsMode &&
-          !historyEpisodeDetailMode &&
-          historyEpisodes.length > 0 ? (
-            <ul className="grid gap-2.5">
-              {historyEpisodes.map((episode) => (
-                <HistoryEpisodeCard
-                  key={episode.id}
-                  childId={childId}
-                  episode={episode}
-                  episodeNumber={
-                    historyEpisodes.length -
-                    historyEpisodes.findIndex((item) => item.id === episode.id)
-                  }
-                />
-              ))}
-            </ul>
-          ) : !historyEpisodeInsightsMode && !historyEpisodeDetailMode ? (
-            <div className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
-              {language === "ru" ? "История пока пустая." : "History is still empty."}
-            </div>
-          ) : null}
-        </section>
-      )}
+            {!historyEpisodeInsightsMode &&
+            !historyEpisodeDetailMode &&
+            historyEpisodes.length > 0 ? (
+              <ul className="grid gap-2.5">
+                {historyEpisodes.map((episode) => (
+                  <HistoryEpisodeCard
+                    key={episode.id}
+                    childId={childId}
+                    episode={episode}
+                    episodeNumber={
+                      historyEpisodes.length -
+                      historyEpisodes.findIndex((item) => item.id === episode.id)
+                    }
+                  />
+                ))}
+              </ul>
+            ) : !historyEpisodeInsightsMode && !historyEpisodeDetailMode ? (
+              <div className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
+                {language === "ru" ? "История пока пустая." : "History is still empty."}
+              </div>
+            ) : null}
+          </section>
+        )}
+      </div>
     </div>
   );
 }

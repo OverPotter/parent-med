@@ -280,6 +280,7 @@ export function ClientLayout() {
     matchPath({ path: "/medicine-cabinet/:medicineId/new-pack", end: true }, location.pathname)
   );
   const shouldHideMobileNav = Boolean(
+    shouldHideHeader ||
     isMedicineCabinetAddRoute ||
     matchPath({ path: "/children/:childId/illness", end: false }, location.pathname)
   );
