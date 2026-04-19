@@ -2,7 +2,8 @@
 
 export type PillboxMealRule = "before_meal" | "with_meal" | "after_meal";
 export type PillboxCourseMode = "continuous" | "period";
-export type PillboxPlanStatus = "active" | "paused" | "archived";
+export type PillboxPlanStatus = "active" | "paused" | "completed" | "archived";
+export type PillboxPlanWritableStatus = "active" | "paused" | "archived";
 
 export interface PillboxMedicationWrite {
   id?: string | null;
@@ -22,7 +23,7 @@ export interface PillboxPlanWrite {
   title: string;
   memberAccountIds: string[];
   medications: PillboxMedicationWrite[];
-  status?: PillboxPlanStatus;
+  status?: PillboxPlanWritableStatus;
 }
 
 export interface PillboxPlanSummary {

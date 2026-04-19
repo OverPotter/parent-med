@@ -27,7 +27,7 @@ export const ru: Translations = {
     nav: {
       observations: "Наблюдения",
       children: "Дети",
-      pillbox: "Таблетница",
+      pillbox: "Приёмы",
       cabinet: "Аптечка",
       more: "Ещё",
     },

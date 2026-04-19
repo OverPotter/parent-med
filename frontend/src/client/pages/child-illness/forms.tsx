@@ -118,7 +118,7 @@ export function EpisodeActivationCard({
 }
 
 const illnessTemperatureInputClass =
-  "soft-input !min-h-[2.68rem] w-full px-4 py-0 text-left text-[16px] leading-[1.15] placeholder:text-left sm:!min-h-[2.76rem]";
+  "soft-input illness-fast-input !min-h-[2.68rem] w-full px-4 py-0 text-left text-[16px] leading-[1.15] placeholder:text-left sm:!min-h-[2.76rem]";
 const illnessTemperatureButtonClass = `${illnessCompactPrimaryButtonClass} min-h-[2.68rem] px-4 sm:min-h-[2.76rem]`;
 export const illnessCompactTextareaClass =
   "soft-input min-h-[7.5rem] w-full px-4 py-3 text-left text-[16px] leading-6 placeholder:text-left";
@@ -197,7 +197,7 @@ export function AdministrationForm({
             value={customMedicineName}
             onChange={(e) => onCustomMedicineNameChange(e.target.value)}
             placeholder={language === "ru" ? "Например: Уголь" : "Example: charcoal"}
-            className={illnessCompactInputClass}
+            className={`${illnessCompactInputClass} illness-fast-input`}
           />
         </label>
 
@@ -210,7 +210,7 @@ export function AdministrationForm({
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
             placeholder={language === "ru" ? "Например: 5 мл или 1 таб." : "Example: 5 ml or 1 tab"}
-            className={illnessCompactInputClass}
+            className={`${illnessCompactInputClass} illness-fast-input`}
           />
         </label>
 

@@ -66,7 +66,7 @@ interface RawPillboxTopMedication {
 interface RawPillboxHistorySummary {
   plan_id: string;
   plan_title: string;
-  plan_status: string;
+  plan_status: PillboxPlan["status"];
   member_count: number;
   period: string;
   total_medications: number;

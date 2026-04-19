@@ -1,18 +1,26 @@
 import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { PageIntro } from "@shared/components/PageIntro";
+import { SectionPathHeader } from "@shared/components/SectionPathHeader";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 
 export function AboutPage() {
-  const { copy } = useI18n();
+  const { copy, language } = useI18n();
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
         title={<BrandWordmark className="brand-wordmark-page-title" />}
         subtitle={copy.about.subtitle}
         eyebrow={copy.about.eyebrow}
         hideOnMobile
+      />
+      <SectionPathHeader
+        backTo="/more"
+        backLabel={language === "ru" ? "← К разделу «Еще»" : "← Back to more"}
+        pathLabel={language === "ru" ? "Еще / О приложении" : "More / About"}
+        title={copy.common.brandName}
+        hint={copy.about.subtitle}
       />
 
       <div className="grid gap-4 sm:grid-cols-3">

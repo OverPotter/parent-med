@@ -12,6 +12,9 @@ const NATIVE_PUSH_NAVIGATION_EVENT = "native-push:navigate";
 let listenersAttached = false;
 let pendingTokenResolver: ((value: string) => void) | null = null;
 let pendingTokenRejecter: ((reason?: unknown) => void) | null = null;
+let cachedPermissionStatus: PermissionStatus["receive"] | null = null;
+let permissionStatusPromise: Promise<PermissionStatus["receive"]> | null = null;
+let tokenRequestPromise: Promise<string | null> | null = null;
 
 function getNativePlatform(): NativePushPlatform | null {
   const platform = Capacitor.getPlatform();
@@ -37,6 +40,10 @@ function getCachedNativeToken(): string | null {
     return null;
   }
   return window.localStorage.getItem(NATIVE_PUSH_TOKEN_KEY);
+}
+
+export function getCachedNativePushToken(): string | null {
+  return getCachedNativeToken();
 }
 
 function attachListeners() {
@@ -85,15 +92,33 @@ function attachListeners() {
 export { NATIVE_PUSH_NAVIGATION_EVENT };
 
 async function ensurePermission(promptIfNeeded: boolean): Promise<PermissionStatus["receive"]> {
-  const initial = await PushNotifications.checkPermissions();
-  if (initial.receive === "granted") {
-    return "granted";
+  if (cachedPermissionStatus === "granted" || (!promptIfNeeded && cachedPermissionStatus)) {
+    return cachedPermissionStatus;
   }
-  if (!promptIfNeeded) {
-    return initial.receive;
+
+  if (permissionStatusPromise) {
+    const existing = await permissionStatusPromise;
+    if (existing === "granted" || !promptIfNeeded) {
+      return existing;
+    }
   }
-  const requested = await PushNotifications.requestPermissions();
-  return requested.receive;
+
+  permissionStatusPromise = (async () => {
+    const initial = await PushNotifications.checkPermissions();
+    cachedPermissionStatus = initial.receive;
+    if (initial.receive === "granted" || !promptIfNeeded) {
+      return initial.receive;
+    }
+    const requested = await PushNotifications.requestPermissions();
+    cachedPermissionStatus = requested.receive;
+    return requested.receive;
+  })();
+
+  try {
+    return await permissionStatusPromise;
+  } finally {
+    permissionStatusPromise = null;
+  }
 }
 
 async function requestToken(promptIfNeeded: boolean): Promise<string | null> {
@@ -101,41 +126,53 @@ async function requestToken(promptIfNeeded: boolean): Promise<string | null> {
     return null;
   }
 
-  attachListeners();
-  const permission = await ensurePermission(promptIfNeeded);
-  if (permission !== "granted") {
-    return null;
+  if (tokenRequestPromise) {
+    return tokenRequestPromise;
   }
 
-  const existing = getCachedNativeToken();
-  if (existing) {
-    return existing;
+  tokenRequestPromise = (async () => {
+    attachListeners();
+    const permission = await ensurePermission(promptIfNeeded);
+    if (permission !== "granted") {
+      return null;
+    }
+
+    const existing = getCachedNativeToken();
+    if (existing) {
+      return existing;
+    }
+
+    const tokenPromise = new Promise<string>((resolve, reject) => {
+      pendingTokenResolver = resolve;
+      pendingTokenRejecter = reject;
+    });
+
+    await PushNotifications.register();
+
+    return new Promise<string | null>((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        pendingTokenResolver = null;
+        pendingTokenRejecter = null;
+        resolve(null);
+      }, NATIVE_PUSH_TIMEOUT_MS);
+
+      tokenPromise
+        .then((token) => {
+          window.clearTimeout(timeoutId);
+          resolve(token);
+        })
+        .catch((error) => {
+          window.clearTimeout(timeoutId);
+          reject(error);
+        });
+    });
+  })();
+
+  try {
+    return await tokenRequestPromise;
+  } finally {
+    tokenRequestPromise = null;
   }
-
-  const tokenPromise = new Promise<string>((resolve, reject) => {
-    pendingTokenResolver = resolve;
-    pendingTokenRejecter = reject;
-  });
-
-  await PushNotifications.register();
-
-  return new Promise<string | null>((resolve, reject) => {
-    const timeoutId = window.setTimeout(() => {
-      pendingTokenResolver = null;
-      pendingTokenRejecter = null;
-      resolve(null);
-    }, NATIVE_PUSH_TIMEOUT_MS);
-
-    tokenPromise
-      .then((token) => {
-        window.clearTimeout(timeoutId);
-        resolve(token);
-      })
-      .catch((error) => {
-        window.clearTimeout(timeoutId);
-        reject(error);
-      });
-  });
 }
 
 export function isNativePushSupported(): boolean {
@@ -146,9 +183,7 @@ export async function getNativePushPermissionStatus(): Promise<NativePushPermiss
   if (!isNativePushSupported()) {
     return null;
   }
-  attachListeners();
-  const permission = await PushNotifications.checkPermissions();
-  return permission.receive;
+  return ensurePermission(false);
 }
 
 export function openNativeNotificationSettings(): boolean {
@@ -202,6 +237,33 @@ export async function getNativePushSubscriptionPayload(options?: {
 
   const token = await requestToken(Boolean(options?.promptIfNeeded));
   if (!token) {
+    return null;
+  }
+
+  return {
+    channel: "native",
+    endpoint: token,
+    native_token: token,
+    platform,
+    user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "native",
+    device_label: `App · ${platform === "ios" ? "iOS" : "Android"}`,
+  };
+}
+
+export function getCachedNativePushSubscriptionPayload(): {
+  channel: "native";
+  endpoint: string;
+  native_token: string;
+  platform: NativePushPlatform;
+  user_agent: string;
+  device_label: string;
+} | null {
+  if (!isNativePushSupported()) {
+    return null;
+  }
+  const platform = getNativePlatform();
+  const token = getCachedNativeToken();
+  if (!platform || !token) {
     return null;
   }
 

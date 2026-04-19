@@ -60,9 +60,7 @@ export function trackEvent(name: string, props?: Record<string, unknown>): void 
   if (window.hk?.event) {
     try {
       window.hk.event(name, payload);
-    } catch {
-      void 0;
-    }
+    } catch {}
     return;
   }
   queue.push([name, payload]);

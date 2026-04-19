@@ -6,6 +6,12 @@ const ACCESS_TOKEN_KEY = "pillpath_auth_access_token";
 const REFRESH_TOKEN_KEY = "pillpath_auth_refresh_token";
 const LEGACY_PERSIST_KEY = "pillpath-app";
 
+let secureTokensCache: { accessToken: string | null; refreshToken: string | null } | null = null;
+let secureTokensPromise: Promise<{
+  accessToken: string | null;
+  refreshToken: string | null;
+}> | null = null;
+
 export function isNativeIOSRuntime(): boolean {
   try {
     return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
@@ -22,34 +28,36 @@ export async function readSecureAuthTokens(): Promise<{
     return { accessToken: null, refreshToken: null };
   }
 
-  let existingKeys = new Set<string>();
-  let keysLoaded = false;
-  try {
-    const keysResult = await SecureStoragePlugin.keys();
-    existingKeys = new Set(keysResult.value ?? []);
-    keysLoaded = true;
-  } catch {
-    // If keys() fails, fallback to best-effort read with catches below.
+  if (secureTokensCache) {
+    return secureTokensCache;
   }
 
-  const read = async (key: string) => {
-    if (keysLoaded && !existingKeys.has(key)) {
-      return null;
-    }
-    try {
-      const result = await SecureStoragePlugin.get({ key });
-      return result.value || null;
-    } catch {
-      return null;
-    }
-  };
+  if (secureTokensPromise) {
+    return secureTokensPromise;
+  }
 
-  const [accessToken, refreshToken] = await Promise.all([
-    read(ACCESS_TOKEN_KEY),
-    read(REFRESH_TOKEN_KEY),
-  ]);
+  secureTokensPromise = (async () => {
+    const read = async (key: string) => {
+      try {
+        const result = await SecureStoragePlugin.get({ key });
+        return result.value || null;
+      } catch {
+        return null;
+      }
+    };
 
-  return { accessToken, refreshToken };
+    const [accessToken, refreshToken] = await Promise.all([
+      read(ACCESS_TOKEN_KEY),
+      read(REFRESH_TOKEN_KEY),
+    ]);
+
+    const nextTokens = { accessToken, refreshToken };
+    secureTokensCache = nextTokens;
+    secureTokensPromise = null;
+    return nextTokens;
+  })();
+
+  return secureTokensPromise;
 }
 
 export async function writeSecureAuthTokens(tokens: {
@@ -60,21 +68,11 @@ export async function writeSecureAuthTokens(tokens: {
     return;
   }
 
-  let existingKeys = new Set<string>();
-  let keysLoaded = false;
-  try {
-    const keysResult = await SecureStoragePlugin.keys();
-    existingKeys = new Set(keysResult.value ?? []);
-    keysLoaded = true;
-  } catch {
-    // Keep empty set and fallback to remove with catch.
-  }
+  secureTokensCache = { ...tokens };
+  secureTokensPromise = null;
 
   const writeOrRemove = async (key: string, value: string | null) => {
     if (!value) {
-      if (keysLoaded && !existingKeys.has(key)) {
-        return;
-      }
       try {
         await SecureStoragePlugin.remove({ key });
       } catch {
@@ -96,6 +94,8 @@ export async function writeSecureAuthTokens(tokens: {
 }
 
 export async function clearSecureAuthTokens(): Promise<void> {
+  secureTokensCache = { accessToken: null, refreshToken: null };
+  secureTokensPromise = null;
   await writeSecureAuthTokens({ accessToken: null, refreshToken: null });
 }
 

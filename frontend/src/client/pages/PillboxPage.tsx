@@ -1,846 +1,49 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isAxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   createPillboxPlan,
   deletePillboxPlan,
-  fetchPillboxHistorySummary,
   fetchPillboxPlan,
   fetchPillboxPlans,
   takePillboxDose,
   updatePillboxPlan,
 } from "@shared/api/pillboxPlans";
-import type {
-  PillboxMealRule,
-  PillboxPlan,
-  PillboxPlanSummary,
-  PillboxPlanWrite,
-} from "@shared/api/pillboxPlans.contract";
+import type { PillboxPlanWrite } from "@shared/api/pillboxPlans.contract";
 import { fetchMyFamilyMembers } from "@shared/api/families";
-import { PageIntro } from "@shared/components/PageIntro";
-import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { DateField } from "@shared/components/DateField";
-import { RowSurface } from "@shared/components/Surface";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
-import type { AppLanguage } from "@shared/i18n";
 import { useAppStore } from "@shared/store/useAppStore";
-import { formatDate, getLocalIsoDate } from "@shared/utils/date";
-import type { PillboxHistorySummary } from "@shared/types/api";
-
-type MedicationItem = {
-  id: string;
-  title: string;
-  dose: string;
-  times: string[];
-  mealRule: PillboxMealRule;
-  repeatDays: number[];
-  courseMode: "continuous" | "period";
-  courseStartDate: string;
-  courseEndDate: string;
-};
-
-type PillboxGroup = {
-  id: string;
-  title: string;
-  status: PillboxPlanSummary["status"];
-  activeCount: number;
-  nextDoseAt: string | null;
-  nextDose: string;
-  nextMedicationId: string | null;
-  nextMedicationTitle: string | null;
-  members: string[];
-  courseSummaryKind: "continuous" | "period" | "mixed" | null;
-  dayLabel?: string;
-  progress: number;
-};
-
-type SetupDraft = {
-  id: string | null;
-  title: string;
-  members: string[];
-  medications: MedicationItem[];
-};
-
-type CoursePreset = "7" | "14" | "30" | "custom";
-type PillboxDeleteTarget =
-  | { kind: "plan" }
-  | { kind: "medication"; medicationId: string; medicationName: string };
-
-type PillboxPlanActionTarget = "pause" | "resume" | "archive" | "restore" | null;
-type PillboxPlanListFilter = "active" | "archive";
-
-const pillboxCopy = {
-  ru: {
-    setupBack: "← К планам",
-    detailsBack: "← К планам",
-    medicationBack: "← К плану",
-    setupTitle: "Настройки плана",
-    detailsTitle: "План приёма",
-    setupSubtitle:
-      "Сначала соберите лекарства, потом назовите план и выберите, кому придут напоминания.",
-    medicationTitle: "Настройка лекарства",
-    medicationSubtitle:
-      "Добавьте одно лекарство в план: когда принимать, как долго и как связать с едой.",
-    eyebrow: "Таблетница",
-    hubTitle: "Таблетница",
-    hubSubtitle: "Семейные планы приёма: что принимать, когда напомнить и как идёт курс.",
-    hubMobileHint: "Планы приёма и напоминания для семьи.",
-    hubEmpty:
-      "Планов пока нет. Создайте первый план, чтобы видеть приёмы, напоминания и аналитику.",
-    createPlan: "Создать план",
-    analytics: "Аналитика",
-    activeFilter: "Активные",
-    archiveFilter: "Архив",
-    analyticsBack: "← К планам",
-    editPlan: "Редактировать",
-    archivePlan: "В архив",
-    restorePlan: "Вернуть в активные",
-    pausePlan: "Поставить на паузу",
-    resumePlan: "Возобновить план",
-    save: "Сохранить",
-    savePlan: "Сохранить план",
-    createNewPlan: "Создать план",
-    deletePlan: "Удалить план",
-    deleteMedicine: "Удалить лекарство",
-    delete: "Удалить",
-    addMedicine: "Добавить лекарство",
-    titleLabel: "Название плана",
-    titlePlaceholder: "Название плана",
-    medsTitle: "Что будем принимать",
-    medsSubtitle: "У каждого лекарства можно отдельно задать время, срок и связь с едой.",
-    membersTitle: "Кому напоминать",
-    membersHint: "Если никого не выбрать, план останется только у того, кто его настроил.",
-    doneTitle: "Сохранить план",
-    doneSubtitle: "План появится в таблетнице, когда в нем есть хотя бы одно лекарство.",
-    whatName: "Как называется",
-    whatNamePlaceholder: "Название лекарства",
-    howMuch: "Сколько принимать",
-    howMuchPlaceholder: "Например, 1 таблетка",
-    addTime: "+ Добавить время",
-    removeTimeAria: "Удалить время {{index}}",
-    continuous: "Постоянно принимать",
-    course: "Курсом",
-    startCourse: "Начало курса",
-    endCourse: "Окончание",
-    startDatePlaceholder: "Дата начала",
-    endDatePlaceholder: "Дата окончания",
-    sevenDays: "7 дней",
-    fourteenDays: "14 дней",
-    thirtyDays: "30 дней",
-    customDates: "Свои даты",
-    beforeMeal: "До еды",
-    duringMeal: "С едой",
-    afterMeal: "После еды",
-    countUnit: "шт.",
-    memberCount: "участников",
-    medicineCount: "Количество лекарств",
-    nextDoseShort: "Ближайший приём",
-    overdueDose: "Пропущен с",
-    courseDuration: "Длительность курса",
-    dueNow: "Сейчас можно отметить",
-    tapToOpen: "Нажмите, чтобы открыть план",
-    continuousPlan: "Постоянный",
-    mixedPlan: "Курс + постоянный",
-    markTaken: "Записать приём",
-    taking: "Сохраняем...",
-    noDeadline: "Без срока",
-    timeMissing: "Время не указано",
-    unnamedMedicine: "Лекарство {{index}}",
-    amountMissing: "Количество не указано",
-    noMedicinesTitle: "Пока без лекарств",
-    noMedicinesDescription: "Добавьте первое лекарство. Пока план пустой, сохранять его не нужно.",
-    saveRequiresMedication: "Добавьте и сохраните хотя бы одно лекарство с названием.",
-    saveMedication: "Сохранить лекарство",
-    saveMedicationRequiresTitle: "Укажите название лекарства.",
-    overdueState: "Приём пропущен",
-    dueNowState: "Пора отметить приём",
-    planActiveState: "Приём по графику",
-    pausedPlanState: "План на паузе",
-    archivedPlanState: "План в архиве",
-    savePlanFailed: "Не удалось сохранить план. Попробуйте ещё раз.",
-    confirmDeletePlanTitle: "Точно удалить план?",
-    confirmDeletePlanDescription:
-      "План приёма исчезнет целиком. Восстановить его потом не получится.",
-    confirmDeleteMedicineTitle: "Точно удалить лекарство?",
-    confirmDeleteMedicineDescription: "Лекарство исчезнет из этого плана приёма.",
-    confirmPausePlanTitle: "Поставить план на паузу?",
-    confirmPausePlanDescription:
-      "Напоминания по этому плану временно перестанут приходить всем участникам.",
-    confirmResumePlanTitle: "Возобновить план?",
-    confirmResumePlanDescription: "Напоминания по этому плану снова начнут приходить участникам.",
-    confirmArchivePlanTitle: "Перенести план в архив?",
-    confirmArchivePlanDescription:
-      "План исчезнет из активного списка, но сохранит историю и останется доступным в аналитике.",
-    confirmRestorePlanTitle: "Вернуть план в активные?",
-    confirmRestorePlanDescription:
-      "План снова появится в рабочем списке и его можно будет продолжить использовать.",
-    cancel: "Отмена",
-  },
-  en: {
-    setupBack: "← Back to plans",
-    detailsBack: "← Back to plans",
-    medicationBack: "← Back to plan",
-    setupTitle: "Plan settings",
-    detailsTitle: "Medication plan",
-    setupSubtitle:
-      "First add medicines, then name the plan and choose who should receive reminders.",
-    medicationTitle: "Medicine setup",
-    medicationSubtitle:
-      "Add one medicine to the plan: when to take it, how long it lasts and how it relates to meals.",
-    eyebrow: "Pillbox",
-    hubTitle: "Pillbox",
-    hubSubtitle:
-      "Family medication plans: what to take, when to remind and how the course is going.",
-    hubMobileHint: "Medication plans and reminders for the family.",
-    hubEmpty:
-      "There are no plans yet. Create the first plan to see doses, reminders and analytics.",
-    createPlan: "Create plan",
-    analytics: "Analytics",
-    activeFilter: "Active",
-    archiveFilter: "Archive",
-    analyticsBack: "← Back to plans",
-    editPlan: "Edit plan",
-    archivePlan: "Archive",
-    restorePlan: "Return to active",
-    pausePlan: "Pause plan",
-    resumePlan: "Resume plan",
-    save: "Save",
-    savePlan: "Save plan",
-    createNewPlan: "Create plan",
-    deletePlan: "Delete plan",
-    deleteMedicine: "Delete medicine",
-    delete: "Delete",
-    addMedicine: "Add medicine",
-    titleLabel: "Plan name",
-    titlePlaceholder: "Plan name",
-    medsTitle: "What will be taken",
-    medsSubtitle: "Each medicine can have its own time, duration and meal relation.",
-    membersTitle: "Who to remind",
-    membersHint: "If you select no one, the plan stays only with the person who created it.",
-    doneTitle: "Save plan",
-    doneSubtitle: "The plan appears in Pillbox once it has at least one medicine.",
-    whatName: "Medicine name",
-    whatNamePlaceholder: "Medicine name",
-    howMuch: "How much to take",
-    howMuchPlaceholder: "Example: 1 tablet",
-    addTime: "+ Add time",
-    removeTimeAria: "Remove time {{index}}",
-    continuous: "Take continuously",
-    course: "Course",
-    startCourse: "Course start",
-    endCourse: "End date",
-    startDatePlaceholder: "Start date",
-    endDatePlaceholder: "End date",
-    sevenDays: "7 days",
-    fourteenDays: "14 days",
-    thirtyDays: "30 days",
-    customDates: "Custom dates",
-    beforeMeal: "Before meal",
-    duringMeal: "With meal",
-    afterMeal: "After meal",
-    countUnit: "items",
-    memberCount: "members",
-    medicineCount: "Medicine count",
-    nextDoseShort: "Next dose",
-    overdueDose: "Missed since",
-    courseDuration: "Course length",
-    dueNow: "Ready to confirm",
-    tapToOpen: "Tap to open the plan",
-    continuousPlan: "Continuous",
-    mixedPlan: "Course + continuous",
-    markTaken: "Log dose",
-    taking: "Saving...",
-    noDeadline: "No deadline",
-    timeMissing: "Time not set",
-    unnamedMedicine: "Medicine {{index}}",
-    amountMissing: "Amount not set",
-    noMedicinesTitle: "No medicines yet",
-    noMedicinesDescription:
-      "Add the first medicine first. There is no draft to save while the plan is empty.",
-    saveRequiresMedication: "Add and save at least one medicine with a name.",
-    saveMedication: "Save medicine",
-    saveMedicationRequiresTitle: "Add a medicine name.",
-    overdueState: "Dose missed",
-    dueNowState: "Time to log dose",
-    planActiveState: "On schedule",
-    pausedPlanState: "Plan is paused",
-    archivedPlanState: "Plan is archived",
-    savePlanFailed: "Could not save the plan. Please try again.",
-    confirmDeletePlanTitle: "Delete this plan?",
-    confirmDeletePlanDescription:
-      "The whole medication plan will be removed. It cannot be restored later.",
-    confirmDeleteMedicineTitle: "Delete this medicine?",
-    confirmDeleteMedicineDescription: "This medicine will be removed from the plan.",
-    confirmPausePlanTitle: "Pause this plan?",
-    confirmPausePlanDescription:
-      "Reminders for this plan will temporarily stop for all participants.",
-    confirmResumePlanTitle: "Resume this plan?",
-    confirmResumePlanDescription:
-      "Reminders for this plan will start coming again for participants.",
-    confirmArchivePlanTitle: "Move this plan to archive?",
-    confirmArchivePlanDescription:
-      "The plan will disappear from the active list, but its history and analytics will stay available.",
-    confirmRestorePlanTitle: "Return this plan to active?",
-    confirmRestorePlanDescription:
-      "The plan will appear in the working list again and can be used further.",
-    cancel: "Cancel",
-  },
-} satisfies Record<AppLanguage, Record<string, string>>;
-
-const medicationDays = [
-  { value: 1, shortRu: "Пн", shortEn: "Mon" },
-  { value: 2, shortRu: "Вт", shortEn: "Tue" },
-  { value: 3, shortRu: "Ср", shortEn: "Wed" },
-  { value: 4, shortRu: "Чт", shortEn: "Thu" },
-  { value: 5, shortRu: "Пт", shortEn: "Fri" },
-  { value: 6, shortRu: "Сб", shortEn: "Sat" },
-  { value: 7, shortRu: "Вс", shortEn: "Sun" },
-] as const;
-
-const editorSectionCardClass =
-  "app-section-surface soft-card rounded-[24px] shadow-[0_10px_28px_rgba(15,23,42,0.05)] sm:rounded-[26px] xl:px-5.5 xl:py-5.5";
-const actionPrimaryClass =
-  "app-btn-primary-md soft-button-primary inline-flex w-full items-center justify-center rounded-[22px] font-semibold";
-const actionSecondaryClass =
-  "app-btn-secondary-md soft-button-secondary inline-flex w-full items-center justify-center rounded-[22px] font-semibold";
-const actionCompactSecondaryClass =
-  "app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.85rem] shrink-0 items-center justify-center rounded-[18px] px-3.5";
-const actionCompactDangerClass =
-  "app-btn-danger-md soft-button-danger inline-flex min-h-[2.85rem] shrink-0 items-center justify-center rounded-[18px] px-3.5";
-const actionFilterClass =
-  "soft-tab inline-flex min-h-[2.25rem] shrink-0 items-center justify-center rounded-full px-3 text-[0.78rem] font-semibold tracking-[-0.02em]";
-const segmentedControlClass =
-  "pillbox-segmented-control inline-grid grid-cols-2 items-center gap-1 rounded-[18px] p-1";
-const segmentedButtonClass =
-  "pillbox-segmented-control__button inline-flex min-h-[2.35rem] items-center justify-center rounded-[14px] px-3.5 text-[0.8rem] font-semibold tracking-[-0.02em]";
-const segmentedButtonActiveClass =
-  "pillbox-segmented-control__button pillbox-segmented-control__button--active inline-flex min-h-[2.35rem] items-center justify-center rounded-[14px] px-3.5 text-[0.8rem] font-semibold tracking-[-0.02em]";
-const flowShellClass =
-  "app-section-surface soft-panel w-full rounded-[24px] sm:rounded-[26px] lg:px-6 lg:py-6";
-const flowShellSpacingClass = "space-y-3 sm:space-y-3.5 lg:space-y-4";
-const PILLBOX_ON_TIME_WINDOW_MS = 30 * 60_000;
-const PILLBOX_LATE_WINDOW_MS = 4 * 60 * 60_000;
-
-function tPillbox(
-  language: AppLanguage,
-  key: keyof (typeof pillboxCopy)["ru"],
-  variables?: Record<string, string | number>
-) {
-  const template = pillboxCopy[language][key];
-  if (!variables) {
-    return template;
-  }
-  return Object.entries(variables).reduce(
-    (result, [name, value]) => result.replace(`{{${name}}}`, String(value)),
-    template
-  );
-}
-
-function createMedication(): MedicationItem {
-  return {
-    id: `new-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    title: "",
-    dose: "",
-    times: [""],
-    mealRule: "after_meal",
-    repeatDays: medicationDays.map((day) => day.value),
-    courseMode: "continuous",
-    courseStartDate: "",
-    courseEndDate: "",
-  };
-}
-
-function summarizeMedicationTimes(times: string[], language: AppLanguage) {
-  const normalized = [...times].filter(Boolean).sort((a, b) => a.localeCompare(b));
-  if (!normalized.length) return tPillbox(language, "timeMissing");
-  if (normalized.length <= 2) return normalized.join(", ");
-  return `${normalized[0]}, ${normalized[1]} +${normalized.length - 2}`;
-}
-
-function normalizeDisplayTime(value: string) {
-  return value.trim().slice(0, 5);
-}
-
-function isMedicationReady(item: MedicationItem) {
-  return Boolean(item.title.trim()) && item.times.some((value) => value.trim());
-}
-
-function getTodayIso() {
-  return getLocalIsoDate();
-}
-
-function addDaysToIso(isoDate: string, days: number) {
-  const parts = isoDate.split("-");
-  const year = Number(parts[0]);
-  const month = Number(parts[1]);
-  const day = Number(parts[2]);
-  const date =
-    Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)
-      ? new Date(year, month - 1, day)
-      : new Date();
-  date.setDate(date.getDate() + days);
-  return getLocalIsoDate(date);
-}
-
-function getCoursePreset(medication: MedicationItem): CoursePreset {
-  if (
-    medication.courseMode !== "period" ||
-    !medication.courseStartDate ||
-    !medication.courseEndDate
-  ) {
-    return "custom";
-  }
-
-  const today = getTodayIso();
-  if (medication.courseStartDate !== today) {
-    return "custom";
-  }
-
-  if (medication.courseEndDate === addDaysToIso(today, 6)) return "7";
-  if (medication.courseEndDate === addDaysToIso(today, 13)) return "14";
-  if (medication.courseEndDate === addDaysToIso(today, 29)) return "30";
-
-  return "custom";
-}
-
-function UtensilsBadge() {
-  return (
-    <span className="inline-flex h-4.5 w-4.5 items-center justify-center text-[0.95rem] leading-none">
-      🍴
-    </span>
-  );
-}
-
-function FieldIcon({ kind }: { kind: "pill" | "dose" | "time" }) {
-  if (kind === "time") {
-    return (
-      <span className="inline-flex h-4.5 w-4.5 items-center justify-center text-[0.95rem] leading-none">
-        ⏰
-      </span>
-    );
-  }
-
-  if (kind === "dose") {
-    return (
-      <span className="inline-flex h-4.5 w-4.5 items-center justify-center text-[0.95rem] leading-none">
-        🔢
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex h-4.5 w-4.5 items-center justify-center text-[0.95rem] leading-none">
-      💊
-    </span>
-  );
-}
-
-function EditorShell({ children }: { children: ReactNode }) {
-  return (
-    <div className={flowShellClass} style={{ boxShadow: "0 14px 44px rgba(15,23,42,0.1)" }}>
-      <div className={flowShellSpacingClass}>{children}</div>
-    </div>
-  );
-}
-
-function FlowScreenHeader({
-  backLabel,
-  onBack,
-  eyebrow,
-  title,
-  subtitle,
-}: {
-  backLabel: string;
-  onBack: () => void;
-  eyebrow: string;
-  title?: string;
-  subtitle?: string;
-}) {
-  return (
-    <div className="space-y-2 px-1">
-      <BackLinkButton label={backLabel} onClick={onBack} />
-      <div className="space-y-1">
-        {eyebrow ? <p className="soft-field-label">{eyebrow}</p> : null}
-        {title ? (
-          <h1 className="app-page-title text-[1.34rem] tracking-[-0.04em] sm:text-[1.64rem]">
-            {title}
-          </h1>
-        ) : null}
-        {subtitle ? <p className="text-[0.8rem] leading-5 text-muted">{subtitle}</p> : null}
-      </div>
-    </div>
-  );
-}
-
-function TintedField({
-  label,
-  icon,
-  placeholder,
-  value,
-  onChange,
-}: {
-  label: string;
-  icon?: ReactNode;
-  placeholder: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block space-y-1.5">
-      <span className="soft-field-label">{label}</span>
-      <span className="group relative block">
-        {icon ? (
-          <span className="pointer-events-none absolute right-3 top-1/2 z-[1] inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)] text-muted transition-colors group-focus-within:bg-[color:color-mix(in_srgb,var(--color-primary)_16%,white)] group-focus-within:text-[color:var(--color-primary)] sm:left-3 sm:right-auto">
-            <span className="inline-flex h-4.5 w-4.5 items-center justify-center">{icon}</span>
-          </span>
-        ) : null}
-        <input
-          type="text"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="none"
-          spellCheck={false}
-          placeholder={placeholder}
-          className={`soft-input min-h-[3.05rem] w-full px-4 text-[0.96rem] placeholder:text-muted sm:min-h-[3.15rem] ${icon ? "pr-14 sm:pr-4 sm:pl-14" : ""}`.trim()}
-        />
-      </span>
-    </label>
-  );
-}
-
-function DayChip({
-  label,
-  selected,
-  onClick,
-}: {
-  label: string;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-full px-0 text-[11px] font-semibold tracking-[-0.03em] transition sm:h-10 sm:w-10 sm:text-[12px] ${
-        selected ? "soft-button-primary min-h-0" : "soft-button-secondary min-h-0"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function ChoiceButtons<T extends string>({
-  value,
-  onChange,
-  options,
-  columnsClassName,
-  buttonClassName,
-}: {
-  value: T;
-  onChange: (value: T) => void;
-  options: Array<{ value: T; label: string; icon?: ReactNode }>;
-  columnsClassName?: string;
-  buttonClassName?: string;
-}) {
-  const defaultColumnsClassName =
-    options.length === 4
-      ? "grid-cols-2 sm:grid-cols-4"
-      : options.length === 3
-        ? "grid-cols-1 sm:grid-cols-3"
-        : options.length === 2
-          ? "grid-cols-1 sm:grid-cols-2"
-          : "grid-cols-1";
-
-  return (
-    <div className={`grid gap-2 ${columnsClassName ?? defaultColumnsClassName}`.trim()}>
-      {options.map((option) => {
-        const selected = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            className={`inline-flex min-h-[3.05rem] w-full items-center justify-center rounded-[22px] px-4 py-3 text-center text-[0.88rem] font-semibold leading-tight tracking-[-0.025em] whitespace-normal sm:min-h-[3.15rem] ${
-              selected ? "soft-button-primary" : "soft-button-secondary"
-            } ${buttonClassName ?? ""}`.trim()}
-          >
-            {selected && option.icon ? <span className="mr-1.5">{option.icon}</span> : null}
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function BackLinkButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex text-sm text-primary hover:underline"
-    >
-      {label}
-    </button>
-  );
-}
-
-function handleCardKeyDown(event: React.KeyboardEvent<HTMLDivElement>, onOpen: () => void) {
-  if (event.key !== "Enter" && event.key !== " ") {
-    return;
-  }
-  event.preventDefault();
-  onOpen();
-}
-
-function normalizeTimePart(raw: string, max: number) {
-  const digits = raw.replace(/\D/g, "").slice(0, 2);
-  if (!digits) return "";
-  const bounded = Math.min(Number(digits), max);
-  return String(bounded).padStart(2, "0");
-}
-
-function normalizeTimeInput(raw: string) {
-  const cleaned = raw.replace(/[^\d:]/g, "");
-  const hasColon = cleaned.includes(":");
-  const digits = cleaned.replace(/:/g, "").slice(0, 4);
-
-  if (!digits) return "";
-
-  const hourDigits = digits.slice(0, 2);
-  const minuteDigits = digits.slice(2, 4);
-
-  if (hasColon) {
-    return `${hourDigits}${cleaned.endsWith(":") && !minuteDigits ? ":" : minuteDigits ? `:${minuteDigits}` : ""}`;
-  }
-
-  if (digits.length <= 2) {
-    return hourDigits;
-  }
-
-  return `${hourDigits}:${minuteDigits}`;
-}
-
-function finalizeTimeInput(raw: string) {
-  const digits = raw.replace(/\D/g, "").slice(0, 4);
-
-  if (!digits) return "08:30";
-  if (digits.length <= 2) return `${normalizeTimePart(digits, 23) || "08"}:00`;
-
-  return `${normalizeTimePart(digits.slice(0, 2), 23) || "08"}:${normalizeTimePart(digits.slice(2), 59) || "00"}`;
-}
-
-function resetMedicationEditorFields(
-  setEditorTitle: Dispatch<SetStateAction<string>>,
-  setEditorDose: Dispatch<SetStateAction<string>>,
-  setEditorTimes: Dispatch<SetStateAction<string[]>>
-) {
-  setEditorTitle("");
-  setEditorDose("");
-  setEditorTimes([""]);
-}
-
-function displayPillboxText(value: string) {
-  return value;
-}
-
-function formatPillboxNextDoseLabel(
-  nextDoseAt: string | null,
-  fallbackLabel: string | null,
-  language: AppLanguage
-) {
-  if (nextDoseAt) {
-    const scheduledAt = new Date(nextDoseAt);
-    if (!Number.isNaN(scheduledAt.getTime())) {
-      const locale = language === "ru" ? "ru-RU" : "en-US";
-      return new Intl.DateTimeFormat(locale, {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(scheduledAt);
-    }
-  }
-  return fallbackLabel ?? "—";
-}
-
-function formatMealRule(mealRule: PillboxMealRule, language: AppLanguage) {
-  if (mealRule === "before_meal") {
-    return tPillbox(language, "beforeMeal");
-  }
-  if (mealRule === "with_meal") {
-    return tPillbox(language, "duringMeal");
-  }
-  return tPillbox(language, "afterMeal");
-}
-
-function canMarkGroupDose(group: PillboxGroup) {
-  if (
-    group.status !== "active" ||
-    !group.nextMedicationId ||
-    !group.nextDoseAt ||
-    Number.isNaN(new Date(group.nextDoseAt).getTime())
-  ) {
-    return false;
-  }
-  const now = Date.now();
-  const scheduledAt = new Date(group.nextDoseAt).getTime();
-  return now >= scheduledAt && now <= scheduledAt + PILLBOX_LATE_WINDOW_MS;
-}
-
-function isOverdueDose(nextDoseAt: string | null, status: PillboxGroup["status"]) {
-  if (status !== "active" || !nextDoseAt) {
-    return false;
-  }
-  const scheduledAt = new Date(nextDoseAt);
-  if (Number.isNaN(scheduledAt.getTime())) {
-    return false;
-  }
-  return Date.now() - scheduledAt.getTime() > PILLBOX_LATE_WINDOW_MS;
-}
-
-function isLateDose(nextDoseAt: string | null, status: PillboxGroup["status"]) {
-  if (status !== "active" || !nextDoseAt) {
-    return false;
-  }
-  const scheduledAt = new Date(nextDoseAt);
-  if (Number.isNaN(scheduledAt.getTime())) {
-    return false;
-  }
-  const diffMs = Date.now() - scheduledAt.getTime();
-  return diffMs > PILLBOX_ON_TIME_WINDOW_MS && diffMs <= PILLBOX_LATE_WINDOW_MS;
-}
-
-function getPlanStateCompact(
-  status: PillboxPlanSummary["status"],
-  isOverdue: boolean,
-  canMarkNow: boolean,
-  isLate: boolean,
-  language: AppLanguage
-) {
-  if (status === "paused") {
-    return language === "ru" ? "На паузе" : "Paused";
-  }
-  if (status === "archived") {
-    return language === "ru" ? "В архиве" : "Archived";
-  }
-  if (isOverdue || isLate) {
-    return language === "ru" ? "Пропущен" : "Missed";
-  }
-  if (canMarkNow) {
-    return language === "ru" ? "Пора отметить" : "Ready to log";
-  }
-  return language === "ru" ? "Активен" : "Active";
-}
-
-function getMedicationDayLabel(day: (typeof medicationDays)[number], language: AppLanguage) {
-  return language === "ru" ? day.shortRu : day.shortEn;
-}
-
-function buildDraft(accountId: string | null, plan?: PillboxPlan): SetupDraft {
-  if (!plan) {
-    return {
-      id: null,
-      title: "",
-      members: accountId ? [accountId] : [],
-      medications: [],
-    };
-  }
-
-  return {
-    id: plan.id,
-    title: plan.title,
-    members: [...plan.memberAccountIds],
-    medications: plan.medications
-      .slice()
-      .sort((left, right) => left.position - right.position)
-      .map((item) => ({
-        id: item.id,
-        title: item.customMedicineName ?? "",
-        dose: item.doseAmount,
-        times: item.times.map(normalizeDisplayTime),
-        mealRule: item.mealRule,
-        repeatDays: [...item.repeatDays],
-        courseMode: item.courseMode,
-        courseStartDate: item.courseStartDate ?? "",
-        courseEndDate: item.courseEndDate ?? "",
-      })),
-  };
-}
-
-function toPlanWrite(draft: SetupDraft): PillboxPlanWrite {
-  return {
-    title: draft.title.trim() || "Новый план",
-    memberAccountIds: draft.members,
-    medications: draft.medications.map((item, index) => ({
-      id: item.id.startsWith("new-") ? null : item.id,
-      householdMedicineId: null,
-      customMedicineName: item.title.trim() || null,
-      doseAmount: item.dose.trim(),
-      mealRule: item.mealRule,
-      repeatDays: [...item.repeatDays],
-      times: item.times.map((value) => finalizeTimeInput(value)),
-      courseMode: item.courseMode,
-      courseStartDate: item.courseMode === "period" ? item.courseStartDate || null : null,
-      courseEndDate: item.courseMode === "period" ? item.courseEndDate || null : null,
-      position: index,
-    })),
-  };
-}
-
-function toPlanWriteFromPlan(plan: PillboxPlan, status?: PillboxPlan["status"]): PillboxPlanWrite {
-  return {
-    title: plan.title,
-    memberAccountIds: [...plan.memberAccountIds],
-    medications: plan.medications
-      .slice()
-      .sort((left, right) => left.position - right.position)
-      .map((item) => ({
-        id: item.id,
-        householdMedicineId: item.householdMedicineId,
-        customMedicineName: item.customMedicineName,
-        doseAmount: item.doseAmount,
-        mealRule: item.mealRule,
-        repeatDays: [...item.repeatDays],
-        times: item.times.map(normalizeDisplayTime),
-        courseMode: item.courseMode,
-        courseStartDate: item.courseStartDate,
-        courseEndDate: item.courseEndDate,
-        position: item.position,
-      })),
-    ...(status ? { status } : {}),
-  };
-}
-
-function toGroupSummary(summary: PillboxPlanSummary, language: AppLanguage): PillboxGroup {
-  return {
-    id: summary.id,
-    title: summary.title,
-    status: summary.status,
-    activeCount: summary.activeMedicationCount,
-    nextDoseAt: summary.nextDoseAt,
-    nextDose: formatPillboxNextDoseLabel(summary.nextDoseAt, summary.nextDoseLabel, language),
-    nextMedicationId: summary.nextMedicationId,
-    nextMedicationTitle: summary.nextMedicationTitle,
-    members: summary.memberAccountIds,
-    courseSummaryKind: summary.courseSummaryKind,
-    dayLabel: summary.courseDayLabel ?? undefined,
-    progress: summary.courseProgressRatio ?? 0,
-  };
-}
+import { PillboxAnalyticsScreen } from "./pillbox/analytics";
+import { PillboxMedicationScreen } from "./pillbox/medicationScreen";
+import {
+  PillboxDetailsScreen,
+  PillboxHubScreen,
+  PillboxLoadingScreen,
+  PillboxSetupScreen,
+} from "./pillbox/screens";
+import {
+  buildDraft,
+  CoursePreset,
+  createMedication,
+  displayPillboxText,
+  finalizeTimeInput,
+  getCoursePreset,
+  isMedicationReady,
+  MedicationItem,
+  normalizeTimeInput,
+  PillboxDeleteTarget,
+  PillboxGroup,
+  PillboxPlanActionTarget,
+  PillboxPlanListFilter,
+  resetMedicationEditorFields,
+  SetupDraft,
+  tPillbox,
+  toGroupSummary,
+  toPlanWrite,
+  toPlanWriteFromPlan,
+} from "./pillbox/shared";
 
 export function PillboxPage() {
   const { language } = useI18n();
@@ -876,7 +79,9 @@ export function PillboxPage() {
   const activeMedicationId = searchParams.get("med");
   const selectedPlanId = searchParams.get("plan");
   const listFilter: PillboxPlanListFilter =
-    searchParams.get("tab") === "archive" ? "archive" : "active";
+    searchParams.get("tab") === "archive" || searchParams.get("tab") === "completed"
+      ? "completed"
+      : "active";
   const highlightedPlanId = screen === "hub" ? searchParams.get("highlightPlan") : null;
   const highlightedAction = screen === "hub" ? searchParams.get("action") : null;
   const isCreating = isEditorScreen && (selectedPlanId === "new" || !selectedPlanId);
@@ -924,7 +129,9 @@ export function PillboxPage() {
   const visibleGroups = useMemo(
     () =>
       allGroups.filter((group) =>
-        listFilter === "archive" ? group.status === "archived" : group.status !== "archived"
+        listFilter === "completed"
+          ? group.status === "archived" || group.status === "completed"
+          : group.status !== "archived" && group.status !== "completed"
       ),
     [allGroups, listFilter]
   );
@@ -1198,7 +405,7 @@ export function PillboxPage() {
   const openDetails = (group: PillboxGroup) => {
     setDraft(null);
     navigate(
-      `/pillbox?mode=details&plan=${group.id}${listFilter === "archive" ? "&tab=archive" : ""}`
+      `/pillbox?mode=details&plan=${group.id}${listFilter === "completed" ? "&tab=completed" : ""}`
     );
   };
 
@@ -1231,7 +438,7 @@ export function PillboxPage() {
     setSaveAttempted(false);
     setSavePlanError(null);
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-    navigate(listFilter === "archive" ? "/pillbox?tab=archive" : "/pillbox");
+    navigate(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
   };
 
   const goToSetup = () => {
@@ -1397,21 +604,17 @@ export function PillboxPage() {
   };
 
   const toggleSelectedPlanStatus = () => {
-    if (!selectedPlan || togglePlanStatusMutation.isPending) {
+    if (
+      !selectedPlan ||
+      togglePlanStatusMutation.isPending ||
+      selectedPlan.status === "archived" ||
+      selectedPlan.status === "completed"
+    ) {
       return;
     }
     setPlanActionError(null);
     setDeleteTarget(null);
     setPlanActionTarget(selectedPlan.status === "active" ? "pause" : "resume");
-  };
-
-  const requestArchiveSelectedPlan = () => {
-    if (!selectedPlan || togglePlanStatusMutation.isPending) {
-      return;
-    }
-    setPlanActionError(null);
-    setDeleteTarget(null);
-    setPlanActionTarget(selectedPlan.status === "archived" ? "restore" : "archive");
   };
 
   const confirmPlanAction = () => {
@@ -1424,12 +627,7 @@ export function PillboxPage() {
       return;
     }
 
-    const nextStatus =
-      planActionTarget === "pause"
-        ? "paused"
-        : planActionTarget === "resume" || planActionTarget === "restore"
-          ? "active"
-          : "archived";
+    const nextStatus = planActionTarget === "pause" ? "paused" : "active";
     togglePlanStatusMutation.mutate({
       planId: selectedPlanId,
       payload: toPlanWriteFromPlan(selectedPlan, nextStatus),
@@ -1440,7 +638,7 @@ export function PillboxPage() {
     if (screen !== "hub") {
       return;
     }
-    navigate(nextFilter === "archive" ? "/pillbox?tab=archive" : "/pillbox");
+    navigate(nextFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
   };
 
   const openAnalytics = (
@@ -1450,13 +648,34 @@ export function PillboxPage() {
     const resolvedPlanId =
       targetPlanId ??
       selectedPlanIdForAnalytics ??
-      (targetFilter === "archive"
-        ? allGroups.find((group) => group.status === "archived")?.id
-        : allGroups.find((group) => group.status !== "archived")?.id) ??
+      (targetFilter === "completed"
+        ? allGroups.find((group) => group.status === "archived" || group.status === "completed")?.id
+        : allGroups.find((group) => group.status !== "archived" && group.status !== "completed")
+            ?.id) ??
       null;
     navigate(
-      `/pillbox?mode=analytics${resolvedPlanId ? `&plan=${resolvedPlanId}` : ""}${targetFilter === "archive" ? "&tab=archive" : ""}`
+      `/pillbox?mode=analytics${resolvedPlanId ? `&plan=${resolvedPlanId}` : ""}${targetFilter === "completed" ? "&tab=completed" : ""}`
     );
+  };
+
+  const saveMedication = () => {
+    if (!activeMedication || !canSaveMedication) return;
+
+    const normalizedTimes = editorTimes
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .map((value) => finalizeTimeInput(value));
+
+    updateMedication(activeMedication.id, {
+      title: editorTitle.trim(),
+      dose: editorDose.trim(),
+      times: normalizedTimes.length ? normalizedTimes : ["08:30"],
+    });
+    if (pendingNewMedicationId === activeMedication.id) {
+      setPendingNewMedicationId(null);
+    }
+    setEditorMedicationBaseline(null);
+    closeMedicationEditor();
   };
 
   if (screen === "analytics") {
@@ -1469,7 +688,7 @@ export function PillboxPage() {
         onBack={goToHub}
         onSelectPlan={(planId, filter) =>
           navigate(
-            `/pillbox?mode=analytics&plan=${planId}${filter === "archive" ? "&tab=archive" : ""}`
+            `/pillbox?mode=analytics&plan=${planId}${filter === "completed" ? "&tab=completed" : ""}`
           )
         }
       />
@@ -1478,1671 +697,129 @@ export function PillboxPage() {
 
   if (screen === "hub" && plansLoading) {
     return (
-      <div className="space-y-6">
-        {!isIosShell ? (
-          <PageIntro
-            title={tPillbox(language, "hubTitle")}
-            subtitle={tPillbox(language, "hubSubtitle")}
-            compactOnMobile
-            hideOnMobile
-            mobileLikeDesktop
-            action={
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => openAnalytics(undefined, listFilter)}
-                  className={actionSecondaryClass}
-                >
-                  {tPillbox(language, "analytics")}
-                </button>
-                <button type="button" disabled className={actionPrimaryClass}>
-                  {tPillbox(language, "createPlan")}
-                </button>
-              </div>
-            }
-            className="app-desktop-mobile-like-intro app-desktop-mobile-like-intro--pillbox [&_.app-title]:text-[1.72rem] [&_.app-title]:tracking-[-0.05em] sm:[&_.app-title]:text-[2.1rem] [&_.app-subtitle]:text-[0.93rem] sm:[&_.app-subtitle]:text-[0.98rem]"
-          />
-        ) : null}
-        <div className={isIosShell ? "space-y-2.5" : "space-y-2.5 sm:hidden"}>
-          <div className="app-mobile-section-intro">
-            <h1 className="app-mobile-section-intro__title">{tPillbox(language, "hubTitle")}</h1>
-            <p className="app-mobile-section-intro__hint">{tPillbox(language, "hubMobileHint")}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => openAnalytics(undefined, listFilter)}
-              className="app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]"
-            >
-              {tPillbox(language, "analytics")}
-            </button>
-            <button
-              type="button"
-              disabled
-              className="soft-button-primary inline-flex min-h-[2.8rem] shrink-0 items-center justify-center rounded-[18px] px-3.5 text-[0.82rem] font-semibold tracking-[-0.025em] opacity-70"
-            >
-              {tPillbox(language, "createPlan")}
-            </button>
-          </div>
-          <div className={segmentedControlClass} aria-label={tPillbox(language, "hubTitle")}>
-            <button
-              type="button"
-              onClick={() => setListFilter("active")}
-              className={
-                listFilter === "active" ? segmentedButtonActiveClass : segmentedButtonClass
-              }
-              aria-pressed={listFilter === "active"}
-            >
-              {tPillbox(language, "activeFilter")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setListFilter("archive")}
-              className={
-                listFilter === "archive" ? segmentedButtonActiveClass : segmentedButtonClass
-              }
-              aria-pressed={listFilter === "archive"}
-            >
-              {tPillbox(language, "archiveFilter")}
-            </button>
-          </div>
-        </div>
-        <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
-          {language === "ru" ? "Загружаем планы приёма..." : "Loading medication plans..."}
-        </div>
+      <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
+        {language === "ru" ? "Загружаем планы приёма..." : "Loading medication plans..."}
       </div>
     );
   }
 
   if (isEditorScreen && !isCreating && selectedPlanLoading && !draft) {
-    return (
-      <EditorShell>
-        <FlowScreenHeader
-          backLabel={
-            screen === "medication"
-              ? tPillbox(language, "medicationBack")
-              : screen === "details"
-                ? tPillbox(language, "detailsBack")
-                : tPillbox(language, "setupBack")
-          }
-          onBack={goToHub}
-          eyebrow={tPillbox(language, "eyebrow")}
-          title={
-            screen === "medication"
-              ? tPillbox(language, "medicationTitle")
-              : screen === "details"
-                ? tPillbox(language, "detailsTitle")
-                : tPillbox(language, "setupTitle")
-          }
-          subtitle={undefined}
-        />
-        <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
-          {language === "ru" ? "Загружаем план..." : "Loading plan..."}
-        </div>
-      </EditorShell>
-    );
+    return <PillboxLoadingScreen language={language} screen={screen} onBack={goToHub} />;
   }
 
   if (screen === "medication" && draft && activeMedication) {
-    const showCourseDates = activeMedication.courseMode === "period";
-    const editorFieldWrapClass = "mx-auto w-full max-w-[36rem]";
-
     return (
-      <EditorShell>
-        <FlowScreenHeader
-          backLabel={tPillbox(language, "medicationBack")}
-          onBack={goToSetupFromMedication}
-          eyebrow={tPillbox(language, "eyebrow")}
-          title={tPillbox(language, "medicationTitle")}
-        />
-
-        <div className="space-y-3.5 sm:space-y-4">
-          <div className="space-y-3.5 sm:space-y-4">
-            <div className={editorSectionCardClass}>
-              <div className="space-y-4.5 sm:space-y-5">
-                <div className="space-y-3">
-                  <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-                    <TintedField
-                      label={tPillbox(language, "whatName")}
-                      icon={<FieldIcon kind="pill" />}
-                      placeholder={tPillbox(language, "whatNamePlaceholder")}
-                      value={editorTitle}
-                      onChange={setEditorTitle}
-                    />
-                    <TintedField
-                      label={tPillbox(language, "howMuch")}
-                      icon={<FieldIcon kind="dose" />}
-                      placeholder={tPillbox(language, "howMuchPlaceholder")}
-                      value={editorDose}
-                      onChange={setEditorDose}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-1 sm:pt-2">
-                  <div className={editorFieldWrapClass}>
-                    <div className="space-y-2">
-                      {editorTimes.map((timeValue, index) => (
-                        <div key={`${activeMedication.id}-time-${index}`} className="flex gap-2">
-                          <div className="relative min-w-0 flex-1">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={timeValue}
-                              onChange={(event) => updateEditorTimeAt(index, event.target.value)}
-                              onBlur={() => finalizeEditorTimeAt(index)}
-                              placeholder="08:30"
-                              className="soft-input min-h-[3.15rem] w-full px-4 pr-11 text-center text-[1.08rem] font-semibold tracking-[-0.04em] text-foreground placeholder:text-muted sm:min-h-[3.3rem] sm:pr-12 sm:text-[1.26rem]"
-                            />
-                            <span className="pointer-events-none absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_12%,white)] text-[color:var(--color-primary)] sm:h-9 sm:w-9">
-                              <FieldIcon kind="time" />
-                            </span>
-                          </div>
-                          {editorTimes.length > 1 ? (
-                            <button
-                              type="button"
-                              onClick={() => removeEditorTime(index)}
-                              className="soft-button-secondary inline-flex h-[3.15rem] w-[3.15rem] shrink-0 items-center justify-center rounded-[18px] px-0 text-[1.15rem] leading-none sm:h-[3.3rem] sm:w-[3.3rem]"
-                              aria-label={tPillbox(language, "removeTimeAria", {
-                                index: index + 1,
-                              })}
-                            >
-                              ×
-                            </button>
-                          ) : null}
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={addEditorTime}
-                        className="soft-button-secondary inline-flex min-h-[2.9rem] w-full items-center justify-center rounded-[18px] px-4 text-[0.84rem] font-semibold tracking-[-0.025em]"
-                      >
-                        {tPillbox(language, "addTime")}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={`${editorFieldWrapClass} space-y-4`}>
-                    <div className="space-y-2.5">
-                      <div className="grid grid-cols-7 gap-2 sm:gap-2.5 lg:gap-2">
-                        {medicationDays.map((day) => {
-                          const selected = activeMedication.repeatDays.includes(day.value);
-                          return (
-                            <DayChip
-                              key={day.value}
-                              label={getMedicationDayLabel(day, language)}
-                              selected={selected}
-                              onClick={() =>
-                                updateMedication(activeMedication.id, {
-                                  repeatDays: selected
-                                    ? activeMedication.repeatDays.length > 1
-                                      ? activeMedication.repeatDays.filter(
-                                          (item) => item !== day.value
-                                        )
-                                      : activeMedication.repeatDays
-                                    : [...activeMedication.repeatDays, day.value],
-                                })
-                              }
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2.5">
-                      <ChoiceButtons
-                        value={activeMedication.courseMode}
-                        onChange={(value) => {
-                          if (value === "period") {
-                            const today = getTodayIso();
-                            setEditorCoursePreset("14");
-                            updateMedication(activeMedication.id, {
-                              courseMode: "period",
-                              courseStartDate: activeMedication.courseStartDate || today,
-                              courseEndDate:
-                                activeMedication.courseEndDate || addDaysToIso(today, 13),
-                            });
-                            return;
-                          }
-
-                          updateMedication(activeMedication.id, {
-                            courseMode: "continuous",
-                            courseStartDate: "",
-                            courseEndDate: "",
-                          });
-                          setEditorCoursePreset("custom");
-                        }}
-                        columnsClassName="grid-cols-1 sm:grid-cols-2"
-                        options={[
-                          { value: "continuous", label: tPillbox(language, "continuous") },
-                          { value: "period", label: tPillbox(language, "course") },
-                        ]}
-                      />
-                      {showCourseDates ? (
-                        <div className="space-y-3">
-                          <ChoiceButtons
-                            value={editorCoursePreset}
-                            onChange={(value) => {
-                              if (value === "custom") {
-                                setEditorCoursePreset("custom");
-                                const today = getTodayIso();
-                                updateMedication(activeMedication.id, {
-                                  courseStartDate: activeMedication.courseStartDate || today,
-                                  courseEndDate:
-                                    activeMedication.courseEndDate || addDaysToIso(today, 13),
-                                });
-                                return;
-                              }
-
-                              const today = getTodayIso();
-                              const durationDays = value === "7" ? 7 : value === "14" ? 14 : 30;
-                              setEditorCoursePreset(value);
-                              updateMedication(activeMedication.id, {
-                                courseStartDate: today,
-                                courseEndDate: addDaysToIso(today, durationDays - 1),
-                              });
-                            }}
-                            columnsClassName="grid-cols-2 sm:grid-cols-4"
-                            buttonClassName="text-[0.82rem] sm:text-[0.86rem]"
-                            options={[
-                              { value: "7", label: tPillbox(language, "sevenDays") },
-                              { value: "14", label: tPillbox(language, "fourteenDays") },
-                              { value: "30", label: tPillbox(language, "thirtyDays") },
-                              { value: "custom", label: tPillbox(language, "customDates") },
-                            ]}
-                          />
-                          {editorCoursePreset === "custom" ? (
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              <label className="block space-y-1.5">
-                                <span className="soft-field-label">
-                                  {tPillbox(language, "startCourse")}
-                                </span>
-                                <DateField
-                                  value={activeMedication.courseStartDate}
-                                  onChange={(nextValue) =>
-                                    updateMedication(activeMedication.id, {
-                                      courseStartDate: nextValue,
-                                      courseEndDate:
-                                        activeMedication.courseEndDate &&
-                                        nextValue &&
-                                        activeMedication.courseEndDate < nextValue
-                                          ? nextValue
-                                          : activeMedication.courseEndDate,
-                                    })
-                                  }
-                                  placeholder={tPillbox(language, "startDatePlaceholder")}
-                                  language={language}
-                                />
-                              </label>
-                              <label className="block space-y-1.5">
-                                <span className="soft-field-label">
-                                  {tPillbox(language, "endCourse")}
-                                </span>
-                                <DateField
-                                  value={activeMedication.courseEndDate}
-                                  onChange={(nextValue) =>
-                                    updateMedication(activeMedication.id, {
-                                      courseEndDate: nextValue,
-                                    })
-                                  }
-                                  placeholder={tPillbox(language, "endDatePlaceholder")}
-                                  language={language}
-                                  min={activeMedication.courseStartDate || undefined}
-                                />
-                              </label>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3.5 sm:space-y-4">
-            <div className={editorSectionCardClass}>
-              <div className="mx-auto w-full max-w-[36rem]">
-                <ChoiceButtons
-                  value={activeMedication.mealRule}
-                  onChange={(value) =>
-                    updateMedication(activeMedication.id, {
-                      mealRule: value as MedicationItem["mealRule"],
-                    })
-                  }
-                  columnsClassName="grid-cols-1 sm:grid-cols-3"
-                  buttonClassName="text-[0.84rem] sm:text-[0.86rem]"
-                  options={[
-                    {
-                      value: "before_meal",
-                      label: tPillbox(language, "beforeMeal"),
-                      icon: <UtensilsBadge />,
-                    },
-                    {
-                      value: "with_meal",
-                      label: tPillbox(language, "duringMeal"),
-                      icon: <UtensilsBadge />,
-                    },
-                    {
-                      value: "after_meal",
-                      label: tPillbox(language, "afterMeal"),
-                      icon: <UtensilsBadge />,
-                    },
-                  ]}
-                />
-              </div>
-            </div>
-
-            <div className={editorSectionCardClass}>
-              <div className="mx-auto flex w-full max-w-[36rem] flex-col gap-2.5 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!canSaveMedication) return;
-                    const normalizedTimes = editorTimes
-                      .map((value) => value.trim())
-                      .filter(Boolean)
-                      .map((value) => finalizeTimeInput(value));
-
-                    updateMedication(activeMedication.id, {
-                      title: editorTitle.trim(),
-                      dose: editorDose.trim(),
-                      times: normalizedTimes.length ? normalizedTimes : ["08:30"],
-                    });
-                    if (pendingNewMedicationId === activeMedication.id) {
-                      setPendingNewMedicationId(null);
-                    }
-                    setEditorMedicationBaseline(null);
-                    closeMedicationEditor();
-                  }}
-                  disabled={!canSaveMedication}
-                  className={`${actionPrimaryClass} disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                  {tPillbox(language, "saveMedication")}
-                </button>
-                {!canSaveMedication ? (
-                  <p className="text-[0.78rem] leading-5 text-muted">
-                    {tPillbox(language, "saveMedicationRequiresTitle")}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-        <ConfirmDialog
-          isOpen={deleteTarget !== null}
-          title={
-            deleteTarget?.kind === "plan"
-              ? tPillbox(language, "confirmDeletePlanTitle")
-              : tPillbox(language, "confirmDeleteMedicineTitle")
-          }
-          description={`${deleteTarget?.kind === "plan" ? tPillbox(language, "confirmDeletePlanDescription") : tPillbox(language, "confirmDeleteMedicineDescription")}${planActionError ? `\n\n${planActionError}` : ""}`}
-          confirmLabel={tPillbox(language, "delete")}
-          cancelLabel={tPillbox(language, "cancel")}
-          confirmTone="danger"
-          isPending={deleteTarget?.kind === "plan" ? deletePlanMutation.isPending : false}
-          onConfirm={confirmDelete}
-          onCancel={() => {
-            setDeleteTarget(null);
-            setPlanActionError(null);
-          }}
-        />
-      </EditorShell>
+      <PillboxMedicationScreen
+        language={language}
+        activeMedication={activeMedication}
+        editorTitle={editorTitle}
+        editorDose={editorDose}
+        editorTimes={editorTimes}
+        editorCoursePreset={editorCoursePreset}
+        canSaveMedication={canSaveMedication}
+        onBack={goToSetupFromMedication}
+        onTitleChange={setEditorTitle}
+        onDoseChange={setEditorDose}
+        onUpdateEditorTimeAt={updateEditorTimeAt}
+        onFinalizeEditorTimeAt={finalizeEditorTimeAt}
+        onAddEditorTime={addEditorTime}
+        onRemoveEditorTime={removeEditorTime}
+        onUpdateMedication={updateMedication}
+        onCoursePresetChange={setEditorCoursePreset}
+        onSaveMedication={saveMedication}
+      />
     );
   }
 
   if (screen === "details" && selectedPlan && selectedPlanId) {
-    const selectedGroup = allGroups.find((group) => group.id === selectedPlanId) ?? null;
-    const selectedGroupOverdue = selectedGroup
-      ? isOverdueDose(selectedGroup.nextDoseAt, selectedGroup.status)
-      : false;
-    const selectedGroupLate = selectedGroup
-      ? isLateDose(selectedGroup.nextDoseAt, selectedGroup.status)
-      : false;
-    const sortedMedications = [...selectedPlan.medications].sort((left, right) => {
-      const nextMedicationId = selectedGroup?.nextMedicationId;
-      if (nextMedicationId) {
-        const leftIsNext = left.id === nextMedicationId;
-        const rightIsNext = right.id === nextMedicationId;
-        if (leftIsNext && !rightIsNext) return -1;
-        if (!leftIsNext && rightIsNext) return 1;
-      }
-      return left.position - right.position;
-    });
     return (
-      <EditorShell>
-        <FlowScreenHeader
-          backLabel={tPillbox(language, "detailsBack")}
-          onBack={goToHub}
-          eyebrow=""
-          title={undefined}
-        />
-
-        <section className="space-y-3.5 px-0.5 sm:px-0">
-          <div className="space-y-2.5">
-            <div className="min-w-0">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span
-                    className={`inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${
-                      selectedPlan.status === "active"
-                        ? "bg-[color:var(--color-success)]"
-                        : selectedPlan.status === "paused"
-                          ? "bg-[color:var(--color-warning)]"
-                          : "bg-[color:var(--color-danger)]"
-                    }`}
-                  />
-                  <p className="app-card-title min-w-0 truncate">
-                    {displayPillboxText(selectedPlan.title)}
-                  </p>
-                </div>
-                {selectedPlan.status !== "archived" ? (
-                  <button
-                    type="button"
-                    onClick={toggleSelectedPlanStatus}
-                    disabled={togglePlanStatusMutation.isPending}
-                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-                      selectedPlan.status === "active"
-                        ? "border-emerald-500/45 bg-emerald-500/25"
-                        : "border-amber-500/45 bg-amber-500/20"
-                    } disabled:cursor-not-allowed disabled:opacity-60`}
-                    aria-label={
-                      selectedPlan.status === "active"
-                        ? tPillbox(language, "pausePlan")
-                        : tPillbox(language, "resumePlan")
-                    }
-                  >
-                    <span
-                      className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
-                        selectedPlan.status === "active"
-                          ? "translate-x-6 text-emerald-600"
-                          : "translate-x-1 text-amber-700"
-                      }`}
-                    >
-                      {selectedPlan.status === "active" ? "✓" : "✕"}
-                    </span>
-                  </button>
-                ) : null}
-              </div>
-            </div>
-            <div className="grid gap-2 border-t border-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] pt-2.5 text-left">
-              <div className="flex items-start justify-between gap-3">
-                <p
-                  className={`text-[0.76rem] leading-5 ${
-                    selectedGroupOverdue
-                      ? "font-semibold text-[color:var(--color-warning)]"
-                      : selectedGroupLate
-                        ? "font-semibold text-[color:var(--color-warning)]"
-                        : "font-semibold text-[color:var(--color-success)]"
-                  }`}
-                >
-                  {selectedGroupOverdue
-                    ? tPillbox(language, "overdueDose")
-                    : tPillbox(language, "nextDoseShort")}
-                </p>
-                <p
-                  className={`text-right text-[0.82rem] font-semibold ${
-                    selectedGroupOverdue
-                      ? "text-[color:var(--color-warning)]"
-                      : selectedGroupLate
-                        ? "text-[color:var(--color-warning)]"
-                        : "text-[color:var(--color-success)]"
-                  }`}
-                >
-                  {selectedGroup?.nextDose ?? "—"}
-                </p>
-              </div>
-              <div className="flex items-start justify-between gap-3 pt-1.5">
-                <p className="text-[0.76rem] leading-5 text-muted">
-                  {tPillbox(language, "medicineCount")}
-                </p>
-                <p className="text-right text-[0.82rem] font-semibold text-foreground">
-                  {sortedMedications.length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] pt-3">
-            <div className="grid gap-0">
-              {sortedMedications.map((medication, index) => {
-                const isNextMedication = medication.id === selectedGroup?.nextMedicationId;
-                return (
-                  <div
-                    key={medication.id}
-                    className={`${
-                      index > 0
-                        ? "mt-2.5 border-t border-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] pt-2.5"
-                        : ""
-                    }`}
-                  >
-                    <div
-                      className={`rounded-[16px] px-3 py-2.5 ${
-                        isNextMedication
-                          ? "soft-panel-muted pillbox-next-medication-outline"
-                          : "soft-panel-muted"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[0.95rem] font-semibold tracking-[-0.025em] text-foreground">
-                            {displayPillboxText(
-                              medication.customMedicineName ||
-                                tPillbox(language, "unnamedMedicine", { index: index + 1 })
-                            )}
-                          </p>
-                          <p className="mt-1 text-[0.78rem] leading-5 text-muted">
-                            {displayPillboxText(
-                              medication.doseAmount || tPillbox(language, "amountMissing")
-                            )}{" "}
-                            ·{" "}
-                            {summarizeMedicationTimes(
-                              medication.times.map(normalizeDisplayTime),
-                              language
-                            )}{" "}
-                            · {formatMealRule(medication.mealRule, language)}
-                          </p>
-                        </div>
-                        <span className="soft-pill shrink-0 rounded-full px-2 py-1 text-[10px]">
-                          {medication.courseMode === "period"
-                            ? `${medication.courseStartDate ?? "—"} → ${medication.courseEndDate ?? "—"}`
-                            : tPillbox(language, "continuous")}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="border-t border-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] pt-3.5">
-            <div className="grid gap-2 sm:grid-cols-2">
-              {selectedPlan.status !== "archived" ? (
-                <button type="button" onClick={goToSetup} className={actionCompactSecondaryClass}>
-                  {tPillbox(language, "editPlan")}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={requestArchiveSelectedPlan}
-                  disabled={togglePlanStatusMutation.isPending}
-                  className={`${actionCompactSecondaryClass} disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                  {tPillbox(language, "restorePlan")}
-                </button>
-              )}
-              {selectedPlan.status !== "archived" ? (
-                <button
-                  type="button"
-                  onClick={requestArchiveSelectedPlan}
-                  disabled={togglePlanStatusMutation.isPending}
-                  className={`${actionFilterClass} disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                  {tPillbox(language, "archivePlan")}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={requestDeletePlan}
-                disabled={deletePlanMutation.isPending}
-                className={`${actionFilterClass} text-[color:var(--color-danger)] disabled:cursor-not-allowed disabled:opacity-60`}
-              >
-                {tPillbox(language, "deletePlan")}
-              </button>
-            </div>
-          </div>
-        </section>
-        <ConfirmDialog
-          isOpen={planActionTarget !== null}
-          title={
-            planActionTarget === "pause"
-              ? tPillbox(language, "confirmPausePlanTitle")
-              : planActionTarget === "resume"
-                ? tPillbox(language, "confirmResumePlanTitle")
-                : planActionTarget === "archive"
-                  ? tPillbox(language, "confirmArchivePlanTitle")
-                  : tPillbox(language, "confirmRestorePlanTitle")
-          }
-          description={`${planActionTarget === "pause" ? tPillbox(language, "confirmPausePlanDescription") : planActionTarget === "resume" ? tPillbox(language, "confirmResumePlanDescription") : planActionTarget === "archive" ? tPillbox(language, "confirmArchivePlanDescription") : tPillbox(language, "confirmRestorePlanDescription")}${planActionError ? `\n\n${planActionError}` : ""}`}
-          confirmLabel={
-            planActionTarget === "pause"
-              ? tPillbox(language, "pausePlan")
-              : planActionTarget === "resume"
-                ? tPillbox(language, "resumePlan")
-                : planActionTarget === "archive"
-                  ? tPillbox(language, "archivePlan")
-                  : tPillbox(language, "restorePlan")
-          }
-          cancelLabel={tPillbox(language, "cancel")}
-          confirmTone="primary"
-          isPending={togglePlanStatusMutation.isPending}
-          onConfirm={confirmPlanAction}
-          onCancel={() => {
-            setPlanActionTarget(null);
-            setPlanActionError(null);
-          }}
-        />
-        <ConfirmDialog
-          isOpen={deleteTarget !== null}
-          title={
-            deleteTarget?.kind === "plan"
-              ? tPillbox(language, "confirmDeletePlanTitle")
-              : tPillbox(language, "confirmDeleteMedicineTitle")
-          }
-          description={`${deleteTarget?.kind === "plan" ? tPillbox(language, "confirmDeletePlanDescription") : tPillbox(language, "confirmDeleteMedicineDescription")}${planActionError ? `\n\n${planActionError}` : ""}`}
-          confirmLabel={tPillbox(language, "delete")}
-          cancelLabel={tPillbox(language, "cancel")}
-          confirmTone="danger"
-          isPending={deletePlanMutation.isPending}
-          onConfirm={confirmDelete}
-          onCancel={() => {
-            setDeleteTarget(null);
-            setPlanActionError(null);
-          }}
-        />
-      </EditorShell>
+      <PillboxDetailsScreen
+        language={language}
+        selectedPlan={selectedPlan}
+        selectedPlanId={selectedPlanId}
+        allGroups={allGroups}
+        planActionTarget={planActionTarget}
+        planActionError={planActionError}
+        togglePlanStatusPending={togglePlanStatusMutation.isPending}
+        deletePlanPending={deletePlanMutation.isPending}
+        deleteTarget={deleteTarget}
+        onBack={goToHub}
+        onToggleStatus={toggleSelectedPlanStatus}
+        onGoToSetup={goToSetup}
+        onRequestDelete={requestDeletePlan}
+        onConfirmPlanAction={confirmPlanAction}
+        onClosePlanAction={() => {
+          setPlanActionTarget(null);
+          setPlanActionError(null);
+        }}
+        onConfirmDelete={confirmDelete}
+        onCloseDelete={() => {
+          setDeleteTarget(null);
+          setPlanActionError(null);
+        }}
+      />
     );
   }
 
   if (screen === "setup" && draft) {
     return (
-      <EditorShell>
-        <FlowScreenHeader
-          backLabel={tPillbox(language, "setupBack")}
-          onBack={goToHub}
-          eyebrow=""
-          title={tPillbox(language, "setupTitle")}
-        />
-
-        <div className="mx-auto grid w-full max-w-5xl gap-3.5 xl:grid-cols-[minmax(0,1.28fr)_minmax(21rem,0.82fr)] xl:gap-4.5">
-          <div className="space-y-4 xl:space-y-5">
-            <RowSurface className="space-y-3 px-4 py-4 sm:px-5 sm:py-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h1 className="app-card-title">{tPillbox(language, "medsTitle")}</h1>
-                  <p className="mt-1 text-[0.8rem] leading-5 text-muted">
-                    {tPillbox(language, "medsSubtitle")}
-                  </p>
-                </div>
-                <span className="soft-pill rounded-full px-2.5 py-1 text-[10px]">
-                  {draft.medications.length} {tPillbox(language, "countUnit")}
-                </span>
-              </div>
-
-              <div className="grid gap-2">
-                {draft.medications.length ? (
-                  draft.medications.map((medication, index) => (
-                    <div
-                      key={medication.id}
-                      className="soft-panel-muted rounded-[16px] px-3.5 py-3"
-                    >
-                      <div className="flex items-start gap-3">
-                        <button
-                          type="button"
-                          onClick={() => goToMedication(medication.id)}
-                          className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left transition hover:translate-y-[-1px]"
-                        >
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-[0.95rem] font-semibold tracking-[-0.025em] text-foreground">
-                                {displayPillboxText(
-                                  medication.title ||
-                                    tPillbox(language, "unnamedMedicine", { index: index + 1 })
-                                )}
-                              </span>
-                            </div>
-                            <p className="mt-1 text-[0.78rem] leading-5 text-muted">
-                              {displayPillboxText(
-                                medication.dose || tPillbox(language, "amountMissing")
-                              )}{" "}
-                              ·{" "}
-                              {summarizeMedicationTimes(
-                                medication.times.map(normalizeDisplayTime),
-                                language
-                              )}{" "}
-                              · {formatMealRule(medication.mealRule, language)}
-                            </p>
-                          </div>
-                          <span className="text-[1.1rem] leading-none text-[color:var(--color-primary)]">
-                            ›
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            requestDeleteMedication(
-                              medication.id,
-                              displayPillboxText(
-                                medication.title ||
-                                  tPillbox(language, "unnamedMedicine", { index: index + 1 })
-                              )
-                            )
-                          }
-                          className={`${actionCompactDangerClass} self-start`}
-                          aria-label={`${tPillbox(language, "delete")} ${displayPillboxText(
-                            medication.title ||
-                              tPillbox(language, "unnamedMedicine", { index: index + 1 })
-                          )}`}
-                        >
-                          {tPillbox(language, "delete")}
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="soft-panel-muted rounded-[16px] px-4 py-4 text-sm text-muted">
-                    <p className="font-semibold text-foreground">
-                      {tPillbox(language, "noMedicinesTitle")}
-                    </p>
-                    <p className="mt-1 leading-6">{tPillbox(language, "noMedicinesDescription")}</p>
-                  </div>
-                )}
-              </div>
-
-              <button type="button" onClick={addMedication} className={actionSecondaryClass}>
-                {tPillbox(language, "addMedicine")}
-              </button>
-            </RowSurface>
-
-            <RowSurface className="px-4 py-4 sm:px-5 sm:py-5">
-              <label className="block space-y-1.5" htmlFor="pillbox-group-title">
-                <span className="soft-field-label">{tPillbox(language, "titleLabel")}</span>
-                <input
-                  id="pillbox-group-title"
-                  value={draft.title}
-                  onChange={(event) =>
-                    setDraft((current) =>
-                      current ? { ...current, title: event.target.value } : current
-                    )
-                  }
-                  placeholder={tPillbox(language, "titlePlaceholder")}
-                  className="soft-input w-full px-4"
-                />
-              </label>
-            </RowSurface>
-          </div>
-
-          <div className="space-y-4 xl:space-y-5">
-            <RowSurface className="space-y-3.5 px-4 py-4 sm:px-5 sm:py-5">
-              <div className="space-y-1">
-                <h2 className="app-card-title">{tPillbox(language, "membersTitle")}</h2>
-                <p className="text-[0.8rem] leading-5 text-muted">
-                  {tPillbox(language, "membersHint")}
-                </p>
-              </div>
-
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                {familyMembers.map((member) => {
-                  const selected = draft.members.includes(member.id);
-                  const memberLabel = member.displayName || member.login || member.id;
-
-                  return (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() =>
-                        setDraft((current) => {
-                          if (!current) return current;
-                          const hasMember = current.members.includes(member.id);
-                          return {
-                            ...current,
-                            members: hasMember
-                              ? current.members.filter((item) => item !== member.id)
-                              : [...current.members, member.id],
-                          };
-                        })
-                      }
-                      className={`group flex w-full items-center gap-3 rounded-[20px] px-3.5 py-3 text-left transition ${
-                        selected ? "soft-panel" : "soft-panel-muted"
-                      }`}
-                      style={{
-                        border: selected
-                          ? "1.5px solid color-mix(in srgb, var(--color-primary) 38%, white)"
-                          : undefined,
-                      }}
-                    >
-                      <span
-                        className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition ${
-                          selected
-                            ? "bg-[color:color-mix(in_srgb,var(--color-primary)_18%,white)] text-[color:var(--color-primary)]"
-                            : "bg-[color:color-mix(in_srgb,var(--color-primary)_8%,white)] text-muted"
-                        }`}
-                      >
-                        <span className="text-[0.9rem] font-semibold">
-                          {memberLabel.slice(0, 1).toUpperCase()}
-                        </span>
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[0.86rem] font-semibold text-foreground">
-                          {memberLabel}
-                        </span>
-                        <span className="mt-0.5 block text-[0.74rem] leading-5 text-muted">
-                          {selected
-                            ? language === "ru"
-                              ? "Напоминания включены"
-                              : "Reminders enabled"
-                            : language === "ru"
-                              ? "Пока без напоминаний"
-                              : "No reminders yet"}
-                        </span>
-                      </span>
-                      <span
-                        className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[0.72rem] font-semibold transition ${
-                          selected
-                            ? "border-[color:var(--color-primary)] bg-[color:var(--color-primary)] text-white"
-                            : "border-[color:color-mix(in_srgb,var(--color-primary)_16%,transparent)] bg-white/70 text-transparent"
-                        }`}
-                        aria-hidden="true"
-                      >
-                        ✓
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="border-t border-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)] pt-3.5">
-                <div className="space-y-1">
-                  <h2 className="app-card-title">{tPillbox(language, "doneTitle")}</h2>
-                  <p className="text-[0.84rem] leading-5 text-muted">
-                    {tPillbox(language, "doneSubtitle")}
-                  </p>
-                </div>
-                {!canSavePlan && saveBlockedReason && saveAttempted ? (
-                  <p className="text-[0.78rem] leading-5 text-[color:var(--color-danger)]">
-                    {saveBlockedReason}
-                  </p>
-                ) : null}
-                {savePlanError ? (
-                  <p className="text-[0.78rem] leading-5 text-[color:var(--color-danger)]">
-                    {savePlanError}
-                  </p>
-                ) : null}
-                <div className="mt-3 grid gap-2.5">
-                  <button type="button" onClick={saveGroup} className={actionPrimaryClass}>
-                    {isEditing
-                      ? tPillbox(language, "savePlan")
-                      : tPillbox(language, "createNewPlan")}
-                  </button>
-                </div>
-              </div>
-            </RowSurface>
-          </div>
-        </div>
-        <ConfirmDialog
-          isOpen={deleteTarget !== null}
-          title={
-            deleteTarget?.kind === "plan"
-              ? tPillbox(language, "confirmDeletePlanTitle")
-              : tPillbox(language, "confirmDeleteMedicineTitle")
-          }
-          description={
-            deleteTarget?.kind === "plan"
-              ? tPillbox(language, "confirmDeletePlanDescription")
-              : tPillbox(language, "confirmDeleteMedicineDescription")
-          }
-          confirmLabel={tPillbox(language, "delete")}
-          cancelLabel={tPillbox(language, "cancel")}
-          confirmTone="danger"
-          onConfirm={confirmDelete}
-          onCancel={() => setDeleteTarget(null)}
-        />
-      </EditorShell>
+      <PillboxSetupScreen
+        language={language}
+        draft={draft}
+        familyMembers={familyMembers}
+        canSavePlan={canSavePlan}
+        saveBlockedReason={saveBlockedReason}
+        saveAttempted={saveAttempted}
+        savePlanError={savePlanError}
+        isEditing={isEditing}
+        onBack={goToHub}
+        onAddMedication={addMedication}
+        onOpenMedication={goToMedication}
+        onRequestDeleteMedication={requestDeleteMedication}
+        onTitleChange={(value) =>
+          setDraft((current) => (current ? { ...current, title: value } : current))
+        }
+        onToggleMember={(memberId) =>
+          setDraft((current) => {
+            if (!current) return current;
+            const hasMember = current.members.includes(memberId);
+            return {
+              ...current,
+              members: hasMember
+                ? current.members.filter((item) => item !== memberId)
+                : [...current.members, memberId],
+            };
+          })
+        }
+        onSavePlan={saveGroup}
+        deleteTarget={deleteTarget}
+        onConfirmDelete={confirmDelete}
+        onCloseDeleteDialog={() => setDeleteTarget(null)}
+      />
     );
   }
 
   return (
-    <div className="space-y-6">
-      {!isIosShell ? (
-        <PageIntro
-          title={tPillbox(language, "hubTitle")}
-          subtitle={tPillbox(language, "hubSubtitle")}
-          compactOnMobile
-          hideOnMobile
-          mobileLikeDesktop
-          action={
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => openAnalytics(undefined, listFilter)}
-                className={actionSecondaryClass}
-              >
-                {tPillbox(language, "analytics")}
-              </button>
-              <button type="button" onClick={openCreate} className={actionPrimaryClass}>
-                {tPillbox(language, "createPlan")}
-              </button>
-            </div>
-          }
-          className="app-desktop-mobile-like-intro app-desktop-mobile-like-intro--pillbox [&_.app-title]:text-[1.72rem] [&_.app-title]:tracking-[-0.05em] sm:[&_.app-title]:text-[2.1rem] [&_.app-subtitle]:text-[0.93rem] sm:[&_.app-subtitle]:text-[0.98rem]"
-        />
-      ) : null}
-
-      <div className={isIosShell ? "space-y-2.5" : "space-y-2.5 sm:hidden"}>
-        <div className="app-mobile-section-intro">
-          <h1 className="app-mobile-section-intro__title">{tPillbox(language, "hubTitle")}</h1>
-          <p className="app-mobile-section-intro__hint">{tPillbox(language, "hubMobileHint")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => openAnalytics(undefined, listFilter)}
-            className="app-btn-secondary-md soft-button-secondary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]"
-          >
-            {tPillbox(language, "analytics")}
-          </button>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="app-btn-primary-md soft-button-primary inline-flex min-h-[2.5rem] w-auto items-center justify-center px-3 text-[0.8rem] font-semibold tracking-[-0.02em]"
-          >
-            {tPillbox(language, "createPlan")}
-          </button>
-        </div>
-        <div className={segmentedControlClass} aria-label={tPillbox(language, "hubTitle")}>
-          <button
-            type="button"
-            onClick={() => setListFilter("active")}
-            className={listFilter === "active" ? segmentedButtonActiveClass : segmentedButtonClass}
-            aria-pressed={listFilter === "active"}
-          >
-            {tPillbox(language, "activeFilter")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setListFilter("archive")}
-            className={listFilter === "archive" ? segmentedButtonActiveClass : segmentedButtonClass}
-            aria-pressed={listFilter === "archive"}
-          >
-            {tPillbox(language, "archiveFilter")}
-          </button>
-        </div>
-      </div>
-
-      <ul className="grid gap-3.5">
-        {visibleGroups.length === 0 ? (
-          <li>
-            <div className="soft-panel-muted rounded-[24px] px-5 py-4 text-sm text-muted">
-              {listFilter === "archive"
-                ? language === "ru"
-                  ? "В архиве пока нет планов."
-                  : "There are no archived plans yet."
-                : tPillbox(language, "hubEmpty")}
-            </div>
-          </li>
-        ) : null}
-        {visibleGroups.map((group) => {
-          const canMarkNow = canMarkGroupDose(group);
-          const isOverdue = isOverdueDose(group.nextDoseAt, group.status);
-          const isLate = isLateDose(group.nextDoseAt, group.status);
-          const isHighlighted = group.id === highlightedPlanId;
-          const cardStatusClass =
-            group.status === "active"
-              ? "soft-card-status-success"
-              : group.status === "paused"
-                ? "soft-card-status-warning"
-                : "soft-card-status-danger";
-          const planStateCompact = getPlanStateCompact(
-            group.status,
-            isOverdue,
-            canMarkNow,
-            isLate,
-            language
-          );
-          return (
-            <li key={group.id}>
-              <div
-                id={`pillbox-plan-${group.id}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => openDetails(group)}
-                onKeyDown={(event) => handleCardKeyDown(event, () => openDetails(group))}
-                className="block w-full cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-              >
-                <RowSurface
-                  className={`app-section-surface ${cardStatusClass} rounded-[24px] py-3.5 transition hover:translate-y-[-1px] sm:rounded-[26px] sm:py-4 ${
-                    isHighlighted
-                      ? "ring-2 ring-[color:color-mix(in_srgb,var(--color-primary)_52%,white)] ring-offset-2 ring-offset-transparent"
-                      : ""
-                  }`}
-                >
-                  <div className="grid gap-2.5 sm:gap-3">
-                    <div className="grid items-start gap-3 grid-cols-1">
-                      <div className="min-w-0">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span
-                            className={`inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${
-                              group.status === "active"
-                                ? "bg-[color:var(--color-success)]"
-                                : group.status === "paused"
-                                  ? "bg-[color:var(--color-warning)]"
-                                  : "bg-[color:var(--color-danger)]"
-                            }`}
-                            aria-hidden="true"
-                          />
-                          <h2 className="app-card-title min-w-0">
-                            {displayPillboxText(group.title)}
-                          </h2>
-                        </div>
-                        <p
-                          className={`mt-2 text-[0.83rem] leading-5 ${
-                            group.status === "paused" || group.status === "archived"
-                              ? "font-medium text-muted"
-                              : isOverdue
-                                ? "font-semibold text-[color:var(--color-warning)]"
-                                : isLate
-                                  ? "font-semibold text-[color:var(--color-warning)]"
-                                  : canMarkNow
-                                    ? "font-semibold text-[color:var(--color-success)]"
-                                    : "font-medium text-muted"
-                          }`}
-                        >
-                          {planStateCompact}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 text-[0.8rem] leading-5">
-                      <span className="shrink-0 text-muted">
-                        {tPillbox(language, "nextDoseShort")}
-                      </span>
-                      <span className="text-right font-semibold text-foreground">
-                        {group.nextDose}
-                      </span>
-                    </div>
-
-                    {canMarkNow ? (
-                      <div className="flex justify-start sm:justify-end">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            markNextDoseTaken(group);
-                          }}
-                          disabled={takeDoseMutation.isPending}
-                          className={`${actionPrimaryClass} min-h-[2.85rem] w-full px-3.5 text-center leading-[1.05] sm:w-auto sm:min-w-[12.5rem] sm:px-4 disabled:cursor-not-allowed disabled:opacity-60`}
-                        >
-                          {takeDoseMutation.isPending
-                            ? tPillbox(language, "taking")
-                            : tPillbox(language, "markTaken")}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="hidden items-center justify-between gap-3 sm:flex">
-                        <span className="text-[0.76rem] leading-5 text-muted">
-                          {tPillbox(language, "tapToOpen")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </RowSurface>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      <ConfirmDialog
-        isOpen={deleteTarget !== null}
-        title={
-          deleteTarget?.kind === "plan"
-            ? tPillbox(language, "confirmDeletePlanTitle")
-            : tPillbox(language, "confirmDeleteMedicineTitle")
-        }
-        description={`${deleteTarget?.kind === "plan" ? tPillbox(language, "confirmDeletePlanDescription") : tPillbox(language, "confirmDeleteMedicineDescription")}${planActionError ? `\n\n${planActionError}` : ""}`}
-        confirmLabel={tPillbox(language, "delete")}
-        cancelLabel={tPillbox(language, "cancel")}
-        confirmTone="danger"
-        isPending={deleteTarget?.kind === "plan" ? deletePlanMutation.isPending : false}
-        onConfirm={confirmDelete}
-        onCancel={() => {
-          setDeleteTarget(null);
-          setPlanActionError(null);
-        }}
-      />
-    </div>
-  );
-}
-
-function PillboxAnalyticsScreen({
-  language,
-  groups,
-  selectedPlanId,
-  initialFilter,
-  onBack,
-  onSelectPlan,
-}: {
-  language: AppLanguage;
-  groups: PillboxGroup[];
-  selectedPlanId: string | null;
-  initialFilter: PillboxPlanListFilter;
-  onBack: () => void;
-  onSelectPlan: (planId: string, filter: PillboxPlanListFilter) => void;
-}) {
-  const [planFilter, setPlanFilter] = useState<PillboxPlanListFilter>(initialFilter);
-  const filteredGroups = groups.filter((group) =>
-    planFilter === "archive" ? group.status === "archived" : group.status !== "archived"
-  );
-  const activePlanId =
-    selectedPlanId && filteredGroups.some((group) => group.id === selectedPlanId)
-      ? selectedPlanId
-      : (filteredGroups[0]?.id ?? null);
-  const { data: activePlan } = useQuery({
-    queryKey: ["pillbox-plan", activePlanId],
-    queryFn: () => fetchPillboxPlan(activePlanId!),
-    enabled: Boolean(activePlanId),
-    staleTime: 60_000,
-  });
-  const periodDates = useMemo(() => {
-    if (!activePlan) {
-      return { start: null as string | null, end: null as string | null };
-    }
-
-    const courseStarts = activePlan.medications
-      .map((item) => item.courseStartDate)
-      .filter((value): value is string => Boolean(value));
-    const courseEnds = activePlan.medications
-      .map((item) => item.courseEndDate)
-      .filter((value): value is string => Boolean(value));
-
-    return {
-      start: courseStarts.length > 0 ? courseStarts.sort()[0] : null,
-      end: courseEnds.length > 0 ? courseEnds.sort()[courseEnds.length - 1] : null,
-    };
-  }, [activePlan]);
-  const analyticsPeriod: "half_year" | "all" =
-    periodDates.start && periodDates.end ? "all" : "half_year";
-  const { data: summary, isLoading } = useQuery({
-    queryKey: ["pillbox-history-summary", activePlanId, analyticsPeriod, language],
-    queryFn: () => fetchPillboxHistorySummary(activePlanId!, analyticsPeriod, language),
-    enabled: Boolean(activePlanId),
-  });
-
-  return (
-    <div className="space-y-5">
-      <BackLinkButton label={tPillbox(language, "analyticsBack")} onClick={onBack} />
-
-      <section className="soft-panel rounded-[28px] p-4 sm:p-5">
-        <h1 className="app-title text-[1.72rem] tracking-[-0.05em] sm:text-[2.1rem]">
-          {language === "ru" ? "Аналитика таблетницы" : "Pillbox analytics"}
-        </h1>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {language === "ru"
-            ? "История выполнения и рисков по выбранному плану."
-            : "History of adherence and missed-dose risks for the selected plan."}
-        </p>
-        <div className="mt-4">
-          <div
-            className={`${segmentedControlClass} w-full max-w-[16rem]`}
-            aria-label={language === "ru" ? "Фильтр планов" : "Plan filter"}
-          >
-            <button
-              type="button"
-              onClick={() => setPlanFilter("active")}
-              className={
-                planFilter === "active" ? segmentedButtonActiveClass : segmentedButtonClass
-              }
-              aria-pressed={planFilter === "active"}
-            >
-              {tPillbox(language, "activeFilter")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPlanFilter("archive")}
-              className={
-                planFilter === "archive" ? segmentedButtonActiveClass : segmentedButtonClass
-              }
-              aria-pressed={planFilter === "archive"}
-            >
-              {tPillbox(language, "archiveFilter")}
-            </button>
-          </div>
-          <p className="text-xs tracking-[0.08em] text-muted">
-            {language === "ru" ? "План" : "Plan"}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {filteredGroups.map((group) => (
-              <button
-                key={group.id}
-                type="button"
-                onClick={() => onSelectPlan(group.id, planFilter)}
-                className={[
-                  group.id === activePlanId ? "soft-tab-active" : "soft-tab",
-                  "min-h-[2.5rem] rounded-full px-3.5 text-sm",
-                ].join(" ")}
-              >
-                {displayPillboxText(group.title)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {!activePlanId ? (
-        <div className="soft-empty rounded-[22px] px-4 py-5 text-sm text-muted">
-          {planFilter === "archive"
-            ? language === "ru"
-              ? "В архиве пока нет планов для аналитики."
-              : "There are no archived plans for analytics yet."
-            : language === "ru"
-              ? "Нет планов для аналитики. Создайте хотя бы один план."
-              : "No plans for analytics yet. Create at least one plan."}
-        </div>
-      ) : isLoading || !summary ? (
-        <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
-          {language === "ru" ? "Готовим сводку…" : "Preparing summary…"}
-        </div>
-      ) : (
-        <PillboxAnalyticsContent
-          summary={summary}
-          language={language}
-          planStartDate={periodDates.start ?? null}
-          planEndDate={periodDates.end ?? null}
-        />
-      )}
-    </div>
-  );
-}
-
-function PillboxAnalyticsContent({
-  summary,
-  language,
-  planStartDate,
-  planEndDate,
-}: {
-  summary: PillboxHistorySummary;
-  language: AppLanguage;
-  planStartDate: string | null;
-  planEndDate: string | null;
-}) {
-  const isIosShell = useIsIosShell();
-  const formattedPlanContext = useMemo(() => {
-    const formatPlanDate = (value: string) => formatDate(value);
-
-    if (planStartDate && planEndDate) {
-      return language === "ru"
-        ? `С ${formatPlanDate(planStartDate)} по ${formatPlanDate(planEndDate)}`
-        : `From ${formatPlanDate(planStartDate)} to ${formatPlanDate(planEndDate)}`;
-    }
-
-    if (planStartDate && !planEndDate) {
-      return language === "ru"
-        ? `С ${formatPlanDate(planStartDate)} по сейчас`
-        : `From ${formatPlanDate(planStartDate)} to now`;
-    }
-
-    return language === "ru" ? "Постоянный план" : "Continuous plan";
-  }, [language, planEndDate, planStartDate]);
-  const filteredTimeline = useMemo(
-    () => filterTimelineByPlanBounds(summary.timeline, language, planStartDate, planEndDate),
-    [language, planEndDate, planStartDate, summary.timeline]
-  );
-
-  const kpiCards = [
-    {
-      label: language === "ru" ? "Соблюдение" : "Adherence",
-      value: `${Math.round(summary.adherenceRate * 100)}%`,
-      hint: language === "ru" ? "Из всех запланированных" : "Of all scheduled doses",
-      badgeClass: "soft-pill-success",
-    },
-    {
-      label: language === "ru" ? "Вовремя" : "On time",
-      value: `${Math.round(summary.onTimeRate * 100)}%`,
-      hint: language === "ru" ? "Без задержки" : "Without delay",
-      badgeClass: "soft-pill-primary",
-    },
-    {
-      label: language === "ru" ? "Отмечено слотов" : "Logged slots",
-      value: `${summary.takenSlots}/${summary.scheduledSlots}`,
-      hint: language === "ru" ? "Факт против плана" : "Actual vs planned",
-      badgeClass: "soft-pill",
-    },
-    {
-      label: language === "ru" ? "Пропуски" : "Missed slots",
-      value: String(summary.missedSlots),
-      hint: language === "ru" ? "Не отмечены совсем" : "Not logged at all",
-      badgeClass: "soft-pill-danger",
-    },
-  ];
-  const summaryGridClass = isIosShell
-    ? "grid grid-cols-2 gap-3"
-    : "grid gap-3 sm:grid-cols-2 xl:grid-cols-4";
-  const planCardClass = isIosShell
-    ? "soft-panel-muted rounded-[22px] px-4 py-4 col-span-2"
-    : "soft-panel-muted rounded-[22px] px-4 py-4 sm:col-span-2 xl:col-span-4";
-  const kpiHintClass =
-    "inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-medium leading-tight";
-  const timelineMax = Math.max(...filteredTimeline.map((point) => point.value), 1);
-  const timelineTotal = filteredTimeline.reduce((total, point) => total + point.value, 0);
-  const timelineAverage =
-    filteredTimeline.length > 0 ? Math.round(timelineTotal / filteredTimeline.length) : 0;
-  const timelinePeak = filteredTimeline.reduce<PillboxHistorySummary["timeline"][number] | null>(
-    (best, point) => (best === null || point.value > best.value ? point : best),
-    null
-  );
-  const timelineLow = filteredTimeline.reduce<PillboxHistorySummary["timeline"][number] | null>(
-    (worst, point) => (worst === null || point.value < worst.value ? point : worst),
-    null
-  );
-  const latestTimelinePoint =
-    filteredTimeline.length > 0 ? filteredTimeline[filteredTimeline.length - 1] : null;
-  const previousTimelinePoint =
-    filteredTimeline.length > 1 ? filteredTimeline[filteredTimeline.length - 2] : null;
-  const latestTimelineDelta =
-    latestTimelinePoint && previousTimelinePoint
-      ? latestTimelinePoint.value - previousTimelinePoint.value
-      : 0;
-  const latestTimelineBadge = latestTimelinePoint
-    ? latestTimelineDelta > 0
-      ? language === "ru"
-        ? "Растёт"
-        : "Improving"
-      : latestTimelineDelta < 0
-        ? language === "ru"
-          ? "Просело"
-          : "Dropped"
-        : language === "ru"
-          ? "Без изменений"
-          : "No change"
-    : null;
-  const latestTimelineBadgeClass = latestTimelinePoint
-    ? latestTimelineDelta > 0
-      ? "soft-pill-success"
-      : latestTimelineDelta < 0
-        ? "soft-pill-danger"
-        : "soft-pill"
-    : "soft-pill";
-  const timelineInsight =
-    timelinePeak && timelineLow
-      ? timelinePeak.label === timelineLow.label
-        ? language === "ru"
-          ? "План отмечался ровно: периоды без выраженных провалов."
-          : "Tracking stayed even across periods without clear drops."
-        : language === "ru"
-          ? `Лучше всего отмечали в период ${timelinePeak.label}, слабее всего в ${timelineLow.label}.`
-          : `Tracking was strongest in ${timelinePeak.label} and weakest in ${timelineLow.label}.`
-      : language === "ru"
-        ? "Данных пока мало, чтобы увидеть выраженную динамику."
-        : "There is not enough data yet to show a strong trend.";
-  const planStatusLabel =
-    summary.planStatus === "active"
-      ? language === "ru"
-        ? "Активен"
-        : "Active"
-      : summary.planStatus === "paused"
-        ? language === "ru"
-          ? "На паузе"
-          : "Paused"
-        : language === "ru"
-          ? "В архиве"
-          : "Archived";
-  const topMissedMedication = summary.topMissedMedications[0] ?? null;
-  const planInsight =
-    summary.missedSlots === 0
-      ? language === "ru"
-        ? "План держится стабильно: пропусков нет."
-        : "This plan is stable: no missed slots."
-      : summary.adherenceRate >= 0.85
-        ? language === "ru"
-          ? "В целом план соблюдается, но есть отдельные сбои."
-          : "Overall adherence is good, but there are occasional misses."
-        : topMissedMedication
-          ? language === "ru"
-            ? `Основная проблема сейчас: пропуски по «${displayPillboxText(topMissedMedication.medicationName)}».`
-            : `The main issue right now is missed doses for “${displayPillboxText(topMissedMedication.medicationName)}”.`
-          : language === "ru"
-            ? "План сбивается: пропусков уже заметно больше нормы."
-            : "This plan is slipping: missed doses are already above a healthy range.";
-
-  return (
-    <div className="space-y-4">
-      <section className={summaryGridClass}>
-        <div className={planCardClass}>
-          <p className="text-[0.82rem] leading-5 text-muted sm:text-sm">
-            {language === "ru" ? "План:" : "Plan:"}{" "}
-            <span className="font-semibold text-foreground">{summary.planTitle}</span>
-          </p>
-          <div className="mt-2">
-            <span className={`soft-pill-info ${kpiHintClass}`}>{formattedPlanContext}</span>
-          </div>
-          <p className="mt-3 text-sm font-medium leading-5 text-foreground">{planInsight}</p>
-        </div>
-        {kpiCards.map((item) => (
-          <div key={item.label} className="soft-card rounded-[22px] px-4 py-4 sm:px-5">
-            <p className="text-[0.82rem] leading-5 text-muted sm:text-sm">{item.label}</p>
-            <div className="mt-2">
-              <span className={`${item.badgeClass} ${kpiHintClass}`}>{item.hint}</span>
-            </div>
-            <p className="app-card-title mt-3 text-[1rem] sm:text-[1.04rem]">{item.value}</p>
-          </div>
-        ))}
-      </section>
-
-      <section className="soft-panel rounded-[28px] p-4 sm:p-5">
-        <h3 className="app-card-title">
-          {language === "ru" ? "Динамика по периодам" : "Period trend"}
-        </h3>
-        <p className="mt-1 text-sm leading-6 text-muted">
-          {language === "ru"
-            ? "Показывает, в какие периоды план отмечался стабильнее."
-            : "Shows which periods were tracked more consistently."}
-        </p>
-        <p className="mt-3 text-sm font-medium leading-5 text-foreground">{timelineInsight}</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {timelinePeak ? (
-            <span className="soft-pill-primary rounded-full px-3 py-1.5 text-xs">
-              {language === "ru"
-                ? `Лучший период: ${timelinePeak.label}`
-                : `Best period: ${timelinePeak.label}`}
-            </span>
-          ) : null}
-          {timelineLow && timelinePeak?.label !== timelineLow.label ? (
-            <span className="soft-pill-danger rounded-full px-3 py-1.5 text-xs">
-              {language === "ru"
-                ? `Слабый период: ${timelineLow.label}`
-                : `Weakest period: ${timelineLow.label}`}
-            </span>
-          ) : null}
-          {latestTimelinePoint && latestTimelineBadge ? (
-            <span className={`${latestTimelineBadgeClass} rounded-full px-3 py-1.5 text-xs`}>
-              {language === "ru"
-                ? `Последний: ${latestTimelinePoint.label} · ${latestTimelineBadge}`
-                : `Latest: ${latestTimelinePoint.label} · ${latestTimelineBadge}`}
-            </span>
-          ) : null}
-          <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
-            {language === "ru" ? `В среднем: ${timelineAverage}` : `Average: ${timelineAverage}`}
-          </span>
-          <span className="soft-pill-info rounded-full px-3 py-1.5 text-xs">
-            {language === "ru" ? `Всего: ${timelineTotal}` : `Total: ${timelineTotal}`}
-          </span>
-        </div>
-        <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-          {filteredTimeline.map((item) => (
-            <SimpleStatRow
-              key={item.label}
-              language={language}
-              label={item.label}
-              value={item.value}
-              max={timelineMax}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-3 lg:grid-cols-2">
-        <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-          <h3 className="app-card-title">
-            {language === "ru" ? "Что важно по плану" : "What matters about this plan"}
-          </h3>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="soft-panel-muted rounded-[20px] px-4 py-3">
-              <p className="text-xs tracking-[0.08em] text-muted">
-                {language === "ru" ? "Статус" : "Status"}
-              </p>
-              <p className="mt-1 text-base font-semibold text-foreground">{planStatusLabel}</p>
-            </div>
-            <div className="soft-panel-muted rounded-[20px] px-4 py-3">
-              <p className="text-xs tracking-[0.08em] text-muted">
-                {language === "ru" ? "Период плана" : "Plan period"}
-              </p>
-              <p className="mt-1 text-base font-semibold text-foreground">{formattedPlanContext}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="soft-panel rounded-[28px] p-4 sm:p-5">
-          <h3 className="app-card-title">
-            {language === "ru" ? "Где чаще пропуски" : "Most missed medicines"}
-          </h3>
-          <div className="mt-4 space-y-3">
-            {summary.topMissedMedications.length > 0 ? (
-              summary.topMissedMedications.map((item) => (
-                <div
-                  key={`${item.medicationName}-${item.missedSlots}`}
-                  className="soft-panel-muted flex items-center justify-between gap-3 rounded-[20px] px-4 py-3"
-                >
-                  <p className="text-sm text-foreground">{item.medicationName}</p>
-                  <span className="soft-pill-danger rounded-full px-2.5 py-1 text-xs">
-                    {language === "ru"
-                      ? `Пропусков: ${item.missedSlots}`
-                      : `Missed: ${item.missedSlots}`}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="soft-empty rounded-[20px] px-4 py-5 text-sm text-muted">
-                {language === "ru"
-                  ? "Пропусков в рамках этого плана не найдено."
-                  : "No missed slots found for this plan."}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function filterTimelineByPlanBounds(
-  timeline: PillboxHistorySummary["timeline"],
-  language: AppLanguage,
-  planStartDate: string | null,
-  planEndDate: string | null
-) {
-  if (!planStartDate && !planEndDate) {
-    return timeline;
-  }
-
-  const start = planStartDate ? new Date(`${planStartDate}T00:00:00`) : null;
-  const end = planEndDate ? new Date(`${planEndDate}T00:00:00`) : null;
-  const monthMap =
-    language === "en"
-      ? {
-          jan: 0,
-          feb: 1,
-          mar: 2,
-          apr: 3,
-          may: 4,
-          jun: 5,
-          jul: 6,
-          aug: 7,
-          sep: 8,
-          oct: 9,
-          nov: 10,
-          dec: 11,
-        }
-      : {
-          янв: 0,
-          фев: 1,
-          мар: 2,
-          апр: 3,
-          май: 4,
-          июн: 5,
-          июл: 6,
-          авг: 7,
-          сен: 8,
-          окт: 9,
-          ноя: 10,
-          дек: 11,
-        };
-
-  const filtered = timeline.filter((item) => {
-    const [monthLabelRaw, yearLabelRaw] = item.label.trim().split(/\s+/);
-    const monthLabel = monthLabelRaw?.toLowerCase();
-    const yearLabel = yearLabelRaw?.trim();
-    if (!monthLabel || !yearLabel || !(monthLabel in monthMap)) {
-      return true;
-    }
-    const monthIndex = monthMap[monthLabel as keyof typeof monthMap];
-    if (monthIndex === undefined) {
-      return true;
-    }
-
-    const fullYear = Number(`20${yearLabel}`);
-    if (Number.isNaN(fullYear)) {
-      return true;
-    }
-
-    const pointDate = new Date(fullYear, monthIndex, 1);
-    const isAfterStart = !start || pointDate >= new Date(start.getFullYear(), start.getMonth(), 1);
-    const isBeforeEnd = !end || pointDate <= new Date(end.getFullYear(), end.getMonth(), 1);
-    return isAfterStart && isBeforeEnd;
-  });
-
-  return filtered.length > 0 ? filtered : timeline;
-}
-
-function SimpleStatRow({
-  label,
-  value,
-  max,
-  language,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  language: AppLanguage;
-}) {
-  const width = Math.max(10, Math.round((value / Math.max(max, 1)) * 100));
-  const averageLabel =
-    width >= 90
-      ? language === "ru"
-        ? "Сильный период"
-        : "Strong period"
-      : width >= 65
-        ? language === "ru"
-          ? "Ровно по плану"
-          : "Steady period"
-        : language === "ru"
-          ? "Нужно внимание"
-          : "Needs attention";
-  const averageBadgeClass =
-    width >= 90 ? "soft-pill-success" : width >= 65 ? "soft-pill" : "soft-pill-warning";
-
-  return (
-    <div className="soft-panel-muted rounded-[20px] px-3.5 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <span className="text-sm font-medium text-foreground">{label}</span>
-        <span className="text-sm font-semibold text-foreground">{value}</span>
-      </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full border border-[color:color-mix(in_srgb,var(--color-border)_76%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_7%,white)]">
-        <div
-          className="h-full rounded-full bg-[linear-gradient(90deg,color-mix(in_srgb,var(--color-primary)_68%,white_20%)_0%,color-mix(in_srgb,var(--color-primary)_88%,black_4%)_100%)]"
-          style={{ width: `${width}%` }}
-        />
-      </div>
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[0.76rem] leading-5 text-muted">
-          {language === "ru" ? `${width}% от лучшего периода` : `${width}% of best period`}
-        </p>
-        <span className={`${averageBadgeClass} rounded-full px-2.5 py-1 text-[10px]`}>
-          {averageLabel}
-        </span>
-      </div>
-    </div>
+    <PillboxHubScreen
+      language={language}
+      isIosShell={isIosShell}
+      listFilter={listFilter}
+      visibleGroups={visibleGroups}
+      highlightedPlanId={highlightedPlanId}
+      openAnalytics={openAnalytics}
+      openCreate={openCreate}
+      openDetails={openDetails}
+      setListFilter={setListFilter}
+      markNextDoseTaken={markNextDoseTaken}
+      takeDosePending={takeDoseMutation.isPending}
+      deleteTarget={deleteTarget}
+      planActionError={planActionError}
+      deletePlanPending={deletePlanMutation.isPending}
+      confirmDelete={confirmDelete}
+      closeDeleteDialog={() => {
+        setDeleteTarget(null);
+        setPlanActionError(null);
+      }}
+    />
   );
 }

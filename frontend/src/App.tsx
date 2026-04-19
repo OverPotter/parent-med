@@ -20,14 +20,17 @@ import {
   toPushSubscriptionPayload,
 } from "@shared/utils/pushNotifications";
 import {
-  getNativePushSubscriptionPayload,
+  getCachedNativePushSubscriptionPayload,
   isNativePushOptedOut,
   isNativePushSupported,
   NATIVE_PUSH_NAVIGATION_EVENT,
 } from "@shared/utils/nativePushNotifications";
 import { HitKeepBridge } from "@shared/analytics";
+import { AppBootSplash } from "@client/layout/AppBootSplash";
+import { AuthPage } from "@client/pages/AuthPage";
 import { detectIosShell } from "@shared/hooks/useIsIosShell";
 import { appLog } from "@shared/utils/appLog";
+import { blurActiveField } from "@shared/utils/focus";
 
 const ClientLayout = lazy(() =>
   import("@client/layout/ClientLayout").then((module) => ({ default: module.ClientLayout }))
@@ -40,9 +43,6 @@ const SettingsPage = lazy(() =>
 );
 const LandingPage = lazy(() =>
   import("@client/pages/LandingPage").then((module) => ({ default: module.LandingPage }))
-);
-const AuthPage = lazy(() =>
-  import("@client/pages/AuthPage").then((module) => ({ default: module.AuthPage }))
 );
 const AboutPage = lazy(() =>
   import("@client/pages/AboutPage").then((module) => ({ default: module.AboutPage }))
@@ -145,12 +145,124 @@ const AdminHomePage = lazy(() =>
   import("@admin/pages/AdminHomePage").then((module) => ({ default: module.AdminHomePage }))
 );
 
+const IOS_FIRST_LAUNCH_NON_CRITICAL_DELAY_MS = 1400;
+const IOS_REPEAT_LAUNCH_NON_CRITICAL_DELAY_MS = 600;
+const IOS_FIRST_LAUNCH_PUSH_SYNC_DELAY_MS = 6000;
+const IOS_REPEAT_LAUNCH_PUSH_SYNC_DELAY_MS = 3000;
+
 function RouteFallback() {
-  return <div className="min-h-screen soft-app-bg" aria-hidden="true" />;
+  const [isBootReady, setIsBootReady] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return Boolean((window as Window & { __PM_BOOT_READY?: boolean }).__PM_BOOT_READY);
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || isBootReady) {
+      return;
+    }
+
+    const handleBootReady = () => setIsBootReady(true);
+    window.addEventListener("app:boot-ready", handleBootReady, { once: true });
+    return () => window.removeEventListener("app:boot-ready", handleBootReady);
+  }, [isBootReady]);
+
+  return isBootReady ? null : <AppBootSplash />;
+}
+
+function IOSRouteSnapshotSync() {
+  const location = useLocation();
+
+  useLayoutEffect(() => {
+    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
+      return;
+    }
+
+    return () => {
+      const frame = document.querySelector(".app-shell-frame");
+      if (!(frame instanceof HTMLElement)) {
+        return;
+      }
+      const clone = frame.cloneNode(true);
+      if (!(clone instanceof HTMLElement)) {
+        return;
+      }
+      clone.classList.remove("app-shell-frame");
+      clone.classList.add("app-shell-auth", "ios-back-swipe-underlay-screen__content");
+      clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+      (
+        window as Window & { __PM_IOS_PREVIOUS_SCREEN_HTML?: string }
+      ).__PM_IOS_PREVIOUS_SCREEN_HTML = clone.outerHTML;
+    };
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+
+function useGlobalBootReady() {
+  const [isBootReady, setIsBootReady] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return Boolean((window as Window & { __PM_BOOT_READY?: boolean }).__PM_BOOT_READY);
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || isBootReady) {
+      return;
+    }
+
+    const handleBootReady = () => setIsBootReady(true);
+    window.addEventListener("app:boot-ready", handleBootReady, { once: true });
+    return () => window.removeEventListener("app:boot-ready", handleBootReady);
+  }, [isBootReady]);
+
+  return isBootReady;
+}
+
+function useDeferredNonCriticalStartupReady() {
+  const isBootReady = useGlobalBootReady();
+  const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  const firstNativeLaunchStorageKey = "pm_native_ios_first_launch_completed_v2";
+  const [isInitialNativeLaunch] = useState(() => {
+    if (!isNativeIos || typeof window === "undefined") {
+      return false;
+    }
+    return window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
+  });
+  const [isReady, setIsReady] = useState(!isNativeIos);
+
+  useEffect(() => {
+    if (!isNativeIos) {
+      setIsReady(true);
+      return;
+    }
+
+    if (!isBootReady) {
+      setIsReady(false);
+      return;
+    }
+
+    setIsReady(false);
+    const timeoutId = window.setTimeout(
+      () => setIsReady(true),
+      isInitialNativeLaunch
+        ? IOS_FIRST_LAUNCH_NON_CRITICAL_DELAY_MS
+        : IOS_REPEAT_LAUNCH_NON_CRITICAL_DELAY_MS
+    );
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isBootReady, isInitialNativeLaunch, isNativeIos]);
+
+  return isReady;
 }
 
 function BootLog() {
   useEffect(() => {
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios") {
+      return;
+    }
     const api = import.meta.env.VITE_API_URL?.trim() || "прокси /api";
     appLog.info(`Store гидратирован, API=${api}`);
   }, []);
@@ -222,6 +334,7 @@ function RouteScrollReset() {
   const previousPathnameRef = useRef<string | null>(null);
 
   useEffect(() => {
+    blurActiveField();
     const previousPathname = previousPathnameRef.current;
     previousPathnameRef.current = location.pathname;
 
@@ -322,16 +435,45 @@ function AuthSync() {
 function PushSubscriptionSync() {
   const authToken = useAppStore((s) => s.authToken);
   const accountId = useAppStore((s) => s.accountId);
+  const isBootReady = useGlobalBootReady();
+  const [isIosPushSyncReady, setIsIosPushSyncReady] = useState(
+    !(Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios")
+  );
+
+  useEffect(() => {
+    if (!(Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios")) {
+      setIsIosPushSyncReady(true);
+      return;
+    }
+
+    setIsIosPushSyncReady(false);
+    const firstNativeLaunchStorageKey = "pm_native_ios_first_launch_completed_v2";
+    const isInitialNativeLaunch =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
+    const timeoutId = window.setTimeout(
+      () => {
+        setIsIosPushSyncReady(true);
+      },
+      isInitialNativeLaunch
+        ? IOS_FIRST_LAUNCH_PUSH_SYNC_DELAY_MS
+        : IOS_REPEAT_LAUNCH_PUSH_SYNC_DELAY_MS
+    );
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
 
   const { data: pushConfig } = useQuery({
     queryKey: ["push", "config", accountId],
     queryFn: fetchPushNotificationConfig,
-    enabled: Boolean(authToken && accountId),
+    enabled: Boolean(authToken && accountId && isBootReady && isIosPushSyncReady),
     staleTime: 5 * 60 * 1000,
   });
 
   useEffect(() => {
-    if (!authToken || !accountId || !pushConfig?.enabled) {
+    if (!isBootReady || !isIosPushSyncReady || !authToken || !accountId || !pushConfig?.enabled) {
       return;
     }
 
@@ -343,7 +485,7 @@ function PushSubscriptionSync() {
           if (isNativePushOptedOut()) {
             return;
           }
-          const nativePayload = await getNativePushSubscriptionPayload({ promptIfNeeded: false });
+          const nativePayload = getCachedNativePushSubscriptionPayload();
           if (!nativePayload || isCancelled) {
             return;
           }
@@ -369,7 +511,7 @@ function PushSubscriptionSync() {
     return () => {
       isCancelled = true;
     };
-  }, [accountId, authToken, pushConfig?.enabled]);
+  }, [accountId, authToken, isBootReady, isIosPushSyncReady, pushConfig?.enabled]);
 
   return null;
 }
@@ -577,128 +719,304 @@ function RuntimePlatformSync() {
   return null;
 }
 
-function IOSKeyboardViewportSync() {
-  useEffect(() => {
+function IosSafeAreaSync() {
+  useLayoutEffect(() => {
     if (!detectIosShell()) {
       return;
     }
 
     const root = document.documentElement;
-    const viewport = window.visualViewport;
-    if (!viewport) {
-      return;
-    }
+    const probe = document.createElement("div");
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.position = "fixed";
+    probe.style.top = "0";
+    probe.style.left = "0";
+    probe.style.width = "0";
+    probe.style.height = "0";
+    probe.style.opacity = "0";
+    probe.style.pointerEvents = "none";
+    probe.style.paddingTop = "env(safe-area-inset-top)";
+    probe.style.paddingBottom = "env(safe-area-inset-bottom)";
+    document.body.appendChild(probe);
 
-    const syncKeyboardState = () => {
-      const keyboardHeight = Math.max(0, window.innerHeight - viewport.height);
-      const isKeyboardOpen = keyboardHeight > 140;
-      root.setAttribute("data-keyboard-open", isKeyboardOpen ? "true" : "false");
+    let rafId = 0;
+    let timeoutId: number | null = null;
+
+    const applySafeArea = () => {
+      const styles = window.getComputedStyle(probe);
+      const top = Number.parseFloat(styles.paddingTop || "0");
+      const bottom = Number.parseFloat(styles.paddingBottom || "0");
+      root.style.setProperty("--app-safe-top-runtime", `${Math.max(0, top)}px`);
+      root.style.setProperty("--app-safe-bottom-runtime", `${Math.max(0, bottom)}px`);
     };
 
-    syncKeyboardState();
-    viewport.addEventListener("resize", syncKeyboardState);
-    viewport.addEventListener("scroll", syncKeyboardState);
+    const scheduleApply = () => {
+      window.cancelAnimationFrame(rafId);
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      rafId = window.requestAnimationFrame(() => {
+        applySafeArea();
+        timeoutId = window.setTimeout(applySafeArea, 180);
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        scheduleApply();
+      }
+    };
+
+    scheduleApply();
+    window.addEventListener("resize", scheduleApply);
+    window.addEventListener("pageshow", scheduleApply);
+    window.addEventListener("orientationchange", scheduleApply);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      root.removeAttribute("data-keyboard-open");
-      viewport.removeEventListener("resize", syncKeyboardState);
-      viewport.removeEventListener("scroll", syncKeyboardState);
+      window.cancelAnimationFrame(rafId);
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      window.removeEventListener("resize", scheduleApply);
+      window.removeEventListener("pageshow", scheduleApply);
+      window.removeEventListener("orientationchange", scheduleApply);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      probe.remove();
     };
   }, []);
 
   return null;
 }
 
-function IOSSwipeBackSync() {
+function IOSKeyboardViewportSync() {
+  useEffect(() => {
+    if (!detectIosShell()) {
+      return;
+    }
+
+    return () => {
+      document.documentElement.removeAttribute("data-keyboard-open");
+    };
+  }, []);
+
+  return null;
+}
+
+function IOSBackSwipeZone() {
   const location = useLocation();
   const navigate = useNavigate();
-  const pathnameRef = useRef(location.pathname);
-
-  useEffect(() => {
-    pathnameRef.current = location.pathname;
-  }, [location.pathname]);
+  const [previousScreenHtml, setPreviousScreenHtml] = useState(() => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+    return (
+      (window as Window & { __PM_IOS_PREVIOUS_SCREEN_HTML?: string })
+        .__PM_IOS_PREVIOUS_SCREEN_HTML ?? ""
+    );
+  });
+  const swipeStateRef = useRef<{
+    startX: number;
+    startY: number;
+    latestDx: number;
+    renderedDx: number;
+    horizontalLocked: boolean;
+    active: boolean;
+    resetTimeoutId: number | null;
+  }>({
+    startX: 0,
+    startY: 0,
+    latestDx: 0,
+    renderedDx: 0,
+    horizontalLocked: false,
+    active: false,
+    resetTimeoutId: null,
+  });
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
       return;
     }
 
-    let tracking = false;
-    let startX = 0;
-    let startY = 0;
-
-    const isInteractiveTarget = (target: EventTarget | null) => {
-      if (!(target instanceof HTMLElement)) {
-        return false;
-      }
-      return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
-    };
-
-    const handleTouchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 1) {
-        tracking = false;
-        return;
-      }
-      if (isInteractiveTarget(event.target)) {
-        tracking = false;
-        return;
-      }
-      const touch = event.touches.item(0);
-      if (!touch || touch.clientX > 44) {
-        tracking = false;
-        return;
-      }
-      tracking = true;
-      startX = touch.clientX;
-      startY = touch.clientY;
-    };
-
-    const handleTouchMove = (event: TouchEvent) => {
-      if (!tracking || event.touches.length !== 1) {
-        return;
-      }
-      const touch = event.touches.item(0);
-      if (!touch) {
-        return;
-      }
-      const dx = touch.clientX - startX;
-      const dy = Math.abs(touch.clientY - startY);
-      if (dx < 0 || (dy > 34 && dy > dx)) {
-        tracking = false;
-      }
-    };
-
-    const handleTouchEnd = (event: TouchEvent) => {
-      if (!tracking) {
-        return;
-      }
-      tracking = false;
-      const touch = event.changedTouches.item(0);
-      if (!touch) {
-        return;
-      }
-      const dx = touch.clientX - startX;
-      const dy = Math.abs(touch.clientY - startY);
-      if (pathnameRef.current === "/" || pathnameRef.current === "/home") {
-        return;
-      }
-      if (dx >= 48 && dy <= 56 && dy <= dx * 0.9) {
-        navigate(-1);
-      }
-    };
-
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchmove", handleTouchMove, { passive: true });
-    window.addEventListener("touchend", handleTouchEnd, { passive: true });
-
+    document.documentElement.setAttribute("data-ios-back-swipe-zone", "true");
     return () => {
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
+      if (swipeStateRef.current.resetTimeoutId !== null) {
+        window.clearTimeout(swipeStateRef.current.resetTimeoutId);
+      }
+      document.documentElement.style.removeProperty("--ios-back-swipe-offset");
+      document.documentElement.style.removeProperty("--ios-back-swipe-progress");
+      document.documentElement.removeAttribute("data-ios-back-swipe-active");
+      document.documentElement.removeAttribute("data-ios-back-swipe-commit");
+      document.documentElement.removeAttribute("data-ios-back-swipe-cancel");
+      document.documentElement.removeAttribute("data-ios-back-swipe-zone");
     };
-  }, [navigate]);
+  }, []);
 
-  return null;
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    setPreviousScreenHtml(
+      (window as Window & { __PM_IOS_PREVIOUS_SCREEN_HTML?: string })
+        .__PM_IOS_PREVIOUS_SCREEN_HTML ?? ""
+    );
+  }, [location.pathname, location.search]);
+
+  const pillboxMode = new URLSearchParams(location.search).get("mode");
+  const shouldDisableSwipeBack =
+    location.pathname === "/" ||
+    location.pathname === "/home" ||
+    location.pathname === "/start" ||
+    location.pathname === "/children" ||
+    location.pathname === "/medicine-cabinet" ||
+    location.pathname === "/illnesses/active" ||
+    (location.pathname === "/pillbox" && !pillboxMode);
+
+  if (
+    !Capacitor.isNativePlatform() ||
+    Capacitor.getPlatform() !== "ios" ||
+    shouldDisableSwipeBack
+  ) {
+    return null;
+  }
+
+  return (
+    <>
+      <div aria-hidden="true" className="ios-back-swipe-underlay">
+        {previousScreenHtml ? (
+          <div
+            className="ios-back-swipe-underlay-screen"
+            dangerouslySetInnerHTML={{ __html: previousScreenHtml }}
+          />
+        ) : null}
+      </div>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 30,
+          zIndex: 160,
+          touchAction: "pan-y",
+        }}
+        onTouchStart={(event) => {
+          const touch = event.touches.item(0);
+          if (!touch) {
+            return;
+          }
+          const root = document.documentElement;
+          if (swipeStateRef.current.resetTimeoutId !== null) {
+            window.clearTimeout(swipeStateRef.current.resetTimeoutId);
+            swipeStateRef.current.resetTimeoutId = null;
+          }
+          swipeStateRef.current.startX = touch.clientX;
+          swipeStateRef.current.startY = touch.clientY;
+          swipeStateRef.current.latestDx = 0;
+          swipeStateRef.current.renderedDx = 0;
+          swipeStateRef.current.horizontalLocked = false;
+          swipeStateRef.current.active = true;
+          root.removeAttribute("data-ios-back-swipe-commit");
+          root.removeAttribute("data-ios-back-swipe-cancel");
+          root.setAttribute("data-ios-back-swipe-active", "true");
+          root.style.setProperty("--ios-back-swipe-offset", "0px");
+          root.style.setProperty("--ios-back-swipe-progress", "0");
+        }}
+        onTouchMove={(event) => {
+          const touch = event.touches.item(0);
+          if (!touch || !swipeStateRef.current.active) {
+            return;
+          }
+          const root = document.documentElement;
+          const dx = Math.max(0, touch.clientX - swipeStateRef.current.startX);
+          const dy = Math.abs(touch.clientY - swipeStateRef.current.startY);
+          swipeStateRef.current.latestDx = dx;
+          if (!swipeStateRef.current.horizontalLocked && dx >= 18 && dx >= dy * 1.08) {
+            swipeStateRef.current.horizontalLocked = true;
+          }
+          const verticalCancelThreshold = swipeStateRef.current.horizontalLocked ? 132 : 84;
+          if (dy > verticalCancelThreshold) {
+            swipeStateRef.current.active = false;
+            root.removeAttribute("data-ios-back-swipe-active");
+            root.setAttribute("data-ios-back-swipe-cancel", "true");
+            root.style.setProperty("--ios-back-swipe-offset", "0px");
+            root.style.setProperty("--ios-back-swipe-progress", "0");
+            swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
+              root.removeAttribute("data-ios-back-swipe-cancel");
+              swipeStateRef.current.resetTimeoutId = null;
+            }, 220);
+            return;
+          }
+          const previousOffset = swipeStateRef.current.renderedDx;
+          const targetOffset = Math.min(swipeStateRef.current.latestDx, window.innerWidth);
+          const offset =
+            targetOffset >= previousOffset
+              ? targetOffset
+              : previousOffset + (targetOffset - previousOffset) * 0.38;
+          swipeStateRef.current.renderedDx = Math.max(0, offset);
+          const progress = Math.min(1, offset / Math.max(window.innerWidth, 1));
+          root.style.setProperty("--ios-back-swipe-offset", `${offset}px`);
+          root.style.setProperty("--ios-back-swipe-progress", `${progress}`);
+        }}
+        onTouchEnd={(event) => {
+          const touch = event.changedTouches.item(0);
+          if (!touch) {
+            return;
+          }
+          const root = document.documentElement;
+          const startX = swipeStateRef.current.startX;
+          const startY = swipeStateRef.current.startY;
+          const dx = Math.max(0, touch.clientX - startX);
+          const dy = Math.abs(touch.clientY - startY);
+          swipeStateRef.current.active = false;
+          const canCommit =
+            dx >= 40 && (swipeStateRef.current.horizontalLocked || (dy <= 88 && dy <= dx * 1.35));
+          if (canCommit) {
+            const activeElement = document.activeElement;
+            if (
+              activeElement instanceof HTMLElement &&
+              activeElement.closest("input, textarea, select, [contenteditable='true']")
+            ) {
+              blurActiveField();
+              root.removeAttribute("data-ios-back-swipe-active");
+              root.setAttribute("data-ios-back-swipe-cancel", "true");
+              root.style.setProperty("--ios-back-swipe-offset", "0px");
+              root.style.setProperty("--ios-back-swipe-progress", "0");
+              swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
+                root.removeAttribute("data-ios-back-swipe-cancel");
+                swipeStateRef.current.resetTimeoutId = null;
+              }, 220);
+              return;
+            }
+            root.removeAttribute("data-ios-back-swipe-active");
+            root.setAttribute("data-ios-back-swipe-commit", "true");
+            root.style.setProperty(
+              "--ios-back-swipe-offset",
+              `${Math.min(dx, window.innerWidth)}px`
+            );
+            root.style.setProperty("--ios-back-swipe-progress", "1");
+            swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
+              root.removeAttribute("data-ios-back-swipe-commit");
+              root.style.removeProperty("--ios-back-swipe-offset");
+              root.style.removeProperty("--ios-back-swipe-progress");
+              swipeStateRef.current.resetTimeoutId = null;
+              navigate(-1);
+            }, 150);
+            return;
+          }
+          root.removeAttribute("data-ios-back-swipe-active");
+          root.setAttribute("data-ios-back-swipe-cancel", "true");
+          root.style.setProperty("--ios-back-swipe-offset", "0px");
+          root.style.setProperty("--ios-back-swipe-progress", "0");
+          swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
+            root.removeAttribute("data-ios-back-swipe-cancel");
+            swipeStateRef.current.resetTimeoutId = null;
+          }, 220);
+        }}
+      />
+    </>
+  );
 }
 
 function IOSLandingGestureGuard() {
@@ -732,6 +1050,10 @@ function IOSLandingGestureGuard() {
 
 function GlobalTapGuard() {
   useEffect(() => {
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios") {
+      return;
+    }
+
     const isMobile =
       window.matchMedia("(pointer: coarse)").matches ||
       window.innerWidth < 1024 ||
@@ -848,6 +1170,112 @@ function MobileInteractionDiagnostics() {
   return null;
 }
 
+function WarmRouteChunks() {
+  const role = useAppStore((s) => s.role);
+  const authToken = useAppStore((s) => s.authToken);
+  const accountId = useAppStore((s) => s.accountId);
+  const isBootReady = useGlobalBootReady();
+  const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  const firstNativeLaunchStorageKey = "pm_native_ios_first_launch_completed_v2";
+  const [isInitialNativeLaunch] = useState(() => {
+    if (!isNativeIos || typeof window === "undefined") {
+      return false;
+    }
+    return window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
+  });
+
+  useEffect(() => {
+    if (!(authToken || accountId) || role === "admin") {
+      return;
+    }
+
+    const windowWithIdleApi = window as Window &
+      typeof globalThis & {
+        requestIdleCallback?: (
+          callback: IdleRequestCallback,
+          options?: IdleRequestOptions
+        ) => number;
+        cancelIdleCallback?: (handle: number) => void;
+      };
+    let cancelled = false;
+    let timeoutId: number | null = null;
+    let idleId: number | null = null;
+
+    const warmRoutes = () => {
+      if (cancelled) {
+        return;
+      }
+
+      const activeElement = document.activeElement;
+      const isUserTyping =
+        activeElement instanceof HTMLElement &&
+        Boolean(activeElement.closest("input, textarea, select, [contenteditable='true']"));
+
+      if (isUserTyping) {
+        timeoutId = window.setTimeout(warmRoutes, 1400);
+        return;
+      }
+
+      void Promise.allSettled([
+        import("@client/pages/ChildrenPage"),
+        import("@client/pages/ChildSleepPage"),
+        import("@client/pages/ChildFeedingPage"),
+        import("@client/pages/ChildIllnessPage"),
+        import("@client/pages/PillboxPage"),
+        import("@client/pages/MedicineCabinetPage"),
+        import("@client/pages/ActiveIllnessesPage"),
+        import("@client/pages/MorePage"),
+        import("@client/pages/SettingsPage"),
+        import("@client/pages/FamilyPage"),
+      ]);
+    };
+
+    const scheduleWarmRoutes = () => {
+      if (!isBootReady) {
+        timeoutId = window.setTimeout(warmRoutes, isNativeIos ? 900 : 120);
+        return;
+      }
+
+      if (typeof windowWithIdleApi.requestIdleCallback === "function") {
+        idleId = windowWithIdleApi.requestIdleCallback(
+          () => {
+            warmRoutes();
+          },
+          { timeout: isNativeIos ? 4600 : 3200 }
+        );
+        return;
+      }
+
+      timeoutId = window.setTimeout(warmRoutes, isNativeIos ? 3400 : 2200);
+    };
+
+    timeoutId = window.setTimeout(
+      scheduleWarmRoutes,
+      isBootReady
+        ? isNativeIos
+          ? isInitialNativeLaunch
+            ? 4200
+            : 2400
+          : 1800
+        : isNativeIos
+          ? 900
+          : 220
+    );
+
+    return () => {
+      cancelled = true;
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      if (idleId !== null && typeof windowWithIdleApi.cancelIdleCallback === "function") {
+        windowWithIdleApi.cancelIdleCallback(idleId);
+      }
+    };
+  }, [accountId, authToken, isBootReady, isInitialNativeLaunch, isNativeIos, role]);
+
+  return null;
+}
+
 export default function App() {
   const role = useAppStore((s) => s.role);
   const language = useAppStore((s) => s.language);
@@ -855,6 +1283,7 @@ export default function App() {
   const accountId = useAppStore((s) => s.accountId);
   const hydrated = useAppStore((s) => s.hydrated);
   const isNativeRuntime = Capacitor.isNativePlatform();
+  const isNonCriticalStartupReady = useDeferredNonCriticalStartupReady();
   const [cookieConsent, setCookieConsent] = useState<CookieConsentDecision | null>(() =>
     getCookieConsentDecision()
   );
@@ -886,22 +1315,25 @@ export default function App() {
         </a>
       ) : null}
       <RuntimePlatformSync />
+      <IOSRouteSnapshotSync />
+      <IosSafeAreaSync />
       <IOSKeyboardViewportSync />
+      <IOSBackSwipeZone />
       <BootLog />
-      {cookieConsent === "accepted" ? <HitKeepBridge /> : null}
+      {isNonCriticalStartupReady ? <HitKeepBridge /> : null}
       <ThemeSync />
       <DisplayModeSync />
       <RouteScrollReset />
       <GlobalTapGuard />
       <MobileInteractionDiagnostics />
+      <WarmRouteChunks />
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
-      <IOSSwipeBackSync />
       <AuthSync />
-      <PushSubscriptionSync />
-      <NativePushNavigationSync />
-      <MobilePageResumeSync />
-      <PullToRefreshSync />
+      {isNonCriticalStartupReady ? <PushSubscriptionSync /> : null}
+      {isNonCriticalStartupReady ? <NativePushNavigationSync /> : null}
+      {isNonCriticalStartupReady ? <MobilePageResumeSync /> : null}
+      {isNonCriticalStartupReady ? <PullToRefreshSync /> : null}
       <Suspense fallback={<RouteFallback />}>
         <div id="app-route-root" tabIndex={-1}>
           <Routes>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Capacitor } from "@capacitor/core";
 import { changePassword, deleteMyAccount, deleteMyFamily } from "@shared/api/auth";
 import {
   deletePushSubscription,
@@ -60,10 +61,28 @@ export function SettingsPage() {
   const [deleteFamilyError, setDeleteFamilyError] = useState<string | null>(null);
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
   const [selectedPillboxReminderMinutes, setSelectedPillboxReminderMinutes] = useState("10");
+  const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  const [isPushRuntimeReady, setIsPushRuntimeReady] = useState(!isNativeIos);
   const childrenEarlyReminderEnabled = Number(selectedReminderMinutes) > 0;
   const pillboxEarlyReminderEnabled = Number(selectedPillboxReminderMinutes) > 0;
   const pushSupportIssue = getPushSupportIssue();
   const isPushEnabled = pushStatus === "enabled";
+
+  useEffect(() => {
+    if (!isNativeIos) {
+      setIsPushRuntimeReady(true);
+      return;
+    }
+
+    setIsPushRuntimeReady(false);
+    const timeoutId = window.setTimeout(() => {
+      setIsPushRuntimeReady(true);
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isNativeIos]);
 
   const { data: pushConfig, isLoading: isPushConfigLoading } = useQuery({
     queryKey: ["push", "config", "account"],
@@ -76,12 +95,14 @@ export function SettingsPage() {
     staleTime: 5 * 60 * 1000,
     retry: false,
     refetchOnWindowFocus: false,
+    enabled: isPushRuntimeReady,
   });
 
   const { data: pushPreferences, isLoading: isPushPreferencesLoading } = useQuery({
     queryKey: ["push", "preferences", "account"],
     queryFn: fetchPushNotificationPreferences,
     staleTime: 5 * 60 * 1000,
+    enabled: isPushRuntimeReady,
   });
   const cabinetEarlyReminderEnabled =
     (pushPreferences?.cabinetNotify10Days ?? false) ||
@@ -123,6 +144,13 @@ export function SettingsPage() {
   }, [pushPreferences]);
 
   useEffect(() => {
+    if (!isPushRuntimeReady) {
+      setPushStatus("checking");
+      setIsNativePushBlocked(false);
+      setIsNativePushSettingsDialogOpen(false);
+      return;
+    }
+
     if (!isPushSupported() && !isNativePushSupported()) {
       setPushStatus("disabled");
       setIsNativePushBlocked(false);
@@ -201,7 +229,7 @@ export function SettingsPage() {
       window.removeEventListener("pageshow", refreshSubscription);
       document.removeEventListener("visibilitychange", refreshSubscription);
     };
-  }, [language]);
+  }, [isPushRuntimeReady, language]);
 
   const changePasswordMutation = useMutation({
     mutationFn: (payload: { current_password: string; new_password: string }) =>
@@ -462,12 +490,13 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
         title={tSettings(language, "title")}
         subtitle={tSettings(language, "subtitle")}
+        eyebrow={language === "ru" ? "Еще / Настройки" : "More / Settings"}
         compactOnMobile
-        hideOnMobile
+        className="app-safe-top-standalone"
       />
       <SettingsAppPreferencesSection
         language={language}

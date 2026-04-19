@@ -5,21 +5,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { matchPath, Outlet, useLocation } from "react-router-dom";
-import { fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
-import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
 import { fetchFamilies } from "@shared/api/families";
-import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
 import { fetchPillboxPlans } from "@shared/api/pillboxPlans";
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Layout } from "@shared/components/Layout";
-import { Surface } from "@shared/components/Surface";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
-import type { IllnessEpisode } from "@shared/types/api";
 import {
   getExistingPushSubscription,
   getPushSupportIssue,
@@ -29,6 +25,7 @@ import {
   withTimeout,
 } from "@shared/utils/pushNotifications";
 import {
+  getCachedNativePushSubscriptionPayload,
   getNativePushPermissionStatus,
   getNativePushSubscriptionPayload,
   isNativePushOptedOut,
@@ -36,9 +33,29 @@ import {
   openNativeNotificationSettings,
   setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
-import { getPrioritizedMedicationPlanItems } from "../utils/medicationPlans";
+import { AppBootSplash } from "./AppBootSplash";
+import { PushPromptControlProvider } from "./PushPromptControlContext";
 
+const IOS_FIRST_LAUNCH_PUSH_UI_DELAY_MS = 3000;
+const IOS_REPEAT_LAUNCH_PUSH_UI_DELAY_MS = 1200;
+const IOS_FIRST_LAUNCH_BOOT_DELAY_MS = 500;
+const IOS_REPEAT_LAUNCH_BOOT_DELAY_MS = 180;
+const IOS_FIRST_LAUNCH_SHELL_WORK_DELAY_MS = 1200;
+const IOS_REPEAT_LAUNCH_SHELL_WORK_DELAY_MS = 350;
+const IOS_TYPING_RETRY_DELAY_MS = 400;
+const IOS_FIRST_LAUNCH_IDLE_TIMEOUT_MS = 1600;
+const IOS_REPEAT_LAUNCH_IDLE_TIMEOUT_MS = 900;
+const IOS_FIRST_LAUNCH_SHELL_FALLBACK_DELAY_MS = 600;
+const IOS_REPEAT_LAUNCH_SHELL_FALLBACK_DELAY_MS = 250;
+const IOS_FIRST_LAUNCH_SPLASH_SETTLE_MS = 900;
+const IOS_REPEAT_LAUNCH_SPLASH_SETTLE_MS = 220;
+const IOS_FIRST_INTERACTION_DEFER_MS = 1800;
+const IOS_REPEAT_INTERACTION_DEFER_MS = 700;
 export function ClientLayout() {
+  const globalBootWindow =
+    typeof window === "undefined" ? undefined : (window as Window & { __PM_BOOT_READY?: boolean });
+  const wasBootReadyOnMount = Boolean(globalBootWindow?.__PM_BOOT_READY);
+  const firstNativeLaunchStorageKey = "pm_native_ios_first_launch_completed_v2";
   const { copy, language } = useI18n();
   const location = useLocation();
   const accountId = useAppStore((s) => s.accountId);
@@ -48,28 +65,117 @@ export function ClientLayout() {
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const isIosShell = useIsIosShell();
   const [pushStatus, setPushStatus] = useState<"checking" | "enabled" | "disabled">("checking");
-  const [isPushPromptActionsHidden, setIsPushPromptActionsHidden] = useState(false);
   const [isPushPending, setIsPushPending] = useState(false);
   const [pushPromptError, setPushPromptError] = useState<string | null>(null);
   const [pushPromptSuccess, setPushPromptSuccess] = useState<string | null>(null);
   const [nativePushIssue, setNativePushIssue] = useState<"system" | "app" | null>(null);
+  const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
   const [isDeferredBootReady, setIsDeferredBootReady] = useState(!isIosShell);
+  const [isDeferredShellWorkReady, setIsDeferredShellWorkReady] = useState(!isIosShell);
+  const [isInitialBootSettled, setIsInitialBootSettled] = useState(wasBootReadyOnMount);
+  const [isBootSplashMounted, setIsBootSplashMounted] = useState(!wasBootReadyOnMount);
+  const [isBootSplashClosing, setIsBootSplashClosing] = useState(false);
+  const [isIosPushUiReady, setIsIosPushUiReady] = useState(!isIosShell);
+  const [isInteractiveDataReady, setIsInteractiveDataReady] = useState(!isIosShell);
   const now = useNow(15_000);
+  const navStaleTime = isIosShell ? 30_000 : 15_000;
+  const navRefetchInterval = isIosShell ? 60_000 : 30_000;
+  const { data: navChildren = [] } = useQuery({
+    queryKey: ["children", currentFamilyId, "nav-observations"],
+    queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
+    enabled: Boolean(currentFamilyId && isDeferredShellWorkReady && isInteractiveDataReady),
+    staleTime: navStaleTime,
+    refetchInterval: navRefetchInterval,
+  });
+
+  const activeEpisodeQueries = useQueries({
+    queries: navChildren.map((child) => ({
+      queryKey: ["illness-episode-active", child.id, "nav-observations"],
+      queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
+      enabled: Boolean(
+        currentFamilyId && child.id && isDeferredShellWorkReady && isInteractiveDataReady
+      ),
+      staleTime: navStaleTime,
+      refetchInterval: navRefetchInterval,
+    })),
+  });
+
+  const activeEpisodesCount = useMemo(
+    () => activeEpisodeQueries.reduce((total, query) => total + (query.data ? 1 : 0), 0),
+    [activeEpisodeQueries]
+  );
+
+  useEffect(() => {
+    if (!isIosShell) {
+      setIsInteractiveDataReady(true);
+      return;
+    }
+
+    if (!isDeferredShellWorkReady) {
+      setIsInteractiveDataReady(false);
+      return;
+    }
+
+    const isFirstNativeLaunch =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
+    setIsInteractiveDataReady(false);
+    const timeoutId = window.setTimeout(
+      () => {
+        setIsInteractiveDataReady(true);
+      },
+      isFirstNativeLaunch ? IOS_FIRST_INTERACTION_DEFER_MS : IOS_REPEAT_INTERACTION_DEFER_MS
+    );
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [firstNativeLaunchStorageKey, isDeferredShellWorkReady, isIosShell]);
+
+  useEffect(() => {
+    if (!isIosShell) {
+      setIsIosPushUiReady(true);
+      return;
+    }
+
+    setIsIosPushUiReady(false);
+    const isFirstNativeLaunch =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
+    const timeoutId = window.setTimeout(
+      () => {
+        setIsIosPushUiReady(true);
+      },
+      isFirstNativeLaunch ? IOS_FIRST_LAUNCH_PUSH_UI_DELAY_MS : IOS_REPEAT_LAUNCH_PUSH_UI_DELAY_MS
+    );
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [accountId, authToken, firstNativeLaunchStorageKey, isIosShell]);
 
   useEffect(() => {
     if (!isIosShell) {
       setIsDeferredBootReady(true);
+      setIsDeferredShellWorkReady(true);
       return;
     }
 
     setIsDeferredBootReady(false);
+    setIsDeferredShellWorkReady(false);
+    const isFirstNativeLaunch =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
     let timeoutId: number | null = null;
     let frameId: number | null = null;
 
     frameId = window.requestAnimationFrame(() => {
-      timeoutId = window.setTimeout(() => {
-        setIsDeferredBootReady(true);
-      }, 850);
+      timeoutId = window.setTimeout(
+        () => {
+          setIsDeferredBootReady(true);
+        },
+        isFirstNativeLaunch ? IOS_FIRST_LAUNCH_BOOT_DELAY_MS : IOS_REPEAT_LAUNCH_BOOT_DELAY_MS
+      );
     });
 
     return () => {
@@ -80,99 +186,93 @@ export function ClientLayout() {
         window.clearTimeout(timeoutId);
       }
     };
-  }, [isIosShell, authToken, accountId]);
+  }, [accountId, authToken, firstNativeLaunchStorageKey, isIosShell]);
 
-  const { data: navChildren = [] } = useQuery({
-    queryKey: ["children", currentFamilyId, "nav-attention"],
-    queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
-    enabled: Boolean(currentFamilyId && isDeferredBootReady),
-    staleTime: 15_000,
-    refetchInterval: 30_000,
-  });
+  useEffect(() => {
+    if (!isIosShell) {
+      setIsDeferredShellWorkReady(true);
+      return;
+    }
 
-  const activeEpisodeQueries = useQueries({
-    queries: navChildren.map((child) => ({
-      queryKey: ["illness-episode-active", child.id, "nav-attention"],
-      queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
-      enabled: Boolean(currentFamilyId && child.id && isDeferredBootReady),
-      staleTime: 15_000,
-      refetchInterval: 30_000,
-    })),
-  });
+    if (!isDeferredBootReady) {
+      setIsDeferredShellWorkReady(false);
+      return;
+    }
 
-  const activeEpisodes = useMemo(
-    () =>
-      activeEpisodeQueries
-        .map((query) => query.data)
-        .filter((episode): episode is IllnessEpisode => Boolean(episode)),
-    [activeEpisodeQueries]
-  );
+    const isFirstNativeLaunch =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
+    const windowWithIdleApi = window as Window &
+      typeof globalThis & {
+        requestIdleCallback?: (
+          callback: IdleRequestCallback,
+          options?: IdleRequestOptions
+        ) => number;
+        cancelIdleCallback?: (handle: number) => void;
+      };
+    let cancelled = false;
+    let timeoutId: number | null = null;
+    let idleId: number | null = null;
 
-  const episodePlansQueries = useQueries({
-    queries: activeEpisodes.map((episode) => ({
-      queryKey: ["episode-medication-plans", episode.id, "nav-attention"],
-      queryFn: () => fetchEpisodeMedicationPlansByEpisodeId(episode.id),
-      enabled: Boolean(episode.id && isDeferredBootReady),
-      staleTime: 15_000,
-      refetchInterval: 30_000,
-    })),
-  });
+    const finishReady = () => {
+      if (!cancelled) {
+        setIsDeferredShellWorkReady(true);
+      }
+    };
 
-  const administrationQueries = useQueries({
-    queries: activeEpisodes.map((episode) => ({
-      queryKey: ["administration-events", episode.id, "nav-attention"],
-      queryFn: () => fetchAdministrationEventsByEpisodeId(episode.id),
-      enabled: Boolean(episode.id && isDeferredBootReady),
-      staleTime: 15_000,
-      refetchInterval: 30_000,
-    })),
-  });
+    const armReady = () => {
+      const activeElement = document.activeElement;
+      const isTyping =
+        activeElement instanceof HTMLElement &&
+        Boolean(activeElement.closest("input, textarea, select, [contenteditable='true']"));
 
-  const { data: householdMedicines = [] } = useQuery({
-    queryKey: ["household-medicines", currentFamilyId, "nav-attention"],
-    queryFn: fetchHouseholdMedicines,
-    enabled: Boolean(currentFamilyId && isDeferredBootReady),
-    staleTime: 15_000,
-    refetchInterval: 30_000,
-  });
+      if (isTyping) {
+        timeoutId = window.setTimeout(armReady, IOS_TYPING_RETRY_DELAY_MS);
+        return;
+      }
+
+      if (typeof windowWithIdleApi.requestIdleCallback === "function") {
+        idleId = windowWithIdleApi.requestIdleCallback(() => finishReady(), {
+          timeout: isFirstNativeLaunch
+            ? IOS_FIRST_LAUNCH_IDLE_TIMEOUT_MS
+            : IOS_REPEAT_LAUNCH_IDLE_TIMEOUT_MS,
+        });
+        return;
+      }
+
+      timeoutId = window.setTimeout(
+        finishReady,
+        isFirstNativeLaunch
+          ? IOS_FIRST_LAUNCH_SHELL_FALLBACK_DELAY_MS
+          : IOS_REPEAT_LAUNCH_SHELL_FALLBACK_DELAY_MS
+      );
+    };
+
+    timeoutId = window.setTimeout(
+      armReady,
+      isFirstNativeLaunch
+        ? IOS_FIRST_LAUNCH_SHELL_WORK_DELAY_MS
+        : IOS_REPEAT_LAUNCH_SHELL_WORK_DELAY_MS
+    );
+
+    return () => {
+      cancelled = true;
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      if (idleId !== null && typeof windowWithIdleApi.cancelIdleCallback === "function") {
+        windowWithIdleApi.cancelIdleCallback(idleId);
+      }
+    };
+  }, [accountId, authToken, firstNativeLaunchStorageKey, isDeferredBootReady, isIosShell]);
 
   const { data: pillboxPlans = [] } = useQuery({
     queryKey: ["pillbox-plans", currentFamilyId, language, "nav-attention"],
     queryFn: fetchPillboxPlans,
-    enabled: Boolean(currentFamilyId && isDeferredBootReady),
-    staleTime: 15_000,
-    refetchInterval: 30_000,
+    enabled: Boolean(currentFamilyId && isDeferredShellWorkReady && isInteractiveDataReady),
+    staleTime: navStaleTime,
+    refetchInterval: navRefetchInterval,
   });
-
-  const observationsAttention = useMemo(() => {
-    const currentDate = new Date(now);
-    const actionableCount = activeEpisodes.reduce((total, _episode, index) => {
-      const plans = episodePlansQueries[index]?.data ?? [];
-      const administrations = administrationQueries[index]?.data ?? [];
-      const actionable = getPrioritizedMedicationPlanItems(
-        plans,
-        administrations,
-        householdMedicines,
-        currentDate
-      ).filter((item) => !item.isUnavailable && !item.stats.isBlocked).length;
-      return total + actionable;
-    }, 0);
-    if (actionableCount > 0) {
-      return { count: actionableCount, tone: "danger" as const };
-    }
-
-    const episodesWithPlans = activeEpisodes.reduce((total, _episode, index) => {
-      const plans = episodePlansQueries[index]?.data ?? [];
-      return total + (plans.length > 0 ? 1 : 0);
-    }, 0);
-    if (episodesWithPlans > 0) {
-      return { count: episodesWithPlans, tone: "warning" as const };
-    }
-    if (activeEpisodes.length > 0) {
-      return { count: activeEpisodes.length, tone: "warning" as const };
-    }
-    return { count: 0, tone: "danger" as const };
-  }, [activeEpisodes, administrationQueries, episodePlansQueries, householdMedicines, now]);
 
   const pillboxAttention = useMemo(() => {
     const threshold = now + 60_000;
@@ -184,13 +284,13 @@ export function ClientLayout() {
       return Number.isFinite(nextDoseTime) && nextDoseTime <= threshold;
     }).length;
     if (dueNowCount > 0) {
-      return { count: dueNowCount, tone: "danger" as const };
+      return { count: dueNowCount, tone: "info" as const };
     }
     const activePlansCount = pillboxPlans.filter((plan) => plan.status === "active").length;
     if (activePlansCount > 0) {
       return { count: activePlansCount, tone: "success" as const };
     }
-    return { count: 0, tone: "danger" as const };
+    return { count: 0, tone: "info" as const };
   }, [now, pillboxPlans]);
 
   const mobileNavLabels =
@@ -198,23 +298,23 @@ export function ClientLayout() {
       ? {
           observations: "Журнал",
           children: "Дети",
-          pillbox: "Таблетница",
+          pillbox: "Приёмы",
           cabinet: "Аптечка",
         }
       : {
-          observations: "Health",
+          observations: "Tracking",
           children: "Kids",
           pillbox: "Meds",
           cabinet: "Cabinet",
         };
 
-  const activeObservationsNavItem = {
+  const observationsNavItem = {
     to: "/illnesses/active",
     label: copy.clientLayout.nav.observations,
     mobileLabel: mobileNavLabels.observations,
     exactActivePaths: ["/illnesses/active"],
-    attentionCount: observationsAttention.count > 0 ? observationsAttention.count : undefined,
-    attentionTone: observationsAttention.tone,
+    attentionCount: activeEpisodesCount > 0 ? activeEpisodesCount : undefined,
+    attentionTone: "info" as const,
   };
   const childrenNavItem = {
     to: "/children",
@@ -223,8 +323,12 @@ export function ClientLayout() {
     exactActivePaths: ["/children", "/children/:childId"],
     activePaths: ["/children"],
   };
+  const isObservationsRoute = observationsNavItem.exactActivePaths.some((path) =>
+    matchPath({ path, end: true }, location.pathname)
+  );
+  const shouldShowObservationsTab = activeEpisodesCount > 0 || isObservationsRoute;
   const baseDesktopNavLinks = [
-    activeObservationsNavItem,
+    ...(shouldShowObservationsTab ? [observationsNavItem] : []),
     childrenNavItem,
     {
       to: "/pillbox",
@@ -240,14 +344,11 @@ export function ClientLayout() {
       mobileLabel: mobileNavLabels.cabinet,
     },
   ];
-  const isObservationsRoute = activeObservationsNavItem.exactActivePaths.some((path) =>
-    matchPath({ path, end: path === "/illnesses/active" }, location.pathname)
-  );
-  const baseMobileNavLinks =
-    activeEpisodes.length > 0 || isObservationsRoute
-      ? [...baseDesktopNavLinks]
-      : baseDesktopNavLinks.filter((link) => link.to !== activeObservationsNavItem.to);
-  const { data: families = [], isSuccess } = useQuery({
+  const {
+    data: families = [],
+    isSuccess,
+    isLoading: isFamiliesLoading,
+  } = useQuery({
     queryKey: ["families", accountId],
     queryFn: fetchFamilies,
     enabled: !!accountId,
@@ -256,24 +357,40 @@ export function ClientLayout() {
   const { data: pushConfig } = useQuery({
     queryKey: ["push", "config", accountId],
     queryFn: fetchPushNotificationConfig,
-    enabled: Boolean(authToken && accountId && isDeferredBootReady),
+    enabled: Boolean(
+      authToken &&
+      accountId &&
+      isDeferredShellWorkReady &&
+      isIosPushUiReady &&
+      isInteractiveDataReady
+    ),
     staleTime: 5 * 60 * 1000,
   });
 
   const desktopNavLinks = baseDesktopNavLinks;
-  const mobileNavLinks = baseMobileNavLinks;
-  const mainMenuPaths = [
-    "/",
-    "/start",
-    "/children",
-    "/pillbox",
-    "/medicine-cabinet",
-    "/illnesses/active",
-    "/more",
-  ];
-  const shouldHideHeader = !mainMenuPaths.some((path) =>
-    matchPath({ path, end: true }, location.pathname)
-  );
+  const mobileNavLinks = baseDesktopNavLinks;
+  const mainMenuPathMatchers = [
+    { path: "/", end: true },
+    { path: "/start", end: true },
+    { path: "/children", end: true },
+    { path: "/pillbox", end: true },
+    { path: "/medicine-cabinet", end: true },
+    { path: "/illnesses/active", end: true },
+    { path: "/more", end: true },
+    { path: "/settings", end: true },
+    { path: "/feedback", end: true },
+    { path: "/account", end: true },
+    { path: "/family", end: true },
+    { path: "/about", end: true },
+    { path: "/legal", end: false },
+  ] as const;
+  const pillboxMode = new URLSearchParams(location.search).get("mode");
+  const isPillboxInnerRoute =
+    location.pathname === "/pillbox" &&
+    ["setup", "medication", "details", "analytics"].includes(pillboxMode ?? "");
+  const shouldHideHeader =
+    isPillboxInnerRoute ||
+    !mainMenuPathMatchers.some((matcher) => matchPath(matcher, location.pathname));
   const isMedicineCabinetAddRoute = Boolean(
     matchPath({ path: "/medicine-cabinet/add", end: true }, location.pathname) ||
     matchPath({ path: "/medicine-cabinet/add/:mode", end: true }, location.pathname) ||
@@ -284,23 +401,36 @@ export function ClientLayout() {
     isMedicineCabinetAddRoute ||
     matchPath({ path: "/children/:childId/illness", end: false }, location.pathname)
   );
+  const isCompactNestedChrome = shouldHideHeader || isMedicineCabinetAddRoute;
+  const isPushPromptReady = Boolean(
+    authToken && accountId && isDeferredShellWorkReady && isIosPushUiReady && pushConfig?.enabled
+  );
   useEffect(() => {
-    setIsPushPromptActionsHidden(false);
     setPushPromptError(null);
     setPushPromptSuccess(null);
   }, [accountId]);
 
   useEffect(() => {
-    if (!isDeferredBootReady || !authToken || !accountId || !pushConfig?.enabled) {
-      setPushStatus("disabled");
+    if (!isPushPromptReady) {
+      setPushStatus("checking");
       setPushPromptSuccess(null);
       setNativePushIssue(null);
       return;
     }
 
     let isCancelled = false;
+    let isChecking = false;
+    let lastCheckAt = 0;
+    const MIN_PUSH_CHECK_INTERVAL_MS = 2500;
 
     const checkPush = async () => {
+      const nowTs = Date.now();
+      if (isChecking || nowTs - lastCheckAt < MIN_PUSH_CHECK_INTERVAL_MS) {
+        return;
+      }
+      isChecking = true;
+      lastCheckAt = nowTs;
+
       try {
         if (isNativePushSupported()) {
           if (isNativePushOptedOut()) {
@@ -311,16 +441,7 @@ export function ClientLayout() {
             }
             return;
           }
-          const permission = await getNativePushPermissionStatus();
-          if (permission === "denied") {
-            if (!isCancelled) {
-              setPushStatus("disabled");
-              setPushPromptSuccess(null);
-              setNativePushIssue("system");
-            }
-            return;
-          }
-          const payload = await getNativePushSubscriptionPayload({ promptIfNeeded: false });
+          const payload = getCachedNativePushSubscriptionPayload();
           if (!isCancelled) {
             const nextStatus = payload ? "enabled" : "disabled";
             setPushStatus(nextStatus);
@@ -356,6 +477,8 @@ export function ClientLayout() {
           setPushPromptSuccess(null);
           setNativePushIssue(null);
         }
+      } finally {
+        isChecking = false;
       }
     };
 
@@ -365,26 +488,27 @@ export function ClientLayout() {
       void checkPush();
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void checkPush();
+      }
+    };
+
     window.addEventListener("push:subscription-changed", handlePushSubscriptionChanged);
-    window.addEventListener("focus", handlePushSubscriptionChanged);
-    window.addEventListener("pageshow", handlePushSubscriptionChanged);
-    document.addEventListener("visibilitychange", handlePushSubscriptionChanged);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       isCancelled = true;
       window.removeEventListener("push:subscription-changed", handlePushSubscriptionChanged);
-      window.removeEventListener("focus", handlePushSubscriptionChanged);
-      window.removeEventListener("pageshow", handlePushSubscriptionChanged);
-      document.removeEventListener("visibilitychange", handlePushSubscriptionChanged);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [accountId, authToken, isDeferredBootReady, pushConfig?.enabled]);
+  }, [isPushPromptReady]);
 
   const shouldShowPushPrompt =
-    Boolean(pushConfig?.enabled) &&
-    !isNativePushSupported() &&
-    isPushSupported() &&
-    pushStatus === "disabled";
-  const shouldShowNativePushPrompt = Boolean(pushConfig?.enabled) && nativePushIssue !== null;
+    isPushPromptReady && !isNativePushSupported() && isPushSupported() && pushStatus === "disabled";
+  const shouldShowNativePushPrompt = isPushPromptReady && nativePushIssue !== null;
+  const shouldShowNotificationPrompt = shouldShowNativePushPrompt || shouldShowPushPrompt;
+  const isNotificationBellActive = shouldShowNotificationPrompt;
 
   const handleEnablePush = async () => {
     if (isNativePushSupported()) {
@@ -483,6 +607,22 @@ export function ClientLayout() {
     }
   };
 
+  const handleHidePushPrompt = () => {
+    setIsPushDialogOpen(false);
+  };
+
+  useEffect(() => {
+    if (!shouldShowNotificationPrompt) {
+      setIsPushDialogOpen(false);
+    }
+  }, [shouldShowNotificationPrompt]);
+
+  useEffect(() => {
+    if (pushStatus === "enabled" && !nativePushIssue) {
+      setIsPushDialogOpen(false);
+    }
+  }, [nativePushIssue, pushStatus]);
+
   useEffect(() => {
     if (!isSuccess) {
       return;
@@ -504,115 +644,140 @@ export function ClientLayout() {
     }
   }, [currentFamilyId, currentFamilyName, families, isSuccess, setCurrentFamily]);
 
+  const isFirstNativeLaunch =
+    isIosShell &&
+    typeof window !== "undefined" &&
+    window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
+
+  const shouldShowBootSplash =
+    Boolean(authToken && accountId) &&
+    (!isDeferredBootReady ||
+      isFamiliesLoading ||
+      !isSuccess ||
+      (isFirstNativeLaunch && !isDeferredShellWorkReady));
+
+  useEffect(() => {
+    if (wasBootReadyOnMount) {
+      return;
+    }
+
+    if (isInitialBootSettled || shouldShowBootSplash) {
+      return;
+    }
+
+    const bootWindow = window as Window & {
+      __PM_FIRST_COLD_BOOT_SETTLED?: boolean;
+    };
+    const settleDelay = isIosShell
+      ? bootWindow.__PM_FIRST_COLD_BOOT_SETTLED
+        ? 140
+        : isFirstNativeLaunch
+          ? IOS_FIRST_LAUNCH_SPLASH_SETTLE_MS
+          : IOS_REPEAT_LAUNCH_SPLASH_SETTLE_MS
+      : 140;
+
+    const timeoutId = window.setTimeout(() => {
+      bootWindow.__PM_FIRST_COLD_BOOT_SETTLED = true;
+      if (isFirstNativeLaunch) {
+        window.localStorage.setItem(firstNativeLaunchStorageKey, "1");
+      }
+      setIsInitialBootSettled(true);
+    }, settleDelay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isInitialBootSettled, isIosShell, shouldShowBootSplash, wasBootReadyOnMount]);
+
+  useEffect(() => {
+    if (wasBootReadyOnMount) {
+      setIsBootSplashMounted(false);
+      setIsBootSplashClosing(false);
+      return;
+    }
+
+    if (!isInitialBootSettled) {
+      setIsBootSplashMounted(true);
+      setIsBootSplashClosing(false);
+      return;
+    }
+
+    if (shouldShowBootSplash) {
+      return;
+    }
+
+    setIsBootSplashMounted(true);
+    setIsBootSplashClosing(true);
+    (window as Window & { __PM_BOOT_READY?: boolean }).__PM_BOOT_READY = true;
+    window.dispatchEvent(new Event("app:boot-ready"));
+    const timeoutId = window.setTimeout(() => {
+      setIsBootSplashMounted(false);
+    }, 240);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isInitialBootSettled, shouldShowBootSplash, wasBootReadyOnMount]);
+
   return (
-    <Layout
-      navLinks={desktopNavLinks}
-      mobileNavLinks={shouldHideMobileNav ? [] : mobileNavLinks}
-      hideHeader={shouldHideHeader || isMedicineCabinetAddRoute}
-      compactHiddenChrome={shouldHideHeader || isMedicineCabinetAddRoute}
-    >
-      {shouldShowNativePushPrompt && (
-        <Surface className="soft-panel-muted mb-4 p-4 sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="app-card-title text-[1rem]">
-                {nativePushIssue === "system"
-                  ? copy.clientLayout.pushPrompt.nativeBlockedTitle
-                  : copy.clientLayout.pushPrompt.title}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                {nativePushIssue === "system"
-                  ? copy.clientLayout.pushPrompt.nativeBlockedDescription
-                  : copy.clientLayout.pushPrompt.description}
-              </p>
-              {pushPromptError && (
-                <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
-                  {pushPromptError}
-                </p>
-              )}
-              {pushPromptSuccess && (
-                <p className="soft-note-success mt-3 rounded-2xl px-4 py-3 text-sm">
-                  {pushPromptSuccess}
-                </p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (nativePushIssue === "system") {
-                  openNativeNotificationSettings();
-                  return;
-                }
-                void handleEnablePush();
-              }}
-              disabled={isPushPending}
-              className="soft-button-secondary inline-flex min-h-[2.85rem] shrink-0 items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
-            >
-              {nativePushIssue === "system"
-                ? copy.clientLayout.pushPrompt.openSettings
-                : isPushPending
-                  ? copy.clientLayout.pushPrompt.enabling
-                  : copy.clientLayout.pushPrompt.enable}
-            </button>
-          </div>
-        </Surface>
-      )}
-      {shouldShowPushPrompt && (
-        <Surface className="soft-panel-muted mb-4 p-4 sm:p-5">
-          {isPushPromptActionsHidden ? (
-            <button
-              type="button"
-              onClick={() => setIsPushPromptActionsHidden(false)}
-              className="flex w-full flex-wrap items-center justify-between gap-2 rounded-[20px] text-left transition hover:opacity-95"
-            >
-              <p className="app-card-title text-[0.96rem]">{copy.clientLayout.pushPrompt.title}</p>
-              <span className="soft-button-secondary inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.025em]">
-                {copy.common.open}
-              </span>
-            </button>
-          ) : (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="app-card-title text-[1rem]">{copy.clientLayout.pushPrompt.title}</p>
-                <p className="mt-1 text-sm leading-6 text-muted">
-                  {copy.clientLayout.pushPrompt.description}
-                </p>
-                {pushPromptError && (
-                  <p className="soft-note-danger mt-3 rounded-2xl px-4 py-3 text-sm">
-                    {pushPromptError}
-                  </p>
-                )}
-                {pushPromptSuccess && (
-                  <p className="soft-note-success mt-3 rounded-2xl px-4 py-3 text-sm">
-                    {pushPromptSuccess}
-                  </p>
-                )}
-              </div>
-              <div className="flex shrink-0 flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={handleEnablePush}
-                  disabled={isPushPending}
-                  className="soft-button-primary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.03em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
-                >
-                  {isPushPending
-                    ? copy.clientLayout.pushPrompt.enabling
-                    : copy.clientLayout.pushPrompt.enable}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsPushPromptActionsHidden(true)}
-                  disabled={isPushPending}
-                  className="soft-button-secondary inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3rem] sm:px-4 sm:text-[0.88rem]"
-                >
-                  {copy.clientLayout.pushPrompt.hide}
-                </button>
-              </div>
-            </div>
-          )}
-        </Surface>
-      )}
-      <Outlet />
-    </Layout>
+    <>
+      <PushPromptControlProvider
+        value={{
+          showNotificationBell: shouldShowNotificationPrompt,
+          isNotificationBellActive,
+          onNotificationBellClick: shouldShowNotificationPrompt
+            ? () => setIsPushDialogOpen(true)
+            : null,
+        }}
+      >
+        <Layout
+          navLinks={desktopNavLinks}
+          mobileNavLinks={shouldHideMobileNav ? [] : mobileNavLinks}
+          hideHeader={isCompactNestedChrome}
+          compactHiddenChrome={isCompactNestedChrome}
+          showNotificationBell={shouldShowNotificationPrompt}
+          isNotificationBellActive={isNotificationBellActive}
+          onNotificationBellClick={
+            shouldShowNotificationPrompt ? () => setIsPushDialogOpen(true) : null
+          }
+        >
+          <Outlet />
+        </Layout>
+      </PushPromptControlProvider>
+      <ConfirmDialog
+        isOpen={isPushDialogOpen && shouldShowNotificationPrompt}
+        title={
+          shouldShowNativePushPrompt && nativePushIssue === "system"
+            ? copy.clientLayout.pushPrompt.nativeBlockedTitle
+            : copy.clientLayout.pushPrompt.title
+        }
+        description={[
+          shouldShowNativePushPrompt && nativePushIssue === "system"
+            ? copy.clientLayout.pushPrompt.nativeBlockedDescription
+            : copy.clientLayout.pushPrompt.description,
+          pushPromptError,
+          pushPromptSuccess,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        confirmLabel={
+          shouldShowNativePushPrompt && nativePushIssue === "system"
+            ? copy.clientLayout.pushPrompt.openSettings
+            : isPushPending
+              ? copy.clientLayout.pushPrompt.enabling
+              : copy.clientLayout.pushPrompt.enable
+        }
+        cancelLabel={copy.clientLayout.pushPrompt.hide}
+        isPending={isPushPending}
+        onCancel={handleHidePushPrompt}
+        onConfirm={() => {
+          if (shouldShowNativePushPrompt && nativePushIssue === "system") {
+            openNativeNotificationSettings();
+            setIsPushDialogOpen(false);
+            return;
+          }
+          void handleEnablePush();
+        }}
+      />
+      {isBootSplashMounted ? (
+        <AppBootSplash className="app-boot-splash--overlay" isClosing={isBootSplashClosing} />
+      ) : null}
+    </>
   );
 }

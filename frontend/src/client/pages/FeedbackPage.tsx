@@ -6,7 +6,7 @@ import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 
 export function FeedbackPage() {
-  const { copy } = useI18n();
+  const { copy, language } = useI18n();
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -47,8 +47,14 @@ export function FeedbackPage() {
   };
 
   return (
-    <div className="min-w-0 space-y-6">
-      <PageIntro title={copy.feedback.pageTitle} subtitle={copy.feedback.pageSubtitle} />
+    <div className="min-w-0 space-y-6 sm:space-y-8">
+      <PageIntro
+        title={copy.feedback.pageTitle}
+        subtitle={copy.feedback.pageSubtitle}
+        eyebrow={language === "ru" ? "Еще / Обратная связь" : "More / Feedback"}
+        compactOnMobile
+        className="app-safe-top-standalone"
+      />
 
       <Surface className="app-section-surface space-y-4 rounded-[24px] p-5 sm:rounded-[26px] sm:p-8">
         <p className="text-[0.86rem] leading-6 text-muted sm:text-[0.9rem]">

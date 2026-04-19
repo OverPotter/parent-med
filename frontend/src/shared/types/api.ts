@@ -281,7 +281,7 @@ export interface PillboxTopMedication {
 export interface PillboxHistorySummary {
   planId: string;
   planTitle: string;
-  planStatus: string;
+  planStatus: "active" | "paused" | "completed" | "archived";
   memberCount: number;
   period: string;
   totalMedications: number;

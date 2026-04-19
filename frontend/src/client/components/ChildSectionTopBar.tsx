@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { usePushPromptControls } from "@client/layout/PushPromptControlContext";
 import { logout } from "@shared/api/auth";
-import { FeedbackIcon, ProfileMenu } from "@shared/components/Layout";
+import { HeaderUtilityActions } from "@shared/components/Layout";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 
 type ChildSectionTopBarProps = {
-  backHref: string;
+  backHref?: string;
+  onBack?: () => void;
   backLabel: string;
   title?: ReactNode;
   hint?: ReactNode;
@@ -16,6 +18,7 @@ type ChildSectionTopBarProps = {
 
 export function ChildSectionTopBar({
   backHref,
+  onBack,
   backLabel,
   title,
   hint,
@@ -23,6 +26,8 @@ export function ChildSectionTopBar({
   containerClassName = "max-w-2xl",
 }: ChildSectionTopBarProps) {
   const { copy } = useI18n();
+  const { showNotificationBell, isNotificationBellActive, onNotificationBellClick } =
+    usePushPromptControls();
   const accountLogin = useAppStore((s) => s.accountLogin);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const clearSession = useAppStore((s) => s.clearSession);
@@ -39,45 +44,52 @@ export function ChildSectionTopBar({
   };
 
   return (
-    <div className="app-safe-top-header shrink-0 -mx-3 bg-background px-3 pb-3 sm:-mx-6 sm:px-6">
-      <div className={`mx-auto w-full ${containerClassName}`}>
-        <div className="child-section-top-bar flex flex-wrap items-center justify-between gap-2 px-1 pt-1 sm:flex-nowrap">
-          <Link
-            to={backHref}
-            className="inline-flex min-h-[2.35rem] min-w-0 flex-1 items-center text-sm text-primary hover:underline"
-          >
-            <span className="truncate">{backLabel}</span>
-          </Link>
-          <div className="flex shrink-0 items-center gap-2">
-            <Link
-              to="/feedback"
-              className="app-header-utility-button app-header-icon-button inline-flex items-center justify-center p-0"
-              aria-label={copy.feedback.navShort}
-              title={copy.feedback.navShort}
-            >
-              <FeedbackIcon />
-              <span className="sr-only">{copy.feedback.navShort}</span>
-            </Link>
-            <ProfileMenu
-              accountLabel={accountLabel}
-              servicesLabel={copy.clientLayout.nav.more}
-              settingsLabel={copy.common.settings}
-              logoutLabel={copy.common.logoutFromAccount}
-              menuLabel={copy.common.profileMenuLabel}
-              onLogout={handleLogout}
-              iconOnly
-            />
-          </div>
-        </div>
-        {title || hint || action ? (
-          <div className="mt-3 flex items-start justify-between gap-3 px-1">
-            <div className="min-w-0">
-              {title ? <h2 className="app-card-title">{title}</h2> : null}
-              {hint ? <p className="mt-1 text-sm leading-6 text-muted">{hint}</p> : null}
+    <div className="shrink-0 -mx-3 bg-background px-3 sm:-mx-6 sm:px-6">
+      <div className="child-section-top-bar-shell app-safe-top-header bg-background pb-3">
+        <div className={`mx-auto w-full ${containerClassName}`}>
+          <div className="child-section-top-bar flex flex-wrap items-center justify-between gap-2 px-1 pt-1 sm:flex-nowrap">
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="inline-flex min-h-[2.35rem] min-w-0 flex-1 items-center text-sm text-primary hover:underline"
+              >
+                <span className="truncate">{backLabel}</span>
+              </button>
+            ) : (
+              <Link
+                to={backHref ?? "#"}
+                className="inline-flex min-h-[2.35rem] min-w-0 flex-1 items-center text-sm text-primary hover:underline"
+              >
+                <span className="truncate">{backLabel}</span>
+              </Link>
+            )}
+            <div className="flex shrink-0 items-center gap-2">
+              <HeaderUtilityActions
+                accountLabel={accountLabel}
+                servicesLabel={copy.clientLayout.nav.more}
+                settingsLabel={copy.common.settings}
+                logoutLabel={copy.common.logoutFromAccount}
+                menuLabel={copy.common.profileMenuLabel}
+                onLogout={handleLogout}
+                feedbackLabel={copy.feedback.navShort}
+                notificationLabel={copy.clientLayout.pushPrompt.title}
+                showNotificationBell={showNotificationBell}
+                isNotificationBellActive={isNotificationBellActive}
+                onNotificationBellClick={onNotificationBellClick}
+              />
             </div>
-            {action ? <div className="shrink-0">{action}</div> : null}
           </div>
-        ) : null}
+          {title || hint || action ? (
+            <div className="mt-3 flex items-start justify-between gap-3 px-1">
+              <div className="min-w-0">
+                {title ? <h2 className="app-card-title">{title}</h2> : null}
+                {hint ? <p className="mt-1 text-sm leading-6 text-muted">{hint}</p> : null}
+              </div>
+              {action ? <div className="shrink-0">{action}</div> : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
