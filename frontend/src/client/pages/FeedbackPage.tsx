@@ -48,7 +48,16 @@ export function FeedbackPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <PageIntro title={copy.feedback.pageTitle} subtitle={copy.feedback.pageSubtitle} />
+      <PageIntro
+        title={copy.feedback.pageTitle}
+        subtitle={copy.feedback.pageSubtitle}
+        compactOnMobile
+        hideOnMobile
+      />
+      <div className="app-mobile-section-intro sm:hidden">
+        <h1 className="app-mobile-section-intro__title">{copy.feedback.pageTitle}</h1>
+        <p className="app-mobile-section-intro__hint">{copy.feedback.pageSubtitle}</p>
+      </div>
 
       <Surface className="app-section-surface space-y-4 rounded-[24px] p-5 sm:rounded-[26px] sm:p-8">
         <p className="text-[0.86rem] leading-6 text-muted sm:text-[0.9rem]">

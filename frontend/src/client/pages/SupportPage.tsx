@@ -16,7 +16,18 @@ export function SupportPage() {
             : "Where to contact us about service, personal data and legal requests."
         }
         compactOnMobile
+        hideOnMobile
       />
+      <div className="app-mobile-section-intro sm:hidden">
+        <h1 className="app-mobile-section-intro__title">
+          {language === "ru" ? "Поддержка / Контакты" : "Support / Contact"}
+        </h1>
+        <p className="app-mobile-section-intro__hint">
+          {language === "ru"
+            ? "Куда писать по вопросам сервиса, персональных данных и legal-запросам."
+            : "Where to contact us about service, personal data and legal requests."}
+        </p>
+      </div>
 
       <Surface className="space-y-3 p-5 text-sm leading-7 text-muted sm:p-6">
         <p>

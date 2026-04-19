@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Sora:wght@600;700;800&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5931,12 +5929,23 @@ html.ios-lock-horizontal .landing-main {
   touch-action: manipulation;
 }
 
+[data-runtime="native"][data-platform="ios"] input,
+[data-runtime="native"][data-platform="ios"] textarea,
+[data-runtime="native"][data-platform="ios"] select,
+[data-ios-shell="true"] input,
+[data-ios-shell="true"] textarea,
+[data-ios-shell="true"] select {
+  transition: none !important;
+}
+
 [data-runtime="native"][data-platform="ios"] .soft-input,
 [data-ios-shell="true"] .soft-input {
   transition:
-    border-color 90ms ease,
-    background 90ms ease,
-    color 90ms ease;
+    border-color 60ms ease,
+    background 60ms ease,
+    color 60ms ease;
+  -webkit-appearance: none;
+  appearance: none;
   box-shadow: none;
 }
 
@@ -5947,15 +5956,17 @@ html.ios-lock-horizontal .landing-main {
 
 [data-runtime="native"][data-platform="ios"] .soft-input:focus,
 [data-ios-shell="true"] .soft-input:focus {
-  box-shadow: 0 0 0 2px rgba(138, 123, 191, 0.08);
+  box-shadow: none;
 }
 
 [data-runtime="native"][data-platform="ios"] .illness-fast-input,
 [data-ios-shell="true"] .illness-fast-input {
   transition:
-    border-color 100ms ease,
-    background 100ms ease,
-    color 100ms ease;
+    border-color 60ms ease,
+    background 60ms ease,
+    color 60ms ease;
+  -webkit-appearance: none;
+  appearance: none;
   box-shadow: none;
 }
 
@@ -5963,7 +5974,7 @@ html.ios-lock-horizontal .landing-main {
 [data-runtime="native"][data-platform="ios"] .illness-fast-input:focus,
 [data-ios-shell="true"] .illness-fast-input:hover,
 [data-ios-shell="true"] .illness-fast-input:focus {
-  box-shadow: 0 0 0 1px rgba(138, 123, 191, 0.07);
+  box-shadow: none;
 }
 
 [data-runtime="native"][data-platform="ios"] .soft-panel,

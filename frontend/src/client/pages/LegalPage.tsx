@@ -51,7 +51,18 @@ export function LegalPage() {
             : "Privacy policy, terms of use and support contacts."
         }
         compactOnMobile
+        hideOnMobile
       />
+      <div className="app-mobile-section-intro sm:hidden">
+        <h1 className="app-mobile-section-intro__title">
+          {language === "ru" ? "Правовая информация" : "Legal information"}
+        </h1>
+        <p className="app-mobile-section-intro__hint">
+          {language === "ru"
+            ? "Политика конфиденциальности, условия использования и контакты."
+            : "Privacy policy, terms of use and support contacts."}
+        </p>
+      </div>
 
       <Surface className="p-5 sm:p-6">
         <div className="space-y-3">

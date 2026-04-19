@@ -20,15 +20,17 @@ import {
   toPushSubscriptionPayload,
 } from "@shared/utils/pushNotifications";
 import {
-  getNativePushSubscriptionPayload,
+  getCachedNativePushSubscriptionPayload,
   isNativePushOptedOut,
   isNativePushSupported,
   NATIVE_PUSH_NAVIGATION_EVENT,
 } from "@shared/utils/nativePushNotifications";
 import { HitKeepBridge } from "@shared/analytics";
 import { AppBootSplash } from "@client/layout/AppBootSplash";
+import { AuthPage } from "@client/pages/AuthPage";
 import { detectIosShell } from "@shared/hooks/useIsIosShell";
 import { appLog } from "@shared/utils/appLog";
+import { blurActiveField } from "@shared/utils/focus";
 
 const ClientLayout = lazy(() =>
   import("@client/layout/ClientLayout").then((module) => ({ default: module.ClientLayout }))
@@ -41,9 +43,6 @@ const SettingsPage = lazy(() =>
 );
 const LandingPage = lazy(() =>
   import("@client/pages/LandingPage").then((module) => ({ default: module.LandingPage }))
-);
-const AuthPage = lazy(() =>
-  import("@client/pages/AuthPage").then((module) => ({ default: module.AuthPage }))
 );
 const AboutPage = lazy(() =>
   import("@client/pages/AboutPage").then((module) => ({ default: module.AboutPage }))
@@ -146,6 +145,11 @@ const AdminHomePage = lazy(() =>
   import("@admin/pages/AdminHomePage").then((module) => ({ default: module.AdminHomePage }))
 );
 
+const IOS_FIRST_LAUNCH_NON_CRITICAL_DELAY_MS = 1400;
+const IOS_REPEAT_LAUNCH_NON_CRITICAL_DELAY_MS = 600;
+const IOS_FIRST_LAUNCH_PUSH_SYNC_DELAY_MS = 6000;
+const IOS_REPEAT_LAUNCH_PUSH_SYNC_DELAY_MS = 3000;
+
 function RouteFallback() {
   const [isBootReady, setIsBootReady] = useState(() => {
     if (typeof window === "undefined") {
@@ -167,8 +171,69 @@ function RouteFallback() {
   return isBootReady ? null : <AppBootSplash />;
 }
 
+function useGlobalBootReady() {
+  const [isBootReady, setIsBootReady] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return Boolean((window as Window & { __PM_BOOT_READY?: boolean }).__PM_BOOT_READY);
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || isBootReady) {
+      return;
+    }
+
+    const handleBootReady = () => setIsBootReady(true);
+    window.addEventListener("app:boot-ready", handleBootReady, { once: true });
+    return () => window.removeEventListener("app:boot-ready", handleBootReady);
+  }, [isBootReady]);
+
+  return isBootReady;
+}
+
+function useDeferredNonCriticalStartupReady() {
+  const isBootReady = useGlobalBootReady();
+  const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  const firstNativeLaunchStorageKey = "pm_native_ios_first_launch_completed_v2";
+  const [isInitialNativeLaunch] = useState(() => {
+    if (!isNativeIos || typeof window === "undefined") {
+      return false;
+    }
+    return window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
+  });
+  const [isReady, setIsReady] = useState(!isNativeIos);
+
+  useEffect(() => {
+    if (!isNativeIos) {
+      setIsReady(true);
+      return;
+    }
+
+    if (!isBootReady) {
+      setIsReady(false);
+      return;
+    }
+
+    setIsReady(false);
+    const timeoutId = window.setTimeout(
+      () => setIsReady(true),
+      isInitialNativeLaunch
+        ? IOS_FIRST_LAUNCH_NON_CRITICAL_DELAY_MS
+        : IOS_REPEAT_LAUNCH_NON_CRITICAL_DELAY_MS
+    );
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isBootReady, isInitialNativeLaunch, isNativeIos]);
+
+  return isReady;
+}
+
 function BootLog() {
   useEffect(() => {
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios") {
+      return;
+    }
     const api = import.meta.env.VITE_API_URL?.trim() || "прокси /api";
     appLog.info(`Store гидратирован, API=${api}`);
   }, []);
@@ -240,6 +305,7 @@ function RouteScrollReset() {
   const previousPathnameRef = useRef<string | null>(null);
 
   useEffect(() => {
+    blurActiveField();
     const previousPathname = previousPathnameRef.current;
     previousPathnameRef.current = location.pathname;
 
@@ -340,16 +406,45 @@ function AuthSync() {
 function PushSubscriptionSync() {
   const authToken = useAppStore((s) => s.authToken);
   const accountId = useAppStore((s) => s.accountId);
+  const isBootReady = useGlobalBootReady();
+  const [isIosPushSyncReady, setIsIosPushSyncReady] = useState(
+    !(Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios")
+  );
+
+  useEffect(() => {
+    if (!(Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios")) {
+      setIsIosPushSyncReady(true);
+      return;
+    }
+
+    setIsIosPushSyncReady(false);
+    const firstNativeLaunchStorageKey = "pm_native_ios_first_launch_completed_v2";
+    const isInitialNativeLaunch =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(firstNativeLaunchStorageKey) !== "1";
+    const timeoutId = window.setTimeout(
+      () => {
+        setIsIosPushSyncReady(true);
+      },
+      isInitialNativeLaunch
+        ? IOS_FIRST_LAUNCH_PUSH_SYNC_DELAY_MS
+        : IOS_REPEAT_LAUNCH_PUSH_SYNC_DELAY_MS
+    );
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
 
   const { data: pushConfig } = useQuery({
     queryKey: ["push", "config", accountId],
     queryFn: fetchPushNotificationConfig,
-    enabled: Boolean(authToken && accountId),
+    enabled: Boolean(authToken && accountId && isBootReady && isIosPushSyncReady),
     staleTime: 5 * 60 * 1000,
   });
 
   useEffect(() => {
-    if (!authToken || !accountId || !pushConfig?.enabled) {
+    if (!isBootReady || !isIosPushSyncReady || !authToken || !accountId || !pushConfig?.enabled) {
       return;
     }
 
@@ -361,7 +456,7 @@ function PushSubscriptionSync() {
           if (isNativePushOptedOut()) {
             return;
           }
-          const nativePayload = await getNativePushSubscriptionPayload({ promptIfNeeded: false });
+          const nativePayload = getCachedNativePushSubscriptionPayload();
           if (!nativePayload || isCancelled) {
             return;
           }
@@ -387,7 +482,7 @@ function PushSubscriptionSync() {
     return () => {
       isCancelled = true;
     };
-  }, [accountId, authToken, pushConfig?.enabled]);
+  }, [accountId, authToken, isBootReady, isIosPushSyncReady, pushConfig?.enabled]);
 
   return null;
 }
@@ -601,133 +696,99 @@ function IOSKeyboardViewportSync() {
       return;
     }
 
-    const root = document.documentElement;
-    const viewport = window.visualViewport;
-    if (!viewport) {
-      return;
-    }
-
-    const syncKeyboardState = () => {
-      const keyboardHeight = Math.max(0, window.innerHeight - viewport.height);
-      const isKeyboardOpen = keyboardHeight > 140;
-      root.setAttribute("data-keyboard-open", isKeyboardOpen ? "true" : "false");
-    };
-
-    syncKeyboardState();
-    viewport.addEventListener("resize", syncKeyboardState);
-    viewport.addEventListener("scroll", syncKeyboardState);
-
     return () => {
-      root.removeAttribute("data-keyboard-open");
-      viewport.removeEventListener("resize", syncKeyboardState);
-      viewport.removeEventListener("scroll", syncKeyboardState);
+      document.documentElement.removeAttribute("data-keyboard-open");
     };
   }, []);
 
   return null;
 }
 
-function IOSSwipeBackSync() {
+function IOSBackSwipeZone() {
   const location = useLocation();
   const navigate = useNavigate();
-  const locationRef = useRef({ pathname: location.pathname, search: location.search });
-
-  useEffect(() => {
-    locationRef.current = { pathname: location.pathname, search: location.search };
-  }, [location.pathname, location.search]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
       return;
     }
 
-    let tracking = false;
-    let startX = 0;
-    let startY = 0;
-
-    const isInteractiveTarget = (target: EventTarget | null) => {
-      if (!(target instanceof HTMLElement)) {
-        return false;
-      }
-      return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
-    };
-
-    const handleTouchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 1) {
-        tracking = false;
-        return;
-      }
-      if (isInteractiveTarget(event.target)) {
-        tracking = false;
-        return;
-      }
-      const touch = event.touches.item(0);
-      if (!touch || touch.clientX > 44) {
-        tracking = false;
-        return;
-      }
-      tracking = true;
-      startX = touch.clientX;
-      startY = touch.clientY;
-    };
-
-    const handleTouchMove = (event: TouchEvent) => {
-      if (!tracking || event.touches.length !== 1) {
-        return;
-      }
-      const touch = event.touches.item(0);
-      if (!touch) {
-        return;
-      }
-      const dx = touch.clientX - startX;
-      const dy = Math.abs(touch.clientY - startY);
-      if (dx < 0 || (dy > 34 && dy > dx)) {
-        tracking = false;
-      }
-    };
-
-    const handleTouchEnd = (event: TouchEvent) => {
-      if (!tracking) {
-        return;
-      }
-      tracking = false;
-      const touch = event.changedTouches.item(0);
-      if (!touch) {
-        return;
-      }
-      const dx = touch.clientX - startX;
-      const dy = Math.abs(touch.clientY - startY);
-      const { pathname: currentPath, search: currentSearch } = locationRef.current;
-      const pillboxMode = new URLSearchParams(currentSearch).get("mode");
-      const shouldDisableSwipeBack =
-        currentPath === "/" ||
-        currentPath === "/home" ||
-        currentPath === "/start" ||
-        currentPath === "/children" ||
-        currentPath === "/medicine-cabinet" ||
-        currentPath === "/illnesses/active" ||
-        currentPath === "/more" ||
-        (currentPath === "/pillbox" && !pillboxMode);
-      if (shouldDisableSwipeBack) {
-        return;
-      }
-      if (dx >= 48 && dy <= 56 && dy <= dx * 0.9) {
-        navigate(-1);
-      }
-    };
-
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchmove", handleTouchMove, { passive: true });
-    window.addEventListener("touchend", handleTouchEnd, { passive: true });
-
+    document.documentElement.setAttribute("data-ios-back-swipe-zone", "true");
     return () => {
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
+      document.documentElement.removeAttribute("data-ios-back-swipe-zone");
     };
-  }, [navigate]);
+  }, []);
 
-  return null;
+  const pillboxMode = new URLSearchParams(location.search).get("mode");
+  const shouldDisableSwipeBack =
+    location.pathname === "/" ||
+    location.pathname === "/home" ||
+    location.pathname === "/start" ||
+    location.pathname === "/children" ||
+    location.pathname === "/medicine-cabinet" ||
+    location.pathname === "/illnesses/active" ||
+    location.pathname === "/more" ||
+    (location.pathname === "/pillbox" && !pillboxMode);
+
+  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios" || shouldDisableSwipeBack) {
+    return null;
+  }
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 22,
+        zIndex: 160,
+        touchAction: "pan-y",
+      }}
+      onTouchStart={(event) => {
+        const touch = event.touches.item(0);
+        if (!touch) {
+          return;
+        }
+        const target = event.target as HTMLDivElement & {
+          dataset: DOMStringMap & {
+            startX?: string;
+            startY?: string;
+          };
+        };
+        target.dataset.startX = String(touch.clientX);
+        target.dataset.startY = String(touch.clientY);
+      }}
+      onTouchEnd={(event) => {
+        const touch = event.changedTouches.item(0);
+        const target = event.currentTarget as HTMLDivElement & {
+          dataset: DOMStringMap & {
+            startX?: string;
+            startY?: string;
+          };
+        };
+        if (!touch) {
+          return;
+        }
+        const startX = Number(target.dataset.startX ?? "0");
+        const startY = Number(target.dataset.startY ?? "0");
+        const dx = touch.clientX - startX;
+        const dy = Math.abs(touch.clientY - startY);
+        if (dx >= 52 && dy <= 56 && dy <= dx * 0.9) {
+          const activeElement = document.activeElement;
+          if (
+            activeElement instanceof HTMLElement &&
+            activeElement.closest("input, textarea, select, [contenteditable='true']")
+          ) {
+            blurActiveField();
+            return;
+          }
+          navigate(-1);
+        }
+      }}
+    />
+  );
 }
 
 function IOSLandingGestureGuard() {
@@ -759,8 +820,85 @@ function IOSLandingGestureGuard() {
   return null;
 }
 
+function IOSInputSessionGuard() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
+      return;
+    }
+
+    const isAuthLikeRoute =
+      location.pathname === "/auth" ||
+      location.pathname === "/join-family" ||
+      location.pathname.startsWith("/legal");
+    if (isAuthLikeRoute) {
+      return;
+    }
+
+    const applyInputGuard = (target: HTMLInputElement | HTMLTextAreaElement) => {
+      if (target.dataset.pmIosInputGuard === "true") {
+        return;
+      }
+
+      target.dataset.pmIosInputGuard = "true";
+      target.setAttribute("autocorrect", "off");
+      target.setAttribute("autocapitalize", "none");
+      target.setAttribute("autocomplete", "off");
+      target.setAttribute("data-gramm", "false");
+      target.setAttribute("data-gramm_editor", "false");
+      target.setAttribute("data-enable-grammarly", "false");
+      target.spellcheck = false;
+      if (target instanceof HTMLInputElement && target.type !== "password") {
+        target.setAttribute("autocapitalize", "none");
+      }
+    };
+
+    const guardRoot = (root: ParentNode) => {
+      root.querySelectorAll("input, textarea").forEach((node) => {
+        if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
+          applyInputGuard(node);
+        }
+      });
+    };
+
+    const guardVisibleInputs = () => {
+      const mainRoot =
+        document.getElementById("app-route-root") ??
+        document.querySelector("main") ??
+        document.body;
+      guardRoot(mainRoot);
+    };
+
+    guardVisibleInputs();
+    const timeoutId = window.setTimeout(guardVisibleInputs, 260);
+
+    const handlePointerStart = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) {
+        return;
+      }
+      applyInputGuard(target);
+    };
+
+    document.addEventListener("pointerdown", handlePointerStart, true);
+    document.addEventListener("touchstart", handlePointerStart, true);
+    return () => {
+      window.clearTimeout(timeoutId);
+      document.removeEventListener("pointerdown", handlePointerStart, true);
+      document.removeEventListener("touchstart", handlePointerStart, true);
+    };
+  }, [location.pathname]);
+
+  return null;
+}
+
 function GlobalTapGuard() {
   useEffect(() => {
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios") {
+      return;
+    }
+
     const isMobile =
       window.matchMedia("(pointer: coarse)").matches ||
       window.innerWidth < 1024 ||
@@ -881,16 +1019,46 @@ function WarmRouteChunks() {
   const role = useAppStore((s) => s.role);
   const authToken = useAppStore((s) => s.authToken);
   const accountId = useAppStore((s) => s.accountId);
+  const isBootReady = useGlobalBootReady();
+  const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
   useEffect(() => {
-    if (!(authToken || accountId) || role === "admin") {
+    if (!(authToken || accountId) || role === "admin" || isNativeIos) {
       return;
     }
 
-    let frameId: number | null = null;
-    frameId = window.requestAnimationFrame(() => {
+    const windowWithIdleApi = window as Window &
+      typeof globalThis & {
+        requestIdleCallback?: (
+          callback: IdleRequestCallback,
+          options?: IdleRequestOptions
+        ) => number;
+        cancelIdleCallback?: (handle: number) => void;
+      };
+    let cancelled = false;
+    let timeoutId: number | null = null;
+    let idleId: number | null = null;
+
+    const warmRoutes = () => {
+      if (cancelled) {
+        return;
+      }
+
+      const activeElement = document.activeElement;
+      const isUserTyping =
+        activeElement instanceof HTMLElement &&
+        Boolean(activeElement.closest("input, textarea, select, [contenteditable='true']"));
+
+      if (isUserTyping) {
+        timeoutId = window.setTimeout(warmRoutes, 1400);
+        return;
+      }
+
       void Promise.allSettled([
         import("@client/pages/ChildrenPage"),
+        import("@client/pages/ChildSleepPage"),
+        import("@client/pages/ChildFeedingPage"),
+        import("@client/pages/ChildIllnessPage"),
         import("@client/pages/PillboxPage"),
         import("@client/pages/MedicineCabinetPage"),
         import("@client/pages/ActiveIllnessesPage"),
@@ -898,14 +1066,39 @@ function WarmRouteChunks() {
         import("@client/pages/SettingsPage"),
         import("@client/pages/FamilyPage"),
       ]);
-    });
+    };
+
+    const scheduleWarmRoutes = () => {
+      if (!isBootReady) {
+        timeoutId = window.setTimeout(warmRoutes, 120);
+        return;
+      }
+
+      if (typeof windowWithIdleApi.requestIdleCallback === "function") {
+        idleId = windowWithIdleApi.requestIdleCallback(
+          () => {
+            warmRoutes();
+          },
+          { timeout: 3200 }
+        );
+        return;
+      }
+
+      timeoutId = window.setTimeout(warmRoutes, 2200);
+    };
+
+    timeoutId = window.setTimeout(scheduleWarmRoutes, isBootReady ? 1800 : 220);
 
     return () => {
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
+      cancelled = true;
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      if (idleId !== null && typeof windowWithIdleApi.cancelIdleCallback === "function") {
+        windowWithIdleApi.cancelIdleCallback(idleId);
       }
     };
-  }, [accountId, authToken, role]);
+  }, [accountId, authToken, isBootReady, isNativeIos, role]);
 
   return null;
 }
@@ -917,6 +1110,7 @@ export default function App() {
   const accountId = useAppStore((s) => s.accountId);
   const hydrated = useAppStore((s) => s.hydrated);
   const isNativeRuntime = Capacitor.isNativePlatform();
+  const isNonCriticalStartupReady = useDeferredNonCriticalStartupReady();
   const [cookieConsent, setCookieConsent] = useState<CookieConsentDecision | null>(() =>
     getCookieConsentDecision()
   );
@@ -949,8 +1143,9 @@ export default function App() {
       ) : null}
       <RuntimePlatformSync />
       <IOSKeyboardViewportSync />
+      <IOSBackSwipeZone />
       <BootLog />
-      <HitKeepBridge />
+      {isNonCriticalStartupReady ? <HitKeepBridge /> : null}
       <ThemeSync />
       <DisplayModeSync />
       <RouteScrollReset />
@@ -959,12 +1154,12 @@ export default function App() {
       <WarmRouteChunks />
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
-      <IOSSwipeBackSync />
+      <IOSInputSessionGuard />
       <AuthSync />
-      <PushSubscriptionSync />
-      <NativePushNavigationSync />
-      <MobilePageResumeSync />
-      <PullToRefreshSync />
+      {isNonCriticalStartupReady ? <PushSubscriptionSync /> : null}
+      {isNonCriticalStartupReady ? <NativePushNavigationSync /> : null}
+      {isNonCriticalStartupReady ? <MobilePageResumeSync /> : null}
+      {isNonCriticalStartupReady ? <PullToRefreshSync /> : null}
       <Suspense fallback={<RouteFallback />}>
         <div id="app-route-root" tabIndex={-1}>
           <Routes>

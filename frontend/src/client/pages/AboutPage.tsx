@@ -14,6 +14,10 @@ export function AboutPage() {
         eyebrow={copy.about.eyebrow}
         hideOnMobile
       />
+      <div className="app-mobile-section-intro sm:hidden">
+        <h1 className="app-mobile-section-intro__title">{copy.common.brandName}</h1>
+        <p className="app-mobile-section-intro__hint">{copy.about.subtitle}</p>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {copy.about.features.map((item) => (

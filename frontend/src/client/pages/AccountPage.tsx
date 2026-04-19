@@ -94,6 +94,7 @@ export function AccountPage() {
   const { data: familyMembers = [] } = useQuery({
     queryKey: ["family-members"],
     queryFn: fetchMyFamilyMembers,
+    enabled: Boolean(accountId && isEditingProfile),
   });
   const currentMember = familyMembers.find((member) => member.id === accountId) ?? null;
   const themeLabel = theme === "light" ? copy.light : theme === "dark" ? copy.dark : copy.auto;
@@ -247,6 +248,15 @@ export function AccountPage() {
   return (
     <div className="min-w-0 space-y-6">
       <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
+      <div className="px-1">
+        <Link to="/more" className="inline-flex text-sm text-primary hover:underline">
+          {language === "ru" ? "← К разделам" : "← Back to more"}
+        </Link>
+      </div>
+      <div className="app-mobile-section-intro sm:hidden">
+        <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
+        <p className="app-mobile-section-intro__hint">{copy.subtitle}</p>
+      </div>
 
       <Surface className="p-5 sm:p-6">
         <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5">
