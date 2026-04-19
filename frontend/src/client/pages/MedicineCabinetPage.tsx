@@ -11,51 +11,27 @@ import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
-import type { AppLanguage } from "@shared/i18n";
-import type { HouseholdMedicine } from "@shared/types/api";
 import { AddHouseholdMedicineForm } from "./medicine-cabinet/AddHouseholdMedicineForm";
 import { AddMedicineChoiceDialog } from "./medicine-cabinet/AddMedicineChoiceDialog";
 import { tCabinet } from "./medicine-cabinet/copy";
-import { MedicineItemCard } from "./medicine-cabinet/MedicineItemCard";
 import { NewPackPage } from "./medicine-cabinet/NewPackPage";
+import { MedicineSection } from "./medicine-cabinet/MedicineSection";
 import {
   cabinetActionPrimaryClass,
   cabinetActionSecondaryClass,
-  cabinetListClass,
+  cabinetFilterPillClass,
   cabinetPanelClass,
+  cabinetTopTabClass,
 } from "./medicine-cabinet/styles";
+import {
+  CabinetFilterKey,
+  getDefaultFilter,
+  getFilterDotClass,
+  isExpiredStatus,
+  needsAttention,
+} from "./medicine-cabinet/filtering";
 
 type AddMedicineFlow = null | "choice" | "catalog" | "manual";
-type CabinetFilterKey = "attention" | "ready" | "all";
-
-function needsAttention(status: string) {
-  return (
-    status === "expired" ||
-    status === "expired_after_opening" ||
-    status === "expiring_soon" ||
-    status === "expiring_after_opening"
-  );
-}
-
-function getDefaultFilter(medicines: HouseholdMedicine[]): CabinetFilterKey {
-  if (medicines.some((medicine) => needsAttention(medicine.status))) {
-    return "attention";
-  }
-  if (medicines.some((medicine) => !needsAttention(medicine.status))) {
-    return "ready";
-  }
-  return "all";
-}
-
-function getFilterDotClass(filter: CabinetFilterKey) {
-  if (filter === "attention") {
-    return "bg-[color:color-mix(in_srgb,var(--color-warning)_78%,var(--color-danger)_22%)]";
-  }
-  if (filter === "ready") {
-    return "bg-[color:color-mix(in_srgb,var(--color-success)_82%,var(--color-primary)_18%)]";
-  }
-  return "bg-[color:color-mix(in_srgb,var(--color-info)_76%,var(--color-primary)_24%)]";
-}
 
 export function MedicineCabinetPage() {
   const { language } = useI18n();
@@ -131,48 +107,60 @@ export function MedicineCabinetPage() {
   const attentionMedicines = baseFilteredMedicines.filter((medicine) =>
     needsAttention(medicine.status)
   );
+  const expiredMedicines = baseFilteredMedicines.filter((medicine) =>
+    isExpiredStatus(medicine.status)
+  );
+  const reviewMedicines = baseFilteredMedicines.filter(
+    (medicine) => needsAttention(medicine.status) && !isExpiredStatus(medicine.status)
+  );
   const readyMedicines = baseFilteredMedicines.filter(
     (medicine) => !needsAttention(medicine.status)
   );
   const displayedMedicines =
-    activeFilter === "attention"
-      ? attentionMedicines
-      : activeFilter === "ready"
-        ? readyMedicines
-        : baseFilteredMedicines;
+    activeFilter === "expired"
+      ? expiredMedicines
+      : activeFilter === "attention"
+        ? reviewMedicines
+        : activeFilter === "ready"
+          ? readyMedicines
+          : baseFilteredMedicines;
   const filterItems: Array<{
     key: CabinetFilterKey;
     label: string;
-    count: number;
   }> = [
+    {
+      key: "expired",
+      label: tCabinet(language, "filterExpired"),
+    },
     {
       key: "attention",
       label: tCabinet(language, "filterAttention"),
-      count: attentionMedicines.length,
     },
     {
       key: "ready",
       label: tCabinet(language, "filterReady"),
-      count: readyMedicines.length,
     },
     {
       key: "all",
       label: tCabinet(language, "filterAll"),
-      count: baseFilteredMedicines.length,
     },
   ];
   const listTitle =
-    activeFilter === "attention"
-      ? tCabinet(language, "attentionSectionTitle")
-      : activeFilter === "ready"
-        ? tCabinet(language, "readySectionTitle")
-        : tCabinet(language, "allSectionTitle");
+    activeFilter === "expired"
+      ? tCabinet(language, "expiredSectionTitle")
+      : activeFilter === "attention"
+        ? tCabinet(language, "attentionSectionTitle")
+        : activeFilter === "ready"
+          ? tCabinet(language, "readySectionTitle")
+          : tCabinet(language, "allSectionTitle");
   const listHint =
-    activeFilter === "attention"
-      ? tCabinet(language, "attentionSectionHint")
-      : activeFilter === "ready"
-        ? tCabinet(language, "readySectionHint")
-        : tCabinet(language, "allSectionHint");
+    activeFilter === "expired"
+      ? tCabinet(language, "expiredSectionHint")
+      : activeFilter === "attention"
+        ? tCabinet(language, "attentionSectionHint")
+        : activeFilter === "ready"
+          ? tCabinet(language, "readySectionHint")
+          : tCabinet(language, "allSectionHint");
   const showSplitSections = activeFilter === "all";
 
   if (addFlow === "choice") {
@@ -231,11 +219,15 @@ export function MedicineCabinetPage() {
           hideOnMobile
           mobileLikeDesktop
           action={
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => openAddFlow("choice")}
-                className={addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
+                className={[
+                  addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
+                  cabinetTopTabClass,
+                  "w-full",
+                ].join(" ")}
               >
                 {tCabinet(language, "addTab")}
               </button>
@@ -245,7 +237,11 @@ export function MedicineCabinetPage() {
                   closeAddFlow();
                   setCabinetSearch("");
                 }}
-                className={!addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
+                className={[
+                  !addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
+                  cabinetTopTabClass,
+                  "w-full",
+                ].join(" ")}
               >
                 {tCabinet(language, "cabinetTab")}
               </button>
@@ -262,11 +258,15 @@ export function MedicineCabinetPage() {
             {tCabinet(language, "mobileHint")}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => openAddFlow("choice")}
-            className={addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
+            className={[
+              addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
+              cabinetTopTabClass,
+              "w-full",
+            ].join(" ")}
           >
             {tCabinet(language, "addTab")}
           </button>
@@ -276,7 +276,11 @@ export function MedicineCabinetPage() {
               closeAddFlow();
               setCabinetSearch("");
             }}
-            className={!addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass}
+            className={[
+              !addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
+              cabinetTopTabClass,
+              "w-full",
+            ].join(" ")}
           >
             {tCabinet(language, "cabinetTab")}
           </button>
@@ -309,7 +313,7 @@ export function MedicineCabinetPage() {
               className="soft-input mt-2 w-full px-4 text-base sm:text-sm"
             />
           </label>
-          <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4 sm:gap-2">
             {filterItems.map((item) => {
               const isActive = item.key === activeFilter;
               return (
@@ -321,16 +325,21 @@ export function MedicineCabinetPage() {
                     setExpandedMedicineId(null);
                   }}
                   className={[
-                    "soft-pill inline-flex min-h-[2.2rem] items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition",
-                    isActive ? "text-foreground" : "opacity-55",
+                    isActive ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
+                    cabinetFilterPillClass,
+                    "inline-flex items-center justify-center gap-1.5",
+                    !isActive ? "opacity-75" : "",
                   ].join(" ")}
                 >
                   <span
                     aria-hidden="true"
-                    className={`h-2 w-2 shrink-0 rounded-full ${getFilterDotClass(item.key)}`}
+                    className={`h-2 w-2 shrink-0 rounded-full ${getFilterDotClass(item.key, {
+                      hasAttention: attentionMedicines.length > 0,
+                    })}`}
                   />
-                  <span>{item.label}</span>
-                  <span className="text-[0.7rem] text-muted">{item.count}</span>
+                  <span className="min-w-0 whitespace-normal text-center leading-4">
+                    {item.label}
+                  </span>
                 </button>
               );
             })}
@@ -362,13 +371,28 @@ export function MedicineCabinetPage() {
           onExpandChange={setExpandedMedicineId}
         />
       )}
-      {medicines.length > 0 && showSplitSections && attentionMedicines.length > 0 && (
+      {medicines.length > 0 && showSplitSections && expiredMedicines.length > 0 && (
+        <MedicineSection
+          language={language}
+          title={tCabinet(language, "expiredSectionTitle")}
+          hint={tCabinet(language, "expiredSectionHint")}
+          count={expiredMedicines.length}
+          medicines={expiredMedicines}
+          compact={isSearchMode}
+          expandedMedicineId={expandedMedicineId}
+          isDeleting={deleteMutation.isPending}
+          deletingMedicineId={deleteMutation.variables ?? null}
+          onDelete={(id) => deleteMutation.mutate(id)}
+          onExpandChange={setExpandedMedicineId}
+        />
+      )}
+      {medicines.length > 0 && showSplitSections && reviewMedicines.length > 0 && (
         <MedicineSection
           language={language}
           title={tCabinet(language, "attentionSectionTitle")}
           hint={tCabinet(language, "attentionSectionHint")}
-          count={attentionMedicines.length}
-          medicines={attentionMedicines}
+          count={reviewMedicines.length}
+          medicines={reviewMedicines}
           compact={isSearchMode}
           expandedMedicineId={expandedMedicineId}
           isDeleting={deleteMutation.isPending}
@@ -393,65 +417,5 @@ export function MedicineCabinetPage() {
         />
       )}
     </div>
-  );
-}
-
-function MedicineSection({
-  language,
-  title,
-  hint,
-  count,
-  medicines,
-  compact,
-  expandedMedicineId,
-  isDeleting,
-  deletingMedicineId,
-  onDelete,
-  onExpandChange,
-}: {
-  language: AppLanguage;
-  title: string;
-  hint?: string;
-  count: number;
-  medicines: HouseholdMedicine[];
-  compact: boolean;
-  expandedMedicineId: string | null;
-  isDeleting: boolean;
-  deletingMedicineId: string | null;
-  onDelete: (id: string) => void;
-  onExpandChange: (value: string | null) => void;
-}) {
-  return (
-    <section className="mt-5 space-y-2.5">
-      <div className="px-1">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <h2 className="text-[0.92rem] font-semibold tracking-[-0.025em] text-foreground">
-              {title}
-            </h2>
-            <span className="text-[0.76rem] font-medium text-muted">
-              {tCabinet(language, "sectionCount", { count })}
-            </span>
-          </div>
-          {hint ? <p className="mt-0.5 text-[0.76rem] leading-5 text-muted">{hint}</p> : null}
-        </div>
-      </div>
-      <ul className={cabinetListClass}>
-        {medicines.map((medicine) => (
-          <MedicineItemCard
-            key={medicine.id}
-            language={language}
-            medicine={medicine}
-            onDelete={onDelete}
-            isDeleting={isDeleting && deletingMedicineId === medicine.id}
-            compact={compact}
-            isExpanded={expandedMedicineId === medicine.id}
-            onExpandChange={(isExpanded) => {
-              onExpandChange(isExpanded ? medicine.id : null);
-            }}
-          />
-        ))}
-      </ul>
-    </section>
   );
 }

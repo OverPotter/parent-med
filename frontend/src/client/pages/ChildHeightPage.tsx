@@ -60,20 +60,15 @@ export function ChildHeightPage() {
   }
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="-mx-3 min-w-0 space-y-6 bg-background px-3 sm:-mx-6 sm:px-6">
       <ChildSectionTopBar
         backHref={`/children/${child.id}`}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
+        title={`${copy.heightCardTitle} · ${child.name}`}
+        hint={copy.measurementsSectionSubtitle}
       />
 
-      <div className="space-y-3">
-        <div>
-          <h1 className="app-card-title">
-            {copy.heightCardTitle} · {child.name}
-          </h1>
-          <p className="mt-1 text-sm text-muted">{copy.measurementsSectionSubtitle}</p>
-        </div>
-
+      <div className="mx-auto w-full max-w-2xl space-y-3">
         <MeasurementCard
           language={language}
           latestLabel={language === "ru" ? "Текущий рост" : "Current height"}

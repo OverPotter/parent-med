@@ -3,28 +3,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createHouseholdMedicine } from "@shared/api/householdMedicines";
 import { searchMedicineCatalog } from "@shared/api/medicineCatalog";
 import { trackHouseholdMedicineAdded } from "@shared/analytics";
-import { DateField } from "@shared/components/DateField";
 import type { AppLanguage } from "@shared/i18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { MedicineCatalogItem } from "@shared/types/api";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
+import {
+  CatalogSearchResults,
+  CatalogSearchSection,
+  ManualMedicineMainSection,
+  ManualMedicineTextSection,
+  PackageFieldsSection,
+  SelectedCatalogMedicine,
+} from "./AddHouseholdMedicineSections";
 import { tCabinet } from "./copy";
 import { MedicineCabinetHeader } from "./MedicineCabinetHeader";
+import { cabinetActionPrimaryClass, cabinetAddPageClass, cabinetPanelClass } from "./styles";
 import {
-  cabinetActionPrimaryClass,
-  cabinetActionSecondaryClass,
-  cabinetAddPageClass,
-  cabinetCatalogListClass,
-  cabinetCatalogRowClass,
-  cabinetCompactInputClass,
-  cabinetCompactTextareaClass,
-  cabinetListClass,
-  cabinetListRowClass,
-  cabinetManualPillClass,
-  cabinetPanelClass,
-} from "./styles";
-import {
-  getLocalizedMedicineForm,
   getMedicineFormOptions,
   hasUnknownOpenedShelfLife,
   isExpiredDate,
@@ -223,25 +217,15 @@ export function AddHouseholdMedicineForm({
         <div className="mx-auto w-full max-w-2xl space-y-3 pb-3">
           {isCatalogMode && (
             <>
-              <div className={`${cabinetPanelClass} px-3.5 py-3`}>
-                <label className="block space-y-1.5">
-                  <span className="soft-field-label">{tCabinet(language, "catalogSearch")}</span>
-                  <input
-                    type="text"
-                    value={searchName}
-                    onChange={(e) => {
-                      setSearchName(e.target.value);
-                      setCatalogItem(null);
-                      setFormError(null);
-                    }}
-                    className={cabinetCompactInputClass}
-                    placeholder={tCabinet(language, "catalogSearchPlaceholder")}
-                  />
-                </label>
-                <p className="mt-2 text-xs font-semibold leading-5 text-muted">
-                  {tCabinet(language, "catalogSearchHint")}
-                </p>
-              </div>
+              <CatalogSearchSection
+                language={language}
+                searchName={searchName}
+                onSearchNameChange={(value) => {
+                  setSearchName(value);
+                  setCatalogItem(null);
+                  setFormError(null);
+                }}
+              />
 
               {searchLoading && (
                 <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
@@ -250,58 +234,11 @@ export function AddHouseholdMedicineForm({
               )}
 
               {!catalogItem && normalizedCatalogSearch.length >= 2 && catalogItems.length > 0 && (
-                <ul className={cabinetCatalogListClass}>
-                  {catalogItems.map((item) => (
-                    <li
-                      key={item.id}
-                      className="border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] last:border-b-0"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleAddFromCatalog(item)}
-                        className={cabinetCatalogRowClass}
-                      >
-                        <span className="min-w-0">
-                          <span className="flex min-w-0 items-center gap-2">
-                            <span className="h-2 w-2 shrink-0 rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_72%,var(--color-info)_28%)]" />
-                            <span className="min-w-0 break-words text-sm font-semibold leading-5 text-foreground">
-                              {item.name}
-                            </span>
-                          </span>
-                          <span className="mt-0.5 block pl-4 text-xs font-semibold leading-5 text-muted">
-                            {[
-                              getLocalizedMedicineForm(item.form, language),
-                              item.concentration,
-                              item.defaultOpenedShelfDays
-                                ? tCabinet(language, "openedShelfHint", {
-                                    days: item.defaultOpenedShelfDays,
-                                  })
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </span>
-                          {item.dosage && (
-                            <span className="mt-0.5 block pl-4 text-xs leading-5 text-muted/90">
-                              {tCabinet(language, "dosageHint", { value: item.dosage })}
-                            </span>
-                          )}
-                          {item.description && (
-                            <span className="mt-0.5 line-clamp-2 block pl-4 text-xs leading-5 text-muted/80">
-                              {item.description}
-                            </span>
-                          )}
-                        </span>
-                        <span
-                          aria-hidden="true"
-                          className="text-right text-lg font-semibold leading-none text-muted"
-                        >
-                          ›
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <CatalogSearchResults
+                  language={language}
+                  catalogItems={catalogItems}
+                  onSelect={handleAddFromCatalog}
+                />
               )}
               {!catalogItem &&
                 !searchLoading &&
@@ -318,230 +255,85 @@ export function AddHouseholdMedicineForm({
               )}
 
               {catalogItem && (
-                <div className={cabinetListClass}>
-                  <div className={cabinetListRowClass}>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground">
-                          {catalogItem.name} ({getLocalizedMedicineForm(catalogItem.form, language)}
-                          {catalogItem.concentration ? `, ${catalogItem.concentration}` : ""})
-                        </p>
-                        {catalogItem.dosage && (
-                          <p className="mt-1 text-sm text-muted">
-                            {tCabinet(language, "dosageHint", { value: catalogItem.dosage })}
-                          </p>
-                        )}
-                        {catalogItem.description && (
-                          <p className="mt-2 text-sm text-muted">
-                            {tCabinet(language, "descriptionLabel", {
-                              value: catalogItem.description,
-                            })}
-                          </p>
-                        )}
-                        {catalogItem.defaultOpenedShelfDays && (
-                          <p className="mt-2 text-sm text-muted">
-                            {tCabinet(language, "openedShelfHint", {
-                              days: catalogItem.defaultOpenedShelfDays,
-                            })}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          resetPackageFields();
-                          setCatalogItem(null);
-                          setSearchName("");
-                        }}
-                        className={cabinetActionSecondaryClass}
-                      >
-                        {tCabinet(language, "switchMedicine")}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <SelectedCatalogMedicine
+                  language={language}
+                  catalogItem={catalogItem}
+                  onChangeMedicine={() => {
+                    resetPackageFields();
+                    setCatalogItem(null);
+                    setSearchName("");
+                  }}
+                />
               )}
             </>
           )}
 
           {isManualMode && (
-            <div className={`${cabinetPanelClass} space-y-2.5 px-3.5 py-2.5`}>
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_72%,var(--color-info)_28%)]" />
-                <p className="text-[0.82rem] font-extrabold tracking-[-0.025em] text-foreground">
-                  {tCabinet(language, "manualMainSection")}
-                </p>
-              </div>
-              <label className="block space-y-1.5">
-                <span className="soft-field-label">{tCabinet(language, "newMedicineName")}</span>
-                <input
-                  type="text"
-                  value={newMedicineName}
-                  onChange={(e) => {
-                    setNewMedicineName(e.target.value);
-                    setFormError(null);
-                  }}
-                  placeholder={tCabinet(language, "newMedicineNamePlaceholder")}
-                  className={cabinetCompactInputClass}
-                />
-              </label>
-              <div className="space-y-1.5">
-                <span className="soft-field-label">{tCabinet(language, "medicineForm")}</span>
-                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {medicineFormOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => {
-                        setNewMedicineForm(option.value);
-                        setFormError(null);
-                      }}
-                      className={`${cabinetManualPillClass} ${
-                        newMedicineForm === option.value
-                          ? "soft-pill-primary app-profile-action app-profile-action--selected"
-                          : "soft-pill app-profile-action"
-                      }`}
-                      aria-pressed={newMedicineForm === option.value}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <label className="block space-y-1.5">
-                <span className="soft-field-label">{tCabinet(language, "concentration")}</span>
-                <input
-                  type="text"
-                  value={newMedicineConcentration}
-                  onChange={(e) => {
-                    setNewMedicineConcentration(e.target.value);
-                    setFormError(null);
-                  }}
-                  placeholder={tCabinet(language, "concentrationPlaceholder")}
-                  className={cabinetCompactInputClass}
-                />
-              </label>
-            </div>
+            <ManualMedicineMainSection
+              language={language}
+              medicineFormOptions={medicineFormOptions}
+              newMedicineName={newMedicineName}
+              newMedicineForm={newMedicineForm}
+              newMedicineConcentration={newMedicineConcentration}
+              onNameChange={(value) => {
+                setNewMedicineName(value);
+                setFormError(null);
+              }}
+              onFormChange={(value) => {
+                setNewMedicineForm(value);
+                setFormError(null);
+              }}
+              onConcentrationChange={(value) => {
+                setNewMedicineConcentration(value);
+                setFormError(null);
+              }}
+            />
           )}
 
           {isManualMode && (
-            <div className={`${cabinetPanelClass} space-y-2.5 px-3.5 py-2.5`}>
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[color:color-mix(in_srgb,var(--color-info)_68%,var(--color-primary)_32%)]" />
-                <p className="text-[0.82rem] font-extrabold tracking-[-0.025em] text-foreground">
-                  {tCabinet(language, "manualTextSection")}
-                </p>
-              </div>
-              <label className="block space-y-1.5 sm:col-span-2">
-                <span className="soft-field-label">{tCabinet(language, "description")}</span>
-                <textarea
-                  value={newMedicineDescription}
-                  onChange={(e) => {
-                    setNewMedicineDescription(e.target.value);
-                    setFormError(null);
-                  }}
-                  className={cabinetCompactTextareaClass}
-                  placeholder={tCabinet(language, "descriptionPlaceholder")}
-                />
-              </label>
-              <label className="block space-y-1.5 sm:col-span-2">
-                <span className="soft-field-label">{tCabinet(language, "usage")}</span>
-                <textarea
-                  value={newMedicineDosage}
-                  onChange={(e) => {
-                    setNewMedicineDosage(e.target.value);
-                    setFormError(null);
-                  }}
-                  className={cabinetCompactTextareaClass}
-                  placeholder={tCabinet(language, "usagePlaceholder")}
-                />
-              </label>
-            </div>
+            <ManualMedicineTextSection
+              language={language}
+              newMedicineDescription={newMedicineDescription}
+              newMedicineDosage={newMedicineDosage}
+              onDescriptionChange={(value) => {
+                setNewMedicineDescription(value);
+                setFormError(null);
+              }}
+              onDosageChange={(value) => {
+                setNewMedicineDosage(value);
+                setFormError(null);
+              }}
+            />
           )}
 
           {(isManualMode || catalogItem) && (
             <>
-              <div className={`${cabinetPanelClass} space-y-2.5 px-3.5 py-2.5`}>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[color:color-mix(in_srgb,var(--color-success)_64%,var(--color-primary)_36%)]" />
-                  <p className="text-[0.82rem] font-extrabold tracking-[-0.025em] text-foreground">
-                    {tCabinet(language, "packageSection")}
-                  </p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="block space-y-1.5">
-                    <span className="soft-field-label">{tCabinet(language, "expiryDate")}</span>
-                    <DateField
-                      value={expiryDate}
-                      onChange={(nextValue) => {
-                        setExpiryDate(nextValue);
-                        setFormError(null);
-                      }}
-                      className="cabinet-compact-date-field"
-                      language={language}
-                    />
-                  </label>
-                  <label className="block space-y-1.5">
-                    <span className="soft-field-label">{tCabinet(language, "openedAt")}</span>
-                    <DateField
-                      value={openedAt}
-                      onChange={(nextValue) => {
-                        setOpenedAt(nextValue);
-                        setFormError(null);
-                      }}
-                      className="cabinet-compact-date-field"
-                      language={language}
-                    />
-                  </label>
-                  <label className="block space-y-1.5">
-                    <span className="soft-field-label">
-                      {tCabinet(language, "openedShelfDays")}
-                    </span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min="1"
-                      max="3650"
-                      value={openedShelfDays}
-                      onChange={(e) => {
-                        setOpenedShelfDays(e.target.value);
-                        setFormError(null);
-                      }}
-                      className={cabinetCompactInputClass}
-                      placeholder={
-                        catalogItem?.defaultOpenedShelfDays
-                          ? String(catalogItem.defaultOpenedShelfDays)
-                          : tCabinet(language, "openedShelfDaysUnknown")
-                      }
-                    />
-                    <span className="mt-1 block text-xs text-muted">
-                      {tCabinet(language, "openedShelfDaysAuto")}
-                    </span>
-                  </label>
-                </div>
-                {isExpired && (
-                  <p className="soft-note-warning rounded-2xl px-4 py-3 text-sm">
-                    {tCabinet(language, "expiredWarning")}
-                  </p>
-                )}
-                {hasUnknownAfterOpening && (
-                  <p className="soft-note-info rounded-2xl px-4 py-3 text-sm">
-                    {tCabinet(language, "openedUnknownWarning")}
-                  </p>
-                )}
-                <label className="block space-y-1.5">
-                  <span className="soft-field-label">{tCabinet(language, "comment")}</span>
-                  <textarea
-                    value={comment}
-                    onChange={(e) => {
-                      setComment(e.target.value);
-                      setFormError(null);
-                    }}
-                    className={cabinetCompactTextareaClass}
-                    placeholder={tCabinet(language, "commentPlaceholder")}
-                  />
-                </label>
-              </div>
+              <PackageFieldsSection
+                language={language}
+                expiryDate={expiryDate}
+                openedAt={openedAt}
+                openedShelfDays={openedShelfDays}
+                comment={comment}
+                catalogDefaultOpenedShelfDays={catalogItem?.defaultOpenedShelfDays}
+                isExpired={isExpired}
+                hasUnknownAfterOpening={hasUnknownAfterOpening}
+                onExpiryDateChange={(value) => {
+                  setExpiryDate(value);
+                  setFormError(null);
+                }}
+                onOpenedAtChange={(value) => {
+                  setOpenedAt(value);
+                  setFormError(null);
+                }}
+                onOpenedShelfDaysChange={(value) => {
+                  setOpenedShelfDays(value);
+                  setFormError(null);
+                }}
+                onCommentChange={(value) => {
+                  setComment(value);
+                  setFormError(null);
+                }}
+              />
               {(formError ||
                 (createHouseholdMutation.error as { response?: { data?: { detail?: string } } })
                   ?.response?.data?.detail) && (

@@ -21,6 +21,7 @@ import {
   formatChildDateTime,
   formatChildTime,
 } from "@client/utils/childDateFormat";
+import { childActionSuccessClass } from "./children/shared";
 
 export function ChildSleepPage() {
   const { language } = useI18n();
@@ -77,7 +78,7 @@ export function ChildSleepPage() {
     .filter(isNumber);
   const averageDuration = getAverage(completedDurations);
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="-mx-3 min-w-0 space-y-6 bg-background px-3 sm:-mx-6 sm:px-6">
       <ConfirmDialog
         isOpen={!!sleepToDelete}
         title={copy.sleepSectionDeleteTitle}
@@ -101,23 +102,18 @@ export function ChildSleepPage() {
       <ChildSectionTopBar
         backHref={`/children/${child.id}`}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
-      />
-
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="app-card-title">
-              {copy.sleepSection} · {child.name}
-            </h1>
-            <p className="mt-1 text-sm text-muted">{copy.sleepSectionSubtitle}</p>
-          </div>
-          {hasActiveSleep ? (
-            <span className="soft-pill-warning rounded-full px-3 py-1.5 text-xs">
+        title={`${copy.sleepSection} · ${child.name}`}
+        hint={copy.sleepSectionSubtitle}
+        action={
+          hasActiveSleep ? (
+            <span className={`${childActionSuccessClass} rounded-full px-3 py-1.5 text-xs`}>
               {copy.sleepSectionActive}
             </span>
-          ) : null}
-        </div>
+          ) : null
+        }
+      />
 
+      <div className="mx-auto w-full max-w-2xl space-y-3">
         <Surface className="relative z-30 overflow-visible p-4 sm:p-5">
           <div className="space-y-4">
             {isSleepLoading ? <p className="text-sm text-muted">{common.loading}</p> : null}
@@ -168,7 +164,7 @@ export function ChildSleepPage() {
                   <div className="flex min-w-0 items-center gap-2">
                     <span
                       className={`h-2 w-2 shrink-0 rounded-full ${
-                        session.status === "active" ? "bg-amber-500" : "bg-sky-500"
+                        session.status === "active" ? "bg-emerald-500" : "bg-sky-500"
                       }`}
                     />
                     <p className="truncate text-sm font-semibold leading-5 text-foreground">

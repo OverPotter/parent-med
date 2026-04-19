@@ -40,7 +40,12 @@ async def create_illness_comment(
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: IllnessCommentService = Depends(get_illness_comment_service),
 ) -> IllnessCommentResponseDto:
-    return await service.create(dto, current_account.family_id)
+    return await service.create(
+        dto,
+        current_account.family_id,
+        current_account.id,
+        current_account.display_name,
+    )
 
 
 @router.delete("/{comment_id}", status_code=204)

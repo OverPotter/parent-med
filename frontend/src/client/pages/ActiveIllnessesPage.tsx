@@ -16,7 +16,7 @@ import { fetchIllnessEpisodesByChildId, updateIllnessEpisode } from "@shared/api
 import { trackMedicationAdministered } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { EmptyState, RowSurface, Surface } from "@shared/components/Surface";
+import { EmptyState, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
@@ -37,13 +37,13 @@ import { formatDate } from "@shared/utils/date";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 
 const appBtnPrimaryClass =
-  "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
+  "soft-pill-primary app-profile-action app-profile-action--selected inline-flex min-h-[2.65rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.75rem] sm:text-[0.84rem]";
 const appGridPillActionClass =
-  "soft-pill inline-flex min-h-[2.7rem] w-full items-center justify-center rounded-[18px] px-3 py-2 text-center text-[0.82rem] font-semibold leading-4 tracking-[-0.015em] text-foreground transition hover:opacity-90";
+  "soft-pill app-profile-action inline-flex min-h-[2.65rem] w-full items-center justify-center px-3.5 text-center text-[0.82rem] font-semibold leading-4 tracking-[-0.025em] text-foreground transition hover:opacity-90 sm:min-h-[2.75rem] sm:text-[0.84rem]";
 const appWidePillActionClass =
-  "soft-pill inline-flex min-h-[2.8rem] w-full items-center justify-center rounded-[18px] px-3.5 py-2.5 text-center text-[0.84rem] font-semibold leading-4 tracking-[-0.015em] text-foreground transition hover:opacity-90";
+  "soft-pill app-profile-action inline-flex min-h-[2.65rem] w-full items-center justify-center px-3.5 text-center text-[0.82rem] font-semibold leading-4 tracking-[-0.025em] text-foreground transition hover:opacity-90 sm:min-h-[2.75rem] sm:text-[0.84rem]";
 const appHeaderDangerPillActionClass =
-  "soft-pill-danger inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] transition hover:opacity-90 whitespace-nowrap";
+  "soft-pill-danger app-profile-action inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] transition hover:opacity-90 whitespace-nowrap";
 
 export function ActiveIllnessesPage() {
   const { language, t } = useI18n();
@@ -117,7 +117,7 @@ export function ActiveIllnessesPage() {
   }
 
   return (
-    <div className="space-y-7">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro title={pageTitle} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
 
       <div className="app-mobile-section-intro sm:hidden">
@@ -264,16 +264,14 @@ function ActiveIllnessCard({
           closeEpisodeMutation.mutate();
         }}
       />
-      <RowSurface className="soft-card-status-warning rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4.5">
-          <div className="space-y-3">
-            <div className="min-w-0">
+      <Surface className="rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4.5">
+        <div className="space-y-3">
+          <div className="min-w-0">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500" />
                   <h2 className="app-card-title">{child.name}</h2>
-                  <span className="soft-pill-warning rounded-full px-2.5 py-1 text-[11px]">
-                    {copy.observationBadge}
-                  </span>
                 </div>
               </div>
               <button
@@ -299,9 +297,10 @@ function ActiveIllnessCard({
               </p>
             )}
             {upcomingLead && !availableNowLead && (
-              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[color:color-mix(in_srgb,var(--color-warning)_24%,transparent)] bg-[color:color-mix(in_srgb,var(--color-warning-soft)_36%,transparent)] px-3 py-1.5 text-xs text-foreground">
-                <span className="soft-text-warning font-medium">{copy.scheduled}</span>
-                <span className="truncate">
+              <div className="soft-pill-info mt-3 inline-flex max-w-full items-center gap-2 rounded-full px-3 py-1.5 text-xs">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-sky-500" />
+                <span className="font-medium">{copy.scheduled}</span>
+                <span className="truncate text-muted">
                   {getPlanDisplayName(upcomingLead)}
                   {upcomingLead.stats.nextAllowedAt
                     ? ` · ${formatRelativeDateTime(upcomingLead.stats.nextAllowedAt, now)}`
@@ -315,11 +314,12 @@ function ActiveIllnessCard({
             <div className={availableNowLead ? "pt-1" : "pt-0"}>
               {availableNowLead ? (
                 <div className="space-y-3">
-                  <div className="rounded-[22px] bg-[color:color-mix(in_srgb,var(--color-success-soft)_58%,transparent)] px-3.5 py-3">
+                  <div className="soft-panel-muted rounded-[22px] px-3.5 py-3">
                     <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                       <div className="min-w-0">
                         <p className="flex flex-wrap items-center gap-2 text-sm leading-5 text-foreground">
-                          <span className="soft-pill-success rounded-full px-2.5 py-1 text-[11px]">
+                          <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+                          <span className="font-medium text-emerald-700 dark:text-emerald-300">
                             {copy.availableNow}
                           </span>
                           <span className="font-medium">
@@ -339,7 +339,7 @@ function ActiveIllnessCard({
                         type="button"
                         onClick={() => takeDoseMutation.mutate(availableNowLead.plan)}
                         disabled={takeDoseMutation.isPending}
-                        className={`${appBtnPrimaryClass} min-h-[2.95rem] w-full disabled:opacity-50 md:w-auto md:min-h-[3.15rem] md:px-5`}
+                        className={`${appBtnPrimaryClass} w-full disabled:opacity-50 md:w-auto md:px-4`}
                       >
                         {takeDoseMutation.isPending ? copy.saving : copy.logDose}
                       </button>
@@ -391,7 +391,7 @@ function ActiveIllnessCard({
             {copy.timeline}
           </Link>
         </div>
-      </RowSurface>
+      </Surface>
     </li>
   );
 }

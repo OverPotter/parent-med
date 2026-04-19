@@ -15,6 +15,7 @@ import { fetchPillboxPlans } from "@shared/api/pillboxPlans";
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
 import { Layout } from "@shared/components/Layout";
 import { Surface } from "@shared/components/Surface";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -45,17 +46,46 @@ export function ClientLayout() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
+  const isIosShell = useIsIosShell();
   const [pushStatus, setPushStatus] = useState<"checking" | "enabled" | "disabled">("checking");
   const [isPushPromptActionsHidden, setIsPushPromptActionsHidden] = useState(false);
   const [isPushPending, setIsPushPending] = useState(false);
   const [pushPromptError, setPushPromptError] = useState<string | null>(null);
   const [pushPromptSuccess, setPushPromptSuccess] = useState<string | null>(null);
   const [nativePushIssue, setNativePushIssue] = useState<"system" | "app" | null>(null);
+  const [isDeferredBootReady, setIsDeferredBootReady] = useState(!isIosShell);
   const now = useNow(15_000);
+
+  useEffect(() => {
+    if (!isIosShell) {
+      setIsDeferredBootReady(true);
+      return;
+    }
+
+    setIsDeferredBootReady(false);
+    let timeoutId: number | null = null;
+    let frameId: number | null = null;
+
+    frameId = window.requestAnimationFrame(() => {
+      timeoutId = window.setTimeout(() => {
+        setIsDeferredBootReady(true);
+      }, 850);
+    });
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [isIosShell, authToken, accountId]);
+
   const { data: navChildren = [] } = useQuery({
     queryKey: ["children", currentFamilyId, "nav-attention"],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
-    enabled: Boolean(currentFamilyId),
+    enabled: Boolean(currentFamilyId && isDeferredBootReady),
     staleTime: 15_000,
     refetchInterval: 30_000,
   });
@@ -64,7 +94,7 @@ export function ClientLayout() {
     queries: navChildren.map((child) => ({
       queryKey: ["illness-episode-active", child.id, "nav-attention"],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
-      enabled: Boolean(currentFamilyId && child.id),
+      enabled: Boolean(currentFamilyId && child.id && isDeferredBootReady),
       staleTime: 15_000,
       refetchInterval: 30_000,
     })),
@@ -82,7 +112,7 @@ export function ClientLayout() {
     queries: activeEpisodes.map((episode) => ({
       queryKey: ["episode-medication-plans", episode.id, "nav-attention"],
       queryFn: () => fetchEpisodeMedicationPlansByEpisodeId(episode.id),
-      enabled: Boolean(episode.id),
+      enabled: Boolean(episode.id && isDeferredBootReady),
       staleTime: 15_000,
       refetchInterval: 30_000,
     })),
@@ -92,7 +122,7 @@ export function ClientLayout() {
     queries: activeEpisodes.map((episode) => ({
       queryKey: ["administration-events", episode.id, "nav-attention"],
       queryFn: () => fetchAdministrationEventsByEpisodeId(episode.id),
-      enabled: Boolean(episode.id),
+      enabled: Boolean(episode.id && isDeferredBootReady),
       staleTime: 15_000,
       refetchInterval: 30_000,
     })),
@@ -101,7 +131,7 @@ export function ClientLayout() {
   const { data: householdMedicines = [] } = useQuery({
     queryKey: ["household-medicines", currentFamilyId, "nav-attention"],
     queryFn: fetchHouseholdMedicines,
-    enabled: Boolean(currentFamilyId),
+    enabled: Boolean(currentFamilyId && isDeferredBootReady),
     staleTime: 15_000,
     refetchInterval: 30_000,
   });
@@ -109,7 +139,7 @@ export function ClientLayout() {
   const { data: pillboxPlans = [] } = useQuery({
     queryKey: ["pillbox-plans", currentFamilyId, language, "nav-attention"],
     queryFn: fetchPillboxPlans,
-    enabled: Boolean(currentFamilyId),
+    enabled: Boolean(currentFamilyId && isDeferredBootReady),
     staleTime: 15_000,
     refetchInterval: 30_000,
   });
@@ -226,7 +256,7 @@ export function ClientLayout() {
   const { data: pushConfig } = useQuery({
     queryKey: ["push", "config", accountId],
     queryFn: fetchPushNotificationConfig,
-    enabled: Boolean(authToken && accountId),
+    enabled: Boolean(authToken && accountId && isDeferredBootReady),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -250,10 +280,10 @@ export function ClientLayout() {
     matchPath({ path: "/medicine-cabinet/:medicineId/new-pack", end: true }, location.pathname)
   );
   const shouldHideMobileNav = Boolean(
+    shouldHideHeader ||
     isMedicineCabinetAddRoute ||
     matchPath({ path: "/children/:childId/illness", end: false }, location.pathname)
   );
-
   useEffect(() => {
     setIsPushPromptActionsHidden(false);
     setPushPromptError(null);
@@ -261,7 +291,7 @@ export function ClientLayout() {
   }, [accountId]);
 
   useEffect(() => {
-    if (!authToken || !accountId || !pushConfig?.enabled) {
+    if (!isDeferredBootReady || !authToken || !accountId || !pushConfig?.enabled) {
       setPushStatus("disabled");
       setPushPromptSuccess(null);
       setNativePushIssue(null);
@@ -347,7 +377,7 @@ export function ClientLayout() {
       window.removeEventListener("pageshow", handlePushSubscriptionChanged);
       document.removeEventListener("visibilitychange", handlePushSubscriptionChanged);
     };
-  }, [accountId, authToken, pushConfig?.enabled]);
+  }, [accountId, authToken, isDeferredBootReady, pushConfig?.enabled]);
 
   const shouldShowPushPrompt =
     Boolean(pushConfig?.enabled) &&
@@ -479,6 +509,7 @@ export function ClientLayout() {
       navLinks={desktopNavLinks}
       mobileNavLinks={shouldHideMobileNav ? [] : mobileNavLinks}
       hideHeader={shouldHideHeader || isMedicineCabinetAddRoute}
+      compactHiddenChrome={shouldHideHeader || isMedicineCabinetAddRoute}
     >
       {shouldShowNativePushPrompt && (
         <Surface className="soft-panel-muted mb-4 p-4 sm:p-5">

@@ -27,6 +27,7 @@ interface LayoutProps {
   navLinks?: LayoutNavLink[];
   mobileNavLinks?: LayoutNavLink[];
   hideHeader?: boolean;
+  compactHiddenChrome?: boolean;
 }
 
 function MoonIcon() {
@@ -213,6 +214,7 @@ export function Layout({
   navLinks = [],
   mobileNavLinks = [],
   hideHeader = false,
+  compactHiddenChrome = false,
 }: LayoutProps) {
   const { copy } = useI18n();
   const { effectiveTheme, toggleTheme, accountLogin, accountDisplayName, clearSession } =
@@ -222,6 +224,7 @@ export function Layout({
   const isAuthenticated = Boolean(accountLogin);
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isIosShell = useIsIosShell();
+  const shouldRenderDecorBackground = !isNativeRuntime && !isIosShell;
 
   const spinTimeoutRef = useRef<number | null>(null);
   const [isIconSpinning, setIsIconSpinning] = useState(false);
@@ -273,11 +276,11 @@ export function Layout({
   return (
     <div className="app-shell-auth min-h-screen flex flex-col bg-background text-foreground">
       <div className="app-v3-background" aria-hidden="true">
-        {!isNativeRuntime && !isIosShell ? <V3BackgroundDoodles /> : null}
-        <div className="app-v3-decor app-v3-decor-a" />
-        <div className="app-v3-decor app-v3-decor-b" />
-        <div className="app-v3-decor app-v3-decor-c" />
-        <div className="app-v3-noise" />
+        {shouldRenderDecorBackground ? <V3BackgroundDoodles /> : null}
+        {shouldRenderDecorBackground ? <div className="app-v3-decor app-v3-decor-a" /> : null}
+        {shouldRenderDecorBackground ? <div className="app-v3-decor app-v3-decor-b" /> : null}
+        {shouldRenderDecorBackground ? <div className="app-v3-decor app-v3-decor-c" /> : null}
+        {shouldRenderDecorBackground ? <div className="app-v3-noise" /> : null}
       </div>
       {!hideHeader ? (
         <header className="app-safe-top-header relative z-30 min-w-0 px-3 pt-3 sm:px-4 sm:pt-3">
@@ -432,7 +435,11 @@ export function Layout({
         tabIndex={-1}
         className={[
           "app-main-shell relative z-[1] mx-auto flex-1 w-full max-w-5xl min-w-0 px-3 sm:px-6",
-          hideHeader ? "pt-3 pb-6 sm:pt-5 sm:pb-8" : "py-6 sm:py-11",
+          hideHeader
+            ? compactHiddenChrome
+              ? "bg-background pt-0 pb-3 sm:pt-0 sm:pb-5"
+              : "pt-3 pb-6 sm:pt-5 sm:pb-8"
+            : "py-6 sm:py-11",
           hasMobileNav ? "pb-28 md:pb-11" : "",
         ].join(" ")}
       >

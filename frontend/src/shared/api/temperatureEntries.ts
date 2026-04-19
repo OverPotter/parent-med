@@ -13,6 +13,8 @@ interface RawTemperatureEntry {
   measured_at: string;
   method: string | null;
   comment: string | null;
+  created_by_account_id: string | null;
+  created_by_name_snapshot: string | null;
 }
 
 export async function fetchTemperatureEntriesByEpisodeId(

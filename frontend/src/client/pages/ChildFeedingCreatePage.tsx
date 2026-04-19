@@ -90,24 +90,19 @@ export function ChildFeedingCreatePage() {
   }
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="-mx-3 min-w-0 space-y-6 bg-background px-3 sm:-mx-6 sm:px-6">
       <ChildSectionTopBar
         backHref={`/children/${child.id}`}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
+        title={`${copy.feedingDialogTitle} · ${child.name}`}
+        hint={
+          language === "ru"
+            ? "Заполните детали кормления и сохраните запись."
+            : "Fill in the feeding details and save the record."
+        }
       />
 
-      <div className="space-y-1 px-1">
-        <h1 className="app-card-title">
-          {copy.feedingDialogTitle} · {child.name}
-        </h1>
-        <p className="text-sm text-muted">
-          {language === "ru"
-            ? "Заполните детали кормления и сохраните запись."
-            : "Fill in the feeding details and save the record."}
-        </p>
-      </div>
-
-      <Surface className="children-card-hero p-4 sm:p-6">
+      <Surface className="children-card-hero mx-auto w-full max-w-2xl p-4 sm:p-6">
         <FeedingRecordForm
           copy={copy}
           language={language}
@@ -138,9 +133,9 @@ export function ChildFeedingCreatePage() {
         />
       </Surface>
 
-      <div className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] z-20">
+      <div className="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))] z-20 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]">
         <div className="mx-auto max-w-3xl px-1">
-          <div className="soft-panel grid grid-cols-2 gap-2 rounded-[24px] p-2">
+          <div className="soft-panel grid grid-cols-2 gap-2 rounded-[24px] p-2 backdrop-blur-sm">
             <button
               type="button"
               onClick={() => {
@@ -152,7 +147,7 @@ export function ChildFeedingCreatePage() {
                 createMutation.mutate();
               }}
               disabled={createMutation.isPending || startMutation.isPending}
-              className="soft-pill app-profile-action min-h-[3rem] w-full text-center disabled:opacity-50"
+              className="soft-pill app-profile-action min-h-[2.5rem] w-full px-3.25 text-center text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
             >
               {createMutation.isPending ? copy.feedingSaving : copy.feedingSave}
             </button>
@@ -163,7 +158,7 @@ export function ChildFeedingCreatePage() {
                 startMutation.mutate();
               }}
               disabled={createMutation.isPending || startMutation.isPending}
-              className="soft-pill-success app-profile-action app-profile-action--active min-h-[3rem] w-full text-center disabled:opacity-50"
+              className="soft-pill-success app-profile-action app-profile-action--active min-h-[2.5rem] w-full px-3.25 text-center text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
             >
               {startMutation.isPending ? copy.feedingStarting : copy.feedingStart}
             </button>

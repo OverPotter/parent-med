@@ -32,29 +32,30 @@ export function useClientStartRoute(): ClientStartRouteResult {
 
   const activeEpisodeQueries = useQueries({
     queries: children.map((child) => ({
-      queryKey: ["illness-episode-active", child.id],
+      queryKey: ["illness-episode-active", child.id, "start-route"],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
-      enabled: !!child.id,
+      enabled: !!familyId && !!child.id,
+      staleTime: 15_000,
     })),
   });
 
-  const isActiveEpisodesLoading =
-    children.length > 0 && activeEpisodeQueries.some((query) => query.isLoading || query.isPending);
-  const hasActiveEpisode = activeEpisodeQueries.some((query) => Boolean(query.data));
   const hasFamily = Boolean(familyId);
   const hasChildren = children.length > 0;
+  const hasActiveEpisode = activeEpisodeQueries.some((query) => Boolean(query.data));
+  const isActiveEpisodeLoading =
+    hasChildren && activeEpisodeQueries.some((query) => query.isLoading || query.isPending);
 
   let startRoute = "/family";
   if (hasFamily && !hasChildren) {
     startRoute = "/children";
-  } else if (hasFamily && hasActiveEpisode) {
+  } else if (hasActiveEpisode) {
     startRoute = "/illnesses/active";
   } else if (hasFamily) {
     startRoute = "/children";
   }
 
   return {
-    isResolving: isFamiliesLoading || (hasFamily && isChildrenLoading) || isActiveEpisodesLoading,
+    isResolving: isFamiliesLoading || (hasFamily && (isChildrenLoading || isActiveEpisodeLoading)),
     startRoute,
     hasFamily,
     hasChildren,

@@ -15,3 +15,5 @@ class TemperatureEntry:
     measured_at: datetime
     method: str | None  # oral, rectal, axillary, etc.
     comment: str | None
+    created_by_account_id: UUID | None = None
+    created_by_name_snapshot: str | None = None

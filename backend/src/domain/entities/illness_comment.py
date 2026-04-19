@@ -13,3 +13,5 @@ class IllnessComment:
     episode_id: UUID
     created_at: datetime
     text: str
+    created_by_account_id: UUID | None = None
+    created_by_name_snapshot: str | None = None

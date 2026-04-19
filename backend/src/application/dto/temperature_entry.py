@@ -27,3 +27,5 @@ class TemperatureEntryResponseDto(ResponseBase):
     measured_at: datetime
     method: str | None
     comment: str | None
+    created_by_account_id: UUID | None
+    created_by_name_snapshot: str | None

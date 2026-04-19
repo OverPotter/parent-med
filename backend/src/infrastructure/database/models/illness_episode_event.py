@@ -28,6 +28,12 @@ class IllnessEpisodeEventModel(Base):
     value_celsius: Mapped[float | None] = mapped_column(Float, nullable=True)
     method: Mapped[str | None] = mapped_column(String(64), nullable=True)
     comment: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    created_by_account_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_by_name_snapshot: Mapped[str | None] = mapped_column(String(255), nullable=True)
     household_medicine_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("household_medicines.id", ondelete="RESTRICT"),

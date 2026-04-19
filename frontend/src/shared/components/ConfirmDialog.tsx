@@ -51,7 +51,13 @@ export function ConfirmDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-[160] flex items-center justify-center p-4"
+      style={{
+        paddingTop: "max(1rem, env(safe-area-inset-top, 0px))",
+        paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
+      }}
+    >
       <button
         type="button"
         aria-label={resolvedCloseAriaLabel}
@@ -91,7 +97,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="soft-pill app-profile-action min-h-[2.95rem] px-4 text-[0.86rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem]"
+            className="soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
           >
             {resolvedCancelLabel}
           </button>
@@ -99,7 +105,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={isPending}
-            className={`app-profile-action min-h-[2.95rem] px-4 text-[0.86rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-[3.05rem] sm:text-[0.89rem] ${
+            className={`app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem] ${
               confirmTone === "danger"
                 ? "soft-pill-danger"
                 : "soft-pill-success app-profile-action--active"

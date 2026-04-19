@@ -212,10 +212,9 @@ function MedicineListRowContent({
           </p>
         </div>
         <div className="mt-0.5 pl-4">
-          <p className={`text-[0.72rem] font-semibold leading-4 ${statusDateClass}`}>
-            {statusLabel}
-          </p>
           <p className="text-[0.72rem] leading-5 text-muted">
+            <span className={`font-semibold ${statusDateClass}`}>{statusLabel}</span>
+            <span className="text-muted"> · </span>
             <span className={statusDateClass}>{statusDateText}</span>
             {medicine.medicineForm &&
             medicine.medicineForm.trim().toLowerCase() !== "не указано" ? (
@@ -240,10 +239,12 @@ function MedicineDetails({
   useUntilText: string;
 }) {
   return (
-    <div className="mt-3 space-y-1.5 border-t border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] pt-3 text-xs leading-5 text-muted">
-      <p>{tCabinet(language, "formField", { value: localizedMedicineForm })}</p>
+    <div className="mt-3 space-y-2 border-t border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] pt-3 text-xs leading-5 text-muted">
+      <p className="break-words">
+        {tCabinet(language, "formField", { value: localizedMedicineForm })}
+      </p>
       {medicine.openedAt && (
-        <p>
+        <p className="break-words">
           {medicine.effectiveOpenedShelfDays
             ? tCabinet(language, "openedFieldKnown", {
                 date: formatDate(medicine.openedAt),
@@ -257,16 +258,22 @@ function MedicineDetails({
         </p>
       )}
       {medicine.medicineDosage && (
-        <p>{tCabinet(language, "usageField", { value: medicine.medicineDosage })}</p>
+        <p className="break-words">
+          {tCabinet(language, "usageField", { value: medicine.medicineDosage })}
+        </p>
       )}
       {medicine.medicineDescription && (
-        <p>
+        <p className="break-words">
           {tCabinet(language, "descriptionField", {
             value: medicine.medicineDescription,
           })}
         </p>
       )}
-      {medicine.comment && <p>{tCabinet(language, "commentField", { value: medicine.comment })}</p>}
+      {medicine.comment && (
+        <p className="break-words">
+          {tCabinet(language, "commentField", { value: medicine.comment })}
+        </p>
+      )}
     </div>
   );
 }

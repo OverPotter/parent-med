@@ -35,6 +35,8 @@ class IllnessCommentService:
             episode_id=entity.episode_id,
             created_at=entity.created_at,
             text=entity.text,
+            created_by_account_id=entity.created_by_account_id,
+            created_by_name_snapshot=entity.created_by_name_snapshot,
         )
 
     async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
@@ -79,6 +81,8 @@ class IllnessCommentService:
         self,
         dto: IllnessCommentCreateDto,
         current_family_id: UUID,
+        created_by_account_id: UUID | None = None,
+        created_by_name_snapshot: str | None = None,
     ) -> IllnessCommentResponseDto:
         episode = await self._get_episode_for_account(dto.episode_id, current_family_id)
         if episode.status != "active":
@@ -91,6 +95,8 @@ class IllnessCommentService:
             episode_id=dto.episode_id,
             created_at=dto.created_at or datetime.now(UTC),
             text=text,
+            created_by_account_id=created_by_account_id,
+            created_by_name_snapshot=(created_by_name_snapshot or "").strip() or None,
         )
         created = await self._repo.add(entity)
         return self._to_response(created)
