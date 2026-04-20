@@ -438,6 +438,8 @@ export const en: Translations = {
     navShort: "Feedback",
     pageTitle: "Feedback",
     pageSubtitle: "Tell us about a bug, friction or idea — your message is saved for the team.",
+    formTitle: "Message for the team",
+    formHint: "Briefly describe what happened or what should be improved.",
     privacyHint:
       "Please do not include personal data, children’s names or health details — this is not a medical support channel.",
     placeholder: "Briefly describe what happened or what you’d like improved…",

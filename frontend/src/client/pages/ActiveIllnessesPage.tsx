@@ -120,9 +120,11 @@ export function ActiveIllnessesPage() {
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro title={pageTitle} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
 
-      <div className="app-mobile-section-intro sm:hidden">
-        <h1 className="app-mobile-section-intro__title">{pageTitle}</h1>
-        <p className="app-mobile-section-intro__hint">{copy.mobileHint}</p>
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <h1 className="app-mobile-section-intro__title">{pageTitle}</h1>
+          <p className="app-mobile-section-intro__hint">{copy.mobileHint}</p>
+        </div>
       </div>
 
       {(isLoading || isActiveEpisodesLoading) && <p className="text-muted">{common.loading}</p>}

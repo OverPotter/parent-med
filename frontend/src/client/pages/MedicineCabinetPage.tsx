@@ -210,7 +210,7 @@ export function MedicineCabinetPage() {
   }
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       {!isIosShell ? (
         <PageIntro
           title={tCabinet(language, "title")}
@@ -251,13 +251,15 @@ export function MedicineCabinetPage() {
         />
       ) : null}
 
-      <div className={isIosShell ? "space-y-2.5" : "space-y-2.5 sm:hidden"}>
+      <div className="app-root-mobile-header sm:hidden">
         <div className="app-mobile-section-intro">
           <h1 className="app-mobile-section-intro__title">{tCabinet(language, "title")}</h1>
           <p className="app-mobile-section-intro__hint app-mobile-section-intro__hint--single-line">
             {tCabinet(language, "mobileHint")}
           </p>
         </div>
+      </div>
+      <div className={isIosShell ? "space-y-2.5" : "space-y-2.5 sm:hidden"}>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"

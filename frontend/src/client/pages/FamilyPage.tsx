@@ -374,17 +374,13 @@ export function FamilyPage() {
         title={familyTitle}
         subtitle={tFamily(language, "subtitle")}
         compactOnMobile
-        hideOnMobile
+        className="app-safe-top-standalone"
         action={
           <span className="soft-pill inline-flex min-h-[2.45rem] w-fit items-center rounded-full px-3.5 py-1.5 text-[0.78rem] tracking-[-0.015em]">
             {memberCountLabel(language, members.length)}
           </span>
         }
       />
-
-      <div className="md:hidden">
-        <h1 className="app-title text-[1.52rem] tracking-[-0.045em]">{familyTitle}</h1>
-      </div>
 
       {error && <p className="soft-note-danger">{error}</p>}
       {familyError && (

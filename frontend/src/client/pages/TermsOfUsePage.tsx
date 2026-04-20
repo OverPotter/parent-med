@@ -1,5 +1,4 @@
 import { PageIntro } from "@shared/components/PageIntro";
-import { SectionPathHeader } from "@shared/components/SectionPathHeader";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 
@@ -17,22 +16,7 @@ export function TermsOfUsePage() {
             : "Rules for using the PillPath service."
         }
         compactOnMobile
-        hideOnMobile
-      />
-      <SectionPathHeader
-        backTo="/legal"
-        backLabel={language === "ru" ? "← К правовой информации" : "← Back to legal"}
-        pathLabel={
-          language === "ru"
-            ? "Еще / Правовая информация / Условия использования"
-            : "More / Legal / Terms of Use"
-        }
-        title={language === "ru" ? "Условия использования" : "Terms of Use"}
-        hint={
-          language === "ru"
-            ? "Правила использования сервиса PillPath."
-            : "Rules for using the PillPath service."
-        }
+        className="app-safe-top-standalone"
       />
 
       <Surface className="legal-doc-surface space-y-4 p-4 text-[0.95rem] leading-6 text-muted sm:p-6 sm:text-sm sm:leading-7">

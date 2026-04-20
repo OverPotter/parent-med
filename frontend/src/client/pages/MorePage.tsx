@@ -25,8 +25,15 @@ export function MorePage() {
         title={copy.more.title}
         subtitle={copy.more.subtitle}
         compactOnMobile
+        hideOnMobile
         className="app-safe-top-standalone"
       />
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <h1 className="app-mobile-section-intro__title">{copy.more.title}</h1>
+          <p className="app-mobile-section-intro__hint">{copy.more.subtitle}</p>
+        </div>
+      </div>
       <ul className="soft-panel rounded-[32px] p-3 sm:p-4 grid gap-3 sm:gap-4">
         {copy.more.links.map((item) => (
           <li key={item.to}>

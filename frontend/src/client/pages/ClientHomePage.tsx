@@ -1,14 +1,38 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
+import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 
 export function ClientHomePage() {
-  const { copy } = useI18n();
+  const { copy, language } = useI18n();
+  const homeTitle = language === "ru" ? "Рабочее пространство" : "Workspace";
+  const homeSubtitle =
+    language === "ru"
+      ? "Короткая карта по основным разделам и следующему полезному шагу."
+      : "A quick map of the main sections and the next useful step.";
+  const homeMobileHint =
+    language === "ru"
+      ? "Главные разделы приложения и быстрый вход в работу."
+      : "Main app sections and a quick path back to work.";
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
+      <PageIntro
+        title={homeTitle}
+        subtitle={homeSubtitle}
+        compactOnMobile
+        hideOnMobile
+        className="app-safe-top-standalone"
+      />
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <h1 className="app-mobile-section-intro__title">{homeTitle}</h1>
+          <p className="app-mobile-section-intro__hint">{homeMobileHint}</p>
+        </div>
+      </div>
+
       {copy.clientHome.sections.map((section) => (
         <HelpSection
           key={section.title}

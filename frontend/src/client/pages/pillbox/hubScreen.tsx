@@ -52,14 +52,16 @@ export function PillboxHubScreen({
   closeDeleteDialog: () => void;
 }) {
   return (
-    <div className="space-y-6">
-      <div className="space-y-2.5">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
+      <div className="app-root-mobile-header sm:hidden">
         <div className="app-mobile-section-intro">
           <h1 className="app-mobile-section-intro__title">{tPillbox(language, "hubTitle")}</h1>
           <p className="app-mobile-section-intro__hint">
             {isIosShell ? tPillbox(language, "hubMobileHint") : tPillbox(language, "hubSubtitle")}
           </p>
         </div>
+      </div>
+      <div className="space-y-2.5">
         <div className="flex items-center gap-2">
           <button type="button" onClick={openCreate} className={actionPrimaryClass}>
             {tPillbox(language, "createPlan")}

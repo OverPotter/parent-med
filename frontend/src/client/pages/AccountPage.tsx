@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { updateAccountProfile } from "@shared/api/auth";
 import { fetchMyFamilyMembers, updateFamilyMemberProfile } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
-import { SectionPathHeader } from "@shared/components/SectionPathHeader";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -13,8 +12,6 @@ const accountCopy = {
   ru: {
     title: "Профиль",
     subtitle: "Личные данные аккаунта.",
-    path: "Еще / Профиль",
-    backToMore: "← К разделу «Еще»",
     name: "Имя",
     login: "Логин",
     email: "Email",
@@ -46,8 +43,6 @@ const accountCopy = {
   en: {
     title: "Profile",
     subtitle: "Personal account details.",
-    path: "More / Profile",
-    backToMore: "← Back to more",
     name: "Name",
     login: "Login",
     email: "Email",
@@ -169,11 +164,6 @@ export function AccountPage() {
           </span>
         </div>
 
-        <div className="app-mobile-section-intro sm:hidden">
-          <h1 className="app-mobile-section-intro__title">{copy.editTitle}</h1>
-          <p className="app-mobile-section-intro__hint">{copy.editHint}</p>
-        </div>
-
         <div className="space-y-1 px-1">
           <h1 className="app-card-title">
             {copy.editTitle} · {profileTitleName}
@@ -230,9 +220,7 @@ export function AccountPage() {
           </div>
 
           {formError ? (
-            <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
-              {formError}
-            </div>
+            <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">{formError}</div>
           ) : null}
 
           <div className="mt-5 flex flex-wrap gap-2">
@@ -260,13 +248,11 @@ export function AccountPage() {
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
-      <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
-      <SectionPathHeader
-        backTo="/more"
-        backLabel={copy.backToMore}
-        pathLabel={copy.path}
+      <PageIntro
         title={copy.title}
-        hint={copy.subtitle}
+        subtitle={copy.subtitle}
+        compactOnMobile
+        className="app-safe-top-standalone"
       />
 
       <Surface className="p-5 sm:p-6">
