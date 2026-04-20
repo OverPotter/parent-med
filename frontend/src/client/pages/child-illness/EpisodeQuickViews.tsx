@@ -13,9 +13,9 @@ import { MedicationPlanComposer, MedicationPlanDetail, MedicationPlanList } from
 import {
   appBtnFilledClass,
   appBtnSecondaryClass,
+  appPillActionClass,
   SectionTitle,
   illnessCompactPrimaryButtonClass,
-  illnessCompactSecondaryButtonClass,
   illnessListClass,
   illnessPanelSoftClass,
 } from "./shared";
@@ -504,7 +504,7 @@ export function ReminderListQuickView(props: {
         action={
           <Link
             to={`/children/${childId}/illness?focus=reminder-create`}
-            className={illnessCompactSecondaryButtonClass}
+            className={appPillActionClass}
           >
             {language === "ru" ? "Добавить" : "Add"}
           </Link>
@@ -585,7 +585,7 @@ export function ReminderDetailQuickView(props: {
           action={
             <Link
               to={`/children/${childId}/illness?focus=reminders`}
-              className={illnessCompactSecondaryButtonClass}
+              className={appPillActionClass}
             >
               {language === "ru" ? "К списку" : "Back"}
             </Link>
@@ -624,7 +624,7 @@ export function ReminderDetailQuickView(props: {
           action={
             <Link
               to={`/children/${childId}/illness?focus=reminders`}
-              className={illnessCompactSecondaryButtonClass}
+              className={appPillActionClass}
             >
               {language === "ru" ? "К списку" : "Back"}
             </Link>
@@ -693,14 +693,6 @@ export function ReminderCreateQuickView(props: {
         <SectionTitle
           title={language === "ru" ? "Новое напоминание" : "New reminder"}
           subtitle={language === "ru" ? "Настройте схему приёма." : "Set up the dosing schedule."}
-          action={
-            <Link
-              to={`/children/${childId}/illness?focus=reminders`}
-              className={illnessCompactSecondaryButtonClass}
-            >
-              {language === "ru" ? "К списку" : "Back"}
-            </Link>
-          }
         />
       ) : null}
 

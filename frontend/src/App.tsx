@@ -44,6 +44,7 @@ import {
   canStartIosBackSwipe,
   getIosBackSwipeOffset,
   getIosBackSwipeProgress,
+  shouldIgnoreIosBackSwipeStartTarget,
   shouldIgnoreIosBackSwipeTarget,
   shouldCancelIosBackSwipe,
   shouldCommitIosBackSwipe,
@@ -318,7 +319,7 @@ function IOSBackSwipeZone() {
       if (!touch || event.touches.length !== 1) {
         return;
       }
-      if (shouldIgnoreIosBackSwipeTarget(event.target)) {
+      if (shouldIgnoreIosBackSwipeStartTarget(event.target, touch.clientX)) {
         return;
       }
       if (!canStartIosBackSwipe(touch.clientX, window.innerWidth)) {
@@ -336,9 +337,9 @@ function IOSBackSwipeZone() {
       swipeStateRef.current.active = true;
       root.removeAttribute("data-ios-back-swipe-commit");
       root.removeAttribute("data-ios-back-swipe-cancel");
-      root.setAttribute("data-ios-back-swipe-active", "true");
-      root.style.setProperty("--ios-back-swipe-offset", "0px");
-      root.style.setProperty("--ios-back-swipe-progress", "0");
+      root.removeAttribute("data-ios-back-swipe-active");
+      root.style.removeProperty("--ios-back-swipe-offset");
+      root.style.removeProperty("--ios-back-swipe-progress");
     };
 
     const handleTouchMove = (event: TouchEvent) => {
@@ -358,6 +359,9 @@ function IOSBackSwipeZone() {
         shouldLockIosBackSwipe(dx, dy)
       ) {
         swipeStateRef.current.horizontalLocked = true;
+        root.setAttribute("data-ios-back-swipe-active", "true");
+        root.style.setProperty("--ios-back-swipe-offset", "0px");
+        root.style.setProperty("--ios-back-swipe-progress", "0");
       }
 
       if (

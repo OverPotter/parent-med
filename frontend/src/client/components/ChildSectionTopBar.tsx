@@ -47,7 +47,7 @@ export function ChildSectionTopBar({
     <div className="shrink-0 -mx-3 bg-background px-3 sm:-mx-6 sm:px-6">
       <div className="child-section-top-bar-shell bg-background pb-3">
         <div className={`mx-auto w-full ${containerClassName}`}>
-          <div className="child-section-top-bar flex min-w-0 items-center justify-between gap-2 px-1 pt-0.5 sm:pt-1">
+          <div className="child-section-top-bar flex min-w-0 items-center justify-between gap-2 px-1 pt-0.5">
             {onBack ? (
               <button
                 type="button"
@@ -81,7 +81,7 @@ export function ChildSectionTopBar({
             </div>
           </div>
           {title || hint || action ? (
-            <div className="mt-3 flex items-start justify-between gap-3 px-1">
+            <div className="mt-2.5 flex items-start justify-between gap-3 px-1">
               <div className="min-w-0">
                 {title ? <h2 className="app-card-title">{title}</h2> : null}
                 {hint ? <p className="mt-1 text-sm leading-6 text-muted">{hint}</p> : null}

@@ -80,11 +80,13 @@ html.ios-lock-horizontal .landing-main {
 }
 
 [data-runtime="native"][data-platform="ios"] .app-safe-top-header {
-  padding-top: max(0.4rem, calc(var(--app-safe-top-runtime) - 0.08rem));
+  --app-ios-top-chrome-offset: max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem));
+  padding-top: var(--app-ios-top-chrome-offset);
 }
 
 [data-ios-shell="true"] .app-safe-top-header {
-  padding-top: max(0.4rem, calc(var(--app-safe-top-runtime) - 0.08rem));
+  --app-ios-top-chrome-offset: max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem));
+  padding-top: var(--app-ios-top-chrome-offset);
 }
 
 .child-profile-shell {
@@ -116,13 +118,13 @@ html.ios-lock-horizontal .landing-main {
   position: sticky;
   top: 0;
   z-index: 40;
-  padding-top: max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem));
+  padding-top: var(--app-ios-top-chrome-offset, max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem)));
   box-shadow: 0 1px 0 color-mix(in srgb, var(--color-border) 42%, transparent);
 }
 
 [data-runtime="native"][data-platform="ios"] .app-main-shell--hidden-chrome > .child-profile-shell,
 [data-ios-shell="true"] .app-main-shell--hidden-chrome > .child-profile-shell {
-  margin-top: calc(-1 * max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem)));
+  margin-top: calc(-1 * var(--app-ios-top-chrome-offset, max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem))));
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-shell {
@@ -144,7 +146,7 @@ html.ios-lock-horizontal .landing-main {
 }
 
 [data-runtime="native"][data-platform="ios"] .app-main-shell--hidden-chrome {
-  padding-top: max(0.75rem, calc(var(--app-safe-top-runtime) + 0.2rem));
+  padding-top: var(--app-ios-top-chrome-offset, max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem)));
 }
 
 [data-ios-shell="true"] .app-safe-top-standalone {
@@ -152,7 +154,7 @@ html.ios-lock-horizontal .landing-main {
 }
 
 [data-ios-shell="true"] .app-main-shell--hidden-chrome {
-  padding-top: max(0.75rem, calc(var(--app-safe-top-runtime) + 0.2rem));
+  padding-top: var(--app-ios-top-chrome-offset, max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem)));
 }
 
 .legal-doc-page {

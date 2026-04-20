@@ -100,11 +100,12 @@ export function PillboxAnalyticsScreen({
   }, [planFilter, activePlanId]);
 
   return (
-    <EditorShell>
+    <EditorShell maxWidthClassName="mx-auto w-full max-w-4xl">
       <FlowScreenHeader
         backLabel={tPillbox(language, "analyticsBack")}
         onBack={onBack}
         eyebrow=""
+        containerClassName="max-w-4xl"
         title={
           language === "ru"
             ? `${tPillbox(language, "eyebrow")} · Как идёт план`

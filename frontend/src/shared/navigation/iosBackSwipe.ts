@@ -1,9 +1,10 @@
 export const IOS_BACK_SWIPE_CAPTURE_RATIO = 0.34;
 export const IOS_BACK_SWIPE_CAPTURE_MAX_PX = 220;
-export const IOS_BACK_SWIPE_CAPTURE_MIN_PX = 16;
+export const IOS_BACK_SWIPE_CAPTURE_MIN_PX = 0;
+export const IOS_BACK_SWIPE_EDGE_PRIORITY_PX = 36;
 export const IOS_BACK_SWIPE_SCROLL_GUARD_DISTANCE = 12;
-export const IOS_BACK_SWIPE_LOCK_DISTANCE = 18;
-export const IOS_BACK_SWIPE_LOCK_RATIO = 1.34;
+export const IOS_BACK_SWIPE_LOCK_DISTANCE = 14;
+export const IOS_BACK_SWIPE_LOCK_RATIO = 1.22;
 export const IOS_BACK_SWIPE_VERTICAL_CANCEL_BEFORE_LOCK = 28;
 export const IOS_BACK_SWIPE_VERTICAL_CANCEL_AFTER_LOCK = 56;
 export const IOS_BACK_SWIPE_COMMIT_MS = 420;
@@ -12,7 +13,7 @@ export const IOS_BACK_SWIPE_CANCEL_MS = 440;
 export function canStartIosBackSwipe(clientX: number, viewportWidth: number) {
   return (
     clientX >= IOS_BACK_SWIPE_CAPTURE_MIN_PX &&
-    clientX <= Math.min(IOS_BACK_SWIPE_CAPTURE_MAX_PX, viewportWidth * IOS_BACK_SWIPE_CAPTURE_RATIO)
+    clientX <= Math.max(IOS_BACK_SWIPE_CAPTURE_MAX_PX, viewportWidth * IOS_BACK_SWIPE_CAPTURE_RATIO)
   );
 }
 
@@ -26,17 +27,44 @@ export function shouldIgnoreIosBackSwipeTarget(target: EventTarget | null) {
       [
         "[data-ios-local-back-swipe='true']",
         "[data-ios-disable-back-swipe='true']",
-        "button",
-        "a",
         "input",
         "textarea",
         "select",
         "label",
+        ".soft-input",
+        "[contenteditable='true']",
+      ].join(",")
+    )
+  );
+}
+
+export function shouldIgnoreIosBackSwipeStartTarget(target: EventTarget | null, clientX?: number) {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  if (typeof clientX === "number" && clientX <= IOS_BACK_SWIPE_EDGE_PRIORITY_PX) {
+    return false;
+  }
+
+  return Boolean(
+    target.closest(
+      [
+        "[data-ios-local-back-swipe='true']",
+        "[data-ios-disable-back-swipe='true']",
+        "button",
+        "a",
+        "label",
         "summary",
+        "input",
+        "textarea",
+        "select",
+        ".soft-input",
         "[role='button']",
         "[role='link']",
         "[role='switch']",
         "[role='tab']",
+        "[role='menuitem']",
         "[contenteditable='true']",
       ].join(",")
     )
