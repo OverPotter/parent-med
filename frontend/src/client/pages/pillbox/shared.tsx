@@ -377,7 +377,7 @@ export function FieldIcon({ kind }: { kind: "pill" | "dose" | "time" }) {
 }
 
 export function EditorShell({ children }: { children: ReactNode }) {
-  return <div className={`${flowShellClass} ${flowShellSpacingClass}`}>{children}</div>;
+  return <div className={`child-profile-shell ${flowShellClass} ${flowShellSpacingClass}`}>{children}</div>;
 }
 
 export function FlowScreenHeader({

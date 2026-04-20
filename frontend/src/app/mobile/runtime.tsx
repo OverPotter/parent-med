@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigationType } from "react-router-dom";
 import { blurActiveField } from "@shared/utils/focus";
 import { useAppStore } from "@shared/store/useAppStore";
 import { appLog } from "@shared/utils/appLog";
@@ -9,15 +9,21 @@ import { useGlobalBootReady } from "@/app/boot/state";
 
 export function RouteScrollReset() {
   const location = useLocation();
+  const navigationType = useNavigationType();
   const previousPathnameRef = useRef<string | null>(null);
+  const scrollPositionsRef = useRef(new Map<string, number>());
 
   useLayoutEffect(() => {
     blurActiveField();
     const previousPathname = previousPathnameRef.current;
     previousPathnameRef.current = location.pathname;
+    const routeKey = `${location.pathname}${location.search}`;
+    const saveCurrentScrollPosition = () => {
+      scrollPositionsRef.current.set(routeKey, Math.max(0, window.scrollY || window.pageYOffset || 0));
+    };
 
     if (previousPathname === location.pathname) {
-      return;
+      return saveCurrentScrollPosition;
     }
 
     const isCreateObservationRoute =
@@ -26,7 +32,15 @@ export function RouteScrollReset() {
       new URLSearchParams(location.search).get("mode") === "create";
 
     if (isCreateObservationRoute) {
-      return;
+      return saveCurrentScrollPosition;
+    }
+
+    if (navigationType === "POP") {
+      const savedScrollTop = scrollPositionsRef.current.get(routeKey);
+      if (typeof savedScrollTop === "number") {
+        window.scrollTo({ top: savedScrollTop, behavior: "auto" });
+        return saveCurrentScrollPosition;
+      }
     }
 
     const isMobileViewport = window.innerWidth < 768;
@@ -51,11 +65,12 @@ export function RouteScrollReset() {
 
     if (!isMobileViewport || !isPrimaryMenuRoute) {
       window.scrollTo({ top: 0, behavior: "auto" });
-      return;
+      return saveCurrentScrollPosition;
     }
 
     window.scrollTo({ top: 0, behavior: "auto" });
-  }, [location.pathname, location.search]);
+    return saveCurrentScrollPosition;
+  }, [location.pathname, location.search, navigationType]);
 
   return null;
 }

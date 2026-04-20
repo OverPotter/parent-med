@@ -6,6 +6,14 @@ import { registerSW } from "virtual:pwa-register";
 import { appLog } from "@shared/utils/appLog";
 import App from "./App";
 import "./index.css";
+import "./styles/app-shell.css";
+import "./styles/auth-v3.css";
+import "./styles/dropdown.css";
+import "./styles/header-nav.css";
+import "./styles/landing.css";
+import "./styles/soft-controls.css";
+import "./styles/soft-surfaces.css";
+import "./styles/visual-system.css";
 
 function loadOptionalWebFonts() {
   if (typeof document === "undefined" || Capacitor.isNativePlatform()) {

@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { LanguageSwitch } from "@shared/components/LanguageSwitch";
+import { useRef, useState, useTransition } from "react";
+import { updateAccountLanguage } from "@shared/api/auth";
+import { ChoiceSheetField, type ChoiceSheetOption } from "@shared/components/ChoiceSheetField";
 import type { AppLanguage } from "@shared/i18n";
+import { useI18n } from "@shared/hooks/useI18n";
+import { useAppStore } from "@shared/store/useAppStore";
 import { tSettings } from "./copy";
 import { SettingsSection } from "./ui";
 
 type ThemePreference = "light" | "dark" | "system";
 
-const settingsDropdownTriggerClassName =
-  "min-w-[4.55rem] justify-between gap-0.5 px-2 py-0 text-[0.66rem] font-semibold normal-case tracking-[-0.012em] sm:min-h-[2.16rem] sm:text-[0.69rem]";
+const settingsChoiceTriggerClassName =
+  "!min-w-[4.35rem] !min-h-[2.34rem] !justify-between !gap-1 !px-2.25 !py-0 !text-[0.64rem] !font-semibold !normal-case !tracking-[-0.01em] sm:!min-h-[2.42rem] sm:!text-[0.68rem]";
 
 export function SettingsAppPreferencesSection({
   language,
@@ -23,17 +25,43 @@ export function SettingsAppPreferencesSection({
   medicationIntervalUnit: "hours" | "minutes";
   setMedicationIntervalUnit: (value: "hours" | "minutes") => void;
 }) {
+  const themeOptions: ChoiceSheetOption<ThemePreference>[] = [
+    {
+      value: "light",
+      label: tSettings(language, "themeLight"),
+      shortLabel: language === "ru" ? "День" : "Day",
+    },
+    {
+      value: "dark",
+      label: tSettings(language, "themeDark"),
+      shortLabel: language === "ru" ? "Ночь" : "Night",
+    },
+    {
+      value: "system",
+      label: tSettings(language, "themeAuto"),
+      shortLabel: language === "ru" ? "Авто" : "Auto",
+    },
+  ];
+
+  const medicationPlanOptions: ChoiceSheetOption<"hours" | "minutes">[] = [
+    {
+      value: "hours",
+      label: tSettings(language, "hours"),
+      shortLabel: language === "ru" ? "Часы" : "Hours",
+    },
+    {
+      value: "minutes",
+      label: tSettings(language, "minutes"),
+      shortLabel: language === "ru" ? "Мин." : "Min.",
+    },
+  ];
+
   return (
     <>
       <SettingsSection
         title={tSettings(language, "interfaceLanguage")}
         hint={tSettings(language, "interfaceLanguageHint")}
-        badge={
-          <LanguageSwitch
-            className="relative z-20"
-            triggerClassName={settingsDropdownTriggerClassName}
-          />
-        }
+        badge={<SettingsLanguageField language={language} />}
       >
         {null}
       </SettingsSection>
@@ -41,7 +69,18 @@ export function SettingsAppPreferencesSection({
       <SettingsSection
         title={tSettings(language, "interfaceTheme")}
         hint={tSettings(language, "interfaceThemeHint")}
-        badge={<ThemeSwitch language={language} value={theme} onChange={setTheme} />}
+        badge={
+          <ChoiceSheetField
+            value={theme}
+            options={themeOptions}
+            onChange={async (nextTheme) => setTheme(nextTheme)}
+            dialogTitle={language === "ru" ? "Выберите тему" : "Choose theme"}
+            dialogHint={tSettings(language, "interfaceThemeHint")}
+            dialogAriaLabel={language === "ru" ? "Выбор темы" : "Choose theme"}
+            triggerClassName={settingsChoiceTriggerClassName}
+            selectActionLabel={language === "ru" ? "Выбрать" : "Select"}
+          />
+        }
       >
         {null}
       </SettingsSection>
@@ -50,25 +89,15 @@ export function SettingsAppPreferencesSection({
         title={tSettings(language, "medicationPlans")}
         hint={tSettings(language, "medicationPlansHint")}
         badge={
-          <InlineDropdownSwitch
-            language={language}
+          <ChoiceSheetField
             value={medicationIntervalUnit}
-            onChange={setMedicationIntervalUnit}
-            ariaLabelRu="Единица интервала"
-            ariaLabelEn="Interval unit"
-            minMenuWidthClassName="min-w-[8.5rem]"
-            options={[
-              {
-                value: "hours",
-                label: tSettings(language, "hours"),
-                shortLabel: language === "ru" ? "Часы" : "Hours",
-              },
-              {
-                value: "minutes",
-                label: tSettings(language, "minutes"),
-                shortLabel: language === "ru" ? "Мин." : "Min",
-              },
-            ]}
+            options={medicationPlanOptions}
+            onChange={async (nextUnit) => setMedicationIntervalUnit(nextUnit)}
+            dialogTitle={language === "ru" ? "Единица интервала" : "Interval unit"}
+            dialogHint={tSettings(language, "medicationPlansHint")}
+            dialogAriaLabel={language === "ru" ? "Единица интервала" : "Interval unit"}
+            triggerClassName={settingsChoiceTriggerClassName}
+            selectActionLabel={language === "ru" ? "Выбрать" : "Select"}
           />
         }
       >
@@ -78,195 +107,57 @@ export function SettingsAppPreferencesSection({
   );
 }
 
-function ThemeSwitch({
-  language,
-  value,
-  onChange,
-}: {
-  language: AppLanguage;
-  value: ThemePreference;
-  onChange: (value: ThemePreference) => void;
-}) {
+function SettingsLanguageField({ language }: { language: AppLanguage }) {
+  const { setLanguage } = useI18n();
+  const authToken = useAppStore((s) => s.authToken);
+  const accountId = useAppStore((s) => s.accountId);
+  const setAccountPreferredLanguage = useAppStore((s) => s.setAccountPreferredLanguage);
+  const [isChangingLanguage, startLanguageTransition] = useTransition();
+  const [isPersisting, setIsPersisting] = useState(false);
+  const requestSeqRef = useRef(0);
+
+  const options: ChoiceSheetOption<AppLanguage>[] = [
+    { value: "ru", label: "RU", shortLabel: "RU" },
+    { value: "en", label: "EN", shortLabel: "EN" },
+  ];
+
   return (
-    <InlineDropdownSwitch
-      language={language}
-      value={value}
-      onChange={onChange}
-      ariaLabelRu="Выбор темы"
-      ariaLabelEn="Choose theme"
-      minMenuWidthClassName="min-w-[8.25rem]"
-      options={[
-        {
-          value: "light",
-          label: tSettings(language, "themeLight"),
-          shortLabel: language === "ru" ? "День" : "Day",
-        },
-        {
-          value: "dark",
-          label: tSettings(language, "themeDark"),
-          shortLabel: language === "ru" ? "Ночь" : "Night",
-        },
-        {
-          value: "system",
-          label: tSettings(language, "themeAuto"),
-          shortLabel: language === "ru" ? "Авто" : "Auto",
-        },
-      ]}
+    <ChoiceSheetField
+      value={language}
+      options={options}
+      onChange={async (nextLanguage) => {
+        if (nextLanguage === language || isChangingLanguage || isPersisting) {
+          return;
+        }
+
+        startLanguageTransition(() => {
+          setLanguage(nextLanguage);
+        });
+
+        if (authToken && accountId) {
+          setIsPersisting(true);
+          const requestSeq = requestSeqRef.current + 1;
+          requestSeqRef.current = requestSeq;
+          try {
+            const account = await updateAccountLanguage(nextLanguage);
+            if (requestSeq === requestSeqRef.current) {
+              setAccountPreferredLanguage(account.preferredLanguage);
+            }
+          } catch {
+            // Keep the local choice even if the server could not persist it yet.
+          } finally {
+            if (requestSeq === requestSeqRef.current) {
+              setIsPersisting(false);
+            }
+          }
+        }
+      }}
+      dialogTitle={language === "ru" ? "Выберите язык" : "Choose language"}
+      dialogHint={tSettings(language, "interfaceLanguageHint")}
+      dialogAriaLabel={language === "ru" ? "Выбор языка" : "Choose language"}
+      triggerClassName={settingsChoiceTriggerClassName}
+      selectActionLabel={language === "ru" ? "Выбрать" : "Select"}
+      disabled={isChangingLanguage || isPersisting}
     />
-  );
-}
-
-function InlineDropdownSwitch<T extends string>({
-  language,
-  value,
-  onChange,
-  options,
-  ariaLabelRu,
-  ariaLabelEn,
-  minMenuWidthClassName,
-}: {
-  language: AppLanguage;
-  value: T;
-  onChange: (value: T) => void;
-  options: Array<{ value: T; label: string; shortLabel: string }>;
-  ariaLabelRu: string;
-  ariaLabelEn: string;
-  minMenuWidthClassName: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const [menuRect, setMenuRect] = useState<{ top: number; left: number; width: number } | null>(null);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const updateMenuRect = () => {
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (!rect) {
-        return;
-      }
-
-      setMenuRect({
-        top: rect.bottom + 8,
-        left: rect.right,
-        width: rect.width,
-      });
-    };
-
-    updateMenuRect();
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (!rootRef.current?.contains(target) && !menuRef.current?.contains(target)) {
-        setIsOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
-    window.addEventListener("resize", updateMenuRect);
-    window.addEventListener("scroll", updateMenuRect, true);
-    window.addEventListener("pointerdown", handlePointerDown, true);
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("resize", updateMenuRect);
-      window.removeEventListener("scroll", updateMenuRect, true);
-      window.removeEventListener("pointerdown", handlePointerDown, true);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
-
-  const activeOption = options.find((option) => option.value === value) ?? options[0];
-
-  return (
-    <div ref={rootRef} className="soft-language-dropdown relative z-20">
-      <button
-        ref={triggerRef}
-        type="button"
-        className={`soft-language-dropdown__trigger relative justify-center text-center ${settingsDropdownTriggerClassName} ${
-          isOpen ? "soft-language-dropdown__trigger-active" : ""
-        }`}
-        onClick={() => setIsOpen((current) => !current)}
-        aria-label={language === "ru" ? ariaLabelRu : ariaLabelEn}
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-      >
-        <span className="flex-1 text-center">{activeOption?.shortLabel}</span>
-        <span
-          className={`soft-language-dropdown__chevron absolute right-2 top-1/2 -translate-y-1/2 ${
-            isOpen ? "soft-language-dropdown__chevron-open" : ""
-          }`}
-          aria-hidden="true"
-        >
-          <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-none stroke-current">
-            <path
-              d="m5.5 7.75 4.5 4.5 4.5-4.5"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
-      </button>
-
-      {isOpen && menuRect && typeof document !== "undefined"
-        ? createPortal(
-            <div
-              ref={menuRef}
-              className={`soft-language-dropdown__menu ${minMenuWidthClassName}`}
-              role="menu"
-              aria-label={language === "ru" ? ariaLabelRu : ariaLabelEn}
-              style={{
-                position: "fixed",
-                top: menuRect.top,
-                left: menuRect.left,
-                minWidth: Math.max(menuRect.width, 132),
-                transform: "translateX(-100%)",
-                zIndex: 9999,
-              }}
-            >
-              {options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={value === option.value}
-                  className={`soft-language-dropdown__option text-[0.72rem] font-semibold normal-case tracking-[-0.012em] ${
-                    value === option.value ? "soft-language-dropdown__option-active" : ""
-                  }`}
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                >
-                  <span>{option.label}</span>
-                  {value === option.value ? (
-                    <span className="soft-language-dropdown__check" aria-hidden="true">
-                      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-none stroke-current">
-                        <path
-                          d="m4.5 10 3.2 3.2L15.5 5.8"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </span>
-                  ) : null}
-                </button>
-              ))}
-            </div>,
-            document.body
-          )
-        : null}
-    </div>
   );
 }

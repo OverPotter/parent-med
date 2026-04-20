@@ -23,9 +23,15 @@ export function IOSRouteSnapshotSync() {
       clone.classList.remove("app-shell-frame");
       clone.classList.add("app-shell-auth", "ios-back-swipe-underlay-screen__content");
       clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+      const scrollY = Math.max(0, window.scrollY || window.pageYOffset || 0);
       (
-        window as Window & { __PM_IOS_PREVIOUS_SCREEN_HTML?: string }
-      ).__PM_IOS_PREVIOUS_SCREEN_HTML = clone.outerHTML;
+        window as Window & {
+          __PM_IOS_PREVIOUS_SCREEN_SNAPSHOT?: { html: string; scrollY: number };
+        }
+      ).__PM_IOS_PREVIOUS_SCREEN_SNAPSHOT = {
+        html: clone.outerHTML,
+        scrollY,
+      };
     };
   }, [location.pathname, location.search]);
 

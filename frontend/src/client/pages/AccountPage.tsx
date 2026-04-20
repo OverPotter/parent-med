@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { updateAccountProfile } from "@shared/api/auth";
 import { fetchMyFamilyMembers, updateFamilyMemberProfile } from "@shared/api/families";
+import { FullscreenOverlay } from "@shared/components/FullscreenOverlay";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
-import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import {
@@ -359,7 +358,6 @@ function ProfileEditDialog({
   onSubmit: () => void;
 }) {
   const isClosingFromHistoryRef = useRef(false);
-  const dialogRootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") {
@@ -393,45 +391,6 @@ function ProfileEditDialog({
     };
   }, [isOpen, onClose]);
 
-  useEffect(() => {
-    if (!isOpen || typeof document === "undefined") {
-      return;
-    }
-
-    const { body, documentElement } = document;
-    const scrollY = window.scrollY;
-    const previousBodyOverflow = body.style.overflow;
-    const previousBodyPosition = body.style.position;
-    const previousBodyTop = body.style.top;
-    const previousBodyWidth = body.style.width;
-    const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
-    const previousHtmlOverflow = documentElement.style.overflow;
-    const previousHtmlOverscrollBehavior = documentElement.style.overscrollBehavior;
-
-    documentElement.style.overflow = "hidden";
-    documentElement.style.overscrollBehavior = "none";
-    body.style.overflow = "hidden";
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.width = "100%";
-    body.style.overscrollBehavior = "none";
-
-    return () => {
-      documentElement.style.overflow = previousHtmlOverflow;
-      documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
-      body.style.overflow = previousBodyOverflow;
-      body.style.position = previousBodyPosition;
-      body.style.top = previousBodyTop;
-      body.style.width = previousBodyWidth;
-      body.style.overscrollBehavior = previousBodyOverscrollBehavior;
-      window.scrollTo({ top: scrollY, behavior: "auto" });
-    };
-  }, [isOpen]);
-
-  if (!isOpen || typeof document === "undefined") {
-    return null;
-  }
-
   const handleClose = () => {
     if (
       typeof window !== "undefined" &&
@@ -446,113 +405,83 @@ function ProfileEditDialog({
     onClose();
   };
 
-  return createPortal(
-    <div
-      ref={dialogRootRef}
-      className="fixed inset-0 z-[9999] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
-      style={{
-        paddingTop: "max(0.75rem, var(--app-safe-top-runtime, env(safe-area-inset-top)))",
-        paddingBottom: "max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
-      }}
+  return (
+    <FullscreenOverlay
+      isOpen={isOpen}
+      onClose={handleClose}
+      backLabel={language === "ru" ? "← Профиль" : "← Profile"}
+      title={copy.editTitle}
+      hint={copy.editHint}
+      maxWidthClassName="max-w-[32rem]"
+      closeDisabled={isPending}
     >
-      <IosEdgeBackGesture isEnabled={isOpen} onBack={handleClose} targetRef={dialogRootRef} />
-      <div className="app-v3-background" aria-hidden="true">
-        <div className="app-v3-decor app-v3-decor-a" />
-        <div className="app-v3-decor app-v3-decor-b" />
-        <div className="app-v3-decor app-v3-decor-c" />
-        <div className="app-v3-noise" />
-      </div>
-      <div className="relative z-[1] flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="shrink-0 border-b border-border/70 bg-background/88 px-4 pb-3 backdrop-blur-md sm:px-6">
-          <div className="mx-auto w-full max-w-[32rem]">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isPending}
-              className="inline-flex min-h-[2.25rem] items-center text-sm font-extrabold text-primary disabled:opacity-50"
-            >
-              {language === "ru" ? "← Профиль" : "← Profile"}
-            </button>
-            <div className="mt-1.5">
-              <h2 className="app-card-title text-[1.25rem]">{copy.editTitle}</h2>
-              <p className="mt-1 text-sm leading-6 text-muted">{copy.editHint}</p>
-            </div>
+      <div className="soft-panel overflow-hidden rounded-[28px] border border-border shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
+        <div className="p-4 sm:p-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="soft-field-label">{copy.displayName}</span>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(event) => onDisplayNameChange(event.target.value)}
+                className="soft-input w-full px-4"
+                placeholder={copy.displayNamePlaceholder}
+              />
+            </label>
+
+            <label className="block">
+              <span className="soft-field-label">{copy.relationship}</span>
+              <input
+                type="text"
+                value={relationshipLabel}
+                onChange={(event) => onRelationshipLabelChange(event.target.value)}
+                className="soft-input w-full px-4"
+                placeholder={copy.relationshipPlaceholder}
+              />
+            </label>
+
+            <label className="block">
+              <span className="soft-field-label">{copy.phone}</span>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(event) => onPhoneChange(event.target.value)}
+                className="soft-input w-full px-4"
+                placeholder={copy.phonePlaceholder}
+              />
+            </label>
+
+            <label className="block">
+              <span className="soft-field-label">{copy.email}</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => onEmailChange(event.target.value)}
+                className="soft-input w-full px-4"
+                placeholder={copy.emailPlaceholder}
+                autoComplete="email"
+              />
+            </label>
+
+            {formError ? (
+              <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm sm:col-span-2">
+                {formError}
+              </div>
+            ) : null}
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-6">
-          <div className="mx-auto w-full max-w-[32rem]">
-            <div className="soft-panel overflow-hidden rounded-[28px] border border-border shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
-              <div className="p-4 sm:p-5">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="soft-field-label">{copy.displayName}</span>
-                    <input
-                      type="text"
-                      value={displayName}
-                      onChange={(event) => onDisplayNameChange(event.target.value)}
-                      className="soft-input w-full px-4"
-                      placeholder={copy.displayNamePlaceholder}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="soft-field-label">{copy.relationship}</span>
-                    <input
-                      type="text"
-                      value={relationshipLabel}
-                      onChange={(event) => onRelationshipLabelChange(event.target.value)}
-                      className="soft-input w-full px-4"
-                      placeholder={copy.relationshipPlaceholder}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="soft-field-label">{copy.phone}</span>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(event) => onPhoneChange(event.target.value)}
-                      className="soft-input w-full px-4"
-                      placeholder={copy.phonePlaceholder}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="soft-field-label">{copy.email}</span>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(event) => onEmailChange(event.target.value)}
-                      className="soft-input w-full px-4"
-                      placeholder={copy.emailPlaceholder}
-                      autoComplete="email"
-                    />
-                  </label>
-
-                  {formError ? (
-                    <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm sm:col-span-2">
-                      {formError}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="border-t border-border/60 p-4 sm:px-5 sm:pb-5 sm:pt-4">
-                <button
-                  type="button"
-                  onClick={onSubmit}
-                  disabled={isPending || !displayName.trim()}
-                  className={`${appBtnJournalPrimaryClass} w-full justify-center disabled:opacity-50`}
-                >
-                  {isPending ? copy.saving : copy.save}
-                </button>
-              </div>
-            </div>
-          </div>
+        <div className="border-t border-border/60 p-4 sm:px-5 sm:pb-5 sm:pt-4">
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={isPending || !displayName.trim()}
+            className={`${appBtnJournalPrimaryClass} w-full justify-center disabled:opacity-50`}
+          >
+            {isPending ? copy.saving : copy.save}
+          </button>
         </div>
       </div>
-    </div>,
-    document.body
+    </FullscreenOverlay>
   );
 }

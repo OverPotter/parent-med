@@ -125,7 +125,7 @@ export function MedicationPlanDetail({
             label: language === "ru" ? "Последний приём" : "Last dose",
             value: `${formatChildDate(stats.lastAdministration.administeredAt, language, {
               month: "short",
-            })} ${formatChildTime(stats.lastAdministration.administeredAt)}`,
+            })} ${formatChildTime(stats.lastAdministration.administeredAt, language)}`,
             tone: "bg-indigo-500",
           },
         ]

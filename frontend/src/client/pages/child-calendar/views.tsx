@@ -1,25 +1,19 @@
-import { type TouchEvent, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
+import { CalendarPickerDialog as SharedCalendarPickerDialog } from "@shared/components/CalendarPickerDialog";
+import { FullscreenOverlay } from "@shared/components/FullscreenOverlay";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { Surface } from "@shared/components/Surface";
-import { getLocalIsoDate } from "@shared/utils/date";
 import { formatChildDate } from "@client/utils/childDateFormat";
 import { childCalendarCopy } from "./copy";
 import type { CalendarDay, ChartDay, EventKind, TimelineEvent } from "./types";
 import {
-  buildCalendarYearOptions,
-  buildDateRange,
   buildDaySummary,
-  buildPlainCalendarDays,
   formatChartDateLabel,
   formatDuration,
-  formatMonthTitle,
   formatNumber,
   formatShortDate,
   formatTime,
-  getMonthLabels,
-  getWeekdayLabels,
   getXAxisLabels,
-  isDateInsideRange,
   kindStyles,
   parseLocalDate,
   uniqueKinds,
@@ -63,7 +57,7 @@ export function FeedView({
                 className="grid grid-cols-[3.2rem_minmax(0,1fr)_auto] items-center gap-2 px-4 py-2.5 sm:grid-cols-[4rem_minmax(0,1fr)_auto] sm:px-5"
               >
                 <span className="text-xs font-semibold tabular-nums text-muted">
-                  {formatTime(event.at)}
+                  {formatTime(event.at, language)}
                 </span>
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
@@ -109,107 +103,54 @@ export function DayFeedDialog({
   language: "ru" | "en";
   onClose: () => void;
 }) {
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    const previousOverflow = document.body.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.documentElement.style.overflow = previousHtmlOverflow;
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onClose]);
-
   if (!isOpen || !date) return null;
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
-      style={{
-        paddingTop: "max(0.75rem, var(--app-safe-top))",
-        paddingBottom: "var(--app-safe-bottom)",
-      }}
+  return (
+    <FullscreenOverlay
+      isOpen={isOpen}
+      onClose={onClose}
+      backLabel={`← ${backLabel}`}
+      title={formatChildDate(date, language)}
+      hint={events.length ? buildDaySummary(events, language) : title}
+      maxWidthClassName="max-w-2xl"
     >
-      <div className="shrink-0 border-b border-border/70 bg-background px-4 pb-3 sm:px-6">
-        <div className="mx-auto w-full max-w-2xl">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex min-h-[2.25rem] items-center text-sm font-extrabold text-primary"
-          >
-            ← {backLabel}
-          </button>
-          <div className="mt-2">
-            <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
-              {title}
-            </p>
-            <h3 className="app-card-title mt-1 text-[1.25rem]">
-              {formatChildDate(date, language)}
-            </h3>
-            {events.length ? (
-              <p className="mt-1 text-xs font-semibold leading-5 text-muted">
-                {buildDaySummary(events, language)}
-              </p>
-            ) : null}
+      {events.length ? (
+        <div className="overflow-hidden rounded-[28px] border border-border bg-surface shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
+          <div className="divide-y divide-border/60">
+            {events.map((event) => (
+              <div
+                key={event.id}
+                className="grid grid-cols-[3.2rem_minmax(0,1fr)_auto] items-center gap-2 px-4 py-3 sm:grid-cols-[4rem_minmax(0,1fr)_auto] sm:px-5"
+              >
+                <span className="text-xs font-semibold tabular-nums text-muted">
+                  {formatTime(event.at, language)}
+                </span>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${kindStyles[event.kind]}`} />
+                    <p className="truncate text-sm font-semibold leading-5 text-foreground">
+                      {event.title}
+                    </p>
+                  </div>
+                  {event.detail ? (
+                    <p className="mt-0.5 truncate text-xs leading-5 text-muted">{event.detail}</p>
+                  ) : null}
+                </div>
+                {event.value ? (
+                  <span className="shrink-0 text-sm font-extrabold tracking-[-0.02em] text-foreground">
+                    {event.value}
+                  </span>
+                ) : null}
+              </div>
+            ))}
           </div>
         </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto px-4 py-3 sm:px-6">
-        <div className="mx-auto w-full max-w-2xl">
-          {events.length ? (
-            <div className="overflow-hidden rounded-[28px] border border-border bg-surface shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
-              <div className="divide-y divide-border/60">
-                {events.map((event) => (
-                  <div
-                    key={event.id}
-                    className="grid grid-cols-[3.2rem_minmax(0,1fr)_auto] items-center gap-2 px-4 py-3 sm:grid-cols-[4rem_minmax(0,1fr)_auto] sm:px-5"
-                  >
-                    <span className="text-xs font-semibold tabular-nums text-muted">
-                      {formatTime(event.at)}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span
-                          className={`h-2 w-2 shrink-0 rounded-full ${kindStyles[event.kind]}`}
-                        />
-                        <p className="truncate text-sm font-semibold leading-5 text-foreground">
-                          {event.title}
-                        </p>
-                      </div>
-                      {event.detail ? (
-                        <p className="mt-0.5 truncate text-xs leading-5 text-muted">
-                          {event.detail}
-                        </p>
-                      ) : null}
-                    </div>
-                    {event.value ? (
-                      <span className="shrink-0 text-sm font-extrabold tracking-[-0.02em] text-foreground">
-                        {event.value}
-                      </span>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-[28px] border border-border bg-surface p-5 shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
-              <p className="text-sm leading-6 text-muted">{emptyText}</p>
-            </div>
-          )}
+      ) : (
+        <div className="rounded-[28px] border border-border bg-surface p-5 shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
+          <p className="text-sm leading-6 text-muted">{emptyText}</p>
         </div>
-      </div>
-    </div>,
-    document.body
+      )}
+    </FullscreenOverlay>
   );
 }
 
@@ -804,14 +745,14 @@ export function CustomPeriodDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-[160] flex items-center justify-center bg-background p-4 sm:p-6">
-      <button
-        type="button"
-        aria-label={text.closePeriodDialog}
-        onClick={onCancel}
-        className="absolute inset-0 bg-background"
-      />
-      <div className="soft-panel relative z-10 w-full max-w-md rounded-[30px] border border-border bg-surface p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
+    <OverlayDialog
+      isOpen={isOpen}
+      onClose={onCancel}
+      zIndexClassName="z-[160]"
+      backdropAriaLabel={text.closePeriodDialog}
+      backdropClassName="bg-background"
+    >
+      <div className="soft-panel relative z-[1] w-full max-w-md rounded-[30px] border border-border bg-surface p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
         <div className="mb-4 h-1.5 w-14 rounded-full bg-primary/55" aria-hidden="true" />
         <div className="space-y-1.5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
@@ -879,7 +820,7 @@ export function CustomPeriodDialog({
         onSelectDate={selectDate}
         onCancel={() => setCalendarEdge(null)}
       />
-    </div>
+    </OverlayDialog>
   );
 }
 
@@ -902,187 +843,18 @@ function CalendarPickerDialog({
   onSelectDate: (value: string) => void;
   onCancel: () => void;
 }) {
-  const [viewDate, setViewDate] = useState(() => parseLocalDate(selectedDate || getLocalIsoDate()));
-  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const calendarDays = useMemo(() => buildPlainCalendarDays(viewDate), [viewDate]);
-  const normalizedRange = useMemo(
-    () => buildDateRange(startDate, "custom", startDate, endDate),
-    [endDate, startDate]
-  );
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    setViewDate(parseLocalDate(selectedDate || getLocalIsoDate()));
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel();
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onCancel, selectedDate]);
-
-  if (!isOpen) return null;
-
-  const shiftViewMonth = (offset: number) => {
-    setViewDate((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
-  };
-
-  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
-    const touch = event.touches[0];
-    if (!touch) return;
-    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
-
-  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
-    const start = swipeStartRef.current;
-    const touch = event.changedTouches[0];
-    swipeStartRef.current = null;
-    if (!start || !touch) return;
-
-    const deltaX = touch.clientX - start.x;
-    const deltaY = touch.clientY - start.y;
-    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.4) return;
-    shiftViewMonth(deltaX < 0 ? 1 : -1);
-  };
-
-  const yearOptions = buildCalendarYearOptions(viewDate);
-
   return (
-    <div className="fixed inset-0 z-[180] flex items-center justify-center bg-background p-4 sm:p-6">
-      <button
-        type="button"
-        aria-label={language === "ru" ? "Закрыть календарь" : "Close calendar"}
-        onClick={onCancel}
-        className="absolute inset-0 bg-background"
-      />
-      <div className="soft-panel relative z-10 w-full max-w-sm rounded-[30px] border border-border bg-surface p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)]">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
-              {language === "ru" ? "Выбор даты" : "Date picker"}
-            </p>
-            <h3 className="app-card-title mt-1 truncate text-[1.05rem]">{title}</h3>
-          </div>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="app-header-icon-button h-9 min-h-0 w-9 shrink-0 text-sm"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="rounded-[26px] border border-border bg-surface-muted p-2 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]">
-          <div className="grid grid-cols-[2.35rem_minmax(0,1fr)_2.35rem] items-center gap-2 rounded-[20px] bg-surface p-1.5">
-            <button
-              type="button"
-              onClick={() => shiftViewMonth(-1)}
-              className="app-header-icon-button h-9 min-h-0 w-9 text-sm"
-            >
-              ←
-            </button>
-            <p className="app-card-title min-w-0 truncate text-center text-[0.95rem]">
-              {formatMonthTitle(viewDate, language)}
-            </p>
-            <button
-              type="button"
-              onClick={() => shiftViewMonth(1)}
-              className="app-header-icon-button h-9 min-h-0 w-9 text-sm"
-            >
-              →
-            </button>
-          </div>
-          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_6.6rem] gap-2">
-            <label className="relative block">
-              <span className="sr-only">{language === "ru" ? "Месяц" : "Month"}</span>
-              <select
-                value={viewDate.getMonth()}
-                onChange={(event) =>
-                  setViewDate(new Date(viewDate.getFullYear(), Number(event.target.value), 1))
-                }
-                className="soft-input min-h-[2.35rem] w-full appearance-none rounded-[16px] px-3 pr-8 text-[0.82rem] font-bold"
-              >
-                {getMonthLabels(language).map((label, index) => (
-                  <option key={label} value={index}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">
-                ▾
-              </span>
-            </label>
-            <label className="relative block">
-              <span className="sr-only">{language === "ru" ? "Год" : "Year"}</span>
-              <select
-                value={viewDate.getFullYear()}
-                onChange={(event) =>
-                  setViewDate(new Date(Number(event.target.value), viewDate.getMonth(), 1))
-                }
-                className="soft-input min-h-[2.35rem] w-full appearance-none rounded-[16px] px-3 pr-7 text-[0.82rem] font-bold"
-              >
-                {yearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-              <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted">
-                ▾
-              </span>
-            </label>
-          </div>
-
-          <div
-            className="touch-pan-y select-none px-1 pb-1 pt-2"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-bold text-muted">
-              {getWeekdayLabels(language).map((label) => (
-                <div key={label} className="py-0.5">
-                  {label}
-                </div>
-              ))}
-            </div>
-            <div className="mt-1.5 grid grid-cols-7 gap-0.5">
-              {calendarDays.map((day) => {
-                const date = parseLocalDate(day.date);
-                const isSelected =
-                  day.date === startDate ||
-                  day.date === endDate ||
-                  isDateInsideRange(date, normalizedRange);
-                const isEdge = day.date === startDate || day.date === endDate;
-                const isToday = day.date === getLocalIsoDate();
-
-                return (
-                  <button
-                    key={day.date}
-                    type="button"
-                    onClick={() => onSelectDate(day.date)}
-                    className={[
-                      "flex h-8 items-center justify-center rounded-[1rem] text-[0.82rem] font-bold transition",
-                      isEdge
-                        ? "bg-primary text-primary-foreground shadow-[0_8px_20px_color-mix(in_srgb,var(--color-primary)_22%,transparent)]"
-                        : isSelected
-                          ? "bg-primary/12 text-foreground"
-                          : day.inMonth
-                            ? "bg-surface text-foreground"
-                            : "bg-surface text-muted opacity-45",
-                      isToday && !isEdge ? "ring-1 ring-primary/25" : "",
-                    ].join(" ")}
-                  >
-                    {date.getDate()}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <SharedCalendarPickerDialog
+      isOpen={isOpen}
+      title={title}
+      language={language}
+      selectedDate={selectedDate}
+      rangeStartDate={startDate}
+      rangeEndDate={endDate}
+      onSelectDate={onSelectDate}
+      onCancel={onCancel}
+      zIndexClassName="z-[180]"
+    />
   );
 }
 

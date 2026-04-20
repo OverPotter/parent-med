@@ -6,7 +6,7 @@ import type {
   WeightEntry,
 } from "@shared/types/api";
 import { getLocalIsoDate } from "@shared/utils/date";
-import { formatChildDate } from "@client/utils/childDateFormat";
+import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
 import { childCalendarCopy } from "./copy";
 import type {
   CalendarDay,
@@ -550,13 +550,13 @@ export function formatShortDate(date: Date, language: "ru" | "en") {
   }).format(date);
 }
 
-export function formatTime(value: string) {
-  return value.slice(11, 16);
+export function formatTime(value: string, language: "ru" | "en") {
+  return formatChildTime(value, language);
 }
 
 function formatTimelineEndLabel(startedAt: string, endedAt: string, language: "ru" | "en") {
-  if (startedAt.slice(0, 10) === endedAt.slice(0, 10)) return formatTime(endedAt);
-  return `${formatTime(endedAt)} · ${formatChildDate(endedAt, language, { month: "short" })}`;
+  if (startedAt.slice(0, 10) === endedAt.slice(0, 10)) return formatTime(endedAt, language);
+  return `${formatTime(endedAt, language)} · ${formatChildDate(endedAt, language, { month: "short" })}`;
 }
 
 export function formatDuration(minutes: number | null | undefined, language: "ru" | "en") {

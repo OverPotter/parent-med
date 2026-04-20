@@ -179,8 +179,6 @@ export function AddHouseholdMedicineForm({
     ? tCabinet(language, "addFromCatalogHint")
     : tCabinet(language, "addOwnMedicineHint");
   const handleSubmit = isCatalogMode ? handleAddSelected : handleCreateNewAndAdd;
-  const shouldDockActions = isManualMode || Boolean(catalogItem);
-
   const resetAllFields = () => {
     setCatalogItem(null);
     setExpiryDate("");
@@ -197,7 +195,12 @@ export function AddHouseholdMedicineForm({
   };
 
   return (
-    <div className={`${cabinetAddPageClass} flex-col overflow-hidden`}>
+    <div
+      className={`${cabinetAddPageClass} flex-col overflow-hidden`}
+      style={{
+        paddingBottom: "max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
+      }}
+    >
       <MedicineCabinetHeader
         backLabel={`← ${tCabinet(language, "back")}`}
         onBack={onClose}
@@ -207,13 +210,7 @@ export function AddHouseholdMedicineForm({
         onAction={resetAllFields}
       />
 
-      <div
-        className={
-          shouldDockActions
-            ? "min-h-0 flex-1 overflow-y-auto py-3"
-            : "shrink-0 overflow-visible py-3"
-        }
-      >
+      <div className="min-h-0 flex-1 overflow-y-auto py-3">
         <div className="mx-auto w-full max-w-2xl space-y-3 pb-3">
           {isCatalogMode && (
             <>

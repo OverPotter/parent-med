@@ -154,7 +154,7 @@ export function ChildSleepPage() {
               >
                 <span className="min-w-0 text-xs font-semibold tabular-nums text-muted">
                   <span className="block leading-4 text-foreground">
-                    {formatChildTime(session.startedAt)}
+                    {formatChildTime(session.startedAt, language)}
                   </span>
                   <span className="block truncate text-[0.68rem] leading-4">
                     {formatChildDate(session.startedAt, language, { month: "short" })}
@@ -274,7 +274,7 @@ function isNumber(value: number | null): value is number {
 
 function formatSleepEndLabel(startedAt: string, endedAt: string, language: "ru" | "en") {
   if (startedAt.slice(0, 10) === endedAt.slice(0, 10)) {
-    return formatChildTime(endedAt);
+    return formatChildTime(endedAt, language);
   }
   return formatChildDateTime(endedAt, language);
 }

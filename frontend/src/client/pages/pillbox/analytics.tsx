@@ -1,4 +1,4 @@
-import { createPortal } from "react-dom";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPillboxHistorySummary, fetchPillboxPlan } from "@shared/api/pillboxPlans";
@@ -95,15 +95,6 @@ export function PillboxAnalyticsScreen({
   };
 
   useEffect(() => {
-    if (!isPlanPickerOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isPlanPickerOpen]);
-
-  useEffect(() => {
     setIsPlanPickerOpen(false);
     setPlanSearch("");
   }, [planFilter, activePlanId]);
@@ -184,89 +175,84 @@ export function PillboxAnalyticsScreen({
         </div>
       </section>
 
-      {isPlanPickerOpen
-        ? createPortal(
-            <div className="fixed inset-0 z-[130] flex items-end bg-[rgba(15,23,42,0.32)]">
+      <OverlayDialog
+        isOpen={isPlanPickerOpen}
+        onClose={() => setIsPlanPickerOpen(false)}
+        placement="bottom"
+        zIndexClassName="z-[130]"
+        backdropAriaLabel={language === "ru" ? "Закрыть выбор плана" : "Close plan picker"}
+        containerClassName="flex items-end"
+        backdropClassName="bg-[rgba(15,23,42,0.32)]"
+      >
+        <div className="relative z-[1] w-full rounded-t-[30px] bg-background px-4 pb-[max(1.25rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))] pt-4 shadow-[0_-24px_64px_rgba(15,23,42,0.24)] sm:mx-auto sm:max-w-2xl">
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="app-card-title">
+                  {language === "ru" ? "Выбрать план" : "Choose plan"}
+                </p>
+                <p className="mt-1 text-sm leading-5 text-muted">
+                  {language === "ru"
+                    ? "Так удобнее переключаться между планами, даже если их много."
+                    : "This makes it easier to switch between plans when there are many."}
+                </p>
+              </div>
               <button
                 type="button"
-                className="absolute inset-0 cursor-default"
-                aria-label={language === "ru" ? "Закрыть выбор плана" : "Close plan picker"}
                 onClick={() => setIsPlanPickerOpen(false)}
-              />
-              <div className="relative z-[131] w-full rounded-t-[30px] bg-background px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-24px_64px_rgba(15,23,42,0.24)] sm:mx-auto sm:max-w-2xl">
-                <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="app-card-title">
-                        {language === "ru" ? "Выбрать план" : "Choose plan"}
-                      </p>
-                      <p className="mt-1 text-sm leading-5 text-muted">
-                        {language === "ru"
-                          ? "Так удобнее переключаться между планами, даже если их много."
-                          : "This makes it easier to switch between plans when there are many."}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsPlanPickerOpen(false)}
-                      className="soft-pill app-profile-action inline-flex min-h-[2.3rem] min-w-[2.3rem] items-center justify-center px-0"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={planSearch}
-                    onChange={(event) => setPlanSearch(event.target.value)}
-                    placeholder={
-                      language === "ru" ? "Найти план по названию" : "Find a plan by name"
-                    }
-                    className="soft-input w-full px-4"
-                  />
-                  <div className="max-h-[min(60vh,28rem)] overflow-y-auto">
-                    <div className="space-y-2 pb-1">
-                      {visiblePlanOptions.length > 0 ? (
-                        visiblePlanOptions.map((group) => {
-                          const isActive = group.id === activePlanId;
-                          return (
-                            <button
-                              key={group.id}
-                              type="button"
-                              onClick={() => {
-                                onSelectPlan(group.id, planFilter);
-                                setIsPlanPickerOpen(false);
-                              }}
-                              className={`w-full rounded-[20px] px-4 py-3 text-left transition ${
-                                isActive
-                                  ? "soft-pill-primary app-profile-action--selected"
-                                  : "soft-panel-muted hover:opacity-95"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="min-w-0 truncate text-sm font-semibold tracking-[-0.02em] text-foreground">
-                                  {displayPillboxText(group.title)}
-                                </span>
-                                {isActive ? <span aria-hidden="true">✓</span> : null}
-                              </div>
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <div className="px-2 py-4 text-sm text-muted">
-                          {language === "ru"
-                            ? "По этому запросу планы не найдены."
-                            : "No plans found for this search."}
+                className="soft-pill app-profile-action inline-flex min-h-[2.3rem] min-w-[2.3rem] items-center justify-center px-0"
+              >
+                ✕
+              </button>
+            </div>
+            <input
+              type="text"
+              value={planSearch}
+              onChange={(event) => setPlanSearch(event.target.value)}
+              placeholder={language === "ru" ? "Найти план по названию" : "Find a plan by name"}
+              className="soft-input w-full px-4"
+            />
+            <div className="max-h-[min(60vh,28rem)] overflow-y-auto">
+              <div className="space-y-2 pb-1">
+                {visiblePlanOptions.length > 0 ? (
+                  visiblePlanOptions.map((group) => {
+                    const isActive = group.id === activePlanId;
+                    return (
+                      <button
+                        key={group.id}
+                        type="button"
+                        onClick={() => {
+                          onSelectPlan(group.id, planFilter);
+                          setIsPlanPickerOpen(false);
+                        }}
+                        className={`w-full rounded-[20px] px-4 py-3 text-left transition ${
+                          isActive
+                            ? "soft-pill-primary app-profile-action--selected"
+                            : "soft-panel-muted hover:opacity-95"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="min-w-0 truncate text-sm font-semibold tracking-[-0.02em] text-foreground">
+                            {displayPillboxText(group.title)}
+                          </span>
+                          {isActive ? <span aria-hidden="true">✓</span> : null}
                         </div>
-                      )}
-                    </div>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="px-2 py-4 text-sm text-muted">
+                    {language === "ru"
+                      ? "По этому запросу планы не найдены."
+                      : "No plans found for this search."}
                   </div>
-                </div>
+                )}
               </div>
-            </div>,
-            document.body
-          )
-        : null}
+            </div>
+          </div>
+        </div>
+      </OverlayDialog>
 
       {!activePlanId ? (
         <div className="soft-empty rounded-[22px] px-4 py-5 text-sm text-muted">

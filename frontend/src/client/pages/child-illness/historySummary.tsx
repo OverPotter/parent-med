@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchIllnessHistorySummary } from "@shared/api/illnessEpisodes";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
@@ -8,7 +9,6 @@ import { getHistoryPeriodHint } from "./shared";
 
 export function HistoryInsightsPreview({ childId }: { childId: string }) {
   const { language } = useI18n();
-  const periodMenuRef = useRef<HTMLDivElement | null>(null);
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
   const periodOptions = [
     { key: "month", label: language === "ru" ? "Месяц" : "Month" },
@@ -31,20 +31,6 @@ export function HistoryInsightsPreview({ childId }: { childId: string }) {
     placeholderData: (previous) => previous,
     ...liveQueryOptions,
   });
-
-  useEffect(() => {
-    if (!isPeriodMenuOpen) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (target instanceof Node && !periodMenuRef.current?.contains(target)) {
-        setIsPeriodMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [isPeriodMenuOpen]);
 
   if (isLoading || !summary) {
     return (
@@ -112,56 +98,76 @@ export function HistoryInsightsPreview({ childId }: { childId: string }) {
   return (
     <Surface className="relative z-30 overflow-visible p-4 sm:p-5">
       <div className="space-y-4">
-        <div ref={periodMenuRef} className="relative z-50">
+        <div className="relative z-50">
           <button
             type="button"
             onClick={() => setIsPeriodMenuOpen((current) => !current)}
-            className="soft-pill app-profile-action app-profile-action--split min-h-[2.45rem] w-full gap-2 rounded-[18px] text-left text-xs font-extrabold"
-            aria-haspopup="listbox"
+            className="soft-input flex min-h-[2.95rem] w-full items-center justify-between gap-3 px-4 text-left text-[0.92rem] tracking-[-0.02em] sm:min-h-[3.1rem]"
+            aria-haspopup="dialog"
             aria-expanded={isPeriodMenuOpen}
             aria-busy={isSummaryUpdating}
           >
-            <span className="min-w-0 truncate">{selectedPeriodLabel}</span>
+            <span className="min-w-0 truncate text-foreground">{selectedPeriodLabel}</span>
             <span
               aria-hidden="true"
-              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-muted"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-muted"
             >
               ▾
             </span>
           </button>
           <p className="mt-2 px-1 text-[0.78rem] leading-5 text-muted">{selectedPeriodHint}</p>
-          {isPeriodMenuOpen ? (
-            <div
-              role="listbox"
-              className="soft-panel absolute left-0 top-[calc(100%+0.5rem)] z-[90] w-full min-w-[min(17rem,calc(100vw-2rem))] overflow-hidden rounded-[24px] p-2 shadow-[0_24px_64px_rgba(15,23,42,0.28)]"
-            >
+        </div>
+        <OverlayDialog
+          isOpen={isPeriodMenuOpen}
+          onClose={() => setIsPeriodMenuOpen(false)}
+          placement="bottom"
+          zIndexClassName="z-[890]"
+          backdropAriaLabel={language === "ru" ? "Закрыть выбор периода" : "Close period options"}
+          containerClassName="flex items-end"
+          backdropClassName="bg-[rgba(15,23,42,0.32)]"
+        >
+          <div
+            data-ios-disable-back-swipe="true"
+            className="relative z-[1] w-full rounded-t-[30px] bg-background px-4 pb-[max(1.25rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))] pt-4 shadow-[0_-24px_64px_rgba(15,23,42,0.24)] sm:mx-auto sm:max-w-xl"
+          >
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
+            <div className="space-y-1.5">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
+                {language === "ru" ? "За период" : "For period"}
+              </p>
+              <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
+                {language === "ru" ? "Выберите период" : "Choose period"}
+              </h2>
+              <p className="text-sm leading-5 text-muted">{selectedPeriodHint}</p>
+            </div>
+
+            <div className="soft-choice-list mt-4">
               {periodOptions.map((item) => {
                 const isActive = selectedPeriod === item.key;
                 return (
                   <button
                     key={item.key}
                     type="button"
-                    role="option"
-                    aria-selected={isActive}
                     onClick={() => {
                       setSelectedPeriod(item.key);
                       setIsPeriodMenuOpen(false);
                     }}
-                    className={[
-                      "flex min-h-[2.45rem] w-full items-center justify-between rounded-[17px] px-3 text-left text-sm font-extrabold tracking-[-0.02em] transition",
-                      isActive
-                        ? "soft-pill-primary app-profile-action--selected text-foreground"
-                        : "soft-pill text-foreground hover:opacity-90",
-                    ].join(" ")}
+                    className={["soft-choice-row", isActive ? "soft-choice-row-active" : ""]
+                      .filter(Boolean)
+                      .join(" ")}
                   >
-                    <span>{item.label}</span>
-                    {isActive ? <span aria-hidden="true">✓</span> : null}
+                    <span className="min-w-0 text-left text-sm font-semibold tracking-[-0.02em] text-foreground">
+                      {item.label}
+                    </span>
+                    <span className="soft-choice-check">
+                      {isActive ? "✓" : language === "ru" ? "Выбрать" : "Select"}
+                    </span>
                   </button>
                 );
               })}
             </div>
-          ) : null}
-        </div>
+          </div>
+        </OverlayDialog>
         <div
           key={summary.period}
           className={[

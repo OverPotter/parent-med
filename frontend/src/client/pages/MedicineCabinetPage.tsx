@@ -163,17 +163,6 @@ export function MedicineCabinetPage() {
           : tCabinet(language, "allSectionHint");
   const showSplitSections = activeFilter === "all";
 
-  if (addFlow === "choice") {
-    return (
-      <AddMedicineChoiceDialog
-        language={language}
-        onClose={() => closeAddFlow()}
-        onCatalog={() => openAddFlow("catalog")}
-        onManual={() => openAddFlow("manual")}
-      />
-    );
-  }
-
   if (addFlow === "catalog" || addFlow === "manual") {
     return (
       <AddHouseholdMedicineForm
@@ -259,6 +248,14 @@ export function MedicineCabinetPage() {
           </p>
         </div>
       </div>
+      {addFlow === "choice" ? (
+        <AddMedicineChoiceDialog
+          language={language}
+          onClose={() => closeAddFlow()}
+          onCatalog={() => openAddFlow("catalog")}
+          onManual={() => openAddFlow("manual")}
+        />
+      ) : null}
       <div className={isIosShell ? "space-y-2.5" : "space-y-2.5 sm:hidden"}>
         <div className="grid grid-cols-2 gap-2">
           <button
