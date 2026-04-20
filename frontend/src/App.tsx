@@ -264,7 +264,6 @@ function IOSBackSwipeZone() {
   const pillboxMode = new URLSearchParams(location.search).get("mode");
   const shouldDisableSwipeBack =
     location.pathname === "/" ||
-    location.pathname === "/home" ||
     location.pathname === "/start" ||
     location.pathname === "/children" ||
     location.pathname === "/medicine-cabinet" ||
@@ -344,7 +343,7 @@ function IOSBackSwipeZone() {
             swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
               root.removeAttribute("data-ios-back-swipe-cancel");
               swipeStateRef.current.resetTimeoutId = null;
-            }, 220);
+            }, 280);
             return;
           }
           const previousOffset = swipeStateRef.current.renderedDx;
@@ -385,7 +384,7 @@ function IOSBackSwipeZone() {
               swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
                 root.removeAttribute("data-ios-back-swipe-cancel");
                 swipeStateRef.current.resetTimeoutId = null;
-              }, 220);
+              }, 280);
               return;
             }
             root.removeAttribute("data-ios-back-swipe-active");
@@ -401,7 +400,7 @@ function IOSBackSwipeZone() {
               root.style.removeProperty("--ios-back-swipe-progress");
               swipeStateRef.current.resetTimeoutId = null;
               navigate(-1);
-            }, 150);
+            }, 240);
             return;
           }
           root.removeAttribute("data-ios-back-swipe-active");
@@ -411,7 +410,7 @@ function IOSBackSwipeZone() {
           swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
             root.removeAttribute("data-ios-back-swipe-cancel");
             swipeStateRef.current.resetTimeoutId = null;
-          }, 220);
+          }, 280);
         }}
       />
     </>

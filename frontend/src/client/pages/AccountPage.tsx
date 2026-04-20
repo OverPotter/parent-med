@@ -6,6 +6,7 @@ import { updateAccountProfile } from "@shared/api/auth";
 import { fetchMyFamilyMembers, updateFamilyMemberProfile } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import {
@@ -358,6 +359,7 @@ function ProfileEditDialog({
   onSubmit: () => void;
 }) {
   const isClosingFromHistoryRef = useRef(false);
+  const dialogRootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") {
@@ -446,12 +448,14 @@ function ProfileEditDialog({
 
   return createPortal(
     <div
+      ref={dialogRootRef}
       className="fixed inset-0 z-[9999] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
       style={{
         paddingTop: "max(0.75rem, var(--app-safe-top-runtime, env(safe-area-inset-top)))",
         paddingBottom: "max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
       }}
     >
+      <IosEdgeBackGesture isEnabled={isOpen} onBack={handleClose} targetRef={dialogRootRef} />
       <div className="app-v3-background" aria-hidden="true">
         <div className="app-v3-decor app-v3-decor-a" />
         <div className="app-v3-decor app-v3-decor-b" />

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
@@ -8,6 +8,7 @@ import { appBtnJournalSecondaryClass, SectionTitle } from "./child-illness/share
 
 export function ClientHomePage() {
   const { copy, language } = useI18n();
+  const navigate = useNavigate();
   const homeTitle = language === "ru" ? "Помощь" : "Help";
   const homeSubtitle =
     language === "ru"
@@ -18,18 +19,28 @@ export function ClientHomePage() {
       ? "Главные разделы приложения и что в них делать."
       : "Main app sections and what you can do there.";
 
+  const handleBack = () => {
+    const historyState = typeof window !== "undefined" ? window.history.state : null;
+    if (typeof historyState?.idx === "number" && historyState.idx > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate("/more");
+  };
+
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
         title={homeTitle}
         subtitle={homeSubtitle}
         action={
-          <Link
-            to="/more"
+          <button
+            type="button"
+            onClick={handleBack}
             className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
             {language === "ru" ? "← Ещё" : "← More"}
-          </Link>
+          </button>
         }
         compactOnMobile
         hideOnMobile
@@ -37,12 +48,13 @@ export function ClientHomePage() {
       />
       <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
         <div className="app-mobile-section-intro">
-          <Link
-            to="/more"
+          <button
+            type="button"
+            onClick={handleBack}
             className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
             {language === "ru" ? "← Ещё" : "← More"}
-          </Link>
+          </button>
           <h1 className="app-mobile-section-intro__title">{homeTitle}</h1>
           <p className="app-mobile-section-intro__hint">{homeMobileHint}</p>
         </div>

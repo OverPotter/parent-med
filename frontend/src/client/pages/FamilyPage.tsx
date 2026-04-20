@@ -15,6 +15,7 @@ import {
 import { createFamilyInvite } from "@shared/api/familyInvites";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { AppLanguage } from "@shared/i18n";
@@ -60,6 +61,7 @@ const familyCopy = {
     newLink: "Новая ссылка",
     validUntil: "Действует до",
     inviteCopied: "Ссылка скопирована",
+    inviteShareReady: "Открылось меню «Поделиться».",
     inviteCopyFailed: "Не удалось скопировать ссылку.",
     inviteShareFailed: "Не удалось открыть меню «Поделиться».",
     shareInvite: "Поделиться",
@@ -131,6 +133,7 @@ const familyCopy = {
     newLink: "New link",
     validUntil: "Valid until",
     inviteCopied: "Link copied",
+    inviteShareReady: "Share sheet opened.",
     inviteCopyFailed: "Could not copy the link.",
     inviteShareFailed: "Could not open the share sheet.",
     shareInvite: "Share",
@@ -188,6 +191,7 @@ export function FamilyPage() {
   const [error, setError] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [isInviteSharePending, setIsInviteSharePending] = useState(false);
+  const [inviteToast, setInviteToast] = useState<string | null>(null);
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
@@ -196,6 +200,7 @@ export function FamilyPage() {
   const setAccountEmail = useAppStore((s) => s.setAccountEmail);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const queryClient = useQueryClient();
+  const isIosShell = useIsIosShell();
 
   const {
     data: families = [],
@@ -333,6 +338,7 @@ export function FamilyPage() {
   const familyTitle =
     family?.name?.trim() || currentFamilyName?.trim() || tFamily(language, "title");
   const canShareInvite = typeof navigator !== "undefined" && typeof navigator.share === "function";
+  const shouldUseDirectNativeInvite = isIosShell && canShareInvite;
 
   const inviteShareText =
     language === "ru"
@@ -355,6 +361,7 @@ export function FamilyPage() {
     try {
       await navigator.clipboard.writeText(latestInviteUrl);
       setInviteCopied(true);
+      setInviteToast(tFamily(language, "inviteCopied"));
       setError(null);
     } catch {
       setError(tFamily(language, "inviteCopyFailed"));
@@ -374,6 +381,9 @@ export function FamilyPage() {
         url: inviteUrl,
       });
       setError(null);
+      if (shouldUseDirectNativeInvite) {
+        setInviteToast(tFamily(language, "inviteShareReady"));
+      }
       return true;
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -391,11 +401,29 @@ export function FamilyPage() {
       const invite = await createInviteMutation.mutateAsync();
       setInviteCopied(false);
       const inviteUrl = `${window.location.origin}${invite.invitePath}`;
-      await handleShareInvite(inviteUrl);
+      if (shouldUseDirectNativeInvite) {
+        await handleShareInvite(inviteUrl);
+        return;
+      }
+      if (canShareInvite) {
+        await handleShareInvite(inviteUrl);
+      }
     } catch {
       // Ошибка уже обработана в mutation.onError.
     }
   };
+
+  useEffect(() => {
+    if (!inviteToast) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setInviteToast(null);
+    }, 2600);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [inviteToast]);
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
@@ -429,6 +457,7 @@ export function FamilyPage() {
       </div>
 
       {error && <p className="soft-note-danger">{error}</p>}
+      {inviteToast ? <p className="soft-note-success">{inviteToast}</p> : null}
       {familyError && (
         <p className="soft-note-danger">
           {(familyError as { message?: string }).message ?? tFamily(language, "loadFamilyFailed")}
@@ -543,7 +572,7 @@ export function FamilyPage() {
 
           <p className="mt-2 text-sm font-semibold text-muted">{tFamily(language, "ownerOnly")}</p>
 
-          {createInviteMutation.data && (
+          {createInviteMutation.data && !shouldUseDirectNativeInvite ? (
             <div className="mt-4 border-t border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] pt-4">
               <p className="text-xs uppercase tracking-[0.16em] text-muted">
                 {tFamily(language, "newLink")}
@@ -580,7 +609,7 @@ export function FamilyPage() {
                 </button>
               </div>
             </div>
-          )}
+          ) : null}
         </RowSurface>
       ) : null}
 

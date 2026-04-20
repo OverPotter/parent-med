@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { AppLanguage } from "@shared/i18n";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { illnessCompactInputClass } from "../child-illness/shared";
 import { tSettings } from "./copy";
 import { SettingsRow, SettingsSection } from "./ui";
@@ -171,6 +172,7 @@ function PasswordChangeDialog({
   passwordError: string | null;
 }) {
   const isClosingFromHistoryRef = useRef(false);
+  const dialogRootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") {
@@ -263,12 +265,14 @@ function PasswordChangeDialog({
 
   return createPortal(
     <div
+      ref={dialogRootRef}
       className="fixed inset-0 z-[9999] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
       style={{
         paddingTop: "max(0.75rem, var(--app-safe-top-runtime, env(safe-area-inset-top)))",
         paddingBottom: "max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
       }}
     >
+      <IosEdgeBackGesture isEnabled={isOpen} onBack={handleClose} targetRef={dialogRootRef} />
       <div className="app-v3-background" aria-hidden="true">
         <div className="app-v3-decor app-v3-decor-a" />
         <div className="app-v3-decor app-v3-decor-b" />

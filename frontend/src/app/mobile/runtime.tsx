@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { useLocation } from "react-router-dom";
@@ -11,7 +11,7 @@ export function RouteScrollReset() {
   const location = useLocation();
   const previousPathnameRef = useRef<string | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     blurActiveField();
     const previousPathname = previousPathnameRef.current;
     previousPathnameRef.current = location.pathname;

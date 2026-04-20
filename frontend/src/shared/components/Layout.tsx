@@ -2,9 +2,9 @@
  * Общий layout: шапка с темой и навигация (переиспользуемый в client/admin).
  */
 
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
 import { Capacitor } from "@capacitor/core";
 import { logout } from "@shared/api/auth";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
@@ -145,6 +145,8 @@ export function ProfileMenu({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isOpen) {
@@ -178,6 +180,49 @@ export function ProfileMenu({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.key, location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePageHide = () => {
+      setIsOpen(false);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        setIsOpen(false);
+      }
+    };
+
+    const handlePopState = () => {
+      setIsOpen(false);
+    };
+
+    window.addEventListener("pagehide", handlePageHide);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isOpen]);
+
+  const handleMenuNavigate =
+    (to: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+      event.preventDefault();
+      setIsOpen(false);
+      window.requestAnimationFrame(() => {
+        navigate(to);
+      });
+    };
+
   return (
     <div ref={rootRef} className="app-profile-menu">
       <button
@@ -201,7 +246,7 @@ export function ProfileMenu({
             to="/more"
             role="menuitem"
             className="app-profile-menu__item"
-            onClick={() => setIsOpen(false)}
+            onClick={handleMenuNavigate("/more")}
           >
             {servicesLabel}
           </Link>
@@ -209,7 +254,7 @@ export function ProfileMenu({
             to="/settings"
             role="menuitem"
             className="app-profile-menu__item"
-            onClick={() => setIsOpen(false)}
+            onClick={handleMenuNavigate("/settings")}
           >
             {settingsLabel}
           </Link>
@@ -273,7 +318,6 @@ export function HeaderUtilityActions({
           <span className="app-header-notification-icon" aria-hidden="true">
             <NotificationBellIcon />
           </span>
-          {isNotificationBellActive ? <span className="app-header-notification-dot" /> : null}
           <span className="sr-only">{notificationLabel}</span>
         </button>
       ) : null}
@@ -519,7 +563,7 @@ export function Layout({
             "app-main-shell relative z-[1] mx-auto flex-1 w-full max-w-5xl min-w-0 px-3 sm:px-6",
             hideHeader
               ? compactHiddenChrome
-                ? "bg-background pt-0 pb-3 sm:pt-0 sm:pb-5"
+                ? "app-main-shell--hidden-chrome bg-background pb-3 sm:pb-5"
                 : "pt-3 pb-6 sm:pt-5 sm:pb-8"
               : "py-6 sm:py-11",
             hasMobileNav ? "pb-28 md:pb-11" : "",

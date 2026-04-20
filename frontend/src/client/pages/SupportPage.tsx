@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
 
@@ -19,15 +19,26 @@ const backLinkClass = "inline-flex min-h-[2.1rem] items-center text-sm font-extr
 const supportBulletClass = "flex items-start gap-2 text-sm leading-6 text-muted";
 
 export function SupportPage() {
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    const historyState = typeof window !== "undefined" ? window.history.state : null;
+    if (typeof historyState?.idx === "number" && historyState.idx > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate("/legal");
+  };
+
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
         title="Помощь"
         subtitle="Выберите тип обращения. Для всех запросов используйте форму внутри приложения."
         action={
-          <Link to="/legal" className={backLinkClass}>
+          <button type="button" onClick={handleBack} className={backLinkClass}>
             ← Правовая информация
-          </Link>
+          </button>
         }
         compactOnMobile
         hideOnMobile
@@ -36,9 +47,9 @@ export function SupportPage() {
 
       <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
         <div className="app-mobile-section-intro">
-          <Link to="/legal" className={backLinkClass}>
+          <button type="button" onClick={handleBack} className={backLinkClass}>
             ← Правовая информация
-          </Link>
+          </button>
           <h1 className="app-mobile-section-intro__title">Помощь</h1>
           <p className="app-mobile-section-intro__hint">
             Выберите тип обращения. Для всех запросов используйте форму внутри приложения.
