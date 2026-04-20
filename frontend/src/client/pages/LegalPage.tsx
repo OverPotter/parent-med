@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { PageIntro } from "@shared/components/PageIntro";
-import { RowSurface, Surface } from "@shared/components/Surface";
+import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { getPrivacyPolicyUrl, getSupportUrl, getTermsOfUseUrl } from "@shared/config/legal";
 
@@ -50,9 +50,37 @@ export function LegalPage() {
             ? "Политика конфиденциальности, условия использования и контакты."
             : "Privacy policy, terms of use and support contacts."
         }
+        action={
+          <Link
+            to="/more"
+            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
+        }
         compactOnMobile
+        hideOnMobile
         className="app-safe-top-standalone"
       />
+
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <Link
+            to="/more"
+            className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
+          <h1 className="app-mobile-section-intro__title">
+            {language === "ru" ? "Правовая информация" : "Legal information"}
+          </h1>
+          <p className="app-mobile-section-intro__hint">
+            {language === "ru"
+              ? "Политика конфиденциальности, условия использования и контакты."
+              : "Privacy policy, terms of use and support contacts."}
+          </p>
+        </div>
+      </div>
 
       <div className="space-y-3 sm:space-y-4">
         {items.map((item) => {
@@ -92,13 +120,13 @@ export function LegalPage() {
         })}
       </div>
 
-      <Surface className="p-5 sm:p-6">
+      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
         <p className="text-sm leading-7 text-muted">
           {language === "ru"
             ? "Медицинский дисклеймер: сервис носит информационный характер. Мы не врачи, не ставим диагнозы, не назначаем лечение и не несем ответственность за медицинские решения."
             : "Medical disclaimer: this service is informational. We are not doctors, we do not diagnose or prescribe treatment, and we are not responsible for medical decisions."}
         </p>
-      </Surface>
+      </RowSurface>
     </div>
   );
 }

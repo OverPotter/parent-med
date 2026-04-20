@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
+import { Link } from "react-router-dom";
 import { changePassword, deleteMyAccount, deleteMyFamily } from "@shared/api/auth";
 import {
   deletePushSubscription,
@@ -495,12 +496,26 @@ export function SettingsPage() {
       <PageIntro
         title={tSettings(language, "title")}
         subtitle={tSettings(language, "subtitle")}
+        action={
+          <Link
+            to="/more"
+            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
+        }
         compactOnMobile
         hideOnMobile
         className="app-safe-top-standalone"
       />
       <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
         <div className="app-mobile-section-intro">
+          <Link
+            to="/more"
+            className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
           <h1 className="app-mobile-section-intro__title">{tSettings(language, "title")}</h1>
           <p className="app-mobile-section-intro__hint">{tSettings(language, "mobileHint")}</p>
         </div>

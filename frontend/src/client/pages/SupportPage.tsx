@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
 
 function ArrowRightIcon() {
@@ -20,17 +21,18 @@ const supportBulletClass = "flex items-start gap-2 text-sm leading-6 text-muted"
 export function SupportPage() {
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
-      <div className="hidden sm:block app-safe-top-standalone">
-        <Link to="/legal" className={backLinkClass}>
-          ← Правовая информация
-        </Link>
-        <div className="mt-2 min-w-0">
-          <h1 className="app-title text-[1.68rem] sm:text-[2.25rem]">Помощь</h1>
-          <p className="app-subtitle mt-1.5 max-w-3xl text-[0.96rem] leading-6 sm:mt-2.5 sm:leading-7">
-            Выберите тип обращения. Для всех запросов используйте форму внутри приложения.
-          </p>
-        </div>
-      </div>
+      <PageIntro
+        title="Помощь"
+        subtitle="Выберите тип обращения. Для всех запросов используйте форму внутри приложения."
+        action={
+          <Link to="/legal" className={backLinkClass}>
+            ← Правовая информация
+          </Link>
+        }
+        compactOnMobile
+        hideOnMobile
+        className="app-safe-top-standalone"
+      />
 
       <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
         <div className="app-mobile-section-intro">

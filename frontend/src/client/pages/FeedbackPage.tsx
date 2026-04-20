@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { submitFeedback } from "@shared/api/feedback";
 import { PageIntro } from "@shared/components/PageIntro";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -10,7 +11,7 @@ import {
 } from "./child-illness/shared";
 
 export function FeedbackPage() {
-  const { copy } = useI18n();
+  const { copy, language } = useI18n();
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -55,12 +56,26 @@ export function FeedbackPage() {
       <PageIntro
         title={copy.feedback.pageTitle}
         subtitle={copy.feedback.pageSubtitle}
+        action={
+          <Link
+            to="/more"
+            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
+        }
         compactOnMobile
         hideOnMobile
         className="app-safe-top-standalone"
       />
       <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
         <div className="app-mobile-section-intro">
+          <Link
+            to="/more"
+            className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
           <h1 className="app-mobile-section-intro__title">{copy.feedback.pageTitle}</h1>
           <p className="app-mobile-section-intro__hint">{copy.feedback.pageSubtitle}</p>
         </div>
