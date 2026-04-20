@@ -22,7 +22,7 @@ html.ios-lock-horizontal #root {
   opacity: 0;
   background: var(--color-background);
   transform: translate3d(0, 0, 0);
-  transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 1080ms cubic-bezier(0.08, 0.82, 0.17, 1);
 }
 
 .ios-back-swipe-underlay-screen {
@@ -64,12 +64,12 @@ html.ios-lock-horizontal #root {
 
 [data-ios-back-swipe-commit="true"] .app-shell-frame {
   transform: translate3d(100vw, 0, 0);
-  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 1080ms cubic-bezier(0.08, 0.82, 0.17, 1);
 }
 
 [data-ios-back-swipe-cancel="true"] .app-shell-frame {
   transform: translate3d(0, 0, 0);
-  transition: transform 440ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 1260ms cubic-bezier(0.08, 0.82, 0.17, 1);
 }
 
 html.ios-lock-horizontal .landing-page,
@@ -722,6 +722,15 @@ html.ios-lock-horizontal .landing-main {
     0 -10px 26px -24px rgb(0 0 0 / 0.22),
     inset 0 1px 0 color-mix(in srgb, var(--color-border) 42%, transparent);
   backdrop-filter: none;
+  transition:
+    opacity 120ms ease-out,
+    visibility 120ms ease-out;
+}
+
+.app-bottom-nav-wrap--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .app-bottom-nav-shell {

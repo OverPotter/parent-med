@@ -8,8 +8,8 @@ import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
+import { childActionSuccessClass } from "./children/shared";
 import {
-  appBtnJournalPrimaryClass,
   appBtnJournalSecondaryClass,
   SectionTitle,
 } from "./child-illness/shared";
@@ -476,7 +476,7 @@ function ProfileEditDialog({
             type="button"
             onClick={onSubmit}
             disabled={isPending || !displayName.trim()}
-            className={`${appBtnJournalPrimaryClass} w-full justify-center disabled:opacity-50`}
+            className={`${childActionSuccessClass} w-full justify-center disabled:opacity-50`}
           >
             {isPending ? copy.saving : copy.save}
           </button>

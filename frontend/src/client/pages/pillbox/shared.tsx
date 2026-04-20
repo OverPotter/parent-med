@@ -384,8 +384,8 @@ export function EditorShell({
   maxWidthClassName?: string;
 }) {
   return (
-    <div className={`child-profile-shell ${maxWidthClassName} ${flowShellSpacingClass}`}>
-      {children}
+    <div className={`child-profile-shell ${flowShellSpacingClass}`}>
+      <div className={`mx-auto w-full ${maxWidthClassName}`}>{children}</div>
     </div>
   );
 }

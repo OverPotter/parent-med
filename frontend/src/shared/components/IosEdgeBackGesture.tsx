@@ -111,7 +111,7 @@ export function IosEdgeBackGesture({
     target.setAttribute("data-ios-local-back-swipe", "true");
 
     const finishCancel = () => {
-      target.style.transition = "transform 340ms cubic-bezier(0.22, 1, 0.36, 1)";
+      target.style.transition = `transform ${IOS_BACK_SWIPE_CANCEL_MS}ms cubic-bezier(0.08, 0.82, 0.17, 1)`;
       target.style.transform = "translate3d(0, 0, 0)";
       target.style.boxShadow = "";
       swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
@@ -210,7 +210,7 @@ export function IosEdgeBackGesture({
       );
 
       if (canCommit) {
-        target.style.transition = "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)";
+        target.style.transition = `transform ${IOS_BACK_SWIPE_COMMIT_MS}ms cubic-bezier(0.08, 0.82, 0.17, 1)`;
         target.style.transform = `translate3d(${window.innerWidth}px, 0, 0)`;
         target.style.boxShadow = "";
         swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {

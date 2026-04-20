@@ -59,6 +59,7 @@ function applyThemeToDocument(theme: Theme): ResolvedTheme {
   document.documentElement.setAttribute("data-theme-mode", theme);
   document.documentElement.style.colorScheme = resolvedTheme;
   document.documentElement.style.background = background;
+  document.body.style.colorScheme = resolvedTheme;
   document.body.style.background = background;
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
   document

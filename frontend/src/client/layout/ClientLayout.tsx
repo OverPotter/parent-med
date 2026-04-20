@@ -284,7 +284,8 @@ export function ClientLayout() {
       >
         <Layout
           navLinks={desktopNavLinks}
-          mobileNavLinks={shouldHideMobileNav ? [] : mobileNavLinks}
+          mobileNavLinks={mobileNavLinks}
+          mobileNavHidden={shouldHideMobileNav}
           hideHeader={isCompactNestedChrome}
           compactHiddenChrome={isCompactNestedChrome}
           showNotificationBell={pushPrompt.shouldShowNotificationPrompt}

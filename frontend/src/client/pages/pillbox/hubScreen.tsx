@@ -62,14 +62,18 @@ export function PillboxHubScreen({
         </div>
       </div>
       <div className="space-y-2.5">
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={openCreate} className={actionPrimaryClass}>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={openCreate}
+            className={`${actionPrimaryClass} min-w-0 px-3.5`}
+          >
             {tPillbox(language, "createPlan")}
           </button>
           <button
             type="button"
             onClick={() => openAnalytics(undefined, listFilter)}
-            className={actionSecondaryClass}
+            className={`${actionSecondaryClass} min-w-0 px-3.5`}
           >
             {tPillbox(language, "analytics")}
           </button>

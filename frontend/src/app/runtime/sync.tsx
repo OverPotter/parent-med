@@ -23,6 +23,7 @@ export function ThemeSync() {
     document.documentElement.style.colorScheme = effectiveTheme;
     const background = effectiveTheme === "dark" ? "#1e1b2e" : "#ebe4ff";
     document.documentElement.style.background = background;
+    document.body.style.colorScheme = effectiveTheme;
     document.body.style.background = background;
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
     document
@@ -36,6 +37,7 @@ export function ThemeSync() {
       document.documentElement.setAttribute("data-theme", effectiveTheme);
       document.documentElement.style.colorScheme = effectiveTheme;
       document.documentElement.style.background = background;
+      document.body.style.colorScheme = effectiveTheme;
       document.body.style.background = background;
       document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
       document

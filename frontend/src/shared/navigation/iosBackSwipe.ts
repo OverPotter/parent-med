@@ -7,8 +7,8 @@ export const IOS_BACK_SWIPE_LOCK_DISTANCE = 14;
 export const IOS_BACK_SWIPE_LOCK_RATIO = 1.22;
 export const IOS_BACK_SWIPE_VERTICAL_CANCEL_BEFORE_LOCK = 28;
 export const IOS_BACK_SWIPE_VERTICAL_CANCEL_AFTER_LOCK = 56;
-export const IOS_BACK_SWIPE_COMMIT_MS = 420;
-export const IOS_BACK_SWIPE_CANCEL_MS = 440;
+export const IOS_BACK_SWIPE_COMMIT_MS = 1080;
+export const IOS_BACK_SWIPE_CANCEL_MS = 1260;
 
 export function canStartIosBackSwipe(clientX: number, viewportWidth: number) {
   return (
@@ -95,15 +95,15 @@ export function shouldPreventScrollDuringIosBackSwipe(
 
 export function getIosBackSwipeOffset(dx: number, viewportWidth: number) {
   const safeDx = Math.max(0, dx);
-  const knee = Math.min(viewportWidth * 0.42, 220);
+  const knee = Math.min(viewportWidth * 0.5, 260);
   if (safeDx <= knee) {
-    return safeDx * 0.96;
+    return Math.min(viewportWidth, safeDx * 1.02);
   }
-  return Math.min(viewportWidth, knee * 0.96 + (safeDx - knee) * 0.42);
+  return Math.min(viewportWidth, knee * 1.02 + (safeDx - knee) * 0.68);
 }
 
 export function getIosBackSwipeProgress(offset: number, viewportWidth: number) {
-  return Math.min(1, offset / Math.max(viewportWidth * 0.82, 1));
+  return Math.min(1, offset / Math.max(viewportWidth * 0.72, 1));
 }
 
 export function shouldCommitIosBackSwipe(

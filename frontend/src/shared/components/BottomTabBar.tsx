@@ -9,9 +9,11 @@ import { renderNavIcon } from "./navIcons";
 export function BottomTabBar({
   links,
   forceVisible = false,
+  hidden = false,
 }: {
   links: LayoutNavLink[];
   forceVisible?: boolean;
+  hidden?: boolean;
 }) {
   const { language } = useI18n();
   const location = useLocation();
@@ -26,7 +28,12 @@ export function BottomTabBar({
   const nav = (
     <nav
       aria-label={language === "ru" ? "Нижняя навигация" : "Bottom navigation"}
-      className={forceVisible ? "app-bottom-nav-wrap" : "app-bottom-nav-wrap md:hidden"}
+      className={[
+        forceVisible ? "app-bottom-nav-wrap" : "app-bottom-nav-wrap md:hidden",
+        hidden ? "app-bottom-nav-wrap--hidden" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <div
         className="app-bottom-nav-shell"

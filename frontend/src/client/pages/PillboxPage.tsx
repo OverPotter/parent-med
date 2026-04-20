@@ -258,13 +258,22 @@ export function PillboxPage() {
 
   const openCreate = () => {
     setDraft(buildDraft(accountId, undefined));
-    navigate("/pillbox?mode=setup&plan=new");
+    navigate("/pillbox?mode=setup&plan=new", { replace: screen !== "hub" });
+  };
+
+  const navigateBackOr = (fallbackHref: string) => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate(fallbackHref, { replace: true });
   };
 
   const openDetails = (group: PillboxGroup) => {
     setDraft(null);
     navigate(
-      `/pillbox?mode=details&plan=${group.id}${listFilter === "completed" ? "&tab=completed" : ""}`
+      `/pillbox?mode=details&plan=${group.id}${listFilter === "completed" ? "&tab=completed" : ""}`,
+      { replace: screen !== "hub" }
     );
   };
 
@@ -297,7 +306,16 @@ export function PillboxPage() {
     setSaveAttempted(false);
     setSavePlanError(null);
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-    navigate(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
+    navigate(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox", { replace: true });
+  };
+
+  const goBackToHub = () => {
+    discardUnsavedNewMedication();
+    setDraft(null);
+    setSaveAttempted(false);
+    setSavePlanError(null);
+    resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
+    navigateBackOr(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
   };
 
   const {
@@ -319,7 +337,9 @@ export function PillboxPage() {
 
   const goToSetup = () => {
     const targetPlanId = draft?.id ?? selectedPlanId;
-    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`);
+    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`, {
+      replace: true,
+    });
   };
 
   const goToSetupFromMedication = () => {
@@ -327,7 +347,7 @@ export function PillboxPage() {
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
     setEditorCoursePreset("custom");
     const targetPlanId = draft?.id ?? selectedPlanId;
-    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`);
+    navigateBackOr(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`);
   };
 
   const closeMedicationEditor = () => {
@@ -335,12 +355,15 @@ export function PillboxPage() {
     setEditorCoursePreset("custom");
     setEditorMedicationBaseline(null);
     const targetPlanId = draft?.id ?? selectedPlanId;
-    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`);
+    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`, {
+      replace: true,
+    });
   };
 
   const goToMedication = (medicationId: string) => {
     navigate(
-      `/pillbox?mode=medication&med=${medicationId}${draft?.id ? `&plan=${draft.id}` : "&plan=new"}`
+      `/pillbox?mode=medication&med=${medicationId}${draft?.id ? `&plan=${draft.id}` : "&plan=new"}`,
+      { replace: screen === "medication" }
     );
   };
 
@@ -514,7 +537,9 @@ export function PillboxPage() {
     if (screen !== "hub") {
       return;
     }
-    navigate(nextFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
+    navigate(nextFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox", {
+      replace: true,
+    });
   };
 
   const openAnalytics = (
@@ -530,7 +555,8 @@ export function PillboxPage() {
             ?.id) ??
       null;
     navigate(
-      `/pillbox?mode=analytics${resolvedPlanId ? `&plan=${resolvedPlanId}` : ""}${targetFilter === "completed" ? "&tab=completed" : ""}`
+      `/pillbox?mode=analytics${resolvedPlanId ? `&plan=${resolvedPlanId}` : ""}${targetFilter === "completed" ? "&tab=completed" : ""}`,
+      { replace: screen !== "hub" }
     );
   };
 
@@ -561,10 +587,11 @@ export function PillboxPage() {
         groups={allGroups}
         selectedPlanId={selectedPlanIdForAnalytics}
         initialFilter={listFilter}
-        onBack={goToHub}
+        onBack={goBackToHub}
         onSelectPlan={(planId, filter) =>
           navigate(
-            `/pillbox?mode=analytics&plan=${planId}${filter === "completed" ? "&tab=completed" : ""}`
+            `/pillbox?mode=analytics&plan=${planId}${filter === "completed" ? "&tab=completed" : ""}`,
+            { replace: true }
           )
         }
       />
@@ -580,7 +607,7 @@ export function PillboxPage() {
   }
 
   if (isEditorScreen && !isCreating && selectedPlanLoading && !draft) {
-    return <PillboxLoadingScreen language={language} screen={screen} onBack={goToHub} />;
+    return <PillboxLoadingScreen language={language} screen={screen} onBack={goBackToHub} />;
   }
 
   if (screen === "medication" && draft && activeMedication) {
@@ -619,7 +646,7 @@ export function PillboxPage() {
         togglePlanStatusPending={togglePlanStatusMutation.isPending}
         deletePlanPending={deletePlanMutation.isPending}
         deleteTarget={deleteTarget}
-        onBack={goToHub}
+        onBack={goBackToHub}
         onToggleStatus={toggleSelectedPlanStatus}
         onGoToSetup={goToSetup}
         onRequestDelete={requestDeletePlan}
@@ -648,7 +675,7 @@ export function PillboxPage() {
         saveAttempted={saveAttempted}
         savePlanError={savePlanError}
         isEditing={isEditing}
-        onBack={goToHub}
+        onBack={goBackToHub}
         onAddMedication={addMedication}
         onOpenMedication={goToMedication}
         onRequestDeleteMedication={requestDeleteMedication}

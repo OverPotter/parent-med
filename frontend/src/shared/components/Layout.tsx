@@ -26,6 +26,7 @@ interface LayoutProps {
   /** Ссылки для навигации (client или admin). */
   navLinks?: LayoutNavLink[];
   mobileNavLinks?: LayoutNavLink[];
+  mobileNavHidden?: boolean;
   hideHeader?: boolean;
   compactHiddenChrome?: boolean;
   showNotificationBell?: boolean;
@@ -347,6 +348,7 @@ export function Layout({
   children,
   navLinks = [],
   mobileNavLinks = [],
+  mobileNavHidden = false,
   hideHeader = false,
   compactHiddenChrome = false,
   showNotificationBell = false,
@@ -358,6 +360,7 @@ export function Layout({
     useAppStore();
   const accountLabel = accountDisplayName || accountLogin || copy.common.userFallback;
   const hasMobileNav = mobileNavLinks.length > 0;
+  const hasVisibleMobileNav = hasMobileNav && !mobileNavHidden;
   const isAuthenticated = Boolean(accountLogin);
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isIosShell = useIsIosShell();
@@ -566,12 +569,18 @@ export function Layout({
                 ? "app-main-shell--hidden-chrome bg-background pb-3 sm:pb-5"
                 : "pt-3 pb-6 sm:pt-5 sm:pb-8"
               : "py-6 sm:py-11",
-            hasMobileNav ? "pb-28 md:pb-11" : "",
+            hasVisibleMobileNav ? "pb-28 md:pb-11" : "",
           ].join(" ")}
         >
           {children}
         </main>
-        {hasMobileNav && <BottomTabBar links={mobileNavLinks} forceVisible={isIosShell} />}
+        {hasMobileNav && (
+          <BottomTabBar
+            links={mobileNavLinks}
+            forceVisible={isIosShell}
+            hidden={mobileNavHidden}
+          />
+        )}
       </div>
     </div>
   );

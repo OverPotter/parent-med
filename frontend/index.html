@@ -14,7 +14,7 @@
     <meta name="theme-color" content="#ebe4ff" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PillPath" />
     <script>
       (() => {
@@ -22,27 +22,39 @@
         const lightBg = "#ebe4ff";
         const darkBg = "#1e1b2e";
         const storageKey = "pillpath-app";
-        let theme = defaultTheme;
+        let themeMode = defaultTheme;
 
         try {
           const raw = localStorage.getItem(storageKey);
           if (raw) {
             const parsed = JSON.parse(raw);
-            if (parsed?.state?.theme === "dark" || parsed?.state?.theme === "light") {
-              theme = parsed.state.theme;
+            if (
+              parsed?.state?.theme === "dark" ||
+              parsed?.state?.theme === "light" ||
+              parsed?.state?.theme === "system"
+            ) {
+              themeMode = parsed.state.theme;
             }
           }
         } catch {
-          theme = defaultTheme;
+          themeMode = defaultTheme;
         }
 
-        const bg = theme === "dark" ? darkBg : lightBg;
-        document.documentElement.setAttribute("data-theme", theme);
+        const resolvedTheme =
+          themeMode === "system"
+            ? window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : themeMode;
+        const bg = resolvedTheme === "dark" ? darkBg : lightBg;
+        document.documentElement.setAttribute("data-theme", resolvedTheme);
+        document.documentElement.setAttribute("data-theme-mode", themeMode);
         document.documentElement.style.background = bg;
-        document.documentElement.style.colorScheme = theme;
+        document.documentElement.style.colorScheme = resolvedTheme;
         document.addEventListener(
           "DOMContentLoaded",
           () => {
+            document.body.style.colorScheme = resolvedTheme;
             document.body.style.background = bg;
           },
           { once: true }
@@ -55,7 +67,10 @@
           'meta[name="apple-mobile-web-app-status-bar-style"]'
         );
         if (statusBarMeta) {
-          statusBarMeta.setAttribute("content", theme === "dark" ? "black-translucent" : "default");
+          statusBarMeta.setAttribute(
+            "content",
+            resolvedTheme === "dark" ? "black-translucent" : "default"
+          );
         }
       })();
     </script>

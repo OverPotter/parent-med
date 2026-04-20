@@ -118,6 +118,20 @@
     color: color-mix(in srgb, var(--color-primary) 28%, var(--color-muted));
   }
 
+  [data-theme="light"] input,
+  [data-theme="light"] textarea,
+  [data-theme="light"] select,
+  [data-theme="light"] .soft-input {
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] input,
+  [data-theme="dark"] textarea,
+  [data-theme="dark"] select,
+  [data-theme="dark"] .soft-input {
+    color-scheme: dark;
+  }
+
   .soft-field-label {
     display: block;
     margin-bottom: 0.65rem;
