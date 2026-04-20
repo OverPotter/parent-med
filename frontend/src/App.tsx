@@ -1,6 +1,6 @@
 /** Роутинг: admin / client. */
 
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -187,7 +187,7 @@ function AuthSync() {
     return () => setRefreshHandler(null);
   }, [refreshToken, setSession]);
 
-  const { data } = useQuery({
+  const { data, error } = useQuery({
     queryKey: ["auth", "me", authToken, accountId],
     queryFn: fetchMe,
     enabled: Boolean(authToken || refreshToken || accountId),
@@ -200,6 +200,15 @@ function AuthSync() {
       setAuthState(data);
     }
   }, [data, setAuthState]);
+
+  useEffect(() => {
+    if (!error || !(authToken || refreshToken || accountId)) {
+      return;
+    }
+    appLog.warn("Сессия недействительна, сбрасываю локальный auth state");
+    queryClient.clear();
+    clearSession();
+  }, [accountId, authToken, clearSession, error, queryClient, refreshToken]);
 
   useEffect(() => {
     const handleLogout = () => {
@@ -486,6 +495,19 @@ export default function App() {
   const accountId = useAppStore((s) => s.accountId);
   const hydrated = useAppStore((s) => s.hydrated);
   const isNativeRuntime = Capacitor.isNativePlatform();
+  const isStandalonePwa = useMemo(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
+    );
+  }, []);
+  const isLocalhostWeb =
+    typeof window !== "undefined" &&
+    /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+  const shouldUseAppEntryRoute = isNativeRuntime || isStandalonePwa || isLocalhostWeb;
   const isNonCriticalStartupReady = useDeferredNonCriticalStartupReady();
   const [cookieConsent, setCookieConsent] = useState<CookieConsentDecision | null>(() =>
     getCookieConsentDecision()
@@ -544,7 +566,11 @@ export default function App() {
                 <Route
                   path="/"
                   element={
-                    isNativeRuntime ? <Navigate to="/auth?mode=login" replace /> : <LandingPage />
+                    shouldUseAppEntryRoute ? (
+                      <Navigate to="/auth?mode=login" replace />
+                    ) : (
+                      <LandingPage />
+                    )
                   }
                 />
                 <Route path="/join-family" element={<JoinFamilyPage />} />

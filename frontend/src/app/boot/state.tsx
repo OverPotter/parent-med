@@ -6,12 +6,17 @@ const IOS_FIRST_LAUNCH_NON_CRITICAL_DELAY_MS = 1400;
 const IOS_REPEAT_LAUNCH_NON_CRITICAL_DELAY_MS = 600;
 
 export function RouteFallback() {
+  const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
   const [isBootReady, setIsBootReady] = useState(() => {
     if (typeof window === "undefined") {
       return false;
     }
     return Boolean((window as Window & { __PM_BOOT_READY?: boolean }).__PM_BOOT_READY);
   });
+
+  if (!isNativeIos) {
+    return null;
+  }
 
   useEffect(() => {
     if (typeof window === "undefined" || isBootReady) {

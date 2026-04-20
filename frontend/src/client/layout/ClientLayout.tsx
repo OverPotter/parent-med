@@ -332,7 +332,7 @@ export function ClientLayout() {
           void pushPrompt.handleEnablePush();
         }}
       />
-      {isBootSplashMounted ? (
+      {isIosShell && isBootSplashMounted ? (
         <AppBootSplash className="app-boot-splash--overlay" isClosing={isBootSplashClosing} />
       ) : null}
     </>

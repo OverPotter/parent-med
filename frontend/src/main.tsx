@@ -53,7 +53,7 @@ const queryClient = new QueryClient({
 
 loadOptionalWebFonts();
 
-if (!Capacitor.isNativePlatform()) {
+if (!Capacitor.isNativePlatform() && import.meta.env.PROD) {
   registerSW({
     immediate: true,
   });
@@ -64,12 +64,46 @@ appLog.info(
 );
 
 if (typeof window !== "undefined") {
+  const handleChunkRecovery = () => {
+    const reloadKey = "pm_chunk_recovery_reload_once";
+    if (window.sessionStorage.getItem(reloadKey) === "1") {
+      return;
+    }
+    window.sessionStorage.setItem(reloadKey, "1");
+    window.location.reload();
+  };
+
+  window.addEventListener("vite:preloadError", (event) => {
+    event.preventDefault();
+    appLog.warn("vite preload error, forcing one-time reload");
+    handleChunkRecovery();
+  });
+
   window.addEventListener("error", (event) => {
     const source = event.filename ? ` @ ${event.filename}:${event.lineno}:${event.colno}` : "";
     appLog.error(`Runtime error: ${event.message}${source}`, event.error);
+    if (
+      typeof event.message === "string" &&
+      /Failed to fetch dynamically imported module|Importing a module script failed/i.test(
+        event.message
+      )
+    ) {
+      appLog.warn("dynamic import failed, forcing one-time reload");
+      handleChunkRecovery();
+    }
   });
   window.addEventListener("unhandledrejection", (event) => {
     appLog.error("Unhandled promise rejection", event.reason);
+    const message =
+      typeof event.reason === "string"
+        ? event.reason
+        : event.reason instanceof Error
+          ? event.reason.message
+          : "";
+    if (/Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
+      appLog.warn("dynamic import rejection, forcing one-time reload");
+      handleChunkRecovery();
+    }
   });
 }
 
@@ -86,3 +120,13 @@ createRoot(document.getElementById("root")!).render(
     </StrictMode>
   )
 );
+
+if (typeof window !== "undefined" && !Capacitor.isNativePlatform()) {
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      if (!(window as Window & { __PM_BOOT_READY?: boolean }).__PM_BOOT_READY) {
+        window.dispatchEvent(new Event("app:boot-ready"));
+      }
+    });
+  });
+}
