@@ -142,8 +142,7 @@ export function TemperatureForm({
           {language === "ru" ? "Температура" : "Temperature"}
         </span>
         <input
-          type="number"
-          step={0.1}
+          type="text"
           inputMode="decimal"
           value={value}
           onChange={(e) => onChange(e.target.value)}

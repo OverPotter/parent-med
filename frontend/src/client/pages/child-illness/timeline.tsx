@@ -32,7 +32,7 @@ export function EpisodeTimelineList({
           className="grid grid-cols-[4.4rem_minmax(0,1fr)] items-start gap-3 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:grid-cols-[5rem_minmax(0,1fr)] sm:px-4"
         >
           <span className="min-w-0 pt-0.5 text-xs font-semibold tabular-nums text-muted">
-            <span className="block leading-4 text-foreground">{formatChildTime(item.at)}</span>
+            <span className="block leading-4 text-foreground">{formatChildTime(item.at, language)}</span>
             <span className="block truncate text-[0.68rem] leading-4">
               {formatChildDate(item.at, language, { month: "short" })}
             </span>

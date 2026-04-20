@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { createWeightEntry } from "@shared/api/weightEntries";
-import { DisclosureHeader } from "@shared/components/DisclosureHeader";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { HouseholdMedicine, WeightEntry } from "@shared/types/api";
@@ -24,6 +23,9 @@ import {
   reminderModeButtonClass,
 } from "./reminderUtils";
 import { CabinetMedicinePicker } from "./CabinetMedicinePicker";
+
+const reminderComposerPrimaryActionClass = `${illnessCompactPrimaryButtonClass} min-h-[2.45rem] px-3.5 text-[0.79rem] sm:min-h-[2.55rem] sm:text-[0.81rem]`;
+const reminderComposerSecondaryActionClass = `${illnessCompactSecondaryButtonClass} min-h-[2.45rem] px-3.5 text-[0.79rem] sm:min-h-[2.55rem] sm:text-[0.81rem]`;
 
 function InlineHint({ text }: { text: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -284,20 +286,26 @@ export function MedicationPlanComposer({
 
       <div className={`${illnessPanelSoftClass} rounded-[28px] p-4 sm:p-5`}>
         <div>
-          <DisclosureHeader
-            isOpen={isAdvancedOpen}
-            onToggle={() => setIsAdvancedOpen((current) => !current)}
-            desktopClosedLabel={language === "ru" ? "Дополнительно" : "Advanced"}
-            desktopOpenLabel={language === "ru" ? "Скрыть" : "Hide"}
-            mobileClosedLabel={language === "ru" ? "Доп." : "More"}
-            mobileOpenLabel={language === "ru" ? "Скрыть" : "Hide"}
-          >
-            <div>
-              <h5 className="text-sm font-semibold text-foreground">
-                {language === "ru" ? "Дополнительные настройки" : "Advanced settings"}
-              </h5>
-            </div>
-          </DisclosureHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <p className="text-sm leading-6 text-muted">
+              {language === "ru"
+                ? "Проверка по весу и лимитам приёма, если она нужна."
+                : "Weight and dose-limit checks if you need them."}
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsAdvancedOpen((current) => !current)}
+              className={reminderComposerSecondaryActionClass}
+            >
+              {isAdvancedOpen
+                ? language === "ru"
+                  ? "Скрыть"
+                  : "Hide"
+                : language === "ru"
+                  ? "Доп. настройки"
+                  : "Advanced"}
+            </button>
+          </div>
 
           {isAdvancedOpen && (
             <div className="mt-4 grid gap-3 border-t border-border/60 pt-4 xl:grid-cols-2">
@@ -421,7 +429,7 @@ export function MedicationPlanComposer({
         <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">{weightHint}</div>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
         <button
           type="button"
           onClick={() => {
@@ -463,7 +471,7 @@ export function MedicationPlanComposer({
             hasInvalidDose ||
             parsedIntervalMinutes === null
           }
-          className={illnessCompactPrimaryButtonClass}
+          className={reminderComposerPrimaryActionClass}
         >
           {isPending ? (language === "ru" ? "Сохраняем…" : "Saving…") : submitLabel}
         </button>
@@ -475,7 +483,7 @@ export function MedicationPlanComposer({
               onCancel();
             }}
             disabled={isPending}
-            className={illnessCompactSecondaryButtonClass}
+            className={reminderComposerSecondaryActionClass}
           >
             {language === "ru" ? "Отмена" : "Cancel"}
           </button>

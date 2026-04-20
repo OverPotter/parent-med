@@ -13,9 +13,9 @@ import { MedicationPlanComposer, MedicationPlanDetail, MedicationPlanList } from
 import {
   appBtnFilledClass,
   appBtnSecondaryClass,
+  appPillActionClass,
   SectionTitle,
   illnessCompactPrimaryButtonClass,
-  illnessCompactSecondaryButtonClass,
   illnessListClass,
   illnessPanelSoftClass,
 } from "./shared";
@@ -97,7 +97,7 @@ export function TemperatureQuickView(props: {
               >
                 <span className="min-w-0 text-xs font-semibold tabular-nums text-muted">
                   <span className="block leading-4 text-foreground">
-                    {formatChildTime(entry.measuredAt)}
+                    {formatChildTime(entry.measuredAt, language)}
                   </span>
                   <span className="block truncate text-[0.68rem] leading-4">
                     {formatChildDate(entry.measuredAt, language, { month: "short" })}
@@ -232,7 +232,7 @@ export function AdministrationQuickView(props: {
               >
                 <span className="min-w-0 text-xs font-semibold tabular-nums text-muted">
                   <span className="block leading-4 text-foreground">
-                    {formatChildTime(entry.administeredAt)}
+                    {formatChildTime(entry.administeredAt, language)}
                   </span>
                   <span className="block truncate text-[0.68rem] leading-4">
                     {formatChildDate(entry.administeredAt, language, { month: "short" })}
@@ -354,7 +354,7 @@ export function CommentQuickView(props: {
               >
                 <span className="min-w-0 pt-0.5 text-xs font-semibold tabular-nums text-muted">
                   <span className="block leading-4 text-foreground">
-                    {formatChildTime(entry.createdAt)}
+                    {formatChildTime(entry.createdAt, language)}
                   </span>
                   <span className="block truncate text-[0.68rem] leading-4">
                     {formatChildDate(entry.createdAt, language, { month: "short" })}
@@ -504,7 +504,7 @@ export function ReminderListQuickView(props: {
         action={
           <Link
             to={`/children/${childId}/illness?focus=reminder-create`}
-            className={illnessCompactSecondaryButtonClass}
+            className={appPillActionClass}
           >
             {language === "ru" ? "Добавить" : "Add"}
           </Link>
@@ -585,7 +585,7 @@ export function ReminderDetailQuickView(props: {
           action={
             <Link
               to={`/children/${childId}/illness?focus=reminders`}
-              className={illnessCompactSecondaryButtonClass}
+              className={appPillActionClass}
             >
               {language === "ru" ? "К списку" : "Back"}
             </Link>
@@ -624,7 +624,7 @@ export function ReminderDetailQuickView(props: {
           action={
             <Link
               to={`/children/${childId}/illness?focus=reminders`}
-              className={illnessCompactSecondaryButtonClass}
+              className={appPillActionClass}
             >
               {language === "ru" ? "К списку" : "Back"}
             </Link>
@@ -693,14 +693,6 @@ export function ReminderCreateQuickView(props: {
         <SectionTitle
           title={language === "ru" ? "Новое напоминание" : "New reminder"}
           subtitle={language === "ru" ? "Настройте схему приёма." : "Set up the dosing schedule."}
-          action={
-            <Link
-              to={`/children/${childId}/illness?focus=reminders`}
-              className={illnessCompactSecondaryButtonClass}
-            >
-              {language === "ru" ? "К списку" : "Back"}
-            </Link>
-          }
         />
       ) : null}
 

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { blurActiveField } from "@shared/utils/focus";
 
 type ConfirmDialogProps = {
@@ -53,28 +54,22 @@ export function ConfirmDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[160] flex items-center justify-center p-4"
-      style={{
-        paddingTop: "max(1rem, env(safe-area-inset-top, 0px))",
-        paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
-      }}
+    <OverlayDialog
+      isOpen={isOpen}
+      onClose={
+        isPending
+          ? undefined
+          : () => {
+              blurActiveField();
+              onCancel();
+            }
+      }
+      closeDisabled={isPending}
+      zIndexClassName="z-[160]"
+      backdropAriaLabel={resolvedCloseAriaLabel}
     >
-      <button
-        type="button"
-        aria-label={resolvedCloseAriaLabel}
-        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_82%,var(--color-surface-soft)_18%)]"
-        onClick={
-          isPending
-            ? undefined
-            : () => {
-                blurActiveField();
-                onCancel();
-              }
-        }
-      />
       <div
-        className={`soft-panel relative z-[161] w-full max-w-md rounded-[30px] p-5 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-6 ${
+        className={`soft-panel relative z-[1] w-full max-w-md rounded-[30px] p-5 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-6 ${
           confirmTone === "danger"
             ? "ring-1 ring-[color:color-mix(in_srgb,var(--color-danger)_28%,transparent)]"
             : ""
@@ -130,6 +125,6 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </OverlayDialog>
   );
 }

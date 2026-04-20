@@ -1,9 +1,16 @@
-import { LanguageSwitch } from "@shared/components/LanguageSwitch";
-import { Surface } from "@shared/components/Surface";
+import { useRef, useState, useTransition } from "react";
+import { updateAccountLanguage } from "@shared/api/auth";
+import { ChoiceSheetField, type ChoiceSheetOption } from "@shared/components/ChoiceSheetField";
 import type { AppLanguage } from "@shared/i18n";
+import { useI18n } from "@shared/hooks/useI18n";
+import { useAppStore } from "@shared/store/useAppStore";
 import { tSettings } from "./copy";
+import { SettingsSection } from "./ui";
 
 type ThemePreference = "light" | "dark" | "system";
+
+const settingsChoiceTriggerClassName =
+  "!min-w-[4.35rem] !min-h-[2.34rem] !justify-between !gap-1 !px-2.25 !py-0 !text-[0.64rem] !font-semibold !normal-case !tracking-[-0.01em] sm:!min-h-[2.42rem] sm:!text-[0.68rem]";
 
 export function SettingsAppPreferencesSection({
   language,
@@ -18,77 +25,139 @@ export function SettingsAppPreferencesSection({
   medicationIntervalUnit: "hours" | "minutes";
   setMedicationIntervalUnit: (value: "hours" | "minutes") => void;
 }) {
+  const themeOptions: ChoiceSheetOption<ThemePreference>[] = [
+    {
+      value: "light",
+      label: tSettings(language, "themeLight"),
+      shortLabel: language === "ru" ? "День" : "Day",
+    },
+    {
+      value: "dark",
+      label: tSettings(language, "themeDark"),
+      shortLabel: language === "ru" ? "Ночь" : "Night",
+    },
+    {
+      value: "system",
+      label: tSettings(language, "themeAuto"),
+      shortLabel: language === "ru" ? "Авто" : "Auto",
+    },
+  ];
+
+  const medicationPlanOptions: ChoiceSheetOption<"hours" | "minutes">[] = [
+    {
+      value: "hours",
+      label: tSettings(language, "hours"),
+      shortLabel: language === "ru" ? "Часы" : "Hours",
+    },
+    {
+      value: "minutes",
+      label: tSettings(language, "minutes"),
+      shortLabel: language === "ru" ? "Мин." : "Min.",
+    },
+  ];
+
   return (
     <>
-      <Surface className="p-5 sm:p-6">
-        <p className="app-card-title">{tSettings(language, "appSettings")}</p>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          {tSettings(language, "appSettingsHint")}
-        </p>
+      <SettingsSection
+        title={tSettings(language, "interfaceLanguage")}
+        hint={tSettings(language, "interfaceLanguageHint")}
+        badge={<SettingsLanguageField language={language} />}
+      >
+        {null}
+      </SettingsSection>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="soft-card relative z-20 overflow-visible rounded-[24px] px-4 py-4 sm:px-5">
-            <p className="text-xs font-semibold tracking-[0.08em] text-muted">
-              {tSettings(language, "interfaceLanguage")}
-            </p>
-            <div className="mt-3">
-              <LanguageSwitch triggerClassName="soft-button-secondary min-h-[2.85rem] px-3.5 text-[0.84rem] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]" />
-            </div>
-          </div>
+      <SettingsSection
+        title={tSettings(language, "interfaceTheme")}
+        hint={tSettings(language, "interfaceThemeHint")}
+        badge={
+          <ChoiceSheetField
+            value={theme}
+            options={themeOptions}
+            onChange={async (nextTheme) => setTheme(nextTheme)}
+            dialogTitle={language === "ru" ? "Выберите тему" : "Choose theme"}
+            dialogHint={tSettings(language, "interfaceThemeHint")}
+            dialogAriaLabel={language === "ru" ? "Выбор темы" : "Choose theme"}
+            triggerClassName={settingsChoiceTriggerClassName}
+            selectActionLabel={language === "ru" ? "Выбрать" : "Select"}
+          />
+        }
+      >
+        {null}
+      </SettingsSection>
 
-          <div className="soft-card relative z-10 rounded-[24px] px-4 py-4 sm:px-5">
-            <p className="text-xs font-semibold tracking-[0.08em] text-muted">
-              {tSettings(language, "interfaceTheme")}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(
-                [
-                  { value: "light", label: tSettings(language, "themeLight") },
-                  { value: "dark", label: tSettings(language, "themeDark") },
-                  { value: "system", label: tSettings(language, "themeAuto") },
-                ] as const
-              ).map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setTheme(option.value)}
-                  className={`${
-                    theme === option.value ? "soft-tab-active" : "soft-tab"
-                  } inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Surface>
-
-      <Surface className="p-5 sm:p-6">
-        <p className="app-card-title">{tSettings(language, "medicationPlans")}</p>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          {tSettings(language, "medicationPlansHint")}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {(
-            [
-              { value: "hours", label: tSettings(language, "hours") },
-              { value: "minutes", label: tSettings(language, "minutes") },
-            ] as const
-          ).map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => setMedicationIntervalUnit(option.value)}
-              className={`${
-                medicationIntervalUnit === option.value ? "soft-tab-active" : "soft-tab"
-              } inline-flex min-h-[2.85rem] items-center justify-center px-3.5 text-[0.84rem] tracking-[-0.025em] sm:min-h-[3.05rem] sm:px-4 sm:text-[0.89rem]`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </Surface>
+      <SettingsSection
+        title={tSettings(language, "medicationPlans")}
+        hint={tSettings(language, "medicationPlansHint")}
+        badge={
+          <ChoiceSheetField
+            value={medicationIntervalUnit}
+            options={medicationPlanOptions}
+            onChange={async (nextUnit) => setMedicationIntervalUnit(nextUnit)}
+            dialogTitle={language === "ru" ? "Единица интервала" : "Interval unit"}
+            dialogHint={tSettings(language, "medicationPlansHint")}
+            dialogAriaLabel={language === "ru" ? "Единица интервала" : "Interval unit"}
+            triggerClassName={settingsChoiceTriggerClassName}
+            selectActionLabel={language === "ru" ? "Выбрать" : "Select"}
+          />
+        }
+      >
+        {null}
+      </SettingsSection>
     </>
+  );
+}
+
+function SettingsLanguageField({ language }: { language: AppLanguage }) {
+  const { setLanguage } = useI18n();
+  const authToken = useAppStore((s) => s.authToken);
+  const accountId = useAppStore((s) => s.accountId);
+  const setAccountPreferredLanguage = useAppStore((s) => s.setAccountPreferredLanguage);
+  const [isChangingLanguage, startLanguageTransition] = useTransition();
+  const [isPersisting, setIsPersisting] = useState(false);
+  const requestSeqRef = useRef(0);
+
+  const options: ChoiceSheetOption<AppLanguage>[] = [
+    { value: "ru", label: "RU", shortLabel: "RU" },
+    { value: "en", label: "EN", shortLabel: "EN" },
+  ];
+
+  return (
+    <ChoiceSheetField
+      value={language}
+      options={options}
+      onChange={async (nextLanguage) => {
+        if (nextLanguage === language || isChangingLanguage || isPersisting) {
+          return;
+        }
+
+        startLanguageTransition(() => {
+          setLanguage(nextLanguage);
+        });
+
+        if (authToken && accountId) {
+          setIsPersisting(true);
+          const requestSeq = requestSeqRef.current + 1;
+          requestSeqRef.current = requestSeq;
+          try {
+            const account = await updateAccountLanguage(nextLanguage);
+            if (requestSeq === requestSeqRef.current) {
+              setAccountPreferredLanguage(account.preferredLanguage);
+            }
+          } catch {
+            // Keep the local choice even if the server could not persist it yet.
+          } finally {
+            if (requestSeq === requestSeqRef.current) {
+              setIsPersisting(false);
+            }
+          }
+        }
+      }}
+      dialogTitle={language === "ru" ? "Выберите язык" : "Choose language"}
+      dialogHint={tSettings(language, "interfaceLanguageHint")}
+      dialogAriaLabel={language === "ru" ? "Выбор языка" : "Choose language"}
+      triggerClassName={settingsChoiceTriggerClassName}
+      selectActionLabel={language === "ru" ? "Выбрать" : "Select"}
+      disabled={isChangingLanguage || isPersisting}
+    />
   );
 }

@@ -376,8 +376,18 @@ export function FieldIcon({ kind }: { kind: "pill" | "dose" | "time" }) {
   );
 }
 
-export function EditorShell({ children }: { children: ReactNode }) {
-  return <div className={`${flowShellClass} ${flowShellSpacingClass}`}>{children}</div>;
+export function EditorShell({
+  children,
+  maxWidthClassName = flowShellClass,
+}: {
+  children: ReactNode;
+  maxWidthClassName?: string;
+}) {
+  return (
+    <div className={`child-profile-shell ${flowShellSpacingClass}`}>
+      <div className={`mx-auto w-full ${maxWidthClassName}`}>{children}</div>
+    </div>
+  );
 }
 
 export function FlowScreenHeader({
@@ -386,17 +396,20 @@ export function FlowScreenHeader({
   eyebrow,
   title,
   subtitle,
+  containerClassName,
 }: {
   backLabel: string;
   onBack: () => void;
   eyebrow: string;
   title?: string;
   subtitle?: string;
+  containerClassName?: string;
 }) {
   return (
     <ChildSectionTopBar
       onBack={onBack}
       backLabel={backLabel}
+      containerClassName={containerClassName}
       title={
         title ? (
           <>

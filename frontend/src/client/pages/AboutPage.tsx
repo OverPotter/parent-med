@@ -1,26 +1,18 @@
 import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { PageIntro } from "@shared/components/PageIntro";
-import { SectionPathHeader } from "@shared/components/SectionPathHeader";
-import { Surface } from "@shared/components/Surface";
+import { RowSurface, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 
 export function AboutPage() {
-  const { copy, language } = useI18n();
+  const { copy } = useI18n();
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
-        title={<BrandWordmark className="brand-wordmark-page-title" />}
+        title={copy.about.eyebrow}
         subtitle={copy.about.subtitle}
-        eyebrow={copy.about.eyebrow}
-        hideOnMobile
-      />
-      <SectionPathHeader
-        backTo="/more"
-        backLabel={language === "ru" ? "← К разделу «Еще»" : "← Back to more"}
-        pathLabel={language === "ru" ? "Еще / О приложении" : "More / About"}
-        title={copy.common.brandName}
-        hint={copy.about.subtitle}
+        compactOnMobile
+        className="app-safe-top-standalone"
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -29,8 +21,8 @@ export function AboutPage() {
         ))}
       </div>
 
-      <Surface className="overflow-hidden">
-        <div className="border-b border-border/70 px-5 py-5 sm:px-8 sm:py-7">
+      <section className="space-y-4">
+        <div className="min-w-0">
           <p className="app-kicker">{copy.about.install.eyebrow}</p>
           <h2 className="app-title mt-2 text-[1.7rem] sm:text-[2.15rem]">
             {copy.about.install.title}
@@ -40,12 +32,12 @@ export function AboutPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 px-5 py-5 sm:px-8 sm:py-7 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-3">
           {copy.about.install.cards.map((item) => (
             <InstallCard key={item.title} title={item.title} steps={item.steps} />
           ))}
         </div>
-      </Surface>
+      </section>
     </div>
   );
 }
@@ -61,7 +53,7 @@ function FeatureCard({ title, description }: { title: string; description: strin
 
 function InstallCard({ title, steps }: { title: string; steps: string[] }) {
   return (
-    <div className="soft-card rounded-[30px] px-4 py-4 sm:px-5">
+    <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5">
       <h3 className="app-card-title">{title}</h3>
       <ol className="mt-3 space-y-2 text-sm leading-7 text-muted">
         {steps.map((step, index) => (
@@ -70,6 +62,6 @@ function InstallCard({ title, steps }: { title: string; steps: string[] }) {
           </li>
         ))}
       </ol>
-    </div>
+    </RowSurface>
   );
 }

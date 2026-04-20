@@ -1,5 +1,6 @@
-import { createPortal } from "react-dom";
-import { type TouchEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarPickerDialog as SharedCalendarPickerDialog } from "@shared/components/CalendarPickerDialog";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n/types";
 import {
   actionPrimaryClass,
@@ -440,11 +441,16 @@ function CoursePeriodDialog({
     if (calendarSource === "custom") setIsCustomDatesOpen(true);
   };
 
-  return createPortal(
+  return (
     <>
-      <div className="fixed inset-0 z-[180] flex items-center justify-center bg-background p-4 sm:p-6">
-        <button type="button" onClick={onCancel} className="absolute inset-0 bg-background" />
-        <div className="soft-panel relative z-10 w-full max-w-md rounded-[30px] border border-border bg-surface p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
+      <OverlayDialog
+        isOpen={isOpen}
+        onClose={onCancel}
+        zIndexClassName="z-[180]"
+        backdropAriaLabel={language === "ru" ? "Закрыть период курса" : "Close course period"}
+        backdropClassName="bg-background"
+      >
+        <div className="soft-panel relative z-[1] w-full max-w-md rounded-[30px] border border-border bg-surface p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
           <div className="mb-4 h-1.5 w-14 rounded-full bg-primary/55" aria-hidden="true" />
           <div className="space-y-1.5">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
@@ -529,7 +535,7 @@ function CoursePeriodDialog({
             </button>
           </div>
         </div>
-      </div>
+      </OverlayDialog>
 
       <CalendarPickerDialog
         isOpen={calendarEdge !== null}
@@ -576,8 +582,7 @@ function CoursePeriodDialog({
           setCalendarEdge(edge);
         }}
       />
-    </>,
-    document.body
+    </>
   );
 }
 
@@ -598,15 +603,15 @@ function CustomCourseDatesDialog({
 }) {
   if (!isOpen) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 z-[260] flex items-center justify-center bg-background p-4 sm:p-6">
-      <button
-        type="button"
-        aria-label={language === "ru" ? "Закрыть свои даты" : "Close custom dates"}
-        onClick={onCancel}
-        className="absolute inset-0 bg-background"
-      />
-      <div className="soft-panel relative z-10 w-full max-w-md rounded-[30px] border border-border bg-surface p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
+  return (
+    <OverlayDialog
+      isOpen={isOpen}
+      onClose={onCancel}
+      zIndexClassName="z-[260]"
+      backdropAriaLabel={language === "ru" ? "Закрыть свои даты" : "Close custom dates"}
+      backdropClassName="bg-background"
+    >
+      <div className="soft-panel relative z-[1] w-full max-w-md rounded-[30px] border border-border bg-surface p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
         <div className="mb-4 h-1.5 w-14 rounded-full bg-primary/55" aria-hidden="true" />
         <div className="space-y-1.5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
@@ -645,8 +650,7 @@ function CustomCourseDatesDialog({
           </button>
         </div>
       </div>
-    </div>,
-    document.body
+    </OverlayDialog>
   );
 }
 
@@ -755,182 +759,18 @@ function CalendarPickerDialog({
   onCancel: () => void;
   onCloseComplete?: () => void;
 }) {
-  const [viewDate, setViewDate] = useState(() => parseLocalDate(selectedDate || getTodayIso()));
-  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const calendarDays = useMemo(() => buildPlainCalendarDays(viewDate), [viewDate]);
-  const normalizedRange = useMemo(
-    () => buildCustomDateRange(startDate, endDate),
-    [endDate, startDate]
-  );
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setViewDate(parseLocalDate(selectedDate || getTodayIso()));
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onCancel, selectedDate]);
-
-  useEffect(() => {
-    if (isOpen) return;
-    onCloseComplete?.();
-  }, [isOpen, onCloseComplete]);
-
-  if (!isOpen) return null;
-
-  const shiftViewMonth = (offset: number) => {
-    setViewDate((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
-  };
-  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
-    const touch = event.touches[0];
-    if (!touch) return;
-    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
-  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
-    const start = swipeStartRef.current;
-    const touch = event.changedTouches[0];
-    swipeStartRef.current = null;
-    if (!start || !touch) return;
-    const deltaX = touch.clientX - start.x;
-    const deltaY = touch.clientY - start.y;
-    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.4) return;
-    shiftViewMonth(deltaX < 0 ? 1 : -1);
-  };
-  const yearOptions = buildCalendarYearOptions(viewDate);
-
-  return createPortal(
-    <div className="fixed inset-0 z-[920] flex items-center justify-center bg-[color:color-mix(in_srgb,var(--color-background)_84%,transparent)] p-4 backdrop-blur-md sm:p-6">
-      <button
-        type="button"
-        aria-label={language === "ru" ? "Закрыть календарь" : "Close calendar"}
-        onClick={onCancel}
-        className="absolute inset-0"
-      />
-      <div className="soft-panel relative z-10 max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-[30px] border border-[color:color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_94%,var(--color-background)_6%)] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)]">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="app-card-title truncate text-[1.02rem]">{title}</h3>
-          </div>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="app-header-icon-button h-9 min-h-0 w-9 shrink-0 text-sm"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="rounded-[26px] border border-[color:color-mix(in_srgb,var(--color-border)_52%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] p-2 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_48%,transparent)]">
-          <div className="grid grid-cols-[2.35rem_minmax(0,1fr)_2.35rem] items-center gap-2 rounded-[20px] bg-surface p-1.5 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_42%,transparent)]">
-            <button
-              type="button"
-              onClick={() => shiftViewMonth(-1)}
-              className="app-header-icon-button h-9 min-h-0 w-9 text-sm"
-            >
-              ←
-            </button>
-            <p className="app-card-title min-w-0 truncate text-center text-[0.95rem]">
-              {formatMonthTitle(viewDate, language)}
-            </p>
-            <button
-              type="button"
-              onClick={() => shiftViewMonth(1)}
-              className="app-header-icon-button h-9 min-h-0 w-9 text-sm"
-            >
-              →
-            </button>
-          </div>
-          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_6.6rem] gap-2">
-            <label className="relative block">
-              <span className="sr-only">{language === "ru" ? "Месяц" : "Month"}</span>
-              <select
-                value={viewDate.getMonth()}
-                onChange={(event) =>
-                  setViewDate(new Date(viewDate.getFullYear(), Number(event.target.value), 1))
-                }
-                className="soft-input min-h-[1.96rem] w-full appearance-none rounded-[14px] px-2.5 pr-7 text-[0.74rem] font-bold sm:min-h-[2.02rem] sm:text-[0.76rem]"
-              >
-                {getMonthLabels(language).map((label, index) => (
-                  <option key={label} value={index}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">
-                ▾
-              </span>
-            </label>
-            <label className="relative block">
-              <span className="sr-only">{language === "ru" ? "Год" : "Year"}</span>
-              <select
-                value={viewDate.getFullYear()}
-                onChange={(event) =>
-                  setViewDate(new Date(Number(event.target.value), viewDate.getMonth(), 1))
-                }
-                className="soft-input min-h-[1.96rem] w-full appearance-none rounded-[14px] px-2.5 pr-6 text-[0.74rem] font-bold sm:min-h-[2.02rem] sm:text-[0.76rem]"
-              >
-                {yearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-              <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted">
-                ▾
-              </span>
-            </label>
-          </div>
-
-          <div
-            className="touch-pan-y select-none px-1 pb-1 pt-2"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-bold text-muted">
-              {getWeekdayLabels(language).map((label) => (
-                <div key={label} className="py-0.5">
-                  {label}
-                </div>
-              ))}
-            </div>
-            <div className="mt-1.5 grid grid-cols-7 gap-0.5">
-              {calendarDays.map((day) => {
-                const date = parseLocalDate(day.date);
-                const isSelected =
-                  day.date === startDate ||
-                  day.date === endDate ||
-                  isDateInsideRange(date, normalizedRange);
-                const isEdge = day.date === startDate || day.date === endDate;
-                const isToday = day.date === getTodayIso();
-                return (
-                  <button
-                    key={day.date}
-                    type="button"
-                    onClick={() => onSelectDate(day.date)}
-                    className={[
-                      "flex h-8 items-center justify-center rounded-[1rem] text-[0.82rem] font-bold transition",
-                      isEdge
-                        ? "bg-primary text-primary-foreground shadow-[0_8px_20px_color-mix(in_srgb,var(--color-primary)_22%,transparent)]"
-                        : isSelected
-                          ? "bg-primary/12 text-foreground"
-                          : day.inMonth
-                            ? "bg-surface text-foreground"
-                            : "bg-surface text-muted opacity-45",
-                      isToday && !isEdge ? "ring-1 ring-primary/25" : "",
-                    ].join(" ")}
-                  >
-                    {date.getDate()}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
+  return (
+    <SharedCalendarPickerDialog
+      isOpen={isOpen}
+      title={title}
+      language={language}
+      selectedDate={selectedDate}
+      rangeStartDate={startDate}
+      rangeEndDate={endDate}
+      onSelectDate={onSelectDate}
+      onCancel={onCancel}
+      onCloseComplete={onCloseComplete}
+    />
   );
 }
 
@@ -944,61 +784,4 @@ function formatShortDate(date: Date, language: "ru" | "en") {
     day: "2-digit",
     month: "short",
   }).format(date);
-}
-
-function formatMonthTitle(date: Date, language: "ru" | "en") {
-  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
-    month: "long",
-    year: "numeric",
-  }).format(date);
-}
-
-function getMonthLabels(language: "ru" | "en") {
-  return Array.from({ length: 12 }, (_, index) =>
-    new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", { month: "long" }).format(
-      new Date(2024, index, 1)
-    )
-  );
-}
-
-function getWeekdayLabels(language: "ru" | "en") {
-  return language === "ru"
-    ? ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
-    : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-}
-
-function buildCalendarYearOptions(date: Date) {
-  const currentYear = new Date().getFullYear();
-  const center = Math.max(currentYear, date.getFullYear());
-  return Array.from({ length: 9 }, (_, index) => center - 6 + index).filter((year) => year >= 2000);
-}
-
-function buildPlainCalendarDays(viewDate: Date) {
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const gridStart = new Date(firstDay);
-  gridStart.setDate(firstDay.getDate() - ((firstDay.getDay() + 6) % 7));
-  return Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(gridStart);
-    date.setDate(gridStart.getDate() + index);
-    return { date: toIsoDate(date), inMonth: date.getMonth() === month };
-  });
-}
-
-function buildCustomDateRange(startDate: string, endDate: string) {
-  const first = parseLocalDate(startDate);
-  const second = parseLocalDate(endDate);
-  return first <= second ? { start: first, end: second } : { start: second, end: first };
-}
-
-function isDateInsideRange(date: Date, range: { start: Date; end: Date }) {
-  return date >= range.start && date <= range.end;
-}
-
-function toIsoDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }

@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { PageIntro } from "@shared/components/PageIntro";
-import { SectionPathHeader } from "@shared/components/SectionPathHeader";
-import { RowSurface, Surface } from "@shared/components/Surface";
+import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { getPrivacyPolicyUrl, getSupportUrl, getTermsOfUseUrl } from "@shared/config/legal";
 
@@ -51,68 +50,83 @@ export function LegalPage() {
             ? "Политика конфиденциальности, условия использования и контакты."
             : "Privacy policy, terms of use and support contacts."
         }
+        action={
+          <Link
+            to="/more"
+            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
+        }
         compactOnMobile
         hideOnMobile
-      />
-      <SectionPathHeader
-        backTo="/more"
-        backLabel={language === "ru" ? "← К разделу «Еще»" : "← Back to more"}
-        pathLabel={language === "ru" ? "Еще / Правовая информация" : "More / Legal"}
-        title={language === "ru" ? "Правовая информация" : "Legal information"}
-        hint={
-          language === "ru"
-            ? "Политика конфиденциальности, условия использования и контакты."
-            : "Privacy policy, terms of use and support contacts."
-        }
+        className="app-safe-top-standalone"
       />
 
-      <Surface className="p-5 sm:p-6">
-        <div className="space-y-3">
-          {items.map((item) => {
-            const content = (
-              <RowSurface className="rounded-[22px] px-4 py-4 sm:px-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="app-card-title">{item.title}</p>
-                    <p className="mt-1 text-sm text-muted">{item.description}</p>
-                  </div>
-                  <span className="soft-pill rounded-full px-2.5 py-2 text-[11px]">
-                    <ExternalArrow />
-                  </span>
-                </div>
-              </RowSurface>
-            );
-
-            if (item.href.startsWith("/")) {
-              return (
-                <Link key={item.title} to={item.href} className="block">
-                  {content}
-                </Link>
-              );
-            }
-
-            return (
-              <a
-                key={item.title}
-                href={item.href}
-                target="_blank"
-                rel="noreferrer"
-                className="block"
-              >
-                {content}
-              </a>
-            );
-          })}
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <Link
+            to="/more"
+            className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
+          <h1 className="app-mobile-section-intro__title">
+            {language === "ru" ? "Правовая информация" : "Legal information"}
+          </h1>
+          <p className="app-mobile-section-intro__hint">
+            {language === "ru"
+              ? "Политика конфиденциальности, условия использования и контакты."
+              : "Privacy policy, terms of use and support contacts."}
+          </p>
         </div>
-      </Surface>
+      </div>
 
-      <Surface className="p-5 sm:p-6">
+      <div className="space-y-3 sm:space-y-4">
+        {items.map((item) => {
+          const content = (
+            <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="app-card-title">{item.title}</p>
+                  <p className="mt-1.5 text-sm leading-6 text-muted">{item.description}</p>
+                </div>
+                <span className="mt-1 shrink-0 text-muted">
+                  <ExternalArrow />
+                </span>
+              </div>
+            </RowSurface>
+          );
+
+          if (item.href.startsWith("/")) {
+            return (
+              <Link key={item.title} to={item.href} className="block">
+                {content}
+              </Link>
+            );
+          }
+
+          return (
+            <a
+              key={item.title}
+              href={item.href}
+              target="_blank"
+              rel="noreferrer"
+              className="block"
+            >
+              {content}
+            </a>
+          );
+        })}
+      </div>
+
+      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
         <p className="text-sm leading-7 text-muted">
           {language === "ru"
             ? "Медицинский дисклеймер: сервис носит информационный характер. Мы не врачи, не ставим диагнозы, не назначаем лечение и не несем ответственность за медицинские решения."
             : "Medical disclaimer: this service is informational. We are not doctors, we do not diagnose or prescribe treatment, and we are not responsible for medical decisions."}
         </p>
-      </Surface>
+      </RowSurface>
     </div>
   );
 }

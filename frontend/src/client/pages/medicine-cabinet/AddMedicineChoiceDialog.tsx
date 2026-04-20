@@ -1,7 +1,8 @@
 import type { AppLanguage } from "@shared/i18n";
+import { ChoiceSheetList } from "@shared/components/ChoiceSheetField";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { tCabinet } from "./copy";
-import { MedicineCabinetHeader } from "./MedicineCabinetHeader";
-import { cabinetAddPageClass, cabinetChoiceActionClass, cabinetPanelClass } from "./styles";
+import { cabinetPanelClass } from "./styles";
 
 export function AddMedicineChoiceDialog({
   language,
@@ -15,53 +16,53 @@ export function AddMedicineChoiceDialog({
   onManual: () => void;
 }) {
   return (
-    <div className={`${cabinetAddPageClass} flex-col overflow-hidden py-2 sm:py-6`}>
-      <MedicineCabinetHeader
-        backLabel={`← ${tCabinet(language, "back")}`}
-        onBack={onClose}
-        title={tCabinet(language, "addChoiceTitle")}
-        hint={tCabinet(language, "addChoiceSubtitle")}
-        actionLabel={tCabinet(language, "close")}
-        onAction={onClose}
-      />
-      <div className="flex flex-1 items-start justify-center py-4 sm:py-6">
+    <OverlayDialog
+      isOpen
+      onClose={onClose}
+      placement="bottom"
+      zIndexClassName="z-[890]"
+      backdropAriaLabel={language === "ru" ? "Закрыть выбор добавления" : "Close add options"}
+      containerClassName="flex items-end"
+      backdropClassName="bg-[rgba(15,23,42,0.32)]"
+    >
+      <div
+        data-ios-disable-back-swipe="true"
+        className="relative z-[1] w-full rounded-t-[30px] bg-background px-4 pb-[max(1.25rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))] pt-4 shadow-[0_-24px_64px_rgba(15,23,42,0.24)] sm:mx-auto sm:max-w-xl"
+      >
+        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
+        <div className="space-y-1.5">
+          <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
+            {tCabinet(language, "addChoiceTitle")}
+          </h2>
+          <p className="text-sm leading-5 text-muted">{tCabinet(language, "addChoiceSubtitle")}</p>
+        </div>
         <div
-          className={`${cabinetPanelClass} w-full max-w-[27rem] p-3.5 shadow-[0_24px_72px_color-mix(in_srgb,var(--color-shadow)_34%,transparent)] sm:p-4.5`}
+          className={`${cabinetPanelClass} mt-4 w-full p-3.5 shadow-[0_24px_72px_color-mix(in_srgb,var(--color-shadow)_34%,transparent)] sm:p-4.5`}
         >
-          <div className="grid gap-2">
-            <button
-              type="button"
-              onClick={onCatalog}
-              className={`${cabinetChoiceActionClass} border-[color:color-mix(in_srgb,var(--color-primary)_28%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-surface)_92%)]`}
-            >
-              <span className="mt-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_76%,var(--color-foreground)_24%)]" />
-              <span className="grid min-w-0 gap-0.5">
-                <span className="text-[0.92rem] font-extrabold tracking-[-0.03em] text-foreground">
-                  {tCabinet(language, "addFromCatalog")}
-                </span>
-                <span className="whitespace-normal text-[0.76rem] font-semibold leading-5 text-muted">
-                  {tCabinet(language, "addFromCatalogHint")}
-                </span>
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={onManual}
-              className={`${cabinetChoiceActionClass} border-[color:color-mix(in_srgb,var(--color-border)_54%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_70%,var(--color-background)_30%)]`}
-            >
-              <span className="mt-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_62%,var(--color-foreground)_20%)]" />
-              <span className="grid min-w-0 gap-0.5">
-                <span className="text-[0.92rem] font-extrabold tracking-[-0.03em] text-foreground">
-                  {tCabinet(language, "addOwnMedicine")}
-                </span>
-                <span className="whitespace-normal text-[0.76rem] font-semibold leading-5 text-muted">
-                  {tCabinet(language, "addOwnMedicineHint")}
-                </span>
-              </span>
-            </button>
-          </div>
+          <ChoiceSheetList
+            options={[
+              {
+                value: "catalog",
+                label: tCabinet(language, "addFromCatalog"),
+                hint: tCabinet(language, "addFromCatalogHint"),
+              },
+              {
+                value: "manual",
+                label: tCabinet(language, "addOwnMedicine"),
+                hint: tCabinet(language, "addOwnMedicineHint"),
+              },
+            ]}
+            onSelect={(nextValue) => {
+              if (nextValue === "catalog") {
+                onCatalog();
+                return;
+              }
+              onManual();
+            }}
+            renderTrailing={(_, __) => (language === "ru" ? "Открыть" : "Open")}
+          />
         </div>
       </div>
-    </div>
+    </OverlayDialog>
   );
 }

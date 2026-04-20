@@ -61,7 +61,7 @@ export function LanguageSwitch({
       <button
         type="button"
         className={joinClasses(
-          "soft-language-dropdown__trigger",
+          "soft-language-dropdown__trigger relative justify-center text-center",
           triggerClassName,
           isOpen && "soft-language-dropdown__trigger-active"
         )}
@@ -72,10 +72,10 @@ export function LanguageSwitch({
         aria-expanded={isOpen}
         aria-busy={isBusy}
       >
-        <span>{languageLabels[language]}</span>
+        <span className="flex-1 text-center">{languageLabels[language]}</span>
         <span
           className={joinClasses(
-            "soft-language-dropdown__chevron",
+            "soft-language-dropdown__chevron absolute right-2 top-1/2 -translate-y-1/2",
             isOpen && "soft-language-dropdown__chevron-open"
           )}
           aria-hidden="true"

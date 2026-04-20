@@ -7,6 +7,7 @@ import { fetchHeightEntriesByChildId } from "@shared/api/heightEntries";
 import { fetchIllnessEpisodesByChildId } from "@shared/api/illnessEpisodes";
 import { fetchSleepSessionsByChildId } from "@shared/api/sleepSessions";
 import { fetchWeightEntriesByChildId } from "@shared/api/weightEntries";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { getLocalIsoDate } from "@shared/utils/date";
@@ -56,7 +57,6 @@ export function ChildCalendarPage() {
   const [calendarFeedDate, setCalendarFeedDate] = useState<string | null>(null);
   const [enabledKinds, setEnabledKinds] = useState<EventKind[]>(eventKinds);
   const calendarFeedHistoryRef = useRef(false);
-  const periodMenuRef = useRef<HTMLDivElement | null>(null);
 
   const { data: child, isLoading: isChildLoading } = useQuery({
     queryKey: ["child", childId],
@@ -149,27 +149,6 @@ export function ChildCalendarPage() {
     () => buildChartDays(dateRange.start, dateRange.end, visibleEvents),
     [dateRange.end, dateRange.start, visibleEvents]
   );
-  useEffect(() => {
-    if (!isPeriodMenuOpen) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (target instanceof Node && !periodMenuRef.current?.contains(target)) {
-        setIsPeriodMenuOpen(false);
-      }
-    };
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsPeriodMenuOpen(false);
-    };
-
-    window.addEventListener("pointerdown", handlePointerDown, true);
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown, true);
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isPeriodMenuOpen]);
-
   useEffect(() => {
     if (!calendarFeedDate || calendarFeedHistoryRef.current) return;
     window.history.pushState({ calendarFeedDate }, "", window.location.href);
@@ -289,50 +268,22 @@ export function ChildCalendarPage() {
         </div>
 
         <div className="grid gap-2 sm:grid-cols-[max-content_auto] sm:items-start">
-          <div ref={periodMenuRef} className="relative z-50 min-w-[10.5rem]">
+          <div className="min-w-[10.5rem]">
             <button
               type="button"
               onClick={() => setIsPeriodMenuOpen((current) => !current)}
-              className="soft-pill app-profile-action app-profile-action--split min-h-[2.5rem] w-full gap-2 rounded-[18px] px-3.25 text-left text-[0.8rem] font-bold tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]"
-              aria-haspopup="listbox"
+              className="soft-input flex min-h-[2.95rem] w-full items-center justify-between gap-3 px-4 text-left text-[0.92rem] tracking-[-0.02em] sm:min-h-[3.1rem]"
+              aria-haspopup="dialog"
               aria-expanded={isPeriodMenuOpen}
             >
-              <span className="min-w-0 truncate">{periodLabel}</span>
+              <span className="min-w-0 truncate text-foreground">{periodLabel}</span>
               <span
                 aria-hidden="true"
-                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-muted"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-muted"
               >
                 ▾
               </span>
             </button>
-            {isPeriodMenuOpen ? (
-              <div
-                role="listbox"
-                className="absolute left-0 top-[calc(100%+0.5rem)] z-[90] w-[min(17rem,calc(100vw-2rem))] overflow-hidden rounded-[24px] border border-border bg-background p-2 shadow-[0_24px_64px_rgba(15,23,42,0.28)]"
-              >
-                {periodOptions.map((option) => {
-                  const isActive = option === period;
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      role="option"
-                      aria-selected={isActive}
-                      onClick={() => handlePeriodChange(option)}
-                      className={[
-                        "flex min-h-[2.5rem] w-full items-center justify-between rounded-[17px] px-3.25 text-left text-[0.82rem] font-bold tracking-[-0.025em] transition sm:min-h-[2.6rem]",
-                        isActive
-                          ? "bg-primary text-primary-foreground shadow-[0_10px_24px_color-mix(in_srgb,var(--color-primary)_22%,transparent)]"
-                          : "bg-surface text-foreground hover:bg-surface-muted",
-                      ].join(" ")}
-                    >
-                      <span>{getPeriodOptionLabel(option, text)}</span>
-                      {isActive ? <span aria-hidden="true">✓</span> : null}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
           </div>
           {period === "custom" ? (
             <button
@@ -369,6 +320,55 @@ export function ChildCalendarPage() {
           ))}
         </div>
       </Surface>
+
+      <OverlayDialog
+        isOpen={isPeriodMenuOpen}
+        onClose={() => setIsPeriodMenuOpen(false)}
+        placement="bottom"
+        zIndexClassName="z-[890]"
+        backdropAriaLabel={language === "ru" ? "Закрыть выбор периода" : "Close period options"}
+        containerClassName="flex items-end"
+        backdropClassName="bg-[rgba(15,23,42,0.32)]"
+      >
+        <div
+          data-ios-disable-back-swipe="true"
+          className="relative z-[1] w-full rounded-t-[30px] bg-background px-4 pb-[max(1.25rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))] pt-4 shadow-[0_-24px_64px_rgba(15,23,42,0.24)] sm:mx-auto sm:max-w-xl"
+        >
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
+          <div className="space-y-1.5">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
+              {text.summaryPeriodPrefix}
+            </p>
+            <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
+              {language === "ru" ? "Выберите период" : "Choose period"}
+            </h2>
+            <p className="text-sm leading-5 text-muted">{periodLabel}</p>
+          </div>
+
+          <div className="soft-choice-list mt-4">
+            {periodOptions.map((option) => {
+              const isActive = option === period;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => handlePeriodChange(option)}
+                  className={["soft-choice-row", isActive ? "soft-choice-row-active" : ""]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  <span className="min-w-0 text-left text-sm font-semibold tracking-[-0.02em] text-foreground">
+                    {getPeriodOptionLabel(option, text)}
+                  </span>
+                  <span className="soft-choice-check">
+                    {isActive ? "✓" : language === "ru" ? "Выбрать" : "Select"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </OverlayDialog>
 
       {mode === "feed" ? (
         <FeedView groupedEvents={groupedEvents} emptyText={text.empty} language={language} />

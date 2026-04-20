@@ -4,14 +4,34 @@ type ChildDateMonthStyle = "long" | "short";
 
 function getDatePart(value: string | null | undefined): string | null {
   if (!value) return null;
-  const datePart = value.slice(0, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : null;
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-function getTimePart(value: string | null | undefined): string | null {
+function getTimePart(value: string | null | undefined, language: AppLanguage): string | null {
   if (!value) return null;
-  const timePart = value.slice(11, 16);
-  return /^\d{2}:\d{2}$/.test(timePart) ? timePart : null;
+  const trimmed = value.trim();
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    const timePart = trimmed.slice(11, 16);
+    return /^\d{2}:\d{2}$/.test(timePart) ? timePart : null;
+  }
+
+  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(parsed);
 }
 
 function getTodayDatePart(): string {
@@ -87,7 +107,7 @@ export function formatChildDateTime(
   language: AppLanguage,
   options: { month?: ChildDateMonthStyle; relative?: boolean } = {}
 ): string {
-  const timePart = getTimePart(value);
+  const timePart = getTimePart(value, language);
   const dateLabel = formatChildDate(value, language, {
     month: options.month ?? "short",
     relative: options.relative,
@@ -99,8 +119,8 @@ export function formatChildDateTime(
   return `${timePart} · ${dateLabel}`;
 }
 
-export function formatChildTime(value: string | null | undefined): string {
-  return getTimePart(value) ?? "";
+export function formatChildTime(value: string | null | undefined, language: AppLanguage = "ru"): string {
+  return getTimePart(value, language) ?? "";
 }
 
 export function formatChildDateRange(

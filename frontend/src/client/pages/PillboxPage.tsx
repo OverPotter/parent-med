@@ -1,16 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { isAxiosError } from "axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  createPillboxPlan,
-  deletePillboxPlan,
   fetchPillboxPlan,
   fetchPillboxPlans,
-  takePillboxDose,
-  updatePillboxPlan,
 } from "@shared/api/pillboxPlans";
-import type { PillboxPlanWrite } from "@shared/api/pillboxPlans.contract";
 import { fetchMyFamilyMembers } from "@shared/api/families";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -44,6 +38,7 @@ import {
   toPlanWrite,
   toPlanWriteFromPlan,
 } from "./pillbox/shared";
+import { usePillboxMutations } from "./pillbox/usePillboxMutations";
 
 export function PillboxPage() {
   const { language } = useI18n();
@@ -148,142 +143,6 @@ export function PillboxPage() {
         ?.scrollIntoView({ block: "center", behavior: "smooth" });
     }, 120);
   }, [highlightedAction, highlightedPlanId, plansLoading, visibleGroups.length]);
-
-  const createPlanMutation = useMutation({
-    mutationFn: createPillboxPlan,
-    onSuccess: async () => {
-      setSavePlanError(null);
-      await queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
-      goToHub();
-    },
-    onError: (error) => {
-      if (isAxiosError(error)) {
-        const detail =
-          typeof error.response?.data === "object" && error.response?.data
-            ? (error.response.data as { detail?: string }).detail
-            : null;
-        setSavePlanError(detail || tPillbox(language, "savePlanFailed"));
-        return;
-      }
-      setSavePlanError(tPillbox(language, "savePlanFailed"));
-    },
-  });
-
-  const updatePlanMutation = useMutation({
-    mutationFn: ({ planId, payload }: { planId: string; payload: PillboxPlanWrite }) =>
-      updatePillboxPlan(planId, payload),
-    onSuccess: async (plan) => {
-      setSavePlanError(null);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-        queryClient.invalidateQueries({ queryKey: ["pillbox-plan", plan.id] }),
-        queryClient.refetchQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-        queryClient.refetchQueries({ queryKey: ["pillbox-plan", plan.id] }),
-      ]);
-      goToHub();
-    },
-    onError: (error) => {
-      if (isAxiosError(error)) {
-        const detail =
-          typeof error.response?.data === "object" && error.response?.data
-            ? (error.response.data as { detail?: string }).detail
-            : null;
-        setSavePlanError(detail || tPillbox(language, "savePlanFailed"));
-        return;
-      }
-      setSavePlanError(tPillbox(language, "savePlanFailed"));
-    },
-  });
-
-  const togglePlanStatusMutation = useMutation({
-    mutationFn: ({ planId, payload }: { planId: string; payload: PillboxPlanWrite }) =>
-      updatePillboxPlan(planId, payload),
-    onSuccess: async (plan) => {
-      setPlanActionError(null);
-      setPlanActionTarget(null);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-        queryClient.invalidateQueries({ queryKey: ["pillbox-plan", plan.id] }),
-        queryClient.refetchQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-        queryClient.refetchQueries({ queryKey: ["pillbox-plan", plan.id] }),
-      ]);
-    },
-    onError: (error) => {
-      if (isAxiosError(error)) {
-        const detail =
-          typeof error.response?.data === "object" && error.response?.data
-            ? (error.response.data as { detail?: string }).detail
-            : null;
-        setPlanActionError(
-          detail ||
-            (language === "ru"
-              ? "Не удалось обновить статус плана. Попробуйте ещё раз."
-              : "Could not update the plan status. Please try again.")
-        );
-        return;
-      }
-      setPlanActionError(
-        language === "ru"
-          ? "Не удалось обновить статус плана. Попробуйте ещё раз."
-          : "Could not update the plan status. Please try again."
-      );
-    },
-  });
-
-  const deletePlanMutation = useMutation({
-    mutationFn: deletePillboxPlan,
-    onSuccess: async () => {
-      setPlanActionError(null);
-      setDeleteTarget(null);
-      setPlanActionTarget(null);
-      await queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
-      goToHub();
-    },
-    onError: (error) => {
-      if (isAxiosError(error)) {
-        const detail =
-          typeof error.response?.data === "object" && error.response?.data
-            ? (error.response.data as { detail?: string }).detail
-            : null;
-        setPlanActionError(
-          detail ||
-            (language === "ru"
-              ? "Не удалось удалить план. Попробуйте ещё раз."
-              : "Could not delete the plan. Please try again.")
-        );
-        return;
-      }
-      setPlanActionError(
-        language === "ru"
-          ? "Не удалось удалить план. Попробуйте ещё раз."
-          : "Could not delete the plan. Please try again."
-      );
-    },
-  });
-
-  const takeDoseMutation = useMutation({
-    mutationFn: ({
-      planId,
-      medicationId,
-      scheduledFor,
-    }: {
-      planId: string;
-      medicationId: string;
-      scheduledFor: string | null;
-    }) =>
-      takePillboxDose(planId, medicationId, {
-        source: "manual",
-        scheduled_for: scheduledFor,
-      }),
-    onSuccess: async (_, variables) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-        queryClient.invalidateQueries({ queryKey: ["pillbox-plan", variables.planId] }),
-        queryClient.refetchQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-        queryClient.refetchQueries({ queryKey: ["pillbox-plan", variables.planId] }),
-      ]);
-    },
-  });
 
   useEffect(() => {
     if (!isEditorScreen) {
@@ -399,13 +258,22 @@ export function PillboxPage() {
 
   const openCreate = () => {
     setDraft(buildDraft(accountId, undefined));
-    navigate("/pillbox?mode=setup&plan=new");
+    navigate("/pillbox?mode=setup&plan=new", { replace: screen !== "hub" });
+  };
+
+  const navigateBackOr = (fallbackHref: string) => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate(fallbackHref, { replace: true });
   };
 
   const openDetails = (group: PillboxGroup) => {
     setDraft(null);
     navigate(
-      `/pillbox?mode=details&plan=${group.id}${listFilter === "completed" ? "&tab=completed" : ""}`
+      `/pillbox?mode=details&plan=${group.id}${listFilter === "completed" ? "&tab=completed" : ""}`,
+      { replace: screen !== "hub" }
     );
   };
 
@@ -438,12 +306,40 @@ export function PillboxPage() {
     setSaveAttempted(false);
     setSavePlanError(null);
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-    navigate(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
+    navigate(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox", { replace: true });
   };
+
+  const goBackToHub = () => {
+    discardUnsavedNewMedication();
+    setDraft(null);
+    setSaveAttempted(false);
+    setSavePlanError(null);
+    resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
+    navigateBackOr(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
+  };
+
+  const {
+    createPlanMutation,
+    updatePlanMutation,
+    togglePlanStatusMutation,
+    deletePlanMutation,
+    takeDoseMutation,
+  } = usePillboxMutations({
+    language,
+    currentFamilyId,
+    queryClient,
+    setSavePlanError,
+    setPlanActionError,
+    setDeleteTarget,
+    setPlanActionTarget,
+    goToHub,
+  });
 
   const goToSetup = () => {
     const targetPlanId = draft?.id ?? selectedPlanId;
-    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`);
+    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`, {
+      replace: true,
+    });
   };
 
   const goToSetupFromMedication = () => {
@@ -451,7 +347,7 @@ export function PillboxPage() {
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
     setEditorCoursePreset("custom");
     const targetPlanId = draft?.id ?? selectedPlanId;
-    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`);
+    navigateBackOr(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`);
   };
 
   const closeMedicationEditor = () => {
@@ -459,12 +355,15 @@ export function PillboxPage() {
     setEditorCoursePreset("custom");
     setEditorMedicationBaseline(null);
     const targetPlanId = draft?.id ?? selectedPlanId;
-    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`);
+    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`, {
+      replace: true,
+    });
   };
 
   const goToMedication = (medicationId: string) => {
     navigate(
-      `/pillbox?mode=medication&med=${medicationId}${draft?.id ? `&plan=${draft.id}` : "&plan=new"}`
+      `/pillbox?mode=medication&med=${medicationId}${draft?.id ? `&plan=${draft.id}` : "&plan=new"}`,
+      { replace: screen === "medication" }
     );
   };
 
@@ -638,7 +537,9 @@ export function PillboxPage() {
     if (screen !== "hub") {
       return;
     }
-    navigate(nextFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
+    navigate(nextFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox", {
+      replace: true,
+    });
   };
 
   const openAnalytics = (
@@ -654,7 +555,8 @@ export function PillboxPage() {
             ?.id) ??
       null;
     navigate(
-      `/pillbox?mode=analytics${resolvedPlanId ? `&plan=${resolvedPlanId}` : ""}${targetFilter === "completed" ? "&tab=completed" : ""}`
+      `/pillbox?mode=analytics${resolvedPlanId ? `&plan=${resolvedPlanId}` : ""}${targetFilter === "completed" ? "&tab=completed" : ""}`,
+      { replace: screen !== "hub" }
     );
   };
 
@@ -685,10 +587,11 @@ export function PillboxPage() {
         groups={allGroups}
         selectedPlanId={selectedPlanIdForAnalytics}
         initialFilter={listFilter}
-        onBack={goToHub}
+        onBack={goBackToHub}
         onSelectPlan={(planId, filter) =>
           navigate(
-            `/pillbox?mode=analytics&plan=${planId}${filter === "completed" ? "&tab=completed" : ""}`
+            `/pillbox?mode=analytics&plan=${planId}${filter === "completed" ? "&tab=completed" : ""}`,
+            { replace: true }
           )
         }
       />
@@ -704,7 +607,7 @@ export function PillboxPage() {
   }
 
   if (isEditorScreen && !isCreating && selectedPlanLoading && !draft) {
-    return <PillboxLoadingScreen language={language} screen={screen} onBack={goToHub} />;
+    return <PillboxLoadingScreen language={language} screen={screen} onBack={goBackToHub} />;
   }
 
   if (screen === "medication" && draft && activeMedication) {
@@ -743,7 +646,7 @@ export function PillboxPage() {
         togglePlanStatusPending={togglePlanStatusMutation.isPending}
         deletePlanPending={deletePlanMutation.isPending}
         deleteTarget={deleteTarget}
-        onBack={goToHub}
+        onBack={goBackToHub}
         onToggleStatus={toggleSelectedPlanStatus}
         onGoToSetup={goToSetup}
         onRequestDelete={requestDeletePlan}
@@ -772,7 +675,7 @@ export function PillboxPage() {
         saveAttempted={saveAttempted}
         savePlanError={savePlanError}
         isEditing={isEditing}
-        onBack={goToHub}
+        onBack={goBackToHub}
         onAddMedication={addMedication}
         onOpenMedication={goToMedication}
         onRequestDeleteMedication={requestDeleteMedication}

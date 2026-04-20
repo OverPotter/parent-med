@@ -59,9 +59,9 @@ export function NewPackPage({
 
   return (
     <div
-      className="flex min-h-[100dvh] flex-col bg-background px-3 text-foreground sm:px-6"
+      className="child-profile-shell space-y-3 text-foreground"
       style={{
-        paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))",
+        paddingBottom: "max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
       }}
     >
       <MedicineCabinetHeader
@@ -73,72 +73,70 @@ export function NewPackPage({
         onAction={handleSave}
         actionDisabled={updateMutation.isPending}
       />
-      <div className="min-h-0 flex-1 overflow-y-auto py-3">
-        <div
-          className={`${cabinetPanelClass} mx-auto grid w-full max-w-2xl gap-3 px-3.5 py-3 sm:grid-cols-2`}
-        >
-          <p className="text-xs leading-5 text-muted sm:col-span-2">
-            {tCabinet(language, "newPackHint")}
+      <div
+        className={`${cabinetPanelClass} mx-auto grid w-full max-w-2xl gap-3 px-3.5 py-3 sm:grid-cols-2`}
+      >
+        <p className="text-xs leading-5 text-muted sm:col-span-2">
+          {tCabinet(language, "newPackHint")}
+        </p>
+        <label className="block space-y-1.5">
+          <span className="soft-field-label">{tCabinet(language, "expiryDate")}</span>
+          <DateField
+            value={expiryDate}
+            onChange={setExpiryDate}
+            className="cabinet-compact-date-field"
+            language={language}
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="soft-field-label">{tCabinet(language, "openedAt")}</span>
+          <DateField
+            value={openedAt}
+            onChange={setOpenedAt}
+            className="cabinet-compact-date-field"
+            language={language}
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="soft-field-label">{tCabinet(language, "openedShelfDays")}</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min="1"
+            max="3650"
+            value={openedShelfDays}
+            onChange={(event) => {
+              setOpenedShelfDays(event.target.value);
+              setFormError(null);
+            }}
+            className={cabinetCompactInputClass}
+            placeholder={tCabinet(language, "openedShelfDaysUnknown")}
+          />
+        </label>
+        {isExpired ? (
+          <p className="soft-note-warning rounded-2xl px-4 py-3 text-sm sm:col-span-2">
+            {tCabinet(language, "expiredCardWarning")}
           </p>
-          <label className="block space-y-1.5">
-            <span className="soft-field-label">{tCabinet(language, "expiryDate")}</span>
-            <DateField
-              value={expiryDate}
-              onChange={setExpiryDate}
-              className="cabinet-compact-date-field"
-              language={language}
-            />
-          </label>
-          <label className="block space-y-1.5">
-            <span className="soft-field-label">{tCabinet(language, "openedAt")}</span>
-            <DateField
-              value={openedAt}
-              onChange={setOpenedAt}
-              className="cabinet-compact-date-field"
-              language={language}
-            />
-          </label>
-          <label className="block space-y-1.5">
-            <span className="soft-field-label">{tCabinet(language, "openedShelfDays")}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="1"
-              max="3650"
-              value={openedShelfDays}
-              onChange={(event) => {
-                setOpenedShelfDays(event.target.value);
-                setFormError(null);
-              }}
-              className={cabinetCompactInputClass}
-              placeholder={tCabinet(language, "openedShelfDaysUnknown")}
-            />
-          </label>
-          {isExpired ? (
-            <p className="soft-note-warning rounded-2xl px-4 py-3 text-sm sm:col-span-2">
-              {tCabinet(language, "expiredCardWarning")}
-            </p>
-          ) : null}
-          {hasUnknownAfterOpening ? (
-            <p className="soft-note-info rounded-2xl px-4 py-3 text-sm sm:col-span-2">
-              {tCabinet(language, "openedCardWarning")}
-            </p>
-          ) : null}
-          <label className="block space-y-1.5 sm:col-span-2">
-            <span className="soft-field-label">{tCabinet(language, "comment")}</span>
-            <textarea
-              value={comment}
-              onChange={(event) => setComment(event.target.value)}
-              className={cabinetCompactTextareaClass}
-              placeholder={tCabinet(language, "commentPlaceholder")}
-            />
-          </label>
-          {formError ? (
-            <div className="sm:col-span-2">
-              <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{formError}</p>
-            </div>
-          ) : null}
-        </div>
+        ) : null}
+        {hasUnknownAfterOpening ? (
+          <p className="soft-note-info rounded-2xl px-4 py-3 text-sm sm:col-span-2">
+            {tCabinet(language, "openedCardWarning")}
+          </p>
+        ) : null}
+        <label className="block space-y-1.5 sm:col-span-2">
+          <span className="soft-field-label">{tCabinet(language, "comment")}</span>
+          <textarea
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+            className={cabinetCompactTextareaClass}
+            placeholder={tCabinet(language, "commentPlaceholder")}
+          />
+        </label>
+        {formError ? (
+          <div className="sm:col-span-2">
+            <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{formError}</p>
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
+import { Link } from "react-router-dom";
 import { PageIntro } from "@shared/components/PageIntro";
-import { SectionPathHeader } from "@shared/components/SectionPathHeader";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 
@@ -16,24 +16,37 @@ export function TermsOfUsePage() {
             ? "Правила использования сервиса PillPath."
             : "Rules for using the PillPath service."
         }
+        action={
+          <Link
+            to="/legal"
+            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Правовая информация" : "← Legal information"}
+          </Link>
+        }
         compactOnMobile
         hideOnMobile
+        className="app-safe-top-standalone"
       />
-      <SectionPathHeader
-        backTo="/legal"
-        backLabel={language === "ru" ? "← К правовой информации" : "← Back to legal"}
-        pathLabel={
-          language === "ru"
-            ? "Еще / Правовая информация / Условия использования"
-            : "More / Legal / Terms of Use"
-        }
-        title={language === "ru" ? "Условия использования" : "Terms of Use"}
-        hint={
-          language === "ru"
-            ? "Правила использования сервиса PillPath."
-            : "Rules for using the PillPath service."
-        }
-      />
+
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <Link
+            to="/legal"
+            className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Правовая информация" : "← Legal information"}
+          </Link>
+          <h1 className="app-mobile-section-intro__title">
+            {language === "ru" ? "Условия использования" : "Terms of Use"}
+          </h1>
+          <p className="app-mobile-section-intro__hint">
+            {language === "ru"
+              ? "Правила использования сервиса PillPath."
+              : "Rules for using the PillPath service."}
+          </p>
+        </div>
+      </div>
 
       <Surface className="legal-doc-surface space-y-4 p-4 text-[0.95rem] leading-6 text-muted sm:p-6 sm:text-sm sm:leading-7">
         <p>

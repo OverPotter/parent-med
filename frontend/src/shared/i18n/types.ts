@@ -242,6 +242,8 @@ export interface Translations {
     navShort: string;
     pageTitle: string;
     pageSubtitle: string;
+    formTitle: string;
+    formHint: string;
     privacyHint: string;
     placeholder: string;
     submit: string;

@@ -1,5 +1,6 @@
 import { type TouchEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 
 type DateFieldLanguage = "ru" | "en";
 
@@ -201,6 +202,8 @@ export function DateField({
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const copy = DATE_FIELD_COPY[language];
 
+  useBodyScrollLock(isOpen && isMobileViewport);
+
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -213,18 +216,6 @@ export function DateField({
     mediaQuery.addEventListener("change", updateMode);
     return () => mediaQuery.removeEventListener("change", updateMode);
   }, []);
-
-  useEffect(() => {
-    if (!isOpen || !isMobileViewport || typeof document === "undefined") {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen, isMobileViewport]);
 
   useEffect(() => {
     if (selectedDate) {
@@ -358,6 +349,8 @@ export function DateField({
             ) : null}
             <div
               ref={panelRef}
+              data-ios-local-back-swipe="true"
+              data-ios-disable-back-swipe="true"
               className={[
                 "soft-panel border border-[color:color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_94%,var(--color-background)_6%)] p-4 shadow-[0_28px_70px_rgba(15,23,42,0.22)]",
                 isMobileViewport

@@ -1,80 +1,91 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { updateAccountProfile } from "@shared/api/auth";
 import { fetchMyFamilyMembers, updateFamilyMemberProfile } from "@shared/api/families";
+import { FullscreenOverlay } from "@shared/components/FullscreenOverlay";
 import { PageIntro } from "@shared/components/PageIntro";
-import { SectionPathHeader } from "@shared/components/SectionPathHeader";
-import { Surface } from "@shared/components/Surface";
+import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
+import { childActionSuccessClass } from "./children/shared";
+import {
+  appBtnJournalSecondaryClass,
+  SectionTitle,
+} from "./child-illness/shared";
+
+const PROFILE_DIALOG_HISTORY_KEY = "__pm_account_profile_dialog__";
 
 const accountCopy = {
   ru: {
     title: "Профиль",
-    subtitle: "Личные данные аккаунта.",
-    path: "Еще / Профиль",
-    backToMore: "← К разделу «Еще»",
+    subtitle: "Личные данные и основные параметры аккаунта.",
+    detailsTitle: "Данные аккаунта",
+    detailsHint: "Основные данные аккаунта.",
+    settingsTitle: "Параметры приложения",
+    settingsHint: "Язык и тема.",
     name: "Имя",
     login: "Логин",
     email: "Email",
+    phone: "Телефон",
+    relationship: "Кто вы в семье",
     role: "Роль",
     language: "Язык",
     theme: "Тема",
     notSet: "Не указано",
     owner: "Владелец",
     member: "Участник",
-    light: "Светлая",
-    dark: "Тёмная",
+    light: "День",
+    dark: "Ночь",
     auto: "Авто",
     edit: "Редактировать профиль",
     editTitle: "Редактировать профиль",
-    editHint: "Личные данные видны взрослым участникам вашей семьи.",
+    editHint: "Изменения увидят взрослые участники вашей семьи.",
     displayName: "Имя",
     displayNamePlaceholder: "Например: Анна",
-    relationship: "Кем приходитесь",
     relationshipPlaceholder: "Например: мама, папа, бабушка",
-    phone: "Телефон",
+    phonePlaceholder: "+375 ...",
     emailPlaceholder: "name@example.com",
     save: "Сохранить",
     saving: "Сохраняем…",
-    back: "Назад",
     invalidEmail: "Укажите корректный email.",
     updateFailed: "Не удалось сохранить профиль.",
-    openSettings: "Открыть настройки приложения",
+    openSettings: "Открыть настройки",
   },
   en: {
     title: "Profile",
-    subtitle: "Personal account details.",
-    path: "More / Profile",
-    backToMore: "← Back to more",
+    subtitle: "Personal details and key account preferences.",
+    detailsTitle: "Account details",
+    detailsHint: "Main account details.",
+    settingsTitle: "App preferences",
+    settingsHint: "Language and theme.",
     name: "Name",
     login: "Login",
     email: "Email",
+    phone: "Phone",
+    relationship: "Relationship",
     role: "Role",
     language: "Language",
     theme: "Theme",
     notSet: "Not set",
     owner: "Owner",
     member: "Member",
-    light: "Light",
-    dark: "Dark",
+    light: "Day",
+    dark: "Night",
     auto: "Auto",
     edit: "Edit profile",
     editTitle: "Edit profile",
-    editHint: "Personal details are visible to adult members of your family.",
+    editHint: "Changes are visible to adult members of your family.",
     displayName: "Name",
     displayNamePlaceholder: "Example: Anna",
-    relationship: "Relationship",
     relationshipPlaceholder: "Example: mom, dad, grandma",
-    phone: "Phone",
+    phonePlaceholder: "+375 ...",
     emailPlaceholder: "name@example.com",
     save: "Save",
     saving: "Saving…",
-    back: "Back",
     invalidEmail: "Enter a valid email.",
     updateFailed: "Could not save the profile.",
-    openSettings: "Open app settings",
+    openSettings: "Open settings",
   },
 } as const;
 
@@ -88,7 +99,7 @@ export function AccountPage() {
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const setAccountProfile = useAppStore((s) => s.setAccountProfile);
   const theme = useAppStore((s) => s.theme);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [displayName, setDisplayName] = useState(accountDisplayName ?? "");
   const [relationshipLabel, setRelationshipLabel] = useState("");
   const [phone, setPhone] = useState("");
@@ -99,8 +110,9 @@ export function AccountPage() {
   const { data: familyMembers = [] } = useQuery({
     queryKey: ["family-members"],
     queryFn: fetchMyFamilyMembers,
-    enabled: Boolean(accountId && isEditingProfile),
+    enabled: Boolean(accountId),
   });
+
   const currentMember = familyMembers.find((member) => member.id === accountId) ?? null;
   const themeLabel = theme === "light" ? copy.light : theme === "dark" ? copy.dark : copy.auto;
   const roleLabel =
@@ -109,24 +121,25 @@ export function AccountPage() {
       : accountFamilyRole === "adult"
         ? copy.member
         : copy.notSet;
-  const profileTitleName = accountDisplayName || accountLogin || copy.notSet;
 
   useEffect(() => {
-    if (!isEditingProfile) {
+    if (!isProfileDialogOpen) {
       return;
     }
+
     setDisplayName(currentMember?.displayName || accountDisplayName || "");
     setRelationshipLabel(currentMember?.relationshipLabel || "");
     setPhone(currentMember?.phone || "");
     setEmail(accountEmail || "");
     setFormError(null);
-  }, [accountDisplayName, accountEmail, currentMember, isEditingProfile]);
+  }, [accountDisplayName, accountEmail, currentMember, isProfileDialogOpen]);
 
   const saveProfileMutation = useMutation({
     mutationFn: async () => {
       if (!accountId) {
         throw new Error(copy.updateFailed);
       }
+
       const normalizedEmail = email.trim().toLowerCase();
       const isValidEmail =
         normalizedEmail.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
@@ -146,173 +159,329 @@ export function AccountPage() {
       setAccountProfile({ displayName: member.displayName, email: account.email });
       queryClient.invalidateQueries({ queryKey: ["family-members"] });
       setFormError(null);
-      setIsEditingProfile(false);
+      setIsProfileDialogOpen(false);
     },
     onError: (error: { message?: string; response?: { data?: { detail?: string } } }) => {
       setFormError(error.response?.data?.detail ?? error.message ?? copy.updateFailed);
     },
   });
 
-  if (isEditingProfile) {
-    return (
-      <div className="min-w-0 space-y-6 sm:space-y-8">
-        <div className="app-section-path hidden sm:flex">
-          <button
-            type="button"
-            onClick={() => setIsEditingProfile(false)}
-            className="app-section-path__back"
+  return (
+    <div className="min-w-0 space-y-6 sm:space-y-8">
+      <PageIntro
+        title={copy.title}
+        subtitle={copy.subtitle}
+        action={
+          <Link
+            to="/more"
+            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
-            {language === "ru" ? "← К профилю" : "← Back to profile"}
-          </button>
-          <span className="app-section-path__label">
-            {language === "ru" ? "Профиль / Редактирование" : "Profile / Edit"}
-          </span>
-        </div>
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
+        }
+        compactOnMobile
+        hideOnMobile
+        className="app-safe-top-standalone"
+      />
 
-        <div className="app-mobile-section-intro sm:hidden">
-          <h1 className="app-mobile-section-intro__title">{copy.editTitle}</h1>
-          <p className="app-mobile-section-intro__hint">{copy.editHint}</p>
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <Link
+            to="/more"
+            className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
+          <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
+          <p className="app-mobile-section-intro__hint">{copy.subtitle}</p>
         </div>
+      </div>
 
-        <div className="space-y-1 px-1">
-          <h1 className="app-card-title">
-            {copy.editTitle} · {profileTitleName}
-          </h1>
-          <p className="text-sm text-muted">{copy.editHint}</p>
+      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+        <SectionTitle
+          title={copy.detailsTitle}
+          subtitle={copy.detailsHint}
+          action={
+            <button
+              type="button"
+              onClick={() => setIsProfileDialogOpen(true)}
+              className={`${appBtnJournalSecondaryClass} min-h-[2.35rem] whitespace-nowrap px-3 text-[0.78rem]`}
+            >
+              {copy.edit}
+            </button>
+          }
+        />
+
+        <div className="mt-4">
+          <div className="grid grid-cols-2 gap-x-6">
+            <ProfileGridCell label={copy.name} value={accountDisplayName || copy.notSet} />
+            <ProfileGridCell
+              label={copy.phone}
+              value={currentMember?.phone || copy.notSet}
+            />
+            <ProfileGridCell
+              label={copy.login}
+              value={accountLogin ? `@${accountLogin}` : copy.notSet}
+              borderedTop
+            />
+            <ProfileGridCell
+              label={copy.role}
+              value={roleLabel}
+              borderedTop
+            />
+            <ProfileGridCell
+              label={copy.email}
+              value={accountEmail || copy.notSet}
+              borderedTop
+            />
+            <ProfileGridCell
+              label={copy.relationship}
+              value={currentMember?.relationshipLabel || copy.notSet}
+              borderedTop
+            />
+          </div>
         </div>
+      </RowSurface>
 
-        <Surface className="p-5 sm:p-6">
+      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+        <SectionTitle
+          title={copy.settingsTitle}
+          subtitle={copy.settingsHint}
+          action={
+            <Link
+              to="/settings"
+              className={`${appBtnJournalSecondaryClass} inline-flex min-h-[2.35rem] whitespace-nowrap px-3 text-[0.78rem]`}
+            >
+              {copy.openSettings}
+            </Link>
+          }
+        />
+
+        <div className="mt-4">
+          <ProfileFactRow
+            label={copy.settingsTitle}
+            value={`${copy.language}: ${language === "en" ? "EN" : "RU"} · ${copy.theme}: ${themeLabel}`}
+          />
+        </div>
+      </RowSurface>
+
+      <ProfileEditDialog
+        language={language}
+        isOpen={isProfileDialogOpen}
+        isPending={saveProfileMutation.isPending}
+        displayName={displayName}
+        relationshipLabel={relationshipLabel}
+        phone={phone}
+        email={email}
+        formError={formError}
+        copy={copy}
+        onClose={() => setIsProfileDialogOpen(false)}
+        onDisplayNameChange={setDisplayName}
+        onRelationshipLabelChange={setRelationshipLabel}
+        onPhoneChange={setPhone}
+        onEmailChange={(value) => {
+          setEmail(value);
+          setFormError(null);
+        }}
+        onSubmit={() => saveProfileMutation.mutate()}
+      />
+    </div>
+  );
+}
+
+function ProfileFactRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[148px_minmax(0,1fr)] sm:items-start sm:gap-4">
+      <p className="text-xs font-medium tracking-[0.04em] text-muted">{label}</p>
+      <p className="text-sm leading-6 text-foreground sm:text-right">{value}</p>
+    </div>
+  );
+}
+
+function ProfileGridCell({
+  label,
+  value,
+  borderedTop = false,
+}: {
+  label: string;
+  value: string;
+  borderedTop?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        "min-w-0 py-3",
+        borderedTop
+          ? "border-t border-[color:color-mix(in_srgb,var(--color-border)_30%,transparent)]"
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <p className="text-[0.7rem] font-medium tracking-[0.08em] text-muted">{label}</p>
+      <p className="mt-1 text-[0.95rem] font-medium leading-6 text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function ProfileEditDialog({
+  language,
+  isOpen,
+  isPending,
+  displayName,
+  relationshipLabel,
+  phone,
+  email,
+  formError,
+  copy,
+  onClose,
+  onDisplayNameChange,
+  onRelationshipLabelChange,
+  onPhoneChange,
+  onEmailChange,
+  onSubmit,
+}: {
+  language: "ru" | "en";
+  isOpen: boolean;
+  isPending: boolean;
+  displayName: string;
+  relationshipLabel: string;
+  phone: string;
+  email: string;
+  formError: string | null;
+  copy: (typeof accountCopy)["ru"] | (typeof accountCopy)["en"];
+  onClose: () => void;
+  onDisplayNameChange: (value: string) => void;
+  onRelationshipLabelChange: (value: string) => void;
+  onPhoneChange: (value: string) => void;
+  onEmailChange: (value: string) => void;
+  onSubmit: () => void;
+}) {
+  const isClosingFromHistoryRef = useRef(false);
+
+  useEffect(() => {
+    if (!isOpen || typeof window === "undefined") {
+      return;
+    }
+
+    const currentState =
+      window.history.state && typeof window.history.state === "object" ? window.history.state : {};
+    const dialogState = { ...currentState, [PROFILE_DIALOG_HISTORY_KEY]: true };
+
+    window.history.pushState(dialogState, "", window.location.href);
+
+    const handlePopState = () => {
+      isClosingFromHistoryRef.current = true;
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      if (
+        !isClosingFromHistoryRef.current &&
+        window.history.state &&
+        typeof window.history.state === "object" &&
+        window.history.state[PROFILE_DIALOG_HISTORY_KEY]
+      ) {
+        window.history.back();
+      }
+      isClosingFromHistoryRef.current = false;
+    };
+  }, [isOpen, onClose]);
+
+  const handleClose = () => {
+    if (
+      typeof window !== "undefined" &&
+      window.history.state &&
+      typeof window.history.state === "object" &&
+      window.history.state[PROFILE_DIALOG_HISTORY_KEY]
+    ) {
+      window.history.back();
+      return;
+    }
+
+    onClose();
+  };
+
+  return (
+    <FullscreenOverlay
+      isOpen={isOpen}
+      onClose={handleClose}
+      backLabel={language === "ru" ? "← Профиль" : "← Profile"}
+      title={copy.editTitle}
+      hint={copy.editHint}
+      maxWidthClassName="max-w-[32rem]"
+      closeDisabled={isPending}
+    >
+      <div className="soft-panel overflow-hidden rounded-[28px] border border-border shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
+        <div className="p-4 sm:p-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block space-y-1.5">
+            <label className="block">
               <span className="soft-field-label">{copy.displayName}</span>
               <input
                 type="text"
                 value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
+                onChange={(event) => onDisplayNameChange(event.target.value)}
                 className="soft-input w-full px-4"
                 placeholder={copy.displayNamePlaceholder}
               />
             </label>
-            <label className="block space-y-1.5">
+
+            <label className="block">
               <span className="soft-field-label">{copy.relationship}</span>
               <input
                 type="text"
                 value={relationshipLabel}
-                onChange={(event) => setRelationshipLabel(event.target.value)}
+                onChange={(event) => onRelationshipLabelChange(event.target.value)}
                 className="soft-input w-full px-4"
                 placeholder={copy.relationshipPlaceholder}
               />
             </label>
-            <label className="block space-y-1.5">
+
+            <label className="block">
               <span className="soft-field-label">{copy.phone}</span>
               <input
                 type="tel"
                 value={phone}
-                onChange={(event) => setPhone(event.target.value)}
+                onChange={(event) => onPhoneChange(event.target.value)}
                 className="soft-input w-full px-4"
-                placeholder="+375 ..."
+                placeholder={copy.phonePlaceholder}
               />
             </label>
-            <label className="block space-y-1.5">
+
+            <label className="block">
               <span className="soft-field-label">{copy.email}</span>
               <input
                 type="email"
                 value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  setFormError(null);
-                }}
+                onChange={(event) => onEmailChange(event.target.value)}
                 className="soft-input w-full px-4"
                 placeholder={copy.emailPlaceholder}
                 autoComplete="email"
               />
             </label>
-          </div>
 
-          {formError ? (
-            <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
-              {formError}
-            </div>
-          ) : null}
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => saveProfileMutation.mutate()}
-              disabled={saveProfileMutation.isPending || !displayName.trim()}
-              className="app-btn-primary-md soft-button-primary inline-flex min-h-[2.95rem] items-center justify-center px-4 disabled:opacity-50 sm:min-h-[3.1rem] sm:px-5"
-            >
-              {saveProfileMutation.isPending ? copy.saving : copy.save}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditingProfile(false)}
-              disabled={saveProfileMutation.isPending}
-              className="soft-pill inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90 disabled:opacity-50"
-            >
-              {copy.back}
-            </button>
-          </div>
-        </Surface>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-w-0 space-y-6 sm:space-y-8">
-      <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
-      <SectionPathHeader
-        backTo="/more"
-        backLabel={copy.backToMore}
-        pathLabel={copy.path}
-        title={copy.title}
-        hint={copy.subtitle}
-      />
-
-      <Surface className="p-5 sm:p-6">
-        <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5">
-          <div className="grid gap-2.5 text-[0.95rem] leading-6 text-foreground">
-            <p>
-              <span className="font-semibold text-muted">{copy.name}: </span>
-              {accountDisplayName || copy.notSet}
-            </p>
-            <p>
-              <span className="font-semibold text-muted">{copy.login}: </span>
-              {accountLogin ? `@${accountLogin}` : copy.notSet}
-            </p>
-            <p>
-              <span className="font-semibold text-muted">{copy.email}: </span>
-              {accountEmail || copy.notSet}
-            </p>
-            <p>
-              <span className="font-semibold text-muted">{copy.role}: </span>
-              {roleLabel}
-            </p>
-            <p>
-              <span className="font-semibold text-muted">{copy.language}: </span>
-              {language === "en" ? "EN" : "RU"}
-            </p>
-            <p>
-              <span className="font-semibold text-muted">{copy.theme}: </span>
-              {themeLabel}
-            </p>
+            {formError ? (
+              <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm sm:col-span-2">
+                {formError}
+              </div>
+            ) : null}
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2.5">
+        <div className="border-t border-border/60 p-4 sm:px-5 sm:pb-5 sm:pt-4">
           <button
             type="button"
-            onClick={() => setIsEditingProfile(true)}
-            className="soft-pill inline-flex min-h-[2.4rem] items-center justify-center rounded-full px-3 py-1.5 text-center text-xs font-semibold tracking-[-0.015em] text-foreground transition hover:opacity-90"
+            onClick={onSubmit}
+            disabled={isPending || !displayName.trim()}
+            className={`${childActionSuccessClass} w-full justify-center disabled:opacity-50`}
           >
-            {copy.edit}
+            {isPending ? copy.saving : copy.save}
           </button>
-          <Link to="/settings" className="app-btn-primary-md soft-button-primary px-4">
-            {copy.openSettings}
-          </Link>
         </div>
-        <p className="mt-3 text-sm leading-6 text-muted">{copy.editHint}</p>
-      </Surface>
-    </div>
+      </div>
+    </FullscreenOverlay>
   );
 }

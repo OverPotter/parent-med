@@ -17,7 +17,7 @@ import {
 } from "./AddHouseholdMedicineSections";
 import { tCabinet } from "./copy";
 import { MedicineCabinetHeader } from "./MedicineCabinetHeader";
-import { cabinetActionPrimaryClass, cabinetAddPageClass, cabinetPanelClass } from "./styles";
+import { cabinetActionPrimaryClass, cabinetPanelClass } from "./styles";
 import {
   getMedicineFormOptions,
   hasUnknownOpenedShelfLife,
@@ -179,8 +179,6 @@ export function AddHouseholdMedicineForm({
     ? tCabinet(language, "addFromCatalogHint")
     : tCabinet(language, "addOwnMedicineHint");
   const handleSubmit = isCatalogMode ? handleAddSelected : handleCreateNewAndAdd;
-  const shouldDockActions = isManualMode || Boolean(catalogItem);
-
   const resetAllFields = () => {
     setCatalogItem(null);
     setExpiryDate("");
@@ -197,7 +195,12 @@ export function AddHouseholdMedicineForm({
   };
 
   return (
-    <div className={`${cabinetAddPageClass} flex-col overflow-hidden`}>
+    <div
+      className="child-profile-shell space-y-3"
+      style={{
+        paddingBottom: "max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
+      }}
+    >
       <MedicineCabinetHeader
         backLabel={`← ${tCabinet(language, "back")}`}
         onBack={onClose}
@@ -207,156 +210,143 @@ export function AddHouseholdMedicineForm({
         onAction={resetAllFields}
       />
 
-      <div
-        className={
-          shouldDockActions
-            ? "min-h-0 flex-1 overflow-y-auto py-3"
-            : "shrink-0 overflow-visible py-3"
-        }
-      >
-        <div className="mx-auto w-full max-w-2xl space-y-3 pb-3">
-          {isCatalogMode && (
-            <>
-              <CatalogSearchSection
+      <div className="mx-auto w-full max-w-2xl space-y-3 pb-3">
+        {isCatalogMode && (
+          <>
+            <CatalogSearchSection
+              language={language}
+              searchName={searchName}
+              onSearchNameChange={(value) => {
+                setSearchName(value);
+                setCatalogItem(null);
+                setFormError(null);
+              }}
+            />
+
+            {searchLoading && (
+              <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
+                {tCabinet(language, "searching")}
+              </p>
+            )}
+
+            {!catalogItem && normalizedCatalogSearch.length >= 2 && catalogItems.length > 0 && (
+              <CatalogSearchResults
                 language={language}
-                searchName={searchName}
-                onSearchNameChange={(value) => {
-                  setSearchName(value);
+                catalogItems={catalogItems}
+                onSelect={handleAddFromCatalog}
+              />
+            )}
+            {!catalogItem &&
+              !searchLoading &&
+              normalizedCatalogSearch.length >= 2 &&
+              catalogItems.length === 0 && (
+                <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
+                  {tCabinet(language, "catalogNoResults")}
+                </p>
+              )}
+            {!catalogItem && normalizedCatalogSearch.length < 2 && (
+              <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
+                {tCabinet(language, "catalogPickFirst")}
+              </p>
+            )}
+
+            {catalogItem && (
+              <SelectedCatalogMedicine
+                language={language}
+                catalogItem={catalogItem}
+                onChangeMedicine={() => {
+                  resetPackageFields();
                   setCatalogItem(null);
-                  setFormError(null);
+                  setSearchName("");
                 }}
               />
+            )}
+          </>
+        )}
 
-              {searchLoading && (
-                <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
-                  {tCabinet(language, "searching")}
-                </p>
-              )}
+        {isManualMode && (
+          <ManualMedicineMainSection
+            language={language}
+            medicineFormOptions={medicineFormOptions}
+            newMedicineName={newMedicineName}
+            newMedicineForm={newMedicineForm}
+            newMedicineConcentration={newMedicineConcentration}
+            onNameChange={(value) => {
+              setNewMedicineName(value);
+              setFormError(null);
+            }}
+            onFormChange={(value) => {
+              setNewMedicineForm(value);
+              setFormError(null);
+            }}
+            onConcentrationChange={(value) => {
+              setNewMedicineConcentration(value);
+              setFormError(null);
+            }}
+          />
+        )}
 
-              {!catalogItem && normalizedCatalogSearch.length >= 2 && catalogItems.length > 0 && (
-                <CatalogSearchResults
-                  language={language}
-                  catalogItems={catalogItems}
-                  onSelect={handleAddFromCatalog}
-                />
-              )}
-              {!catalogItem &&
-                !searchLoading &&
-                normalizedCatalogSearch.length >= 2 &&
-                catalogItems.length === 0 && (
-                  <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
-                    {tCabinet(language, "catalogNoResults")}
-                  </p>
-                )}
-              {!catalogItem && normalizedCatalogSearch.length < 2 && (
-                <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
-                  {tCabinet(language, "catalogPickFirst")}
-                </p>
-              )}
+        {isManualMode && (
+          <ManualMedicineTextSection
+            language={language}
+            newMedicineDescription={newMedicineDescription}
+            newMedicineDosage={newMedicineDosage}
+            onDescriptionChange={(value) => {
+              setNewMedicineDescription(value);
+              setFormError(null);
+            }}
+            onDosageChange={(value) => {
+              setNewMedicineDosage(value);
+              setFormError(null);
+            }}
+          />
+        )}
 
-              {catalogItem && (
-                <SelectedCatalogMedicine
-                  language={language}
-                  catalogItem={catalogItem}
-                  onChangeMedicine={() => {
-                    resetPackageFields();
-                    setCatalogItem(null);
-                    setSearchName("");
-                  }}
-                />
-              )}
-            </>
-          )}
-
-          {isManualMode && (
-            <ManualMedicineMainSection
+        {(isManualMode || catalogItem) && (
+          <>
+            <PackageFieldsSection
               language={language}
-              medicineFormOptions={medicineFormOptions}
-              newMedicineName={newMedicineName}
-              newMedicineForm={newMedicineForm}
-              newMedicineConcentration={newMedicineConcentration}
-              onNameChange={(value) => {
-                setNewMedicineName(value);
+              expiryDate={expiryDate}
+              openedAt={openedAt}
+              openedShelfDays={openedShelfDays}
+              comment={comment}
+              catalogDefaultOpenedShelfDays={catalogItem?.defaultOpenedShelfDays}
+              isExpired={isExpired}
+              hasUnknownAfterOpening={hasUnknownAfterOpening}
+              onExpiryDateChange={(value) => {
+                setExpiryDate(value);
                 setFormError(null);
               }}
-              onFormChange={(value) => {
-                setNewMedicineForm(value);
+              onOpenedAtChange={(value) => {
+                setOpenedAt(value);
                 setFormError(null);
               }}
-              onConcentrationChange={(value) => {
-                setNewMedicineConcentration(value);
+              onOpenedShelfDaysChange={(value) => {
+                setOpenedShelfDays(value);
+                setFormError(null);
+              }}
+              onCommentChange={(value) => {
+                setComment(value);
                 setFormError(null);
               }}
             />
-          )}
+            {(formError ||
+              (createHouseholdMutation.error as { response?: { data?: { detail?: string } } })
+                ?.response?.data?.detail) && (
+              <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+                {formError ??
+                  (
+                    createHouseholdMutation.error as {
+                      response?: { data?: { detail?: string } };
+                    }
+                  ).response?.data?.detail ??
+                  tCabinet(language, "addError")}
+              </p>
+            )}
+          </>
+        )}
 
-          {isManualMode && (
-            <ManualMedicineTextSection
-              language={language}
-              newMedicineDescription={newMedicineDescription}
-              newMedicineDosage={newMedicineDosage}
-              onDescriptionChange={(value) => {
-                setNewMedicineDescription(value);
-                setFormError(null);
-              }}
-              onDosageChange={(value) => {
-                setNewMedicineDosage(value);
-                setFormError(null);
-              }}
-            />
-          )}
-
-          {(isManualMode || catalogItem) && (
-            <>
-              <PackageFieldsSection
-                language={language}
-                expiryDate={expiryDate}
-                openedAt={openedAt}
-                openedShelfDays={openedShelfDays}
-                comment={comment}
-                catalogDefaultOpenedShelfDays={catalogItem?.defaultOpenedShelfDays}
-                isExpired={isExpired}
-                hasUnknownAfterOpening={hasUnknownAfterOpening}
-                onExpiryDateChange={(value) => {
-                  setExpiryDate(value);
-                  setFormError(null);
-                }}
-                onOpenedAtChange={(value) => {
-                  setOpenedAt(value);
-                  setFormError(null);
-                }}
-                onOpenedShelfDaysChange={(value) => {
-                  setOpenedShelfDays(value);
-                  setFormError(null);
-                }}
-                onCommentChange={(value) => {
-                  setComment(value);
-                  setFormError(null);
-                }}
-              />
-              {(formError ||
-                (createHouseholdMutation.error as { response?: { data?: { detail?: string } } })
-                  ?.response?.data?.detail) && (
-                <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
-                  {formError ??
-                    (
-                      createHouseholdMutation.error as {
-                        response?: { data?: { detail?: string } };
-                      }
-                    ).response?.data?.detail ??
-                    tCabinet(language, "addError")}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      <div
-        className="shrink-0 border-t border-[color:color-mix(in_srgb,var(--color-border)_42%,transparent)] bg-background py-3"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))" }}
-      >
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
+        <div className="pt-1">
           <button
             type="button"
             onClick={handleSubmit}

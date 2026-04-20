@@ -282,144 +282,196 @@ export function EpisodeBlock({
   if (quickComposeMode) {
     if (composerMode === "temperature") {
       return (
-        <TemperatureQuickView
-          language={language}
-          childName={childName}
-          successMessage={quickComposeSuccessMessage}
-          tempValue={tempValue}
-          onTempChange={setTempValue}
-          onSubmit={() => {
-            const parsed = parseFloat(tempValue);
-            if (Number.isNaN(parsed)) return;
-            addTempMutation.mutate(parsed);
-            setTempValue("");
-          }}
-          isPending={addTempMutation.isPending}
-          entries={temperatureEntries}
-        />
+        <div className="mx-auto w-full max-w-2xl">
+          <TemperatureQuickView
+            language={language}
+            childName={childName}
+            successMessage={quickComposeSuccessMessage}
+            tempValue={tempValue}
+            onTempChange={setTempValue}
+            onSubmit={() => {
+              const parsed = parseFloat(tempValue);
+              if (Number.isNaN(parsed)) return;
+              addTempMutation.mutate(parsed);
+              setTempValue("");
+            }}
+            isPending={addTempMutation.isPending}
+            entries={temperatureEntries}
+          />
+        </div>
       );
     }
 
     if (composerMode === "administration") {
       return (
-        <AdministrationQuickView
-          language={language}
-          successMessage={quickComposeSuccessMessage}
-          customMedicineName={adminCustomMedicineName}
-          amount={adminAmount}
-          onCustomMedicineNameChange={setAdminCustomMedicineName}
-          onAmountChange={setAdminAmount}
-          onSubmit={() => {
-            if (!adminCustomMedicineName.trim()) return;
-            addAdminMutation.mutate({
-              custom_medicine_name: adminCustomMedicineName.trim(),
-              amount: adminAmount.trim(),
-            });
-            setAdminCustomMedicineName("");
-            setAdminAmount("");
-          }}
-          isPending={addAdminMutation.isPending}
-          isError={addAdminMutation.isError}
-          errorDetail={
-            (addAdminMutation.error as { response?: { data?: { detail?: string } } })?.response
-              ?.data?.detail ?? null
-          }
-          entries={administrations}
-        />
+        <div className="mx-auto w-full max-w-2xl">
+          <AdministrationQuickView
+            language={language}
+            successMessage={quickComposeSuccessMessage}
+            customMedicineName={adminCustomMedicineName}
+            amount={adminAmount}
+            onCustomMedicineNameChange={setAdminCustomMedicineName}
+            onAmountChange={setAdminAmount}
+            onSubmit={() => {
+              if (!adminCustomMedicineName.trim()) return;
+              addAdminMutation.mutate({
+                custom_medicine_name: adminCustomMedicineName.trim(),
+                amount: adminAmount.trim(),
+              });
+              setAdminCustomMedicineName("");
+              setAdminAmount("");
+            }}
+            isPending={addAdminMutation.isPending}
+            isError={addAdminMutation.isError}
+            errorDetail={
+              (addAdminMutation.error as { response?: { data?: { detail?: string } } })?.response
+                ?.data?.detail ?? null
+            }
+            entries={administrations}
+          />
+        </div>
       );
     }
 
     return (
-      <CommentQuickView
-        language={language}
-        successMessage={quickComposeSuccessMessage}
-        commentText={commentText}
-        onCommentChange={setCommentText}
-        onSubmit={() => {
-          if (!commentText.trim()) return;
-          addCommentMutation.mutate();
-        }}
-        isPending={addCommentMutation.isPending}
-        entries={comments}
-      />
+      <div className="mx-auto w-full max-w-2xl">
+        <CommentQuickView
+          language={language}
+          successMessage={quickComposeSuccessMessage}
+          commentText={commentText}
+          onCommentChange={setCommentText}
+          onSubmit={() => {
+            if (!commentText.trim()) return;
+            addCommentMutation.mutate();
+          }}
+          isPending={addCommentMutation.isPending}
+          entries={comments}
+        />
+      </div>
     );
   }
 
   if (quickTimelineMode) {
     return (
-      <TimelineQuickView
-        language={language}
-        timelineFilter={timelineFilter}
-        setTimelineFilter={setTimelineFilter}
-        timelineActorFilter={timelineActorFilter}
-        setTimelineActorFilter={setTimelineActorFilter}
-        timelineActorOptions={timelineActorOptions}
-        visibleTimelineItems={visibleTimelineItems}
-      />
+      <div className="mx-auto w-full max-w-2xl">
+        <TimelineQuickView
+          language={language}
+          timelineFilter={timelineFilter}
+          setTimelineFilter={setTimelineFilter}
+          timelineActorFilter={timelineActorFilter}
+          setTimelineActorFilter={setTimelineActorFilter}
+          timelineActorOptions={timelineActorOptions}
+          visibleTimelineItems={visibleTimelineItems}
+        />
+      </div>
     );
   }
 
   if (quickReminderMode) {
     return (
-      <ReminderListQuickView
-        language={language}
-        childId={childId}
-        plans={medicationPlans}
-        medicines={householdMedicines}
-        administrations={administrations}
-        onOpen={(planId) =>
-          navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${planId}`)
-        }
-        onTakeDose={(plan) =>
-          addAdminMutation.mutate({
-            household_medicine_id: plan.householdMedicineId,
-            custom_medicine_name: plan.customMedicineName ?? undefined,
-            amount: plan.doseAmount,
-            reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
-          })
-        }
-        isSubmittingAdministration={addAdminMutation.isPending}
-      />
+      <div className="mx-auto w-full max-w-2xl">
+        <ReminderListQuickView
+          language={language}
+          childId={childId}
+          plans={medicationPlans}
+          medicines={householdMedicines}
+          administrations={administrations}
+          onOpen={(planId) =>
+            navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${planId}`)
+          }
+          onTakeDose={(plan) =>
+            addAdminMutation.mutate({
+              household_medicine_id: plan.householdMedicineId,
+              custom_medicine_name: plan.customMedicineName ?? undefined,
+              amount: plan.doseAmount,
+              reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
+            })
+          }
+          isSubmittingAdministration={addAdminMutation.isPending}
+        />
+      </div>
     );
   }
 
   if (quickReminderDetailMode) {
     return (
-      <ReminderDetailQuickView
-        language={language}
-        childId={childId}
-        selectedReminderItem={selectedReminderItem}
-        latestWeight={latestWeight}
-        isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
-        isReminderEditing={isReminderEditing}
-        editingReminderName={editingReminderName}
-        medicines={householdMedicines}
-        isSubmittingAdministration={addAdminMutation.isPending}
-        isUpdating={updatePlanMutation.isPending}
-        isDeleting={deletePlanMutation.isPending}
-        errorDetail={
-          (
-            (updatePlanMutation.error ?? deletePlanMutation.error) as {
-              response?: { data?: { detail?: string } };
-            }
-          )?.response?.data?.detail ?? null
-        }
-        onEditingChange={(nextIsEditing, planName) => {
-          setIsReminderEditing(nextIsEditing);
-          setEditingReminderName(nextIsEditing ? planName : null);
-        }}
-        onTakeDose={(plan) =>
-          addAdminMutation.mutate({
-            household_medicine_id: plan.householdMedicineId,
-            custom_medicine_name: plan.customMedicineName ?? undefined,
-            amount: plan.doseAmount,
-            reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
-          })
-        }
-        onUpdate={(planId, payload) =>
-          updatePlanMutation.mutate({
-            id: planId,
-            payload: {
+      <div className="mx-auto w-full max-w-2xl">
+        <ReminderDetailQuickView
+          language={language}
+          childId={childId}
+          selectedReminderItem={selectedReminderItem}
+          latestWeight={latestWeight}
+          isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
+          isReminderEditing={isReminderEditing}
+          editingReminderName={editingReminderName}
+          medicines={householdMedicines}
+          isSubmittingAdministration={addAdminMutation.isPending}
+          isUpdating={updatePlanMutation.isPending}
+          isDeleting={deletePlanMutation.isPending}
+          errorDetail={
+            (
+              (updatePlanMutation.error ?? deletePlanMutation.error) as {
+                response?: { data?: { detail?: string } };
+              }
+            )?.response?.data?.detail ?? null
+          }
+          onEditingChange={(nextIsEditing, planName) => {
+            setIsReminderEditing(nextIsEditing);
+            setEditingReminderName(nextIsEditing ? planName : null);
+          }}
+          onTakeDose={(plan) =>
+            addAdminMutation.mutate({
+              household_medicine_id: plan.householdMedicineId,
+              custom_medicine_name: plan.customMedicineName ?? undefined,
+              amount: plan.doseAmount,
+              reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
+            })
+          }
+          onUpdate={(planId, payload) =>
+            updatePlanMutation.mutate({
+              id: planId,
+              payload: {
+                household_medicine_id: payload.householdMedicineId,
+                custom_medicine_name: payload.customMedicineName,
+                dose_amount: payload.doseAmount,
+                min_interval_minutes: payload.minIntervalMinutes,
+                max_doses_per_day: payload.maxDosesPerDay,
+                weight_kg: payload.weightKg,
+                dose_mg_per_kg: payload.doseMgPerKg,
+                notes: payload.notes,
+              },
+            })
+          }
+          onDelete={(planId) => {
+            deletePlanMutation.mutate(planId, {
+              onSuccess: () => navigate(`/children/${childId}/illness?focus=reminders`),
+            });
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (quickReminderCreateMode) {
+    return (
+      <div className="mx-auto w-full max-w-2xl">
+        <ReminderCreateQuickView
+          language={language}
+          childId={childId}
+          medicines={householdMedicines.filter(
+            (medicine) =>
+              medicine.status !== "expired" && medicine.status !== "expired_after_opening"
+          )}
+          latestWeight={latestWeight}
+          isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
+          submitLabel={language === "ru" ? "Сохранить напоминание" : "Save reminder"}
+          isPending={createPlanMutation.isPending}
+          errorDetail={
+            (createPlanMutation.error as { response?: { data?: { detail?: string } } })?.response
+              ?.data?.detail ?? null
+          }
+          onSubmit={(payload) =>
+            createPlanMutation.mutate({
               household_medicine_id: payload.householdMedicineId,
               custom_medicine_name: payload.customMedicineName,
               dose_amount: payload.doseAmount,
@@ -428,48 +480,11 @@ export function EpisodeBlock({
               weight_kg: payload.weightKg,
               dose_mg_per_kg: payload.doseMgPerKg,
               notes: payload.notes,
-            },
-          })
-        }
-        onDelete={(planId) => {
-          deletePlanMutation.mutate(planId, {
-            onSuccess: () => navigate(`/children/${childId}/illness?focus=reminders`),
-          });
-        }}
-      />
-    );
-  }
-
-  if (quickReminderCreateMode) {
-    return (
-      <ReminderCreateQuickView
-        language={language}
-        childId={childId}
-        medicines={householdMedicines.filter(
-          (medicine) => medicine.status !== "expired" && medicine.status !== "expired_after_opening"
-        )}
-        latestWeight={latestWeight}
-        isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
-        submitLabel={language === "ru" ? "Сохранить напоминание" : "Save reminder"}
-        isPending={createPlanMutation.isPending}
-        errorDetail={
-          (createPlanMutation.error as { response?: { data?: { detail?: string } } })?.response
-            ?.data?.detail ?? null
-        }
-        onSubmit={(payload) =>
-          createPlanMutation.mutate({
-            household_medicine_id: payload.householdMedicineId,
-            custom_medicine_name: payload.customMedicineName,
-            dose_amount: payload.doseAmount,
-            min_interval_minutes: payload.minIntervalMinutes,
-            max_doses_per_day: payload.maxDosesPerDay,
-            weight_kg: payload.weightKg,
-            dose_mg_per_kg: payload.doseMgPerKg,
-            notes: payload.notes,
-          })
-        }
-        onCancel={() => navigate(`/children/${childId}/illness?focus=reminders`)}
-      />
+            })
+          }
+          onCancel={() => navigate(`/children/${childId}/illness?focus=reminders`)}
+        />
+      </div>
     );
   }
 

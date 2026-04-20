@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFeedingRecord, startFeedingRecord } from "@shared/api/feedingRecords";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { Child, FeedingRecord } from "@shared/types/api";
 import { FeedingRecordForm } from "@client/components/FeedingRecordForm";
 import { getChildrenCopy } from "@client/i18n/children";
@@ -78,20 +79,14 @@ export function FeedingRecordDialog({
   });
 
   return (
-    <div
-      className="fixed inset-0 z-[160] flex items-center justify-center p-4"
-      style={{
-        paddingTop: "max(1rem, env(safe-area-inset-top, 0px))",
-        paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
-      }}
+    <OverlayDialog
+      isOpen
+      onClose={createMutation.isPending ? undefined : onClose}
+      closeDisabled={createMutation.isPending}
+      zIndexClassName="z-[160]"
+      backdropAriaLabel={copy.feedingCancel}
     >
-      <button
-        type="button"
-        aria-label={copy.feedingCancel}
-        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_82%,var(--color-surface-soft)_18%)]"
-        onClick={createMutation.isPending ? undefined : onClose}
-      />
-      <div className="soft-panel relative z-[161] w-full max-w-[28rem] rounded-[30px] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
+      <div className="soft-panel relative z-[1] w-full max-w-[28rem] rounded-[30px] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
         <div className="space-y-2">
           <span className="soft-pill inline-flex rounded-full px-3 py-1 text-[11px] font-semibold tracking-[0.03em]">
             {child.name}
@@ -171,7 +166,7 @@ export function FeedingRecordDialog({
           </button>
         </div>
       </div>
-    </div>
+    </OverlayDialog>
   );
 }
 
@@ -191,20 +186,14 @@ export function FeedingStopDialog({
   const typeLabel =
     feeding.feedingType === "breast" ? copy.feedingTypeBreast : copy.feedingTypeFormula;
   return (
-    <div
-      className="fixed inset-0 z-[165] flex items-center justify-center p-4"
-      style={{
-        paddingTop: "max(1rem, env(safe-area-inset-top, 0px))",
-        paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
-      }}
+    <OverlayDialog
+      isOpen
+      onClose={isPending ? undefined : onClose}
+      closeDisabled={isPending}
+      zIndexClassName="z-[165]"
+      backdropAriaLabel={copy.feedingCancel}
     >
-      <button
-        type="button"
-        aria-label={copy.feedingCancel}
-        className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_82%,var(--color-surface-soft)_18%)]"
-        onClick={isPending ? undefined : onClose}
-      />
-      <div className="soft-panel relative z-[166] w-full max-w-[25rem] rounded-[28px] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
+      <div className="soft-panel relative z-[1] w-full max-w-[25rem] rounded-[28px] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
         <div className="space-y-2">
           <h2 className="app-card-title text-[1.02rem] sm:text-[1.12rem]">
             {copy.stopFeedingConfirmTitle}
@@ -233,6 +222,6 @@ export function FeedingStopDialog({
           </button>
         </div>
       </div>
-    </div>
+    </OverlayDialog>
   );
 }

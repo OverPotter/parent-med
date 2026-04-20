@@ -15,14 +15,8 @@ export const cabinetListClass =
 
 export const cabinetListRowClass = "px-4 py-3 sm:px-5";
 
-export const cabinetChoiceActionClass =
-  "flex w-full min-w-0 items-start gap-3 rounded-[20px] border px-3.5 py-3 text-left transition hover:opacity-95 active:translate-y-[1px]";
-
 export const cabinetTopTabClass =
   "inline-flex min-h-[2.34rem] min-w-0 items-center justify-center rounded-full px-3 text-[0.76rem] font-bold tracking-[-0.025em] sm:min-h-[2.45rem] sm:px-3.25 sm:text-[0.8rem]";
-
-export const cabinetAddPageClass =
-  "-mx-3 -mb-6 -mt-3 flex min-h-[100dvh] bg-background px-3 text-foreground sm:-mx-6 sm:-mb-8 sm:-mt-5 sm:px-6";
 
 export const cabinetCatalogListClass = "soft-panel overflow-hidden rounded-[28px] p-0";
 

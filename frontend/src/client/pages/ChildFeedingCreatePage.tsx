@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
@@ -30,6 +30,62 @@ export function ChildFeedingCreatePage() {
   const [recordedTime, setRecordedTime] = useState(() => getCurrentLocalTimeInputValue());
   const [note, setNote] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const pageRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page) {
+      return;
+    }
+
+    let frameId = 0;
+    let timeoutId: number | null = null;
+
+    const scrollFocusedFieldIntoView = (target: HTMLElement) => {
+      const run = () => {
+        target.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+          inline: "nearest",
+        });
+      };
+
+      window.cancelAnimationFrame(frameId);
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+
+      frameId = window.requestAnimationFrame(run);
+      timeoutId = window.setTimeout(run, 240);
+    };
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      if (
+        !target.matches(
+          "input:not([type='hidden']):not([type='checkbox']):not([type='radio']), textarea, select, [contenteditable='true']"
+        )
+      ) {
+        return;
+      }
+
+      scrollFocusedFieldIntoView(target);
+    };
+
+    page.addEventListener("focusin", handleFocusIn);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      page.removeEventListener("focusin", handleFocusIn);
+    };
+  }, []);
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
@@ -90,7 +146,7 @@ export function ChildFeedingCreatePage() {
   }
 
   return (
-    <div className="child-profile-shell space-y-6">
+    <div ref={pageRef} className="child-profile-shell space-y-6">
       <ChildSectionTopBar
         backHref={`/children/${child.id}`}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
@@ -133,9 +189,8 @@ export function ChildFeedingCreatePage() {
         />
       </Surface>
 
-      <div className="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))] z-20 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]">
-        <div className="mx-auto max-w-3xl px-1">
-          <div className="soft-panel grid grid-cols-2 gap-2 rounded-[24px] p-2 backdrop-blur-sm">
+      <div className="mx-auto w-full max-w-2xl px-1 pb-[max(0.75rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))]">
+        <div className="soft-panel grid grid-cols-2 gap-2 rounded-[24px] p-2">
             <button
               type="button"
               onClick={() => {
@@ -162,7 +217,6 @@ export function ChildFeedingCreatePage() {
             >
               {startMutation.isPending ? copy.feedingStarting : copy.feedingStart}
             </button>
-          </div>
         </div>
       </div>
     </div>

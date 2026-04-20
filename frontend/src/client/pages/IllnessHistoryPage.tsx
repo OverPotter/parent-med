@@ -80,13 +80,15 @@ export function IllnessHistoryPage() {
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro title={copy.title} subtitle={copy.subtitle} compactOnMobile hideOnMobile />
 
-      <div className="app-mobile-section-intro sm:hidden">
-        <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
-        <p className="app-mobile-section-intro__hint">
-          {language === "ru"
-            ? "Завершённые наблюдения по детям семьи."
-            : "Completed tracking sessions for the children in your family."}
-        </p>
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
+          <p className="app-mobile-section-intro__hint">
+            {language === "ru"
+              ? "Завершённые наблюдения по детям семьи."
+              : "Completed tracking sessions for the children in your family."}
+          </p>
+        </div>
       </div>
 
       {(isLoading || isEpisodesLoading) && <p className="text-muted">{common.loading}</p>}

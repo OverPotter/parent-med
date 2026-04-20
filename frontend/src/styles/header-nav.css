@@ -1,0 +1,555 @@
+.app-profile-menu {
+  position: relative;
+  display: inline-flex;
+  z-index: 180;
+}
+
+.app-header-utility-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  height: 2.9rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-surface) 98%, transparent);
+  color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
+  padding: 0 0.92rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.app-header-utility-button:hover {
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+  transform: translateY(-1px);
+}
+
+.app-profile-menu__trigger {
+  display: inline-flex;
+  min-height: 2.9rem;
+  height: 2.9rem;
+  max-width: 14rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+  border-radius: 9999px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent 78%),
+    color-mix(in srgb, var(--color-surface) 98%, transparent);
+  color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
+  padding: 0.45rem 0.92rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.app-profile-menu__trigger:hover {
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+  transform: translateY(-1px);
+}
+
+.app-profile-menu__trigger--icon-only {
+  min-height: 2.35rem;
+  height: 2.35rem;
+  width: 2.35rem;
+  padding: 0;
+}
+
+.app-header-icon-button {
+  min-height: 2.35rem !important;
+  height: 2.35rem !important;
+  width: 2.35rem !important;
+  min-width: 2.35rem !important;
+  border-radius: 9999px !important;
+  padding: 0 !important;
+}
+
+.app-profile-menu__trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.app-profile-menu__panel {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 260;
+  min-width: 13rem;
+  padding: 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 84%, transparent);
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.36), transparent 34%),
+    color-mix(in srgb, var(--color-surface-soft) 98%, transparent);
+  box-shadow:
+    0 22px 38px -24px rgb(var(--color-shadow) / 0.24),
+    inset 0 1px 0 rgb(255 255 255 / 0.34);
+  backdrop-filter: blur(18px);
+}
+
+.app-profile-menu__item {
+  display: flex;
+  width: 100%;
+  min-height: 2.25rem;
+  align-items: center;
+  border: 0;
+  border-radius: 0.78rem;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-primary) 78%, var(--color-foreground));
+  padding: 0.52rem 0.7rem;
+  text-decoration: none;
+  text-align: left;
+  font-size: 0.77rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.app-profile-menu__item:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.app-profile-menu__item--danger {
+  color: color-mix(in srgb, var(--color-danger) 84%, var(--color-foreground));
+}
+
+.app-header-language-switch .soft-language-dropdown__trigger,
+.app-header-theme-toggle {
+  min-height: 2.9rem;
+  height: 2.9rem;
+  min-width: 2.9rem;
+  padding: 0 0.84rem;
+  font-size: 0.78rem;
+  border-radius: 9999px;
+}
+
+.app-header-language-switch .soft-language-dropdown__trigger {
+  min-width: 3.1rem;
+  gap: 0.22rem;
+  text-transform: uppercase;
+}
+
+.app-header-theme-toggle {
+  gap: 0;
+  padding: 0 0.78rem;
+}
+
+.app-primary-tab {
+  position: relative;
+}
+
+.app-primary-tab--active {
+  box-shadow:
+    0 14px 34px -20px color-mix(in srgb, var(--color-primary) 36%, transparent),
+    0 8px 22px -20px rgb(var(--color-shadow) / 0.2);
+}
+
+.app-bottom-nav-wrap {
+  position: fixed !important;
+  left: 0;
+  right: 0;
+  bottom: 0 !important;
+  z-index: 90;
+  padding-inline: 0;
+  padding-bottom: max(calc(env(safe-area-inset-bottom) - 1.15rem), 0px);
+  background:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.08) 0%,
+      rgb(255 255 255 / 0.02) 14%,
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-primary) 8%, transparent) 0%,
+      transparent 18%
+    ),
+    color-mix(in srgb, var(--color-surface-strong, var(--color-surface)) 98%, transparent);
+  box-shadow:
+    0 -18px 42px -34px rgb(0 0 0 / 0.44),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.app-bottom-nav-shell {
+  position: relative;
+  display: grid;
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+  gap: 0;
+  padding: 0.42rem 0.72rem 0.18rem;
+}
+
+.app-bottom-nav-link {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  min-height: 4.08rem;
+  position: relative;
+  border: 0;
+  border-radius: 1.1rem;
+  background: transparent;
+  color: color-mix(in srgb, #cdbef3 56%, var(--color-foreground));
+  box-shadow: inset 0 0 0 1px transparent;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.48rem 0.24rem 0.52rem;
+  text-align: center;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.app-bottom-nav-link:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 1.86rem;
+  width: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.08) 10%,
+    rgb(255 255 255 / 0.16) 26%,
+    rgb(255 255 255 / 0.24) 50%,
+    rgb(255 255 255 / 0.16) 74%,
+    rgb(255 255 255 / 0.08) 90%,
+    transparent 100%
+  );
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.02);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.app-bottom-nav-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: 0;
+  transform: translateY(-0.01rem);
+  z-index: 1;
+}
+
+.app-bottom-nav-icon {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.92rem;
+  padding: 0.32rem;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.app-nav-icon {
+  display: inline-flex;
+  height: 1.38rem;
+  width: 1.38rem;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  opacity: 0.96;
+  transition:
+    color 160ms ease,
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.app-nav-icon svg {
+  height: 100%;
+  width: 100%;
+  overflow: visible;
+}
+
+.app-nav-icon--journal {
+  transform: scale(0.94);
+}
+
+.app-nav-icon--children {
+  transform: scale(0.84);
+}
+
+.app-nav-icon--pillbox {
+  transform: scale(0.92);
+}
+
+.app-nav-icon--cabinet {
+  transform: scale(0.92);
+}
+
+.app-nav-icon--journal.app-nav-icon--active {
+  transform: translateY(-0.01rem) scale(0.98);
+}
+
+.app-nav-icon--children.app-nav-icon--active {
+  transform: translateY(-0.01rem) scale(0.9);
+}
+
+.app-nav-icon--pillbox.app-nav-icon--active,
+.app-nav-icon--cabinet.app-nav-icon--active {
+  transform: translateY(-0.01rem) scale(0.96);
+}
+
+.app-nav-icon--active {
+  transform: translateY(-0.04rem) scale(1.06);
+  color: color-mix(in srgb, #efe6ff 82%, var(--color-foreground));
+  opacity: 1;
+}
+
+.app-bottom-nav-label {
+  display: block;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  transform: none;
+  opacity: 0.9;
+  position: relative;
+  z-index: 1;
+}
+
+.app-bottom-nav-link:hover {
+  background: transparent;
+}
+
+.app-bottom-nav-link:active {
+  transform: scale(0.985);
+}
+
+.app-bottom-nav-link:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.app-bottom-nav-link--active {
+  color: color-mix(in srgb, #e9defe 78%, var(--color-foreground));
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.app-bottom-nav-link--active .app-bottom-nav-icon {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.14), transparent 72%),
+    color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 18%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 10px 18px -16px color-mix(in srgb, var(--color-primary) 26%, transparent);
+}
+
+.app-bottom-nav-link--active .app-bottom-nav-label {
+  font-weight: 800;
+  letter-spacing: 0.008em;
+  color: color-mix(in srgb, #f2eaff 86%, var(--color-foreground));
+  text-shadow: 0 0 14px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  opacity: 1;
+}
+
+.app-bottom-nav-link--active:hover {
+  background: transparent;
+}
+
+.app-bottom-nav-link--active:active {
+  transform: scale(0.985);
+}
+
+/* Unified button chrome: align app controls with auth/register visual language */
+.soft-theme-toggle,
+.app-header-utility-button,
+.app-profile-menu__trigger,
+.soft-language-dropdown__trigger,
+.soft-button-secondary,
+.soft-button-danger {
+  border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent 78%),
+    color-mix(in srgb, var(--color-surface) 98%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.34),
+    0 10px 24px -22px rgb(var(--color-shadow) / 0.12);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.soft-theme-toggle:hover,
+.app-header-utility-button:hover,
+.app-profile-menu__trigger:hover,
+.soft-language-dropdown__trigger:hover,
+.soft-button-secondary:hover,
+.soft-button-danger:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.32), transparent 78%),
+    color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.36),
+    0 12px 28px -22px color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.soft-theme-toggle:focus-visible,
+.app-header-utility-button:focus-visible,
+.app-profile-menu__trigger:focus-visible,
+.soft-language-dropdown__trigger:focus-visible,
+.soft-button-secondary:focus-visible,
+.soft-button-danger:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.34);
+}
+
+[data-theme="dark"] .soft-button-secondary,
+[data-theme="dark"] .soft-theme-toggle,
+[data-theme="dark"] .app-header-utility-button,
+[data-theme="dark"] .app-profile-menu__trigger,
+[data-theme="dark"] .soft-tab {
+  border-color: rgba(166, 149, 207, 0.2);
+  background:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.14) 0%,
+      rgb(255 255 255 / 0.05) 18%,
+      transparent 44%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-glare-soft) 28%, transparent),
+      transparent 60%
+    ),
+    color-mix(in srgb, var(--color-surface-strong, var(--color-surface)) 97%, transparent);
+  color: color-mix(in srgb, var(--color-primary-focus) 26%, var(--color-foreground));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 10px 24px -22px rgb(0 0 0 / 0.24);
+}
+
+[data-theme="dark"] .soft-button-secondary:hover,
+[data-theme="dark"] .soft-theme-toggle:hover,
+[data-theme="dark"] .app-header-utility-button:hover,
+[data-theme="dark"] .app-profile-menu__trigger:hover,
+[data-theme="dark"] .soft-tab:hover {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.16) 0%,
+      rgb(255 255 255 / 0.06) 18%,
+      transparent 44%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-glare-soft)),
+      transparent 60%
+    ),
+    color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    0 12px 28px -24px rgb(0 0 0 / 0.26);
+}
+
+[data-theme="dark"] .app-profile-menu__panel {
+  border-color: color-mix(in srgb, var(--color-border) 90%, transparent);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.08), transparent 34%),
+    color-mix(in srgb, var(--color-surface-soft) 96%, transparent);
+  box-shadow:
+    0 20px 36px -24px rgb(0 0 0 / 0.32),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+[data-theme="dark"] .app-profile-menu__item:hover {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+@media (max-width: 639px) {
+  .app-profile-menu__panel {
+    right: 0;
+    top: calc(100% + 0.38rem);
+    min-width: 11rem;
+    max-width: calc(100vw - 1.75rem);
+    padding: 0.34rem;
+    border-radius: 0.9rem;
+  }
+
+  .app-profile-menu__item {
+    min-height: 2.1rem;
+    border-radius: 0.72rem;
+    font-size: 0.72rem;
+    padding: 0.45rem 0.58rem;
+  }
+
+  .soft-language-dropdown__trigger {
+    min-width: 3.15rem;
+    min-height: 2.72rem;
+    padding: 0 0.58rem 0 0.66rem;
+    gap: 0.2rem;
+    font-size: 0.78rem;
+  }
+
+  .app-header-theme-toggle {
+    min-height: 2.72rem;
+    height: 2.72rem;
+    min-width: 2.72rem;
+    padding: 0 0.64rem;
+  }
+
+  .app-header-language-switch .soft-language-dropdown__trigger {
+    min-height: 2.72rem;
+    height: 2.72rem;
+    min-width: 2.95rem;
+    padding: 0 0.56rem;
+    font-size: 0.78rem;
+  }
+}

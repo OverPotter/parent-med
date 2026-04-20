@@ -45,9 +45,9 @@ export function ChildSectionTopBar({
 
   return (
     <div className="shrink-0 -mx-3 bg-background px-3 sm:-mx-6 sm:px-6">
-      <div className="child-section-top-bar-shell app-safe-top-header bg-background pb-3">
+      <div className="child-section-top-bar-shell bg-background pb-3">
         <div className={`mx-auto w-full ${containerClassName}`}>
-          <div className="child-section-top-bar flex flex-wrap items-center justify-between gap-2 px-1 pt-1 sm:flex-nowrap">
+          <div className="child-section-top-bar flex min-w-0 items-center justify-between gap-2 px-1 pt-0.5">
             {onBack ? (
               <button
                 type="button"
@@ -64,7 +64,7 @@ export function ChildSectionTopBar({
                 <span className="truncate">{backLabel}</span>
               </Link>
             )}
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <HeaderUtilityActions
                 accountLabel={accountLabel}
                 servicesLabel={copy.clientLayout.nav.more}
@@ -81,7 +81,7 @@ export function ChildSectionTopBar({
             </div>
           </div>
           {title || hint || action ? (
-            <div className="mt-3 flex items-start justify-between gap-3 px-1">
+            <div className="mt-2.5 flex items-start justify-between gap-3 px-1">
               <div className="min-w-0">
                 {title ? <h2 className="app-card-title">{title}</h2> : null}
                 {hint ? <p className="mt-1 text-sm leading-6 text-muted">{hint}</p> : null}

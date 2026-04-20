@@ -144,9 +144,11 @@ export function ChildrenPage() {
         }
       />
 
-      <div className="app-mobile-section-intro sm:hidden">
-        <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
-        <p className="app-mobile-section-intro__hint">{copy.mobileHint}</p>
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
+          <p className="app-mobile-section-intro__hint">{copy.mobileHint}</p>
+        </div>
       </div>
 
       {feedingDialog ? (
