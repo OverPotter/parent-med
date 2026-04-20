@@ -54,45 +54,43 @@ export function LegalPage() {
         className="app-safe-top-standalone"
       />
 
-      <Surface className="p-5 sm:p-6">
-        <div className="space-y-3">
-          {items.map((item) => {
-            const content = (
-              <RowSurface className="rounded-[22px] px-4 py-4 sm:px-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="app-card-title">{item.title}</p>
-                    <p className="mt-1 text-sm text-muted">{item.description}</p>
-                  </div>
-                  <span className="soft-pill rounded-full px-2.5 py-2 text-[11px]">
-                    <ExternalArrow />
-                  </span>
+      <div className="space-y-3 sm:space-y-4">
+        {items.map((item) => {
+          const content = (
+            <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="app-card-title">{item.title}</p>
+                  <p className="mt-1.5 text-sm leading-6 text-muted">{item.description}</p>
                 </div>
-              </RowSurface>
-            );
+                <span className="mt-1 shrink-0 text-muted">
+                  <ExternalArrow />
+                </span>
+              </div>
+            </RowSurface>
+          );
 
-            if (item.href.startsWith("/")) {
-              return (
-                <Link key={item.title} to={item.href} className="block">
-                  {content}
-                </Link>
-              );
-            }
-
+          if (item.href.startsWith("/")) {
             return (
-              <a
-                key={item.title}
-                href={item.href}
-                target="_blank"
-                rel="noreferrer"
-                className="block"
-              >
+              <Link key={item.title} to={item.href} className="block">
                 {content}
-              </a>
+              </Link>
             );
-          })}
-        </div>
-      </Surface>
+          }
+
+          return (
+            <a
+              key={item.title}
+              href={item.href}
+              target="_blank"
+              rel="noreferrer"
+              className="block"
+            >
+              {content}
+            </a>
+          );
+        })}
+      </div>
 
       <Surface className="p-5 sm:p-6">
         <p className="text-sm leading-7 text-muted">

@@ -34,14 +34,14 @@ export function MorePage() {
           <p className="app-mobile-section-intro__hint">{copy.more.subtitle}</p>
         </div>
       </div>
-      <ul className="soft-panel rounded-[32px] p-3 sm:p-4 grid gap-3 sm:gap-4">
+      <ul className="grid gap-3 sm:gap-4">
         {copy.more.links.map((item) => (
           <li key={item.to}>
             <Link
               to={item.to}
               className="block transition-transform duration-200 hover:-translate-y-0.5"
             >
-              <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5">
+              <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="app-card-title">{item.title}</p>
@@ -49,14 +49,9 @@ export function MorePage() {
                       {item.description}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2 self-center">
-                    <span className="soft-pill-primary hidden rounded-full px-3.5 py-1.5 text-[11px] md:inline-flex">
-                      {copy.more.openLabel}
-                    </span>
-                    <span className="soft-pill rounded-full px-2.5 py-2 text-[11px]">
-                      <ArrowRightIcon />
-                    </span>
-                  </div>
+                  <span className="mt-1 shrink-0 text-muted">
+                    <ArrowRightIcon />
+                  </span>
                 </div>
               </RowSurface>
             </Link>

@@ -2,64 +2,69 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { PageIntro } from "@shared/components/PageIntro";
-import { Surface } from "@shared/components/Surface";
+import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { appBtnJournalSecondaryClass, SectionTitle } from "./child-illness/shared";
 
 export function ClientHomePage() {
   const { copy, language } = useI18n();
-  const homeTitle = language === "ru" ? "Рабочее пространство" : "Workspace";
+  const homeTitle = language === "ru" ? "Помощь" : "Help";
   const homeSubtitle =
     language === "ru"
-      ? "Короткая карта по основным разделам и следующему полезному шагу."
-      : "A quick map of the main sections and the next useful step.";
+      ? "Короткий гид по основным разделам и полезным действиям."
+      : "A quick guide to the main sections and useful actions.";
   const homeMobileHint =
     language === "ru"
-      ? "Главные разделы приложения и быстрый вход в работу."
-      : "Main app sections and a quick path back to work.";
+      ? "Главные разделы приложения и что в них делать."
+      : "Main app sections and what you can do there.";
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
         title={homeTitle}
         subtitle={homeSubtitle}
+        action={
+          <Link
+            to="/more"
+            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
+        }
         compactOnMobile
         hideOnMobile
         className="app-safe-top-standalone"
       />
       <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
         <div className="app-mobile-section-intro">
+          <Link
+            to="/more"
+            className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
           <h1 className="app-mobile-section-intro__title">{homeTitle}</h1>
           <p className="app-mobile-section-intro__hint">{homeMobileHint}</p>
         </div>
       </div>
 
       {copy.clientHome.sections.map((section) => (
-        <HelpSection
+        <HelpCardSection
           key={section.title}
           title={section.title}
           description={section.description}
           action={section.action}
-        >
-          <div className="grid gap-3 lg:grid-cols-3">
-            {section.items.map((item) => (
-              <InfoCard key={item.title} title={item.title} description={item.description} />
-            ))}
-          </div>
-        </HelpSection>
+          items={section.items}
+        />
       ))}
 
-      <HelpSection
+      <HelpCardSection
         title={copy.clientHome.analytics.title}
         description={copy.clientHome.analytics.description}
-      >
-        <div className="grid gap-3 lg:grid-cols-3">
-          {copy.clientHome.analytics.items.map((item) => (
-            <InfoCard key={item.title} title={item.title} description={item.description} />
-          ))}
-        </div>
-      </HelpSection>
+        items={copy.clientHome.analytics.items}
+      />
 
-      <HelpSection
+      <HelpInstallSection
         title={copy.clientHome.install.title}
         description={
           <>
@@ -67,68 +72,91 @@ export function ClientHomePage() {
             {copy.clientHome.install.description}
           </>
         }
-      >
-        <div className="grid gap-4 lg:grid-cols-2">
-          {copy.clientHome.install.cards.map((item) => (
-            <InstallCard key={item.title} title={item.title} steps={item.steps} />
-          ))}
-        </div>
-      </HelpSection>
+        cards={copy.clientHome.install.cards}
+      />
     </div>
   );
 }
 
-function HelpSection({
+function HelpCardSection({
   title,
   description,
   action,
-  children,
+  items,
 }: {
   title: string;
   description: ReactNode;
   action?: { to: string; label: string };
-  children: ReactNode;
+  items: Array<{ title: string; description: string }>;
 }) {
   return (
-    <Surface className="overflow-hidden p-0">
-      <section>
-        <div className="border-b border-border/70 px-5 py-5 sm:px-6 sm:py-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="app-card-title">{title}</h2>
-              <p className="app-card-description-2l mt-1.5 max-w-3xl text-sm leading-6 text-muted">
-                {description}
-              </p>
+    <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+      <SectionTitle
+        title={title}
+        subtitle={typeof description === "string" ? description : ""}
+        action={
+          action ? (
+            <Link
+              to={action.to}
+              className={`${appBtnJournalSecondaryClass} min-h-[2.35rem] whitespace-nowrap px-3 text-[0.78rem]`}
+            >
+              {action.label}
+            </Link>
+          ) : undefined
+        }
+      />
+      <div className="mt-4 divide-y divide-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)]">
+        {items.map((item, index) => (
+          <div
+            key={item.title}
+            className={index === 0 ? "pb-3 sm:pb-4" : "pt-3 sm:pt-4"}
+          >
+            <div className="flex items-start gap-3">
+              <span
+                aria-hidden="true"
+                className="mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_52%,var(--color-foreground))]"
+              />
+              <div className="min-w-0">
+                <h3 className="app-card-title text-[1.02rem] sm:text-[1.08rem]">{item.title}</h3>
+                <p className="mt-1.5 text-sm leading-6 text-muted">{item.description}</p>
+              </div>
             </div>
-            {action ? (
-              <Link
-                to={action.to}
-                className="app-btn-secondary-md soft-button-secondary inline-flex px-4"
-              >
-                {action.label}
-              </Link>
-            ) : null}
           </div>
-        </div>
-        <div className="px-5 py-5 sm:px-6 sm:py-6">{children}</div>
-      </section>
-    </Surface>
+        ))}
+      </div>
+    </RowSurface>
   );
 }
 
-function InfoCard({ title, description }: { title: string; description: string }) {
+function HelpInstallSection({
+  title,
+  description,
+  cards,
+}: {
+  title: string;
+  description: ReactNode;
+  cards: Array<{ title: string; steps: string[] }>;
+}) {
   return (
-    <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5 sm:py-5">
-      <h3 className="app-card-title">{title}</h3>
-      <p className="app-card-description-2l mt-2 text-sm leading-7 text-muted">{description}</p>
-    </div>
+    <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+      <div className="min-w-0">
+        <h2 className="app-card-title">{title}</h2>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-muted">{description}</p>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        {cards.map((item) => (
+          <InstallCard key={item.title} title={item.title} steps={item.steps} />
+        ))}
+      </div>
+    </RowSurface>
   );
 }
 
 function InstallCard({ title, steps }: { title: string; steps: string[] }) {
   return (
-    <div className="soft-panel-muted rounded-[24px] px-4 py-4 sm:px-5 sm:py-5">
-      <h3 className="app-card-title">{title}</h3>
+    <div className="rounded-[22px] border border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_54%,transparent)] px-4 py-4">
+      <h3 className="app-card-title text-[1.02rem] sm:text-[1.08rem]">{title}</h3>
       <ol className="mt-3 space-y-2 text-sm leading-7 text-muted">
         {steps.map((step, index) => (
           <li key={step}>

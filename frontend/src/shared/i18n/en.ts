@@ -511,18 +511,18 @@ export const en: Translations = {
     sections: [
       {
         title: "First step",
-        description: "Quick start and your next working section.",
+        description: "Where to begin and where to go next.",
         items: [
           {
-            title: "Open again",
-            description: "You can reopen it anytime.",
+            title: "Where to start",
+            description: "If this is your first time here, start with the Children section.",
           },
           {
-            title: "Continue safely",
-            description: "After closing, you return to work.",
+            title: "You can return later",
+            description: "This is just a guide. Close it anytime and continue using the app.",
           },
         ],
-        action: { to: "/children", label: "Open Children" },
+        action: { to: "/children", label: "Go to Children" },
       },
       {
         title: "Children",
@@ -541,7 +541,7 @@ export const en: Translations = {
       },
       {
         title: "Tracking",
-        description: "Current state: temperature, doses and notes.",
+        description: "Temperature, doses and notes for the current state.",
         items: [
           {
             title: "Start tracking",
@@ -560,7 +560,7 @@ export const en: Translations = {
       },
       {
         title: "Pillbox",
-        description: "Medication plans for you and family members: who takes what and when.",
+        description: "Medication plans: who takes what and when.",
         items: [
           {
             title: "Create a plan",
@@ -598,9 +598,8 @@ export const en: Translations = {
       },
     ],
     analytics: {
-      title: "How analytics works",
-      description:
-        "Analytics lives inside a child’s history and helps you understand the big picture and each episode in detail.",
+      title: "Child history analytics",
+      description: "Where to find analytics in a child’s history and what it shows.",
       items: [
         {
           title: "Where to find analytics",
@@ -621,8 +620,7 @@ export const en: Translations = {
     },
     install: {
       title: "Install on your phone",
-      description:
-        "PillPath is already configured as a PWA, so you can add the app to your home screen right from the browser.",
+      description: "You can add the app to your home screen directly from the browser.",
       cards: [
         {
           title: "iPhone / iPad",
