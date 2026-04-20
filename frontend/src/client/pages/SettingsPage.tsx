@@ -49,7 +49,7 @@ export function SettingsPage() {
   const [isDisablePushConfirmOpen, setIsDisablePushConfirmOpen] = useState(false);
   const [isNativePushBlocked, setIsNativePushBlocked] = useState(false);
   const [isNativePushSettingsDialogOpen, setIsNativePushSettingsDialogOpen] = useState(false);
-  const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isDeleteAccountConfirmOpen, setIsDeleteAccountConfirmOpen] = useState(false);
   const [isDeleteFamilyConfirmOpen, setIsDeleteFamilyConfirmOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -235,6 +235,7 @@ export function SettingsPage() {
     mutationFn: (payload: { current_password: string; new_password: string }) =>
       changePassword(payload),
     onSuccess: () => {
+      setIsPasswordDialogOpen(false);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -494,10 +495,16 @@ export function SettingsPage() {
       <PageIntro
         title={tSettings(language, "title")}
         subtitle={tSettings(language, "subtitle")}
-        eyebrow={language === "ru" ? "Еще / Настройки" : "More / Settings"}
         compactOnMobile
+        hideOnMobile
         className="app-safe-top-standalone"
       />
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <h1 className="app-mobile-section-intro__title">{tSettings(language, "title")}</h1>
+          <p className="app-mobile-section-intro__hint">{tSettings(language, "mobileHint")}</p>
+        </div>
+      </div>
       <SettingsAppPreferencesSection
         language={language}
         theme={theme}
@@ -532,8 +539,13 @@ export function SettingsPage() {
       />
       <SettingsSecuritySection
         language={language}
-        isPasswordFormOpen={isPasswordFormOpen}
-        onTogglePasswordForm={() => setIsPasswordFormOpen((current) => !current)}
+        isPasswordDialogOpen={isPasswordDialogOpen}
+        onOpenPasswordDialog={() => {
+          setPasswordError(null);
+          setPasswordSuccess(null);
+          setIsPasswordDialogOpen(true);
+        }}
+        onClosePasswordDialog={() => setIsPasswordDialogOpen(false)}
         currentPassword={currentPassword}
         newPassword={newPassword}
         confirmPassword={confirmPassword}

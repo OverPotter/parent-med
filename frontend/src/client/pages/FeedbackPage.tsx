@@ -2,11 +2,15 @@ import axios from "axios";
 import { useState } from "react";
 import { submitFeedback } from "@shared/api/feedback";
 import { PageIntro } from "@shared/components/PageIntro";
-import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import {
+  illnessCompactInputClass,
+  illnessCompactPrimaryButtonClass,
+  illnessPanelSoftClass,
+} from "./child-illness/shared";
 
 export function FeedbackPage() {
-  const { copy, language } = useI18n();
+  const { copy } = useI18n();
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -51,21 +55,27 @@ export function FeedbackPage() {
       <PageIntro
         title={copy.feedback.pageTitle}
         subtitle={copy.feedback.pageSubtitle}
-        eyebrow={language === "ru" ? "Еще / Обратная связь" : "More / Feedback"}
         compactOnMobile
+        hideOnMobile
         className="app-safe-top-standalone"
       />
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <h1 className="app-mobile-section-intro__title">{copy.feedback.pageTitle}</h1>
+          <p className="app-mobile-section-intro__hint">{copy.feedback.pageSubtitle}</p>
+        </div>
+      </div>
 
-      <Surface className="app-section-surface space-y-4 rounded-[24px] p-5 sm:rounded-[26px] sm:p-8">
-        <p className="text-[0.86rem] leading-6 text-muted sm:text-[0.9rem]">
-          {copy.feedback.privacyHint}
-        </p>
+      <section className={`${illnessPanelSoftClass} overflow-hidden p-5 sm:p-6`}>
+        <div className="space-y-1">
+          <h2 className="app-card-title">{copy.feedback.formTitle}</h2>
+          <p className="text-sm leading-6 text-muted">{copy.feedback.formHint}</p>
+        </div>
 
-        <form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
-          <label className="block space-y-1.5">
-            <span className="sr-only">{copy.feedback.placeholder}</span>
+        <form className="mt-5 space-y-4" onSubmit={(e) => void handleSubmit(e)}>
+          <label className="block">
             <textarea
-              className="soft-input min-h-[170px] w-full resize-y rounded-[20px] px-4 py-3 text-base leading-6 sm:min-h-[190px]"
+              className={`${illnessCompactInputClass} min-h-[10rem] resize-y py-3 leading-6`}
               name="message"
               rows={6}
               maxLength={8000}
@@ -77,26 +87,30 @@ export function FeedbackPage() {
             />
           </label>
 
+          <p className="text-sm leading-6 text-muted">{copy.feedback.privacyHint}</p>
+
           {error ? (
             <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm" role="alert">
               {error}
             </p>
           ) : null}
           {success ? (
-            <p className="text-sm text-emerald-600 dark:text-emerald-400" role="status">
+            <p className="soft-note-success rounded-2xl px-4 py-3 text-sm" role="status">
               {copy.feedback.success}
             </p>
           ) : null}
 
-          <button
-            type="submit"
-            className="app-btn-primary-md soft-button-primary inline-flex min-w-[12rem] items-center justify-center rounded-[20px] px-5 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={pending || !message.trim()}
-          >
-            {pending ? copy.feedback.submitting : copy.feedback.submit}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="submit"
+              className={`${illnessCompactPrimaryButtonClass} min-w-[12rem] justify-center`}
+              disabled={pending || !message.trim()}
+            >
+              {pending ? copy.feedback.submitting : copy.feedback.submit}
+            </button>
+          </div>
         </form>
-      </Surface>
+      </section>
     </div>
   );
 }

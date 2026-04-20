@@ -1,6 +1,7 @@
-import { Surface } from "@shared/components/Surface";
 import type { AppLanguage } from "@shared/i18n";
+import { childActionSecondaryClass } from "../children/shared";
 import { tSettings } from "./copy";
+import { SettingsChoiceGroup, SettingsRow, SettingsSection } from "./ui";
 
 export function SettingsNotificationsSection({
   language,
@@ -52,59 +53,30 @@ export function SettingsNotificationsSection({
   onCabinetReminderSelect: (days: 10 | 7 | 3) => void;
 }) {
   return (
-    <Surface className="p-5 sm:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <p className="app-card-title">{tSettings(language, "notifications")}</p>
-          <span
-            className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border text-[0.68rem] font-semibold ${
-              isPushEnabled
-                ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-600 dark:text-emerald-300"
-                : "border-amber-500/40 bg-amber-500/20 text-amber-700 dark:text-amber-300"
-            }`}
-          >
-            {isPushEnabled ? "✓" : "✕"}
-          </span>
-          <span
-            className={`text-xs ${isPushEnabled ? "text-muted" : "text-amber-700 dark:text-amber-300"}`}
-          >
-            {isPushEnabled
-              ? tSettings(language, "notificationsStatusOn")
-              : tSettings(language, "notificationsStatusOff")}
-          </span>
+    <SettingsSection
+      title={tSettings(language, "notifications")}
+      hint={tSettings(language, "notificationsHint")}
+      badge={
+        <div className="pt-0.5">
+          <SettingsToggleSwitch
+            language={language}
+            enabled={isPushEnabled}
+            disabled={isGlobalPushSwitchDisabled}
+            onChange={(enabled) => {
+              if (enabled === isPushEnabled) {
+                return;
+              }
+              onGlobalPushSwitchToggle();
+            }}
+          />
         </div>
-        <button
-          type="button"
-          onClick={onGlobalPushSwitchToggle}
-          disabled={isGlobalPushSwitchDisabled}
-          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-            isPushEnabled
-              ? "border-emerald-500/45 bg-emerald-500/25"
-              : "border-amber-500/45 bg-amber-500/20"
-          } disabled:cursor-not-allowed disabled:opacity-60`}
-          aria-label={
-            isPushEnabled
-              ? tSettings(language, "disableNotifications")
-              : tSettings(language, "enableNotifications")
-          }
-        >
-          <span
-            className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
-              isPushEnabled ? "translate-x-6 text-emerald-600" : "translate-x-1 text-amber-700"
-            }`}
-          >
-            {isPushEnabled ? "✓" : "✕"}
-          </span>
-        </button>
-      </div>
-      <p className="mt-3 text-sm leading-7 text-muted">
-        {tSettings(language, "notificationsHint")}
-      </p>
+      }
+    >
       {pushError ? (
-        <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">{pushError}</div>
+        <div className="soft-note-danger mx-4 mt-1 rounded-2xl px-4 py-3 text-sm">{pushError}</div>
       ) : null}
       {isNativePushBlocked && !pushError ? (
-        <div className="soft-note-warning mt-4 space-y-3 rounded-2xl px-4 py-3 text-sm">
+        <div className="soft-note-warning mx-4 mt-1 space-y-3 rounded-2xl px-4 py-3 text-sm">
           <p className="font-semibold text-foreground">
             {tSettings(language, "nativePermissionBlockedTitle")}
           </p>
@@ -114,19 +86,19 @@ export function SettingsNotificationsSection({
           <button
             type="button"
             onClick={onOpenSystemSettingsDialog}
-            className="soft-button-secondary inline-flex min-h-[2.55rem] items-center justify-center px-4 text-[0.84rem]"
+            className={`${childActionSecondaryClass} min-h-[2.6rem] px-4 text-[0.84rem]`}
           >
             {tSettings(language, "openSystemSettings")}
           </button>
         </div>
       ) : null}
       {!isPushConfigLoading && pushConfigEnabled === false ? (
-        <div className="soft-note-warning mt-4 rounded-2xl px-4 py-3 text-sm">
+        <div className="soft-note-warning mx-4 mt-1 rounded-2xl px-4 py-3 text-sm">
           {tSettings(language, "pushServerMissing")}
         </div>
       ) : null}
       {isPushEnabled ? (
-        <div className="mt-5 border-t border-border/70 pt-4">
+        <>
           <ReminderCard
             language={language}
             title={tSettings(language, "childrenReminders")}
@@ -140,6 +112,7 @@ export function SettingsNotificationsSection({
               label: `${minutes} ${tSettings(language, "minShort")}`,
             }))}
             onOptionSelect={onChildrenMinutesChange}
+            separated
           />
           <ReminderCard
             language={language}
@@ -154,29 +127,64 @@ export function SettingsNotificationsSection({
               label: `${minutes} ${tSettings(language, "minShort")}`,
             }))}
             onOptionSelect={onPillboxMinutesChange}
+            separated
           />
-        </div>
+        </>
       ) : null}
       {isPushEnabled ? (
-        <div className="mt-5 border-t border-border/70 pt-4">
-          <ReminderCard
-            language={language}
-            title={tSettings(language, "cabinetReminders")}
-            hint={tSettings(language, "cabinetRemindersSoftText")}
-            enabled={cabinetEarlyReminderEnabled}
-            disabled={isPushPreferencesLoading || isUpdatePending}
-            selectedValue={selectedCabinetReminderDays ? String(selectedCabinetReminderDays) : ""}
-            onToggle={onCabinetToggle}
-            options={[
-              { key: "10", label: tSettings(language, "days10") },
-              { key: "7", label: tSettings(language, "days7") },
-              { key: "3", label: tSettings(language, "days3") },
-            ]}
-            onOptionSelect={(value) => onCabinetReminderSelect(Number(value) as 10 | 7 | 3)}
-          />
-        </div>
+        <ReminderCard
+          language={language}
+          title={tSettings(language, "cabinetReminders")}
+          hint={tSettings(language, "cabinetRemindersSoftText")}
+          enabled={cabinetEarlyReminderEnabled}
+          disabled={isPushPreferencesLoading || isUpdatePending}
+          selectedValue={selectedCabinetReminderDays ? String(selectedCabinetReminderDays) : ""}
+          onToggle={onCabinetToggle}
+          options={[
+            { key: "10", label: tSettings(language, "days10") },
+            { key: "7", label: tSettings(language, "days7") },
+            { key: "3", label: tSettings(language, "days3") },
+          ]}
+          onOptionSelect={(value) => onCabinetReminderSelect(Number(value) as 10 | 7 | 3)}
+          separated
+        />
       ) : null}
-    </Surface>
+    </SettingsSection>
+  );
+}
+
+function SettingsToggleSwitch({
+  language,
+  enabled,
+  disabled,
+  onChange,
+}: {
+  language: AppLanguage;
+  enabled: boolean;
+  disabled?: boolean;
+  onChange: (enabled: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!enabled)}
+      disabled={disabled}
+      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
+        enabled ? "border-emerald-500/45 bg-emerald-500/25" : "border-border bg-card-muted"
+      } disabled:cursor-not-allowed disabled:opacity-60`}
+      aria-label={
+        enabled ? tSettings(language, "disableNotifications") : tSettings(language, "enableNotifications")
+      }
+      aria-pressed={enabled}
+    >
+      <span
+        className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
+          enabled ? "translate-x-6 text-emerald-600" : "translate-x-1 text-slate-500"
+        }`}
+      >
+        {enabled ? "✓" : "✕"}
+      </span>
+    </button>
   );
 }
 
@@ -190,6 +198,7 @@ function ReminderCard({
   onToggle,
   options,
   onOptionSelect,
+  separated = false,
 }: {
   language: AppLanguage;
   title: string;
@@ -200,49 +209,42 @@ function ReminderCard({
   onToggle: (enabled: boolean) => void;
   options: Array<{ key: string; label: string }>;
   onOptionSelect: (value: string) => void;
+  separated?: boolean;
 }) {
   return (
-    <div className="soft-card mt-3 rounded-[20px] border border-border/70 px-4 py-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-foreground">{title}</p>
-        <button
-          type="button"
-          onClick={() => onToggle(!enabled)}
-          disabled={disabled}
-          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${
-            enabled ? "border-emerald-500/45 bg-emerald-500/25" : "border-border bg-card-muted"
-          } disabled:cursor-not-allowed disabled:opacity-60`}
-          aria-label={
-            enabled ? tSettings(language, "reminderOff") : tSettings(language, "reminderOn")
-          }
-        >
-          <span
-            className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white text-[0.7rem] shadow-sm transition-transform dark:bg-slate-100 ${
-              enabled ? "translate-x-6 text-emerald-600" : "translate-x-1 text-slate-500"
-            }`}
-          >
-            {enabled ? "✓" : "✕"}
-          </span>
-        </button>
-      </div>
-      <p className="mt-2 text-sm leading-6 text-muted">{hint}</p>
-      {enabled ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {options.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() => onOptionSelect(option.key)}
+    <SettingsRow
+      separated={separated}
+      align="start"
+      actions={
+        <div className="w-full">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground">{title}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{hint}</p>
+            </div>
+            <div className="shrink-0">
+              <SettingsToggleSwitch
+                language={language}
+                enabled={enabled}
+                disabled={disabled}
+                onChange={onToggle}
+              />
+            </div>
+          </div>
+          {enabled ? (
+            <SettingsChoiceGroup
+              className="mt-3 sm:max-w-[18rem] sm:justify-end"
+              value={selectedValue}
               disabled={disabled}
-              className={`${
-                selectedValue === option.key ? "soft-tab-active" : "soft-tab"
-              } inline-flex min-h-[2.6rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.02em] disabled:opacity-50`}
-            >
-              {option.label}
-            </button>
-          ))}
+              onChange={onOptionSelect}
+              options={options.map((option) => ({
+                value: option.key,
+                label: option.label,
+              }))}
+            />
+          ) : null}
         </div>
-      ) : null}
-    </div>
+      }
+    />
   );
 }
