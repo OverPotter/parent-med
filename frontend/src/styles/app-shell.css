@@ -187,68 +187,6 @@ html.ios-lock-horizontal .landing-main {
   }
 }
 
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-shell {
-  padding-top: calc(max(0.48rem, var(--app-safe-top-runtime)) + 0.1rem);
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-shell {
-  padding-top: calc(max(0.48rem, var(--app-safe-top-runtime)) + 0.1rem);
-}
-
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-hero {
-  margin-top: 0.4rem;
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-hero {
-  margin-top: 0.4rem;
-}
-
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-title {
-  font-size: clamp(2.25rem, 8vw, 2.8rem);
-  line-height: 0.96;
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-title {
-  font-size: clamp(2.25rem, 8vw, 2.8rem);
-  line-height: 0.96;
-}
-
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-subtitle {
-  margin-top: 0.55rem !important;
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-subtitle {
-  margin-top: 0.55rem !important;
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-panel {
-  margin-top: 0.65rem;
-  padding: 0.55rem;
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-panel {
-  margin-top: 0.65rem;
-  padding: 0.55rem;
-}
-
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-card,
-[data-runtime="native"][data-platform="ios"]
-  .auth-v3-page.auth-v3-page--login
-  .auth-v3-secondary-card {
-  border-radius: 1.35rem;
-  padding: 0.85rem;
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-card,
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-secondary-card {
-  border-radius: 1.35rem;
-  padding: 0.85rem;
-}
-
 [data-runtime="native"][data-platform="ios"]
   .auth-v3-page.auth-v3-page--login
   .auth-v3-toggle-button {
@@ -293,32 +231,18 @@ html.ios-lock-horizontal .landing-main {
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-card,
 [data-runtime="native"][data-platform="ios"] .auth-v3-secondary-card {
-  box-shadow:
-    0 14px 32px -28px rgb(var(--color-shadow) / 0.12),
-    0 6px 14px -16px rgb(var(--color-shadow) / 0.07);
-  border-color: color-mix(in srgb, var(--color-border) 78%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-surface-glare-soft) 82%, transparent),
-      transparent 24%
-    ),
-    color-mix(in srgb, var(--color-surface-soft) 94%, var(--color-primary) 6%);
+  box-shadow: none;
+  border-color: transparent;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 [data-ios-shell="true"] .auth-v3-card,
 [data-ios-shell="true"] .auth-v3-secondary-card {
-  box-shadow:
-    0 14px 32px -28px rgb(var(--color-shadow) / 0.12),
-    0 6px 14px -16px rgb(var(--color-shadow) / 0.07);
-  border-color: color-mix(in srgb, var(--color-border) 78%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-surface-glare-soft) 82%, transparent),
-      transparent 24%
-    ),
-    color-mix(in srgb, var(--color-surface-soft) 94%, var(--color-primary) 6%);
+  box-shadow: none;
+  border-color: transparent;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-header-control,
@@ -372,15 +296,11 @@ html.ios-lock-horizontal .landing-main {
 [data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-page,
 [data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-shell,
 [data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-panel,
-[data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-card,
-[data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-secondary-card,
 [data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-input,
 [data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-input-toggle,
 [data-ios-shell="true"][data-theme="light"] .auth-v3-page,
 [data-ios-shell="true"][data-theme="light"] .auth-v3-shell,
 [data-ios-shell="true"][data-theme="light"] .auth-v3-panel,
-[data-ios-shell="true"][data-theme="light"] .auth-v3-card,
-[data-ios-shell="true"][data-theme="light"] .auth-v3-secondary-card,
 [data-ios-shell="true"][data-theme="light"] .auth-v3-input,
 [data-ios-shell="true"][data-theme="light"] .auth-v3-input-toggle {
   color-scheme: light;
@@ -389,15 +309,11 @@ html.ios-lock-horizontal .landing-main {
 [data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-page,
 [data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-shell,
 [data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-panel,
-[data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-card,
-[data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-secondary-card,
 [data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-input,
 [data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-input-toggle,
 [data-ios-shell="true"][data-theme="dark"] .auth-v3-page,
 [data-ios-shell="true"][data-theme="dark"] .auth-v3-shell,
 [data-ios-shell="true"][data-theme="dark"] .auth-v3-panel,
-[data-ios-shell="true"][data-theme="dark"] .auth-v3-card,
-[data-ios-shell="true"][data-theme="dark"] .auth-v3-secondary-card,
 [data-ios-shell="true"][data-theme="dark"] .auth-v3-input,
 [data-ios-shell="true"][data-theme="dark"] .auth-v3-input-toggle {
   color-scheme: dark;
@@ -527,7 +443,7 @@ html.ios-lock-horizontal .landing-main {
 [data-runtime="native"][data-platform="ios"] .auth-v3-panel--ios,
 [data-ios-shell="true"] .auth-v3-panel--ios {
   border-radius: 1.6rem;
-  min-height: 42rem;
+  min-height: 46rem;
   display: flex;
   flex-direction: column;
 }
@@ -540,6 +456,14 @@ html.ios-lock-horizontal .landing-main {
 [data-runtime="native"][data-platform="ios"] .auth-v3-form--ios,
 [data-ios-shell="true"] .auth-v3-form--ios {
   min-height: 100%;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-form--ios > .auth-v3-card,
+[data-runtime="native"][data-platform="ios"] .auth-v3-form--ios > .auth-v3-secondary-card,
+[data-ios-shell="true"] .auth-v3-form--ios > .auth-v3-card,
+[data-ios-shell="true"] .auth-v3-form--ios > .auth-v3-secondary-card {
+  border-radius: 0;
+  padding: 0;
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-submit,

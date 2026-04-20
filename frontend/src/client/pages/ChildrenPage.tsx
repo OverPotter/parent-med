@@ -18,6 +18,8 @@ import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child } from "@shared/types/api";
+import { syncLiveActivitiesSnapshot } from "@shared/utils/liveActivities";
+import { getLiveActivityPreferencesCache } from "@shared/utils/liveActivityPreferences";
 import { getChildrenCopy } from "@client/i18n/children";
 import { ChildCard } from "./children/ChildCard";
 import { FeedingRecordDialog } from "./children/FeedingDialogs";
@@ -111,6 +113,33 @@ export function ChildrenPage() {
       ...liveQueryOptions,
     })),
   });
+
+  useEffect(() => {
+    if (!isChildrenAuxReady || children.length === 0) {
+      return;
+    }
+
+    const activeSleepByChildId = Object.fromEntries(
+      children.map((child, index) => [child.id, activeSleepQueries[index]?.data ?? null])
+    );
+    const activeFeedingByChildId = Object.fromEntries(
+      children.map((child, index) => [child.id, activeFeedingQueries[index]?.data ?? null])
+    );
+
+    void syncLiveActivitiesSnapshot({
+      children,
+      activeSleepByChildId,
+      activeFeedingByChildId,
+      language,
+      preferences: getLiveActivityPreferencesCache(),
+    });
+  }, [
+    activeFeedingQueries,
+    activeSleepQueries,
+    children,
+    isChildrenAuxReady,
+    language,
+  ]);
 
   if (!currentFamilyId) {
     return (

@@ -359,10 +359,24 @@ export function AuthPage() {
   };
 
   const switchMode = (nextMode: Mode) => {
+    if (typeof document !== "undefined") {
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLElement &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          activeElement.tagName === "SELECT")
+      ) {
+        activeElement.blur();
+      }
+    }
     resetAuthFormState();
     setMode(nextMode);
     setSearchParams(nextMode === "register" ? { mode: "register" } : { mode: "login" });
     setError(null);
+    if (isNativeIOS) {
+      return;
+    }
     window.requestAnimationFrame(() => {
       stageRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
       window.scrollTo({ top: 0, behavior: "auto" });

@@ -19,6 +19,7 @@ import {
   formatWeightValue,
 } from "./shared";
 import { FeedingStopDialog } from "./FeedingDialogs";
+import { syncFeedingLiveActivity, syncSleepLiveActivity } from "@shared/utils/liveActivities";
 
 export function ChildCard({
   child,
@@ -62,9 +63,10 @@ export function ChildCard({
       }
       return startSleepSession(child.id);
     },
-    onSuccess: () => {
+    onSuccess: (nextSleep) => {
       queryClient.invalidateQueries({ queryKey: ["sleep-session-active", child.id] });
       setIsStopSleepConfirmOpen(false);
+      void syncSleepLiveActivity(child, nextSleep, language);
     },
   });
   const activeSleepElapsedLabel = activeSleep
@@ -85,6 +87,7 @@ export function ChildCard({
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
       queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
       setIsStopFeedingDialogOpen(false);
+      void syncFeedingLiveActivity(child, null, language);
     },
   });
   const activeFeedingStartedAt = activeFeeding?.startedAt ?? activeFeeding?.recordedAt ?? null;
