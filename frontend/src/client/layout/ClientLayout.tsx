@@ -388,7 +388,9 @@ export function ClientLayout() {
   const isPillboxInnerRoute =
     location.pathname === "/pillbox" &&
     ["setup", "medication", "details", "analytics"].includes(pillboxMode ?? "");
+  const isFamilyRoute = Boolean(matchPath({ path: "/family", end: true }, location.pathname));
   const shouldHideHeader =
+    isFamilyRoute ||
     isPillboxInnerRoute ||
     !mainMenuPathMatchers.some((matcher) => matchPath(matcher, location.pathname));
   const isMedicineCabinetAddRoute = Boolean(
@@ -397,6 +399,7 @@ export function ClientLayout() {
     matchPath({ path: "/medicine-cabinet/:medicineId/new-pack", end: true }, location.pathname)
   );
   const shouldHideMobileNav = Boolean(
+    isFamilyRoute ||
     shouldHideHeader ||
     isMedicineCabinetAddRoute ||
     matchPath({ path: "/children/:childId/illness", end: false }, location.pathname)

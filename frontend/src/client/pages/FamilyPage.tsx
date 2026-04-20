@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { updateAccountProfile } from "@shared/api/auth";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import {
@@ -12,21 +13,22 @@ import {
   updateMyFamily,
 } from "@shared/api/families";
 import { createFamilyInvite } from "@shared/api/familyInvites";
-import { DisclosureHeader } from "@shared/components/DisclosureHeader";
 import { PageIntro } from "@shared/components/PageIntro";
-import { Surface } from "@shared/components/Surface";
+import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { AppLanguage } from "@shared/i18n";
 import type { FamilyMember } from "@shared/types/api";
+import {
+  appBtnJournalPrimaryClass,
+  appBtnJournalSecondaryClass,
+  SectionTitle,
+} from "./child-illness/shared";
 
 const familyCopy = {
   ru: {
     title: "Семья",
     subtitle: "Родители и близкие работают в одном семейном пространстве.",
-    memberCountOne: "участник",
-    memberCountFew: "участника",
-    memberCountMany: "участников",
     loadFamilyFailed: "Не удалось загрузить семью.",
     loadMembersFailed: "Не удалось загрузить участников.",
     updateFamilyFailed: "Не удалось обновить название семьи.",
@@ -38,7 +40,6 @@ const familyCopy = {
     familyNameDescription: "Общее название, которое видят все участники семьи.",
     edit: "Изменить",
     hide: "Скрыть",
-    currentFamilyName: "Текущее название",
     familyNameMissing: "Название пока не указано",
     newFamilyName: "Новое название",
     newFamilyNamePlaceholder: "Например: Семья Ивановых",
@@ -50,16 +51,18 @@ const familyCopy = {
     peopleShort: "чел.",
     membersLoading: "Загружаем участников…",
     noMembers: "У семьи пока нет подключённых участников.",
-    inviteTitle: "Приглашение в семью",
+    inviteTitle: "Пригласить в приложение",
     inviteDescription:
-      "Новому взрослому отправляется личная ссылка. Он войдёт в ту же семейную базу, но под своим аккаунтом.",
+      "Отправьте приглашение близкому. Он установит приложение или откроет ссылку и подключится к вашей семье под своим аккаунтом.",
     ownerOnly: "Только для владельца",
-    creatingInvite: "Создаём ссылку…",
-    createInvite: "Создать ссылку-приглашение",
+    creatingInvite: "Готовим приглашение…",
+    createInvite: "Пригласить",
     newLink: "Новая ссылка",
     validUntil: "Действует до",
     inviteCopied: "Ссылка скопирована",
     inviteCopyFailed: "Не удалось скопировать ссылку.",
+    inviteShareFailed: "Не удалось открыть меню «Поделиться».",
+    shareInvite: "Поделиться",
     copyInvite: "Скопировать ссылку",
     owner: "Владелец",
     member: "Участник",
@@ -97,9 +100,6 @@ const familyCopy = {
   en: {
     title: "Family",
     subtitle: "Parents and relatives work together in one family space.",
-    memberCountOne: "member",
-    memberCountFew: "members",
-    memberCountMany: "members",
     loadFamilyFailed: "Could not load family.",
     loadMembersFailed: "Could not load members.",
     updateFamilyFailed: "Could not update the family name.",
@@ -111,7 +111,6 @@ const familyCopy = {
     familyNameDescription: "Shared name visible to everyone in your family space.",
     edit: "Edit",
     hide: "Hide",
-    currentFamilyName: "Current name",
     familyNameMissing: "Family name is not set yet",
     newFamilyName: "New family name",
     newFamilyNamePlaceholder: "Example: The Ivanov Family",
@@ -123,16 +122,18 @@ const familyCopy = {
     peopleShort: "people",
     membersLoading: "Loading members…",
     noMembers: "No family members are connected yet.",
-    inviteTitle: "Family invite",
+    inviteTitle: "Invite to the app",
     inviteDescription:
-      "A new adult gets a personal invite link. They join the same family workspace under their own account.",
+      "Send an invite to a family member. They can install the app or open the link and join your family with their own account.",
     ownerOnly: "Owners only",
-    creatingInvite: "Creating link…",
-    createInvite: "Create invite link",
+    creatingInvite: "Preparing invite…",
+    createInvite: "Invite",
     newLink: "New link",
     validUntil: "Valid until",
     inviteCopied: "Link copied",
     inviteCopyFailed: "Could not copy the link.",
+    inviteShareFailed: "Could not open the share sheet.",
+    shareInvite: "Share",
     copyInvite: "Copy link",
     owner: "Owner",
     member: "Member",
@@ -173,25 +174,11 @@ function tFamily(language: AppLanguage, key: keyof (typeof familyCopy)["ru"]) {
   return familyCopy[language][key];
 }
 
-function memberCountLabel(language: AppLanguage, count: number) {
-  if (language === "en") {
-    return `${count} ${count === 1 ? tFamily(language, "memberCountOne") : tFamily(language, "memberCountMany")}`;
-  }
-
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  const label =
-    mod10 === 1 && mod100 !== 11
-      ? tFamily(language, "memberCountOne")
-      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
-        ? tFamily(language, "memberCountFew")
-        : tFamily(language, "memberCountMany");
-  return `${count} ${label}`;
-}
-
 function roleLabel(role: string, language: AppLanguage): string {
   return role === "owner" ? tFamily(language, "owner") : tFamily(language, "member");
 }
+
+const PROFILE_DIALOG_HISTORY_KEY = "__pm_family_profile_dialog__";
 
 export function FamilyPage() {
   const { language } = useI18n();
@@ -200,6 +187,7 @@ export function FamilyPage() {
   const [isEditingFamilyName, setIsEditingFamilyName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [isInviteSharePending, setIsInviteSharePending] = useState(false);
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
@@ -339,6 +327,17 @@ export function FamilyPage() {
   const latestInviteUrl = createInviteMutation.data
     ? `${window.location.origin}${createInviteMutation.data.invitePath}`
     : "";
+  const canManageFamily = currentAccountRole === "owner";
+  const shouldOpenCurrentProfileEditor =
+    searchParams.get("edit") === "profile" || searchParams.get("edit") === "me";
+  const familyTitle =
+    family?.name?.trim() || currentFamilyName?.trim() || tFamily(language, "title");
+  const canShareInvite = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+  const inviteShareText =
+    language === "ru"
+      ? `Присоединяйся к нашей семье в приложении ${familyTitle}. Открой приглашение:`
+      : `Join our family in the ${familyTitle} app. Open this invite:`;
 
   const handleFamilySubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -362,25 +361,72 @@ export function FamilyPage() {
     }
   };
 
-  const canManageFamily = currentAccountRole === "owner";
-  const shouldOpenCurrentProfileEditor =
-    searchParams.get("edit") === "profile" || searchParams.get("edit") === "me";
-  const familyTitle =
-    family?.name?.trim() || currentFamilyName?.trim() || tFamily(language, "title");
+  const handleShareInvite = async (inviteUrl: string) => {
+    if (!inviteUrl || !canShareInvite) {
+      return false;
+    }
+
+    try {
+      setIsInviteSharePending(true);
+      await navigator.share({
+        title: tFamily(language, "inviteTitle"),
+        text: inviteShareText,
+        url: inviteUrl,
+      });
+      setError(null);
+      return true;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return false;
+      }
+      setError(tFamily(language, "inviteShareFailed"));
+      return false;
+    } finally {
+      setIsInviteSharePending(false);
+    }
+  };
+
+  const handleCreateInvite = async () => {
+    try {
+      const invite = await createInviteMutation.mutateAsync();
+      setInviteCopied(false);
+      const inviteUrl = `${window.location.origin}${invite.invitePath}`;
+      await handleShareInvite(inviteUrl);
+    } catch {
+      // Ошибка уже обработана в mutation.onError.
+    }
+  };
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
         title={familyTitle}
         subtitle={tFamily(language, "subtitle")}
-        compactOnMobile
-        className="app-safe-top-standalone"
         action={
-          <span className="soft-pill inline-flex min-h-[2.45rem] w-fit items-center rounded-full px-3.5 py-1.5 text-[0.78rem] tracking-[-0.015em]">
-            {memberCountLabel(language, members.length)}
-          </span>
+          <Link
+            to="/more"
+            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
         }
+        compactOnMobile
+        hideOnMobile
+        className="app-safe-top-standalone"
       />
+
+      <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+        <div className="app-mobile-section-intro">
+          <Link
+            to="/more"
+            className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
+            {language === "ru" ? "← Ещё" : "← More"}
+          </Link>
+          <h1 className="app-mobile-section-intro__title">{familyTitle}</h1>
+          <p className="app-mobile-section-intro__hint">{tFamily(language, "subtitle")}</p>
+        </div>
+      </div>
 
       {error && <p className="soft-note-danger">{error}</p>}
       {familyError && (
@@ -394,25 +440,23 @@ export function FamilyPage() {
         </p>
       )}
 
-      <Surface className="app-section-surface">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="app-card-title">{tFamily(language, "membersTitle")}</h2>
-            <p className="mt-1.5 text-sm leading-6 text-muted">
-              {tFamily(language, "membersDescription")}
-            </p>
-          </div>
-          <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
-            {members.length} {tFamily(language, "peopleShort")}
-          </span>
-        </div>
+      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+        <SectionTitle
+          title={tFamily(language, "membersTitle")}
+          subtitle={tFamily(language, "membersDescription")}
+          action={
+            <span className="text-sm font-semibold text-muted">
+              {members.length} {tFamily(language, "peopleShort")}
+            </span>
+          }
+        />
 
         {isMembersLoading ? (
           <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
         ) : members.length === 0 ? (
           <p className="mt-4 text-sm text-muted">{tFamily(language, "noMembers")}</p>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 divide-y divide-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)]">
             {members.map((member) => (
               <MemberCard
                 key={member.id}
@@ -472,35 +516,35 @@ export function FamilyPage() {
             ))}
           </div>
         )}
-      </Surface>
+      </RowSurface>
 
       {canManageFamily ? (
-        <Surface className="app-section-surface">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
+        <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+          <div className="grid gap-2">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
               <h2 className="app-card-title">{tFamily(language, "inviteTitle")}</h2>
-              <p className="mt-1.5 text-sm leading-6 text-muted">
-                {tFamily(language, "inviteDescription")}
-              </p>
+              <div className="flex shrink-0 items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleCreateInvite();
+                  }}
+                  disabled={createInviteMutation.isPending || isInviteSharePending}
+                  className={`${appBtnJournalSecondaryClass} min-h-[2.35rem] whitespace-nowrap px-3 text-[0.78rem] disabled:opacity-50`}
+                >
+                  {createInviteMutation.isPending || isInviteSharePending
+                    ? tFamily(language, "creatingInvite")
+                    : tFamily(language, "createInvite")}
+                </button>
+              </div>
             </div>
-            <span className="soft-pill rounded-full px-3.5 py-1.5 text-xs">
-              {tFamily(language, "ownerOnly")}
-            </span>
+            <p className="text-sm leading-6 text-muted">{tFamily(language, "inviteDescription")}</p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => createInviteMutation.mutate()}
-            disabled={createInviteMutation.isPending}
-            className="soft-button-primary app-btn-primary-md mt-4 inline-flex disabled:opacity-50"
-          >
-            {createInviteMutation.isPending
-              ? tFamily(language, "creatingInvite")
-              : tFamily(language, "createInvite")}
-          </button>
+          <p className="mt-2 text-sm font-semibold text-muted">{tFamily(language, "ownerOnly")}</p>
 
           {createInviteMutation.data && (
-            <div className="soft-panel mt-4 rounded-[24px] p-4">
+            <div className="mt-4 border-t border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] pt-4">
               <p className="text-xs uppercase tracking-[0.16em] text-muted">
                 {tFamily(language, "newLink")}
               </p>
@@ -513,10 +557,22 @@ export function FamilyPage() {
                 .
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
+                {canShareInvite ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleShareInvite(latestInviteUrl);
+                    }}
+                    disabled={isInviteSharePending}
+                    className={`${appBtnJournalSecondaryClass} inline-flex`}
+                  >
+                    {tFamily(language, "shareInvite")}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={handleCopyInvite}
-                  className="soft-button-secondary app-btn-secondary-md inline-flex"
+                  className={`${appBtnJournalSecondaryClass} inline-flex`}
                 >
                   {inviteCopied
                     ? tFamily(language, "inviteCopied")
@@ -525,34 +581,33 @@ export function FamilyPage() {
               </div>
             </div>
           )}
-        </Surface>
+        </RowSurface>
       ) : null}
 
-      <Surface className="app-section-surface">
-        <div>
-          <h2 className="app-card-title">{tFamily(language, "familyNameTitle")}</h2>
-          <p className="mt-1.5 text-sm leading-6 text-muted">
-            {tFamily(language, "familyNameDescription")}
-          </p>
+      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+        <div className="grid gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+            <h2 className="app-card-title">{tFamily(language, "familyNameTitle")}</h2>
+            <div className="flex shrink-0 items-center justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  if (isEditingFamilyName) {
+                    setFamilyName(family?.name ?? "");
+                  }
+                  setIsEditingFamilyName((current) => !current);
+                }}
+                className={`${appBtnJournalSecondaryClass} min-h-[2.35rem] whitespace-nowrap px-3 text-[0.78rem]`}
+              >
+                {isEditingFamilyName ? tFamily(language, "hide") : tFamily(language, "edit")}
+              </button>
+            </div>
+          </div>
+          <p className="text-sm leading-6 text-muted">{tFamily(language, "familyNameDescription")}</p>
         </div>
 
         <div className="mt-4 space-y-4">
-          <DisclosureHeader
-            isOpen={isEditingFamilyName}
-            onToggle={() => {
-              setFamilyName(family?.name ?? "");
-              setIsEditingFamilyName((current) => !current);
-            }}
-            desktopClosedLabel={tFamily(language, "edit")}
-            desktopOpenLabel={tFamily(language, "hide")}
-            mobileClosedLabel={tFamily(language, "edit")}
-            mobileOpenLabel={tFamily(language, "hide")}
-            contentClassName="space-y-0"
-          >
-            <p className="app-card-title truncate">
-              {family?.name || tFamily(language, "familyNameMissing")}
-            </p>
-          </DisclosureHeader>
+          <p className="app-card-title truncate">{family?.name || tFamily(language, "familyNameMissing")}</p>
 
           {isEditingFamilyName && (
             <form onSubmit={handleFamilySubmit} className="flex flex-wrap items-end gap-3">
@@ -573,10 +628,10 @@ export function FamilyPage() {
                     !family ||
                     isFamilyLoading ||
                     updateFamilyMutation.isPending ||
-                    !familyName.trim() ||
-                    familyName.trim() === family.name
-                  }
-                  className="soft-button-primary app-btn-primary-md inline-flex w-full disabled:opacity-50 sm:w-auto"
+                  !familyName.trim() ||
+                  familyName.trim() === family.name
+                }
+                  className={`${appBtnJournalPrimaryClass} inline-flex w-full disabled:opacity-50 sm:w-auto`}
                 >
                   {updateFamilyMutation.isPending
                     ? tFamily(language, "saving")
@@ -589,7 +644,7 @@ export function FamilyPage() {
                     setIsEditingFamilyName(false);
                   }}
                   disabled={updateFamilyMutation.isPending}
-                  className="soft-button-secondary app-btn-secondary-md inline-flex w-full sm:w-auto"
+                  className={`${appBtnJournalSecondaryClass} inline-flex w-full sm:w-auto`}
                 >
                   {tFamily(language, "cancel")}
                 </button>
@@ -597,7 +652,7 @@ export function FamilyPage() {
             </form>
           )}
         </div>
-      </Surface>
+      </RowSurface>
     </div>
   );
 }
@@ -666,7 +721,7 @@ function MemberCard({
   }, [forceEdit]);
 
   return (
-    <div className="soft-panel rounded-[30px] p-4">
+    <div className="py-4 first:pt-0 last:pb-0">
       <ConfirmDialog
         isOpen={isPromoteConfirmOpen}
         title={tFamily(language, "confirmPromoteTitle")}
@@ -733,13 +788,19 @@ function MemberCard({
               </span>
             )}
           </div>
-          <p className="mt-2 text-sm text-muted">@{member.login}</p>
-          <p className="mt-1 text-sm text-muted">
-            {member.email || tFamily(language, "emailMissing")}
-          </p>
-          <p className="mt-1 text-sm text-muted">
-            {member.phone || tFamily(language, "phoneMissing")}
-          </p>
+          <div className="mt-2 grid gap-1.5">
+            <p className="text-sm text-muted">
+              <span className="font-semibold text-foreground/90">Login: </span>@{member.login}
+            </p>
+            <p className="text-sm text-muted">
+              <span className="font-semibold text-foreground/90">Email: </span>
+              {member.email || tFamily(language, "emailMissing")}
+            </p>
+            <p className="text-sm text-muted">
+              <span className="font-semibold text-foreground/90">{tFamily(language, "phone")}: </span>
+              {member.phone || tFamily(language, "phoneMissing")}
+            </p>
+          </div>
         </div>
 
         {(isOwner || canEditProfile) && (
@@ -756,7 +817,7 @@ function MemberCard({
                     return next;
                   })
                 }
-                className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
+                className={`${appBtnJournalSecondaryClass} min-h-[2.55rem] px-3 text-[0.78rem] sm:min-h-[2.35rem] sm:text-[0.76rem]`}
               >
                 {isEditing ? tFamily(language, "hideProfile") : tFamily(language, "editProfile")}
               </button>
@@ -766,7 +827,7 @@ function MemberCard({
                 type="button"
                 onClick={() => setIsPromoteConfirmOpen(true)}
                 disabled={isPending}
-                className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
+                className={`${appBtnJournalSecondaryClass} min-h-[2.55rem] px-3 text-[0.78rem] disabled:opacity-50 sm:min-h-[2.35rem] sm:text-[0.76rem]`}
               >
                 {tFamily(language, "makeOwner")}
               </button>
@@ -776,7 +837,7 @@ function MemberCard({
                 type="button"
                 onClick={() => setIsDemoteConfirmOpen(true)}
                 disabled={isPending}
-                className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
+                className={`${appBtnJournalSecondaryClass} min-h-[2.55rem] px-3 text-[0.78rem] disabled:opacity-50 sm:min-h-[2.35rem] sm:text-[0.76rem]`}
               >
                 {tFamily(language, "makeAdult")}
               </button>
@@ -786,7 +847,7 @@ function MemberCard({
                 type="button"
                 onClick={() => setIsDeleteConfirmOpen(true)}
                 disabled={isPending}
-                className="soft-button-secondary min-h-[2.85rem] px-3 text-[0.8rem] tracking-[-0.03em] disabled:opacity-50 sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs"
+                className={`${appBtnJournalSecondaryClass} min-h-[2.55rem] px-3 text-[0.78rem] disabled:opacity-50 sm:min-h-[2.35rem] sm:text-[0.76rem]`}
               >
                 {tFamily(language, "removeFromFamily")}
               </button>
@@ -795,89 +856,275 @@ function MemberCard({
         )}
       </div>
 
-      {isEditing && (
-        <div className="mt-4 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="soft-field-label">{tFamily(language, "displayName")}</span>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              className="soft-input w-full px-4"
-              placeholder={tFamily(language, "displayNamePlaceholder")}
-            />
-          </label>
-          <label className="block">
-            <span className="soft-field-label">{tFamily(language, "relationship")}</span>
-            <input
-              type="text"
-              value={relationshipLabel}
-              onChange={(event) => setRelationshipLabel(event.target.value)}
-              className="soft-input w-full px-4"
-              placeholder={tFamily(language, "relationshipPlaceholder")}
-            />
-          </label>
-          <label className="block">
-            <span className="soft-field-label">{tFamily(language, "phone")}</span>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              className="soft-input w-full px-4"
-              placeholder="+375 ..."
-            />
-          </label>
-          {isCurrent ? (
-            <label className="block">
-              <span className="soft-field-label">{tFamily(language, "email")}</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  setEmailError(null);
-                }}
-                className="soft-input w-full px-4"
-                placeholder={tFamily(language, "emailPlaceholder")}
-                autoComplete="email"
-              />
-            </label>
-          ) : null}
-          <div className="flex items-end">
+      <ProfileEditDialog
+        language={language}
+        isOpen={isEditing}
+        isCurrent={isCurrent}
+        displayName={displayName}
+        relationshipLabel={relationshipLabel}
+        phone={phone}
+        email={email}
+        emailError={emailError}
+        isPending={isPending}
+        onClose={() => {
+          setIsEditing(false);
+          onHideForcedEdit();
+        }}
+        onDisplayNameChange={setDisplayName}
+        onRelationshipLabelChange={setRelationshipLabel}
+        onPhoneChange={setPhone}
+        onEmailChange={(value) => {
+          setEmail(value);
+          setEmailError(null);
+        }}
+        onSubmit={async () => {
+          const normalizedEmail = email.trim().toLowerCase();
+          const isValidEmail =
+            normalizedEmail.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+          if (!isValidEmail) {
+            setEmailError(tFamily(language, "invalidEmail"));
+            return;
+          }
+          const isSaved = await onSaveProfile({
+            displayName: displayName.trim() || member.login,
+            relationshipLabel: relationshipLabel.trim() || null,
+            phone: phone.trim() || null,
+            email: isCurrent ? normalizedEmail || null : undefined,
+          });
+          if (isSaved) {
+            setIsEditing(false);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+function ProfileEditDialog({
+  language,
+  isOpen,
+  isCurrent,
+  displayName,
+  relationshipLabel,
+  phone,
+  email,
+  emailError,
+  isPending,
+  onClose,
+  onDisplayNameChange,
+  onRelationshipLabelChange,
+  onPhoneChange,
+  onEmailChange,
+  onSubmit,
+}: {
+  language: AppLanguage;
+  isOpen: boolean;
+  isCurrent: boolean;
+  displayName: string;
+  relationshipLabel: string;
+  phone: string;
+  email: string;
+  emailError: string | null;
+  isPending: boolean;
+  onClose: () => void;
+  onDisplayNameChange: (value: string) => void;
+  onRelationshipLabelChange: (value: string) => void;
+  onPhoneChange: (value: string) => void;
+  onEmailChange: (value: string) => void;
+  onSubmit: () => Promise<void>;
+}) {
+  const isClosingFromHistoryRef = useRef(false);
+
+  useEffect(() => {
+    if (!isOpen || typeof window === "undefined") {
+      return;
+    }
+
+    const currentState =
+      window.history.state && typeof window.history.state === "object" ? window.history.state : {};
+    const dialogState = { ...currentState, [PROFILE_DIALOG_HISTORY_KEY]: true };
+
+    window.history.pushState(dialogState, "", window.location.href);
+
+    const handlePopState = () => {
+      isClosingFromHistoryRef.current = true;
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      if (
+        !isClosingFromHistoryRef.current &&
+        window.history.state &&
+        typeof window.history.state === "object" &&
+        window.history.state[PROFILE_DIALOG_HISTORY_KEY]
+      ) {
+        window.history.back();
+      }
+      isClosingFromHistoryRef.current = false;
+    };
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen || typeof document === "undefined") {
+      return;
+    }
+
+    const { body, documentElement } = document;
+    const scrollY = window.scrollY;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyPosition = body.style.position;
+    const previousBodyTop = body.style.top;
+    const previousBodyWidth = body.style.width;
+    const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
+    const previousHtmlOverflow = documentElement.style.overflow;
+    const previousHtmlOverscrollBehavior = documentElement.style.overscrollBehavior;
+
+    documentElement.style.overflow = "hidden";
+    documentElement.style.overscrollBehavior = "none";
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    body.style.overscrollBehavior = "none";
+
+    return () => {
+      documentElement.style.overflow = previousHtmlOverflow;
+      documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
+      body.style.overflow = previousBodyOverflow;
+      body.style.position = previousBodyPosition;
+      body.style.top = previousBodyTop;
+      body.style.width = previousBodyWidth;
+      body.style.overscrollBehavior = previousBodyOverscrollBehavior;
+      window.scrollTo({ top: scrollY, behavior: "auto" });
+    };
+  }, [isOpen]);
+
+  if (!isOpen || typeof document === "undefined") {
+    return null;
+  }
+
+  const handleClose = () => {
+    if (
+      typeof window !== "undefined" &&
+      window.history.state &&
+      typeof window.history.state === "object" &&
+      window.history.state[PROFILE_DIALOG_HISTORY_KEY]
+    ) {
+      window.history.back();
+      return;
+    }
+
+    onClose();
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
+      style={{
+        paddingTop: "max(0.75rem, var(--app-safe-top-runtime, env(safe-area-inset-top)))",
+        paddingBottom: "max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
+      }}
+    >
+      <div className="app-v3-background" aria-hidden="true">
+        <div className="app-v3-decor app-v3-decor-a" />
+        <div className="app-v3-decor app-v3-decor-b" />
+        <div className="app-v3-decor app-v3-decor-c" />
+        <div className="app-v3-noise" />
+      </div>
+      <div className="relative z-[1] flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="shrink-0 border-b border-border/70 bg-background/88 px-4 pb-3 backdrop-blur-md sm:px-6">
+          <div className="mx-auto w-full max-w-[34rem]">
             <button
               type="button"
-              onClick={async () => {
-                const normalizedEmail = email.trim().toLowerCase();
-                const isValidEmail =
-                  normalizedEmail.length === 0 ||
-                  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
-                if (!isValidEmail) {
-                  setEmailError(tFamily(language, "invalidEmail"));
-                  return;
-                }
-                const isSaved = await onSaveProfile({
-                  displayName: displayName.trim() || member.login,
-                  relationshipLabel: relationshipLabel.trim() || null,
-                  phone: phone.trim() || null,
-                  email: isCurrent ? normalizedEmail || null : undefined,
-                });
-                if (isSaved) {
-                  setIsEditing(false);
-                }
-              }}
-              disabled={isPending || !displayName.trim()}
-              className="app-btn-primary-md soft-button-primary inline-flex min-h-[3rem] items-center justify-center px-4 disabled:opacity-50 sm:min-h-[3.15rem] sm:px-5"
+              onClick={handleClose}
+              disabled={isPending}
+              className="inline-flex min-h-[2.25rem] items-center text-sm font-extrabold text-primary disabled:opacity-50"
             >
-              {isPending ? tFamily(language, "saving") : tFamily(language, "saveProfile")}
+              {language === "ru" ? "← Семья" : "← Family"}
             </button>
-          </div>
-          {emailError ? (
-            <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm sm:col-span-2">
-              {emailError}
+            <div className="mt-1.5">
+              <h2 className="app-card-title text-[1.25rem]">{tFamily(language, "editProfile")}</h2>
             </div>
-          ) : null}
+          </div>
         </div>
-      )}
-    </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-6">
+          <div className="mx-auto w-full max-w-[34rem]">
+            <div className="soft-panel overflow-hidden rounded-[28px] border border-border shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
+              <div className="p-4 sm:p-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="soft-field-label">{tFamily(language, "displayName")}</span>
+                    <input
+                      type="text"
+                      value={displayName}
+                      onChange={(event) => onDisplayNameChange(event.target.value)}
+                      className="soft-input w-full px-4"
+                      placeholder={tFamily(language, "displayNamePlaceholder")}
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="soft-field-label">{tFamily(language, "relationship")}</span>
+                    <input
+                      type="text"
+                      value={relationshipLabel}
+                      onChange={(event) => onRelationshipLabelChange(event.target.value)}
+                      className="soft-input w-full px-4"
+                      placeholder={tFamily(language, "relationshipPlaceholder")}
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="soft-field-label">{tFamily(language, "phone")}</span>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(event) => onPhoneChange(event.target.value)}
+                      className="soft-input w-full px-4"
+                      placeholder="+375 ..."
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="soft-field-label">{tFamily(language, "email")}</span>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(event) => onEmailChange(event.target.value)}
+                      disabled={!isCurrent}
+                      className="soft-input w-full px-4 disabled:opacity-80"
+                      placeholder={tFamily(language, "emailPlaceholder")}
+                      autoComplete="email"
+                    />
+                  </label>
+
+                  {emailError ? (
+                    <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm sm:col-span-2">
+                      {emailError}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="border-t border-border/60 p-4 sm:px-5 sm:pb-5 sm:pt-4">
+                <button
+                  type="button"
+                  onClick={() => void onSubmit()}
+                  disabled={isPending || !displayName.trim()}
+                  className={`${appBtnJournalPrimaryClass} w-full justify-center disabled:opacity-50`}
+                >
+                  {isPending ? tFamily(language, "saving") : tFamily(language, "saveProfile")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
