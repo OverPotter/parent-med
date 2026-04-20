@@ -2,7 +2,11 @@ import { useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
-import { deleteSleepSession, fetchSleepSessionsByChildId } from "@shared/api/sleepSessions";
+import {
+  deleteSleepSession,
+  fetchActiveSleepSessionByChildId,
+  fetchSleepSessionsByChildId,
+} from "@shared/api/sleepSessions";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -43,6 +47,12 @@ export function ChildSleepPage() {
   const { data: sleepSessions = [], isLoading: isSleepLoading } = useQuery({
     queryKey: ["sleep-sessions", childId],
     queryFn: () => fetchSleepSessionsByChildId(childId!),
+    enabled: !!childId,
+  });
+
+  useQuery({
+    queryKey: ["sleep-session-active", childId],
+    queryFn: () => fetchActiveSleepSessionByChildId(childId!),
     enabled: !!childId,
   });
 

@@ -2,7 +2,11 @@ import { useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
-import { deleteFeedingRecord, fetchFeedingRecordsByChildId } from "@shared/api/feedingRecords";
+import {
+  deleteFeedingRecord,
+  fetchActiveFeedingRecordByChildId,
+  fetchFeedingRecordsByChildId,
+} from "@shared/api/feedingRecords";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -38,6 +42,12 @@ export function ChildFeedingPage() {
   const { data: feedingRecords = [], isLoading: isFeedingLoading } = useQuery({
     queryKey: ["feeding-records", childId],
     queryFn: () => fetchFeedingRecordsByChildId(childId!),
+    enabled: !!childId,
+  });
+
+  useQuery({
+    queryKey: ["feeding-record-active", childId],
+    queryFn: () => fetchActiveFeedingRecordByChildId(childId!),
     enabled: !!childId,
   });
 

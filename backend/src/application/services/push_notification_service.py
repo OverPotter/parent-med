@@ -50,6 +50,8 @@ class PushNotificationService:
             cabinet_notify_10_days=account.cabinet_notify_10_days,
             cabinet_notify_7_days=account.cabinet_notify_7_days,
             cabinet_notify_3_days=account.cabinet_notify_3_days,
+            live_activity_sleep_enabled=account.live_activity_sleep_enabled,
+            live_activity_feeding_enabled=account.live_activity_feeding_enabled,
         )
 
     async def update_preferences(
@@ -63,6 +65,8 @@ class PushNotificationService:
 
         before_reminder_minutes = account.push_before_reminder_minutes
         pillbox_before_reminder_minutes = account.pillbox_push_before_reminder_minutes
+        live_activity_sleep_enabled = account.live_activity_sleep_enabled
+        live_activity_feeding_enabled = account.live_activity_feeding_enabled
         if dto.before_reminder_minutes is not None:
             if dto.before_reminder_minutes not in self.ALLOWED_BEFORE_REMINDER_MINUTES:
                 raise ValidationError("Можно выбрать 0, 5, 10, 15 или 20 минут")
@@ -74,6 +78,10 @@ class PushNotificationService:
             ):
                 raise ValidationError("Для таблетницы можно выбрать 0, 5, 10 или 15 минут")
             pillbox_before_reminder_minutes = dto.pillbox_before_reminder_minutes
+        if dto.live_activity_sleep_enabled is not None:
+            live_activity_sleep_enabled = dto.live_activity_sleep_enabled
+        if dto.live_activity_feeding_enabled is not None:
+            live_activity_feeding_enabled = dto.live_activity_feeding_enabled
 
         if (
             dto.before_reminder_minutes is None
@@ -81,6 +89,8 @@ class PushNotificationService:
             and dto.cabinet_notify_10_days is None
             and dto.cabinet_notify_7_days is None
             and dto.cabinet_notify_3_days is None
+            and dto.live_activity_sleep_enabled is None
+            and dto.live_activity_feeding_enabled is None
         ):
             return await self.get_preferences(account_id)
 
@@ -114,6 +124,8 @@ class PushNotificationService:
                     else account.cabinet_notify_3_days
                 ),
                 cabinet_notify_1_day=True,
+                live_activity_sleep_enabled=live_activity_sleep_enabled,
+                live_activity_feeding_enabled=live_activity_feeding_enabled,
                 created_at=account.created_at,
             )
         )
@@ -124,6 +136,8 @@ class PushNotificationService:
             cabinet_notify_10_days=updated.cabinet_notify_10_days,
             cabinet_notify_7_days=updated.cabinet_notify_7_days,
             cabinet_notify_3_days=updated.cabinet_notify_3_days,
+            live_activity_sleep_enabled=updated.live_activity_sleep_enabled,
+            live_activity_feeding_enabled=updated.live_activity_feeding_enabled,
         )
 
     def _to_response(self, entity: PushSubscription) -> PushSubscriptionResponseDto:

@@ -34,6 +34,8 @@ class SqlAccountRepository(AccountRepository):
             cabinet_notify_7_days=model.cabinet_notify_7_days,
             cabinet_notify_3_days=model.cabinet_notify_3_days,
             cabinet_notify_1_day=model.cabinet_notify_1_day,
+            live_activity_sleep_enabled=model.live_activity_sleep_enabled,
+            live_activity_feeding_enabled=model.live_activity_feeding_enabled,
             created_at=model.created_at,
         )
 
@@ -55,6 +57,8 @@ class SqlAccountRepository(AccountRepository):
             cabinet_notify_7_days=entity.cabinet_notify_7_days,
             cabinet_notify_3_days=entity.cabinet_notify_3_days,
             cabinet_notify_1_day=entity.cabinet_notify_1_day,
+            live_activity_sleep_enabled=entity.live_activity_sleep_enabled,
+            live_activity_feeding_enabled=entity.live_activity_feeding_enabled,
             created_at=entity.created_at,
         )
 
@@ -124,6 +128,8 @@ class SqlAccountRepository(AccountRepository):
         row.cabinet_notify_7_days = entity.cabinet_notify_7_days
         row.cabinet_notify_3_days = entity.cabinet_notify_3_days
         row.cabinet_notify_1_day = entity.cabinet_notify_1_day
+        row.live_activity_sleep_enabled = entity.live_activity_sleep_enabled
+        row.live_activity_feeding_enabled = entity.live_activity_feeding_enabled
         await self._session.flush()
         await self._session.refresh(row)
         return self._to_entity(row)

@@ -31,10 +31,13 @@ import {
   openNativeNotificationSettings,
   setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
+import { getLiveActivityPreferencesCache } from "@shared/utils/liveActivityPreferences";
 import { SettingsAppPreferencesSection } from "./settings/SettingsAppPreferencesSection";
 import { tSettings } from "./settings/copy";
+import { SettingsLiveActivitiesSection } from "./settings/SettingsLiveActivitiesSection";
 import { SettingsNotificationsSection } from "./settings/SettingsNotificationsSection";
 import { SettingsSecuritySection } from "./settings/SettingsSecuritySection";
+import { stopDisabledLiveActivities } from "@shared/utils/liveActivities";
 
 export function SettingsPage() {
   const { language } = useI18n();
@@ -62,6 +65,9 @@ export function SettingsPage() {
   const [deleteFamilyError, setDeleteFamilyError] = useState<string | null>(null);
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
   const [selectedPillboxReminderMinutes, setSelectedPillboxReminderMinutes] = useState("10");
+  const [liveActivitySettings, setLiveActivitySettings] = useState(() =>
+    getLiveActivityPreferencesCache()
+  );
   const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
   const [isPushRuntimeReady, setIsPushRuntimeReady] = useState(!isNativeIos);
   const childrenEarlyReminderEnabled = Number(selectedReminderMinutes) > 0;
@@ -124,6 +130,8 @@ export function SettingsPage() {
       cabinet_notify_10_days?: boolean;
       cabinet_notify_7_days?: boolean;
       cabinet_notify_3_days?: boolean;
+      live_activity_sleep_enabled?: boolean;
+      live_activity_feeding_enabled?: boolean;
     }) => updatePushNotificationPreferences(payload),
     onSuccess: (nextPreferences) => {
       setSelectedReminderMinutes(String(nextPreferences.beforeReminderMinutes));
@@ -141,6 +149,10 @@ export function SettingsPage() {
     if (pushPreferences) {
       setSelectedReminderMinutes(String(pushPreferences.beforeReminderMinutes));
       setSelectedPillboxReminderMinutes(String(pushPreferences.pillboxBeforeReminderMinutes));
+      setLiveActivitySettings({
+        sleepEnabled: pushPreferences.liveActivitySleepEnabled,
+        feedingEnabled: pushPreferences.liveActivityFeedingEnabled,
+      });
     }
   }, [pushPreferences]);
 
@@ -467,6 +479,46 @@ export function SettingsPage() {
     });
   };
 
+  const handleLiveActivitySleepToggle = (enabled: boolean) => {
+    setPushError(null);
+    const previous = liveActivitySettings;
+    setLiveActivitySettings((current) => ({ ...current, sleepEnabled: enabled }));
+    updatePushPreferencesMutation.mutate(
+      { live_activity_sleep_enabled: enabled },
+      {
+        onSuccess: (nextPreferences) => {
+          void stopDisabledLiveActivities({
+            sleepEnabled: nextPreferences.liveActivitySleepEnabled,
+            feedingEnabled: nextPreferences.liveActivityFeedingEnabled,
+          });
+        },
+        onError: () => {
+          setLiveActivitySettings(previous);
+        },
+      }
+    );
+  };
+
+  const handleLiveActivityFeedingToggle = (enabled: boolean) => {
+    setPushError(null);
+    const previous = liveActivitySettings;
+    setLiveActivitySettings((current) => ({ ...current, feedingEnabled: enabled }));
+    updatePushPreferencesMutation.mutate(
+      { live_activity_feeding_enabled: enabled },
+      {
+        onSuccess: (nextPreferences) => {
+          void stopDisabledLiveActivities({
+            sleepEnabled: nextPreferences.liveActivitySleepEnabled,
+            feedingEnabled: nextPreferences.liveActivityFeedingEnabled,
+          });
+        },
+        onError: () => {
+          setLiveActivitySettings(previous);
+        },
+      }
+    );
+  };
+
   const handleSubmitPasswordChange = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordSuccess(null);
@@ -526,6 +578,15 @@ export function SettingsPage() {
         setTheme={setTheme}
         medicationIntervalUnit={medicationIntervalUnit}
         setMedicationIntervalUnit={setMedicationIntervalUnit}
+      />
+      <SettingsLiveActivitiesSection
+        language={language}
+        isIos={isNativeIos}
+        sleepEnabled={liveActivitySettings.sleepEnabled}
+        feedingEnabled={liveActivitySettings.feedingEnabled}
+        disabled={!isPushRuntimeReady || isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
+        onSleepToggle={handleLiveActivitySleepToggle}
+        onFeedingToggle={handleLiveActivityFeedingToggle}
       />
       <SettingsNotificationsSection
         language={language}

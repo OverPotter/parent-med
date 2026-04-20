@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPushNotificationConfig, upsertPushSubscription } from "@shared/api/pushNotifications";
 import { Capacitor } from "@capacitor/core";
+import { App as CapacitorApp } from "@capacitor/app";
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@shared/store/useAppStore";
 import {
@@ -109,17 +110,58 @@ export function NativePushNavigationSync() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleNavigate = (event: Event) => {
-      const detail = (event as CustomEvent<{ url?: unknown }>).detail;
-      const url = detail?.url;
-      if (typeof url !== "string" || !url.startsWith("/")) {
+    let lastHandledUrl: string | null = null;
+
+    const navigateToNativeUrl = (rawUrl: unknown) => {
+      if (typeof rawUrl !== "string") {
         return;
       }
+
+      let url = rawUrl;
+      try {
+        const parsed = new URL(rawUrl);
+        if (parsed.pathname.startsWith("/")) {
+          url = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        }
+      } catch {
+        // noop: keep raw value
+      }
+
+      if (!url.startsWith("/") || url === lastHandledUrl) {
+        return;
+      }
+
+      lastHandledUrl = url;
       navigate(url, { replace: false });
     };
 
+    const handleNavigate = (event: Event) => {
+      const detail = (event as CustomEvent<{ url?: unknown }>).detail;
+      navigateToNativeUrl(detail?.url);
+    };
+
     window.addEventListener(NATIVE_PUSH_NAVIGATION_EVENT, handleNavigate);
-    return () => window.removeEventListener(NATIVE_PUSH_NAVIGATION_EVENT, handleNavigate);
+
+    let removeAppUrlOpenListener: (() => void) | undefined;
+
+    if (Capacitor.isNativePlatform()) {
+      void CapacitorApp.getLaunchUrl().then((result) => {
+        navigateToNativeUrl(result?.url);
+      });
+
+      void CapacitorApp.addListener("appUrlOpen", ({ url }) => {
+        navigateToNativeUrl(url);
+      }).then((listener) => {
+        removeAppUrlOpenListener = () => {
+          void listener.remove();
+        };
+      });
+    }
+
+    return () => {
+      window.removeEventListener(NATIVE_PUSH_NAVIGATION_EVENT, handleNavigate);
+      removeAppUrlOpenListener?.();
+    };
   }, [navigate]);
 
   return null;

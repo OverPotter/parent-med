@@ -29,3 +29,5 @@ class Account:
     relationship_label: str | None = None
     phone: str | None = None
     preferred_language: AccountLanguage = "ru"
+    live_activity_sleep_enabled: bool = True
+    live_activity_feeding_enabled: bool = True

@@ -3,7 +3,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 import { KeyboardResize } from "@capacitor/keyboard";
 
-const config: CapacitorConfig = {
+const config: CapacitorConfig & { packageClassList: string[] } = {
   appId: "com.overpotter.pillpath",
   appName: "PillPath",
   webDir: "www",
@@ -18,6 +18,12 @@ const config: CapacitorConfig = {
       presentationOptions: ["badge", "sound", "alert"],
     },
   },
+  packageClassList: [
+    "KeyboardPlugin",
+    "LiveActivitiesPlugin",
+    "PushNotificationsPlugin",
+    "SecureStoragePlugin",
+  ],
 };
 
 export default config;

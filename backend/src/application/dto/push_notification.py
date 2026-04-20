@@ -25,6 +25,8 @@ class PushNotificationPreferencesResponseDto(ResponseBase):
     cabinet_notify_10_days: bool
     cabinet_notify_7_days: bool
     cabinet_notify_3_days: bool
+    live_activity_sleep_enabled: bool = True
+    live_activity_feeding_enabled: bool = True
 
 
 class PushNotificationPreferencesUpdateDto(BaseModel):
@@ -44,6 +46,12 @@ class PushNotificationPreferencesUpdateDto(BaseModel):
     )
     cabinet_notify_3_days: bool | None = Field(
         None, description="Присылать reminder по аптечке за 3 дня"
+    )
+    live_activity_sleep_enabled: bool | None = Field(
+        None, description="Показывать live activity для сна"
+    )
+    live_activity_feeding_enabled: bool | None = Field(
+        None, description="Показывать live activity для кормления"
     )
 
 

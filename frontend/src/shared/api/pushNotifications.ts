@@ -1,5 +1,6 @@
 import { apiClient } from "./client";
 import type { PushNotificationConfig, PushNotificationPreferences } from "@shared/types/api";
+import { setLiveActivityPreferencesCache } from "@shared/utils/liveActivityPreferences";
 
 interface RawPushNotificationConfig {
   enabled: boolean;
@@ -13,6 +14,8 @@ interface RawPushNotificationPreferences {
   cabinet_notify_10_days: boolean;
   cabinet_notify_7_days: boolean;
   cabinet_notify_3_days: boolean;
+  live_activity_sleep_enabled: boolean;
+  live_activity_feeding_enabled: boolean;
 }
 
 export async function fetchPushNotificationConfig(): Promise<PushNotificationConfig> {
@@ -27,14 +30,21 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
   const res = await apiClient.get<RawPushNotificationPreferences>(
     "/push-notifications/preferences"
   );
-  return {
+  const preferences = {
     beforeReminderMinutes: res.data.before_reminder_minutes,
     pillboxBeforeReminderMinutes: res.data.pillbox_before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,
     cabinetNotify10Days: res.data.cabinet_notify_10_days,
     cabinetNotify7Days: res.data.cabinet_notify_7_days,
     cabinetNotify3Days: res.data.cabinet_notify_3_days,
+    liveActivitySleepEnabled: res.data.live_activity_sleep_enabled,
+    liveActivityFeedingEnabled: res.data.live_activity_feeding_enabled,
   };
+  setLiveActivityPreferencesCache({
+    sleepEnabled: preferences.liveActivitySleepEnabled,
+    feedingEnabled: preferences.liveActivityFeedingEnabled,
+  });
+  return preferences;
 }
 
 export async function updatePushNotificationPreferences(body: {
@@ -43,19 +53,28 @@ export async function updatePushNotificationPreferences(body: {
   cabinet_notify_10_days?: boolean;
   cabinet_notify_7_days?: boolean;
   cabinet_notify_3_days?: boolean;
+  live_activity_sleep_enabled?: boolean;
+  live_activity_feeding_enabled?: boolean;
 }): Promise<PushNotificationPreferences> {
   const res = await apiClient.patch<RawPushNotificationPreferences>(
     "/push-notifications/preferences",
     body
   );
-  return {
+  const preferences = {
     beforeReminderMinutes: res.data.before_reminder_minutes,
     pillboxBeforeReminderMinutes: res.data.pillbox_before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,
     cabinetNotify10Days: res.data.cabinet_notify_10_days,
     cabinetNotify7Days: res.data.cabinet_notify_7_days,
     cabinetNotify3Days: res.data.cabinet_notify_3_days,
+    liveActivitySleepEnabled: res.data.live_activity_sleep_enabled,
+    liveActivityFeedingEnabled: res.data.live_activity_feeding_enabled,
   };
+  setLiveActivityPreferencesCache({
+    sleepEnabled: preferences.liveActivitySleepEnabled,
+    feedingEnabled: preferences.liveActivityFeedingEnabled,
+  });
+  return preferences;
 }
 
 export async function upsertPushSubscription(body: {
