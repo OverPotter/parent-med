@@ -627,11 +627,32 @@ html.ios-lock-horizontal .landing-main {
 }
 
 [data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-main-shell {
-  padding-bottom: 1rem !important;
+  padding-bottom: calc(1rem + var(--app-keyboard-height, 0px)) !important;
 }
 
 [data-ios-shell="true"][data-keyboard-open="true"] .app-main-shell {
-  padding-bottom: 1rem !important;
+  padding-bottom: calc(1rem + var(--app-keyboard-height, 0px)) !important;
+}
+
+.app-form-action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  padding-bottom: max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-background) 0%, transparent) 0%,
+      color-mix(in srgb, var(--color-background) 78%, transparent) 22%,
+      var(--color-background) 100%
+    );
+}
+
+[data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-form-action-bar,
+[data-ios-shell="true"][data-keyboard-open="true"] .app-form-action-bar {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
 [data-runtime="native"] #root {

@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { createWeightEntry } from "@shared/api/weightEntries";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { HouseholdMedicine, WeightEntry } from "@shared/types/api";
 import { formatChildDate } from "@client/utils/childDateFormat";
+import { blurActiveField, scrollFieldIntoView } from "@shared/utils/focus";
 import { buildWeightDoseHint } from "../../utils/medicationPlans";
 import {
   appBtnSecondaryClass,
@@ -84,6 +86,7 @@ export function MedicationPlanComposer({
   onCancel?: () => void;
 }) {
   const { language } = useI18n();
+  const isIosShell = useIsIosShell();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
@@ -125,6 +128,8 @@ export function MedicationPlanComposer({
   const [doseMgPerKg, setDoseMgPerKg] = useState(
     initialValue?.doseMgPerKg ? String(initialValue.doseMgPerKg) : ""
   );
+  const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const selectedMedicine = medicines.find((medicine) => medicine.id === selectedMedicineId) ?? null;
   const parsedWeightKg = parseNullableNumber(weightKg);
   const weightHint = buildWeightDoseHint(
@@ -166,6 +171,49 @@ export function MedicationPlanComposer({
     }
   }, [planMode]);
 
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) {
+      return;
+    }
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      if (
+        !target.matches(
+          "input:not([type='hidden']):not([type='checkbox']):not([type='radio']), textarea, select, [contenteditable='true']"
+        )
+      ) {
+        return;
+      }
+      setHasKeyboardFocus(true);
+      scrollFieldIntoView(target, { delayMs: 140, block: "center" });
+    };
+
+    const handleFocusOut = () => {
+      window.setTimeout(() => {
+        const activeElement = document.activeElement;
+        const stillInForm =
+          activeElement instanceof HTMLElement &&
+          root.contains(activeElement) &&
+          activeElement.matches(
+            "input:not([type='hidden']):not([type='checkbox']):not([type='radio']), textarea, select, [contenteditable='true']"
+          );
+        setHasKeyboardFocus(Boolean(stillInForm));
+      }, 0);
+    };
+
+    root.addEventListener("focusin", handleFocusIn);
+    root.addEventListener("focusout", handleFocusOut);
+    return () => {
+      root.removeEventListener("focusin", handleFocusIn);
+      root.removeEventListener("focusout", handleFocusOut);
+    };
+  }, []);
+
   if (planMode === "cabinet" && isCabinetPickerOpen) {
     return (
       <CabinetMedicinePicker
@@ -179,7 +227,14 @@ export function MedicationPlanComposer({
   }
 
   return (
-    <div className="space-y-4">
+    <div
+      ref={rootRef}
+      className="space-y-4"
+      style={{
+        scrollPaddingBottom:
+          "calc(8.5rem + var(--app-keyboard-height, 0px) + max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom))))",
+      }}
+    >
       <div className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
         {medicines.length > 0 ? (
           <div className="grid grid-cols-2 gap-2">
@@ -429,7 +484,19 @@ export function MedicationPlanComposer({
         <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">{weightHint}</div>
       )}
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
+      <div className="app-form-action-bar flex flex-wrap justify-end gap-2">
+        {isIosShell && hasKeyboardFocus ? (
+          <button
+            type="button"
+            onClick={() => {
+              blurActiveField();
+              setHasKeyboardFocus(false);
+            }}
+            className={reminderComposerSecondaryActionClass}
+          >
+            {language === "ru" ? "Скрыть клавиатуру" : "Hide keyboard"}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => {

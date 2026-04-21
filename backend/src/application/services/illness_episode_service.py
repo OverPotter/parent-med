@@ -20,6 +20,7 @@ from src.domain.entities.administration_event import AdministrationEvent
 from src.domain.entities.child import Child
 from src.domain.entities.illness_episode import IllnessEpisode
 from src.domain.entities.temperature_entry import TemperatureEntry
+from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.illness_comment_repository import IllnessCommentRepository
@@ -34,12 +35,14 @@ class IllnessEpisodeService:
         self,
         episode_repo: IllnessEpisodeRepository,
         child_repo: ChildRepository,
+        account_repo: AccountRepository | None = None,
         temperature_repo: TemperatureEntryRepository | None = None,
         administration_repo: AdministrationEventRepository | None = None,
         comment_repo: IllnessCommentRepository | None = None,
     ) -> None:
         self._repo = episode_repo
         self._child_repo = child_repo
+        self._account_repo = account_repo
         self._temperature_repo = temperature_repo
         self._administration_repo = administration_repo
         self._comment_repo = comment_repo
@@ -53,8 +56,32 @@ class IllnessEpisodeService:
             status=entity.status,
             medication_mode=entity.medication_mode,
             note=entity.note,
+            member_account_ids=list(entity.member_account_ids),
             closed_at=entity.closed_at,
         )
+
+    async def _resolve_member_account_ids(
+        self,
+        requested_member_ids: list[UUID] | None,
+        current_family_id: UUID,
+    ) -> list[UUID]:
+        if self._account_repo is None:
+            if requested_member_ids:
+                raise ValidationError("Выбор получателей недоступен")
+            return []
+        accounts = await self._account_repo.list_by_family_id(current_family_id)
+        if not accounts:
+            raise ValidationError("В семье нет участников для напоминаний")
+        family_account_ids = {account.id for account in accounts}
+        if requested_member_ids is None:
+            return []
+        normalized_ids = list(dict.fromkeys(requested_member_ids))
+        invalid_ids = [
+            account_id for account_id in normalized_ids if account_id not in family_account_ids
+        ]
+        if invalid_ids:
+            raise ForbiddenError("Нельзя выбрать получателей из другой семьи")
+        return normalized_ids
 
     async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
         child = await self._child_repo.get_by_id(child_id)
@@ -242,6 +269,10 @@ class IllnessEpisodeService:
             raise ValidationError(
                 "У ребёнка уже есть активный эпизод. " "Закройте его перед созданием нового."
             )
+        member_account_ids = await self._resolve_member_account_ids(
+            dto.member_account_ids,
+            current_family_id,
+        )
         entity = IllnessEpisode(
             id=uuid4(),
             child_id=dto.child_id,
@@ -250,6 +281,7 @@ class IllnessEpisodeService:
             status="active",
             medication_mode=dto.medication_mode,
             note=dto.note,
+            member_account_ids=member_account_ids,
             closed_at=None,
             deleted_at=None,
         )
@@ -276,9 +308,14 @@ class IllnessEpisodeService:
             dto.medication_mode if "medication_mode" in fields_set else entity.medication_mode
         )
         note = dto.note if "note" in fields_set else entity.note
+        member_account_ids = (
+            await self._resolve_member_account_ids(dto.member_account_ids, current_family_id)
+            if "member_account_ids" in fields_set
+            else list(entity.member_account_ids)
+        )
         closed_at = dto.closed_at if "closed_at" in fields_set else entity.closed_at
 
-        if started_at > datetime.now(UTC).date():
+        if "started_at" in fields_set and started_at > datetime.now(UTC).date():
             raise ValidationError("Дата начала эпизода не может быть в будущем")
         if closed_at and closed_at.date() < started_at:
             raise ValidationError("Дата закрытия не может быть раньше даты начала эпизода")
@@ -300,6 +337,7 @@ class IllnessEpisodeService:
             status=status,
             medication_mode=medication_mode,
             note=note,
+            member_account_ids=member_account_ids,
             closed_at=closed_at,
             deleted_at=entity.deleted_at,
         )

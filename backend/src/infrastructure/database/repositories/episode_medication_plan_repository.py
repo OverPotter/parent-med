@@ -32,6 +32,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             weight_kg=m.weight_kg,
             dose_mg_per_kg=m.dose_mg_per_kg,
             notes=m.notes,
+            member_account_ids=list(m.member_account_ids or []),
             reminders_enabled=m.reminders_enabled,
             reminder_before_minutes=m.reminder_before_minutes,
             notify_at_due=m.notify_at_due,
@@ -53,6 +54,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
             weight_kg=e.weight_kg,
             dose_mg_per_kg=e.dose_mg_per_kg,
             notes=e.notes,
+            member_account_ids=list(e.member_account_ids),
             reminders_enabled=e.reminders_enabled,
             reminder_before_minutes=e.reminder_before_minutes,
             notify_at_due=e.notify_at_due,
@@ -111,6 +113,7 @@ class SqlEpisodeMedicationPlanRepository(EpisodeMedicationPlanRepository):
         row.weight_kg = entity.weight_kg
         row.dose_mg_per_kg = entity.dose_mg_per_kg
         row.notes = entity.notes
+        row.member_account_ids = list(entity.member_account_ids)
         row.reminders_enabled = entity.reminders_enabled
         row.reminder_before_minutes = entity.reminder_before_minutes
         row.notify_at_due = entity.notify_at_due

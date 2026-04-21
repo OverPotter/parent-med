@@ -1,31 +1,18 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ConfirmDialog } from "@shared/components/ConfirmDialog";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
-import { deleteIllnessEpisode, fetchIllnessEpisodeInsights } from "@shared/api/illnessEpisodes";
-import { fetchTemperatureEntriesByEpisodeId } from "@shared/api/temperatureEntries";
-import { fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
-import { fetchIllnessCommentsByEpisodeId } from "@shared/api/illnessComments";
-import type {
-  HouseholdMedicine,
-  IllnessEpisode,
-  IllnessEpisodeInsights,
-  TemperatureEntry,
-} from "@shared/types/api";
+import { fetchIllnessEpisodeInsights } from "@shared/api/illnessEpisodes";
+import type { IllnessEpisode, IllnessEpisodeInsights, TemperatureEntry } from "@shared/types/api";
 import { formatChildDate, formatChildDateTime } from "@client/utils/childDateFormat";
 import {
   EpisodeFactRow,
   EpisodeMetricCard,
-  appBtnDangerClass,
   appPillActionClass,
   formatEpisodePeriod,
   illnessListClass,
-  illnessPanelClass,
   illnessPanelSoftClass,
 } from "./shared";
-import { EpisodeTimelineList, buildEpisodeTimeline, formatEntrySummary } from "./timeline";
 
 export function HistoryEpisodeCard({
   childId,
@@ -70,186 +57,9 @@ export function HistoryEpisodeCard({
           >
             {language === "ru" ? "Разбор" : "Insights"}
           </Link>
-          <Link
-            to={`/children/${childId}/illness?view=history&openEpisodeId=${episode.id}`}
-            className={historyEpisodeActionClass}
-          >
-            {language === "ru" ? "Открыть" : "Open"}
-          </Link>
         </div>
       </div>
     </li>
-  );
-}
-
-export function HistoryEpisodeDetailScreen({
-  childId,
-  episode,
-  episodeNumber,
-  medicines,
-}: {
-  childId: string;
-  episode: IllnessEpisode;
-  episodeNumber: number;
-  medicines: HouseholdMedicine[];
-}) {
-  const { language } = useI18n();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const liveQueryOptions = useLiveQueryOptions(10000);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const { data: temperatureEntries = [] } = useQuery({
-    queryKey: ["temperature-entries", episode.id],
-    queryFn: () => fetchTemperatureEntriesByEpisodeId(episode.id),
-    enabled: !!episode.id,
-    ...liveQueryOptions,
-  });
-  const { data: administrations = [] } = useQuery({
-    queryKey: ["administration-events", episode.id],
-    queryFn: () => fetchAdministrationEventsByEpisodeId(episode.id),
-    enabled: !!episode.id,
-    ...liveQueryOptions,
-  });
-  const { data: comments = [] } = useQuery({
-    queryKey: ["illness-comments", episode.id],
-    queryFn: () => fetchIllnessCommentsByEpisodeId(episode.id),
-    enabled: !!episode.id,
-    ...liveQueryOptions,
-  });
-  const deleteEpisodeMutation = useMutation({
-    mutationFn: () => deleteIllnessEpisode(episode.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
-      queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
-      navigate(`/children/${childId}/illness?view=history`, { replace: true });
-    },
-  });
-  const timelineItems = buildEpisodeTimeline(
-    temperatureEntries,
-    administrations,
-    comments,
-    medicines,
-    language
-  );
-
-  return (
-    <div className="space-y-4">
-      <ConfirmDialog
-        isOpen={isDeleteConfirmOpen}
-        title={
-          language === "ru" ? `Удалить эпизод ${episodeNumber}` : `Delete episode ${episodeNumber}`
-        }
-        description={
-          language === "ru"
-            ? "Запись будет полностью удалена из истории ребёнка без возможности восстановления."
-            : "This record will be removed from the child’s history without recovery."
-        }
-        confirmLabel={
-          deleteEpisodeMutation.isPending
-            ? language === "ru"
-              ? "Удаляем…"
-              : "Deleting…"
-            : language === "ru"
-              ? "Да, удалить из истории"
-              : "Yes, delete from history"
-        }
-        confirmTone="danger"
-        isPending={deleteEpisodeMutation.isPending}
-        onCancel={() => setIsDeleteConfirmOpen(false)}
-        onConfirm={() => deleteEpisodeMutation.mutate()}
-      />
-
-      <div className="grid grid-cols-2 gap-2">
-        <Link to={`/children/${childId}/illness?view=history`} className={appPillActionClass}>
-          {language === "ru" ? "Ко всей истории" : "Back to full history"}
-        </Link>
-        <Link
-          to={`/children/${childId}/illness?view=history&episodeId=${episode.id}`}
-          className={appPillActionClass}
-        >
-          {language === "ru" ? "Разбор" : "Insights"}
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-        <EpisodeMetricCard
-          label={language === "ru" ? "Эпизод" : "Episode"}
-          value={String(episodeNumber)}
-        />
-        <EpisodeMetricCard
-          label={language === "ru" ? "Период" : "Period"}
-          value={formatEpisodePeriod(episode.startedAt, episode.closedAt, language)}
-        />
-        <EpisodeMetricCard
-          label={language === "ru" ? "Записей" : "Entries"}
-          value={formatEntrySummary(
-            temperatureEntries.length,
-            administrations.length,
-            comments.length,
-            language
-          )}
-        />
-        <EpisodeMetricCard
-          label={language === "ru" ? "Название" : "Title"}
-          value={episode.title?.trim() || (language === "ru" ? "Без названия" : "Untitled")}
-        />
-      </div>
-
-      <section className="space-y-2">
-        <h3 className="px-1 text-sm font-semibold text-foreground">
-          {language === "ru" ? "Описание" : "Description"}
-        </h3>
-        <div className={`${illnessPanelClass} px-4 py-4`}>
-          <p className="whitespace-pre-wrap text-sm leading-6 text-muted">
-            {episode.note?.trim() || (language === "ru" ? "Без описания" : "No description")}
-          </p>
-        </div>
-      </section>
-
-      <section className="space-y-2">
-        <h3 className="px-1 text-sm font-semibold text-foreground">
-          {language === "ru" ? "Что уже записано" : "What is already logged"}
-        </h3>
-        {timelineItems.length > 0 ? (
-          <EpisodeTimelineList items={timelineItems} language={language} />
-        ) : (
-          <div className="soft-empty rounded-[22px] px-4 py-6 text-sm text-muted">
-            {language === "ru"
-              ? "Для этого наблюдения ещё нет записей."
-              : "There are no records for this tracking yet."}
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-danger)_18%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-4 py-4">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-foreground">
-              {language === "ru" ? "Действия" : "Actions"}
-            </h3>
-            <p className="mt-1 text-sm text-muted">
-              {language === "ru"
-                ? "Запись можно удалить из истории."
-                : "This record can be deleted from history."}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsDeleteConfirmOpen(true)}
-            disabled={deleteEpisodeMutation.isPending}
-            className={`${appBtnDangerClass} w-full px-3.25 disabled:opacity-50 sm:w-auto`}
-          >
-            {deleteEpisodeMutation.isPending
-              ? language === "ru"
-                ? "Удаляем…"
-                : "Deleting…"
-              : language === "ru"
-                ? "Удалить"
-                : "Delete"}
-          </button>
-        </div>
-      </section>
-    </div>
   );
 }
 

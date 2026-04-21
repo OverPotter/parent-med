@@ -17,6 +17,11 @@ interface RawPushNotificationPreferences {
   live_activity_feeding_enabled: boolean;
 }
 
+interface RawPushNotificationTestResponse {
+  sent: boolean;
+  subscription_count: number;
+}
+
 export async function fetchPushNotificationConfig(): Promise<PushNotificationConfig> {
   const res = await apiClient.get<RawPushNotificationConfig>("/push-notifications/config");
   return {
@@ -81,4 +86,15 @@ export async function upsertPushSubscription(body: {
 
 export async function deletePushSubscription(body: { endpoint: string }): Promise<void> {
   await apiClient.delete("/push-notifications/subscriptions", { data: body });
+}
+
+export async function sendTestPushNotification(): Promise<{
+  sent: boolean;
+  subscriptionCount: number;
+}> {
+  const res = await apiClient.post<RawPushNotificationTestResponse>("/push-notifications/test");
+  return {
+    sent: res.data.sent,
+    subscriptionCount: res.data.subscription_count,
+  };
 }

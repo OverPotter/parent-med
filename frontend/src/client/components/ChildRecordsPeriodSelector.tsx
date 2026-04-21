@@ -318,7 +318,7 @@ function CustomPeriodDialog({
           <button
             type="button"
             onClick={onApply}
-            className="soft-pill-warning app-profile-action app-profile-action--active min-h-[2.9rem] px-4 text-sm font-extrabold"
+            className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.9rem] px-4 text-sm font-extrabold"
           >
             {language === "ru" ? "Применить" : "Apply"}
           </button>

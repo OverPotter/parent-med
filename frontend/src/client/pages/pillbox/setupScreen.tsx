@@ -97,7 +97,7 @@ export function PillboxSetupScreen({
         }
       />
 
-      <div className="space-y-4">
+      <div className="pt-2 space-y-4">
         <div className="soft-panel space-y-5 rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -241,7 +241,7 @@ export function PillboxSetupScreen({
                 {savePlanError}
               </p>
             ) : null}
-            <div className="pt-1">
+            <div className="app-form-action-bar pt-1">
               <button type="button" onClick={onSavePlan} className={actionPrimaryClass}>
                 {isEditing ? tPillbox(language, "savePlan") : tPillbox(language, "createNewPlan")}
               </button>

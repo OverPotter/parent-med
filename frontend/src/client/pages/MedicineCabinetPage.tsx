@@ -6,6 +6,11 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { deleteHouseholdMedicine, fetchHouseholdMedicines } from "@shared/api/householdMedicines";
+import {
+  fetchMyFamily,
+  fetchMyFamilyMembers,
+  updateMyFamilyCabinetRecipients,
+} from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -13,6 +18,7 @@ import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import { AddHouseholdMedicineForm } from "./medicine-cabinet/AddHouseholdMedicineForm";
 import { AddMedicineChoiceDialog } from "./medicine-cabinet/AddMedicineChoiceDialog";
+import { CabinetPushRecipientsCard } from "./medicine-cabinet/CabinetPushRecipientsCard";
 import { tCabinet } from "./medicine-cabinet/copy";
 import { NewPackPage } from "./medicine-cabinet/NewPackPage";
 import { MedicineSection } from "./medicine-cabinet/MedicineSection";
@@ -44,6 +50,7 @@ export function MedicineCabinetPage() {
   const [selectedFilter, setSelectedFilter] = useState<CabinetFilterKey | null>(null);
   const [expandedMedicineId, setExpandedMedicineId] = useState<string | null>(null);
   const accountId = useAppStore((s) => s.accountId);
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const liveQueryOptions = useLiveQueryOptions(10000);
 
   const addFlow: AddMedicineFlow =
@@ -79,10 +86,32 @@ export function MedicineCabinetPage() {
     ...liveQueryOptions,
   });
 
+  const { data: family } = useQuery({
+    queryKey: ["families", "me", currentFamilyId],
+    queryFn: fetchMyFamily,
+    enabled: !!currentFamilyId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: familyMembers = [] } = useQuery({
+    queryKey: ["families", "me", "members", currentFamilyId],
+    queryFn: fetchMyFamilyMembers,
+    enabled: !!currentFamilyId,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const deleteMutation = useMutation({
     mutationFn: deleteHouseholdMedicine,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] }),
+  });
+
+  const updateCabinetRecipientsMutation = useMutation({
+    mutationFn: (memberAccountIds: string[]) => updateMyFamilyCabinetRecipients(memberAccountIds),
+    onSuccess: (updatedFamily) => {
+      queryClient.setQueryData(["families", "me", currentFamilyId], updatedFamily);
+      queryClient.invalidateQueries({ queryKey: ["families"] });
+    },
   });
 
   const normalizedCabinetSearch = cabinetSearch.trim().toLowerCase();
@@ -202,7 +231,23 @@ export function MedicineCabinetPage() {
     <div className="min-w-0 space-y-6 sm:space-y-8">
       {!isIosShell ? (
         <PageIntro
-          title={tCabinet(language, "title")}
+          title={
+            <span className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+              <span>{tCabinet(language, "title")}</span>
+              {family ? (
+                <CabinetPushRecipientsCard
+                  language={language}
+                  family={family}
+                  familyMembers={familyMembers}
+                  isPending={updateCabinetRecipientsMutation.isPending}
+                  onSelectAll={() => updateCabinetRecipientsMutation.mutate([])}
+                  onChangeSelection={(memberIds) => {
+                    updateCabinetRecipientsMutation.mutate(memberIds);
+                  }}
+                />
+              ) : null}
+            </span>
+          }
           subtitle={tCabinet(language, "subtitle")}
           compactOnMobile
           hideOnMobile
@@ -242,7 +287,21 @@ export function MedicineCabinetPage() {
 
       <div className="app-root-mobile-header sm:hidden">
         <div className="app-mobile-section-intro">
-          <h1 className="app-mobile-section-intro__title">{tCabinet(language, "title")}</h1>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="app-mobile-section-intro__title">{tCabinet(language, "title")}</h1>
+            {family ? (
+              <CabinetPushRecipientsCard
+                language={language}
+                family={family}
+                familyMembers={familyMembers}
+                isPending={updateCabinetRecipientsMutation.isPending}
+                onSelectAll={() => updateCabinetRecipientsMutation.mutate([])}
+                onChangeSelection={(memberIds) => {
+                  updateCabinetRecipientsMutation.mutate(memberIds);
+                }}
+              />
+            ) : null}
+          </div>
           <p className="app-mobile-section-intro__hint app-mobile-section-intro__hint--single-line">
             {tCabinet(language, "mobileHint")}
           </p>

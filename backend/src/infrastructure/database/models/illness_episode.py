@@ -6,7 +6,7 @@ from datetime import date, datetime
 from uuid import uuid4
 
 from sqlalchemy import Date, DateTime, ForeignKey, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infrastructure.database.base import Base
@@ -26,6 +26,12 @@ class IllnessEpisodeModel(Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
     medication_mode: Mapped[str] = mapped_column(String(32), nullable=False, default="manual")
     note: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    member_account_ids: Mapped[list[UUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)),
+        nullable=False,
+        default=list,
+        server_default="{}",
+    )
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

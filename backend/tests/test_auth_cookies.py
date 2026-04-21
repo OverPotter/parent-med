@@ -21,6 +21,7 @@ def make_auth_response() -> AuthResponseDto:
         family=FamilyResponseDto(
             id="00000000-0000-0000-0000-000000000002",
             name="Моя семья",
+            cabinet_member_account_ids=[],
         ),
     )
 

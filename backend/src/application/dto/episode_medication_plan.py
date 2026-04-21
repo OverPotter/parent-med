@@ -24,6 +24,10 @@ class EpisodeMedicationPlanCreateDto(BaseModel):
     weight_kg: float | None = Field(None, ge=0.1, le=200, description="Вес ребёнка на момент плана")
     dose_mg_per_kg: float | None = Field(None, ge=0.1, le=100, description="Расчётная доза в мг/кг")
     notes: str | None = Field(None, description="Комментарий к схеме")
+    member_account_ids: list[UUID] = Field(
+        default_factory=list,
+        description="Кому отправлять напоминания по схеме",
+    )
 
 
 class EpisodeMedicationPlanUpdateDto(BaseModel):
@@ -41,6 +45,10 @@ class EpisodeMedicationPlanUpdateDto(BaseModel):
     weight_kg: float | None = Field(None, ge=0.1, le=200, description="Вес ребёнка на момент плана")
     dose_mg_per_kg: float | None = Field(None, ge=0.1, le=100, description="Расчётная доза в мг/кг")
     notes: str | None = Field(None, description="Комментарий к схеме")
+    member_account_ids: list[UUID] | None = Field(
+        None,
+        description="Кому отправлять напоминания по схеме",
+    )
 
 
 class EpisodeMedicationPlanResponseDto(ResponseBase):
@@ -56,4 +64,5 @@ class EpisodeMedicationPlanResponseDto(ResponseBase):
     weight_kg: float | None
     dose_mg_per_kg: float | None
     notes: str | None
+    member_account_ids: list[UUID]
     created_at: datetime

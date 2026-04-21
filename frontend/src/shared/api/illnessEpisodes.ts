@@ -20,6 +20,7 @@ interface RawIllnessEpisode {
   status: string;
   medication_mode: string;
   note: string | null;
+  member_account_ids: string[] | null;
   closed_at: string | null;
 }
 
@@ -184,6 +185,7 @@ export async function createIllnessEpisode(body: {
   title?: string | null;
   medication_mode?: string;
   note?: string | null;
+  member_account_ids?: string[];
 }): Promise<IllnessEpisode> {
   const res = await apiClient.post<RawIllnessEpisode>("/illness-episodes", body);
   return toIllnessEpisode(res.data);
@@ -197,6 +199,7 @@ export async function updateIllnessEpisode(
     status?: string;
     medication_mode?: string;
     note?: string | null;
+    member_account_ids?: string[];
     closed_at?: string | null;
   }
 ): Promise<IllnessEpisode> {

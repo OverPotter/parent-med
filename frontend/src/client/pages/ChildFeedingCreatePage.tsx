@@ -5,6 +5,8 @@ import { fetchChild } from "@shared/api/children";
 import { createFeedingRecord, startFeedingRecord } from "@shared/api/feedingRecords";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { FeedingRecordForm } from "@client/components/FeedingRecordForm";
 import { getChildrenCopy } from "@client/i18n/children";
@@ -14,6 +16,7 @@ import {
   toApiDateTime,
 } from "@client/utils/feedingRecordForm";
 import { syncFeedingLiveActivity } from "@shared/utils/liveActivities";
+import { scrollFieldIntoView } from "@shared/utils/focus";
 
 export function ChildFeedingCreatePage() {
   const { language } = useI18n();
@@ -21,6 +24,7 @@ export function ChildFeedingCreatePage() {
   const common = getChildrenCopy(language).common;
   const { childId } = useParams<{ childId: string }>();
   const navigate = useNavigate();
+  const isIosShell = useIsIosShell();
   const queryClient = useQueryClient();
   const [feedingType, setFeedingType] = useState<"breast" | "formula">("breast");
   const [breastSide, setBreastSide] = useState<"left" | "right" | "both">("left");
@@ -43,13 +47,7 @@ export function ChildFeedingCreatePage() {
     let timeoutId: number | null = null;
 
     const scrollFocusedFieldIntoView = (target: HTMLElement) => {
-      const run = () => {
-        target.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-          inline: "nearest",
-        });
-      };
+      const run = () => scrollFieldIntoView(target, { block: "center" });
 
       window.cancelAnimationFrame(frameId);
       if (timeoutId !== null) {
@@ -148,9 +146,21 @@ export function ChildFeedingCreatePage() {
   }
 
   return (
-    <div ref={pageRef} className="child-profile-shell space-y-6">
+    <div
+      ref={pageRef}
+      className="child-profile-shell min-h-[100dvh] space-y-6"
+      style={{
+        scrollPaddingBottom:
+          "calc(7.5rem + var(--app-keyboard-height, 0px) + max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom))))",
+      }}
+    >
+      <IosEdgeBackGesture
+        isEnabled={isIosShell}
+        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        targetRef={pageRef}
+      />
       <ChildSectionTopBar
-        backHref={`/children/${child.id}`}
+        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
         title={`${copy.feedingDialogTitle} · ${child.name}`}
         hint={
@@ -160,7 +170,7 @@ export function ChildFeedingCreatePage() {
         }
       />
 
-      <Surface className="children-card-hero mx-auto w-full max-w-2xl p-4 sm:p-6">
+      <Surface className="children-card-hero mx-auto w-full max-w-2xl p-4 pt-5 sm:p-6 sm:pt-6">
         <FeedingRecordForm
           copy={copy}
           language={language}
@@ -192,33 +202,33 @@ export function ChildFeedingCreatePage() {
       </Surface>
 
       <div className="mx-auto w-full max-w-2xl px-1 pb-[max(0.75rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))]">
-        <div className="soft-panel grid grid-cols-2 gap-2 rounded-[24px] p-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (!recordedDate || !recordedTime || !toApiDateTime(recordedDate, recordedTime)) {
-                  setValidationError(copy.feedingValidationTime);
-                  return;
-                }
-                setValidationError(null);
-                createMutation.mutate();
-              }}
-              disabled={createMutation.isPending || startMutation.isPending}
-              className="soft-pill app-profile-action min-h-[2.5rem] w-full px-3.25 text-center text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
-            >
-              {createMutation.isPending ? copy.feedingSaving : copy.feedingSave}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setValidationError(null);
-                startMutation.mutate();
-              }}
-              disabled={createMutation.isPending || startMutation.isPending}
-              className="soft-pill-success app-profile-action app-profile-action--active min-h-[2.5rem] w-full px-3.25 text-center text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
-            >
-              {startMutation.isPending ? copy.feedingStarting : copy.feedingStart}
-            </button>
+        <div className="app-form-action-bar soft-panel grid grid-cols-2 gap-2 rounded-[24px] p-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (!recordedDate || !recordedTime || !toApiDateTime(recordedDate, recordedTime)) {
+                setValidationError(copy.feedingValidationTime);
+                return;
+              }
+              setValidationError(null);
+              createMutation.mutate();
+            }}
+            disabled={createMutation.isPending || startMutation.isPending}
+            className="soft-pill app-profile-action min-h-[2.5rem] w-full px-3.25 text-center text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
+          >
+            {createMutation.isPending ? copy.feedingSaving : copy.feedingSave}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setValidationError(null);
+              startMutation.mutate();
+            }}
+            disabled={createMutation.isPending || startMutation.isPending}
+            className="soft-pill-success app-profile-action app-profile-action--active min-h-[2.5rem] w-full px-3.25 text-center text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
+          >
+            {startMutation.isPending ? copy.feedingStarting : copy.feedingStart}
+          </button>
         </div>
       </div>
     </div>

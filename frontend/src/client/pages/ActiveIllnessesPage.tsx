@@ -375,7 +375,11 @@ function ActiveIllnessCard({
               {language === "ru" ? "+ Заметка" : "+ Note"}
             </Link>
             <Link
-              to={`/children/${child.id}/illness?focus=reminders`}
+              to={
+                plans.length > 0
+                  ? `/children/${child.id}/illness?focus=reminders`
+                  : `/children/${child.id}/illness?focus=reminder-create`
+              }
               className={appGridPillActionClass}
             >
               {plans.length > 0

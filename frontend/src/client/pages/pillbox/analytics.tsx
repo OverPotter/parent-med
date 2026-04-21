@@ -117,7 +117,7 @@ export function PillboxAnalyticsScreen({
         }
       />
 
-      <section className="soft-panel space-y-4 rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
+      <section className="soft-panel mt-2 space-y-4 rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex items-center justify-between gap-4 px-1">
           <div className="min-w-0">
             <p className="soft-field-label">{language === "ru" ? "Показывать" : "Show"}</p>

@@ -218,7 +218,10 @@ export function ChildCalendarPage() {
   };
 
   return (
-    <div ref={rootRef} className="child-profile-shell child-overview-page space-y-4 sm:space-y-5">
+    <div
+      ref={rootRef}
+      className="child-profile-shell child-overview-page min-h-[100dvh] space-y-4 sm:space-y-5"
+    >
       <IosEdgeBackGesture isEnabled={isIosShell} onBack={handleBack} targetRef={rootRef} />
       <ChildSectionTopBar
         onBack={handleBack}
@@ -228,7 +231,7 @@ export function ChildCalendarPage() {
         containerClassName="max-w-5xl"
       />
 
-      <Surface className="mx-auto w-full max-w-5xl space-y-2 p-2">
+      <Surface className="mx-auto w-full max-w-5xl space-y-2 p-2 pt-3">
         <div className="flex items-center justify-between gap-2 px-1">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.08em] text-muted">
             {text.summaryPeriodPrefix}

@@ -17,10 +17,18 @@ class SqlFamilyRepository(FamilyRepository):
         self._session = session
 
     def _to_entity(self, m: FamilyModel) -> Family:
-        return Family(id=m.id, name=m.name)
+        return Family(
+            id=m.id,
+            name=m.name,
+            cabinet_member_account_ids=list(m.cabinet_member_account_ids or []),
+        )
 
     def _to_model(self, e: Family) -> FamilyModel:
-        return FamilyModel(id=e.id, name=e.name)
+        return FamilyModel(
+            id=e.id,
+            name=e.name,
+            cabinet_member_account_ids=list(e.cabinet_member_account_ids),
+        )
 
     async def list_all(self) -> list[Family]:
         result = await self._session.execute(select(FamilyModel).order_by(FamilyModel.name))
@@ -44,6 +52,7 @@ class SqlFamilyRepository(FamilyRepository):
         if not row:
             raise ValueError(f"Family {entity.id} not found")
         row.name = entity.name
+        row.cabinet_member_account_ids = list(entity.cabinet_member_account_ids)
         await self._session.flush()
         await self._session.refresh(row)
         return self._to_entity(row)

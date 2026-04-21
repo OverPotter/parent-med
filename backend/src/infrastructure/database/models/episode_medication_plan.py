@@ -16,7 +16,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infrastructure.database.base import Base
@@ -50,6 +50,12 @@ class EpisodeMedicationPlanModel(Base):
     weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
     dose_mg_per_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    member_account_ids: Mapped[list[UUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)),
+        nullable=False,
+        default=list,
+        server_default="{}",
+    )
     reminders_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     reminder_before_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True, default=10)
     notify_at_due: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

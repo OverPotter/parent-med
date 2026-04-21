@@ -392,7 +392,14 @@ export function EditorShell({
   const isIosShell = useIsIosShell();
 
   return (
-    <div ref={shellRef} className={`child-profile-shell ${flowShellSpacingClass}`}>
+    <div
+      ref={shellRef}
+      className={`child-profile-shell ${flowShellSpacingClass} min-h-[100dvh] pb-3 sm:pb-4`}
+      style={{
+        scrollPaddingBottom:
+          "calc(7.5rem + var(--app-keyboard-height, 0px) + var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
+      }}
+    >
       {onBack ? (
         <IosEdgeBackGesture isEnabled={isIosShell} onBack={onBack} targetRef={shellRef} />
       ) : null}

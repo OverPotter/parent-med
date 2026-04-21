@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -17,12 +17,13 @@ import {
   createTemperatureEntry,
   fetchTemperatureEntriesByEpisodeId,
 } from "@shared/api/temperatureEntries";
+import { updateIllnessEpisode } from "@shared/api/illnessEpisodes";
 import { trackMedicationAdministered, trackTemperatureLogged } from "@shared/analytics";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
-import type { IllnessEpisode, WeightEntry } from "@shared/types/api";
+import type { EpisodeMedicationPlan, FamilyMember, IllnessEpisode, WeightEntry } from "@shared/types/api";
 import { getPrioritizedMedicationPlanItems } from "@client/utils/medicationPlans";
 import {
   AdministrationQuickView,
@@ -45,6 +46,7 @@ export function EpisodeBlock({
   childName,
   childId,
   episode,
+  familyMembers,
   onClose,
   familyId,
   latestWeight,
@@ -59,6 +61,7 @@ export function EpisodeBlock({
   childName: string;
   childId: string;
   episode: IllnessEpisode;
+  familyMembers: FamilyMember[];
   onClose: () => void;
   familyId: string | null;
   latestWeight: WeightEntry | null;
@@ -80,6 +83,7 @@ export function EpisodeBlock({
   const isReminderCabinetPickerOpen = searchParams.get("picker") === "cabinet";
   const [isReminderEditing, setIsReminderEditing] = useState(false);
   const [editingReminderName, setEditingReminderName] = useState<string | null>(null);
+  const [recipientDraftIds, setRecipientDraftIds] = useState<string[]>(() => episode.memberAccountIds);
   const [commentText, setCommentText] = useState("");
   const [quickComposeSuccessMessage, setQuickComposeSuccessMessage] = useState<string | null>(null);
   const composerMode = quickComposeMode ?? initialComposerMode;
@@ -184,9 +188,21 @@ export function EpisodeBlock({
         dose_mg_per_kg: payload.dose_mg_per_kg ?? null,
         notes: payload.notes ?? null,
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
-      if (quickReminderCreateMode) navigate(`/children/${childId}/illness?focus=reminders`);
+    onSuccess: async (createdPlan) => {
+      queryClient.setQueryData<EpisodeMedicationPlan[]>(
+        ["episode-medication-plans", episode.id],
+        (current) => {
+          const items = current ?? [];
+          if (items.some((item) => item.id === createdPlan.id)) {
+            return items;
+          }
+          return [createdPlan, ...items];
+        }
+      );
+      await queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      if (quickReminderCreateMode) {
+        navigate(`/children/${childId}/illness?focus=reminders`, { replace: true });
+      }
     },
   });
 
@@ -216,6 +232,79 @@ export function EpisodeBlock({
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] }),
   });
+
+  const updateEpisodeRecipientsMutation = useMutation({
+    mutationFn: (memberAccountIds: string[]) =>
+      updateIllnessEpisode(episode.id, {
+        member_account_ids: memberAccountIds,
+      }),
+    onMutate: async (memberAccountIds) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ["illness-episode-active", childId] }),
+        queryClient.cancelQueries({ queryKey: ["illness-episodes", childId] }),
+      ]);
+
+      const previousActiveEpisode = queryClient.getQueryData<IllnessEpisode | null>([
+        "illness-episode-active",
+        childId,
+      ]);
+      const previousEpisodes = queryClient.getQueryData<IllnessEpisode[]>([
+        "illness-episodes",
+        childId,
+      ]);
+
+      queryClient.setQueryData<IllnessEpisode | null>(
+        ["illness-episode-active", childId],
+        (current) =>
+          current && current.id === episode.id
+            ? { ...current, memberAccountIds: [...memberAccountIds] }
+            : current
+      );
+      queryClient.setQueryData<IllnessEpisode[]>(["illness-episodes", childId], (current) =>
+        (current ?? []).map((item) =>
+          item.id === episode.id ? { ...item, memberAccountIds: [...memberAccountIds] } : item
+        )
+      );
+
+      return { previousActiveEpisode, previousEpisodes };
+    },
+    onError: (_error, _memberAccountIds, context) => {
+      setRecipientDraftIds(context?.previousActiveEpisode?.memberAccountIds ?? episode.memberAccountIds);
+      if (context?.previousActiveEpisode !== undefined) {
+        queryClient.setQueryData(["illness-episode-active", childId], context.previousActiveEpisode);
+      }
+      if (context?.previousEpisodes !== undefined) {
+        queryClient.setQueryData(["illness-episodes", childId], context.previousEpisodes);
+      }
+    },
+    onSuccess: (updatedEpisode) => {
+      setRecipientDraftIds(updatedEpisode.memberAccountIds);
+      queryClient.setQueryData<IllnessEpisode | null>(
+        ["illness-episode-active", childId],
+        (current) => (current && current.id === updatedEpisode.id ? updatedEpisode : current)
+      );
+      queryClient.setQueryData<IllnessEpisode[]>(["illness-episodes", childId], (current) =>
+        (current ?? []).map((item) => (item.id === updatedEpisode.id ? updatedEpisode : item))
+      );
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
+    },
+  });
+  const isUpdatingRecipients = updateEpisodeRecipientsMutation.isPending;
+
+  useEffect(() => {
+    if (isUpdatingRecipients) {
+      return;
+    }
+    setRecipientDraftIds(episode.memberAccountIds);
+  }, [episode.memberAccountIds, isUpdatingRecipients]);
+
+  const recipientsEpisode = useMemo<IllnessEpisode>(
+    () => ({ ...episode, memberAccountIds: recipientDraftIds }),
+    [episode, recipientDraftIds]
+  );
 
   const addCommentMutation = useMutation({
     mutationFn: () =>
@@ -270,6 +359,38 @@ export function EpisodeBlock({
   const selectedReminderItem = reminderPlanId
     ? (reminderItems.find((item) => item.plan.id === reminderPlanId) ?? null)
     : null;
+  const updateEpisodeRecipients = (memberIds: string[]) => {
+    setRecipientDraftIds(memberIds);
+    updateEpisodeRecipientsMutation.mutate(memberIds);
+  };
+
+  useEffect(() => {
+    if (!quickReminderDetailMode || !reminderPlanId || selectedReminderItem) {
+      return;
+    }
+    navigate(`/children/${childId}/illness?focus=reminders`, { replace: true });
+  }, [childId, navigate, quickReminderDetailMode, reminderPlanId, selectedReminderItem]);
+
+  useEffect(() => {
+    if (!quickReminderDetailMode || !isReminderCabinetPickerOpen || isReminderEditing) {
+      return;
+    }
+    navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${reminderPlanId}`, {
+      replace: true,
+    });
+  }, [
+    childId,
+    isReminderCabinetPickerOpen,
+    isReminderEditing,
+    navigate,
+    quickReminderDetailMode,
+    reminderPlanId,
+  ]);
+
+  useEffect(() => {
+    setIsReminderEditing(false);
+    setEditingReminderName(null);
+  }, [reminderPlanId]);
 
   useEffect(() => {
     if (!quickComposeSuccessMessage) return;
@@ -373,8 +494,10 @@ export function EpisodeBlock({
         <ReminderListQuickView
           language={language}
           childId={childId}
+          episode={recipientsEpisode}
           plans={medicationPlans}
           medicines={householdMedicines}
+          familyMembers={familyMembers}
           administrations={administrations}
           onOpen={(planId) =>
             navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${planId}`)
@@ -388,6 +511,9 @@ export function EpisodeBlock({
             })
           }
           isSubmittingAdministration={addAdminMutation.isPending}
+          isUpdatingRecipients={isUpdatingRecipients}
+          onSelectAllRecipients={() => updateEpisodeRecipientsMutation.mutate([])}
+          onChangeRecipients={updateEpisodeRecipients}
         />
       </div>
     );
@@ -399,15 +525,18 @@ export function EpisodeBlock({
         <ReminderDetailQuickView
           language={language}
           childId={childId}
+          episode={recipientsEpisode}
           selectedReminderItem={selectedReminderItem}
           latestWeight={latestWeight}
           isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
           isReminderEditing={isReminderEditing}
           editingReminderName={editingReminderName}
           medicines={householdMedicines}
+          familyMembers={familyMembers}
           isSubmittingAdministration={addAdminMutation.isPending}
           isUpdating={updatePlanMutation.isPending}
           isDeleting={deletePlanMutation.isPending}
+          isUpdatingRecipients={isUpdatingRecipients}
           errorDetail={
             (
               (updatePlanMutation.error ?? deletePlanMutation.error) as {
@@ -444,9 +573,26 @@ export function EpisodeBlock({
           }
           onDelete={(planId) => {
             deletePlanMutation.mutate(planId, {
-              onSuccess: () => navigate(`/children/${childId}/illness?focus=reminders`),
+              onSuccess: () => {
+                const canGoBack =
+                  typeof window !== "undefined" &&
+                  (window.history.length > 1 ||
+                    (typeof window.history.state === "object" &&
+                      window.history.state !== null &&
+                      typeof (window.history.state as { idx?: unknown }).idx === "number" &&
+                      ((window.history.state as { idx: number }).idx ?? 0) > 0));
+
+                if (canGoBack) {
+                  navigate(-1);
+                  return;
+                }
+
+                navigate(`/children/${childId}/illness?focus=reminders`, { replace: true });
+              },
             });
           }}
+          onSelectAllRecipients={() => updateEpisodeRecipientsMutation.mutate([])}
+          onChangeRecipients={updateEpisodeRecipients}
         />
       </div>
     );
@@ -458,14 +604,17 @@ export function EpisodeBlock({
         <ReminderCreateQuickView
           language={language}
           childId={childId}
+          episode={recipientsEpisode}
           medicines={householdMedicines.filter(
             (medicine) =>
               medicine.status !== "expired" && medicine.status !== "expired_after_opening"
           )}
+          familyMembers={familyMembers}
           latestWeight={latestWeight}
           isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
           submitLabel={language === "ru" ? "Сохранить напоминание" : "Save reminder"}
           isPending={createPlanMutation.isPending}
+          isUpdatingRecipients={isUpdatingRecipients}
           errorDetail={
             (createPlanMutation.error as { response?: { data?: { detail?: string } } })?.response
               ?.data?.detail ?? null
@@ -482,7 +631,16 @@ export function EpisodeBlock({
               notes: payload.notes,
             })
           }
-          onCancel={() => navigate(`/children/${childId}/illness?focus=reminders`)}
+          onCancel={() =>
+            navigate(
+              medicationPlans.length > 0
+                ? `/children/${childId}/illness?focus=reminders`
+                : `/children/${childId}`,
+              { replace: true }
+            )
+          }
+          onSelectAllRecipients={() => updateEpisodeRecipientsMutation.mutate([])}
+          onChangeRecipients={updateEpisodeRecipients}
         />
       </div>
     );

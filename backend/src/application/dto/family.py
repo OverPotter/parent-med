@@ -17,6 +17,10 @@ class FamilyUpdateDto(BaseModel):
     """Обновление семьи."""
 
     name: str | None = Field(None, description="Название семьи")
+    cabinet_member_account_ids: list[UUID] | None = Field(
+        None,
+        description="Кому приходят push по аптечке; пустой список = всей семье",
+    )
 
 
 class FamilyResponseDto(ResponseBase):
@@ -24,6 +28,7 @@ class FamilyResponseDto(ResponseBase):
 
     id: UUID
     name: str
+    cabinet_member_account_ids: list[UUID]
 
 
 class FamilyMemberUpdateDto(BaseModel):

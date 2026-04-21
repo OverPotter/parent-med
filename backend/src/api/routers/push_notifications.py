@@ -1,6 +1,6 @@
 """Роуты для web push-уведомлений."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from src.api.deps import get_push_notification_service
 from src.api.deps.auth import get_current_account
@@ -9,11 +9,14 @@ from src.application.dto.push_notification import (
     PushNotificationConfigResponseDto,
     PushNotificationPreferencesResponseDto,
     PushNotificationPreferencesUpdateDto,
+    PushNotificationTestResponseDto,
     PushSubscriptionDeleteDto,
     PushSubscriptionResponseDto,
     PushSubscriptionUpsertDto,
 )
 from src.application.services.push_notification_service import PushNotificationService
+from src.core.config import settings
+from src.core.lifespan import get_push_scheduler
 
 router = APIRouter(prefix="/push-notifications", tags=["push-notifications"])
 
@@ -63,3 +66,15 @@ async def delete_push_subscription(
 ) -> None:
     """Удалить подписку текущего устройства."""
     await service.delete_subscription(current_account.id, dto)
+
+
+@router.post("/test", response_model=PushNotificationTestResponseDto)
+async def send_test_push_notification(
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: PushNotificationService = Depends(get_push_notification_service),
+) -> PushNotificationTestResponseDto:
+    """Отправить тестовый push в подписки текущего аккаунта."""
+    if not settings.debug:
+        raise HTTPException(status_code=404, detail="Not Found")
+    scheduler = get_push_scheduler()
+    return await service.send_test_notification(current_account.id, scheduler)

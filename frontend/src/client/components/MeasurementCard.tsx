@@ -56,7 +56,7 @@ export function MeasurementCard({
               tone="bg-sky-500"
             />
           </div>
-          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="grid gap-2">
             <input
               type="number"
               inputMode="decimal"
@@ -65,14 +65,16 @@ export function MeasurementCard({
               className="soft-input w-full px-4"
               placeholder={inputPlaceholder}
             />
-            <button
-              type="button"
-              onClick={onSubmit}
-              disabled={isPending || isSubmitDisabled}
-              className="soft-pill-warning app-profile-action app-profile-action--active min-h-[2.75rem] px-4 disabled:opacity-50"
-            >
-              {actionLabel}
-            </button>
+            <div className="app-form-action-bar pt-1">
+              <button
+                type="button"
+                onClick={onSubmit}
+                disabled={isPending || isSubmitDisabled}
+                className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.75rem] w-full px-4 disabled:opacity-50 sm:w-auto"
+              >
+                {actionLabel}
+              </button>
+            </div>
           </div>
         </div>
       </Surface>

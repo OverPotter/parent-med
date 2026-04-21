@@ -7,6 +7,7 @@ import {
   deletePushSubscription,
   fetchPushNotificationConfig,
   fetchPushNotificationPreferences,
+  sendTestPushNotification,
   updatePushNotificationPreferences,
   upsertPushSubscription,
 } from "@shared/api/pushNotifications";
@@ -24,6 +25,7 @@ import {
   withTimeout,
 } from "@shared/utils/pushNotifications";
 import {
+  getCachedNativePushSubscriptionPayload,
   getNativePushPermissionStatus,
   getNativePushSubscriptionPayload,
   isNativePushOptedOut,
@@ -42,6 +44,16 @@ import { SettingsNotificationsSection } from "./settings/SettingsNotificationsSe
 import { SettingsSecuritySection } from "./settings/SettingsSecuritySection";
 import { stopDisabledLiveActivities } from "@shared/utils/liveActivities";
 
+function getInitialPushStatus() {
+  if (!isNativePushSupported()) {
+    return "checking" as const;
+  }
+  if (isNativePushOptedOut()) {
+    return "disabled" as const;
+  }
+  return getCachedNativePushSubscriptionPayload() ? ("enabled" as const) : ("disabled" as const);
+}
+
 export function SettingsPage() {
   const { language } = useI18n();
   const queryClient = useQueryClient();
@@ -50,8 +62,11 @@ export function SettingsPage() {
   const setMedicationIntervalUnit = useAppStore((s) => s.setMedicationIntervalUnit);
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
-  const [pushStatus, setPushStatus] = useState<"checking" | "enabled" | "disabled">("checking");
+  const [pushStatus, setPushStatus] = useState<"checking" | "enabled" | "disabled">(
+    getInitialPushStatus
+  );
   const [pushError, setPushError] = useState<string | null>(null);
+  const [testPushStatus, setTestPushStatus] = useState<string | null>(null);
   const [isPushPending, setIsPushPending] = useState(false);
   const [isDisablePushConfirmOpen, setIsDisablePushConfirmOpen] = useState(false);
   const [isNativePushBlocked, setIsNativePushBlocked] = useState(false);
@@ -72,27 +87,12 @@ export function SettingsPage() {
     getLiveActivityPreferencesCache()
   );
   const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
-  const [isPushRuntimeReady, setIsPushRuntimeReady] = useState(!isNativeIos);
+  const isDevTestPushVisible =
+    import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
   const childrenEarlyReminderEnabled = Number(selectedReminderMinutes) > 0;
   const pillboxEarlyReminderEnabled = Number(selectedPillboxReminderMinutes) > 0;
   const pushSupportIssue = getPushSupportIssue();
   const isPushEnabled = pushStatus === "enabled";
-
-  useEffect(() => {
-    if (!isNativeIos) {
-      setIsPushRuntimeReady(true);
-      return;
-    }
-
-    setIsPushRuntimeReady(false);
-    const timeoutId = window.setTimeout(() => {
-      setIsPushRuntimeReady(true);
-    }, 5000);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [isNativeIos]);
 
   const { data: pushConfig, isLoading: isPushConfigLoading } = useQuery({
     queryKey: ["push", "config", "account"],
@@ -144,6 +144,39 @@ export function SettingsPage() {
     },
   });
 
+  const sendTestPushMutation = useMutation({
+    mutationFn: sendTestPushNotification,
+    onMutate: () => {
+      setPushError(null);
+      setTestPushStatus(language === "ru" ? "Отправляем тестовый push..." : "Sending test push...");
+    },
+    onSuccess: (result) => {
+      if (result.sent) {
+        setTestPushStatus(
+          language === "ru"
+            ? `Тестовый push отправлен. Подписок: ${result.subscriptionCount}.`
+            : `Test push sent. Subscriptions: ${result.subscriptionCount}.`
+        );
+        return;
+      }
+      setTestPushStatus(
+        language === "ru"
+          ? "У аккаунта нет активных push-подписок."
+          : "This account has no active push subscriptions."
+      );
+    },
+    onError: (error) => {
+      setTestPushStatus(null);
+      setPushError(
+        error instanceof Error
+          ? error.message
+          : language === "ru"
+            ? "Тестовый push не отправлен"
+            : "Test push failed"
+      );
+    },
+  });
+
   useEffect(() => {
     if (pushPreferences) {
       setSelectedReminderMinutes(String(pushPreferences.beforeReminderMinutes));
@@ -152,13 +185,6 @@ export function SettingsPage() {
   }, [pushPreferences]);
 
   useEffect(() => {
-    if (!isPushRuntimeReady) {
-      setPushStatus("checking");
-      setIsNativePushBlocked(false);
-      setIsNativePushSettingsDialogOpen(false);
-      return;
-    }
-
     if (!isPushSupported() && !isNativePushSupported()) {
       setPushStatus("disabled");
       setIsNativePushBlocked(false);
@@ -178,6 +204,12 @@ export function SettingsPage() {
             }
             return;
           }
+          const cachedPayload = getCachedNativePushSubscriptionPayload();
+          if (!isCancelled && cachedPayload) {
+            setPushStatus("enabled");
+            setIsNativePushBlocked(false);
+            setIsNativePushSettingsDialogOpen(false);
+          }
           const permission = await getNativePushPermissionStatus();
           if (permission === "denied") {
             if (!isCancelled) {
@@ -185,6 +217,9 @@ export function SettingsPage() {
               setIsNativePushBlocked(true);
               setIsNativePushSettingsDialogOpen(true);
             }
+            return;
+          }
+          if (cachedPayload) {
             return;
           }
           const payload = await withTimeout(
@@ -237,7 +272,7 @@ export function SettingsPage() {
       window.removeEventListener("pageshow", refreshSubscription);
       document.removeEventListener("visibilitychange", refreshSubscription);
     };
-  }, [isPushRuntimeReady, language]);
+  }, [language]);
 
   const changePasswordMutation = useMutation({
     mutationFn: (payload: { current_password: string; new_password: string }) =>
@@ -378,7 +413,9 @@ export function SettingsPage() {
     setIsPushPending(true);
     try {
       if (isNativePushSupported()) {
-        const payload = await getNativePushSubscriptionPayload({ promptIfNeeded: false });
+        const payload =
+          (await getNativePushSubscriptionPayload({ promptIfNeeded: false })) ??
+          getCachedNativePushSubscriptionPayload();
         if (payload) {
           await deletePushSubscription({ endpoint: payload.endpoint });
         }
@@ -420,6 +457,10 @@ export function SettingsPage() {
       return;
     }
     void handleEnablePush();
+  };
+
+  const handleSendTestPush = () => {
+    sendTestPushMutation.mutate();
   };
 
   const handleReminderMinutesChange = (value: string) => {
@@ -567,11 +608,15 @@ export function SettingsPage() {
         language={language}
         isPushEnabled={isPushEnabled}
         pushError={pushError}
+        showTestPushAction={isDevTestPushVisible}
+        testPushStatus={testPushStatus}
+        isTestPushPending={sendTestPushMutation.isPending}
         isNativePushBlocked={isNativePushBlocked}
         isPushConfigLoading={isPushConfigLoading}
         pushConfigEnabled={pushConfig?.enabled}
         isGlobalPushSwitchDisabled={isGlobalPushSwitchDisabled}
         onGlobalPushSwitchToggle={handleGlobalPushSwitchToggle}
+        onSendTestPush={handleSendTestPush}
         onOpenSystemSettingsDialog={() => setIsNativePushSettingsDialogOpen(true)}
         childrenEarlyReminderEnabled={childrenEarlyReminderEnabled}
         pillboxEarlyReminderEnabled={pillboxEarlyReminderEnabled}

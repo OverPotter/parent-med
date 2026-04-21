@@ -38,8 +38,6 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  const url = `${config.baseURL ?? ""}${config.url ?? ""}`;
-  appLog.dev(`→ ${config.method?.toUpperCase() ?? "GET"} ${url}`);
   return config;
 });
 
@@ -55,11 +53,7 @@ function shouldSkipRefresh(url?: string): boolean {
 }
 
 apiClient.interceptors.response.use(
-  (response) => {
-    const cfg = response.config;
-    appLog.dev(`← ${response.status} ${cfg.baseURL ?? ""}${cfg.url ?? ""}`);
-    return response;
-  },
+  (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as
       | (typeof error.config & { _retry?: boolean })
@@ -72,11 +66,9 @@ apiClient.interceptors.response.use(
       !originalRequest._retry &&
       !shouldSkipRefresh(originalRequest.url);
 
-    if (willRetry) {
-      appLog.dev(`401 → refresh ${failedUrl}`);
-    } else if (status !== undefined && status < 500) {
+    if (status !== undefined && status < 500 && !willRetry) {
       appLog.warn(`API ${status} ${failedUrl}`, error.response?.data ?? error.message);
-    } else {
+    } else if (!willRetry) {
       appLog.error(`API ${status ?? "?"} ${failedUrl}`, error.response?.data ?? error.message);
     }
 

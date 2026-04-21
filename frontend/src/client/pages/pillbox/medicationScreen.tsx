@@ -135,7 +135,7 @@ export function PillboxMedicationScreen({
         subtitle={tPillbox(language, "medicationSubtitle")}
       />
 
-      <div className="space-y-4">
+      <div className="pt-2 space-y-4">
         <div className={editorSectionCardClass}>
           <div className="space-y-4.5">
             <div className="space-y-3">
@@ -334,7 +334,7 @@ export function PillboxMedicationScreen({
                     }
                   />
                 </div>
-                <div className="pt-3">
+                <div className="app-form-action-bar pt-3">
                   <button
                     type="button"
                     onClick={onSaveMedication}

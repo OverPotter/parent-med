@@ -26,6 +26,7 @@ class SqlIllnessEpisodeRepository(IllnessEpisodeRepository):
             status=m.status,
             medication_mode=m.medication_mode,
             note=m.note,
+            member_account_ids=list(m.member_account_ids or []),
             closed_at=m.closed_at,
             deleted_at=m.deleted_at,
         )
@@ -39,6 +40,7 @@ class SqlIllnessEpisodeRepository(IllnessEpisodeRepository):
             status=e.status,
             medication_mode=e.medication_mode,
             note=e.note,
+            member_account_ids=list(e.member_account_ids),
             closed_at=e.closed_at,
             deleted_at=e.deleted_at,
         )
@@ -96,6 +98,7 @@ class SqlIllnessEpisodeRepository(IllnessEpisodeRepository):
         row.status = entity.status
         row.medication_mode = entity.medication_mode
         row.note = entity.note
+        row.member_account_ids = list(entity.member_account_ids)
         row.closed_at = entity.closed_at
         row.deleted_at = entity.deleted_at
         await self._session.flush()

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { useRef, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import {
@@ -10,6 +10,8 @@ import {
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import type { FeedingRecord } from "@shared/types/api";
 import {
   ChildRecordsPeriodSelector,
@@ -27,7 +29,10 @@ export function ChildFeedingPage() {
   const copy = getChildrenCopy(language).childProfile;
   const common = getChildrenCopy(language).common;
   const { childId } = useParams<{ childId: string }>();
+  const isIosShell = useIsIosShell();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [recordToDelete, setRecordToDelete] = useState<FeedingRecord | null>(null);
   const [period, setPeriod] = useState<ChildRecordsPeriod>("week");
   const [customStartDate, setCustomStartDate] = useState(() => getShiftedLocalIsoDate(-6));
@@ -87,7 +92,12 @@ export function ChildFeedingPage() {
     filteredRecords.map((record) => record.formulaVolumeMl).filter(isNumber)
   );
   return (
-    <div className="child-profile-shell space-y-6">
+    <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-6">
+      <IosEdgeBackGesture
+        isEnabled={isIosShell}
+        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        targetRef={rootRef}
+      />
       <ConfirmDialog
         isOpen={!!recordToDelete}
         title={copy.feedingSectionDeleteTitle}
@@ -107,13 +117,13 @@ export function ChildFeedingPage() {
       />
 
       <ChildSectionTopBar
-        backHref={`/children/${child.id}`}
+        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
         title={`${copy.feedingSection} · ${child.name}`}
         hint={copy.feedingSectionSubtitle}
       />
 
-      <div className="mx-auto w-full max-w-2xl space-y-3">
+      <div className="mx-auto w-full max-w-2xl space-y-3 pt-2">
         <Surface className="relative z-30 overflow-visible p-4 sm:p-5">
           <div className="space-y-4">
             {isFeedingLoading ? <p className="text-sm text-muted">{common.loading}</p> : null}
