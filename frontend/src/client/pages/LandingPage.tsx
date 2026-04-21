@@ -592,60 +592,58 @@ export function LandingPage() {
 
       <main className="px-4 pb-10 pt-5 sm:px-6 sm:pb-14 sm:pt-6">
         <div className="mx-auto max-w-[78rem] space-y-6 sm:space-y-8 lg:space-y-10">
-          <section className="landing-topbar-shell">
-            <div className="landing-topbar-inner">
-              <div className="landing-hero-reset-topline">
+          <div className="landing-app-header">
+            <div className="landing-hero-reset-topline">
+              <Link
+                to="/"
+                className="landing-hero-reset-brandicon"
+                aria-label={copy.common.brandName}
+              >
+                <img src="/pwa-icon.png" alt="" className="landing-hero-reset-logo" />
+              </Link>
+              <Link
+                to="/"
+                className="landing-hero-reset-brandmark"
+                aria-label={copy.common.brandName}
+              >
+                <BrandWordmark
+                  className="landing-hero-reset-brand"
+                  ariaLabel={copy.common.brandName}
+                />
+              </Link>
+              <div className="landing-hero-reset-actions-inline">
                 <Link
-                  to="/"
-                  className="landing-hero-reset-brandicon"
-                  aria-label={copy.common.brandName}
+                  to="/auth?mode=login"
+                  className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
                 >
-                  <img src="/pwa-icon.png" alt="" className="landing-hero-reset-logo" />
+                  {copy.landing.hero.login}
                 </Link>
-                <Link
-                  to="/"
-                  className="landing-hero-reset-brandmark"
-                  aria-label={copy.common.brandName}
+                <LanguageSwitch
+                  className="landing-language-switch"
+                  triggerClassName="landing-topline-button"
+                />
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="landing-topline-button landing-theme-toggle rounded-full"
+                  aria-label={
+                    effectiveTheme === "light"
+                      ? copy.landing.hero.themeToggleAriaDark
+                      : copy.landing.hero.themeToggleAriaLight
+                  }
+                  title={
+                    effectiveTheme === "light"
+                      ? copy.landing.hero.themeToggleAriaDark
+                      : copy.landing.hero.themeToggleAriaLight
+                  }
                 >
-                  <BrandWordmark
-                    className="landing-hero-reset-brand"
-                    ariaLabel={copy.common.brandName}
-                  />
-                </Link>
-                <div className="landing-hero-reset-actions-inline">
-                  <Link
-                    to="/auth?mode=login"
-                    className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
-                  >
-                    {copy.landing.hero.login}
-                  </Link>
-                  <LanguageSwitch
-                    className="landing-language-switch"
-                    triggerClassName="landing-topline-button"
-                  />
-                  <button
-                    type="button"
-                    onClick={toggleTheme}
-                    className="landing-topline-button landing-theme-toggle rounded-full"
-                    aria-label={
-                      effectiveTheme === "light"
-                        ? copy.landing.hero.themeToggleAriaDark
-                        : copy.landing.hero.themeToggleAriaLight
-                    }
-                    title={
-                      effectiveTheme === "light"
-                        ? copy.landing.hero.themeToggleAriaDark
-                        : copy.landing.hero.themeToggleAriaLight
-                    }
-                  >
-                    <span aria-hidden="true" className="inline-flex">
-                      {effectiveTheme === "light" ? <LandingMoonIcon /> : <LandingSunIcon />}
-                    </span>
-                  </button>
-                </div>
+                  <span aria-hidden="true" className="inline-flex">
+                    {effectiveTheme === "light" ? <LandingMoonIcon /> : <LandingSunIcon />}
+                  </span>
+                </button>
               </div>
             </div>
-          </section>
+          </div>
 
           <section className="landing-hero-reset">
             <div className="landing-hero-reset-inner">

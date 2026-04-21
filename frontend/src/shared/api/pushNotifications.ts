@@ -13,6 +13,8 @@ interface RawPushNotificationPreferences {
   cabinet_notify_10_days: boolean;
   cabinet_notify_7_days: boolean;
   cabinet_notify_3_days: boolean;
+  live_activity_sleep_enabled: boolean;
+  live_activity_feeding_enabled: boolean;
 }
 
 export async function fetchPushNotificationConfig(): Promise<PushNotificationConfig> {
@@ -34,6 +36,8 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
     cabinetNotify10Days: res.data.cabinet_notify_10_days,
     cabinetNotify7Days: res.data.cabinet_notify_7_days,
     cabinetNotify3Days: res.data.cabinet_notify_3_days,
+    liveActivitySleepEnabled: res.data.live_activity_sleep_enabled,
+    liveActivityFeedingEnabled: res.data.live_activity_feeding_enabled,
   };
 }
 
@@ -43,6 +47,8 @@ export async function updatePushNotificationPreferences(body: {
   cabinet_notify_10_days?: boolean;
   cabinet_notify_7_days?: boolean;
   cabinet_notify_3_days?: boolean;
+  live_activity_sleep_enabled?: boolean;
+  live_activity_feeding_enabled?: boolean;
 }): Promise<PushNotificationPreferences> {
   const res = await apiClient.patch<RawPushNotificationPreferences>(
     "/push-notifications/preferences",
@@ -55,6 +61,8 @@ export async function updatePushNotificationPreferences(body: {
     cabinetNotify10Days: res.data.cabinet_notify_10_days,
     cabinetNotify7Days: res.data.cabinet_notify_7_days,
     cabinetNotify3Days: res.data.cabinet_notify_3_days,
+    liveActivitySleepEnabled: res.data.live_activity_sleep_enabled,
+    liveActivityFeedingEnabled: res.data.live_activity_feeding_enabled,
   };
 }
 

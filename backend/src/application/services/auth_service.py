@@ -164,6 +164,8 @@ class AuthService(BaseAuthService):
             cabinet_notify_7_days=True,
             cabinet_notify_3_days=True,
             cabinet_notify_1_day=True,
+            live_activity_sleep_enabled=True,
+            live_activity_feeding_enabled=True,
             created_at=datetime.now(UTC),
         )
         created_account = await self._account_repo.add(account)
@@ -271,6 +273,8 @@ class AuthService(BaseAuthService):
                 cabinet_notify_7_days=account.cabinet_notify_7_days,
                 cabinet_notify_3_days=account.cabinet_notify_3_days,
                 cabinet_notify_1_day=account.cabinet_notify_1_day,
+                live_activity_sleep_enabled=account.live_activity_sleep_enabled,
+                live_activity_feeding_enabled=account.live_activity_feeding_enabled,
                 created_at=account.created_at,
             )
         )
@@ -307,6 +311,8 @@ class AuthService(BaseAuthService):
                 cabinet_notify_7_days=next_owner.cabinet_notify_7_days,
                 cabinet_notify_3_days=next_owner.cabinet_notify_3_days,
                 cabinet_notify_1_day=next_owner.cabinet_notify_1_day,
+                live_activity_sleep_enabled=next_owner.live_activity_sleep_enabled,
+                live_activity_feeding_enabled=next_owner.live_activity_feeding_enabled,
                 created_at=next_owner.created_at,
             )
         )
@@ -364,6 +370,8 @@ class AuthService(BaseAuthService):
                 cabinet_notify_7_days=account.cabinet_notify_7_days,
                 cabinet_notify_3_days=account.cabinet_notify_3_days,
                 cabinet_notify_1_day=account.cabinet_notify_1_day,
+                live_activity_sleep_enabled=account.live_activity_sleep_enabled,
+                live_activity_feeding_enabled=account.live_activity_feeding_enabled,
                 created_at=account.created_at,
             )
         )
@@ -414,6 +422,8 @@ class AuthService(BaseAuthService):
                 cabinet_notify_7_days=account.cabinet_notify_7_days,
                 cabinet_notify_3_days=account.cabinet_notify_3_days,
                 cabinet_notify_1_day=account.cabinet_notify_1_day,
+                live_activity_sleep_enabled=account.live_activity_sleep_enabled,
+                live_activity_feeding_enabled=account.live_activity_feeding_enabled,
                 created_at=account.created_at,
             )
         )
@@ -457,6 +467,8 @@ class AuthService(BaseAuthService):
                 cabinet_notify_7_days=account.cabinet_notify_7_days,
                 cabinet_notify_3_days=account.cabinet_notify_3_days,
                 cabinet_notify_1_day=account.cabinet_notify_1_day,
+                live_activity_sleep_enabled=account.live_activity_sleep_enabled,
+                live_activity_feeding_enabled=account.live_activity_feeding_enabled,
                 created_at=account.created_at,
             )
         )
@@ -497,6 +509,8 @@ class AuthService(BaseAuthService):
                 cabinet_notify_7_days=account.cabinet_notify_7_days,
                 cabinet_notify_3_days=account.cabinet_notify_3_days,
                 cabinet_notify_1_day=account.cabinet_notify_1_day,
+                live_activity_sleep_enabled=account.live_activity_sleep_enabled,
+                live_activity_feeding_enabled=account.live_activity_feeding_enabled,
                 created_at=account.created_at,
             )
         )

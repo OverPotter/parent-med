@@ -31,10 +31,16 @@ import {
   openNativeNotificationSettings,
   setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
+import {
+  getLiveActivityPreferencesCache,
+  setLiveActivityPreferencesCache,
+} from "@shared/utils/liveActivityPreferences";
 import { SettingsAppPreferencesSection } from "./settings/SettingsAppPreferencesSection";
 import { tSettings } from "./settings/copy";
+import { SettingsLiveActivitiesSection } from "./settings/SettingsLiveActivitiesSection";
 import { SettingsNotificationsSection } from "./settings/SettingsNotificationsSection";
 import { SettingsSecuritySection } from "./settings/SettingsSecuritySection";
+import { stopDisabledLiveActivities } from "@shared/utils/liveActivities";
 
 export function SettingsPage() {
   const { language } = useI18n();
@@ -62,6 +68,9 @@ export function SettingsPage() {
   const [deleteFamilyError, setDeleteFamilyError] = useState<string | null>(null);
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
   const [selectedPillboxReminderMinutes, setSelectedPillboxReminderMinutes] = useState("10");
+  const [liveActivitySettings, setLiveActivitySettings] = useState(() =>
+    getLiveActivityPreferencesCache()
+  );
   const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
   const [isPushRuntimeReady, setIsPushRuntimeReady] = useState(!isNativeIos);
   const childrenEarlyReminderEnabled = Number(selectedReminderMinutes) > 0;
@@ -96,14 +105,12 @@ export function SettingsPage() {
     staleTime: 5 * 60 * 1000,
     retry: false,
     refetchOnWindowFocus: false,
-    enabled: isPushRuntimeReady,
   });
 
   const { data: pushPreferences, isLoading: isPushPreferencesLoading } = useQuery({
     queryKey: ["push", "preferences", "account"],
     queryFn: fetchPushNotificationPreferences,
     staleTime: 5 * 60 * 1000,
-    enabled: isPushRuntimeReady,
   });
   const cabinetEarlyReminderEnabled =
     (pushPreferences?.cabinetNotify10Days ?? false) ||
@@ -467,6 +474,26 @@ export function SettingsPage() {
     });
   };
 
+  const handleLiveActivitySleepToggle = (enabled: boolean) => {
+    setPushError(null);
+    setLiveActivitySettings((current) => {
+      const next = { ...current, sleepEnabled: enabled };
+      setLiveActivityPreferencesCache(next);
+      void stopDisabledLiveActivities(next);
+      return next;
+    });
+  };
+
+  const handleLiveActivityFeedingToggle = (enabled: boolean) => {
+    setPushError(null);
+    setLiveActivitySettings((current) => {
+      const next = { ...current, feedingEnabled: enabled };
+      setLiveActivityPreferencesCache(next);
+      void stopDisabledLiveActivities(next);
+      return next;
+    });
+  };
+
   const handleSubmitPasswordChange = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordSuccess(null);
@@ -526,6 +553,15 @@ export function SettingsPage() {
         setTheme={setTheme}
         medicationIntervalUnit={medicationIntervalUnit}
         setMedicationIntervalUnit={setMedicationIntervalUnit}
+      />
+      <SettingsLiveActivitiesSection
+        language={language}
+        isIos={isNativeIos}
+        sleepEnabled={liveActivitySettings.sleepEnabled}
+        feedingEnabled={liveActivitySettings.feedingEnabled}
+        disabled={!isNativeIos}
+        onSleepToggle={handleLiveActivitySleepToggle}
+        onFeedingToggle={handleLiveActivityFeedingToggle}
       />
       <SettingsNotificationsSection
         language={language}

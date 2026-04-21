@@ -22,7 +22,7 @@ html.ios-lock-horizontal #root {
   opacity: 0;
   background: var(--color-background);
   transform: translate3d(0, 0, 0);
-  transition: opacity 1080ms cubic-bezier(0.08, 0.82, 0.17, 1);
+  transition: opacity 360ms cubic-bezier(0.16, 0.84, 0.24, 1);
 }
 
 .ios-back-swipe-underlay-screen {
@@ -64,12 +64,22 @@ html.ios-lock-horizontal #root {
 
 [data-ios-back-swipe-commit="true"] .app-shell-frame {
   transform: translate3d(100vw, 0, 0);
-  transition: transform 1080ms cubic-bezier(0.08, 0.82, 0.17, 1);
+  transition: transform 420ms cubic-bezier(0.16, 0.84, 0.24, 1);
 }
 
 [data-ios-back-swipe-cancel="true"] .app-shell-frame {
   transform: translate3d(0, 0, 0);
-  transition: transform 1260ms cubic-bezier(0.08, 0.82, 0.17, 1);
+  transition: transform 360ms cubic-bezier(0.16, 0.84, 0.24, 1);
+}
+
+html[data-ios-back-swipe-active="true"],
+html[data-ios-back-swipe-active="true"] body,
+html[data-ios-back-swipe-commit="true"],
+html[data-ios-back-swipe-commit="true"] body,
+html[data-ios-back-swipe-cancel="true"],
+html[data-ios-back-swipe-cancel="true"] body {
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 html.ios-lock-horizontal .landing-page,
@@ -130,14 +140,14 @@ html.ios-lock-horizontal .landing-main {
 [data-runtime="native"][data-platform="ios"] .auth-v3-shell {
   min-height: 100dvh;
   align-items: flex-start;
-  padding-top: calc(max(0.75rem, var(--app-safe-top-runtime)) + 0.5rem);
+  padding-top: calc(max(0.55rem, var(--app-safe-top-runtime)) + 0.2rem);
   padding-bottom: max(1rem, var(--app-safe-bottom-runtime));
 }
 
 [data-ios-shell="true"] .auth-v3-shell {
   min-height: 100dvh;
   align-items: flex-start;
-  padding-top: calc(max(0.75rem, var(--app-safe-top-runtime)) + 0.5rem);
+  padding-top: calc(max(0.55rem, var(--app-safe-top-runtime)) + 0.2rem);
   padding-bottom: max(1rem, var(--app-safe-bottom-runtime));
 }
 
@@ -187,68 +197,6 @@ html.ios-lock-horizontal .landing-main {
   }
 }
 
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-shell {
-  padding-top: calc(max(0.6rem, var(--app-safe-top-runtime)) + 0.25rem);
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-shell {
-  padding-top: calc(max(0.6rem, var(--app-safe-top-runtime)) + 0.25rem);
-}
-
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-hero {
-  margin-top: 0.85rem;
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-hero {
-  margin-top: 0.85rem;
-}
-
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-title {
-  font-size: clamp(2.25rem, 8vw, 2.8rem);
-  line-height: 0.96;
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-title {
-  font-size: clamp(2.25rem, 8vw, 2.8rem);
-  line-height: 0.96;
-}
-
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-subtitle {
-  margin-top: 0.55rem !important;
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-subtitle {
-  margin-top: 0.55rem !important;
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-panel {
-  margin-top: 1rem;
-  padding: 0.72rem;
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-panel {
-  margin-top: 1rem;
-  padding: 0.72rem;
-}
-
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-card,
-[data-runtime="native"][data-platform="ios"]
-  .auth-v3-page.auth-v3-page--login
-  .auth-v3-secondary-card {
-  border-radius: 1.5rem;
-  padding: 0.95rem;
-}
-
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-card,
-[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-secondary-card {
-  border-radius: 1.5rem;
-  padding: 0.95rem;
-}
-
 [data-runtime="native"][data-platform="ios"]
   .auth-v3-page.auth-v3-page--login
   .auth-v3-toggle-button {
@@ -278,23 +226,33 @@ html.ios-lock-horizontal .landing-main {
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-panel {
-  backdrop-filter: blur(12px);
-  box-shadow: 0 18px 36px rgba(76, 63, 120, 0.12);
+  backdrop-filter: none;
+  box-shadow: none;
+  border-color: transparent;
+  background: transparent;
 }
 
 [data-ios-shell="true"] .auth-v3-panel {
-  backdrop-filter: blur(12px);
-  box-shadow: 0 18px 36px rgba(76, 63, 120, 0.12);
+  backdrop-filter: none;
+  box-shadow: none;
+  border-color: transparent;
+  background: transparent;
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-card,
 [data-runtime="native"][data-platform="ios"] .auth-v3-secondary-card {
-  box-shadow: 0 8px 20px rgba(91, 77, 138, 0.08);
+  box-shadow: none;
+  border-color: transparent;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 [data-ios-shell="true"] .auth-v3-card,
 [data-ios-shell="true"] .auth-v3-secondary-card {
-  box-shadow: 0 8px 20px rgba(91, 77, 138, 0.08);
+  box-shadow: none;
+  border-color: transparent;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-header-control,
@@ -343,6 +301,192 @@ html.ios-lock-horizontal .landing-main {
 [data-ios-shell="true"] .auth-v3-input {
   -webkit-user-select: text;
   user-select: text;
+}
+
+[data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-page,
+[data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-shell,
+[data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-panel,
+[data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-input,
+[data-runtime="native"][data-platform="ios"][data-theme="light"] .auth-v3-input-toggle,
+[data-ios-shell="true"][data-theme="light"] .auth-v3-page,
+[data-ios-shell="true"][data-theme="light"] .auth-v3-shell,
+[data-ios-shell="true"][data-theme="light"] .auth-v3-panel,
+[data-ios-shell="true"][data-theme="light"] .auth-v3-input,
+[data-ios-shell="true"][data-theme="light"] .auth-v3-input-toggle {
+  color-scheme: light;
+}
+
+[data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-page,
+[data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-shell,
+[data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-panel,
+[data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-input,
+[data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-input-toggle,
+[data-ios-shell="true"][data-theme="dark"] .auth-v3-page,
+[data-ios-shell="true"][data-theme="dark"] .auth-v3-shell,
+[data-ios-shell="true"][data-theme="dark"] .auth-v3-panel,
+[data-ios-shell="true"][data-theme="dark"] .auth-v3-input,
+[data-ios-shell="true"][data-theme="dark"] .auth-v3-input-toggle {
+  color-scheme: dark;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-stage,
+[data-ios-shell="true"] .auth-v3-stage {
+  width: min(100%, 31rem);
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-title,
+[data-ios-shell="true"] .auth-v3-title {
+  font-size: clamp(2rem, 6.5vw, 2.35rem);
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-subtitle,
+[data-ios-shell="true"] .auth-v3-subtitle {
+  font-size: 0.88rem;
+  line-height: 1.48;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-section-title,
+[data-ios-shell="true"] .auth-v3-section-title {
+  font-size: 0.98rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-section-copy,
+[data-ios-shell="true"] .auth-v3-section-copy {
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-label,
+[data-ios-shell="true"] .auth-v3-label {
+  font-size: 0.84rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-input,
+[data-ios-shell="true"] .auth-v3-input {
+  font-size: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-clip: padding-box;
+  caret-color: var(--auth-v3-text);
+  transition-property: border-color, box-shadow;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-toggle-button,
+[data-ios-shell="true"] .auth-v3-toggle-button {
+  font-size: 0.88rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-checkbox,
+[data-runtime="native"][data-platform="ios"] .auth-v3-linkish,
+[data-runtime="native"][data-platform="ios"] .auth-v3-summary,
+[data-runtime="native"][data-platform="ios"] .auth-v3-error,
+[data-runtime="native"][data-platform="ios"] .auth-v3-footer-note,
+[data-ios-shell="true"] .auth-v3-checkbox,
+[data-ios-shell="true"] .auth-v3-linkish,
+[data-ios-shell="true"] .auth-v3-summary,
+[data-ios-shell="true"] .auth-v3-error,
+[data-ios-shell="true"] .auth-v3-footer-note {
+  font-size: 0.82rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-submit,
+[data-ios-shell="true"] .auth-v3-submit {
+  font-size: 0.94rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-ios-intro,
+[data-ios-shell="true"] .auth-v3-ios-intro {
+  min-height: 2.8rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-section-copy,
+[data-ios-shell="true"] .auth-v3-section-copy {
+  min-height: 2.55rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-header,
+[data-ios-shell="true"] .auth-v3-header {
+  position: relative;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0 0 0.4rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-header-logo--ios,
+[data-ios-shell="true"] .auth-v3-header-logo--ios {
+  width: 2.55rem;
+  height: 2.55rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-header-brand--ios,
+[data-ios-shell="true"] .auth-v3-header-brand--ios {
+  flex: 1;
+  min-width: 0;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-header-brand--ios .auth-v3-header-brand-text,
+[data-ios-shell="true"] .auth-v3-header-brand--ios .auth-v3-header-brand-text {
+  font-size: 1.18rem;
+  letter-spacing: -0.05em;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-language-switch .soft-language-dropdown__trigger,
+[data-ios-shell="true"] .auth-v3-language-switch .soft-language-dropdown__trigger {
+  min-width: 3.7rem;
+  padding-left: 0.78rem;
+  padding-right: 1.8rem;
+  font-size: 0.82rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-language-switch .soft-language-dropdown__chevron,
+[data-ios-shell="true"] .auth-v3-language-switch .soft-language-dropdown__chevron {
+  right: 0.58rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-hero--ios-hidden,
+[data-ios-shell="true"] .auth-v3-hero--ios-hidden {
+  display: none;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-panel--ios,
+[data-ios-shell="true"] .auth-v3-panel--ios {
+  border-radius: 1.6rem;
+  min-height: 46rem;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-secondary-card--ios,
+[data-ios-shell="true"] .auth-v3-secondary-card--ios {
+  margin-top: 0.15rem;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-form--ios,
+[data-ios-shell="true"] .auth-v3-form--ios {
+  min-height: 100%;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-form--ios > .auth-v3-card,
+[data-runtime="native"][data-platform="ios"] .auth-v3-form--ios > .auth-v3-secondary-card,
+[data-ios-shell="true"] .auth-v3-form--ios > .auth-v3-card,
+[data-ios-shell="true"] .auth-v3-form--ios > .auth-v3-secondary-card {
+  border-radius: 0;
+  padding: 0;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-submit,
+[data-ios-shell="true"] .auth-v3-submit {
+  background: linear-gradient(180deg, #1db37d 0%, #159a69 100%);
+  box-shadow: 0 14px 28px -20px rgba(21, 154, 105, 0.5);
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-ios-about-row,
+[data-ios-shell="true"] .auth-v3-ios-about-row {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.15rem;
 }
 
 [data-runtime="native"][data-platform="ios"] a,

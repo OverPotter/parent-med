@@ -19,6 +19,7 @@ import {
   formatWeightValue,
 } from "./shared";
 import { FeedingStopDialog } from "./FeedingDialogs";
+import { syncFeedingLiveActivity, syncSleepLiveActivity } from "@shared/utils/liveActivities";
 
 export function ChildCard({
   child,
@@ -62,9 +63,10 @@ export function ChildCard({
       }
       return startSleepSession(child.id);
     },
-    onSuccess: () => {
+    onSuccess: (nextSleep) => {
       queryClient.invalidateQueries({ queryKey: ["sleep-session-active", child.id] });
       setIsStopSleepConfirmOpen(false);
+      void syncSleepLiveActivity(child, nextSleep, language);
     },
   });
   const activeSleepElapsedLabel = activeSleep
@@ -85,6 +87,7 @@ export function ChildCard({
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
       queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
       setIsStopFeedingDialogOpen(false);
+      void syncFeedingLiveActivity(child, null, language);
     },
   });
   const activeFeedingStartedAt = activeFeeding?.startedAt ?? activeFeeding?.recordedAt ?? null;
@@ -101,7 +104,7 @@ export function ChildCard({
   const activeSleepActionClass = childActionSuccessClass;
 
   return (
-    <li>
+    <li data-child-card-id={child.id}>
       <ConfirmDialog
         isOpen={isStopSleepConfirmOpen && !!activeSleep}
         title={copy.childCard.stopSleepConfirmTitle}
@@ -169,6 +172,7 @@ export function ChildCard({
               <div className="grid grid-cols-2 gap-2">
                 <Link
                   to={`/children/${child.id}/feeding`}
+                  data-live-action-target={`feeding:${child.id}`}
                   onClick={(event) => {
                     event.preventDefault();
                     if (activeFeeding) {
@@ -187,6 +191,7 @@ export function ChildCard({
                 </Link>
                 <button
                   type="button"
+                  data-live-action-target={`sleep:${child.id}`}
                   onClick={() => {
                     if (activeSleep) {
                       setIsStopSleepConfirmOpen(true);

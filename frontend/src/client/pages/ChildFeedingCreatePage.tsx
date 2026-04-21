@@ -13,6 +13,7 @@ import {
   getCurrentLocalTimeInputValue,
   toApiDateTime,
 } from "@client/utils/feedingRecordForm";
+import { syncFeedingLiveActivity } from "@shared/utils/liveActivities";
 
 export function ChildFeedingCreatePage() {
   const { language } = useI18n();
@@ -130,9 +131,10 @@ export function ChildFeedingCreatePage() {
             : null,
         note: note.trim() || null,
       }),
-    onSuccess: () => {
+    onSuccess: (feeding) => {
       queryClient.invalidateQueries({ queryKey: ["feeding-records", childId] });
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", childId] });
+      void syncFeedingLiveActivity(child!, feeding, language);
       navigate("/children", { replace: true });
     },
   });

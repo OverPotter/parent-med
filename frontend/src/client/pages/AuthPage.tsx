@@ -2,7 +2,7 @@
  * Экран авторизации: вход и регистрация без лендингового контента.
  */
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { login, register } from "@shared/api/auth";
@@ -251,6 +251,7 @@ export function AuthPage() {
   const [acceptLegal, setAcceptLegal] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const stageRef = useRef<HTMLElement | null>(null);
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const setSession = useAppStore((s) => s.setSession);
@@ -342,7 +343,6 @@ export function AuthPage() {
   const passwordsMismatch =
     mode === "register" && passwordConfirm.length > 0 && password !== passwordConfirm;
   const isRegisterMode = mode === "register";
-  const pageTitle = isRegisterMode ? copy.auth.page.registerTitle : copy.auth.page.loginTitle;
   const pageDescription = isRegisterMode
     ? copy.auth.page.registerDescription
     : copy.auth.page.loginDescription;
@@ -359,10 +359,28 @@ export function AuthPage() {
   };
 
   const switchMode = (nextMode: Mode) => {
+    if (typeof document !== "undefined") {
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLElement &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          activeElement.tagName === "SELECT")
+      ) {
+        activeElement.blur();
+      }
+    }
     resetAuthFormState();
     setMode(nextMode);
     setSearchParams(nextMode === "register" ? { mode: "register" } : { mode: "login" });
     setError(null);
+    if (isNativeIOS) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      stageRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+      window.scrollTo({ top: 0, behavior: "auto" });
+    });
   };
 
   const submitLabel =
@@ -381,6 +399,21 @@ export function AuthPage() {
     }
   };
 
+  const authAboutAction =
+    isNativeRuntime && hasAbsoluteMarketingUrl ? (
+      <button
+        type="button"
+        className="app-header-utility-button auth-v3-home-link"
+        onClick={openAbout}
+      >
+        {copy.common.aboutApp}
+      </button>
+    ) : (
+      <Link to="/" className="app-header-utility-button auth-v3-home-link">
+        {copy.common.aboutApp}
+      </Link>
+    );
+
   return (
     <div
       className={joinClasses(
@@ -394,16 +427,27 @@ export function AuthPage() {
       {!isNativeIOS ? <div className="auth-v3-noise" aria-hidden="true" /> : null}
 
       <div className="auth-v3-shell">
-        <section className="auth-v3-stage">
+        <section ref={stageRef} className="auth-v3-stage">
           <div className="auth-v3-header">
-            <Link to="/" className="auth-v3-header-logo" aria-label={copy.common.brandName}>
+            <Link
+              to="/"
+              className={joinClasses("auth-v3-header-logo", isNativeIOS && "auth-v3-header-logo--ios")}
+              aria-label={copy.common.brandName}
+            >
               <img
                 src="/pwa-icon.png"
                 alt=""
                 className="h-10 w-10 rounded-[1.15rem] shadow-[0_16px_32px_rgba(138,123,191,0.18)]"
               />
             </Link>
-            <Link to="/" className="auth-v3-header-brand" aria-label={copy.common.brandName}>
+            <Link
+              to="/"
+              className={joinClasses(
+                "auth-v3-header-brand",
+                isNativeIOS && "auth-v3-header-brand--ios"
+              )}
+              aria-label={copy.common.brandName}
+            >
               <BrandWordmark className="auth-v3-header-brand-text" />
             </Link>
             <div className="auth-v3-header-actions">
@@ -438,23 +482,14 @@ export function AuthPage() {
                   {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
                 </span>
               </button>
-              {isNativeRuntime ? (
-                hasAbsoluteMarketingUrl ? (
-                  <button
-                    type="button"
-                    className="app-header-utility-button auth-v3-home-link"
-                    onClick={openAbout}
-                  >
-                    {copy.common.aboutApp}
-                  </button>
-                ) : null
-              ) : (
-                <Link to="/" className="app-header-utility-button auth-v3-home-link">
-                  {copy.common.aboutApp}
-                </Link>
-              )}
+              {!isNativeIOS ? authAboutAction : null}
             </div>
           </div>
+          {isNativeIOS ? (
+            <div className="auth-v3-ios-intro">
+              <p className="auth-v3-subtitle auth-v3-subtitle--ios">{pageDescription}</p>
+            </div>
+          ) : null}
           {!isNativeRuntime ? (
             <div className="auth-v3-mobile-home-wrap">
               <Link to="/" className="app-header-utility-button auth-v3-mobile-home-link">
@@ -463,15 +498,15 @@ export function AuthPage() {
             </div>
           ) : null}
 
-          <div className="auth-v3-hero">
-            <h1 className="auth-v3-title">{pageTitle}</h1>
-            <p className="auth-v3-subtitle mt-4">{pageDescription}</p>
+          <div className={joinClasses("auth-v3-hero", isNativeIOS && "auth-v3-hero--ios-hidden")}>
+            <p className="auth-v3-subtitle">{pageDescription}</p>
           </div>
 
           <section
             className={joinClasses(
-              "auth-v3-panel auth-v3-panel-compact",
-              mode === "login" && "auth-v3-panel-compact-login"
+              "auth-v3-panel auth-v3-panel-compact soft-page-intro",
+              mode === "login" && "auth-v3-panel-compact-login",
+              isNativeIOS && "auth-v3-panel--ios"
             )}
           >
             <div className="auth-v3-toggle" role="tablist" aria-label={copy.auth.page.toggleLabel}>
@@ -499,7 +534,7 @@ export function AuthPage() {
 
             <form
               onSubmit={handleSubmit}
-              className={joinClasses("mt-5 space-y-4", mode === "login" && "mt-4 space-y-3")}
+              className={joinClasses("mt-5 space-y-4", isNativeIOS && "auth-v3-form--ios")}
               method="post"
               autoComplete="on"
             >
@@ -649,7 +684,7 @@ export function AuthPage() {
               </div>
 
               {isRegisterMode ? (
-                <details className="auth-v3-secondary-card">
+                <details className={joinClasses("auth-v3-secondary-card", isNativeIOS && "auth-v3-secondary-card--ios")}>
                   <summary className="auth-v3-summary">{copy.auth.page.extraProfileFields}</summary>
                   <p className="auth-v3-section-copy mt-2">{copy.auth.page.extraProfileCopy}</p>
                   <div className="mt-4 space-y-4">
@@ -719,6 +754,8 @@ export function AuthPage() {
               >
                 {submitLabel}
               </button>
+
+              {isNativeIOS ? <div className="auth-v3-ios-about-row">{authAboutAction}</div> : null}
 
               <p className="auth-v3-footer-note">{copy.auth.page.invitationNote}</p>
             </form>

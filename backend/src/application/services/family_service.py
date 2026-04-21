@@ -125,6 +125,8 @@ class FamilyService:
                 cabinet_notify_7_days=target.cabinet_notify_7_days,
                 cabinet_notify_3_days=target.cabinet_notify_3_days,
                 cabinet_notify_1_day=target.cabinet_notify_1_day,
+                live_activity_sleep_enabled=target.live_activity_sleep_enabled,
+                live_activity_feeding_enabled=target.live_activity_feeding_enabled,
                 created_at=target.created_at,
             )
         )
@@ -207,6 +209,8 @@ class FamilyService:
                 cabinet_notify_7_days=target.cabinet_notify_7_days,
                 cabinet_notify_3_days=target.cabinet_notify_3_days,
                 cabinet_notify_1_day=target.cabinet_notify_1_day,
+                live_activity_sleep_enabled=target.live_activity_sleep_enabled,
+                live_activity_feeding_enabled=target.live_activity_feeding_enabled,
                 created_at=target.created_at,
             )
         )

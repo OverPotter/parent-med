@@ -266,6 +266,8 @@ export interface PushNotificationPreferences {
   cabinetNotify10Days: boolean;
   cabinetNotify7Days: boolean;
   cabinetNotify3Days: boolean;
+  liveActivitySleepEnabled: boolean;
+  liveActivityFeedingEnabled: boolean;
 }
 
 export interface PillboxAnalyticsSeriesPoint {

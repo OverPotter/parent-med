@@ -1,12 +1,17 @@
 import UIKit
 import Capacitor
+import CapApp_SPM
 
 @objc(AppViewController)
-final class AppViewController: CAPBridgeViewController {}
+final class AppViewController: CAPBridgeViewController {
+    override func capacitorDidLoad() {
+        super.capacitorDidLoad()
+        bridge?.registerPluginInstance(LiveActivitiesPlugin())
+    }
+}
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         return true
     }

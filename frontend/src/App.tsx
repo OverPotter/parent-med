@@ -35,6 +35,7 @@ import {
   WarmRouteChunks,
 } from "@/app/mobile/runtime";
 import { NativePushNavigationSync, PushSubscriptionSync } from "@/app/push/sync";
+import { LiveActivityRuntimeSync } from "@/app/live-activities/sync";
 import { AuthPage } from "@client/pages/AuthPage";
 import { appLog } from "@shared/utils/appLog";
 import { blurActiveField } from "@shared/utils/focus";
@@ -287,6 +288,7 @@ function IOSBackSwipeZone() {
   const pillboxMode = new URLSearchParams(location.search).get("mode");
   const shouldDisableSwipeBack =
     location.pathname === "/" ||
+    location.pathname === "/auth" ||
     location.pathname === "/start" ||
     location.pathname === "/children" ||
     location.pathname === "/medicine-cabinet" ||
@@ -595,6 +597,7 @@ export default function App() {
       <AuthSync />
       {isNonCriticalStartupReady ? <PushSubscriptionSync /> : null}
       {isNonCriticalStartupReady ? <NativePushNavigationSync /> : null}
+      {isNonCriticalStartupReady ? <LiveActivityRuntimeSync /> : null}
       {isNonCriticalStartupReady ? <MobilePageResumeSync /> : null}
       {isNonCriticalStartupReady ? <PullToRefreshSync /> : null}
       <Suspense fallback={<RouteFallback />}>

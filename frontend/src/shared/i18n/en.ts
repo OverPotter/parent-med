@@ -57,14 +57,14 @@ export const en: Translations = {
     hero: {
       eyebrow: "Family care for sick days and daily meds",
       titleLines: ["When a child is sick,", "the family needs one", "clear plan."],
-      lead: "Child illness profile, dose reminders, and home medicine cabinet in one app.",
+      lead: "See what is happening now, what is already done, and what comes next: child tracking, dose reminders, and the home medicine cabinet in one place.",
       createAccount: "Try it free",
       loginPrompt: "Already have an account?",
       login: "Log in",
       highlights: [
-        "See how your child’s condition changes",
-        "Get reminders on time",
-        "Keep expiry dates under control",
+        "One timeline for the whole illness story",
+        "The family sees what is done and what comes next",
+        "Reminders and expiry dates stay under control",
       ],
       themeToggleAriaDark: "Dark theme",
       themeToggleAriaLight: "Light theme",
@@ -72,19 +72,19 @@ export const en: Translations = {
     cards: [
       {
         title: "Children",
-        description: "Track symptoms, temperature, notes and medicine reminders.",
+        description: "Symptoms, temperature, notes, and doses in one timeline.",
       },
       {
-        title: "Pillbox",
-        description: "Create medicine schedules and receive reminders.",
+        title: "Dose reminders",
+        description: "Flexible schedules and reminders for the family.",
       },
       {
         title: "Home medicine cabinet",
-        description: "Keep track of expiry dates for medicines at home.",
+        description: "See what is at home, what is running out, and what to replace.",
       },
       {
         title: "Family account",
-        description: "Bring parents and relatives together in one care space.",
+        description: "One shared picture for parents and relatives.",
       },
     ],
     product: {
@@ -108,7 +108,7 @@ export const en: Translations = {
       eyebrow: "Instead of chat threads",
       title: "When important details do not have to be dug out of chat",
       description:
-        "Chat is good for sending a quick message, but poor at showing what is already done, what is happening now and what should happen next.",
+        "Chat is fine for a quick message, but poor at showing the current state, recent actions, and the next step for the whole family.",
       oldTitle: "When everything stays in chat",
       newTitle: "When everything lives in PillPath",
       oldWay: [
@@ -117,36 +117,36 @@ export const en: Translations = {
         "the full picture has to be rebuilt manually",
       ],
       newWay: [
-        "the latest notes stay close at hand",
-        "it is clear what is already done and who logged it",
-        "the whole family looks at the same picture",
+        "the current state and latest notes are visible right away",
+        "it is clear who logged a note or marked a dose",
+        "the whole family sees the same picture and the next step",
       ],
     },
     workflow: {
       eyebrow: "Working flow",
       title: "Not just notes, but a clear workflow for the whole family",
       description:
-        "PillPath is not for storing isolated notes. It helps the whole family understand the child’s current state and the next steps faster.",
+        "PillPath is not for storing isolated notes. It helps the whole family understand the child’s current state, recent actions, and the next step faster.",
       descriptionSecondary:
-        "Alongside notes and tracking, PillPath also keeps the home medicine cabinet close.",
+        "Alongside tracking and reminders, PillPath also keeps the home medicine cabinet close.",
       steps: [
         {
           step: "01",
-          title: "Add a child and start tracking",
+          title: "Add a child and open tracking",
           description:
-            "Create a child profile and open a tracking session whenever you need to log symptoms, medicines and important changes.",
+            "Create a child profile and log symptoms, temperature, and important changes in one place.",
         },
         {
           step: "02",
-          title: "Log everything into one story",
+          title: "Log doses, notes, and reminders",
           description:
-            "Temperature, doses, comments and reminders stay in one timeline instead of getting lost between messages.",
+            "Temperature, doses, notes, and reminders stay in one timeline instead of getting lost between messages.",
         },
         {
           step: "03",
           title: "The family sees what happens next",
           description:
-            "All adults can see the current status and recent actions, so it is easier to understand what is already done and what still needs attention.",
+            "All adults can see the current status and recent actions, so it is easier to understand what is already done and what needs attention next.",
         },
       ],
     },
@@ -154,7 +154,7 @@ export const en: Translations = {
       eyebrow: "Install on your phone",
       title: "Add PillPath to your home screen",
       description:
-        "The app already works as a PWA, so it installs from the browser without the App Store or Google Play.",
+        "Open PillPath in your browser and add it to the home screen so your family workspace stays close at hand.",
       iphoneTitle: "iPhone / iPad",
       androidTitle: "Android",
       iphoneSteps: [
@@ -169,8 +169,8 @@ export const en: Translations = {
         "Choose Install app or Add to Home screen.",
         "Confirm the install.",
       ],
-      ctaTitle: "Register first, then install the app on your phone.",
-      ctaDescription: "That way the home screen icon opens your family workspace right away.",
+      ctaTitle: "Register first, then add PillPath to your home screen.",
+      ctaDescription: "That way the icon opens your family workspace and current records right away.",
       createAccount: "Create account",
       login: "Log in",
       closePreview: "Close",
@@ -181,11 +181,11 @@ export const en: Translations = {
       strip: [
         {
           title: "Children",
-          description: "A day-by-day illness profile for your child.",
+          description: "The whole illness story day by day in one timeline.",
         },
         {
-          title: "Pillbox",
-          description: "Reminders for medicines and vitamins.",
+          title: "Dose reminders",
+          description: "Medicine schedules and reminders for the family.",
         },
         {
           title: "Home Medicine Cabinet",
@@ -193,17 +193,17 @@ export const en: Translations = {
         },
         {
           title: "Family Account",
-          description: "One shared access for parents and relatives.",
+          description: "One shared picture for parents and relatives.",
         },
       ],
       children: {
         title: "Children",
         description:
-          "Create a child profile and track illness day by day: symptoms, temperature, notes, and reminders.",
+          "Create a child profile and track illness day by day: symptoms, temperature, notes, doses, and reminders in one timeline.",
         mobilePoints: [
-          "Symptoms and temperature in one day-by-day history",
-          "Medication reminders at the right time",
-          "Notes you can quickly share with a doctor",
+          "Symptoms, temperature, and notes in one timeline",
+          "See what is already done and what comes next",
+          "A history you can quickly share with a doctor or family",
         ],
         chips: ["Child profile created", "Day-by-day timeline"],
         cards: [
@@ -220,11 +220,10 @@ export const en: Translations = {
             lines: ["Give medicine at 2:00 PM", "Next step is clear"],
           },
         ],
-        footer:
-          "Mom added the plan, dad followed the schedule, gave the dose, and logged it on time.",
+        footer: "The whole illness story stays in one place for the family.",
       },
       pillbox: {
-        title: "Pillbox",
+        title: "Dose reminders",
         description: "Set up medicine and vitamin schedules for yourself or a family member.",
         mobilePoints: [
           "Flexible schedules: daily, specific days, specific times",
@@ -246,7 +245,7 @@ export const en: Translations = {
       cabinet: {
         title: "Home Medicine Cabinet",
         description:
-          "Shows what is safe to use now, what is running out soon, and what to buy next.",
+          "Shows what is at home, what is safe to use now, and what should be replaced or restocked soon.",
         mobilePoints: [
           "See what is at home and how much is left",
           "Get early expiry alerts",
@@ -268,19 +267,19 @@ export const en: Translations = {
       },
       family: {
         title: "Family Account",
-        description: "One parent creates the account and invites family members with a link.",
+        description: "One parent creates the account and invites relatives into one shared care picture.",
         mobilePoints: [
           "One parent sends an invite link",
           "Everyone sees the same treatment plan and reminders",
           "It is clear who logged a note or marked a dose",
         ],
-        footer: "One shared plan for the family: everyone sees current notes and reminders.",
+        footer: "Everyone sees the current notes, doses, and reminders in one place.",
         roles: ["Mom", "Dad", "Grandma", "Grandpa", "Other relatives"],
         flowTitle: "How family access works",
         flowSteps: [
           "Mom creates the account",
           "Sends an invite link",
-          "Family sees one shared medication plan",
+          "Family sees one shared care plan",
         ],
       },
       trust: {
@@ -300,34 +299,34 @@ export const en: Translations = {
         items: [
           {
             question: "Who can see child data?",
-            answer: "Only family members you invite.",
+            answer: "Only the family members you invite and choose to share access with.",
           },
           {
             question: "Can I track more than one child?",
             answer: "Yes, you can add multiple child profiles.",
           },
           {
-            question: "Can I set up Pillbox for another family member?",
-            answer: "Yes, you can create a schedule for a loved one.",
+            question: "Can I set up doses for another family member?",
+            answer: "Yes, you can create a schedule for yourself or a loved one.",
           },
           {
             question: "Will I get medication reminders?",
-            answer: "Yes, the app sends reminders on your schedule.",
+            answer: "Yes, the app sends reminders based on the schedules and alerts you configure.",
           },
           {
             question: "What can I log in Children?",
-            answer: "Symptoms, temperature, notes, plans, and reminders.",
+            answer: "Symptoms, temperature, notes, doses, and reminders for your child.",
           },
           {
             question: "What does Home Medicine Cabinet warn about?",
-            answer: "Upcoming expiry dates and low stock.",
+            answer: "Upcoming expiry dates and medicines that should be checked or restocked soon.",
           },
         ],
       },
       finalCta: {
         title: "When a child is sick, it helps to miss nothing important.",
         description:
-          "PillPath combines illness tracking, dose reminders, and medicine cabinet control.",
+          "PillPath combines child tracking, dose reminders, and home medicine cabinet control.",
         primary: "Try it free",
         secondary: "Log in",
       },

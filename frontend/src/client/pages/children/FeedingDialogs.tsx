@@ -15,6 +15,7 @@ import {
   childActionSecondaryClass,
   childActionSuccessClass,
 } from "./shared";
+import { syncFeedingLiveActivity } from "@shared/utils/liveActivities";
 
 export function FeedingRecordDialog({
   child,
@@ -71,9 +72,10 @@ export function FeedingRecordDialog({
           feedingType === "formula" ? Number.parseInt(formulaVolume.trim(), 10) || null : null,
         note: note.trim() || null,
       }),
-    onSuccess: () => {
+    onSuccess: (feeding) => {
       queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
+      void syncFeedingLiveActivity(child, feeding, language);
       onClose();
     },
   });

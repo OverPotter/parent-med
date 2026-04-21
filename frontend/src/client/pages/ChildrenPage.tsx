@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
@@ -18,6 +18,8 @@ import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child } from "@shared/types/api";
+import { syncLiveActivitiesSnapshot } from "@shared/utils/liveActivities";
+import { getLiveActivityPreferencesCache } from "@shared/utils/liveActivityPreferences";
 import { getChildrenCopy } from "@client/i18n/children";
 import { ChildCard } from "./children/ChildCard";
 import { FeedingRecordDialog } from "./children/FeedingDialogs";
@@ -33,11 +35,18 @@ export function ChildrenPage() {
   const common = getChildrenCopy(language).common;
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isDesktop = useIsDesktop();
   const isIosShell = useIsIosShell();
   const [feedingDialog, setFeedingDialog] = useState<FeedingDialogState | null>(null);
   const [isChildrenAuxReady, setIsChildrenAuxReady] = useState(!isIosShell);
   const liveQueryOptions = useLiveQueryOptions(isIosShell ? 20000 : 10000);
+  const liveTargetChildId = searchParams.get("liveChild")?.trim() ?? "";
+  const liveTargetAction = searchParams.get("liveAction") === "sleep"
+    ? "sleep"
+    : searchParams.get("liveAction") === "feeding"
+      ? "feeding"
+      : null;
 
   useEffect(() => {
     if (!isIosShell) {
@@ -111,6 +120,65 @@ export function ChildrenPage() {
       ...liveQueryOptions,
     })),
   });
+
+  useEffect(() => {
+    if (!isChildrenAuxReady || children.length === 0) {
+      return;
+    }
+
+    const activeSleepByChildId = Object.fromEntries(
+      children.map((child, index) => [child.id, activeSleepQueries[index]?.data ?? null])
+    );
+    const activeFeedingByChildId = Object.fromEntries(
+      children.map((child, index) => [child.id, activeFeedingQueries[index]?.data ?? null])
+    );
+
+    void syncLiveActivitiesSnapshot({
+      children,
+      activeSleepByChildId,
+      activeFeedingByChildId,
+      language,
+      preferences: getLiveActivityPreferencesCache(),
+    });
+  }, [
+    activeFeedingQueries,
+    activeSleepQueries,
+    children,
+    isChildrenAuxReady,
+    language,
+  ]);
+
+  useEffect(() => {
+    if (!liveTargetChildId || children.length === 0) {
+      return;
+    }
+
+    const selector = liveTargetAction
+      ? `[data-live-action-target="${liveTargetAction}:${liveTargetChildId}"]`
+      : `[data-child-card-id="${liveTargetChildId}"]`;
+
+    let frameId = window.requestAnimationFrame(() => {
+      const target = document.querySelector(selector);
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      target.scrollIntoView({
+        block: "center",
+        behavior: "smooth",
+      });
+      target.focus?.({ preventScroll: true });
+
+      const next = new URLSearchParams(searchParams);
+      next.delete("liveChild");
+      next.delete("liveAction");
+      setSearchParams(next, { replace: true });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [children.length, liveTargetAction, liveTargetChildId, searchParams, setSearchParams]);
 
   if (!currentFamilyId) {
     return (
