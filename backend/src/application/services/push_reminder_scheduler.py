@@ -466,9 +466,15 @@ class PushNotificationScheduler:
                     ):
                         payload = {
                             "title": (
-                                f"In {reminder_before_minutes} min: {medicine_name} for {child.name}"
+                                (
+                                    f"In {reminder_before_minutes} min: "
+                                    f"{medicine_name} for {child.name}"
+                                )
                                 if language == "en"
-                                else f"Через {reminder_before_minutes} мин: {medicine_name} для {child.name}"
+                                else (
+                                    f"Через {reminder_before_minutes} мин: "
+                                    f"{medicine_name} для {child.name}"
+                                )
                             ),
                             "body": _format_before_body(
                                 child.name,
@@ -811,9 +817,15 @@ class PushNotificationScheduler:
             if remind_at <= now < scheduled_for and not await slot_delivered("before"):
                 payload = {
                     "title": (
-                        f"In {pillbox_before_minutes} min: {summary_label} for {recipient_label}"
+                        (
+                            f"In {pillbox_before_minutes} min: "
+                            f"{summary_label} for {recipient_label}"
+                        )
                         if language == "en"
-                        else f"Через {pillbox_before_minutes} мин: {summary_label} для {recipient_label}"
+                        else (
+                            f"Через {pillbox_before_minutes} мин: "
+                            f"{summary_label} для {recipient_label}"
+                        )
                     ),
                     "body": _format_pillbox_before_body(
                         summary_label,

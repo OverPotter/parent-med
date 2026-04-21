@@ -24,8 +24,8 @@ dev = [
     "ruff>=0.8",
 ]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "black>=24.0",
     "ruff>=0.8",
     "pytest>=8.0",
@@ -45,15 +45,17 @@ target-version = ["py311"]
 
 [tool.ruff]
 line-length = 100
+exclude = ["alembic"]
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
 ignore = ["N818"]
-exclude = ["alembic"]
 
 [tool.ruff.lint.per-file-ignores]
 # SQLAlchemy relationship(): forward refs в Mapped["ModelName"]
 "src/infrastructure/database/models/*.py" = ["F821", "UP037"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["src"]
 
 [tool.pytest.ini_options]
