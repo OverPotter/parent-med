@@ -69,11 +69,7 @@ def make_service(
     service = IllnessEpisodeService(
         episode_repo=repo,
         child_repo=StubChildRepository(child),
-        account_repo=(
-            StubAccountRepository(account_ids)
-            if account_ids is not None
-            else None
-        ),
+        account_repo=(StubAccountRepository(account_ids) if account_ids is not None else None),
     )
     return service, repo
 

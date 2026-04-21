@@ -554,9 +554,7 @@ class PushNotificationScheduler:
                             or sent_due
                         )
 
-                    overdue_at = next_allowed_at + timedelta(
-                        minutes=OVERDUE_REMINDER_AFTER_MINUTES
-                    )
+                    overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
                     if (
                         now >= overdue_at
                         and plan.last_overdue_notification_for_at != next_allowed_at
