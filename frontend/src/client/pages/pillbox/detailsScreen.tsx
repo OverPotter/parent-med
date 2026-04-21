@@ -81,7 +81,7 @@ export function PillboxDetailsScreen({
   const isCompletedPlan = selectedPlan.status === "completed" || selectedPlan.status === "archived";
 
   return (
-    <EditorShell>
+    <EditorShell onBack={onBack}>
       <FlowScreenHeader
         backLabel={tPillbox(language, "detailsBack")}
         onBack={onBack}

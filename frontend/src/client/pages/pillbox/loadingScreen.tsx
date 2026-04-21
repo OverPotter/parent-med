@@ -11,7 +11,7 @@ export function PillboxLoadingScreen({
   onBack: () => void;
 }) {
   return (
-    <EditorShell>
+    <EditorShell onBack={onBack}>
       <FlowScreenHeader
         backLabel={
           screen === "medication"

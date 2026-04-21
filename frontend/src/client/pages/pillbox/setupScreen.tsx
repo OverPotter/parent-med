@@ -72,7 +72,7 @@ export function PillboxSetupScreen({
   onCloseDeleteDialog: () => void;
 }) {
   return (
-    <EditorShell>
+    <EditorShell onBack={onBack}>
       <FlowScreenHeader
         backLabel={tPillbox(language, "setupBack")}
         onBack={onBack}

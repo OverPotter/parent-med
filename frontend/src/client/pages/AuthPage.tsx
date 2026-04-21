@@ -13,6 +13,11 @@ import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { AppLanguage } from "@shared/i18n";
 import { useAppStore } from "@shared/store/useAppStore";
+import {
+  buildNativeAppUrl,
+  NATIVE_APP_MARKETING_FLAG,
+} from "@shared/config/nativeAppLinks";
+import { blurActiveField } from "@shared/utils/focus";
 import { Link, useSearchParams } from "react-router-dom";
 
 type Mode = "login" | "register";
@@ -252,6 +257,7 @@ export function AuthPage() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const stageRef = useRef<HTMLElement | null>(null);
+  const submitButtonRef = useRef<HTMLButtonElement | null>(null);
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const setSession = useAppStore((s) => s.setSession);
@@ -359,17 +365,7 @@ export function AuthPage() {
   };
 
   const switchMode = (nextMode: Mode) => {
-    if (typeof document !== "undefined") {
-      const activeElement = document.activeElement;
-      if (
-        activeElement instanceof HTMLElement &&
-        (activeElement.tagName === "INPUT" ||
-          activeElement.tagName === "TEXTAREA" ||
-          activeElement.tagName === "SELECT")
-      ) {
-        activeElement.blur();
-      }
-    }
+    blurActiveField();
     resetAuthFormState();
     setMode(nextMode);
     setSearchParams(nextMode === "register" ? { mode: "register" } : { mode: "login" });
@@ -393,11 +389,43 @@ export function AuthPage() {
         : copy.auth.actions.register;
 
   const openAbout = () => {
+    blurActiveField();
     if (isNativeRuntime && hasAbsoluteMarketingUrl) {
-      window.open(marketingSiteUrl, "_blank", "noopener,noreferrer");
+      const aboutUrl = new URL(marketingSiteUrl);
+      aboutUrl.searchParams.set(NATIVE_APP_MARKETING_FLAG, "1");
+      aboutUrl.searchParams.set("appLoginUrl", buildNativeAppUrl("/auth?mode=login"));
+      aboutUrl.searchParams.set("appRegisterUrl", buildNativeAppUrl("/auth?mode=register"));
+      window.open(aboutUrl.toString(), "_blank", "noopener,noreferrer");
       return;
     }
   };
+
+  const ensureSubmitVisible = () => {
+    if (!isNativeIOS || mode !== "login" || typeof window === "undefined") {
+      return;
+    }
+
+    const submitButton = submitButtonRef.current;
+    if (!submitButton) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      submitButton.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+    }, 120);
+  };
+
+  useEffect(() => {
+    if (!isNativeIOS || mode !== "login" || (!loginValue.trim() && !password.trim())) {
+      return;
+    }
+
+    ensureSubmitVisible();
+  }, [ensureSubmitVisible, isNativeIOS, loginValue, mode, password]);
 
   const authAboutAction =
     isNativeRuntime && hasAbsoluteMarketingUrl ? (
@@ -433,6 +461,7 @@ export function AuthPage() {
               to="/"
               className={joinClasses("auth-v3-header-logo", isNativeIOS && "auth-v3-header-logo--ios")}
               aria-label={copy.common.brandName}
+              onClick={blurActiveField}
             >
               <img
                 src="/pwa-icon.png"
@@ -447,6 +476,7 @@ export function AuthPage() {
                 isNativeIOS && "auth-v3-header-brand--ios"
               )}
               aria-label={copy.common.brandName}
+              onClick={blurActiveField}
             >
               <BrandWordmark className="auth-v3-header-brand-text" />
             </Link>
@@ -492,7 +522,11 @@ export function AuthPage() {
           ) : null}
           {!isNativeRuntime ? (
             <div className="auth-v3-mobile-home-wrap">
-              <Link to="/" className="app-header-utility-button auth-v3-mobile-home-link">
+              <Link
+                to="/"
+                className="app-header-utility-button auth-v3-mobile-home-link"
+                onClick={blurActiveField}
+              >
                 {copy.common.aboutApp}
               </Link>
             </div>
@@ -534,6 +568,7 @@ export function AuthPage() {
 
             <form
               onSubmit={handleSubmit}
+              onFocusCapture={ensureSubmitVisible}
               className={joinClasses("mt-5 space-y-4", isNativeIOS && "auth-v3-form--ios")}
               method="post"
               autoComplete="on"
@@ -541,11 +576,6 @@ export function AuthPage() {
               <div className="auth-v3-card">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="auth-v3-section-title">
-                      {mode === "login"
-                        ? copy.auth.page.loginCardTitle
-                        : copy.auth.page.registerCardTitle}
-                    </p>
                     <p className="auth-v3-section-copy">
                       {isRegisterMode
                         ? copy.auth.page.registerCardCopy
@@ -742,6 +772,7 @@ export function AuthPage() {
               {error ? <p className="auth-v3-error">{error}</p> : null}
 
               <button
+                ref={submitButtonRef}
                 type="submit"
                 disabled={
                   isPending ||

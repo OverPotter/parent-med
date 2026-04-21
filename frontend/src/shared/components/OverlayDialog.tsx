@@ -15,6 +15,7 @@ type OverlayDialogProps = {
   containerClassName?: string;
   backdropClassName?: string;
   backdropAriaLabel?: string;
+  disableIosBackSwipe?: boolean;
 };
 
 export function OverlayDialog({
@@ -29,6 +30,7 @@ export function OverlayDialog({
   containerClassName,
   backdropClassName,
   backdropAriaLabel = "Close dialog",
+  disableIosBackSwipe = true,
 }: OverlayDialogProps) {
   useBodyScrollLock(isOpen);
 
@@ -64,10 +66,18 @@ export function OverlayDialog({
 
   return createPortal(
     <div
+      data-ios-local-back-swipe={disableIosBackSwipe ? "true" : undefined}
+      data-ios-disable-back-swipe={disableIosBackSwipe ? "true" : undefined}
       className={`fixed inset-0 ${zIndexClassName} ${resolvedContainerClassName}`}
       style={{
-        paddingTop: "max(1rem, var(--app-safe-top-runtime, env(safe-area-inset-top)))",
-        paddingBottom: "max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
+        paddingTop:
+          placement === "bottom"
+            ? "0"
+            : "max(1rem, var(--app-safe-top-runtime, env(safe-area-inset-top)))",
+        paddingBottom:
+          placement === "bottom"
+            ? "0"
+            : "max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
       }}
     >
       <button

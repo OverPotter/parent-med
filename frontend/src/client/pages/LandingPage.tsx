@@ -1,9 +1,13 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { Surface } from "@shared/components/Surface";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
+import {
+  buildNativeAppUrl,
+  NATIVE_APP_MARKETING_FLAG,
+} from "@shared/config/nativeAppLinks";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 
@@ -12,6 +16,7 @@ type FeatureSectionId = (typeof FEATURE_SECTION_IDS)[number];
 
 export function LandingPage() {
   const { copy } = useI18n();
+  const [searchParams] = useSearchParams();
   const MOBILE_FAQ_LIMIT = 4;
   const [isHeroMobile, setIsHeroMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth <= 640 : false
@@ -55,6 +60,18 @@ export function LandingPage() {
     if (!firstSection || !lastSection) return [...FEATURE_SECTION_IDS];
     return [lastSection, ...FEATURE_SECTION_IDS, firstSection];
   }, []);
+  const shouldOpenAuthInApp = searchParams.get(NATIVE_APP_MARKETING_FLAG) === "1";
+  const loginTarget =
+    searchParams.get("appLoginUrl")?.trim() || buildNativeAppUrl("/auth?mode=login");
+  const registerTarget =
+    searchParams.get("appRegisterUrl")?.trim() || buildNativeAppUrl("/auth?mode=register");
+
+  const openInApp = (url: string) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.location.href = url;
+  };
 
   useEffect(() => {
     const onResize = () => {
@@ -612,12 +629,22 @@ export function LandingPage() {
                 />
               </Link>
               <div className="landing-hero-reset-actions-inline">
-                <Link
-                  to="/auth?mode=login"
-                  className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
-                >
-                  {copy.landing.hero.login}
-                </Link>
+                {shouldOpenAuthInApp ? (
+                  <button
+                    type="button"
+                    onClick={() => openInApp(loginTarget)}
+                    className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                  >
+                    {copy.landing.hero.login}
+                  </button>
+                ) : (
+                  <Link
+                    to="/auth?mode=login"
+                    className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                  >
+                    {copy.landing.hero.login}
+                  </Link>
+                )}
                 <LanguageSwitch
                   className="landing-language-switch"
                   triggerClassName="landing-topline-button"
@@ -668,19 +695,39 @@ export function LandingPage() {
                   <div className="landing-hero-cta-wrap mt-4 flex flex-col items-start gap-2.5">
                     <p className="text-sm text-muted">
                       {copy.landing.hero.loginPrompt}{" "}
-                      <Link
-                        to="/auth?mode=login"
-                        className="font-semibold text-[color:var(--color-primary)] underline-offset-4 hover:underline"
-                      >
-                        {copy.landing.hero.login}
-                      </Link>
+                      {shouldOpenAuthInApp ? (
+                        <button
+                          type="button"
+                          onClick={() => openInApp(loginTarget)}
+                          className="font-semibold text-[color:var(--color-primary)] underline-offset-4 hover:underline"
+                        >
+                          {copy.landing.hero.login}
+                        </button>
+                      ) : (
+                        <Link
+                          to="/auth?mode=login"
+                          className="font-semibold text-[color:var(--color-primary)] underline-offset-4 hover:underline"
+                        >
+                          {copy.landing.hero.login}
+                        </Link>
+                      )}
                     </p>
-                    <Link
-                      to="/auth?mode=register"
-                      className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
-                    >
-                      {copy.landing.hero.createAccount}
-                    </Link>
+                    {shouldOpenAuthInApp ? (
+                      <button
+                        type="button"
+                        onClick={() => openInApp(registerTarget)}
+                        className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
+                      >
+                        {copy.landing.hero.createAccount}
+                      </button>
+                    ) : (
+                      <Link
+                        to="/auth?mode=register"
+                        className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
+                      >
+                        {copy.landing.hero.createAccount}
+                      </Link>
+                    )}
                   </div>
 
                   <div className="mt-4 hidden space-y-2.5 sm:block">

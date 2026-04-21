@@ -2,71 +2,17 @@ import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import {
-  IOS_BACK_SWIPE_EDGE_PRIORITY_PX,
   IOS_BACK_SWIPE_CANCEL_MS,
   IOS_BACK_SWIPE_COMMIT_MS,
   canStartIosBackSwipe,
   getIosBackSwipeOffset,
   shouldCancelIosBackSwipe,
   shouldCommitIosBackSwipe,
+  shouldIgnoreIosBackSwipeStartTarget,
+  shouldIgnoreIosBackSwipeTarget,
   shouldLockIosBackSwipe,
   shouldPreventScrollDuringIosBackSwipe,
 } from "@shared/navigation/iosBackSwipe";
-
-function shouldIgnoreLocalIosBackSwipeStartTarget(target: EventTarget | null) {
-  if (!(target instanceof Element)) {
-    return false;
-  }
-
-  return Boolean(
-    target.closest(
-      [
-        "[data-ios-disable-back-swipe='true']",
-        "button",
-        "a",
-        "label",
-        "summary",
-        "input",
-        "textarea",
-        "select",
-        ".soft-input",
-        "[role='button']",
-        "[role='link']",
-        "[role='switch']",
-        "[role='tab']",
-        "[role='menuitem']",
-        "[contenteditable='true']",
-      ].join(",")
-    )
-  );
-}
-
-function shouldIgnoreLocalIosBackSwipeStartTargetAtX(target: EventTarget | null, clientX: number) {
-  if (clientX <= IOS_BACK_SWIPE_EDGE_PRIORITY_PX) {
-    return false;
-  }
-  return shouldIgnoreLocalIosBackSwipeStartTarget(target);
-}
-
-function shouldIgnoreLocalIosBackSwipeTarget(target: EventTarget | null) {
-  if (!(target instanceof Element)) {
-    return false;
-  }
-
-  return Boolean(
-    target.closest(
-      [
-        "[data-ios-disable-back-swipe='true']",
-        "input",
-        "textarea",
-        "select",
-        "label",
-        ".soft-input",
-        "[contenteditable='true']",
-      ].join(",")
-    )
-  );
-}
 
 export function IosEdgeBackGesture({
   isEnabled,
@@ -125,7 +71,11 @@ export function IosEdgeBackGesture({
       if (!touch || event.touches.length !== 1) {
         return;
       }
-      if (shouldIgnoreLocalIosBackSwipeStartTargetAtX(event.target, touch.clientX)) {
+      if (
+        shouldIgnoreIosBackSwipeStartTarget(event.target, touch.clientX, {
+          includeLocalSwipeRoot: false,
+        })
+      ) {
         return;
       }
       if (!canStartIosBackSwipe(touch.clientX, window.innerWidth)) {
@@ -151,7 +101,7 @@ export function IosEdgeBackGesture({
       if (!touch || !swipeStateRef.current.active) {
         return;
       }
-      if (shouldIgnoreLocalIosBackSwipeTarget(event.target)) {
+      if (shouldIgnoreIosBackSwipeTarget(event.target, { includeLocalSwipeRoot: false })) {
         return;
       }
       const dx = Math.max(0, touch.clientX - swipeStateRef.current.startX);
@@ -195,7 +145,7 @@ export function IosEdgeBackGesture({
       if (!touch || !swipeStateRef.current.active) {
         return;
       }
-      if (shouldIgnoreLocalIosBackSwipeTarget(event.target)) {
+      if (shouldIgnoreIosBackSwipeTarget(event.target, { includeLocalSwipeRoot: false })) {
         swipeStateRef.current.active = false;
         return;
       }

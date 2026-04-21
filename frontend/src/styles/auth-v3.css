@@ -449,10 +449,46 @@
 }
 
 .auth-v3-summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.9rem;
+  border: 1px solid color-mix(in srgb, var(--auth-v3-primary) 16%, transparent);
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--auth-v3-primary-soft) 64%, white);
+  padding: 0.75rem 1rem;
   cursor: pointer;
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--auth-v3-text);
+  list-style: none;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.auth-v3-summary::-webkit-details-marker {
+  display: none;
+}
+
+.auth-v3-summary::after {
+  content: "▾";
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: var(--auth-v3-primary-strong);
+  transition: transform 180ms ease;
+}
+
+details[open] > .auth-v3-summary::after {
+  transform: rotate(180deg);
+}
+
+.auth-v3-summary:hover {
+  background: color-mix(in srgb, var(--auth-v3-primary-soft) 78%, white);
+  border-color: rgba(138, 123, 191, 0.34);
 }
 
 .auth-v3-error {
@@ -558,6 +594,15 @@
   box-shadow:
     0 0 0 4px rgba(138, 123, 191, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .auth-v3-summary {
+  background: color-mix(in srgb, var(--auth-v3-primary-soft) 48%, var(--auth-v3-surface));
+  border-color: var(--auth-v3-border);
+}
+
+[data-theme="dark"] .auth-v3-summary:hover {
+  background: color-mix(in srgb, var(--auth-v3-primary-soft) 56%, var(--auth-v3-surface));
 }
 
 [data-theme="dark"] .auth-v3-input-toggle:hover,

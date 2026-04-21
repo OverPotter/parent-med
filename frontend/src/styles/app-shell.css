@@ -218,11 +218,17 @@ html.ios-lock-horizontal .landing-main {
 [data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-submit {
   min-height: 3.45rem;
   font-size: 1.05rem;
+  position: sticky;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  z-index: 3;
 }
 
 [data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-submit {
   min-height: 3.45rem;
   font-size: 1.05rem;
+  position: sticky;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  z-index: 3;
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-panel {
@@ -458,6 +464,31 @@ html.ios-lock-horizontal .landing-main {
   flex-direction: column;
 }
 
+[data-runtime="native"][data-platform="ios"] .auth-v3-shell,
+[data-ios-shell="true"] .auth-v3-shell {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-top: calc(1rem + env(safe-area-inset-top));
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page,
+[data-ios-shell="true"] .auth-v3-page {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-stage,
+[data-ios-shell="true"] .auth-v3-stage {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--login .auth-v3-panel--ios,
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--login .auth-v3-panel--ios {
+  min-height: auto;
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-secondary-card--ios,
 [data-ios-shell="true"] .auth-v3-secondary-card--ios {
   margin-top: 0.15rem;
@@ -466,6 +497,7 @@ html.ios-lock-horizontal .landing-main {
 [data-runtime="native"][data-platform="ios"] .auth-v3-form--ios,
 [data-ios-shell="true"] .auth-v3-form--ios {
   min-height: 100%;
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-form--ios > .auth-v3-card,
@@ -480,6 +512,7 @@ html.ios-lock-horizontal .landing-main {
 [data-ios-shell="true"] .auth-v3-submit {
   background: linear-gradient(180deg, #1db37d 0%, #159a69 100%);
   box-shadow: 0 14px 28px -20px rgba(21, 154, 105, 0.5);
+  scroll-margin-bottom: calc(6.5rem + env(safe-area-inset-bottom));
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-ios-about-row,
