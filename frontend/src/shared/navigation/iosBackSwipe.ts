@@ -7,8 +7,8 @@ export const IOS_BACK_SWIPE_LOCK_DISTANCE = 14;
 export const IOS_BACK_SWIPE_LOCK_RATIO = 1.22;
 export const IOS_BACK_SWIPE_VERTICAL_CANCEL_BEFORE_LOCK = 28;
 export const IOS_BACK_SWIPE_VERTICAL_CANCEL_AFTER_LOCK = 56;
-export const IOS_BACK_SWIPE_COMMIT_MS = 1080;
-export const IOS_BACK_SWIPE_CANCEL_MS = 1260;
+export const IOS_BACK_SWIPE_COMMIT_MS = 420;
+export const IOS_BACK_SWIPE_CANCEL_MS = 360;
 
 export function canStartIosBackSwipe(clientX: number, viewportWidth: number) {
   return (

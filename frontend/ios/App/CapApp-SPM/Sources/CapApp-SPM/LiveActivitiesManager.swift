@@ -75,7 +75,6 @@ actor LiveActivitiesManager {
 
         let key = activityKey(kind: payload.kind, itemId: payload.itemId)
         if inFlightUpsertKeys.contains(key) {
-            NSLog("[PM] LiveActivities skip duplicate inflight kind=%@ itemId=%@", payload.kind, payload.itemId)
             return findActivity(kind: payload.kind, itemId: payload.itemId)?.id
         }
         inFlightUpsertKeys.insert(key)
@@ -91,25 +90,21 @@ actor LiveActivitiesManager {
 
         let matched = matchingActivities(kind: payload.kind, itemId: payload.itemId)
         if matched.count > 1 {
-            NSLog("[PM] LiveActivities dedupe matched=%d kind=%@ itemId=%@", matched.count, payload.kind, payload.itemId)
             for activity in matched.dropFirst() {
                 await activity.end(using: activity.contentState, dismissalPolicy: .immediate)
             }
         }
 
         if let existing = matched.first {
-            NSLog("[PM] LiveActivities update existing id=%@", existing.id)
             await existing.update(using: contentState)
             return existing.id
         }
 
-        NSLog("[PM] LiveActivities request new kind=%@ itemId=%@", payload.kind, payload.itemId)
         let activity = try Activity<LiveActivityAttributes>.request(
             attributes: attributes,
             contentState: contentState,
             pushType: nil
         )
-        NSLog("[PM] LiveActivities request created id=%@", activity.id)
         return activity.id
 #else
         return nil
@@ -124,7 +119,6 @@ actor LiveActivitiesManager {
 
         inFlightUpsertKeys.remove(activityKey(kind: kind, itemId: itemId))
         let matched = matchingActivities(kind: kind, itemId: itemId)
-        NSLog("[PM] LiveActivities stop matched=%d kind=%@ itemId=%@", matched.count, kind, itemId)
         for activity in matched {
             await activity.end(using: activity.contentState, dismissalPolicy: .immediate)
         }
@@ -148,7 +142,6 @@ actor LiveActivitiesManager {
         } else {
             inFlightUpsertKeys.removeAll()
         }
-        NSLog("[PM] LiveActivities stopAll matched=%d kind=%@", matched.count, kind ?? "all")
         for activity in matched {
             await activity.end(using: activity.contentState, dismissalPolicy: .immediate)
         }

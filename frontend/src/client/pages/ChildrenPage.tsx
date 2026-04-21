@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
@@ -35,11 +35,18 @@ export function ChildrenPage() {
   const common = getChildrenCopy(language).common;
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isDesktop = useIsDesktop();
   const isIosShell = useIsIosShell();
   const [feedingDialog, setFeedingDialog] = useState<FeedingDialogState | null>(null);
   const [isChildrenAuxReady, setIsChildrenAuxReady] = useState(!isIosShell);
   const liveQueryOptions = useLiveQueryOptions(isIosShell ? 20000 : 10000);
+  const liveTargetChildId = searchParams.get("liveChild")?.trim() ?? "";
+  const liveTargetAction = searchParams.get("liveAction") === "sleep"
+    ? "sleep"
+    : searchParams.get("liveAction") === "feeding"
+      ? "feeding"
+      : null;
 
   useEffect(() => {
     if (!isIosShell) {
@@ -140,6 +147,38 @@ export function ChildrenPage() {
     isChildrenAuxReady,
     language,
   ]);
+
+  useEffect(() => {
+    if (!liveTargetChildId || children.length === 0) {
+      return;
+    }
+
+    const selector = liveTargetAction
+      ? `[data-live-action-target="${liveTargetAction}:${liveTargetChildId}"]`
+      : `[data-child-card-id="${liveTargetChildId}"]`;
+
+    let frameId = window.requestAnimationFrame(() => {
+      const target = document.querySelector(selector);
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      target.scrollIntoView({
+        block: "center",
+        behavior: "smooth",
+      });
+      target.focus?.({ preventScroll: true });
+
+      const next = new URLSearchParams(searchParams);
+      next.delete("liveChild");
+      next.delete("liveAction");
+      setSearchParams(next, { replace: true });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [children.length, liveTargetAction, liveTargetChildId, searchParams, setSearchParams]);
 
   if (!currentFamilyId) {
     return (

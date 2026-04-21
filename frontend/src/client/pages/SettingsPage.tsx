@@ -31,7 +31,10 @@ import {
   openNativeNotificationSettings,
   setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
-import { getLiveActivityPreferencesCache } from "@shared/utils/liveActivityPreferences";
+import {
+  getLiveActivityPreferencesCache,
+  setLiveActivityPreferencesCache,
+} from "@shared/utils/liveActivityPreferences";
 import { SettingsAppPreferencesSection } from "./settings/SettingsAppPreferencesSection";
 import { tSettings } from "./settings/copy";
 import { SettingsLiveActivitiesSection } from "./settings/SettingsLiveActivitiesSection";
@@ -102,14 +105,12 @@ export function SettingsPage() {
     staleTime: 5 * 60 * 1000,
     retry: false,
     refetchOnWindowFocus: false,
-    enabled: isPushRuntimeReady,
   });
 
   const { data: pushPreferences, isLoading: isPushPreferencesLoading } = useQuery({
     queryKey: ["push", "preferences", "account"],
     queryFn: fetchPushNotificationPreferences,
     staleTime: 5 * 60 * 1000,
-    enabled: isPushRuntimeReady,
   });
   const cabinetEarlyReminderEnabled =
     (pushPreferences?.cabinetNotify10Days ?? false) ||
@@ -130,8 +131,6 @@ export function SettingsPage() {
       cabinet_notify_10_days?: boolean;
       cabinet_notify_7_days?: boolean;
       cabinet_notify_3_days?: boolean;
-      live_activity_sleep_enabled?: boolean;
-      live_activity_feeding_enabled?: boolean;
     }) => updatePushNotificationPreferences(payload),
     onSuccess: (nextPreferences) => {
       setSelectedReminderMinutes(String(nextPreferences.beforeReminderMinutes));
@@ -149,10 +148,6 @@ export function SettingsPage() {
     if (pushPreferences) {
       setSelectedReminderMinutes(String(pushPreferences.beforeReminderMinutes));
       setSelectedPillboxReminderMinutes(String(pushPreferences.pillboxBeforeReminderMinutes));
-      setLiveActivitySettings({
-        sleepEnabled: pushPreferences.liveActivitySleepEnabled,
-        feedingEnabled: pushPreferences.liveActivityFeedingEnabled,
-      });
     }
   }, [pushPreferences]);
 
@@ -481,42 +476,22 @@ export function SettingsPage() {
 
   const handleLiveActivitySleepToggle = (enabled: boolean) => {
     setPushError(null);
-    const previous = liveActivitySettings;
-    setLiveActivitySettings((current) => ({ ...current, sleepEnabled: enabled }));
-    updatePushPreferencesMutation.mutate(
-      { live_activity_sleep_enabled: enabled },
-      {
-        onSuccess: (nextPreferences) => {
-          void stopDisabledLiveActivities({
-            sleepEnabled: nextPreferences.liveActivitySleepEnabled,
-            feedingEnabled: nextPreferences.liveActivityFeedingEnabled,
-          });
-        },
-        onError: () => {
-          setLiveActivitySettings(previous);
-        },
-      }
-    );
+    setLiveActivitySettings((current) => {
+      const next = { ...current, sleepEnabled: enabled };
+      setLiveActivityPreferencesCache(next);
+      void stopDisabledLiveActivities(next);
+      return next;
+    });
   };
 
   const handleLiveActivityFeedingToggle = (enabled: boolean) => {
     setPushError(null);
-    const previous = liveActivitySettings;
-    setLiveActivitySettings((current) => ({ ...current, feedingEnabled: enabled }));
-    updatePushPreferencesMutation.mutate(
-      { live_activity_feeding_enabled: enabled },
-      {
-        onSuccess: (nextPreferences) => {
-          void stopDisabledLiveActivities({
-            sleepEnabled: nextPreferences.liveActivitySleepEnabled,
-            feedingEnabled: nextPreferences.liveActivityFeedingEnabled,
-          });
-        },
-        onError: () => {
-          setLiveActivitySettings(previous);
-        },
-      }
-    );
+    setLiveActivitySettings((current) => {
+      const next = { ...current, feedingEnabled: enabled };
+      setLiveActivityPreferencesCache(next);
+      void stopDisabledLiveActivities(next);
+      return next;
+    });
   };
 
   const handleSubmitPasswordChange = () => {
@@ -584,7 +559,7 @@ export function SettingsPage() {
         isIos={isNativeIos}
         sleepEnabled={liveActivitySettings.sleepEnabled}
         feedingEnabled={liveActivitySettings.feedingEnabled}
-        disabled={!isPushRuntimeReady || isPushPreferencesLoading || updatePushPreferencesMutation.isPending}
+        disabled={!isNativeIos}
         onSleepToggle={handleLiveActivitySleepToggle}
         onFeedingToggle={handleLiveActivityFeedingToggle}
       />

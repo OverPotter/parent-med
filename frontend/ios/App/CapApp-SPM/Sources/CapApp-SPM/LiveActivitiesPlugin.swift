@@ -17,7 +17,6 @@ public final class LiveActivitiesPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func getStatus(_ call: CAPPluginCall) {
         Task {
             let status = await manager.getStatus()
-            NSLog("[PM] LiveActivities getStatus %@", status as NSDictionary)
             call.resolve(status)
         }
     }
@@ -32,24 +31,13 @@ public final class LiveActivitiesPlugin: CAPPlugin, CAPBridgedPlugin {
 
         Task {
             guard let payload = await manager.parsePayload(options) else {
-                NSLog("[PM] LiveActivities invalid payload %@", options as NSDictionary)
                 call.reject("Invalid live activity payload")
                 return
             }
             do {
-                NSLog("[PM] LiveActivities upsert %@", [
-                    "kind": payload.kind,
-                    "itemId": payload.itemId,
-                    "title": payload.title,
-                    "subtitle": payload.subtitle ?? "",
-                    "startedAt": payload.startedAt.ISO8601Format(),
-                    "deepLink": payload.deepLink ?? "",
-                ] as NSDictionary)
                 let activeId = try await manager.upsert(payload: payload)
-                NSLog("[PM] LiveActivities upsert success %@", activeId ?? "nil")
                 call.resolve(["activeId": activeId as Any])
             } catch {
-                NSLog("[PM] LiveActivities upsert error %@", String(describing: error))
                 call.reject("Failed to upsert live activity", nil, error)
             }
         }
@@ -65,7 +53,6 @@ public final class LiveActivitiesPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         Task {
-            NSLog("[PM] LiveActivities stop kind=%@ itemId=%@", kind, itemId)
             await manager.stop(kind: kind, itemId: itemId)
             call.resolve()
         }
@@ -75,7 +62,6 @@ public final class LiveActivitiesPlugin: CAPPlugin, CAPBridgedPlugin {
         let kind = call.getString("kind")
 
         Task {
-            NSLog("[PM] LiveActivities stopAll kind=%@", kind ?? "all")
             await manager.stopAll(kind: kind)
             call.resolve()
         }

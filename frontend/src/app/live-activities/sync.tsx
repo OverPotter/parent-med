@@ -11,7 +11,6 @@ import {
 import { updateLiveActivityDiagnostics } from "@shared/utils/liveActivityDiagnostics";
 import { stopDisabledLiveActivities, syncLiveActivitiesSnapshot } from "@shared/utils/liveActivities";
 import { useGlobalBootReady } from "@/app/boot/state";
-import { appLog } from "@shared/utils/appLog";
 
 export function LiveActivityRuntimeSync() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
@@ -34,11 +33,6 @@ export function LiveActivityRuntimeSync() {
 
     const sync = async () => {
       const preferences = getLiveActivityPreferencesCache();
-      appLog.dev("LiveActivities sync:start", {
-        currentFamilyId,
-        language,
-        preferences,
-      });
       updateLiveActivityDiagnostics({
         lastSync: `start family=${currentFamilyId}`,
         lastError: null,
@@ -47,13 +41,6 @@ export function LiveActivityRuntimeSync() {
 
       const children = await fetchChildrenByFamilyId(currentFamilyId);
       const babyChildren = children.filter((child) => child.babyModeEnabled);
-      appLog.dev("LiveActivities sync:children", {
-        total: children.length,
-        babyChildren: babyChildren.map((child) => ({
-          id: child.id,
-          name: child.name,
-        })),
-      });
       const sleepEntries = await Promise.all(
         babyChildren.map(async (child) => [child.id, await fetchActiveSleepSessionByChildId(child.id)] as const)
       );
@@ -77,12 +64,10 @@ export function LiveActivityRuntimeSync() {
       updateLiveActivityDiagnostics({
         lastSync: `done children=${babyChildren.length} sleep=${sleepEntries.filter(([, value]) => value).length} feeding=${feedingEntries.filter(([, value]) => value).length}`,
       });
-      appLog.dev("LiveActivities sync:done");
     };
 
     const syncSafely = () => {
       void sync().catch((error) => {
-        appLog.warn("LiveActivities sync failed", error);
         updateLiveActivityDiagnostics({
           lastSync: "error",
           lastError: String(error),

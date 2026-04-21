@@ -1,5 +1,4 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
-import { appLog } from "./appLog";
 import { updateLiveActivityDiagnostics } from "./liveActivityDiagnostics";
 
 export type NativeLiveActivityKind = "sleep" | "feeding";
@@ -43,11 +42,6 @@ export async function getNativeLiveActivitiesStatus(): Promise<{
   authorizationState?: string;
 }> {
   if (!isNativeLiveActivitiesSupported()) {
-    const status = {
-      isNativePlatform: Capacitor.isNativePlatform(),
-      platform: Capacitor.getPlatform(),
-    };
-    console.warn("[PM] LiveActivities unsupported platform", status);
     updateLiveActivityDiagnostics({
       nativeStatus: {
         supported: false,
@@ -55,7 +49,10 @@ export async function getNativeLiveActivitiesStatus(): Promise<{
         authorizationState: "unsupported",
       },
       lastAction: "status:unsupported-platform",
-      lastPayload: status,
+      lastPayload: {
+        isNativePlatform: Capacitor.isNativePlatform(),
+        platform: Capacitor.getPlatform(),
+      },
       lastError: null,
     });
     return { supported: false, available: false };
@@ -63,7 +60,6 @@ export async function getNativeLiveActivitiesStatus(): Promise<{
 
   try {
     const status = await LiveActivities.getStatus();
-    appLog.dev("LiveActivities status", status);
     updateLiveActivityDiagnostics({
       nativeStatus: status,
       lastAction: "status:success",
@@ -72,7 +68,6 @@ export async function getNativeLiveActivitiesStatus(): Promise<{
     });
     return status;
   } catch (error) {
-    appLog.warn("LiveActivities getStatus failed", error);
     updateLiveActivityDiagnostics({
       lastAction: "status:error",
       lastPayload: null,
@@ -91,38 +86,31 @@ export async function upsertNativeLiveActivity(args: {
   deepLink?: string | null;
 }) {
   if (!isNativeLiveActivitiesSupported()) {
-    const payload = {
-      isNativePlatform: Capacitor.isNativePlatform(),
-      platform: Capacitor.getPlatform(),
-      args,
-    };
-    console.warn("[PM] LiveActivities upsert skipped unsupported platform", payload);
     updateLiveActivityDiagnostics({
       lastAction: "upsert:unsupported-platform",
-      lastPayload: payload,
+      lastPayload: {
+        isNativePlatform: Capacitor.isNativePlatform(),
+        platform: Capacitor.getPlatform(),
+        args,
+      },
       lastError: null,
     });
     return;
   }
 
   try {
-    console.log("[PM] LiveActivities upsert:start", args);
-    appLog.dev("LiveActivities upsert", args);
     updateLiveActivityDiagnostics({
       lastAction: "upsert:start",
       lastPayload: args,
       lastError: null,
     });
     await LiveActivities.upsert(args);
-    console.log("[PM] LiveActivities upsert:done", args);
     updateLiveActivityDiagnostics({
       lastAction: "upsert:done",
       lastPayload: args,
       lastError: null,
     });
   } catch (error) {
-    console.error("[PM] LiveActivities upsert:error", error, args);
-    appLog.warn("LiveActivities upsert failed", error);
     updateLiveActivityDiagnostics({
       lastAction: "upsert:error",
       lastPayload: args,
@@ -139,38 +127,31 @@ export async function stopNativeLiveActivity(args: {
   itemId: string;
 }) {
   if (!isNativeLiveActivitiesSupported()) {
-    const payload = {
-      isNativePlatform: Capacitor.isNativePlatform(),
-      platform: Capacitor.getPlatform(),
-      args,
-    };
-    console.warn("[PM] LiveActivities stop skipped unsupported platform", payload);
     updateLiveActivityDiagnostics({
       lastAction: "stop:unsupported-platform",
-      lastPayload: payload,
+      lastPayload: {
+        isNativePlatform: Capacitor.isNativePlatform(),
+        platform: Capacitor.getPlatform(),
+        args,
+      },
       lastError: null,
     });
     return;
   }
 
   try {
-    console.log("[PM] LiveActivities stop:start", args);
-    appLog.dev("LiveActivities stop", args);
     updateLiveActivityDiagnostics({
       lastAction: "stop:start",
       lastPayload: args,
       lastError: null,
     });
     await LiveActivities.stop(args);
-    console.log("[PM] LiveActivities stop:done", args);
     updateLiveActivityDiagnostics({
       lastAction: "stop:done",
       lastPayload: args,
       lastError: null,
     });
   } catch (error) {
-    console.error("[PM] LiveActivities stop:error", error, args);
-    appLog.warn("LiveActivities stop failed", error);
     updateLiveActivityDiagnostics({
       lastAction: "stop:error",
       lastPayload: args,
@@ -184,38 +165,31 @@ export async function stopNativeLiveActivity(args: {
 
 export async function stopAllNativeLiveActivities(kind?: NativeLiveActivityKind) {
   if (!isNativeLiveActivitiesSupported()) {
-    const payload = {
-      isNativePlatform: Capacitor.isNativePlatform(),
-      platform: Capacitor.getPlatform(),
-      kind,
-    };
-    console.warn("[PM] LiveActivities stopAll skipped unsupported platform", payload);
     updateLiveActivityDiagnostics({
       lastAction: "stopAll:unsupported-platform",
-      lastPayload: payload,
+      lastPayload: {
+        isNativePlatform: Capacitor.isNativePlatform(),
+        platform: Capacitor.getPlatform(),
+        kind,
+      },
       lastError: null,
     });
     return;
   }
 
   try {
-    console.log("[PM] LiveActivities stopAll:start", kind ? { kind } : undefined);
-    appLog.dev("LiveActivities stopAll", kind ? { kind } : undefined);
     updateLiveActivityDiagnostics({
       lastAction: "stopAll:start",
       lastPayload: kind ? { kind } : null,
       lastError: null,
     });
     await LiveActivities.stopAll(kind ? { kind } : undefined);
-    console.log("[PM] LiveActivities stopAll:done", kind ? { kind } : undefined);
     updateLiveActivityDiagnostics({
       lastAction: "stopAll:done",
       lastPayload: kind ? { kind } : null,
       lastError: null,
     });
   } catch (error) {
-    console.error("[PM] LiveActivities stopAll:error", error, kind ? { kind } : undefined);
-    appLog.warn("LiveActivities stopAll failed", error);
     updateLiveActivityDiagnostics({
       lastAction: "stopAll:error",
       lastPayload: kind ? { kind } : null,

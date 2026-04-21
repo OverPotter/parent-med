@@ -7,7 +7,6 @@ final class AppViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(LiveActivitiesPlugin())
-        NSLog("[PM] LiveActivities manually registered in AppViewController")
     }
 }
 

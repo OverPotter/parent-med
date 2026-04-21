@@ -42,7 +42,7 @@ export async function syncSleepLiveActivity(
     title: child.name,
     subtitle: getKindLabel("sleep", language),
     startedAt: session.startedAt,
-    deepLink: `/children/${child.id}`,
+    deepLink: `/children?liveChild=${child.id}&liveAction=sleep`,
   });
 }
 
@@ -67,7 +67,7 @@ export async function syncFeedingLiveActivity(
     title: child.name,
     subtitle: getKindLabel("feeding", language),
     startedAt: feeding.startedAt ?? feeding.recordedAt,
-    deepLink: `/children/${child.id}/feeding`,
+    deepLink: `/children?liveChild=${child.id}&liveAction=feeding`,
   });
 }
 

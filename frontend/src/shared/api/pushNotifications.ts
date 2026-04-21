@@ -1,6 +1,5 @@
 import { apiClient } from "./client";
 import type { PushNotificationConfig, PushNotificationPreferences } from "@shared/types/api";
-import { setLiveActivityPreferencesCache } from "@shared/utils/liveActivityPreferences";
 
 interface RawPushNotificationConfig {
   enabled: boolean;
@@ -30,7 +29,7 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
   const res = await apiClient.get<RawPushNotificationPreferences>(
     "/push-notifications/preferences"
   );
-  const preferences = {
+  return {
     beforeReminderMinutes: res.data.before_reminder_minutes,
     pillboxBeforeReminderMinutes: res.data.pillbox_before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,
@@ -40,11 +39,6 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
     liveActivitySleepEnabled: res.data.live_activity_sleep_enabled,
     liveActivityFeedingEnabled: res.data.live_activity_feeding_enabled,
   };
-  setLiveActivityPreferencesCache({
-    sleepEnabled: preferences.liveActivitySleepEnabled,
-    feedingEnabled: preferences.liveActivityFeedingEnabled,
-  });
-  return preferences;
 }
 
 export async function updatePushNotificationPreferences(body: {
@@ -60,7 +54,7 @@ export async function updatePushNotificationPreferences(body: {
     "/push-notifications/preferences",
     body
   );
-  const preferences = {
+  return {
     beforeReminderMinutes: res.data.before_reminder_minutes,
     pillboxBeforeReminderMinutes: res.data.pillbox_before_reminder_minutes,
     dueReminderEnabled: res.data.due_reminder_enabled,
@@ -70,11 +64,6 @@ export async function updatePushNotificationPreferences(body: {
     liveActivitySleepEnabled: res.data.live_activity_sleep_enabled,
     liveActivityFeedingEnabled: res.data.live_activity_feeding_enabled,
   };
-  setLiveActivityPreferencesCache({
-    sleepEnabled: preferences.liveActivitySleepEnabled,
-    feedingEnabled: preferences.liveActivityFeedingEnabled,
-  });
-  return preferences;
 }
 
 export async function upsertPushSubscription(body: {

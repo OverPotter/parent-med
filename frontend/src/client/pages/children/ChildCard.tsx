@@ -104,7 +104,7 @@ export function ChildCard({
   const activeSleepActionClass = childActionSuccessClass;
 
   return (
-    <li>
+    <li data-child-card-id={child.id}>
       <ConfirmDialog
         isOpen={isStopSleepConfirmOpen && !!activeSleep}
         title={copy.childCard.stopSleepConfirmTitle}
@@ -172,6 +172,7 @@ export function ChildCard({
               <div className="grid grid-cols-2 gap-2">
                 <Link
                   to={`/children/${child.id}/feeding`}
+                  data-live-action-target={`feeding:${child.id}`}
                   onClick={(event) => {
                     event.preventDefault();
                     if (activeFeeding) {
@@ -190,6 +191,7 @@ export function ChildCard({
                 </Link>
                 <button
                   type="button"
+                  data-live-action-target={`sleep:${child.id}`}
                   onClick={() => {
                     if (activeSleep) {
                       setIsStopSleepConfirmOpen(true);
