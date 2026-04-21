@@ -7,6 +7,7 @@ from src.application.dto.push_notification import (
     PushNotificationConfigResponseDto,
     PushNotificationPreferencesResponseDto,
     PushNotificationPreferencesUpdateDto,
+    PushNotificationTestResponseDto,
     PushSubscriptionDeleteDto,
     PushSubscriptionResponseDto,
     PushSubscriptionUpsertDto,
@@ -183,7 +184,6 @@ class PushNotificationService:
             auth_key = dto.keys.auth
 
         now = datetime.now(UTC)
-
         entity = PushSubscription(
             id=existing.id if existing else uuid4(),
             account_id=account_id,
@@ -214,3 +214,32 @@ class PushNotificationService:
         if not existing or existing.account_id != account_id:
             return
         await self._repo.delete(existing.id)
+
+    async def send_test_notification(
+        self,
+        account_id: UUID,
+        scheduler,
+    ) -> PushNotificationTestResponseDto:
+        subscriptions = await self._repo.get_by_account_id(account_id)
+        if not subscriptions:
+            return PushNotificationTestResponseDto(sent=False, subscription_count=0)
+
+        payload = {
+            "title": settings.app_name,
+            "body": "Test push from Settings",
+            "url": "/settings",
+            "tag": f"push-test-{account_id}",
+            "data": {
+                "kind": "test",
+                "source": "settings",
+            },
+        }
+        sent = await scheduler._send_to_subscriptions(  # noqa: SLF001
+            subscriptions=subscriptions,
+            subscription_repo=self._repo,
+            payload=payload,
+        )
+        return PushNotificationTestResponseDto(
+            sent=sent,
+            subscription_count=len(subscriptions),
+        )

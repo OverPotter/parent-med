@@ -1,10 +1,13 @@
 import { Capacitor } from "@capacitor/core";
 import { useEffect, useLayoutEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { Keyboard } from "@capacitor/keyboard";
+import { useLocation, useNavigationType } from "react-router-dom";
 import { detectIosShell } from "@shared/hooks/useIsIosShell";
+import { scrollFieldIntoView } from "@shared/utils/focus";
 
 export function IOSRouteSnapshotSync() {
   const location = useLocation();
+  const navigationType = useNavigationType();
 
   useLayoutEffect(() => {
     if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") {
@@ -12,6 +15,9 @@ export function IOSRouteSnapshotSync() {
     }
 
     return () => {
+      if (navigationType === "REPLACE") {
+        return;
+      }
       const frame = document.querySelector(".app-shell-frame");
       if (!(frame instanceof HTMLElement)) {
         return;
@@ -33,7 +39,7 @@ export function IOSRouteSnapshotSync() {
         scrollY,
       };
     };
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, navigationType]);
 
   return null;
 }
@@ -44,8 +50,42 @@ export function IOSKeyboardViewportSync() {
       return;
     }
 
+    const html = document.documentElement;
+    const setKeyboardState = (isOpen: boolean, keyboardHeight = 0) => {
+      html.toggleAttribute("data-keyboard-open", isOpen);
+      html.style.setProperty("--app-keyboard-height", `${Math.max(0, keyboardHeight)}px`);
+    };
+
+    const handleFocusIn = (event: FocusEvent) => {
+      scrollFieldIntoView(event.target, { delayMs: 140, block: "center" });
+    };
+
+    const willShow = Keyboard.addListener("keyboardWillShow", (info) => {
+      setKeyboardState(true, info.keyboardHeight);
+      scrollFieldIntoView(document.activeElement, { delayMs: 120, block: "center" });
+    });
+    const didShow = Keyboard.addListener("keyboardDidShow", (info) => {
+      setKeyboardState(true, info.keyboardHeight);
+      scrollFieldIntoView(document.activeElement, { delayMs: 40, block: "center" });
+    });
+    const willHide = Keyboard.addListener("keyboardWillHide", () => {
+      setKeyboardState(false, 0);
+    });
+    const didHide = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardState(false, 0);
+    });
+
+    window.addEventListener("focusin", handleFocusIn);
+
     return () => {
+      window.removeEventListener("focusin", handleFocusIn);
+      void Promise.all([willShow, didShow, willHide, didHide]).then((listeners) => {
+        listeners.forEach((listener) => {
+          void listener.remove();
+        });
+      });
       document.documentElement.removeAttribute("data-keyboard-open");
+      document.documentElement.style.removeProperty("--app-keyboard-height");
     };
   }, []);
 

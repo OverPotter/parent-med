@@ -7,27 +7,67 @@ import type { Family, FamilyMember } from "@shared/types/api";
 import { toFamily, toFamilyMember } from "@shared/types/transform";
 
 export async function fetchFamilies(): Promise<Family[]> {
-  const res = await apiClient.get<Array<{ id: string; name: string }>>("/families");
+  const res = await apiClient.get<
+    Array<{ id: string; name: string; cabinet_member_account_ids?: string[] | null }>
+  >("/families");
   return res.data.map(toFamily);
 }
 
 export async function fetchFamily(id: string): Promise<Family> {
-  const res = await apiClient.get<{ id: string; name: string }>(`/families/${id}`);
+  const res = await apiClient.get<{
+    id: string;
+    name: string;
+    cabinet_member_account_ids?: string[] | null;
+  }>(`/families/${id}`);
   return toFamily(res.data);
 }
 
 export async function createFamily(name: string): Promise<Family> {
-  const res = await apiClient.post<{ id: string; name: string }>("/families", { name });
+  const res = await apiClient.post<{
+    id: string;
+    name: string;
+    cabinet_member_account_ids?: string[] | null;
+  }>("/families", { name });
   return toFamily(res.data);
 }
 
 export async function updateFamily(id: string, name: string): Promise<Family> {
-  const res = await apiClient.patch<{ id: string; name: string }>(`/families/${id}`, { name });
+  const res = await apiClient.patch<{
+    id: string;
+    name: string;
+    cabinet_member_account_ids?: string[] | null;
+  }>(`/families/${id}`, { name });
   return toFamily(res.data);
 }
 
 export async function updateMyFamily(name: string): Promise<Family> {
-  const res = await apiClient.patch<{ id: string; name: string }>("/families/me", { name });
+  const res = await apiClient.patch<{
+    id: string;
+    name: string;
+    cabinet_member_account_ids?: string[] | null;
+  }>("/families/me", { name });
+  return toFamily(res.data);
+}
+
+export async function fetchMyFamily(): Promise<Family> {
+  const res = await apiClient.get<{
+    id: string;
+    name: string;
+    cabinet_member_account_ids?: string[] | null;
+  }>("/families/me");
+  return toFamily(res.data);
+}
+
+export async function updateMyFamilyCabinetRecipients(
+  cabinetMemberAccountIds: string[]
+): Promise<Family> {
+  const res = await apiClient.patch<{
+    id: string;
+    name: string;
+    cabinet_member_account_ids?: string[] | null;
+  }>("/families/me", {
+    cabinet_member_account_ids: cabinetMemberAccountIds,
+  });
   return toFamily(res.data);
 }
 

@@ -1,6 +1,2 @@
 export { HistoryInsightsPreview } from "./historySummary";
-export {
-  HistoryEpisodeCard,
-  HistoryEpisodeDetailScreen,
-  HistoryEpisodeInsightsScreen,
-} from "./historyEpisodeScreens";
+export { HistoryEpisodeCard, HistoryEpisodeInsightsScreen } from "./historyEpisodeScreens";

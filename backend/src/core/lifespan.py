@@ -28,6 +28,12 @@ def get_async_session_factory() -> async_sessionmaker[AsyncSession]:
     return _async_session_factory
 
 
+def get_push_scheduler() -> PushNotificationScheduler:
+    if _push_scheduler is None:
+        raise RuntimeError("Push scheduler not initialized. Use lifespan context.")
+    return _push_scheduler
+
+
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     if _async_session_factory is None:
         raise RuntimeError("Session factory not initialized.")

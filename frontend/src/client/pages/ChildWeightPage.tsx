@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import {
@@ -8,6 +8,8 @@ import {
   fetchWeightEntriesByChildId,
 } from "@shared/api/weightEntries";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { MeasurementCard } from "@client/components/MeasurementCard";
 import { getChildrenCopy } from "@client/i18n/children";
@@ -19,7 +21,10 @@ export function ChildWeightPage() {
   const copy = getChildrenCopy(language).childProfile;
   const common = getChildrenCopy(language).common;
   const { childId } = useParams<{ childId: string }>();
+  const isIosShell = useIsIosShell();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [weightValue, setWeightValue] = useState("");
   const parsedWeight = parseMeasurement(weightValue);
 
@@ -60,15 +65,26 @@ export function ChildWeightPage() {
   }
 
   return (
-    <div className="child-profile-shell space-y-6">
+    <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-6">
+      <IosEdgeBackGesture
+        isEnabled={isIosShell}
+        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        targetRef={rootRef}
+      />
       <ChildSectionTopBar
-        backHref={`/children/${child.id}`}
+        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
         title={`${copy.weightCardTitle} · ${child.name}`}
         hint={copy.measurementsSectionSubtitle}
       />
 
-      <div className="mx-auto w-full max-w-2xl space-y-3">
+      <div
+        className="mx-auto w-full max-w-2xl space-y-3 pt-2"
+        style={{
+          scrollPaddingBottom:
+            "calc(7.5rem + var(--app-keyboard-height, 0px) + max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom))))",
+        }}
+      >
         <MeasurementCard
           language={language}
           latestLabel={language === "ru" ? "Текущий вес" : "Current weight"}

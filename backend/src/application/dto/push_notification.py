@@ -99,3 +99,10 @@ class PushSubscriptionResponseDto(ResponseBase):
     device_label: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class PushNotificationTestResponseDto(ResponseBase):
+    """Результат отправки тестового push."""
+
+    sent: bool
+    subscription_count: int

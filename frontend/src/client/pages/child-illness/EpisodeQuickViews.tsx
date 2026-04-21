@@ -1,9 +1,13 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type {
   AdministrationEvent,
   EpisodeMedicationPlan,
+  FamilyMember,
   HouseholdMedicine,
   IllnessComment,
+  IllnessEpisode,
   WeightEntry,
 } from "@shared/types/api";
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
@@ -21,6 +25,146 @@ import {
 } from "./shared";
 import type { EpisodeTimelineItem } from "./timeline";
 import { EpisodeTimelineList } from "./timeline";
+
+function EpisodeReminderRecipientsCard({
+  language,
+  episode,
+  familyMembers,
+  isPending,
+  onSelectAll,
+  onChangeSelection,
+}: {
+  language: "ru" | "en";
+  episode: IllnessEpisode;
+  familyMembers: FamilyMember[];
+  isPending: boolean;
+  onSelectAll: () => void;
+  onChangeSelection: (memberIds: string[]) => void;
+}) {
+  const [selectedIds, setSelectedIds] = useState<string[]>(() => episode.memberAccountIds ?? []);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (isPending) {
+      return;
+    }
+    setSelectedIds(episode.memberAccountIds ?? []);
+  }, [episode.memberAccountIds, isPending]);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        disabled={isPending}
+        className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
+      >
+        Push
+      </button>
+
+      <OverlayDialog
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        placement="bottom"
+        zIndexClassName="z-[890]"
+        backdropAriaLabel={
+          language === "ru" ? "Закрыть выбор получателей push" : "Close push recipients"
+        }
+        containerClassName="flex items-end"
+        backdropClassName="bg-[rgba(15,23,42,0.32)]"
+      >
+        <div
+          data-ios-disable-back-swipe="true"
+          className="relative z-[1] w-full rounded-t-[30px] bg-background px-4 pb-[max(1.25rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))] pt-4 shadow-[0_-24px_64px_rgba(15,23,42,0.24)] sm:mx-auto sm:max-w-xl"
+        >
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
+          <div className="space-y-1.5">
+            <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
+              {language === "ru" ? "Кому приходят push" : "Who gets push"}
+            </h2>
+            <p className="text-sm leading-5 text-muted">
+              {language === "ru"
+                ? "Выбор действует для всех напоминаний внутри этого эпизода."
+                : "This applies to all reminders inside the current episode."}
+            </p>
+          </div>
+
+          <div
+            className={`${illnessPanelSoftClass} mt-4 max-h-[min(23rem,58vh)] overflow-y-auto p-2.5`}
+          >
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedIds([]);
+                  onSelectAll();
+                }}
+                disabled={isPending}
+                className={[
+                  "soft-choice-row w-full",
+                  selectedIds.length === 0 ? "soft-choice-row-active" : "",
+                  isPending ? "cursor-not-allowed opacity-60" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <span className="grid min-w-0 gap-0.5 text-left">
+                  <span className="min-w-0 text-sm font-semibold tracking-[-0.02em] text-foreground">
+                    {language === "ru" ? "Вся семья" : "Whole family"}
+                  </span>
+                  <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
+                    {language === "ru"
+                      ? "Напоминания придут всем участникам семьи с включёнными push."
+                      : "Reminders go to all family members with push enabled."}
+                  </span>
+                </span>
+                <span className="soft-choice-check">{selectedIds.length === 0 ? "✓" : null}</span>
+              </button>
+
+              {familyMembers.map((member) => {
+                const selected = selectedIds.includes(member.id);
+                const label = member.displayName || member.login || member.id;
+                return (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedIds((current) => {
+                        const nextIds = current.includes(member.id)
+                          ? current.filter((id) => id !== member.id)
+                          : [...current, member.id];
+                        onChangeSelection(nextIds);
+                        return nextIds;
+                      });
+                    }}
+                    disabled={isPending}
+                    className={[
+                      "soft-choice-row w-full",
+                      selected ? "soft-choice-row-active" : "",
+                      isPending ? "cursor-not-allowed opacity-60" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    <span className="grid min-w-0 gap-0.5 text-left">
+                      <span className="min-w-0 truncate text-sm font-semibold tracking-[-0.02em] text-foreground">
+                        {label}
+                      </span>
+                      <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
+                        {member.relationshipLabel || member.login || member.email || member.id}
+                      </span>
+                    </span>
+                    <span className="soft-choice-check">{selected ? "✓" : null}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </OverlayDialog>
+    </>
+  );
+}
 
 export function TemperatureQuickView(props: {
   language: "ru" | "en";
@@ -304,7 +448,7 @@ export function CommentQuickView(props: {
               }
               className={illnessCompactTextareaClass}
             />
-            <div className="flex flex-wrap gap-2">
+            <div className="app-form-action-bar flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={onSubmit}
@@ -475,22 +619,32 @@ export function TimelineQuickView(props: {
 export function ReminderListQuickView(props: {
   language: "ru" | "en";
   childId: string;
+  episode: IllnessEpisode;
   plans: EpisodeMedicationPlan[];
   medicines: HouseholdMedicine[];
+  familyMembers: FamilyMember[];
   administrations: AdministrationEvent[];
   onOpen: (planId: string) => void;
   onTakeDose: (plan: EpisodeMedicationPlan) => void;
   isSubmittingAdministration: boolean;
+  isUpdatingRecipients: boolean;
+  onSelectAllRecipients: () => void;
+  onChangeRecipients: (memberIds: string[]) => void;
 }) {
   const {
     language,
     childId,
+    episode,
     plans,
     medicines,
+    familyMembers,
     administrations,
     onOpen,
     onTakeDose,
     isSubmittingAdministration,
+    isUpdatingRecipients,
+    onSelectAllRecipients,
+    onChangeRecipients,
   } = props;
   return (
     <div className="min-w-0 space-y-5">
@@ -502,12 +656,22 @@ export function ReminderListQuickView(props: {
             : "Dose plans for the current tracking session."
         }
         action={
-          <Link
-            to={`/children/${childId}/illness?focus=reminder-create`}
-            className={appPillActionClass}
-          >
-            {language === "ru" ? "Добавить" : "Add"}
-          </Link>
+          <div className="flex items-center gap-2">
+            <EpisodeReminderRecipientsCard
+              language={language}
+              episode={episode}
+              familyMembers={familyMembers}
+              isPending={isUpdatingRecipients}
+              onSelectAll={onSelectAllRecipients}
+              onChangeSelection={onChangeRecipients}
+            />
+            <Link
+              to={`/children/${childId}/illness?focus=reminder-create`}
+              className={appPillActionClass}
+            >
+              {language === "ru" ? "Добавить" : "Add"}
+            </Link>
+          </div>
         }
       />
 
@@ -526,15 +690,18 @@ export function ReminderListQuickView(props: {
 export function ReminderDetailQuickView(props: {
   language: "ru" | "en";
   childId: string;
+  episode: IllnessEpisode;
   selectedReminderItem: MedicationPlanPriorityItem | null;
   latestWeight: WeightEntry | null;
   isReminderCabinetPickerOpen: boolean;
   isReminderEditing: boolean;
   editingReminderName: string | null;
   medicines: HouseholdMedicine[];
+  familyMembers: FamilyMember[];
   isSubmittingAdministration: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
+  isUpdatingRecipients: boolean;
   errorDetail: string | null;
   onEditingChange: (nextIsEditing: boolean, planName: string | null) => void;
   onTakeDose: (plan: EpisodeMedicationPlan) => void;
@@ -552,24 +719,31 @@ export function ReminderDetailQuickView(props: {
     }
   ) => void;
   onDelete: (planId: string) => void;
+  onSelectAllRecipients: () => void;
+  onChangeRecipients: (memberIds: string[]) => void;
 }) {
   const {
     language,
     childId,
+    episode,
     selectedReminderItem,
     latestWeight,
     isReminderCabinetPickerOpen,
     isReminderEditing,
     editingReminderName,
     medicines,
+    familyMembers,
     isSubmittingAdministration,
     isUpdating,
     isDeleting,
+    isUpdatingRecipients,
     errorDetail,
     onEditingChange,
     onTakeDose,
     onUpdate,
     onDelete,
+    onSelectAllRecipients,
+    onChangeRecipients,
   } = props;
 
   if (!selectedReminderItem) {
@@ -585,6 +759,7 @@ export function ReminderDetailQuickView(props: {
           action={
             <Link
               to={`/children/${childId}/illness?focus=reminders`}
+              replace
               className={appPillActionClass}
             >
               {language === "ru" ? "К списку" : "Back"}
@@ -622,12 +797,23 @@ export function ReminderDetailQuickView(props: {
                 : "Selected reminder details and history."
           }
           action={
-            <Link
-              to={`/children/${childId}/illness?focus=reminders`}
-              className={appPillActionClass}
-            >
-              {language === "ru" ? "К списку" : "Back"}
-            </Link>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Link
+                to={`/children/${childId}/illness?focus=reminders`}
+                replace
+                className={appPillActionClass}
+              >
+                {language === "ru" ? "К списку" : "Back"}
+              </Link>
+              <EpisodeReminderRecipientsCard
+                language={language}
+                episode={episode}
+                familyMembers={familyMembers}
+                isPending={isUpdatingRecipients}
+                onSelectAll={onSelectAllRecipients}
+                onChangeSelection={onChangeRecipients}
+              />
+            </div>
           }
         />
       ) : null}
@@ -657,11 +843,14 @@ export function ReminderDetailQuickView(props: {
 export function ReminderCreateQuickView(props: {
   language: "ru" | "en";
   childId: string;
+  episode: IllnessEpisode;
   medicines: HouseholdMedicine[];
+  familyMembers: FamilyMember[];
   latestWeight: WeightEntry | null;
   isReminderCabinetPickerOpen: boolean;
   submitLabel: string;
   isPending: boolean;
+  isUpdatingRecipients: boolean;
   errorDetail: string | null;
   onSubmit: (payload: {
     householdMedicineId?: string | null;
@@ -674,18 +863,25 @@ export function ReminderCreateQuickView(props: {
     notes?: string | null;
   }) => void;
   onCancel: () => void;
+  onSelectAllRecipients: () => void;
+  onChangeRecipients: (memberIds: string[]) => void;
 }) {
   const {
     language,
     childId,
+    episode,
     medicines,
+    familyMembers,
     latestWeight,
     isReminderCabinetPickerOpen,
     submitLabel,
     isPending,
+    isUpdatingRecipients,
     errorDetail,
     onSubmit,
     onCancel,
+    onSelectAllRecipients,
+    onChangeRecipients,
   } = props;
   return (
     <div className={isReminderCabinetPickerOpen ? "min-w-0 overflow-hidden" : "min-w-0 space-y-5"}>
@@ -693,6 +889,16 @@ export function ReminderCreateQuickView(props: {
         <SectionTitle
           title={language === "ru" ? "Новое напоминание" : "New reminder"}
           subtitle={language === "ru" ? "Настройте схему приёма." : "Set up the dosing schedule."}
+          action={
+            <EpisodeReminderRecipientsCard
+              language={language}
+              episode={episode}
+              familyMembers={familyMembers}
+              isPending={isUpdatingRecipients}
+              onSelectAll={onSelectAllRecipients}
+              onChangeSelection={onChangeRecipients}
+            />
+          }
         />
       ) : null}
 

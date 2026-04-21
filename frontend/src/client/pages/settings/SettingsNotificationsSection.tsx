@@ -7,11 +7,15 @@ export function SettingsNotificationsSection({
   language,
   isPushEnabled,
   pushError,
+  showTestPushAction,
+  testPushStatus,
+  isTestPushPending,
   isNativePushBlocked,
   isPushConfigLoading,
   pushConfigEnabled,
   isGlobalPushSwitchDisabled,
   onGlobalPushSwitchToggle,
+  onSendTestPush,
   onOpenSystemSettingsDialog,
   childrenEarlyReminderEnabled,
   pillboxEarlyReminderEnabled,
@@ -31,11 +35,15 @@ export function SettingsNotificationsSection({
   language: AppLanguage;
   isPushEnabled: boolean;
   pushError: string | null;
+  showTestPushAction: boolean;
+  testPushStatus: string | null;
+  isTestPushPending: boolean;
   isNativePushBlocked: boolean;
   isPushConfigLoading: boolean;
   pushConfigEnabled?: boolean;
   isGlobalPushSwitchDisabled: boolean;
   onGlobalPushSwitchToggle: () => void;
+  onSendTestPush: () => void;
   onOpenSystemSettingsDialog: () => void;
   childrenEarlyReminderEnabled: boolean;
   pillboxEarlyReminderEnabled: boolean;
@@ -97,6 +105,45 @@ export function SettingsNotificationsSection({
           {tSettings(language, "pushServerMissing")}
         </div>
       ) : null}
+      {showTestPushAction ? (
+        <SettingsRow
+          separated={isPushEnabled}
+          align="start"
+          actions={
+            <div className="w-full">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    {language === "ru" ? "Тестовый push" : "Test push"}
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-muted">
+                    {language === "ru"
+                      ? "Dev-only отправка уведомления на текущие подписки аккаунта."
+                      : "Dev-only notification to the current account subscriptions."}
+                  </p>
+                  {testPushStatus ? (
+                    <p className="mt-2 text-sm leading-6 text-muted">{testPushStatus}</p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={onSendTestPush}
+                  disabled={isTestPushPending || !isPushEnabled}
+                  className={`${childActionSecondaryClass} min-h-[2.6rem] px-4 text-[0.84rem] disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  {isTestPushPending
+                    ? language === "ru"
+                      ? "Отправляем..."
+                      : "Sending..."
+                    : language === "ru"
+                      ? "Отправить"
+                      : "Send"}
+                </button>
+              </div>
+            </div>
+          }
+        />
+      ) : null}
       {isPushEnabled ? (
         <>
           <ReminderCard
@@ -129,25 +176,23 @@ export function SettingsNotificationsSection({
             onOptionSelect={onPillboxMinutesChange}
             separated
           />
+          <ReminderCard
+            language={language}
+            title={tSettings(language, "cabinetReminders")}
+            hint={tSettings(language, "cabinetRemindersSoftText")}
+            enabled={cabinetEarlyReminderEnabled}
+            disabled={isPushPreferencesLoading || isUpdatePending}
+            selectedValue={selectedCabinetReminderDays ? String(selectedCabinetReminderDays) : ""}
+            onToggle={onCabinetToggle}
+            options={[
+              { key: "10", label: tSettings(language, "days10") },
+              { key: "7", label: tSettings(language, "days7") },
+              { key: "3", label: tSettings(language, "days3") },
+            ]}
+            onOptionSelect={(value) => onCabinetReminderSelect(Number(value) as 10 | 7 | 3)}
+            separated
+          />
         </>
-      ) : null}
-      {isPushEnabled ? (
-        <ReminderCard
-          language={language}
-          title={tSettings(language, "cabinetReminders")}
-          hint={tSettings(language, "cabinetRemindersSoftText")}
-          enabled={cabinetEarlyReminderEnabled}
-          disabled={isPushPreferencesLoading || isUpdatePending}
-          selectedValue={selectedCabinetReminderDays ? String(selectedCabinetReminderDays) : ""}
-          onToggle={onCabinetToggle}
-          options={[
-            { key: "10", label: tSettings(language, "days10") },
-            { key: "7", label: tSettings(language, "days7") },
-            { key: "3", label: tSettings(language, "days3") },
-          ]}
-          onOptionSelect={(value) => onCabinetReminderSelect(Number(value) as 10 | 7 | 3)}
-          separated
-        />
       ) : null}
     </SettingsSection>
   );

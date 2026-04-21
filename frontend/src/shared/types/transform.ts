@@ -26,6 +26,7 @@ import type {
 interface RawFamily {
   id: string;
   name: string;
+  cabinet_member_account_ids?: string[] | null;
 }
 
 interface RawAccount {
@@ -134,6 +135,21 @@ interface RawHouseholdMedicine {
   opened_expires_in_days: number | null;
 }
 
+interface RawEpisodeMedicationPlan {
+  id: string;
+  episode_id: string;
+  household_medicine_id: string | null;
+  custom_medicine_name: string | null;
+  dose_amount: string;
+  min_interval_minutes: number;
+  max_doses_per_day: number | null;
+  weight_kg: number | null;
+  dose_mg_per_kg: number | null;
+  notes: string | null;
+  member_account_ids: string[] | null;
+  created_at: string;
+}
+
 interface RawIllnessEpisode {
   id: string;
   child_id: string;
@@ -142,6 +158,7 @@ interface RawIllnessEpisode {
   status: string;
   medication_mode: string;
   note: string | null;
+  member_account_ids: string[] | null;
   closed_at: string | null;
 }
 
@@ -194,22 +211,12 @@ interface RawFamilyInvitePreview {
   expires_at: string;
 }
 
-interface RawEpisodeMedicationPlan {
-  id: string;
-  episode_id: string;
-  household_medicine_id: string | null;
-  custom_medicine_name: string | null;
-  dose_amount: string;
-  min_interval_minutes: number;
-  max_doses_per_day: number | null;
-  weight_kg: number | null;
-  dose_mg_per_kg: number | null;
-  notes: string | null;
-  created_at: string;
-}
-
 export function toFamily(r: RawFamily): Family {
-  return { id: r.id, name: r.name };
+  return {
+    id: r.id,
+    name: r.name,
+    cabinetMemberAccountIds: r.cabinet_member_account_ids ?? [],
+  };
 }
 
 export function toAccount(r: RawAccount): Account {
@@ -349,6 +356,7 @@ export function toIllnessEpisode(r: RawIllnessEpisode): IllnessEpisode {
     status: r.status,
     medicationMode: r.medication_mode,
     note: r.note ?? null,
+    memberAccountIds: r.member_account_ids ?? [],
     closedAt: r.closed_at ?? null,
   };
 }
@@ -424,6 +432,7 @@ export function toEpisodeMedicationPlan(r: RawEpisodeMedicationPlan): EpisodeMed
     weightKg: r.weight_kg ?? null,
     doseMgPerKg: r.dose_mg_per_kg ?? null,
     notes: r.notes ?? null,
+    memberAccountIds: r.member_account_ids ?? [],
     createdAt: r.created_at,
   };
 }

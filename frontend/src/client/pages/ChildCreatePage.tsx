@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createChild } from "@shared/api/children";
@@ -8,11 +8,14 @@ import { trackChildCreated } from "@shared/analytics";
 import { DateField } from "@shared/components/DateField";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useAppStore } from "@shared/store/useAppStore";
 import { getLocalIsoDate } from "@shared/utils/date";
 import { normalizeIsoDateInput } from "@shared/utils/dateInput";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
+import { scrollFieldIntoView } from "@shared/utils/focus";
 
 type ChildProfileDetails = {
   babyModeEnabled?: boolean;
@@ -30,6 +33,7 @@ export function ChildCreatePage() {
   const common = getChildrenCopy(language).common;
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const navigate = useNavigate();
+  const isIosShell = useIsIosShell();
   const queryClient = useQueryClient();
 
   const [name, setName] = useState("");
@@ -47,6 +51,21 @@ export function ChildCreatePage() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const parsedWeight = parseMeasurement(weightValue);
   const parsedHeight = parseMeasurement(heightValue);
+  const pageRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page) {
+      return;
+    }
+
+    const handleFocusIn = (event: FocusEvent) => {
+      scrollFieldIntoView(event.target, { delayMs: 120, block: "center" });
+    };
+
+    page.addEventListener("focusin", handleFocusIn);
+    return () => page.removeEventListener("focusin", handleFocusIn);
+  }, []);
 
   const createMutation = useMutation({
     mutationFn: ({
@@ -144,15 +163,27 @@ export function ChildCreatePage() {
       ?.detail ?? null;
 
   return (
-    <div className="child-profile-shell space-y-6">
+    <div
+      ref={pageRef}
+      className="child-profile-shell min-h-[100dvh] space-y-6"
+      style={{
+        scrollPaddingBottom:
+          "calc(7.5rem + var(--app-keyboard-height, 0px) + max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom))))",
+      }}
+    >
+      <IosEdgeBackGesture
+        isEnabled={isIosShell}
+        onBack={() => navigate("/children", { replace: true })}
+        targetRef={pageRef}
+      />
       <ChildSectionTopBar
-        backHref="/children"
+        onBack={() => navigate("/children", { replace: true })}
         backLabel={language === "ru" ? "← К детям" : "← Back to children"}
         title={`${copy.formTitle} · ${copy.title}`}
         hint={copy.formSubtitle}
       />
 
-      <Surface className="app-section-surface mx-auto w-full max-w-2xl">
+      <Surface className="app-section-surface mx-auto w-full max-w-2xl pt-2">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
             <label className="min-w-0">
@@ -331,21 +362,23 @@ export function ChildCreatePage() {
             ) : null}
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={() => navigate("/children")}
-              className="soft-pill app-profile-action min-h-[2.5rem] w-full sm:w-auto"
-            >
-              {copy.cancel}
-            </button>
-            <button
-              type="submit"
-              disabled={createMutation.isPending || !name.trim()}
-              className="soft-pill-warning app-profile-action app-profile-action--active min-h-[2.5rem] w-full disabled:opacity-50 sm:w-auto"
-            >
-              {createMutation.isPending ? copy.saving : copy.addButtonShort}
-            </button>
+          <div className="app-form-action-bar border-t border-border/70 pt-4">
+            <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end">
+              <button
+                type="button"
+                onClick={() => navigate("/children")}
+                className="soft-pill app-profile-action min-h-[2.7rem] w-full sm:min-h-[2.5rem] sm:w-auto"
+              >
+                {copy.cancel}
+              </button>
+              <button
+                type="submit"
+                disabled={createMutation.isPending || !name.trim()}
+                className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.7rem] w-full disabled:opacity-50 sm:min-h-[2.5rem] sm:w-auto"
+              >
+                {createMutation.isPending ? copy.saving : copy.addButtonShort}
+              </button>
+            </div>
           </div>
 
           {(validationError || apiError) && (

@@ -3,9 +3,13 @@ from uuid import uuid4
 
 import pytest
 
-from src.application.dto.family import FamilyMemberProfileUpdateDto, FamilyMemberUpdateDto
+from src.application.dto.family import (
+    FamilyMemberProfileUpdateDto,
+    FamilyMemberUpdateDto,
+    FamilyUpdateDto,
+)
 from src.application.services.family_service import FamilyService
-from src.core.exceptions import ValidationError
+from src.core.exceptions import ForbiddenError, ValidationError
 from src.domain.entities.account import Account
 from src.domain.entities.family import Family
 
@@ -231,3 +235,82 @@ async def test_member_can_update_own_profile() -> None:
     assert updated.display_name == "Папа Антон"
     assert updated.relationship_label == "папа"
     assert updated.phone == "+375291234567"
+
+
+@pytest.mark.asyncio
+async def test_update_family_saves_cabinet_recipients() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        login="mama",
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="owner",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    adult = Account(
+        id=uuid4(),
+        login="papa",
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="adult",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, adult]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    updated = await service.update(
+        family.id,
+        dto=FamilyUpdateDto(cabinet_member_account_ids=[adult.id]),
+    )
+
+    assert updated.cabinet_member_account_ids == [adult.id]
+
+
+@pytest.mark.asyncio
+async def test_update_family_rejects_foreign_cabinet_recipient() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        login="mama",
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="owner",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    foreign_member_id = uuid4()
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    with pytest.raises(ForbiddenError, match="Нельзя выбрать получателей из другой семьи"):
+        await service.update(
+            family.id,
+            dto=FamilyUpdateDto(cabinet_member_account_ids=[foreign_member_id]),
+        )

@@ -47,14 +47,33 @@ class StubChildRepository:
         return self.child if id == self.child.id else None
 
 
+class StubAccount:
+    def __init__(self, id):  # noqa: ANN001
+        self.id = id
+
+
+class StubAccountRepository:
+    def __init__(self, account_ids) -> None:  # noqa: ANN001
+        self.accounts = [StubAccount(account_id) for account_id in account_ids]
+
+    async def list_by_family_id(self, family_id):  # noqa: ANN001
+        return self.accounts
+
+
 def make_service(
     entity: IllnessEpisode,
     child: Child,
+    account_ids=None,  # noqa: ANN001
 ) -> tuple[IllnessEpisodeService, StubIllnessEpisodeRepository]:
     repo = StubIllnessEpisodeRepository(entity)
     service = IllnessEpisodeService(
         episode_repo=repo,
         child_repo=StubChildRepository(child),
+        account_repo=(
+            StubAccountRepository(account_ids)
+            if account_ids is not None
+            else None
+        ),
     )
     return service, repo
 
@@ -149,4 +168,58 @@ async def test_update_rejects_foreign_family() -> None:
             entity.id,
             IllnessEpisodeUpdateDto(note="Новая заметка"),
             uuid4(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_saves_episode_recipients() -> None:
+    child = Child(id=uuid4(), family_id=uuid4(), name="Маша", birth_date=date(2021, 1, 1))
+    member_id = uuid4()
+    entity = IllnessEpisode(
+        id=uuid4(),
+        child_id=child.id,
+        started_at=date(2026, 3, 10),
+        title="ОРВИ",
+        status="active",
+        medication_mode="guided",
+        note=None,
+        closed_at=None,
+        deleted_at=None,
+    )
+    service, repo = make_service(entity, child, account_ids=[member_id])
+
+    result = await service.update(
+        entity.id,
+        IllnessEpisodeUpdateDto(member_account_ids=[member_id]),
+        child.family_id,
+    )
+
+    assert result.member_account_ids == [member_id]
+    assert repo.updated is not None
+    assert repo.updated.member_account_ids == [member_id]
+
+
+@pytest.mark.asyncio
+async def test_update_rejects_episode_recipients_from_other_family() -> None:
+    child = Child(id=uuid4(), family_id=uuid4(), name="Маша", birth_date=date(2021, 1, 1))
+    allowed_member_id = uuid4()
+    foreign_member_id = uuid4()
+    entity = IllnessEpisode(
+        id=uuid4(),
+        child_id=child.id,
+        started_at=date(2026, 3, 10),
+        title="ОРВИ",
+        status="active",
+        medication_mode="guided",
+        note=None,
+        closed_at=None,
+        deleted_at=None,
+    )
+    service, _ = make_service(entity, child, account_ids=[allowed_member_id])
+
+    with pytest.raises(ForbiddenError, match="Нельзя выбрать получателей из другой семьи"):
+        await service.update(
+            entity.id,
+            IllnessEpisodeUpdateDto(member_account_ids=[foreign_member_id]),
+            child.family_id,
         )

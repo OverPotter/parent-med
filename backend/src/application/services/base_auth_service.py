@@ -53,7 +53,11 @@ class BaseAuthService(ABC):
         )
 
     def _family_to_response(self, entity: Family) -> FamilyResponseDto:
-        return FamilyResponseDto(id=entity.id, name=entity.name)
+        return FamilyResponseDto(
+            id=entity.id,
+            name=entity.name,
+            cabinet_member_account_ids=list(entity.cabinet_member_account_ids),
+        )
 
     @abstractmethod
     async def signup(self, dto: RegisterDto) -> AuthResponseDto:

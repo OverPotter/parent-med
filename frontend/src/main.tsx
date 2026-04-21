@@ -59,10 +59,6 @@ if (!Capacitor.isNativePlatform() && import.meta.env.PROD) {
   });
 }
 
-appLog.info(
-  `Старт UI: ${import.meta.env.MODE}, host=${typeof window !== "undefined" ? window.location.host : ""}`
-);
-
 if (typeof window !== "undefined") {
   const handleChunkRecovery = () => {
     const reloadKey = "pm_chunk_recovery_reload_once";

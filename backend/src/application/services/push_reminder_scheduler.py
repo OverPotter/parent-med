@@ -36,6 +36,7 @@ from src.infrastructure.database.repositories.child_repository import SqlChildRe
 from src.infrastructure.database.repositories.episode_medication_plan_repository import (
     SqlEpisodeMedicationPlanRepository,
 )
+from src.infrastructure.database.repositories.family_repository import SqlFamilyRepository
 from src.infrastructure.database.repositories.household_medicine_repository import (
     SqlHouseholdMedicineRepository,
 )
@@ -391,8 +392,21 @@ class PushNotificationScheduler:
                 if not child:
                     continue
 
-                account = await account_repo.get_by_family_id(child.family_id)
-                if not account:
+                family_accounts = await account_repo.list_by_family_id(child.family_id)
+                if not family_accounts:
+                    continue
+
+                selected_account_ids = list(episode.member_account_ids or [])
+                if not selected_account_ids:
+                    selected_account_ids = list(plan.member_account_ids or [])
+                if selected_account_ids:
+                    selected_id_set = set(selected_account_ids)
+                    accounts = [
+                        account for account in family_accounts if account.id in selected_id_set
+                    ]
+                else:
+                    accounts = family_accounts
+                if not accounts:
                     continue
 
                 medicine = None
@@ -440,126 +454,154 @@ class PushNotificationScheduler:
                 next_allowed_at = last_administration.administered_at + timedelta(
                     minutes=plan.min_interval_minutes
                 )
-
-                subscriptions = await subscription_repo.get_by_account_id(account.id)
-                if not subscriptions:
-                    continue
-
-                preferred_before_minutes = (
-                    account.push_before_reminder_minutes
-                    if account.push_before_reminder_minutes is not None
-                    else DEFAULT_REMINDER_BEFORE_MINUTES
-                )
-                language = _normalize_language(account.preferred_language)
                 next_allowed_local_label = next_allowed_at.astimezone(self._timezone).strftime(
                     "%H:%M"
                 )
-                reminder_before_minutes = min(
-                    preferred_before_minutes,
-                    max(plan.min_interval_minutes - 1, 0),
-                )
-                if reminder_before_minutes > 0:
-                    remind_at = next_allowed_at - timedelta(minutes=reminder_before_minutes)
+                sent_before = False
+                sent_due = False
+                sent_overdue = False
+
+                for account in accounts:
+                    subscriptions = await subscription_repo.get_by_account_id(account.id)
+                    if not subscriptions:
+                        continue
+
+                    preferred_before_minutes = (
+                        account.push_before_reminder_minutes
+                        if account.push_before_reminder_minutes is not None
+                        else DEFAULT_REMINDER_BEFORE_MINUTES
+                    )
+                    language = _normalize_language(account.preferred_language)
+                    reminder_before_minutes = min(
+                        preferred_before_minutes,
+                        max(plan.min_interval_minutes - 1, 0),
+                    )
+
+                    if reminder_before_minutes > 0:
+                        remind_at = next_allowed_at - timedelta(minutes=reminder_before_minutes)
+                        if (
+                            remind_at <= now < next_allowed_at
+                            and plan.last_before_notification_for_at != next_allowed_at
+                        ):
+                            payload = {
+                                "title": (
+                                    (
+                                        f"In {reminder_before_minutes} min: "
+                                        f"{medicine_name} for {child.name}"
+                                    )
+                                    if language == "en"
+                                    else (
+                                        f"Через {reminder_before_minutes} мин: "
+                                        f"{medicine_name} для {child.name}"
+                                    )
+                                ),
+                                "body": _format_before_body(
+                                    child.name,
+                                    medicine_name,
+                                    plan.dose_amount,
+                                    reminder_before_minutes,
+                                    next_allowed_local_label,
+                                    language,
+                                ),
+                                "url": "/illnesses/active",
+                                "tag": f"plan-before-{plan.id}-{int(next_allowed_at.timestamp())}",
+                                "data": {
+                                    "childId": str(child.id),
+                                    "episodeId": str(episode.id),
+                                    "planId": str(plan.id),
+                                },
+                            }
+                            sent_before = (
+                                await self._send_to_subscriptions(
+                                    subscriptions=subscriptions,
+                                    subscription_repo=subscription_repo,
+                                    payload=payload,
+                                )
+                                or sent_before
+                            )
+
                     if (
-                        remind_at <= now < next_allowed_at
-                        and plan.last_before_notification_for_at != next_allowed_at
+                        now >= next_allowed_at
+                        and plan.last_due_notification_for_at != next_allowed_at
                     ):
                         payload = {
                             "title": (
-                                (
-                                    f"In {reminder_before_minutes} min: "
-                                    f"{medicine_name} for {child.name}"
-                                )
+                                f"Time to give {medicine_name} to {child.name}"
                                 if language == "en"
-                                else (
-                                    f"Через {reminder_before_minutes} мин: "
-                                    f"{medicine_name} для {child.name}"
-                                )
+                                else f"Пора дать {medicine_name} · {child.name}"
                             ),
-                            "body": _format_before_body(
+                            "body": _format_due_body(
                                 child.name,
                                 medicine_name,
                                 plan.dose_amount,
-                                reminder_before_minutes,
                                 next_allowed_local_label,
                                 language,
                             ),
                             "url": "/illnesses/active",
-                            "tag": f"plan-before-{plan.id}-{int(next_allowed_at.timestamp())}",
+                            "tag": f"plan-due-{plan.id}-{int(next_allowed_at.timestamp())}",
                             "data": {
                                 "childId": str(child.id),
                                 "episodeId": str(episode.id),
                                 "planId": str(plan.id),
                             },
                         }
-                        if await self._send_to_subscriptions(
-                            subscriptions=subscriptions,
-                            subscription_repo=subscription_repo,
-                            payload=payload,
-                        ):
-                            updated = replace(plan, last_before_notification_for_at=next_allowed_at)
-                            await plan_repo.update_notification_marks(updated)
+                        sent_due = (
+                            await self._send_to_subscriptions(
+                                subscriptions=subscriptions,
+                                subscription_repo=subscription_repo,
+                                payload=payload,
+                            )
+                            or sent_due
+                        )
 
-                if now >= next_allowed_at and plan.last_due_notification_for_at != next_allowed_at:
-                    payload = {
-                        "title": (
-                            f"Time to give {medicine_name} to {child.name}"
-                            if language == "en"
-                            else f"Пора дать {medicine_name} · {child.name}"
-                        ),
-                        "body": _format_due_body(
-                            child.name,
-                            medicine_name,
-                            plan.dose_amount,
-                            next_allowed_local_label,
-                            language,
-                        ),
-                        "url": "/illnesses/active",
-                        "tag": f"plan-due-{plan.id}-{int(next_allowed_at.timestamp())}",
-                        "data": {
-                            "childId": str(child.id),
-                            "episodeId": str(episode.id),
-                            "planId": str(plan.id),
-                        },
-                    }
-                    if await self._send_to_subscriptions(
-                        subscriptions=subscriptions,
-                        subscription_repo=subscription_repo,
-                        payload=payload,
+                    overdue_at = next_allowed_at + timedelta(
+                        minutes=OVERDUE_REMINDER_AFTER_MINUTES
+                    )
+                    if (
+                        now >= overdue_at
+                        and plan.last_overdue_notification_for_at != next_allowed_at
                     ):
-                        updated = replace(plan, last_due_notification_for_at=next_allowed_at)
-                        await plan_repo.update_notification_marks(updated)
+                        payload = {
+                            "title": (
+                                f"Check dose: {medicine_name} for {child.name}"
+                                if language == "en"
+                                else f"Проверьте приём: {medicine_name} · {child.name}"
+                            ),
+                            "body": _format_overdue_body(
+                                child.name,
+                                medicine_name,
+                                plan.dose_amount,
+                                next_allowed_local_label,
+                                language,
+                            ),
+                            "url": "/illnesses/active",
+                            "tag": f"plan-overdue-{plan.id}-{int(next_allowed_at.timestamp())}",
+                            "data": {
+                                "childId": str(child.id),
+                                "episodeId": str(episode.id),
+                                "planId": str(plan.id),
+                            },
+                        }
+                        sent_overdue = (
+                            await self._send_to_subscriptions(
+                                subscriptions=subscriptions,
+                                subscription_repo=subscription_repo,
+                                payload=payload,
+                            )
+                            or sent_overdue
+                        )
 
-                overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
-                if now >= overdue_at and plan.last_overdue_notification_for_at != next_allowed_at:
-                    payload = {
-                        "title": (
-                            f"Check dose: {medicine_name} for {child.name}"
-                            if language == "en"
-                            else f"Проверьте приём: {medicine_name} · {child.name}"
-                        ),
-                        "body": _format_overdue_body(
-                            child.name,
-                            medicine_name,
-                            plan.dose_amount,
-                            next_allowed_local_label,
-                            language,
-                        ),
-                        "url": "/illnesses/active",
-                        "tag": f"plan-overdue-{plan.id}-{int(next_allowed_at.timestamp())}",
-                        "data": {
-                            "childId": str(child.id),
-                            "episodeId": str(episode.id),
-                            "planId": str(plan.id),
-                        },
-                    }
-                    if await self._send_to_subscriptions(
-                        subscriptions=subscriptions,
-                        subscription_repo=subscription_repo,
-                        payload=payload,
-                    ):
-                        updated = replace(plan, last_overdue_notification_for_at=next_allowed_at)
-                        await plan_repo.update_notification_marks(updated)
+                if sent_before:
+                    updated = replace(plan, last_before_notification_for_at=next_allowed_at)
+                    await plan_repo.update_notification_marks(updated)
+                    plan = updated
+                if sent_due:
+                    updated = replace(plan, last_due_notification_for_at=next_allowed_at)
+                    await plan_repo.update_notification_marks(updated)
+                    plan = updated
+                if sent_overdue:
+                    updated = replace(plan, last_overdue_notification_for_at=next_allowed_at)
+                    await plan_repo.update_notification_marks(updated)
 
             await self._process_pillbox_plan_reminders(
                 session=session,
@@ -625,7 +667,7 @@ class PushNotificationScheduler:
     ) -> list[tuple[datetime, PillboxMedicationModel]]:
         candidates: list[tuple[datetime, PillboxMedicationModel]] = []
         local_now = now.astimezone(self._timezone)
-        for offset in (0,):
+        for offset in (0, 1):
             target_day = (local_now + timedelta(days=offset)).date()
             weekday = target_day.isoweekday()
             for medication in plan.medications:
@@ -908,30 +950,40 @@ class PushNotificationScheduler:
         result = await session.execute(select(HouseholdMedicineModel.family_id).distinct())
         family_ids = [family_id for family_id in result.scalars().all() if family_id is not None]
         today = now.astimezone(self._timezone).date()
+        family_repo = SqlFamilyRepository(session)
 
         for family_id in family_ids:
-            account = await account_repo.get_by_family_id(family_id)
-            if not account:
+            family = await family_repo.get_by_id(family_id)
+            if not family:
                 continue
-            language = _normalize_language(account.preferred_language)
-            reminder_offsets = _get_cabinet_offsets(account)
-
-            subscriptions = await subscription_repo.get_by_account_id(account.id)
-            if not subscriptions:
+            accounts = await account_repo.list_by_family_id(family_id)
+            if not accounts:
                 continue
-
+            selected_account_ids = list(family.cabinet_member_account_ids or [])
+            if selected_account_ids:
+                selected_id_set = set(selected_account_ids)
+                accounts = [account for account in accounts if account.id in selected_id_set]
+            if not accounts:
+                continue
             medicines = await medicine_repo.get_by_family_id(family_id)
-            for medicine in medicines:
-                await self._process_single_household_medicine(
-                    session=session,
-                    subscriptions=subscriptions,
-                    subscription_repo=subscription_repo,
-                    medicine=medicine,
-                    reminder_offsets=reminder_offsets,
-                    today=today,
-                    now=now,
-                    language=language,
-                )
+            for account in accounts:
+                language = _normalize_language(account.preferred_language)
+                reminder_offsets = _get_cabinet_offsets(account)
+                subscriptions = await subscription_repo.get_by_account_id(account.id)
+                if not subscriptions:
+                    continue
+
+                for medicine in medicines:
+                    await self._process_single_household_medicine(
+                        session=session,
+                        subscriptions=subscriptions,
+                        subscription_repo=subscription_repo,
+                        medicine=medicine,
+                        reminder_offsets=reminder_offsets,
+                        today=today,
+                        now=now,
+                        language=language,
+                    )
 
     async def _process_single_household_medicine(
         self,

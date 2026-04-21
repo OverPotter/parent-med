@@ -19,6 +19,7 @@ class EpisodeMedicationPlan:
     weight_kg: float | None
     dose_mg_per_kg: float | None
     notes: str | None
+    member_account_ids: list[UUID]
     reminders_enabled: bool
     reminder_before_minutes: int | None
     notify_at_due: bool

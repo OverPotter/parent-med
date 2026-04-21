@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteChild, fetchChild, updateChild } from "@shared/api/children";
@@ -6,9 +6,12 @@ import { DateField } from "@shared/components/DateField";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { getLocalIsoDate } from "@shared/utils/date";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
+import { scrollFieldIntoView } from "@shared/utils/focus";
 
 type ChildProfileDetails = {
   babyModeEnabled?: boolean;
@@ -20,7 +23,7 @@ type ChildProfileDetails = {
   notes?: string | null;
 };
 
-const appBtnPrimaryClass = "soft-pill-warning app-profile-action app-profile-action--active";
+const appBtnPrimaryClass = "soft-pill-primary app-profile-action app-profile-action--selected";
 const appBtnDangerClass = "soft-pill-danger app-profile-action";
 
 export function ChildEditPage() {
@@ -29,8 +32,24 @@ export function ChildEditPage() {
   const common = getChildrenCopy(language).common;
   const { childId } = useParams<{ childId: string }>();
   const navigate = useNavigate();
+  const isIosShell = useIsIosShell();
   const queryClient = useQueryClient();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const pageRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page) {
+      return;
+    }
+
+    const handleFocusIn = (event: FocusEvent) => {
+      scrollFieldIntoView(event.target, { delayMs: 120, block: "center" });
+    };
+
+    page.addEventListener("focusin", handleFocusIn);
+    return () => page.removeEventListener("focusin", handleFocusIn);
+  }, []);
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
@@ -70,7 +89,19 @@ export function ChildEditPage() {
   }
 
   return (
-    <div className="child-profile-shell space-y-6">
+    <div
+      ref={pageRef}
+      className="child-profile-shell min-h-[100dvh] space-y-6"
+      style={{
+        scrollPaddingBottom:
+          "calc(7.5rem + var(--app-keyboard-height, 0px) + max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom))))",
+      }}
+    >
+      <IosEdgeBackGesture
+        isEnabled={isIosShell}
+        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        targetRef={pageRef}
+      />
       <ConfirmDialog
         isOpen={isDeleteConfirmOpen}
         title={
@@ -88,7 +119,7 @@ export function ChildEditPage() {
       />
 
       <ChildSectionTopBar
-        backHref={`/children/${child.id}`}
+        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
         title={`${copy.form.title} · ${child.name}`}
         hint={copy.form.subtitle}
@@ -154,7 +185,7 @@ function EditChildProfileForm({
   );
 
   return (
-    <Surface className="app-section-surface mx-auto w-full max-w-2xl">
+    <Surface className="app-section-surface mx-auto w-full max-w-2xl pt-2">
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px]">
           <label className="block min-w-0 space-y-1.5">
@@ -281,33 +312,35 @@ function EditChildProfileForm({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row sm:flex-wrap sm:items-center">
-          <button
-            type="button"
-            onClick={() =>
-              onSave(draftName.trim(), draftBirthDate || null, {
-                babyModeEnabled,
-                institutionName: institutionName.trim() || null,
-                institutionPhone: institutionPhone.trim() || null,
-                doctorName: doctorName.trim() || null,
-                doctorPhone: doctorPhone.trim() || null,
-                allergies: allergies.trim() || null,
-                notes: notes.trim() || null,
-              })
-            }
-            disabled={isSaving || !draftName.trim()}
-            className={`${appBtnPrimaryClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:w-auto`}
-          >
-            {isSaving ? copy.form.saving : copy.form.save}
-          </button>
-          <button
-            type="button"
-            onClick={onRequestDeleteConfirm}
-            disabled={isDeleting || isSaving}
-            className={`${appBtnDangerClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:ml-auto sm:w-auto`}
-          >
-            {isDeleting ? copy.deleting : copy.form.delete}
-          </button>
+        <div className="app-form-action-bar border-t border-border/70 pt-4">
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center">
+            <button
+              type="button"
+              onClick={() =>
+                onSave(draftName.trim(), draftBirthDate || null, {
+                  babyModeEnabled,
+                  institutionName: institutionName.trim() || null,
+                  institutionPhone: institutionPhone.trim() || null,
+                  doctorName: doctorName.trim() || null,
+                  doctorPhone: doctorPhone.trim() || null,
+                  allergies: allergies.trim() || null,
+                  notes: notes.trim() || null,
+                })
+              }
+              disabled={isSaving || !draftName.trim()}
+              className={`${appBtnPrimaryClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:w-auto`}
+            >
+              {isSaving ? copy.form.saving : copy.form.save}
+            </button>
+            <button
+              type="button"
+              onClick={onRequestDeleteConfirm}
+              disabled={isDeleting || isSaving}
+              className={`${appBtnDangerClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:ml-auto sm:w-auto`}
+            >
+              {isDeleting ? copy.deleting : copy.form.delete}
+            </button>
+          </div>
         </div>
       </div>
     </Surface>

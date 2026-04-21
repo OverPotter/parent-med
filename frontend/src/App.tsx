@@ -16,7 +16,6 @@ import {
 import { HitKeepBridge } from "@shared/analytics";
 import { RouteFallback, useDeferredNonCriticalStartupReady } from "@/app/boot/state";
 import {
-  BootLog,
   DisplayModeSync,
   IosSafeAreaSync,
   RuntimePlatformSync,
@@ -34,7 +33,11 @@ import {
   RouteScrollReset,
   WarmRouteChunks,
 } from "@/app/mobile/runtime";
-import { NativePushNavigationSync, PushSubscriptionSync } from "@/app/push/sync";
+import {
+  NativePushForegroundBannerSync,
+  NativePushNavigationSync,
+  PushSubscriptionSync,
+} from "@/app/push/sync";
 import { LiveActivityRuntimeSync } from "@/app/live-activities/sync";
 import { AuthPage } from "@client/pages/AuthPage";
 import { appLog } from "@shared/utils/appLog";
@@ -278,6 +281,13 @@ function IOSBackSwipeZone() {
     if (typeof window === "undefined") {
       return;
     }
+    const shouldHidePreviousSnapshot =
+      (location.pathname.startsWith("/children/") && location.pathname.endsWith("/illness")) ||
+      (location.pathname.startsWith("/children/") && location.pathname.endsWith("/calendar"));
+    if (shouldHidePreviousSnapshot) {
+      setPreviousScreenSnapshot({ html: "", scrollY: 0 });
+      return;
+    }
     setPreviousScreenSnapshot(
       (window as Window & {
         __PM_IOS_PREVIOUS_SCREEN_SNAPSHOT?: { html: string; scrollY: number };
@@ -285,15 +295,14 @@ function IOSBackSwipeZone() {
     );
   }, [location.pathname, location.search]);
 
-  const pillboxMode = new URLSearchParams(location.search).get("mode");
   const shouldDisableSwipeBack =
     location.pathname === "/" ||
     location.pathname === "/auth" ||
     location.pathname === "/start" ||
-    location.pathname === "/children" ||
+    location.pathname.startsWith("/children") ||
     location.pathname === "/medicine-cabinet" ||
     location.pathname === "/illnesses/active" ||
-    (location.pathname === "/pillbox" && !pillboxMode);
+    location.pathname === "/pillbox";
 
   useEffect(() => {
     if (
@@ -586,7 +595,6 @@ export default function App() {
       <IosSafeAreaSync />
       <IOSKeyboardViewportSync />
       <IOSBackSwipeZone />
-      <BootLog />
       <NativeUnauthedBootReady />
       {isNonCriticalStartupReady ? <HitKeepBridge /> : null}
       <ThemeSync />
@@ -599,6 +607,7 @@ export default function App() {
       <AuthSync />
       {isNonCriticalStartupReady ? <PushSubscriptionSync /> : null}
       {isNonCriticalStartupReady ? <NativePushNavigationSync /> : null}
+      {isNonCriticalStartupReady ? <NativePushForegroundBannerSync /> : null}
       {isNonCriticalStartupReady ? <LiveActivityRuntimeSync /> : null}
       {isNonCriticalStartupReady ? <MobilePageResumeSync /> : null}
       {isNonCriticalStartupReady ? <PullToRefreshSync /> : null}

@@ -1,18 +1,24 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { fetchLatestHeightEntryByChildId } from "@shared/api/heightEntries";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 import { formatChildDatePlain } from "@client/utils/childDateFormat";
+import { useRef } from "react";
 
 export function ChildProfilePage() {
   const { language } = useI18n();
   const copy = getChildrenCopy(language).childProfile;
   const { childId } = useParams<{ childId: string }>();
+  const navigate = useNavigate();
+  const isIosShell = useIsIosShell();
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
@@ -62,9 +68,14 @@ export function ChildProfilePage() {
   ];
 
   return (
-    <div className="child-profile-shell space-y-6">
+    <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-6">
+      <IosEdgeBackGesture
+        isEnabled={isIosShell}
+        onBack={() => navigate("/children", { replace: true })}
+        targetRef={rootRef}
+      />
       <ChildSectionTopBar
-        backHref="/children"
+        onBack={() => navigate("/children", { replace: true })}
         backLabel={language === "ru" ? "← К детям" : "← Back to children"}
         title={`${copy.eyebrow} · ${child.name}`}
         hint={copy.subtitle}
@@ -78,7 +89,7 @@ export function ChildProfilePage() {
         }
       />
 
-      <div className="mx-auto w-full max-w-2xl space-y-3">
+      <div className="mx-auto w-full max-w-2xl space-y-3 pt-2">
         <Surface className="p-3 sm:p-4">
           <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
             {quickLinks.map((item) => (

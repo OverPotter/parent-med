@@ -7,9 +7,6 @@ export const childActionSecondaryClass =
 export const childActionSuccessClass =
   "soft-pill-success app-profile-action app-profile-action--active min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]";
 
-export const childActionWarningClass =
-  "soft-pill-warning app-profile-action app-profile-action--active min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]";
-
 export function formatWeightValue(valueKg: number, language: "ru" | "en"): string {
   const unit = language === "ru" ? "кг" : "kg";
   return `${new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {

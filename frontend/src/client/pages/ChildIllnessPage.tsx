@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import {
@@ -13,7 +13,7 @@ import {
   updateIllnessEpisode,
 } from "@shared/api/illnessEpisodes";
 import { createEpisodeMedicationPlan } from "@shared/api/episodeMedicationPlans";
-import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
+import { fetchMyFamilyMembers } from "@shared/api/families";
 import { createIllnessComment } from "@shared/api/illnessComments";
 import { createAdministrationEvent } from "@shared/api/administrationEvents";
 import { createTemperatureEntry } from "@shared/api/temperatureEntries";
@@ -30,12 +30,11 @@ import { formatChildDatePlain } from "@client/utils/childDateFormat";
 import { EpisodeActivationCard } from "./child-illness/forms";
 import {
   HistoryEpisodeCard,
-  HistoryEpisodeDetailScreen,
   HistoryEpisodeInsightsScreen,
   HistoryInsightsPreview,
 } from "./child-illness/history";
 import { EpisodeBlock } from "./child-illness/EpisodeBlock";
-import { SummaryCard, appPillActionClass, formatWeightValue } from "./child-illness/shared";
+import { SummaryCard, formatWeightValue } from "./child-illness/shared";
 
 const QUICK_FOCUS_VALUES = new Set([
   "temperature",
@@ -49,13 +48,16 @@ const QUICK_FOCUS_VALUES = new Set([
 
 function normalizeChildIllnessSearchParams(
   source: URLSearchParams,
-  options: { isActiveEpisodeFetched: boolean; hasActiveEpisode: boolean }
+  options: {
+    isActiveEpisodeFetched: boolean;
+    hasActiveEpisode: boolean;
+    activeEpisodeMedicationMode: string | null;
+  }
 ): URLSearchParams {
   const next = new URLSearchParams();
   const view = source.get("view");
   const mode = source.get("mode");
   const episodeId = source.get("episodeId");
-  const openEpisodeId = source.get("openEpisodeId");
   const focus = source.get("focus") ?? source.get("compose");
   const plan = source.get("plan");
   const picker = source.get("picker");
@@ -64,10 +66,6 @@ function normalizeChildIllnessSearchParams(
     next.set("view", "history");
     if (episodeId) {
       next.set("episodeId", episodeId);
-      return next;
-    }
-    if (openEpisodeId) {
-      next.set("openEpisodeId", openEpisodeId);
       return next;
     }
     return next;
@@ -80,7 +78,17 @@ function normalizeChildIllnessSearchParams(
     return next;
   }
 
+  if (options.isActiveEpisodeFetched && !options.hasActiveEpisode) {
+    return next;
+  }
+
   if (!focus || !QUICK_FOCUS_VALUES.has(focus)) {
+    return next;
+  }
+
+  const reminderFocus =
+    focus === "reminders" || focus === "reminder-create" || focus === "reminder-detail";
+  if (reminderFocus && options.activeEpisodeMedicationMode !== "guided") {
     return next;
   }
 
@@ -115,8 +123,6 @@ export function ChildIllnessPage() {
   const historyOnlyView = searchParams.get("view") === "history";
   const historyEpisodeInsightsId = historyOnlyView ? searchParams.get("episodeId") : null;
   const historyEpisodeInsightsMode = Boolean(historyEpisodeInsightsId);
-  const historyEpisodeDetailId = historyOnlyView ? searchParams.get("openEpisodeId") : null;
-  const historyEpisodeDetailMode = Boolean(historyEpisodeDetailId);
   const createMode = searchParams.get("mode") === "create";
   const focusMode = searchParams.get("focus") ?? searchParams.get("compose");
   const quickComposeMode =
@@ -166,17 +172,47 @@ export function ChildIllnessPage() {
     const normalized = normalizeChildIllnessSearchParams(searchParams, {
       isActiveEpisodeFetched,
       hasActiveEpisode: Boolean(activeEpisode),
+      activeEpisodeMedicationMode: activeEpisode?.medicationMode ?? null,
     });
     if (normalized.toString() !== searchParams.toString()) {
       setSearchParams(normalized, { replace: true });
     }
   }, [activeEpisode, isActiveEpisodeFetched, searchParams, setSearchParams]);
 
-  const { data: familyMedicines = [] } = useQuery({
-    queryKey: ["household-medicines", currentFamilyId],
-    queryFn: fetchHouseholdMedicines,
+  useEffect(() => {
+    if (
+      !isActiveEpisodeFetched ||
+      !activeEpisode ||
+      historyOnlyView ||
+      createMode ||
+      quickComposeMode ||
+      quickTimelineMode ||
+      quickReminderMode ||
+      quickReminderCreateMode ||
+      quickReminderDetailMode
+    ) {
+      return;
+    }
+
+    navigate("/illnesses/active", { replace: true });
+  }, [
+    activeEpisode,
+    createMode,
+    historyOnlyView,
+    isActiveEpisodeFetched,
+    navigate,
+    quickComposeMode,
+    quickReminderCreateMode,
+    quickReminderDetailMode,
+    quickReminderMode,
+    quickTimelineMode,
+  ]);
+
+  const { data: familyMembers = [] } = useQuery({
+    queryKey: ["families", "me", "members", currentFamilyId],
+    queryFn: fetchMyFamilyMembers,
     enabled: !!currentFamilyId,
-    ...liveQueryOptions,
+    staleTime: 5 * 60 * 1000,
   });
 
   const closeEpisodeMutation = useMutation({
@@ -301,7 +337,7 @@ export function ChildIllnessPage() {
   }, [activeEpisode, createMode, historyOnlyView]);
 
   useEffect(() => {
-    if (!historyOnlyView || (!historyEpisodeInsightsMode && !historyEpisodeDetailMode)) {
+    if (!historyOnlyView || !historyEpisodeInsightsMode) {
       return;
     }
     if (typeof window === "undefined" || window.innerWidth >= 1024) {
@@ -320,7 +356,26 @@ export function ChildIllnessPage() {
         behavior: "smooth",
       });
     });
-  }, [historyOnlyView, historyEpisodeDetailMode, historyEpisodeInsightsMode]);
+  }, [historyOnlyView, historyEpisodeInsightsMode]);
+
+  const historyEpisodes = episodes.filter((episode) => episode.status === "closed");
+  const focusedHistoryEpisode = historyEpisodeInsightsId
+    ? (historyEpisodes.find((episode) => episode.id === historyEpisodeInsightsId) ?? null)
+    : null;
+  useEffect(() => {
+    if (!historyOnlyView) {
+      return;
+    }
+
+    if (historyEpisodeInsightsId && !focusedHistoryEpisode) {
+      setSearchParams(new URLSearchParams([["view", "history"]]), { replace: true });
+    }
+  }, [
+    focusedHistoryEpisode,
+    historyEpisodeInsightsId,
+    historyOnlyView,
+    setSearchParams,
+  ]);
 
   if (!childId || childLoading || !child) {
     return (
@@ -329,24 +384,95 @@ export function ChildIllnessPage() {
       </div>
     );
   }
-
-  const historyEpisodes = episodes.filter((episode) => episode.status === "closed");
-  const focusedHistoryEpisode = historyEpisodeInsightsId
-    ? (historyEpisodes.find((episode) => episode.id === historyEpisodeInsightsId) ?? null)
-    : null;
-  const focusedHistoryDetailEpisode = historyEpisodeDetailId
-    ? (historyEpisodes.find((episode) => episode.id === historyEpisodeDetailId) ?? null)
-    : null;
   const childAgeLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
-  const backHref = activeEpisode && !historyOnlyView ? "/illnesses/active" : "/children";
-  const backLabel =
-    activeEpisode && !historyOnlyView
-      ? language === "ru"
-        ? "← К наблюдениям"
-        : "← Back to tracking"
-      : language === "ru"
-        ? "← К списку детей"
-        : "← Back to children";
+  const buildChildIllnessBackState = (): { href: string; label: string } => {
+    if (searchParams.get("picker") === "cabinet" && quickReminderDetailMode && reminderPlanId) {
+      return {
+        href: `/children/${child.id}/illness?focus=reminder-detail&plan=${reminderPlanId}`,
+        label: language === "ru" ? "← К напоминанию" : "← Back to reminder",
+      };
+    }
+
+    if (searchParams.get("picker") === "cabinet" && quickReminderCreateMode) {
+      return {
+        href: `/children/${child.id}/illness?focus=reminder-create`,
+        label: language === "ru" ? "← К созданию" : "← Back to create",
+      };
+    }
+
+    if (historyEpisodeInsightsMode) {
+      return {
+        href: `/children/${child.id}/illness?view=history`,
+        label: language === "ru" ? "← Ко всей истории" : "← Back to history",
+      };
+    }
+
+    if (historyOnlyView) {
+      return {
+        href: `/children/${child.id}`,
+        label: language === "ru" ? "← К профилю ребёнка" : "← Back to child profile",
+      };
+    }
+
+    if (quickReminderDetailMode) {
+      const href = `/children/${child.id}/illness?focus=reminders`;
+      return {
+        href,
+        label: language === "ru" ? "← К напоминаниям" : "← Back to reminders",
+      };
+    }
+
+    if (quickReminderCreateMode) {
+      const href =
+        activeEpisode?.medicationMode === "guided"
+          ? `/children/${child.id}/illness?focus=reminders`
+          : `/children/${child.id}`;
+      return {
+        href,
+        label:
+          href === `/children/${child.id}`
+            ? language === "ru"
+              ? "← К профилю ребёнка"
+              : "← Back to child profile"
+            : language === "ru"
+              ? "← К напоминаниям"
+              : "← Back to reminders",
+      };
+    }
+
+    if (
+      quickReminderMode ||
+      quickComposeMode ||
+      quickTimelineMode ||
+      (activeEpisode && !historyOnlyView)
+    ) {
+      return {
+        href: `/children/${child.id}`,
+        label: language === "ru" ? "← К профилю ребёнка" : "← Back to child profile",
+      };
+    }
+
+    if (createMode) {
+      return {
+        href: `/children/${child.id}`,
+        label: language === "ru" ? "← К профилю ребёнка" : "← Back to child profile",
+      };
+    }
+
+    return {
+      href: "/children",
+      label: language === "ru" ? "← К списку детей" : "← Back to children",
+    };
+  };
+
+  const { href: backHref, label: backLabel } = buildChildIllnessBackState();
+  const hasBrowserBack =
+    typeof window !== "undefined" &&
+    (window.history.length > 1 ||
+      (typeof window.history.state === "object" &&
+        window.history.state !== null &&
+        typeof (window.history.state as { idx?: unknown }).idx === "number" &&
+        ((window.history.state as { idx: number }).idx ?? 0) > 0));
   const topBarTitle =
     historyOnlyView || (!activeEpisode && !createMode)
       ? child.name
@@ -358,11 +484,7 @@ export function ChildIllnessPage() {
       ? language === "ru"
         ? "Подробный разбор конкретного эпизода."
         : "Detailed breakdown of a specific episode."
-      : historyEpisodeDetailMode
-        ? language === "ru"
-          ? "Открыта одна запись из истории."
-          : "One history record is opened."
-        : historyEpisodes.length > 0
+      : historyEpisodes.length > 0
           ? language === "ru"
             ? "Сводка и завершённые наблюдения по ребёнку."
             : "Summary and completed tracking records for this child."
@@ -379,15 +501,19 @@ export function ChildIllnessPage() {
           : "There is no active tracking right now."
         : undefined;
   const handleBack = () => {
-    navigate(backHref);
+    if (hasBrowserBack) {
+      navigate(-1);
+      return;
+    }
+    navigate(backHref, { replace: true });
   };
 
   return (
-    <div ref={rootRef} className="child-profile-shell space-y-7">
+    <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-7">
       <IosEdgeBackGesture isEnabled={isIosShell} onBack={handleBack} targetRef={rootRef} />
       <ChildSectionTopBar
         onBack={handleBack}
-        backLabel={backLabel}
+        backLabel={hasBrowserBack ? (language === "ru" ? "← Назад" : "← Back") : backLabel}
         title={topBarTitle}
         hint={topBarHint}
         containerClassName="max-w-5xl"
@@ -442,6 +568,7 @@ export function ChildIllnessPage() {
               childName={child.name}
               childId={child.id}
               episode={activeEpisode}
+              familyMembers={familyMembers}
               onClose={() => closeEpisodeMutation.mutate(activeEpisode.id)}
               familyId={currentFamilyId}
               latestWeight={latestWeight}
@@ -485,40 +612,15 @@ export function ChildIllnessPage() {
 
         {historyOnlyView && (
           <section ref={historySectionRef} className="space-y-3">
-            {historyEpisodeInsightsMode ? (
-              <div className="flex justify-end">
-                <Link
-                  to={`/children/${child.id}/illness?view=history`}
-                  className={appPillActionClass}
-                >
-                  {language === "ru" ? "Ко всей истории" : "Back to history"}
-                </Link>
-              </div>
-            ) : null}
-
             {historyEpisodeInsightsMode && focusedHistoryEpisode ? (
               <HistoryEpisodeInsightsScreen episode={focusedHistoryEpisode} />
             ) : null}
 
-            {historyEpisodeDetailMode && focusedHistoryDetailEpisode ? (
-              <HistoryEpisodeDetailScreen
-                childId={child.id}
-                episode={focusedHistoryDetailEpisode}
-                episodeNumber={
-                  historyEpisodes.length -
-                  historyEpisodes.findIndex((item) => item.id === focusedHistoryDetailEpisode.id)
-                }
-                medicines={familyMedicines}
-              />
-            ) : null}
-
-            {!historyEpisodeInsightsMode && !historyEpisodeDetailMode && (
+            {!historyEpisodeInsightsMode && (
               <HistoryInsightsPreview childId={child.id} />
             )}
 
-            {!historyEpisodeInsightsMode &&
-            !historyEpisodeDetailMode &&
-            historyEpisodes.length > 0 ? (
+            {!historyEpisodeInsightsMode && historyEpisodes.length > 0 ? (
               <ul className="grid gap-2.5">
                 {historyEpisodes.map((episode) => (
                   <HistoryEpisodeCard
@@ -532,7 +634,7 @@ export function ChildIllnessPage() {
                   />
                 ))}
               </ul>
-            ) : !historyEpisodeInsightsMode && !historyEpisodeDetailMode ? (
+            ) : !historyEpisodeInsightsMode ? (
               <div className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
                 {language === "ru" ? "История пока пустая." : "History is still empty."}
               </div>

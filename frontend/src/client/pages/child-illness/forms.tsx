@@ -77,7 +77,7 @@ export function EpisodeActivationCard({
             className={illnessCompactInputClass}
           />
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="app-form-action-bar flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() =>
@@ -136,7 +136,7 @@ export function TemperatureForm({
 }) {
   const { language } = useI18n();
   return (
-    <div className="flex items-end gap-2.5">
+    <div className="space-y-3">
       <label className="block w-[7.9rem] shrink-0 space-y-1.5 sm:w-[8.4rem]">
         <span className="soft-field-label">
           {language === "ru" ? "Температура" : "Temperature"}
@@ -150,20 +150,22 @@ export function TemperatureForm({
           className={illnessTemperatureInputClass}
         />
       </label>
-      <button
-        type="button"
-        onClick={onSubmit}
-        disabled={isPending || !value}
-        className={`${illnessTemperatureButtonClass} shrink-0`}
-      >
-        {isPending
-          ? language === "ru"
-            ? "Сохраняем…"
-            : "Saving…"
-          : language === "ru"
-            ? "Добавить"
-            : "Add"}
-      </button>
+      <div className="app-form-action-bar">
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={isPending || !value}
+          className={`${illnessTemperatureButtonClass} w-full sm:w-auto`}
+        >
+          {isPending
+            ? language === "ru"
+              ? "Сохраняем…"
+              : "Saving…"
+            : language === "ru"
+              ? "Добавить"
+              : "Add"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -213,22 +215,22 @@ export function AdministrationForm({
           />
         </label>
 
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={isPending || !customMedicineName.trim()}
-            className={`${illnessCompactPrimaryButtonClass} w-full`}
-          >
-            {isPending
-              ? language === "ru"
-                ? "Сохраняем…"
-                : "Saving…"
-              : language === "ru"
-                ? "Сохранить приём"
-                : "Log dose"}
-          </button>
-        </div>
+      </div>
+      <div className="app-form-action-bar">
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={isPending || !customMedicineName.trim()}
+          className={`${illnessCompactPrimaryButtonClass} w-full md:w-auto`}
+        >
+          {isPending
+            ? language === "ru"
+              ? "Сохраняем…"
+              : "Saving…"
+            : language === "ru"
+              ? "Сохранить приём"
+              : "Log dose"}
+        </button>
       </div>
     </div>
   );

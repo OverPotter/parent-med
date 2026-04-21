@@ -8,6 +8,7 @@ const NATIVE_PUSH_OPT_OUT_KEY = "pm_native_push_opt_out";
 const NATIVE_PUSH_TOKEN_KEY = "pm_native_push_token";
 const NATIVE_PUSH_TIMEOUT_MS = 10_000;
 const NATIVE_PUSH_NAVIGATION_EVENT = "native-push:navigate";
+const PUSH_SUBSCRIPTION_CHANGED_EVENT = "push:subscription-changed";
 
 let listenersAttached = false;
 let pendingTokenResolver: ((value: string) => void) | null = null;
@@ -42,10 +43,6 @@ function getCachedNativeToken(): string | null {
   return window.localStorage.getItem(NATIVE_PUSH_TOKEN_KEY);
 }
 
-export function getCachedNativePushToken(): string | null {
-  return getCachedNativeToken();
-}
-
 function attachListeners() {
   if (listenersAttached) {
     return;
@@ -53,7 +50,11 @@ function attachListeners() {
   listenersAttached = true;
 
   PushNotifications.addListener("registration", (token: Token) => {
+    const previousToken = getCachedNativeToken();
     setCachedNativeToken(token.value);
+    if (typeof window !== "undefined" && previousToken !== token.value) {
+      window.dispatchEvent(new Event(PUSH_SUBSCRIPTION_CHANGED_EVENT));
+    }
     if (pendingTokenResolver) {
       pendingTokenResolver(token.value);
       pendingTokenResolver = null;
@@ -121,7 +122,11 @@ async function ensurePermission(promptIfNeeded: boolean): Promise<PermissionStat
   }
 }
 
-async function requestToken(promptIfNeeded: boolean): Promise<string | null> {
+async function requestToken(options?: {
+  promptIfNeeded?: boolean;
+  forceRefresh?: boolean;
+  allowCachedFallback?: boolean;
+}): Promise<string | null> {
   if (!isNativePushSupported()) {
     return null;
   }
@@ -132,13 +137,16 @@ async function requestToken(promptIfNeeded: boolean): Promise<string | null> {
 
   tokenRequestPromise = (async () => {
     attachListeners();
+    const promptIfNeeded = Boolean(options?.promptIfNeeded);
+    const forceRefresh = Boolean(options?.forceRefresh);
+    const allowCachedFallback = options?.allowCachedFallback ?? true;
+    const existing = getCachedNativeToken();
     const permission = await ensurePermission(promptIfNeeded);
     if (permission !== "granted") {
       return null;
     }
 
-    const existing = getCachedNativeToken();
-    if (existing) {
+    if (existing && !forceRefresh) {
       return existing;
     }
 
@@ -153,7 +161,7 @@ async function requestToken(promptIfNeeded: boolean): Promise<string | null> {
       const timeoutId = window.setTimeout(() => {
         pendingTokenResolver = null;
         pendingTokenRejecter = null;
-        resolve(null);
+        resolve(allowCachedFallback ? existing : null);
       }, NATIVE_PUSH_TIMEOUT_MS);
 
       tokenPromise
@@ -163,6 +171,10 @@ async function requestToken(promptIfNeeded: boolean): Promise<string | null> {
         })
         .catch((error) => {
           window.clearTimeout(timeoutId);
+          if (allowCachedFallback && existing) {
+            resolve(existing);
+            return;
+          }
           reject(error);
         });
     });
@@ -235,7 +247,50 @@ export async function getNativePushSubscriptionPayload(options?: {
     return null;
   }
 
-  const token = await requestToken(Boolean(options?.promptIfNeeded));
+  const token = await requestToken({
+    promptIfNeeded: options?.promptIfNeeded,
+    forceRefresh: true,
+    allowCachedFallback: true,
+  });
+  if (!token) {
+    return null;
+  }
+
+  return {
+    channel: "native",
+    endpoint: token,
+    native_token: token,
+    platform,
+    user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "native",
+    device_label: `App · ${platform === "ios" ? "iOS" : "Android"}`,
+  };
+}
+
+export async function refreshNativePushSubscriptionPayload(options?: {
+  promptIfNeeded?: boolean;
+  allowCachedFallback?: boolean;
+}): Promise<{
+  channel: "native";
+  endpoint: string;
+  native_token: string;
+  platform: NativePushPlatform;
+  user_agent: string;
+  device_label: string;
+} | null> {
+  if (!isNativePushSupported()) {
+    return null;
+  }
+
+  const platform = getNativePlatform();
+  if (!platform) {
+    return null;
+  }
+
+  const token = await requestToken({
+    promptIfNeeded: options?.promptIfNeeded,
+    forceRefresh: true,
+    allowCachedFallback: options?.allowCachedFallback ?? false,
+  });
   if (!token) {
     return null;
   }

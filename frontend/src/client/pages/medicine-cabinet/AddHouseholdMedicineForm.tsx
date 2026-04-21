@@ -199,6 +199,8 @@ export function AddHouseholdMedicineForm({
       className="child-profile-shell space-y-3"
       style={{
         paddingBottom: "max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
+        scrollPaddingBottom:
+          "calc(7.5rem + var(--app-keyboard-height, 0px) + var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
       }}
     >
       <MedicineCabinetHeader
@@ -210,7 +212,7 @@ export function AddHouseholdMedicineForm({
         onAction={resetAllFields}
       />
 
-      <div className="mx-auto w-full max-w-2xl space-y-3 pb-3">
+      <div className="mx-auto w-full max-w-2xl space-y-3 pb-3 pt-2">
         {isCatalogMode && (
           <>
             <CatalogSearchSection
@@ -346,7 +348,7 @@ export function AddHouseholdMedicineForm({
           </>
         )}
 
-        <div className="pt-1">
+        <div className="app-form-action-bar pt-1">
           <button
             type="button"
             onClick={handleSubmit}

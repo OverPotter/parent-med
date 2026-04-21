@@ -94,7 +94,7 @@ export function PillboxDetailsScreen({
         }
       />
 
-      <section className="space-y-4">
+      <section className="mt-4 space-y-4">
         <div className="soft-panel rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
           <div className="space-y-4">
             <div className="space-y-2">

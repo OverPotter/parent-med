@@ -32,7 +32,30 @@ class FamilyService:
         self._session_repo = session_repo
 
     def _to_response(self, entity: Family) -> FamilyResponseDto:
-        return FamilyResponseDto(id=entity.id, name=entity.name)
+        return FamilyResponseDto(
+            id=entity.id,
+            name=entity.name,
+            cabinet_member_account_ids=list(entity.cabinet_member_account_ids),
+        )
+
+    async def _resolve_cabinet_member_account_ids(
+        self,
+        current_family_id: UUID,
+        requested_member_ids: list[UUID] | None,
+    ) -> list[UUID]:
+        if requested_member_ids is None:
+            return []
+        family_accounts = await self._account_repo.list_by_family_id(current_family_id)
+        family_account_ids = {
+            account.id for account in family_accounts if account.family_role != "deleted"
+        }
+        normalized_ids = list(dict.fromkeys(requested_member_ids))
+        invalid_ids = [
+            account_id for account_id in normalized_ids if account_id not in family_account_ids
+        ]
+        if invalid_ids:
+            raise ForbiddenError("Нельзя выбрать получателей из другой семьи")
+        return normalized_ids
 
     def _to_member_response(self, entity: Account) -> AccountResponseDto:
         return AccountResponseDto(
@@ -58,7 +81,7 @@ class FamilyService:
         return self._to_response(entity)
 
     async def create(self, dto: FamilyCreateDto) -> FamilyResponseDto:
-        entity = Family(id=uuid4(), name=dto.name)
+        entity = Family(id=uuid4(), name=dto.name, cabinet_member_account_ids=[])
         created = await self._repo.add(entity)
         return self._to_response(created)
 
@@ -220,11 +243,22 @@ class FamilyService:
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Семья не найдена", resource="family")
-        if dto.name is not None:
-            entity = Family(id=entity.id, name=dto.name)
-            updated = await self._repo.update(entity)
-        else:
+        fields_set = dto.model_fields_set
+        if not fields_set:
             updated = entity
+        else:
+            cabinet_member_account_ids = (
+                await self._resolve_cabinet_member_account_ids(id, dto.cabinet_member_account_ids)
+                if "cabinet_member_account_ids" in fields_set
+                else list(entity.cabinet_member_account_ids)
+            )
+            updated = await self._repo.update(
+                Family(
+                    id=entity.id,
+                    name=dto.name if dto.name is not None else entity.name,
+                    cabinet_member_account_ids=cabinet_member_account_ids,
+                )
+            )
         return self._to_response(updated)
 
     async def update_for_account(

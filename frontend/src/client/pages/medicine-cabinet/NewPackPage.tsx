@@ -62,6 +62,8 @@ export function NewPackPage({
       className="child-profile-shell space-y-3 text-foreground"
       style={{
         paddingBottom: "max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
+        scrollPaddingBottom:
+          "calc(7.5rem + var(--app-keyboard-height, 0px) + var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
       }}
     >
       <MedicineCabinetHeader
@@ -69,12 +71,9 @@ export function NewPackPage({
         onBack={onClose}
         title={tCabinet(language, "newPack")}
         hint={medicine.medicineName}
-        actionLabel={tCabinet(language, "save")}
-        onAction={handleSave}
-        actionDisabled={updateMutation.isPending}
       />
       <div
-        className={`${cabinetPanelClass} mx-auto grid w-full max-w-2xl gap-3 px-3.5 py-3 sm:grid-cols-2`}
+        className={`${cabinetPanelClass} mx-auto grid w-full max-w-2xl gap-3 px-3.5 py-3 pt-4 sm:grid-cols-2`}
       >
         <p className="text-xs leading-5 text-muted sm:col-span-2">
           {tCabinet(language, "newPackHint")}
@@ -137,6 +136,18 @@ export function NewPackPage({
             <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{formError}</p>
           </div>
         ) : null}
+      </div>
+      <div className="mx-auto w-full max-w-2xl">
+        <div className="app-form-action-bar pt-1">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={updateMutation.isPending}
+            className="soft-pill-primary app-profile-action app-profile-action--selected inline-flex min-h-[2.65rem] w-full items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.025em] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[2.75rem] sm:text-[0.84rem]"
+          >
+            {tCabinet(language, "save")}
+          </button>
+        </div>
       </div>
     </div>
   );

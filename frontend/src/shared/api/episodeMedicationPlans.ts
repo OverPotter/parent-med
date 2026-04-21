@@ -17,6 +17,7 @@ interface RawEpisodeMedicationPlan {
   weight_kg: number | null;
   dose_mg_per_kg: number | null;
   notes: string | null;
+  member_account_ids: string[] | null;
   created_at: string;
 }
 
@@ -39,6 +40,7 @@ export async function createEpisodeMedicationPlan(body: {
   weight_kg?: number | null;
   dose_mg_per_kg?: number | null;
   notes?: string | null;
+  member_account_ids?: string[];
 }): Promise<EpisodeMedicationPlan> {
   const res = await apiClient.post<RawEpisodeMedicationPlan>("/episode-medication-plans", body);
   return toEpisodeMedicationPlan(res.data);
@@ -55,6 +57,7 @@ export async function updateEpisodeMedicationPlan(
     weight_kg?: number | null;
     dose_mg_per_kg?: number | null;
     notes?: string | null;
+    member_account_ids?: string[];
   }
 ): Promise<EpisodeMedicationPlan> {
   const res = await apiClient.patch<RawEpisodeMedicationPlan>(

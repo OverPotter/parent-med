@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
-import type { EpisodeMedicationPlan, HouseholdMedicine, WeightEntry } from "@shared/types/api";
+import type {
+  EpisodeMedicationPlan,
+  HouseholdMedicine,
+  WeightEntry,
+} from "@shared/types/api";
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
 import {
   buildWeightDoseHint,
@@ -147,6 +151,11 @@ export function MedicationPlanDetail({
     onEditingChange?.(isEditing, planName);
     return () => onEditingChange?.(false, planName);
   }, [isEditing, onEditingChange, planName]);
+
+  useEffect(() => {
+    setIsEditing(false);
+    setIsDeleteConfirmOpen(false);
+  }, [plan.id]);
 
   if (isEditing) {
     return (

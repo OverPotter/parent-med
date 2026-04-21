@@ -119,12 +119,14 @@ def get_episode_medication_plan_service(
     episode_repo=Depends(get_illness_episode_repo),
     household_repo=Depends(get_household_medicine_repo),
     child_repo=Depends(get_child_repo),
+    account_repo=Depends(get_account_repo),
 ) -> EpisodeMedicationPlanService:
     return EpisodeMedicationPlanService(
         plan_repo=plan_repo,
         episode_repo=episode_repo,
         household_repo=household_repo,
         child_repo=child_repo,
+        account_repo=account_repo,
     )
 
 
@@ -193,6 +195,7 @@ def get_household_medicine_service(
 def get_illness_episode_service(
     episode_repo=Depends(get_illness_episode_repo),
     child_repo=Depends(get_child_repo),
+    account_repo=Depends(get_account_repo),
     temperature_repo=Depends(get_temperature_entry_repo),
     administration_repo=Depends(get_administration_repo),
     comment_repo=Depends(get_illness_comment_repo),
@@ -200,6 +203,7 @@ def get_illness_episode_service(
     return IllnessEpisodeService(
         episode_repo=episode_repo,
         child_repo=child_repo,
+        account_repo=account_repo,
         temperature_repo=temperature_repo,
         administration_repo=administration_repo,
         comment_repo=comment_repo,

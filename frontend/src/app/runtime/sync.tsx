@@ -2,18 +2,6 @@ import { Capacitor } from "@capacitor/core";
 import { useEffect, useLayoutEffect } from "react";
 import { detectIosShell } from "@shared/hooks/useIsIosShell";
 import { useAppStore } from "@shared/store/useAppStore";
-import { appLog } from "@shared/utils/appLog";
-
-export function BootLog() {
-  useEffect(() => {
-    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios") {
-      return;
-    }
-    const api = import.meta.env.VITE_API_URL?.trim() || "прокси /api";
-    appLog.info(`Store гидратирован, API=${api}`);
-  }, []);
-  return null;
-}
 
 export function ThemeSync() {
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);

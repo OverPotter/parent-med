@@ -13,6 +13,7 @@ from src.domain.entities.child import Child
 from src.domain.entities.episode_medication_plan import EpisodeMedicationPlan
 from src.domain.entities.household_medicine import HouseholdMedicine
 from src.domain.entities.illness_episode import IllnessEpisode
+from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.episode_medication_plan_repository import (
     EpisodeMedicationPlanRepository,
@@ -32,11 +33,13 @@ class EpisodeMedicationPlanService:
         episode_repo: IllnessEpisodeRepository,
         household_repo: HouseholdMedicineRepository,
         child_repo: ChildRepository,
+        account_repo: AccountRepository,
     ) -> None:
         self._repo = plan_repo
         self._episode_repo = episode_repo
         self._household_repo = household_repo
         self._child_repo = child_repo
+        self._account_repo = account_repo
 
     @staticmethod
     def _normalize_manual_name(value: str | None) -> str:
@@ -54,8 +57,28 @@ class EpisodeMedicationPlanService:
             weight_kg=entity.weight_kg,
             dose_mg_per_kg=entity.dose_mg_per_kg,
             notes=entity.notes,
+            member_account_ids=list(entity.member_account_ids),
             created_at=entity.created_at,
         )
+
+    async def _resolve_member_account_ids(
+        self,
+        requested_member_ids: list[UUID] | None,
+        current_family_id: UUID,
+    ) -> list[UUID]:
+        accounts = await self._account_repo.list_by_family_id(current_family_id)
+        if not accounts:
+            raise ValidationError("В семье нет участников для напоминаний")
+        family_account_ids = {account.id for account in accounts}
+        if requested_member_ids is None:
+            return []
+        normalized_ids = list(dict.fromkeys(requested_member_ids))
+        invalid_ids = [
+            account_id for account_id in normalized_ids if account_id not in family_account_ids
+        ]
+        if invalid_ids:
+            raise ForbiddenError("Нельзя выбрать получателей из другой семьи")
+        return normalized_ids
 
     async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
         child = await self._child_repo.get_by_id(child_id)
@@ -116,6 +139,10 @@ class EpisodeMedicationPlanService:
         episode = await self._get_episode_for_account(dto.episode_id, current_family_id)
         if episode.status != "active":
             raise ValidationError("Для закрытого эпизода план лекарства создавать нельзя")
+        member_account_ids = await self._resolve_member_account_ids(
+            dto.member_account_ids,
+            current_family_id,
+        )
 
         household_medicine_id = dto.household_medicine_id
         custom_medicine_name = (dto.custom_medicine_name or "").strip() or None
@@ -150,6 +177,7 @@ class EpisodeMedicationPlanService:
             weight_kg=dto.weight_kg,
             dose_mg_per_kg=dto.dose_mg_per_kg,
             notes=dto.notes.strip() if dto.notes else None,
+            member_account_ids=member_account_ids,
             reminders_enabled=True,
             reminder_before_minutes=self.DEFAULT_REMINDER_BEFORE_MINUTES,
             notify_at_due=True,
@@ -206,6 +234,11 @@ class EpisodeMedicationPlanService:
             if "notes" in fields_set and dto.notes
             else (None if "notes" in fields_set else entity.notes)
         )
+        member_account_ids = (
+            await self._resolve_member_account_ids(dto.member_account_ids, current_family_id)
+            if "member_account_ids" in fields_set
+            else list(entity.member_account_ids)
+        )
         if not household_medicine_id and not custom_medicine_name:
             raise ValidationError("Выбери лекарство из аптечки или введи название вручную")
 
@@ -240,6 +273,7 @@ class EpisodeMedicationPlanService:
                 weight_kg=weight_kg,
                 dose_mg_per_kg=dose_mg_per_kg,
                 notes=notes,
+                member_account_ids=member_account_ids,
                 reminders_enabled=True,
                 reminder_before_minutes=self.DEFAULT_REMINDER_BEFORE_MINUTES,
                 notify_at_due=True,

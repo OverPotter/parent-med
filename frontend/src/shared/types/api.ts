@@ -5,6 +5,7 @@
 export interface Family {
   id: string;
   name: string;
+  cabinetMemberAccountIds: string[];
 }
 
 export interface Account {
@@ -152,6 +153,7 @@ export interface IllnessEpisode {
   status: string;
   medicationMode: string;
   note: string | null;
+  memberAccountIds: string[];
   closedAt: string | null;
 }
 
@@ -251,6 +253,7 @@ export interface EpisodeMedicationPlan {
   weightKg: number | null;
   doseMgPerKg: number | null;
   notes: string | null;
+  memberAccountIds: string[];
   createdAt: string;
 }
 

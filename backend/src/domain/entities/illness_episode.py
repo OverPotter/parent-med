@@ -1,6 +1,6 @@
 """Сущность: эпизод болезни ребёнка."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from uuid import UUID
 
@@ -18,3 +18,4 @@ class IllnessEpisode:
     note: str | None
     closed_at: datetime | None
     deleted_at: datetime | None
+    member_account_ids: list[UUID] = field(default_factory=list)
