@@ -1,4 +1,5 @@
 import type { Child, FeedingRecord, SleepSession } from "@shared/types/api";
+import { buildNativeAppUrl } from "@shared/config/nativeAppLinks";
 import {
   getLiveActivityPreferencesCache,
   type LiveActivityPreferencesCache,
@@ -42,7 +43,7 @@ export async function syncSleepLiveActivity(
     title: child.name,
     subtitle: getKindLabel("sleep", language),
     startedAt: session.startedAt,
-    deepLink: `/children?liveChild=${child.id}&liveAction=sleep`,
+    deepLink: buildNativeAppUrl(`/children?liveChild=${child.id}&liveAction=sleep`),
   });
 }
 
@@ -67,7 +68,7 @@ export async function syncFeedingLiveActivity(
     title: child.name,
     subtitle: getKindLabel("feeding", language),
     startedAt: feeding.startedAt ?? feeding.recordedAt,
-    deepLink: `/children?liveChild=${child.id}&liveAction=feeding`,
+    deepLink: buildNativeAppUrl(`/children?liveChild=${child.id}&liveAction=feeding`),
   });
 }
 

@@ -52,7 +52,7 @@ export const settingsCopy = {
     liveActivitiesHint:
       "Большой живой статус на экране блокировки iPhone для сна и кормления.",
     liveActivitiesAppleOnly:
-      "Работает только на iPhone и показывает живой статус прямо на экране блокировки.",
+      "На iPhone покажет компактный живой статус на локскрине и в Dynamic Island.",
     liveActivitiesSleep: "Сон на экране блокировки",
     liveActivitiesSleepHint: "Показывать большой таймер, пока сессия сна активна.",
     liveActivitiesFeeding: "Кормление на экране блокировки",
@@ -62,8 +62,7 @@ export const settingsCopy = {
     liveActivitiesFeedingPreviewTitle: "Кормление",
     liveActivitiesSleepPreviewStatus: "Идёт сон",
     liveActivitiesFeedingPreviewStatus: "Идёт кормление",
-    liveActivitiesPreviewFromLockScreen: "Открывается с экрана блокировки",
-    liveActivitiesPreviewManageInApp: "Завершение и детали — в приложении",
+    liveActivitiesPreviewFromLockScreen: "Тап открывает нужного ребёнка в разделе «Дети»",
     childrenReminders: "По детям",
     pillboxReminders: "По таблетнице",
     childrenRemindersSoftText: "Напомнить заранее перед событием.",
@@ -150,7 +149,7 @@ export const settingsCopy = {
     liveActivitiesHint:
       "A large live status on the iPhone lock screen for sleep and feeding.",
     liveActivitiesAppleOnly:
-      "Available on iPhone only and shows a live status right on the lock screen.",
+      "On iPhone it shows a compact live status on the lock screen and in the Dynamic Island.",
     liveActivitiesSleep: "Sleep on the lock screen",
     liveActivitiesSleepHint: "Show a large timer while a sleep session is active.",
     liveActivitiesFeeding: "Feeding on the lock screen",
@@ -160,8 +159,7 @@ export const settingsCopy = {
     liveActivitiesFeedingPreviewTitle: "Feeding",
     liveActivitiesSleepPreviewStatus: "Sleep in progress",
     liveActivitiesFeedingPreviewStatus: "Feeding in progress",
-    liveActivitiesPreviewFromLockScreen: "Opens from the lock screen",
-    liveActivitiesPreviewManageInApp: "Details and ending stay in the app",
+    liveActivitiesPreviewFromLockScreen: "Tap opens the right child in the Children section",
     childrenReminders: "For children",
     pillboxReminders: "For pillbox",
     childrenRemindersSoftText: "Remind me before the event.",

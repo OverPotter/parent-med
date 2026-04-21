@@ -1,74 +1,79 @@
-export const IOS_BACK_SWIPE_CAPTURE_RATIO = 0.34;
-export const IOS_BACK_SWIPE_CAPTURE_MAX_PX = 220;
+export const IOS_BACK_SWIPE_CAPTURE_RATIO = 0.16;
+export const IOS_BACK_SWIPE_CAPTURE_MAX_PX = 72;
 export const IOS_BACK_SWIPE_CAPTURE_MIN_PX = 0;
-export const IOS_BACK_SWIPE_EDGE_PRIORITY_PX = 36;
-export const IOS_BACK_SWIPE_SCROLL_GUARD_DISTANCE = 12;
-export const IOS_BACK_SWIPE_LOCK_DISTANCE = 14;
-export const IOS_BACK_SWIPE_LOCK_RATIO = 1.22;
-export const IOS_BACK_SWIPE_VERTICAL_CANCEL_BEFORE_LOCK = 28;
-export const IOS_BACK_SWIPE_VERTICAL_CANCEL_AFTER_LOCK = 56;
-export const IOS_BACK_SWIPE_COMMIT_MS = 420;
-export const IOS_BACK_SWIPE_CANCEL_MS = 360;
+export const IOS_BACK_SWIPE_EDGE_PRIORITY_PX = 24;
+export const IOS_BACK_SWIPE_SCROLL_GUARD_DISTANCE = 16;
+export const IOS_BACK_SWIPE_LOCK_DISTANCE = 18;
+export const IOS_BACK_SWIPE_LOCK_RATIO = 1.38;
+export const IOS_BACK_SWIPE_VERTICAL_CANCEL_BEFORE_LOCK = 24;
+export const IOS_BACK_SWIPE_VERTICAL_CANCEL_AFTER_LOCK = 44;
+export const IOS_BACK_SWIPE_COMMIT_MS = 360;
+export const IOS_BACK_SWIPE_CANCEL_MS = 280;
+
+const IOS_BACK_SWIPE_TEXT_INPUT_SELECTORS = [
+  "input",
+  "textarea",
+  "select",
+  "label",
+  ".soft-input",
+  "[contenteditable='true']",
+];
+
+const IOS_BACK_SWIPE_INTERACTIVE_SELECTORS = [
+  "button",
+  "a",
+  "summary",
+  "[role='button']",
+  "[role='link']",
+  "[role='switch']",
+  "[role='tab']",
+  "[role='menuitem']",
+];
+
+function matchesClosest(target: EventTarget | null, selectors: string[]) {
+  if (!(target instanceof Element) || selectors.length === 0) {
+    return false;
+  }
+  return Boolean(target.closest(selectors.join(",")));
+}
 
 export function canStartIosBackSwipe(clientX: number, viewportWidth: number) {
   return (
     clientX >= IOS_BACK_SWIPE_CAPTURE_MIN_PX &&
-    clientX <= Math.max(IOS_BACK_SWIPE_CAPTURE_MAX_PX, viewportWidth * IOS_BACK_SWIPE_CAPTURE_RATIO)
+    clientX <= Math.min(IOS_BACK_SWIPE_CAPTURE_MAX_PX, viewportWidth * IOS_BACK_SWIPE_CAPTURE_RATIO)
   );
 }
 
-export function shouldIgnoreIosBackSwipeTarget(target: EventTarget | null) {
-  if (!(target instanceof Element)) {
-    return false;
-  }
+export function shouldIgnoreIosBackSwipeTarget(
+  target: EventTarget | null,
+  options?: { includeLocalSwipeRoot?: boolean }
+) {
+  const selectors = [
+    options?.includeLocalSwipeRoot === false ? null : "[data-ios-local-back-swipe='true']",
+    "[data-ios-disable-back-swipe='true']",
+    ...IOS_BACK_SWIPE_TEXT_INPUT_SELECTORS,
+  ].filter(Boolean) as string[];
 
-  return Boolean(
-    target.closest(
-      [
-        "[data-ios-local-back-swipe='true']",
-        "[data-ios-disable-back-swipe='true']",
-        "input",
-        "textarea",
-        "select",
-        "label",
-        ".soft-input",
-        "[contenteditable='true']",
-      ].join(",")
-    )
-  );
+  return matchesClosest(target, selectors);
 }
 
-export function shouldIgnoreIosBackSwipeStartTarget(target: EventTarget | null, clientX?: number) {
-  if (!(target instanceof Element)) {
-    return false;
-  }
-
+export function shouldIgnoreIosBackSwipeStartTarget(
+  target: EventTarget | null,
+  clientX?: number,
+  options?: { includeLocalSwipeRoot?: boolean }
+) {
   if (typeof clientX === "number" && clientX <= IOS_BACK_SWIPE_EDGE_PRIORITY_PX) {
     return false;
   }
 
-  return Boolean(
-    target.closest(
-      [
-        "[data-ios-local-back-swipe='true']",
-        "[data-ios-disable-back-swipe='true']",
-        "button",
-        "a",
-        "label",
-        "summary",
-        "input",
-        "textarea",
-        "select",
-        ".soft-input",
-        "[role='button']",
-        "[role='link']",
-        "[role='switch']",
-        "[role='tab']",
-        "[role='menuitem']",
-        "[contenteditable='true']",
-      ].join(",")
-    )
-  );
+  const selectors = [
+    options?.includeLocalSwipeRoot === false ? null : "[data-ios-local-back-swipe='true']",
+    "[data-ios-disable-back-swipe='true']",
+    ...IOS_BACK_SWIPE_TEXT_INPUT_SELECTORS,
+    ...IOS_BACK_SWIPE_INTERACTIVE_SELECTORS,
+  ].filter(Boolean) as string[];
+
+  return matchesClosest(target, selectors);
 }
 
 export function shouldLockIosBackSwipe(dx: number, dy: number) {
@@ -112,6 +117,6 @@ export function shouldCommitIosBackSwipe(
   horizontalLocked: boolean,
   viewportWidth: number
 ) {
-  const threshold = Math.max(110, viewportWidth * 0.22);
-  return dx >= threshold && (horizontalLocked || (dy <= 26 && dx >= 46));
+  const threshold = Math.max(92, viewportWidth * 0.18);
+  return dx >= threshold && (horizontalLocked || (dy <= 22 && dx >= 44));
 }

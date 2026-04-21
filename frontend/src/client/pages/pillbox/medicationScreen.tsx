@@ -122,7 +122,7 @@ export function PillboxMedicationScreen({
     "text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground/88 sm:text-[0.94rem]";
 
   return (
-    <EditorShell>
+    <EditorShell onBack={onBack}>
       <FlowScreenHeader
         backLabel={tPillbox(language, "medicationBack")}
         onBack={onBack}

@@ -519,7 +519,9 @@ function NativeUnauthedBootReady() {
     };
 
     const frameId = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(releaseBootSplash);
+      window.requestAnimationFrame(() => {
+        releaseBootSplash();
+      });
     });
 
     return () => window.cancelAnimationFrame(frameId);

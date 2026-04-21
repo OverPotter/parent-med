@@ -12,7 +12,7 @@ const config: CapacitorConfig & { packageClassList: string[] } = {
   },
   plugins: {
     Keyboard: {
-      resize: KeyboardResize.Native,
+      resize: KeyboardResize.Body,
     },
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],

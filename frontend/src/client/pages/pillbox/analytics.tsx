@@ -100,7 +100,7 @@ export function PillboxAnalyticsScreen({
   }, [planFilter, activePlanId]);
 
   return (
-    <EditorShell>
+    <EditorShell onBack={onBack}>
       <FlowScreenHeader
         backLabel={tPillbox(language, "analyticsBack")}
         onBack={onBack}

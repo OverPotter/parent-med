@@ -1,5 +1,6 @@
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import type { KeyboardEvent } from "react";
+import { useRef } from "react";
 import type {
   PillboxMealRule,
   PillboxPlan,
@@ -8,6 +9,8 @@ import type {
   PillboxPlanWritableStatus,
 } from "@shared/api/pillboxPlans.contract";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import type { AppLanguage } from "@shared/i18n";
 import { getLocalIsoDate } from "@shared/utils/date";
 
@@ -379,12 +382,20 @@ export function FieldIcon({ kind }: { kind: "pill" | "dose" | "time" }) {
 export function EditorShell({
   children,
   maxWidthClassName = flowShellClass,
+  onBack,
 }: {
   children: ReactNode;
   maxWidthClassName?: string;
+  onBack?: () => void;
 }) {
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const isIosShell = useIsIosShell();
+
   return (
-    <div className={`child-profile-shell ${flowShellSpacingClass}`}>
+    <div ref={shellRef} className={`child-profile-shell ${flowShellSpacingClass}`}>
+      {onBack ? (
+        <IosEdgeBackGesture isEnabled={isIosShell} onBack={onBack} targetRef={shellRef} />
+      ) : null}
       <div className={`mx-auto w-full ${maxWidthClassName}`}>{children}</div>
     </div>
   );

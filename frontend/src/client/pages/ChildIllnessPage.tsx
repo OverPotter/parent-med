@@ -20,9 +20,11 @@ import { createTemperatureEntry } from "@shared/api/temperatureEntries";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { trackIllnessEpisodeStarted } from "@shared/analytics";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { formatChildAgeLabel } from "@client/i18n/children";
 import { formatChildDatePlain } from "@client/utils/childDateFormat";
 import { EpisodeActivationCard } from "./child-illness/forms";
@@ -107,6 +109,7 @@ export function ChildIllnessPage() {
   const { childId } = useParams<{ childId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const isIosShell = useIsIosShell();
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const queryClient = useQueryClient();
   const historyOnlyView = searchParams.get("view") === "history";
@@ -129,6 +132,7 @@ export function ChildIllnessPage() {
   const liveQueryOptions = useLiveQueryOptions(3000);
   const createModeCardRef = useRef<HTMLDivElement | null>(null);
   const historySectionRef = useRef<HTMLElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   const { data: child, isLoading: childLoading } = useQuery({
     queryKey: ["child", childId],
@@ -374,11 +378,15 @@ export function ChildIllnessPage() {
           ? "Сейчас активного наблюдения нет."
           : "There is no active tracking right now."
         : undefined;
+  const handleBack = () => {
+    navigate(backHref);
+  };
 
   return (
-    <div className="child-profile-shell space-y-7">
+    <div ref={rootRef} className="child-profile-shell space-y-7">
+      <IosEdgeBackGesture isEnabled={isIosShell} onBack={handleBack} targetRef={rootRef} />
       <ChildSectionTopBar
-        backHref={backHref}
+        onBack={handleBack}
         backLabel={backLabel}
         title={topBarTitle}
         hint={topBarHint}

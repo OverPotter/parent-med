@@ -40,47 +40,46 @@ export function SettingsLiveActivitiesSection({
         separated
       />
 
-      <div className="mx-4 mt-4 rounded-[24px] border border-white/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(244,247,255,0.88))] p-3.5 shadow-[0_18px_36px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[linear-gradient(145deg,rgba(19,26,44,0.94),rgba(12,18,31,0.9))]">
+      <div className="mx-4 mt-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted">
               {tSettings(language, "liveActivitiesPreviewLabel")}
             </p>
-            <p className="mt-1 text-sm text-muted">{tSettings(language, "liveActivitiesAppleOnly")}</p>
+            <p className="mt-1 text-sm text-foreground/78 dark:text-white/78">
+              {tSettings(language, "liveActivitiesAppleOnly")}
+            </p>
           </div>
           <div className="rounded-full border border-black/5 bg-black px-3 py-1 text-[0.72rem] font-semibold text-white dark:border-white/10 dark:bg-white dark:text-slate-950">
             iPhone
           </div>
         </div>
 
-        <div className="rounded-[26px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_55%),linear-gradient(180deg,#101828,#0f172a)] p-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-          <div className="mx-auto flex h-[1.875rem] w-28 items-center justify-center rounded-full border border-white/10 bg-black/70 text-[0.68rem] font-medium tracking-[0.08em] text-white/72">
-            Dynamic Island
-          </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <LiveActivityPreviewCard
-              title={tSettings(language, "liveActivitiesSleepPreviewTitle")}
-              timer="00:43"
-              status={tSettings(language, "liveActivitiesSleepPreviewStatus")}
-              accentClassName="from-sky-400/90 via-cyan-300/85 to-teal-300/90"
-              accentSurfaceClassName="bg-cyan-300/12 text-cyan-100 border-cyan-200/15"
-              iconName="moon.stars.fill"
-              enabled={sleepEnabled}
-              muted={!isIos}
-              language={language}
-            />
-            <LiveActivityPreviewCard
-              title={tSettings(language, "liveActivitiesFeedingPreviewTitle")}
-              timer="00:12"
-              status={tSettings(language, "liveActivitiesFeedingPreviewStatus")}
-              accentClassName="from-violet-300/95 via-fuchsia-300/90 to-indigo-300/90"
-              accentSurfaceClassName="bg-violet-300/12 text-violet-100 border-violet-200/15"
-              iconName="drop.fill"
-              enabled={feedingEnabled}
-              muted={!isIos}
-              language={language}
-            />
-          </div>
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          <LiveActivityPreviewCard
+            title={tSettings(language, "liveActivitiesSleepPreviewTitle")}
+            timer="00:43"
+            status={tSettings(language, "liveActivitiesSleepPreviewStatus")}
+            accentClassName="from-[#61E0FA] via-[#61E0FA] to-[#61E0FA]"
+            accentSurfaceClassName="bg-[#61E0FA]/16 text-[#61E0FA] border-[#61E0FA]/14"
+            surfaceClassName="border-white/[0.09] bg-[linear-gradient(135deg,rgb(18,28,48),rgb(10,36,56),rgb(5,20,36))] shadow-[0_18px_36px_rgba(15,23,42,0.16)]"
+            iconName="moon.stars.fill"
+            enabled={sleepEnabled}
+            muted={!isIos}
+            language={language}
+          />
+          <LiveActivityPreviewCard
+            title={tSettings(language, "liveActivitiesFeedingPreviewTitle")}
+            timer="00:12"
+            status={tSettings(language, "liveActivitiesFeedingPreviewStatus")}
+            accentClassName="from-[#B394FA] via-[#B394FA] to-[#B394FA]"
+            accentSurfaceClassName="bg-[#B394FA]/16 text-[#B394FA] border-[#B394FA]/14"
+            surfaceClassName="border-white/[0.09] bg-[linear-gradient(135deg,rgb(33,23,51),rgb(46,28,77),rgb(23,15,41))] shadow-[0_18px_36px_rgba(15,23,42,0.16)]"
+            iconName="drop.fill"
+            enabled={feedingEnabled}
+            muted={!isIos}
+            language={language}
+          />
         </div>
       </div>
 
@@ -169,6 +168,7 @@ function LiveActivityPreviewCard({
   status,
   accentClassName,
   accentSurfaceClassName,
+  surfaceClassName,
   iconName,
   enabled,
   muted,
@@ -179,52 +179,58 @@ function LiveActivityPreviewCard({
   status: string;
   accentClassName: string;
   accentSurfaceClassName: string;
+  surfaceClassName: string;
   iconName: string;
   enabled: boolean;
   muted: boolean;
 }) {
   return (
     <div
-      className={`rounded-[22px] border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm transition-opacity ${
+      className={`rounded-[20px] border px-3 py-3 backdrop-blur-sm transition-opacity ${surfaceClassName} ${
         enabled && !muted ? "opacity-100" : "opacity-55"
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div
-            className={`flex h-[2.625rem] w-[2.625rem] shrink-0 items-center justify-center rounded-[14px] border ${accentSurfaceClassName}`}
+      <div className="flex items-center gap-3">
+        <div
+          className={`flex h-[2.625rem] w-[2.625rem] shrink-0 items-center justify-center rounded-[14px] border ${accentSurfaceClassName}`}
+        >
+          <span className="sr-only">{title}</span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-[0.95rem] w-[0.95rem] fill-current text-white/90"
           >
-            <span className="sr-only">{title}</span>
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="h-[1.05rem] w-[1.05rem] fill-current text-white/90"
-            >
-              {iconName === "moon.stars.fill" ? (
-                <path d="M21 12.79A9 9 0 0 1 11.21 3c0-.45.05-.89.13-1.32A1 1 0 0 0 10.08.57 10 10 0 1 0 23.43 13.92a1 1 0 0 0-1.11-1.26c-.43.08-.87.13-1.32.13Z" />
-              ) : (
-                <path d="M12 2.75c2.97 3.42 5.25 6.27 5.25 9.05A5.25 5.25 0 1 1 6.75 11.8c0-2.78 2.28-5.63 5.25-9.05Z" />
-              )}
-            </svg>
+            {iconName === "moon.stars.fill" ? (
+              <path d="M21 12.79A9 9 0 0 1 11.21 3c0-.45.05-.89.13-1.32A1 1 0 0 0 10.08.57 10 10 0 1 0 23.43 13.92a1 1 0 0 0-1.11-1.26c-.43.08-.87.13-1.32.13Z" />
+            ) : (
+              <path d="M12 2.75c2.97 3.42 5.25 6.27 5.25 9.05A5.25 5.25 0 1 1 6.75 11.8c0-2.78 2.28-5.63 5.25-9.05Z" />
+            )}
+          </svg>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <p className="truncate text-sm font-semibold text-white">
+              {title}
+            </p>
+            <p className="shrink-0 text-[1.1rem] font-semibold tracking-[-0.04em] text-white">
+              {timer}
+            </p>
           </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">{title}</p>
-            <p className="mt-1 truncate text-[0.8rem] font-medium text-white/70">{status}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <div className={`h-2 w-2 shrink-0 rounded-full bg-gradient-to-br ${accentClassName}`} />
+            <p className="truncate text-[0.8rem] font-semibold text-white/84">
+              {status}
+            </p>
           </div>
         </div>
       </div>
-      <div className="mt-3.5 flex items-end justify-between gap-3">
-        <p className="text-[1.65rem] font-semibold tracking-[-0.045em] text-white">{timer}</p>
-        <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 shrink-0 rounded-full bg-gradient-to-br ${accentClassName}`} />
-          <span className="text-[0.72rem] font-medium text-white/66">
-            {language === "ru" ? "сейчас" : "now"}
-          </span>
-        </div>
-      </div>
-      <div className="mt-2.5 space-y-1 text-[0.76rem] leading-5 text-white/72">
-        <p>{tSettings(language, "liveActivitiesPreviewFromLockScreen")}</p>
-        <p className="text-white/58">{tSettings(language, "liveActivitiesPreviewManageInApp")}</p>
+      <div className="mt-2.5 flex items-center justify-between gap-3">
+        <span className="text-[0.72rem] leading-5 text-white/72">
+          {tSettings(language, "liveActivitiesPreviewFromLockScreen")}
+        </span>
+        <span className="inline-flex shrink-0 items-center rounded-full border border-white/10 bg-white/15 px-3 py-1 text-[0.72rem] font-semibold text-white">
+          {language === "ru" ? "Открыть" : "Open"}
+        </span>
       </div>
     </div>
   );

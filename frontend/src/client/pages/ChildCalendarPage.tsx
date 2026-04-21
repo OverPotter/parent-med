@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { fetchFeedingRecordsByChildId } from "@shared/api/feedingRecords";
@@ -10,8 +10,10 @@ import { fetchWeightEntriesByChildId } from "@shared/api/weightEntries";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { getLocalIsoDate } from "@shared/utils/date";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { childCalendarCopy } from "./child-calendar/copy";
 import type { EventKind, PeriodKey, ViewMode } from "./child-calendar/types";
 import {
@@ -43,6 +45,8 @@ import {
 
 export function ChildCalendarPage() {
   const { language } = useI18n();
+  const isIosShell = useIsIosShell();
+  const navigate = useNavigate();
   const text = childCalendarCopy[language];
   const { childId } = useParams<{ childId: string }>();
   const [mode, setMode] = useState<ViewMode>("feed");
@@ -57,6 +61,7 @@ export function ChildCalendarPage() {
   const [calendarFeedDate, setCalendarFeedDate] = useState<string | null>(null);
   const [enabledKinds, setEnabledKinds] = useState<EventKind[]>(eventKinds);
   const calendarFeedHistoryRef = useRef(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   const { data: child, isLoading: isChildLoading } = useQuery({
     queryKey: ["child", childId],
@@ -207,11 +212,16 @@ export function ChildCalendarPage() {
     setPeriod(value);
     setAnchorDate(getLocalIsoDate());
   };
+  const handleBack = () => {
+    if (!child) return;
+    navigate(`/children/${child.id}`);
+  };
 
   return (
-    <div className="child-profile-shell child-overview-page space-y-4 sm:space-y-5">
+    <div ref={rootRef} className="child-profile-shell child-overview-page space-y-4 sm:space-y-5">
+      <IosEdgeBackGesture isEnabled={isIosShell} onBack={handleBack} targetRef={rootRef} />
       <ChildSectionTopBar
-        backHref={`/children/${child.id}`}
+        onBack={handleBack}
         backLabel={text.back}
         title={`${text.title} · ${child.name}`}
         hint={text.hint}

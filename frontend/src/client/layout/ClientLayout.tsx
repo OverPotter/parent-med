@@ -217,6 +217,8 @@ export function ClientLayout() {
   const isSettingsRoute = Boolean(matchPath({ path: "/settings", end: true }, location.pathname));
   const isAccountRoute = Boolean(matchPath({ path: "/account", end: true }, location.pathname));
   const isFamilyRoute = Boolean(matchPath({ path: "/family", end: true }, location.pathname));
+  const shouldKeepMobileNav =
+    isSettingsRoute || isFeedbackRoute || isAccountRoute || isFamilyRoute;
   const shouldHideHeader =
     isLegalRoute ||
     isFeedbackRoute ||
@@ -232,11 +234,7 @@ export function ClientLayout() {
   );
   const shouldHideMobileNav = Boolean(
     isLegalRoute ||
-    isFeedbackRoute ||
-    isSettingsRoute ||
-    isAccountRoute ||
-    isFamilyRoute ||
-    shouldHideHeader ||
+    (shouldHideHeader && !shouldKeepMobileNav) ||
     isMedicineCabinetAddRoute ||
     matchPath({ path: "/children/:childId/illness", end: false }, location.pathname)
   );
