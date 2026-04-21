@@ -46,7 +46,9 @@ export function SettingsLiveActivitiesSection({
             <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted">
               {tSettings(language, "liveActivitiesPreviewLabel")}
             </p>
-            <p className="mt-1 text-sm text-muted">{tSettings(language, "liveActivitiesAppleOnly")}</p>
+            <p className="mt-1 text-sm text-foreground/78 dark:text-white/78">
+              {tSettings(language, "liveActivitiesAppleOnly")}
+            </p>
           </div>
           <div className="rounded-full border border-black/5 bg-black px-3 py-1 text-[0.72rem] font-semibold text-white dark:border-white/10 dark:bg-white dark:text-slate-950">
             iPhone
@@ -216,7 +218,7 @@ function LiveActivityPreviewCard({
           </div>
           <div className="mt-1 flex items-center gap-2">
             <div className={`h-2 w-2 shrink-0 rounded-full bg-gradient-to-br ${accentClassName}`} />
-            <p className="truncate text-[0.78rem] font-medium text-white/78">
+            <p className="truncate text-[0.8rem] font-semibold text-white/84">
               {status}
             </p>
           </div>
