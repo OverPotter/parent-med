@@ -77,7 +77,7 @@ export function EpisodeActivationCard({
             className={illnessCompactInputClass}
           />
         </label>
-        <div className="app-form-action-bar flex flex-wrap gap-2">
+        <div className="border-t border-border/60 pt-4 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
           <button
             type="button"
             onClick={() =>
@@ -93,7 +93,7 @@ export function EpisodeActivationCard({
               })
             }
             disabled={isPending || !startedAt}
-            className={illnessCompactPrimaryButtonClass}
+            className={`${illnessCompactPrimaryButtonClass} w-full sm:w-auto`}
           >
             {isPending
               ? language === "ru"
@@ -107,7 +107,7 @@ export function EpisodeActivationCard({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className={illnessCompactSecondaryButtonClass}
+            className={`${illnessCompactSecondaryButtonClass} mt-2 w-full sm:mt-0 sm:w-auto`}
           >
             {language === "ru" ? "Назад" : "Back"}
           </button>
@@ -150,7 +150,7 @@ export function TemperatureForm({
           className={illnessTemperatureInputClass}
         />
       </label>
-      <div className="app-form-action-bar">
+      <div className="border-t border-border/60 pt-4">
         <button
           type="button"
           onClick={onSubmit}
@@ -216,7 +216,7 @@ export function AdministrationForm({
         </label>
 
       </div>
-      <div className="app-form-action-bar">
+      <div className="border-t border-border/60 pt-4">
         <button
           type="button"
           onClick={onSubmit}

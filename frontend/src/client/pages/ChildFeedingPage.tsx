@@ -11,6 +11,7 @@ import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { useNow } from "@shared/hooks/useNow";
 import { canEditChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
@@ -25,6 +26,11 @@ import {
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
+import {
+  childActionSuccessClass,
+  formatDurationMinutesHuman,
+  formatElapsedDuration,
+} from "./children/shared";
 
 export function ChildFeedingPage() {
   const { language } = useI18n();
@@ -56,16 +62,19 @@ export function ChildFeedingPage() {
     enabled: !!childId && canViewFeeding,
   });
 
-  useQuery({
+  const { data: activeFeeding } = useQuery({
     queryKey: ["feeding-record-active", childId],
     queryFn: () => fetchActiveFeedingRecordByChildId(childId!),
     enabled: !!childId && canViewFeeding,
   });
+  const activeFeedingStartedAt = activeFeeding?.startedAt ?? activeFeeding?.recordedAt ?? null;
+  const now = useNow(activeFeedingStartedAt ? 1_000 : 60_000);
 
   const deleteMutation = useMutation({
     mutationFn: deleteFeedingRecord,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feeding-records", childId] });
+      queryClient.invalidateQueries({ queryKey: ["feeding-record-active", childId] });
       setRecordToDelete(null);
     },
   });
@@ -132,6 +141,13 @@ export function ChildFeedingPage() {
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
         title={`${copy.feedingSection} · ${child.name}`}
         hint={copy.feedingSectionSubtitle}
+        action={
+          activeFeedingStartedAt ? (
+            <span className={`${childActionSuccessClass} rounded-full px-3 py-1.5 text-xs`}>
+              {`${copy.feedingSectionActive} · ${formatElapsedDuration(activeFeedingStartedAt, now, language)}`}
+            </span>
+          ) : null
+        }
       />
 
       <div className="mx-auto w-full max-w-2xl space-y-3 pt-2">
@@ -244,13 +260,7 @@ function formatBreastSide(side: string | null, language: "ru" | "en") {
 }
 
 function formatFeedingDuration(durationMinutes: number | null, language: "ru" | "en") {
-  if (durationMinutes === null) {
-    return "—";
-  }
-  if (language === "ru") {
-    return `${durationMinutes} мин`;
-  }
-  return `${durationMinutes} min`;
+  return formatDurationMinutesHuman(durationMinutes, language);
 }
 
 function formatMinutes(value: number | null, language: "ru" | "en") {

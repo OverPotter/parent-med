@@ -8,21 +8,21 @@ struct SleepFeedingLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: LiveActivityAttributes.self) { context in
             LiveActivityLockScreenView(context: context)
-                .activityBackgroundTint(.clear)
+                .activityBackgroundTint(.black.opacity(0.16))
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    HStack(spacing: 9) {
-                        ActivityIcon(kind: context.attributes.kind, size: 36)
+                    HStack(spacing: 7) {
+                        ActivityIcon(kind: context.attributes.kind, size: 28)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(context.state.title)
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                            Text(activityTitle(for: context))
-                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .minimumScaleFactor(0.64)
+                            Text(compactActivityEyebrow(for: context))
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
                                 .foregroundStyle(.white.opacity(0.62))
                                 .lineLimit(1)
                         }
@@ -65,7 +65,7 @@ struct SleepFeedingLiveActivityWidget: Widget {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.white)
                 } else {
-                    ElapsedTimerText(startedAt: context.state.startedAt, font: .caption.weight(.semibold))
+                    CompactElapsedText(startedAt: context.state.startedAt)
                         .foregroundStyle(.white)
                 }
             } minimal: {
@@ -94,8 +94,19 @@ private struct LiveActivityLockScreenView: View {
                 .fill(backgroundGradient(for: kind))
                 .overlay(
                     RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .strokeBorder(.white.opacity(0.09), lineWidth: 1)
+                        .strokeBorder(.black.opacity(0.38), lineWidth: 3.1)
                 )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .inset(by: 0.9)
+                        .strokeBorder(.white.opacity(0.16), lineWidth: 1.1)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .inset(by: 2.1)
+                        .strokeBorder(.white.opacity(0.07), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.34), radius: 24, x: 0, y: 14)
 
             VStack(alignment: .leading, spacing: 15) {
                 HStack(alignment: .center, spacing: 13) {
@@ -108,10 +119,10 @@ private struct LiveActivityLockScreenView: View {
                             .lineLimit(2)
                             .minimumScaleFactor(0.82)
 
-                        Text(activityTitle(for: context))
+                        Text(activitySubtitle(for: context))
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(activityAccentColor(for: kind))
-                            .lineLimit(1)
+                            .lineLimit(2)
                             .minimumScaleFactor(0.9)
                     }
 
@@ -134,6 +145,23 @@ private struct LiveActivityLockScreenView: View {
                     }
                 }
 
+                if hasSupplementaryDetails(context: context) {
+                    VStack(alignment: .leading, spacing: 7) {
+                        if let primaryRow = detailRow(
+                            value: context.state.primaryValue,
+                            caption: context.state.primaryCaption
+                        ) {
+                            primaryRow
+                        }
+                        if let secondaryRow = detailRow(
+                            value: context.state.secondaryValue,
+                            caption: context.state.secondaryCaption
+                        ) {
+                            secondaryRow
+                        }
+                    }
+                }
+
                 OpenActivityLink(url: deepLink, compact: false)
             }
             .padding(.horizontal, 20)
@@ -141,6 +169,42 @@ private struct LiveActivityLockScreenView: View {
         }
         .widgetURL(deepLink)
     }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func hasSupplementaryDetails(context: ActivityViewContext<LiveActivityAttributes>) -> Bool {
+    if context.attributes.kind != "illness" {
+        return false
+    }
+    let primaryValue = context.state.primaryValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    let secondaryValue = context.state.secondaryValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return !primaryValue.isEmpty || !secondaryValue.isEmpty
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func detailRow(value: String?, caption: String?) -> AnyView? {
+    let trimmedValue = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if trimmedValue.isEmpty {
+        return nil
+    }
+
+    let trimmedCaption = caption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return AnyView(
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            if !trimmedCaption.isEmpty {
+                Text(trimmedCaption)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.62))
+                    .lineLimit(1)
+            }
+            Text(trimmedValue)
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.96))
+                .lineLimit(1)
+                .minimumScaleFactor(0.86)
+            Spacer(minLength: 0)
+        }
+    )
 }
 
 @available(iOSApplicationExtension 16.1, *)
@@ -155,6 +219,21 @@ private struct ElapsedTimerText: View {
             .multilineTextAlignment(.trailing)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private struct CompactElapsedText: View {
+    let startedAt: Date
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 60)) { timeline in
+            Text(compactElapsedLabel(startedAt: startedAt, now: timeline.date))
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+        }
     }
 }
 
@@ -259,6 +338,44 @@ private func activityTitle(for context: ActivityViewContext<LiveActivityAttribut
 }
 
 @available(iOSApplicationExtension 16.1, *)
+private func activitySubtitle(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
+    let startedAtText = startedAtLabel(context.state.startedAt)
+
+    switch context.attributes.kind {
+    case "sleep":
+        return "С \(startedAtText)"
+    case "feeding":
+        return "С \(startedAtText)"
+    case "illness":
+        return activityTitle(for: context)
+    default:
+        return activityTitle(for: context)
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func compactActivityEyebrow(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
+    switch context.attributes.kind {
+    case "sleep":
+        return "Сон"
+    case "feeding":
+        return "Кормление"
+    case "illness":
+        return activityTitle(for: context)
+    default:
+        return activityTitle(for: context)
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func startedAtLabel(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "ru_RU")
+    formatter.dateFormat = "HH:mm"
+    return formatter.string(from: date)
+}
+
+@available(iOSApplicationExtension 16.1, *)
 private func iconName(for kind: String) -> String {
     switch kind {
     case "sleep":
@@ -278,7 +395,7 @@ private func activityAccentColor(for kind: String) -> Color {
     case "sleep":
         return Color(red: 0.45, green: 0.55, blue: 0.82)
     case "feeding":
-        return Color(red: 0.75, green: 0.40, blue: 0.56)
+        return Color(red: 0.90, green: 0.60, blue: 0.39)
     case "illness":
         return Color(red: 0.54, green: 0.48, blue: 0.75)
     default:
@@ -314,9 +431,9 @@ private func backgroundGradient(for kind: String) -> LinearGradient {
 
     return LinearGradient(
         colors: [
-            Color(red: 0.26, green: 0.14, blue: 0.24),
-            Color(red: 0.33, green: 0.17, blue: 0.29),
-            Color(red: 0.22, green: 0.12, blue: 0.21)
+            Color(red: 0.32, green: 0.18, blue: 0.12),
+            Color(red: 0.40, green: 0.24, blue: 0.15),
+            Color(red: 0.26, green: 0.15, blue: 0.09)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
@@ -336,4 +453,20 @@ private func illnessDayLabel(startedAt: Date) -> String {
 @available(iOSApplicationExtension 16.1, *)
 private func compactIllnessDayLabel(startedAt: Date) -> String {
     "\(illnessDayNumber(startedAt: startedAt))д"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func compactElapsedLabel(startedAt: Date, now: Date) -> String {
+    let elapsedSeconds = max(0, Int(now.timeIntervalSince(startedAt)))
+    let minutes = elapsedSeconds / 60
+    let hours = minutes / 60
+    let days = hours / 24
+
+    if days > 0 {
+        return "\(days)д"
+    }
+    if hours > 0 {
+        return "\(hours)ч"
+    }
+    return "\(max(1, minutes))м"
 }

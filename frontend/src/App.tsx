@@ -21,6 +21,7 @@ import {
   RuntimePlatformSync,
   ThemeSync,
 } from "@/app/runtime/sync";
+import { ClientRuntimeMount } from "@/app/runtime/ClientRuntimeMount";
 import {
   IOSKeyboardViewportSync,
   IOSLandingGestureGuard,
@@ -28,16 +29,13 @@ import {
 } from "@/app/mobile/ios/sync";
 import {
   MobileInteractionDiagnostics,
-  MobilePageResumeSync,
-  PullToRefreshSync,
   RouteScrollReset,
   WarmRouteChunks,
 } from "@/app/mobile/runtime";
-import { NativePushNavigationSync, PushSubscriptionSync } from "@/app/push/sync";
-import { LiveActivityRuntimeSync } from "@/app/live-activities/sync";
 import { AuthPage } from "@client/pages/AuthPage";
 import { appLog } from "@shared/utils/appLog";
 import { blurActiveField } from "@shared/utils/focus";
+import { cleanupDeviceSessionArtifacts } from "@shared/utils/sessionCleanup";
 import {
   IOS_BACK_SWIPE_CANCEL_MS,
   IOS_BACK_SWIPE_COMMIT_MS,
@@ -68,6 +66,11 @@ const AboutPage = lazy(() =>
 );
 const ClientHomePage = lazy(() =>
   import("@client/pages/ClientHomePage").then((module) => ({ default: module.ClientHomePage }))
+);
+const ClientWorkspacePage = lazy(() =>
+  import("@client/pages/ClientWorkspacePage").then((module) => ({
+    default: module.ClientWorkspacePage,
+  }))
 );
 const ClientStartPage = lazy(() =>
   import("@client/pages/ClientStartPage").then((module) => ({ default: module.ClientStartPage }))
@@ -216,6 +219,7 @@ function AuthSync() {
       return;
     }
     appLog.warn("Сессия недействительна, сбрасываю локальный auth state");
+    void cleanupDeviceSessionArtifacts();
     queryClient.clear();
     clearSession();
   }, [accountId, authToken, clearSession, error, queryClient, refreshToken]);
@@ -223,6 +227,7 @@ function AuthSync() {
   useEffect(() => {
     const handleLogout = () => {
       appLog.warn("Сессия сброшена (401 / выход)");
+      void cleanupDeviceSessionArtifacts();
       queryClient.clear();
       clearSession();
     };
@@ -560,6 +565,8 @@ export default function App() {
     /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
   const shouldUseAppEntryRoute = isNativeRuntime || isStandalonePwa || isLocalhostWeb;
   const isNonCriticalStartupReady = useDeferredNonCriticalStartupReady();
+  const hasSession = Boolean(authToken || accountId);
+  const shouldMountClientRuntime = isNonCriticalStartupReady && hasSession && role !== "admin";
   const [cookieConsent, setCookieConsent] = useState<CookieConsentDecision | null>(() =>
     getCookieConsentDecision()
   );
@@ -634,16 +641,12 @@ export default function App() {
       <ThemeSync />
       <DisplayModeSync />
       <RouteScrollReset />
-      <MobileInteractionDiagnostics />
-      <WarmRouteChunks />
+      {!isNativeRuntime && import.meta.env.DEV ? <MobileInteractionDiagnostics /> : null}
+      {!isNativeRuntime ? <WarmRouteChunks /> : null}
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <AuthSync />
-      {isNonCriticalStartupReady ? <PushSubscriptionSync /> : null}
-      {isNonCriticalStartupReady ? <NativePushNavigationSync /> : null}
-      {isNonCriticalStartupReady ? <LiveActivityRuntimeSync /> : null}
-      {isNonCriticalStartupReady ? <MobilePageResumeSync /> : null}
-      {isNonCriticalStartupReady ? <PullToRefreshSync /> : null}
+      <ClientRuntimeMount enabled={shouldMountClientRuntime} />
       <Suspense fallback={<RouteFallback />}>
         <div id="app-route-root" tabIndex={-1}>
           <Routes>
@@ -680,6 +683,7 @@ export default function App() {
                 <Route path="/" element={<ClientLayout />}>
                   <Route path="auth" element={<Navigate to="/" replace />} />
                   <Route index element={<ClientStartPage />} />
+                  <Route path="workspace" element={<ClientWorkspacePage />} />
                   <Route path="home" element={<ClientHomePage />} />
                   <Route path="intro" element={<Navigate to="/home" replace />} />
                   <Route path="family" element={<FamilyPage />} />

@@ -159,14 +159,14 @@ export function ChildCard({
                     </span>
                   ) : null}
                   {secondaryMeta.map((item, index) => (
-                    <span key={item} className="inline-flex items-center gap-2">
+                    <span key={item} className="inline-flex max-w-full items-center gap-2">
                       {index > 0 ? (
                         <span
                           aria-hidden="true"
                           className="h-1 w-1 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_32%,transparent)]"
                         />
                       ) : null}
-                      <span className="truncate">{item}</span>
+                      <span className="whitespace-normal break-words">{item}</span>
                     </span>
                   ))}
                 </div>

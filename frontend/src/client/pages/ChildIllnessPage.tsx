@@ -13,7 +13,10 @@ import {
   fetchIllnessEpisodesByChildId,
   updateIllnessEpisode,
 } from "@shared/api/illnessEpisodes";
-import { createEpisodeMedicationPlan } from "@shared/api/episodeMedicationPlans";
+import {
+  createEpisodeMedicationPlan,
+  fetchEpisodeMedicationPlansByEpisodeId,
+} from "@shared/api/episodeMedicationPlans";
 import { fetchMyFamilyMembers } from "@shared/api/families";
 import { createIllnessComment } from "@shared/api/illnessComments";
 import { createAdministrationEvent } from "@shared/api/administrationEvents";
@@ -30,6 +33,7 @@ import {
   canViewChild,
 } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
 import { stopLiveActivitiesForChildIds, syncIllnessLiveActivity } from "@shared/utils/liveActivities";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
@@ -146,7 +150,7 @@ export function ChildIllnessPage() {
   const quickReminderDetailMode = focusMode === "reminder-detail";
   const reminderPlanId = searchParams.get("plan");
   const initialComposerMode = quickComposeMode ?? "temperature";
-  const liveQueryOptions = useLiveQueryOptions(3000);
+  const liveQueryOptions = useLiveQueryOptions(isIosShell ? 15_000 : 10_000);
   const createModeCardRef = useRef<HTMLDivElement | null>(null);
   const historySectionRef = useRef<HTMLElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -189,6 +193,12 @@ export function ChildIllnessPage() {
     enabled: !!activeEpisode?.id && canViewIllness,
     ...liveQueryOptions,
   });
+  const { data: activeEpisodeMedicationPlans = [] } = useQuery({
+    queryKey: ["episode-medication-plans", activeEpisode?.id, "live-activity"],
+    queryFn: () => fetchEpisodeMedicationPlansByEpisodeId(activeEpisode!.id),
+    enabled: !!activeEpisode?.id && canViewIllness,
+    ...liveQueryOptions,
+  });
 
   useEffect(() => {
     const normalized = normalizeChildIllnessSearchParams(searchParams, {
@@ -218,11 +228,12 @@ export function ChildIllnessPage() {
       child,
       activeEpisode ?? null,
       activeEpisodeInsights,
+      activeEpisodeMedicationPlans,
       language,
       undefined,
       accountId
     );
-  }, [accountId, activeEpisode, activeEpisodeInsights, child, language]);
+  }, [accountId, activeEpisode, activeEpisodeInsights, activeEpisodeMedicationPlans, child, language]);
 
   useEffect(() => {
     const hasAccessToRequestedMode = createMode || quickReminderCreateMode ? canEditIllness : canActIllness;
@@ -308,6 +319,7 @@ export function ChildIllnessPage() {
   const closeEpisodeMutation = useMutation({
     mutationFn: (episodeId: string) => updateIllnessEpisode(episodeId, { status: "closed" }),
     onSuccess: () => {
+      requestLiveActivityRefresh();
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
@@ -389,6 +401,7 @@ export function ChildIllnessPage() {
     },
     onSuccess: (episode) => {
       void trackIllnessEpisodeStarted(episode.id);
+      requestLiveActivityRefresh();
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
       navigate("/illnesses/active");

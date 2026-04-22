@@ -11,6 +11,7 @@ import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { useNow } from "@shared/hooks/useNow";
 import { canEditChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
@@ -29,7 +30,11 @@ import {
   formatChildDateTime,
   formatChildTime,
 } from "@client/utils/childDateFormat";
-import { childActionSuccessClass } from "./children/shared";
+import {
+  childActionSuccessClass,
+  formatDurationMinutesHuman,
+  formatElapsedDuration,
+} from "./children/shared";
 
 export function ChildSleepPage() {
   const { language } = useI18n();
@@ -61,11 +66,12 @@ export function ChildSleepPage() {
     enabled: !!childId && canViewSleep,
   });
 
-  useQuery({
+  const { data: activeSleep } = useQuery({
     queryKey: ["sleep-session-active", childId],
     queryFn: () => fetchActiveSleepSessionByChildId(childId!),
     enabled: !!childId && canViewSleep,
   });
+  const now = useNow(activeSleep ? 1_000 : 60_000);
 
   const deleteSleepMutation = useMutation({
     mutationFn: deleteSleepSession,
@@ -88,7 +94,6 @@ export function ChildSleepPage() {
     return <Navigate to={`/children/${child.id}`} replace />;
   }
 
-  const hasActiveSleep = sleepSessions.some((item) => item.status === "active");
   const canEditSleepRecords = canEditChild(child.id, accountFamilyRole, accountAccessPolicy);
   const filteredSessions = sleepSessions.filter((session) =>
     matchesChildRecordsPeriod(session.startedAt, period, customStartDate, customEndDate)
@@ -136,9 +141,9 @@ export function ChildSleepPage() {
         title={`${copy.sleepSection} · ${child.name}`}
         hint={copy.sleepSectionSubtitle}
         action={
-          hasActiveSleep ? (
+          activeSleep ? (
             <span className={`${childActionSuccessClass} rounded-full px-3 py-1.5 text-xs`}>
-              {copy.sleepSectionActive}
+              {`${copy.sleepSectionActive} · ${formatElapsedDuration(activeSleep.startedAt, now, language)}`}
             </span>
           ) : null
         }
@@ -248,33 +253,11 @@ function formatSleepDuration(
   if (durationMinutes === null) {
     return status === "active" ? (language === "ru" ? "Идёт сейчас" : "In progress") : "—";
   }
-  const hours = Math.floor(durationMinutes / 60);
-  const minutes = durationMinutes % 60;
-  if (language === "ru") {
-    if (hours > 0 && minutes > 0) return `${hours} ч ${minutes} мин`;
-    if (hours > 0) return `${hours} ч`;
-    return `${minutes} мин`;
-  }
-  if (hours > 0 && minutes > 0) return `${hours} h ${minutes} min`;
-  if (hours > 0) return `${hours} h`;
-  return `${minutes} min`;
+  return formatDurationMinutesHuman(durationMinutes, language);
 }
 
 function formatSleepSummaryDuration(durationMinutes: number | null, language: "ru" | "en") {
-  if (durationMinutes === null || durationMinutes <= 0) {
-    return "—";
-  }
-  const rounded = Math.round(durationMinutes);
-  const hours = Math.floor(rounded / 60);
-  const minutes = rounded % 60;
-  if (language === "ru") {
-    if (hours > 0 && minutes > 0) return `${hours} ч ${minutes} мин`;
-    if (hours > 0) return `${hours} ч`;
-    return `${minutes} мин`;
-  }
-  if (hours > 0 && minutes > 0) return `${hours} h ${minutes} min`;
-  if (hours > 0) return `${hours} h`;
-  return `${minutes} min`;
+  return formatDurationMinutesHuman(durationMinutes, language);
 }
 
 function formatPerDay(value: number | null, language: "ru" | "en") {

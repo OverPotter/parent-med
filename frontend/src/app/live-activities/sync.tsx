@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPushNotificationPreferences } from "@shared/api/pushNotifications";
@@ -12,6 +13,7 @@ import {
   resolveLiveActivityPreferences,
 } from "@shared/utils/liveActivityPreferences";
 import { updateLiveActivityDiagnostics } from "@shared/utils/liveActivityDiagnostics";
+import { LIVE_ACTIVITY_REFRESH_EVENT } from "@shared/utils/liveActivityRuntimeEvents";
 import {
   stopLiveActivitiesForChildIds,
   stopDisabledLiveActivities,
@@ -20,12 +22,16 @@ import {
 import { useGlobalBootReady } from "@/app/boot/state";
 
 export function LiveActivityRuntimeSync() {
+  const SYNC_THROTTLE_MS = 60_000;
+  const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountId = useAppStore((s) => s.accountId);
   const language = useAppStore((s) => s.language);
   const authToken = useAppStore((s) => s.authToken);
   const isBootReady = useGlobalBootReady();
   const previousChildIdsRef = useRef<string[]>([]);
+  const lastSyncAtRef = useRef(0);
+  const isSyncInFlightRef = useRef(false);
   const { data: pushPreferences } = useQuery({
     queryKey: ["push", "preferences", "account"],
     queryFn: fetchPushNotificationPreferences,
@@ -44,8 +50,7 @@ export function LiveActivityRuntimeSync() {
       !isBootReady ||
       !authToken ||
       !currentFamilyId ||
-      !Capacitor.isNativePlatform() ||
-      Capacitor.getPlatform() !== "ios"
+      !isNativeIos
     ) {
       return;
     }
@@ -70,22 +75,24 @@ export function LiveActivityRuntimeSync() {
         await stopLiveActivitiesForChildIds(removedChildIds);
       }
 
-      const illnessEntries = await Promise.all(
-        children.map(
-          async (child) => [child.id, await fetchActiveIllnessEpisodeByChildId(child.id)] as const
-        )
-      );
       const babyChildren = children.filter((child) => child.babyModeEnabled);
-      const sleepEntries = await Promise.all(
-        babyChildren.map(
-          async (child) => [child.id, await fetchActiveSleepSessionByChildId(child.id)] as const
-        )
-      );
-      const feedingEntries = await Promise.all(
-        babyChildren.map(
-          async (child) => [child.id, await fetchActiveFeedingRecordByChildId(child.id)] as const
-        )
-      );
+      const [illnessEntries, sleepEntries, feedingEntries] = await Promise.all([
+        Promise.all(
+          children.map(
+            async (child) => [child.id, await fetchActiveIllnessEpisodeByChildId(child.id)] as const
+          )
+        ),
+        Promise.all(
+          babyChildren.map(
+            async (child) => [child.id, await fetchActiveSleepSessionByChildId(child.id)] as const
+          )
+        ),
+        Promise.all(
+          babyChildren.map(
+            async (child) => [child.id, await fetchActiveFeedingRecordByChildId(child.id)] as const
+          )
+        ),
+      ]);
 
       if (isCancelled) {
         return;
@@ -106,37 +113,73 @@ export function LiveActivityRuntimeSync() {
       });
     };
 
-    const syncSafely = () => {
+    const syncSafely = (force = false) => {
+      const now = Date.now();
+      if (isSyncInFlightRef.current) {
+        return;
+      }
+      if (!force && now - lastSyncAtRef.current < SYNC_THROTTLE_MS) {
+        return;
+      }
+      isSyncInFlightRef.current = true;
+      lastSyncAtRef.current = now;
       void sync().catch((error) => {
         updateLiveActivityDiagnostics({
           lastSync: "error",
           lastError: String(error),
         });
+      }).finally(() => {
+        isSyncInFlightRef.current = false;
       });
     };
 
-    syncSafely();
+    syncSafely(true);
 
+    const handleFocus = () => syncSafely();
+    const handlePageShow = () => syncSafely();
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        syncSafely();
+        syncSafely(true);
       }
     };
+    let removeAppStateListener: (() => void) | undefined;
 
-    window.addEventListener("focus", syncSafely);
-    window.addEventListener("pageshow", syncSafely);
-    window.addEventListener(LIVE_ACTIVITY_PREFERENCES_CHANGED_EVENT, syncSafely);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    const handlePreferencesChanged = () => syncSafely(true);
+    const handleRefreshRequested = () => syncSafely(true);
+
+    if (!isNativeIos) {
+      window.addEventListener("focus", handleFocus);
+      window.addEventListener("pageshow", handlePageShow);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+    window.addEventListener(LIVE_ACTIVITY_PREFERENCES_CHANGED_EVENT, handlePreferencesChanged);
+    window.addEventListener(LIVE_ACTIVITY_REFRESH_EVENT, handleRefreshRequested);
+
+    if (isNativeIos) {
+      void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+        if (isActive) {
+          syncSafely(true);
+        }
+      }).then((listener) => {
+        removeAppStateListener = () => {
+          void listener.remove();
+        };
+      });
+    }
 
     return () => {
       isCancelled = true;
       previousChildIdsRef.current = [];
-      window.removeEventListener("focus", syncSafely);
-      window.removeEventListener("pageshow", syncSafely);
-      window.removeEventListener(LIVE_ACTIVITY_PREFERENCES_CHANGED_EVENT, syncSafely);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (!isNativeIos) {
+        window.removeEventListener("focus", handleFocus);
+        window.removeEventListener("pageshow", handlePageShow);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
+      window.removeEventListener(LIVE_ACTIVITY_PREFERENCES_CHANGED_EVENT, handlePreferencesChanged);
+      window.removeEventListener(LIVE_ACTIVITY_REFRESH_EVENT, handleRefreshRequested);
+      removeAppStateListener?.();
     };
-  }, [accountId, authToken, currentFamilyId, isBootReady, language, pushPreferences]);
+  }, [accountId, authToken, currentFamilyId, isBootReady, isNativeIos, language, pushPreferences]);
 
   return null;
 }

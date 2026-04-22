@@ -17,11 +17,13 @@ import { trackMedicationAdministered } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { EmptyState, Surface } from "@shared/components/Surface";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
 import type {
   AdministrationEvent,
   Child,
@@ -52,11 +54,12 @@ export function ActiveIllnessesPage() {
   const common = getChildrenCopy(language).common;
   const pageTitle = language === "ru" ? "Журнал" : "Health";
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const isIosShell = useIsIosShell();
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
-  const now = useNow();
+  const now = useNow(isIosShell ? 30_000 : 15_000);
   const currentTime = new Date(now);
-  const liveQueryOptions = useLiveQueryOptions(3000);
+  const liveQueryOptions = useLiveQueryOptions(isIosShell ? 15_000 : 10_000);
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
 
   const { data: children = [], isLoading } = useQuery({
@@ -238,6 +241,7 @@ function ActiveIllnessCard({
   const closeEpisodeMutation = useMutation({
     mutationFn: () => updateIllnessEpisode(episode.id, { status: "closed" }),
     onSuccess: () => {
+      requestLiveActivityRefresh();
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", child.id] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", child.id] });
       queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
