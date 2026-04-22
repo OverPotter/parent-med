@@ -91,8 +91,9 @@ export const pillboxCopy = {
     addMedicine: "Добавить лекарство",
     titleLabel: "Название плана",
     medsTitle: "Что будем принимать",
-    membersTitle: "Кто участвует",
-    membersHint: "Наблюдатель следит за планом, исполнитель отмечает приём, ведущий меняет план.",
+    membersTitle: "Кому приходят уведомления",
+    membersHint:
+      "Здесь выбирается, кому приходят уведомления по плану. Наблюдатель следит за планом, исполнитель отмечает приём, ведущий меняет план.",
     whatName: "Как называется",
     whatNamePlaceholder: "Название лекарства",
     howMuch: "Сколько принимать",
@@ -184,8 +185,9 @@ export const pillboxCopy = {
     addMedicine: "Add medicine",
     titleLabel: "Plan name",
     medsTitle: "What will be taken",
-    membersTitle: "Who participates",
-    membersHint: "Observers follow the plan, actors log doses, and leads edit the plan.",
+    membersTitle: "Who gets reminders",
+    membersHint:
+      "Choose who receives reminders for this plan. Observers follow the plan, actors log doses, and leads edit the plan.",
     whatName: "Medicine name",
     whatNamePlaceholder: "Medicine name",
     howMuch: "How much to take",
@@ -257,7 +259,7 @@ export const medicationDays = [
 
 export const editorSectionCardClass = "soft-panel rounded-[30px] px-5 py-5 sm:px-6 sm:py-6";
 export const actionPrimaryClass =
-  "soft-pill-primary app-profile-action app-profile-action--selected inline-flex min-h-[2.5rem] w-full items-center justify-center px-3.25 text-[0.8rem] font-semibold tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]";
+  "soft-pill-primary app-profile-action inline-flex min-h-[2.5rem] w-full items-center justify-center px-3.25 text-[0.8rem] font-semibold tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]";
 export const actionSecondaryClass =
   "soft-pill app-profile-action inline-flex min-h-[2.5rem] w-full items-center justify-center px-3.25 text-[0.8rem] font-semibold tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]";
 export const actionCompactSecondaryClass =

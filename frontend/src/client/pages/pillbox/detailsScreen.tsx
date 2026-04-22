@@ -249,24 +249,26 @@ export function PillboxDetailsScreen({
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          {canEdit && (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
-            <button
-              type="button"
-              onClick={onGoToSetup}
-              className={`${actionCompactSecondaryClass} sm:col-span-2`}
-            >
-              {tPillbox(language, "editPlan")}
-            </button>
-          ) : null}
-        </div>
         {canEdit ? (
-          <div>
+          <div className="grid grid-cols-2 gap-2">
+            {selectedPlan.status === "active" || selectedPlan.status === "paused" ? (
+              <button
+                type="button"
+                onClick={onGoToSetup}
+                className={`${actionCompactSecondaryClass} w-full`}
+              >
+                {tPillbox(language, "editPlan")}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onRequestDelete}
               disabled={deletePlanPending}
-              className={`${actionCompactDangerClass} w-full disabled:cursor-not-allowed disabled:opacity-60`}
+              className={`${actionCompactDangerClass} w-full disabled:cursor-not-allowed disabled:opacity-60 ${
+                selectedPlan.status === "active" || selectedPlan.status === "paused"
+                  ? ""
+                  : "col-span-2"
+              }`}
             >
               {tPillbox(language, "deletePlan")}
             </button>

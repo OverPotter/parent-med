@@ -28,6 +28,7 @@ export function MemberAccessEditor({
 }) {
   const [isChildrenSheetOpen, setIsChildrenSheetOpen] = useState(false);
   const hasChildAccess = accessPolicy.allChildren || accessPolicy.childIds.length > 0;
+  const effectiveChildrenAccess = hasChildAccess ? accessPolicy.childrenAccess : "none";
   const selectedChildNames = familyChildren
     .filter((child) => accessPolicy.childIds.includes(child.id))
     .map((child) => child.name)
@@ -52,64 +53,71 @@ export function MemberAccessEditor({
 
   return (
     <div className="soft-panel overflow-hidden rounded-[26px] border border-border/60 shadow-[0_18px_48px_rgba(15,23,42,0.10)]">
-      <div className="border-b border-border/60 px-4 py-4 sm:px-5">
-        <p className="text-sm font-semibold tracking-[-0.02em] text-foreground">
-          {tFamily(language, "accessEditorTitle")}
-        </p>
-        <p className="mt-1 text-xs leading-5 text-muted">
-          {tFamily(language, "accessDescription")}
-        </p>
-      </div>
-
       <div className="space-y-5 px-4 py-4 sm:px-5">
-        <label className="grid gap-1.5 text-sm">
-          <span className="soft-field-label">{tFamily(language, "childrenScope")}</span>
-          <button
-            type="button"
-            onClick={() => setIsChildrenSheetOpen(true)}
-            className="soft-input flex min-h-[2.82rem] w-full items-center justify-between gap-3 px-4 text-left text-[0.92rem] tracking-[-0.02em] sm:min-h-[2.92rem]"
-          >
-            <span className="min-w-0">
-              {accessPolicy.allChildren
-                ? tFamily(language, "childrenScopeAll")
-                : selectedChildNames || tFamily(language, "selectedChildrenEmpty")}
-            </span>
-            <span
-              aria-hidden="true"
-              className="inline-flex h-7 shrink-0 items-center rounded-full bg-surface px-3 text-[0.76rem] font-semibold text-muted"
-            >
-              {tFamily(language, "selectedChildrenAction")}
-            </span>
-          </button>
-        </label>
         <div className="grid gap-4 sm:grid-cols-2">
-          {hasChildAccess ? (
+          <div className="grid gap-4">
             <AccessSelect
               language={language}
               label={tFamily(language, "childrenAccess")}
               dialogHint={
                 language === "ru"
-                  ? "Только смотреть — без записей. Может записывать уход — температуру, кормление, сон и факты по болезни. Полный доступ — может ещё и менять сам сценарий."
-                  : "View only means no records. Can log care covers temperature, feeding, sleep, and illness facts. Full access can also manage the workflow."
+                  ? "Нет доступа — дети и журнал скрыты. Только смотреть — без записей. Может записывать уход — температуру, кормление, сон и факты по болезни. Полный доступ — может ещё и менять сам сценарий."
+                  : "No access hides children and the journal. View only means no records. Can log care covers temperature, feeding, sleep, and illness facts. Full access can also manage the workflow."
               }
-              value={accessPolicy.childrenAccess}
+              value={effectiveChildrenAccess}
               options={[
+                { value: "none", label: tFamily(language, "hidden") },
                 { value: "view", label: childrenAccessRoleLabel("view", language) },
                 { value: "act", label: childrenAccessRoleLabel("act", language) },
                 { value: "edit", label: childrenAccessRoleLabel("edit", language) },
               ]}
-              onChange={(value) =>
+              onChange={(value) => {
+                if (value === "none") {
+                  onChange({
+                    ...accessPolicy,
+                    allChildren: false,
+                    childIds: [],
+                    pillboxAccess:
+                      accessPolicy.pillboxAccess === "edit" ? "act" : accessPolicy.pillboxAccess,
+                  });
+                  return;
+                }
+
                 onChange({
                   ...accessPolicy,
+                  allChildren: hasChildAccess ? accessPolicy.allChildren : true,
+                  childIds: hasChildAccess ? accessPolicy.childIds : [],
                   childrenAccess: value as "view" | "act" | "edit",
                   pillboxAccess:
                     value !== "edit" && accessPolicy.pillboxAccess === "edit"
                       ? "act"
                       : accessPolicy.pillboxAccess,
-                })
-              }
+                });
+              }}
             />
-          ) : null}
+            {effectiveChildrenAccess !== "none" ? (
+              <label className="grid gap-1.5 text-sm">
+                <span className="soft-field-label">{tFamily(language, "childrenScope")}</span>
+                <button
+                  type="button"
+                  onClick={() => setIsChildrenSheetOpen(true)}
+                  className="soft-input flex min-h-[2.82rem] w-full items-center justify-between gap-3 px-4 text-left text-[0.92rem] tracking-[-0.02em] sm:min-h-[2.92rem]"
+                >
+                  <span className="min-w-0">
+                    {accessPolicy.allChildren
+                      ? tFamily(language, "childrenScopeAll")
+                      : selectedChildNames || tFamily(language, "selectedChildrenEmpty")}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex h-7 shrink-0 items-center rounded-full bg-surface px-3 text-[0.76rem] font-semibold text-muted"
+                  >
+                    {tFamily(language, "selectedChildrenAction")}
+                  </span>
+                </button>
+              </label>
+            ) : null}
+          </div>
           <AccessSelect
             language={language}
             label={tFamily(language, "pillboxAccess")}
@@ -119,7 +127,7 @@ export function MemberAccessEditor({
                   ? "Только смотреть — видит план. Может отмечать приём — подтверждает, что лекарство дали. Полный доступ — меняет план и участников."
                   : "Если к детям нет полного доступа, в приёмах можно оставить только просмотр или отметку приёма."
                 : accessPolicy.childrenAccess === "edit"
-                  ? "View only can monitor the plan. Can mark doses confirms the medicine was given. Full access can edit the plan and participants."
+                  ? "View only can monitor the plan. Can mark doses confirms the medicine was given. Full access can edit the plan itself."
                   : "Without full child access, pillbox can only stay in view or mark-dose mode."
             }
             value={accessPolicy.pillboxAccess}
@@ -136,8 +144,8 @@ export function MemberAccessEditor({
             label={tFamily(language, "cabinetAccess")}
             dialogHint={
               language === "ru"
-                ? "Только смотреть — видит аптечку и сроки. Может менять — добавляет, редактирует и удаляет лекарства."
-                : "View only can see the cabinet and dates. Can edit can add, change, and remove medicines."
+                ? "Только смотреть — видит аптечку и сроки. Полный доступ — добавляет, редактирует и удаляет лекарства."
+                : "View only can see the cabinet and dates. Full access can add, change, and remove medicines."
             }
             value={accessPolicy.cabinetAccess}
             options={[
@@ -155,43 +163,36 @@ export function MemberAccessEditor({
             }
           />
         </div>
-        {!hasAnyFamilyAccess ? (
-          <p className="soft-note-danger">
-            <span className="font-semibold">{tFamily(language, "noFamilyAccessTitle")}. </span>
-            {tFamily(language, "noFamilyAccessDescription")}
-          </p>
-        ) : null}
-        {accessPolicy.childrenAccess !== "edit" && accessPolicy.pillboxAccess === "act" ? (
-          <p className="text-xs leading-5 text-muted">
-            {language === "ru"
-              ? "Участник сможет отметить, что лекарство дали, но не сможет менять сам план."
-              : "This actor can log doses, but cannot create or edit plans."}
-          </p>
-        ) : null}
 
-        <div className="space-y-2">
-          <p className="text-sm font-semibold tracking-[-0.02em] text-foreground">
-            {language === "ru" ? "Уведомления по аптечке" : "Cabinet reminders"}
-          </p>
-          <p className="text-[0.81rem] leading-5 text-muted">
-            {language === "ru"
-              ? "Только для аптечки. В болезнях и приёмах участники выбираются внутри самих записей."
-              : "Cabinet only. Illness and pillbox participants are chosen inside each record."}
-          </p>
-          <ToggleRow
-            label={tFamily(language, "cabinetPush")}
-            checked={accessPolicy.cabinetPushEnabled}
-            disabled={accessPolicy.cabinetAccess === "none"}
-            onChange={(checked) => onChange({ ...accessPolicy, cabinetPushEnabled: checked })}
-          />
+        <div className="space-y-4 border-t border-border/55 pt-4">
+          {accessPolicy.cabinetAccess !== "none" ? (
+            <ToggleRow
+              label={language === "ru" ? "Уведомления по аптечке" : "Cabinet reminders"}
+              hint={
+                language === "ru"
+                  ? "Если включено, push по срокам и просрочке будут приходить этому участнику."
+                  : "When enabled, this member receives cabinet push reminders about expiry and overdue packs."
+              }
+              checked={accessPolicy.cabinetPushEnabled}
+              onChange={(checked) => onChange({ ...accessPolicy, cabinetPushEnabled: checked })}
+            />
+          ) : null}
+
+          {!hasAnyFamilyAccess ? (
+            <p className="soft-note-danger">
+              <span className="font-semibold">{tFamily(language, "noFamilyAccessTitle")}. </span>
+              {tFamily(language, "noFamilyAccessDescription")}
+            </p>
+          ) : null}
+
+          {effectiveChildrenAccess !== "edit" && accessPolicy.pillboxAccess === "act" ? (
+            <p className="text-xs leading-5 text-muted">
+              {language === "ru"
+                ? "Участник сможет отметить, что лекарство дали, но не сможет менять сам план."
+                : "This actor can log doses, but cannot create or edit plans."}
+            </p>
+          ) : null}
         </div>
-        {accessPolicy.cabinetAccess === "none" ? (
-          <p className="soft-note-danger">
-            {language === "ru"
-              ? "Если аптечка скрыта, семейные уведомления по аптечке автоматически выключаются."
-              : "If the cabinet is hidden, cabinet notifications are turned off automatically."}
-          </p>
-        ) : null}
       </div>
 
       <div className="border-t border-border/60 px-4 py-4 sm:px-5">
@@ -267,8 +268,8 @@ export function MemberAccessEditor({
 
                         onChange({
                           ...accessPolicy,
-                          allChildren: nextChildIds.length === 0,
-                          childIds: nextChildIds.length === 0 ? [] : nextChildIds,
+                          allChildren: false,
+                          childIds: nextChildIds,
                         });
                       }
                     }
@@ -323,11 +324,13 @@ function AccessSelect({
 
 function ToggleRow({
   label,
+  hint,
   checked,
   disabled = false,
   onChange,
 }: {
   label: string;
+  hint?: string;
   checked: boolean;
   disabled?: boolean;
   onChange: (checked: boolean) => void;
@@ -338,16 +341,38 @@ function ToggleRow({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={[
-        "soft-choice-row w-full",
-        checked ? "soft-choice-row-active" : "",
+        "settings-preference-row w-full rounded-[20px] px-4 py-4 text-left",
+        checked
+          ? "border border-[color:color-mix(in_srgb,var(--color-primary)_26%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,white_92%)]"
+          : "border border-border/55 bg-[color:color-mix(in_srgb,var(--color-background)_88%,white_12%)]",
         disabled ? "cursor-not-allowed opacity-50" : "",
       ].join(" ")}
       aria-pressed={checked}
     >
-      <span className="min-w-0 text-left text-sm font-semibold tracking-[-0.02em] text-foreground">
-        {label}
+      <span className="block min-w-0">
+        <span className="flex items-center justify-between gap-3">
+          <span className="block min-w-0 text-sm font-semibold tracking-[-0.02em] text-foreground">
+            {label}
+          </span>
+          <span
+            className={[
+              "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200",
+              checked
+                ? "bg-[color:color-mix(in_srgb,var(--color-primary)_72%,white_28%)]"
+                : "bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]",
+            ].join(" ")}
+            aria-hidden="true"
+          >
+            <span
+              className={[
+                "absolute left-1 h-5 w-5 rounded-full bg-white shadow-[0_3px_10px_rgba(15,23,42,0.22)] transition-transform duration-200",
+                checked ? "translate-x-5" : "translate-x-0",
+              ].join(" ")}
+            />
+          </span>
+        </span>
+        {hint ? <span className="mt-1 block text-sm leading-6 text-muted">{hint}</span> : null}
       </span>
-      <span className="soft-choice-check">{checked ? "✓" : null}</span>
     </button>
   );
 }

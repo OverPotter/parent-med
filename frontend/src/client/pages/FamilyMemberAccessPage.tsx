@@ -1,29 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { fetchChildrenByFamilyIdForManagement } from "@shared/api/children";
-import { fetchMyFamilyMembers, updateFamilyMember } from "@shared/api/families";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
+import { fetchMyFamilyMembers } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
-import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { FamilyAccessPolicy } from "@shared/types/api";
 import { toFamilyAccessUpdatePayload } from "./family/accessPolicy";
-import { invalidateAccessSensitiveQueries } from "./family/invalidateAccessSensitiveQueries";
+import { buildMemberAccessSummaryItems } from "./family/accessPolicy";
+import { MemberAccessHeaderCard } from "./family/MemberAccessHeaderCard";
 import { MemberAccessEditor } from "./family/MemberAccessEditor";
-import { roleLabel, tFamily } from "./family/copy";
+import { tFamily } from "./family/copy";
+import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
 
 export function FamilyMemberAccessPage() {
   const { language } = useI18n();
   const { memberAccountId = "" } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
   const currentAccountId = useAppStore((s) => s.accountId);
   const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
+  const setAccountEmail = useAppStore((s) => s.setAccountEmail);
   const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
+  const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const canManageFamily = currentAccountRole === "admin";
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPromoteConfirmOpen, setIsPromoteConfirmOpen] = useState(false);
+  const [isDemoteConfirmOpen, setIsDemoteConfirmOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const {
     data: members = [],
@@ -53,23 +61,19 @@ export function FamilyMemberAccessPage() {
     }
   }, [member]);
 
-  const updateMemberMutation = useMutation({
-    mutationFn: (policy: FamilyAccessPolicy) =>
-      updateFamilyMember(memberAccountId, {
-        access_policy: toFamilyAccessUpdatePayload(policy),
-      }),
-    onSuccess: async (updatedMember) => {
-      if (updatedMember.id === currentAccountId) {
-        setAccountFamilyContext({
-          familyRole: updatedMember.familyRole,
-          accessPolicy: updatedMember.accessPolicy,
-        });
-        await invalidateAccessSensitiveQueries(queryClient, currentFamilyId);
-      } else {
-        await queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
-      }
-      navigate("/family", { replace: true });
-    },
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [memberAccountId]);
+
+  const { updateMemberMutation, deleteMemberMutation } = useFamilyPageMutations({
+    language,
+    accountId,
+    currentFamilyId,
+    currentAccountId,
+    setCurrentFamily,
+    setAccountEmail,
+    setAccountFamilyContext,
+    setError: setActionError,
   });
 
   if (!canManageFamily) {
@@ -109,11 +113,72 @@ export function FamilyMemberAccessPage() {
     return <Navigate to="/family" replace />;
   }
 
+  const adminsCount = members.filter((item) => item.familyRole === "admin").length;
+  const canPromote = member?.familyRole !== "admin" && member?.id !== currentAccountId;
+  const canDemote =
+    member?.familyRole === "admin" && member?.id !== currentAccountId && adminsCount > 1;
+  const canDelete = member?.id !== currentAccountId;
+  const hasHeaderActions = Boolean(canPromote || canDemote || canDelete);
+  const isActionPending = updateMemberMutation.isPending || deleteMemberMutation.isPending;
+  const accessSummaryItems = member ? buildMemberAccessSummaryItems(member.accessPolicy, language) : [];
+
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
+      <ConfirmDialog
+        isOpen={isPromoteConfirmOpen}
+        title={tFamily(language, "confirmPromoteTitle")}
+        description={tFamily(language, "confirmPromoteDescription")}
+        confirmLabel={tFamily(language, "confirmPromoteAction")}
+        cancelLabel={tFamily(language, "cancel")}
+        confirmTone="danger"
+        isPending={updateMemberMutation.isPending}
+        onCancel={() => setIsPromoteConfirmOpen(false)}
+        onConfirm={() => {
+          updateMemberMutation.mutate({
+            memberAccountId,
+            payload: { family_role: "admin" },
+          });
+          setIsPromoteConfirmOpen(false);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={isDemoteConfirmOpen}
+        title={tFamily(language, "confirmDemoteTitle")}
+        description={tFamily(language, "confirmDemoteDescription")}
+        confirmLabel={tFamily(language, "confirmDemoteAction")}
+        cancelLabel={tFamily(language, "cancel")}
+        confirmTone="danger"
+        isPending={updateMemberMutation.isPending}
+        onCancel={() => setIsDemoteConfirmOpen(false)}
+        onConfirm={() => {
+          updateMemberMutation.mutate({
+            memberAccountId,
+            payload: { family_role: "member" },
+          });
+          setIsDemoteConfirmOpen(false);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        title={tFamily(language, "confirmRemoveTitle")}
+        description={tFamily(language, "confirmRemoveDescription")}
+        confirmLabel={tFamily(language, "confirmRemoveAction")}
+        cancelLabel={tFamily(language, "cancel")}
+        confirmTone="danger"
+        isPending={deleteMemberMutation.isPending}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={() => {
+          deleteMemberMutation.mutate(memberAccountId, {
+            onSuccess: () => {
+              navigate("/family", { replace: true });
+            },
+          });
+          setIsDeleteConfirmOpen(false);
+        }}
+      />
       <PageIntro
         title={tFamily(language, "accessEditorTitle")}
-        subtitle={member?.displayName || member?.login || currentFamilyName || tFamily(language, "title")}
+        subtitle={currentFamilyName || tFamily(language, "title")}
         action={
           <Link
             to="/family"
@@ -137,7 +202,7 @@ export function FamilyMemberAccessPage() {
           </Link>
           <h1 className="app-mobile-section-intro__title">{tFamily(language, "accessEditorTitle")}</h1>
           <p className="app-mobile-section-intro__hint">
-            {member?.displayName || member?.login || currentFamilyName || tFamily(language, "title")}
+            {currentFamilyName || tFamily(language, "title")}
           </p>
         </div>
       </div>
@@ -146,29 +211,20 @@ export function FamilyMemberAccessPage() {
         <p className="text-sm text-muted">{tFamily(language, "membersLoading")}</p>
       ) : (
         <>
-          <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="app-card-title text-base">
-                  {member.displayName || member.login || tFamily(language, "noName")}
-                </p>
-                <span
-                  className={`rounded-full px-2.5 py-1 text-[11px] ${
-                    member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill"
-                  }`}
-                >
-                  {roleLabel(member.familyRole, language)}
-                </span>
-              </div>
-              <p className="text-sm text-muted">
-                <span className="font-semibold text-foreground/90">Login: </span>@{member.login}
-              </p>
-              <p className="text-sm text-muted">
-                <span className="font-semibold text-foreground/90">Email: </span>
-                {member.email || tFamily(language, "emailMissing")}
-              </p>
-            </div>
-          </RowSurface>
+          {actionError ? <p className="soft-note-danger">{actionError}</p> : null}
+          <MemberAccessHeaderCard
+            language={language}
+            member={member}
+            accessSummaryItems={accessSummaryItems}
+            hasHeaderActions={hasHeaderActions}
+            canPromote={canPromote}
+            canDemote={canDemote}
+            canDelete={canDelete}
+            isActionPending={isActionPending}
+            onPromote={() => setIsPromoteConfirmOpen(true)}
+            onDemote={() => setIsDemoteConfirmOpen(true)}
+            onDelete={() => setIsDeleteConfirmOpen(true)}
+          />
 
           <MemberAccessEditor
             language={language}
@@ -176,7 +232,21 @@ export function FamilyMemberAccessPage() {
             accessPolicy={accessPolicy}
             isPending={updateMemberMutation.isPending}
             onChange={setAccessPolicy}
-            onSave={() => updateMemberMutation.mutate(accessPolicy)}
+            onSave={() =>
+              updateMemberMutation.mutate(
+                {
+                  memberAccountId,
+                  payload: {
+                    access_policy: toFamilyAccessUpdatePayload(accessPolicy),
+                  },
+                },
+                {
+                  onSuccess: () => {
+                    navigate("/family", { replace: true });
+                  },
+                }
+              )
+            }
           />
         </>
       )}

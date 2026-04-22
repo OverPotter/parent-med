@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { fetchFamilies } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface } from "@shared/components/Surface";
@@ -12,19 +12,22 @@ import { SectionTitle } from "./child-illness/shared";
 import { FamilyInviteSection } from "./family/FamilyInviteSection";
 import { FamilyNameSection } from "./family/FamilyNameSection";
 import { MemberCard } from "./family/MemberCard";
-import { roleLabel, tFamily } from "./family/copy";
+import { OtherMembersSheet } from "./family/OtherMembersSheet";
+import { tFamily } from "./family/copy";
 import { useFamilyMembersData } from "./family/useFamilyMembersData";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
 
 export function FamilyPage() {
   const { language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [familyName, setFamilyName] = useState("");
   const [isEditingFamilyName, setIsEditingFamilyName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [isInviteSharePending, setIsInviteSharePending] = useState(false);
   const [inviteToast, setInviteToast] = useState<string | null>(null);
+  const [isMembersSheetOpen, setIsMembersSheetOpen] = useState(false);
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
@@ -46,7 +49,7 @@ export function FamilyPage() {
     enabled: Boolean(accountId),
   });
 
-  const { members, isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
+  const { isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
     useFamilyMembersData(currentFamilyId, currentAccountId);
 
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
@@ -300,11 +303,6 @@ export function FamilyPage() {
         <SectionTitle
           title={tFamily(language, "yourProfileTitle")}
           subtitle={tFamily(language, "yourProfileDescription")}
-          action={
-            <span className="text-sm font-semibold text-muted">
-              {members.length} {tFamily(language, "peopleShort")}
-            </span>
-          }
         />
 
         {isMembersLoading ? (
@@ -377,12 +375,13 @@ export function FamilyPage() {
           subtitle={tFamily(language, "otherMembersDescription")}
           action={
             otherMembers.length > 0 ? (
-              <Link
-                to="/family/members"
-                className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+              <button
+                type="button"
+                onClick={() => setIsMembersSheetOpen(true)}
+                className="soft-pill-primary inline-flex min-h-[2.2rem] items-center px-3 text-[0.78rem] font-semibold"
               >
                 {tFamily(language, "openAllMembers")}
-              </Link>
+              </button>
             ) : null
           }
         />
@@ -392,31 +391,11 @@ export function FamilyPage() {
         ) : otherMembers.length === 0 ? (
           <p className="mt-4 text-sm text-muted">{tFamily(language, "noOtherMembers")}</p>
         ) : (
-          <div className="mt-4 space-y-3">
-            {otherMembers.slice(0, 3).map((member) => (
-              <div
-                key={member.id}
-                className="rounded-[22px] border border-border/60 bg-[color:color-mix(in_srgb,var(--color-background)_88%,white_12%)] px-4 py-3 shadow-[0_10px_28px_rgba(15,23,42,0.06)]"
-              >
-                <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold tracking-[-0.02em] text-foreground">
-                    {member.displayName || member.login || tFamily(language, "noName")}
-                  </p>
-                  <p className="mt-1 text-[0.82rem] leading-5 text-muted">
-                    {member.relationshipLabel || roleLabel(member.familyRole, language)}
-                  </p>
-                </div>
-                <Link
-                  to="/family/members"
-                  className="inline-flex min-h-[2.1rem] shrink-0 items-center text-[0.82rem] font-semibold text-primary"
-                >
-                  {tFamily(language, "openAllMembers")}
-                </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="mt-4 text-sm leading-6 text-muted">
+            {language === "ru"
+              ? `В семье ещё ${otherMembers.length} ${otherMembers.length === 1 ? "участник" : "участника"}.`
+              : `${otherMembers.length} more member${otherMembers.length === 1 ? "" : "s"} in the family.`}
+          </p>
         )}
       </RowSurface>
 
@@ -459,6 +438,17 @@ export function FamilyPage() {
           setIsEditingFamilyName(false);
         }}
         onSubmit={handleFamilySubmit}
+      />
+
+      <OtherMembersSheet
+        language={language}
+        isOpen={isMembersSheetOpen}
+        members={otherMembers}
+        onClose={() => setIsMembersSheetOpen(false)}
+        onSelectMember={(memberId) => {
+          setIsMembersSheetOpen(false);
+          navigate(canManageFamily ? `/family/members/${memberId}/access` : "/family/members");
+        }}
       />
         </>
       ) : null}

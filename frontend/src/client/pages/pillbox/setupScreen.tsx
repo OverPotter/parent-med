@@ -1,5 +1,6 @@
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { PlanPushRecipientsField } from "./PlanPushRecipientsField";
 import {
   actionPrimaryClass,
   actionSecondaryClass,
@@ -19,6 +20,7 @@ type FamilyMemberLike = {
   id: string;
   displayName?: string | null;
   login?: string | null;
+  relationshipLabel?: string | null;
 };
 
 function formatMedicationListCount(count: number, language: AppLanguage) {
@@ -89,11 +91,11 @@ export function PillboxSetupScreen({
         subtitle={
           isEditing
             ? language === "ru"
-              ? "Обновите лекарства, название и участников плана. В списке только те, у кого открыт доступ к приёмам."
-              : "Update medicines, plan name and participants."
+              ? "Обновите лекарства, название и push по плану. В списке только те, у кого открыт доступ к приёмам."
+              : "Update medicines, the plan name, and push recipients."
             : language === "ru"
-              ? "Сначала добавьте лекарства, потом дайте плану имя и выберите участников с доступом к приёмам."
-              : "Add medicines first, then name the plan and choose participants with pillbox access."
+              ? "Сначала добавьте лекарства, потом дайте плану имя и выберите, кому приходят push."
+              : "Add medicines first, then name the plan and choose who gets push reminders."
         }
       />
 
@@ -200,42 +202,15 @@ export function PillboxSetupScreen({
           </section>
 
           <section className="space-y-3 pt-1">
-            <div className="space-y-1">
+            <div className="flex items-center justify-between gap-3">
               <h2 className="app-card-title">{tPillbox(language, "membersTitle")}</h2>
-              <p className="text-sm leading-5 text-muted">
-                {language === "ru"
-                  ? "Здесь только участники с доступом к приёмам. Наблюдатель следит за планом, исполнитель отмечает приём, ведущий меняет план и участников."
-                  : "Only members with pillbox access are listed here. Observers follow the plan, actors log doses, and leads edit the plan and participants."}
-              </p>
+              <PlanPushRecipientsField
+                language={language}
+                familyMembers={familyMembers}
+                selectedMemberIds={draft.members}
+                onToggleMember={onToggleMember}
+              />
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              {familyMembers.map((member) => {
-                const selected = draft.members.includes(member.id);
-                const memberLabel = member.displayName || member.login || member.id;
-                return (
-                  <button
-                    key={member.id}
-                    type="button"
-                    onClick={() => onToggleMember(member.id)}
-                    className="soft-pill app-profile-action inline-flex min-h-[2.5rem] w-auto max-w-full items-center gap-2 px-3.25 text-[0.8rem] font-medium tracking-[-0.02em]"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`inline-flex h-2.5 w-2.5 shrink-0 rounded-full transition ${
-                        selected
-                          ? "bg-[color:var(--color-success)]"
-                          : "bg-[color:color-mix(in_srgb,var(--color-border)_86%,transparent)]"
-                      }`}
-                    />
-                    <span className={selected ? "text-foreground" : "text-foreground/86"}>
-                      {memberLabel}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
             {!canSavePlan && saveBlockedReason && saveAttempted ? (
               <p className="text-[0.78rem] leading-5 text-[color:var(--color-danger)]">
                 {saveBlockedReason}
@@ -246,7 +221,7 @@ export function PillboxSetupScreen({
                 {savePlanError}
               </p>
             ) : null}
-            <div className="app-form-action-bar pt-1">
+            <div className="border-t border-border/60 pt-4">
               <button type="button" onClick={onSavePlan} className={actionPrimaryClass}>
                 {isEditing ? tPillbox(language, "savePlan") : tPillbox(language, "createNewPlan")}
               </button>

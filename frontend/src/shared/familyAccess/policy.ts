@@ -1,6 +1,15 @@
 import type { FamilyAccessPolicy } from "@shared/types/api";
 
 export const DEFAULT_FAMILY_ACCESS_POLICY: FamilyAccessPolicy = {
+  allChildren: false,
+  childIds: [],
+  childrenAccess: "view",
+  cabinetAccess: "none",
+  pillboxAccess: "none",
+  cabinetPushEnabled: false,
+};
+
+export const LEGACY_FULL_FAMILY_ACCESS_POLICY: FamilyAccessPolicy = {
   allChildren: true,
   childIds: [],
   childrenAccess: "edit",
@@ -16,13 +25,10 @@ export function normalizeFamilyAccessPolicy(
     return DEFAULT_FAMILY_ACCESS_POLICY;
   }
 
-  const hasSelectedChildren = Array.isArray(policy.childIds) && policy.childIds.length > 0;
-  const allChildren = policy.allChildren || !hasSelectedChildren;
-
   return {
     ...policy,
-    allChildren,
-    childIds: allChildren ? [] : policy.childIds,
+    allChildren: Boolean(policy.allChildren),
+    childIds: policy.allChildren ? [] : policy.childIds,
   };
 }
 
