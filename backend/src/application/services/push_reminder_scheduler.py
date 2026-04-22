@@ -1018,6 +1018,7 @@ class PushNotificationScheduler:
                 for medicine in medicines:
                     await self._process_single_household_medicine(
                         session=session,
+                        account_id=account.id,
                         subscriptions=subscriptions,
                         subscription_repo=subscription_repo,
                         medicine=medicine,
@@ -1031,6 +1032,7 @@ class PushNotificationScheduler:
         self,
         *,
         session: Any,
+        account_id: Any,
         subscriptions: list[PushSubscription],
         subscription_repo: SqlPushSubscriptionRepository,
         medicine: HouseholdMedicine,
@@ -1048,6 +1050,7 @@ class PushNotificationScheduler:
         if days_until == -1:
             await self._send_expired_household_medicine_notification(
                 session=session,
+                account_id=account_id,
                 subscriptions=subscriptions,
                 subscription_repo=subscription_repo,
                 medicine=medicine,
@@ -1072,6 +1075,7 @@ class PushNotificationScheduler:
         already_sent_result = await session.execute(
             select(HouseholdMedicineNotificationDeliveryModel.id).where(
                 HouseholdMedicineNotificationDeliveryModel.household_medicine_id == medicine.id,
+                HouseholdMedicineNotificationDeliveryModel.account_id == account_id,
                 HouseholdMedicineNotificationDeliveryModel.notification_kind == notification_kind,
                 HouseholdMedicineNotificationDeliveryModel.target_date == target_date,
                 HouseholdMedicineNotificationDeliveryModel.days_before == days_until,
@@ -1098,6 +1102,7 @@ class PushNotificationScheduler:
         session.add(
             HouseholdMedicineNotificationDeliveryModel(
                 household_medicine_id=medicine.id,
+                account_id=account_id,
                 notification_kind=notification_kind,
                 target_date=target_date,
                 days_before=days_until,
@@ -1109,6 +1114,7 @@ class PushNotificationScheduler:
         self,
         *,
         session: Any,
+        account_id: Any,
         subscriptions: list[PushSubscription],
         subscription_repo: SqlPushSubscriptionRepository,
         medicine: HouseholdMedicine,
@@ -1121,6 +1127,7 @@ class PushNotificationScheduler:
         already_sent_result = await session.execute(
             select(HouseholdMedicineNotificationDeliveryModel.id).where(
                 HouseholdMedicineNotificationDeliveryModel.household_medicine_id == medicine.id,
+                HouseholdMedicineNotificationDeliveryModel.account_id == account_id,
                 HouseholdMedicineNotificationDeliveryModel.notification_kind == notification_kind,
                 HouseholdMedicineNotificationDeliveryModel.target_date == target_date,
                 HouseholdMedicineNotificationDeliveryModel.days_before == -1,
@@ -1146,6 +1153,7 @@ class PushNotificationScheduler:
         session.add(
             HouseholdMedicineNotificationDeliveryModel(
                 household_medicine_id=medicine.id,
+                account_id=account_id,
                 notification_kind=notification_kind,
                 target_date=target_date,
                 days_before=-1,

@@ -8,6 +8,9 @@ from src.application.services.push_reminder_scheduler import (
 )
 from src.domain.entities.account import Account
 from src.domain.entities.family_access import FamilyAccessPolicy
+from src.infrastructure.database.models.household_medicine_notification_delivery import (
+    HouseholdMedicineNotificationDeliveryModel,
+)
 
 
 def build_account(policy: FamilyAccessPolicy) -> Account:
@@ -78,3 +81,21 @@ def test_pillbox_push_requires_current_pillbox_access() -> None:
 
     account.access_policy = FamilyAccessPolicy(pillbox_access="view")
     assert _can_receive_pillbox_push(account) is True
+
+
+def test_cabinet_delivery_log_is_scoped_per_account() -> None:
+    unique_constraints = [
+        constraint
+        for constraint in HouseholdMedicineNotificationDeliveryModel.__table__.constraints
+        if getattr(constraint, "name", None) == "uq_household_medicine_notification_delivery"
+    ]
+
+    assert len(unique_constraints) == 1
+    assert tuple(unique_constraints[0].columns.keys()) == (
+        "household_medicine_id",
+        "notification_kind",
+        "target_date",
+        "days_before",
+        "account_id",
+    )
+    assert HouseholdMedicineNotificationDeliveryModel.__table__.c.account_id.nullable is False
