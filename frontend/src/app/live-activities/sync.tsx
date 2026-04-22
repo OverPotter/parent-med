@@ -32,6 +32,7 @@ export function LiveActivityRuntimeSync() {
   const previousChildIdsRef = useRef<string[]>([]);
   const lastSyncAtRef = useRef(0);
   const isSyncInFlightRef = useRef(false);
+  const pendingForceSyncRef = useRef(false);
   const { data: pushPreferences } = useQuery({
     queryKey: ["push", "preferences", "account"],
     queryFn: fetchPushNotificationPreferences,
@@ -116,6 +117,7 @@ export function LiveActivityRuntimeSync() {
     const syncSafely = (force = false) => {
       const now = Date.now();
       if (isSyncInFlightRef.current) {
+        pendingForceSyncRef.current = pendingForceSyncRef.current || force;
         return;
       }
       if (!force && now - lastSyncAtRef.current < SYNC_THROTTLE_MS) {
@@ -130,6 +132,10 @@ export function LiveActivityRuntimeSync() {
         });
       }).finally(() => {
         isSyncInFlightRef.current = false;
+        if (pendingForceSyncRef.current) {
+          pendingForceSyncRef.current = false;
+          syncSafely(true);
+        }
       });
     };
 
@@ -170,6 +176,7 @@ export function LiveActivityRuntimeSync() {
     return () => {
       isCancelled = true;
       previousChildIdsRef.current = [];
+      pendingForceSyncRef.current = false;
       if (!isNativeIos) {
         window.removeEventListener("focus", handleFocus);
         window.removeEventListener("pageshow", handlePageShow);
