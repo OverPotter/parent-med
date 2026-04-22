@@ -9,21 +9,12 @@ test("resolveClientStartRoute routes to family when no family exists", () => {
   assert.equal(
     resolveClientStartRoute({
       hasFamily: false,
-      hasChildren: false,
       hasActiveEpisode: false,
+      canSeeChildren: false,
+      canSeePillbox: false,
+      canSeeCabinet: false,
     }),
     "/family"
-  );
-});
-
-test("resolveClientStartRoute routes to children when family exists but no children", () => {
-  assert.equal(
-    resolveClientStartRoute({
-      hasFamily: true,
-      hasChildren: false,
-      hasActiveEpisode: false,
-    }),
-    "/children"
   );
 });
 
@@ -31,21 +22,51 @@ test("resolveClientStartRoute routes to active illness when an active episode ex
   assert.equal(
     resolveClientStartRoute({
       hasFamily: true,
-      hasChildren: true,
       hasActiveEpisode: true,
+      canSeeChildren: true,
+      canSeePillbox: true,
+      canSeeCabinet: true,
     }),
     "/illnesses/active"
   );
 });
 
-test("resolveClientStartRoute routes to children when family exists and no active episode", () => {
+test("resolveClientStartRoute routes to children when children are available and no active episode", () => {
   assert.equal(
     resolveClientStartRoute({
       hasFamily: true,
-      hasChildren: true,
       hasActiveEpisode: false,
+      canSeeChildren: true,
+      canSeePillbox: true,
+      canSeeCabinet: true,
     }),
     "/children"
+  );
+});
+
+test("resolveClientStartRoute routes to pillbox when children are hidden but pillbox is available", () => {
+  assert.equal(
+    resolveClientStartRoute({
+      hasFamily: true,
+      hasActiveEpisode: false,
+      canSeeChildren: false,
+      canSeePillbox: true,
+      canSeeCabinet: true,
+    }),
+    "/pillbox"
+  );
+});
+
+test("resolveClientStartRoute routes to cabinet when only cabinet is available", () => {
+  assert.equal(
+    resolveClientStartRoute({
+      hasFamily: true,
+      hasActiveEpisode: false,
+      canSeeChildren: false,
+      canSeePillbox: false,
+      canSeeCabinet: true,
+    }),
+    "/medicine-cabinet"
   );
 });
 

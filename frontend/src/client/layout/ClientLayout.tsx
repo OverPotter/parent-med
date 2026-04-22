@@ -10,6 +10,11 @@ import { Layout } from "@shared/components/Layout";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useNow } from "@shared/hooks/useNow";
+import {
+  canViewAnyChildren,
+  canViewCabinet,
+  canViewPillbox,
+} from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { PushPromptControlProvider } from "./PushPromptControlContext";
 import { useClientLayoutBoot } from "./clientLayout/useClientLayoutBoot";
@@ -23,11 +28,16 @@ export function ClientLayout() {
   const authToken = useAppStore((s) => s.authToken);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const isIosShell = useIsIosShell();
   const now = useNow(15_000);
   const navStaleTime = isIosShell ? 30_000 : 15_000;
   const navRefetchInterval = isIosShell ? 60_000 : 30_000;
+  const canSeeChildren = canViewAnyChildren(accountFamilyRole, accountAccessPolicy);
+  const canSeePillbox = canViewPillbox(accountFamilyRole, accountAccessPolicy);
+  const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
   const {
     data: families = [],
     isSuccess,
@@ -56,7 +66,7 @@ export function ClientLayout() {
   } = useQuery({
     queryKey: ["children", currentFamilyId, "nav-observations"],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
-    enabled: Boolean(currentFamilyId && isDeferredBootReady),
+    enabled: Boolean(currentFamilyId && isDeferredBootReady && canSeeChildren),
     staleTime: navStaleTime,
     refetchInterval: navRefetchInterval,
   });
@@ -65,7 +75,7 @@ export function ClientLayout() {
     queries: navChildren.map((child) => ({
       queryKey: ["illness-episode-active", child.id, "nav-observations"],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
-      enabled: Boolean(currentFamilyId && child.id && isDeferredBootReady),
+      enabled: Boolean(currentFamilyId && child.id && isDeferredBootReady && canSeeChildren),
       staleTime: navStaleTime,
       refetchInterval: navRefetchInterval,
     })),
@@ -79,7 +89,7 @@ export function ClientLayout() {
   const { data: pillboxPlans = [] } = useQuery({
     queryKey: ["pillbox-plans", currentFamilyId, language, "nav-attention"],
     queryFn: fetchPillboxPlans,
-    enabled: Boolean(currentFamilyId && isDeferredBootReady),
+    enabled: Boolean(currentFamilyId && isDeferredBootReady && canSeePillbox),
     staleTime: navStaleTime,
     refetchInterval: navRefetchInterval,
   });
@@ -92,6 +102,7 @@ export function ClientLayout() {
     navChildren,
     pillboxPlans,
     isDeferredBootReady,
+    isIosShell,
   });
 
   useClientLayoutSplash({
@@ -161,23 +172,31 @@ export function ClientLayout() {
   const isObservationsRoute = observationsNavItem.exactActivePaths.some((path) =>
     matchPath({ path, end: true }, location.pathname)
   );
-  const shouldShowObservationsTab = activeEpisodesCount > 0 || isObservationsRoute;
+  const shouldShowObservationsTab = canSeeChildren && (activeEpisodesCount > 0 || isObservationsRoute);
   const baseDesktopNavLinks = [
     ...(shouldShowObservationsTab ? [observationsNavItem] : []),
-    childrenNavItem,
-    {
-      to: "/pillbox",
-      label: copy.clientLayout.nav.pillbox,
-      mobileLabel: mobileNavLabels.pillbox,
-      exactActivePaths: ["/pillbox"],
-      attentionCount: pillboxAttention.count > 0 ? pillboxAttention.count : undefined,
-      attentionTone: pillboxAttention.tone,
-    },
-    {
-      to: "/medicine-cabinet",
-      label: copy.clientLayout.nav.cabinet,
-      mobileLabel: mobileNavLabels.cabinet,
-    },
+    ...(canSeeChildren ? [childrenNavItem] : []),
+    ...(canSeePillbox
+      ? [
+          {
+            to: "/pillbox",
+            label: copy.clientLayout.nav.pillbox,
+            mobileLabel: mobileNavLabels.pillbox,
+            exactActivePaths: ["/pillbox"],
+            attentionCount: pillboxAttention.count > 0 ? pillboxAttention.count : undefined,
+            attentionTone: pillboxAttention.tone,
+          },
+        ]
+      : []),
+    ...(canSeeCabinet
+      ? [
+          {
+            to: "/medicine-cabinet",
+            label: copy.clientLayout.nav.cabinet,
+            mobileLabel: mobileNavLabels.cabinet,
+          },
+        ]
+      : []),
   ];
 
   const desktopNavLinks = baseDesktopNavLinks;
@@ -188,6 +207,7 @@ export function ClientLayout() {
     { path: "/children", end: true },
     { path: "/pillbox", end: true },
     { path: "/medicine-cabinet", end: true },
+    { path: "/workspace", end: true },
     { path: "/illnesses/active", end: true },
     { path: "/more", end: true },
     { path: "/settings", end: true },

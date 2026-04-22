@@ -137,8 +137,6 @@ class FamilyService:
                 "Полный доступ к приёмам требует права на изменение детей",
                 code="PILLBOX_EDIT_REQUIRES_CHILD_EDIT_ACCESS",
             )
-        if not merged.all_children and len(merged.child_ids) == 0:
-            merged.all_children = True
         if merged.all_children:
             merged.child_ids = []
         if merged.cabinet_access == "none":

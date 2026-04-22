@@ -1,24 +1,34 @@
 export interface StartRouteInputs {
   hasFamily: boolean;
-  hasChildren: boolean;
   hasActiveEpisode: boolean;
+  canSeeChildren: boolean;
+  canSeePillbox: boolean;
+  canSeeCabinet: boolean;
 }
 
 export function resolveClientStartRoute({
   hasFamily,
-  hasChildren,
   hasActiveEpisode,
+  canSeeChildren,
+  canSeePillbox,
+  canSeeCabinet,
 }: StartRouteInputs): string {
   if (!hasFamily) {
     return "/family";
   }
-  if (!hasChildren) {
-    return "/children";
-  }
   if (hasActiveEpisode) {
     return "/illnesses/active";
   }
-  return "/children";
+  if (canSeeChildren) {
+    return "/children";
+  }
+  if (canSeePillbox) {
+    return "/pillbox";
+  }
+  if (canSeeCabinet) {
+    return "/medicine-cabinet";
+  }
+  return "/workspace";
 }
 
 export interface BootSplashInputs {

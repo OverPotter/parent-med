@@ -54,7 +54,7 @@ export function MedicineCabinetPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
-  const liveQueryOptions = useLiveQueryOptions(10000);
+  const liveQueryOptions = useLiveQueryOptions(isIosShell ? 30_000 : 15_000);
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
   const canMutateCabinet = canEditCabinet(accountFamilyRole, accountAccessPolicy);
   const canManageCabinetRecipients = accountFamilyRole === "admin";

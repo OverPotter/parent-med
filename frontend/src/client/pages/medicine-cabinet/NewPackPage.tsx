@@ -138,7 +138,7 @@ export function NewPackPage({
         ) : null}
       </div>
       <div className="mx-auto w-full max-w-2xl">
-        <div className="app-form-action-bar pt-1">
+        <div className="border-t border-border/55 pt-4">
           <button
             type="button"
             onClick={handleSave}

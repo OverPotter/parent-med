@@ -59,7 +59,7 @@ function EpisodeReminderRecipientsCard({
         disabled={isPending}
         className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
       >
-        {language === "ru" ? "Участники" : "Participants"}
+        {language === "ru" ? "Push" : "Push"}
       </button>
 
       <OverlayDialog
@@ -80,12 +80,14 @@ function EpisodeReminderRecipientsCard({
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
           <div className="space-y-1.5">
             <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
-              {language === "ru" ? "Кто участвует в наблюдении" : "Who participates in this case"}
+              {language === "ru"
+                ? "Кому приходят push по наблюдению"
+                : "Who gets push reminders for this tracking"}
             </h2>
             <p className="text-sm leading-5 text-muted">
               {language === "ru"
-                ? "Эти участники видят эпизод и могут получать напоминания внутри него, если не выключили уведомления у себя."
-                : "These participants can follow this episode and receive reminders inside it if they keep notifications enabled."}
+                ? "Этим получателям могут приходить push внутри эпизода, если у них включены личные уведомления."
+                : "These recipients can receive push reminders inside the episode if their personal notifications stay enabled."}
             </p>
           </div>
 
@@ -110,12 +112,12 @@ function EpisodeReminderRecipientsCard({
               >
                 <span className="grid min-w-0 gap-0.5 text-left">
                   <span className="min-w-0 text-sm font-semibold tracking-[-0.02em] text-foreground">
-                    {language === "ru" ? "Все доступные участники" : "All eligible members"}
+                    {language === "ru" ? "Все доступные получатели" : "All eligible recipients"}
                   </span>
                   <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
                     {language === "ru"
-                      ? "В наблюдение автоматически войдут все участники, у кого есть доступ к этому ребёнку и включены личные уведомления."
-                      : "Everyone with access to this child and personal notifications enabled joins automatically."}
+                      ? "Push автоматически придут всем, у кого есть доступ к этому ребёнку и включены личные уведомления."
+                      : "Push reminders will go automatically to everyone with access to this child and personal notifications enabled."}
                   </span>
                 </span>
                 <span className="soft-choice-check">{selectedIds.length === 0 ? "✓" : null}</span>
@@ -448,7 +450,7 @@ export function CommentQuickView(props: {
               }
               className={illnessCompactTextareaClass}
             />
-            <div className="app-form-action-bar flex flex-wrap gap-2">
+            <div className="border-t border-border/60 pt-4">
               <button
                 type="button"
                 onClick={onSubmit}

@@ -180,19 +180,10 @@ function EditChildProfileForm({
 }) {
   const [draftName, setDraftName] = useState(child.name);
   const [draftBirthDate, setDraftBirthDate] = useState(child.birthDate ?? "");
-  const [institutionName, setInstitutionName] = useState(child.institutionName ?? "");
-  const [institutionPhone, setInstitutionPhone] = useState(child.institutionPhone ?? "");
-  const [doctorName, setDoctorName] = useState(child.doctorName ?? "");
-  const [doctorPhone, setDoctorPhone] = useState(child.doctorPhone ?? "");
   const [allergies, setAllergies] = useState(child.allergies ?? "");
   const [notes, setNotes] = useState(child.notes ?? "");
   const [babyModeEnabled, setBabyModeEnabled] = useState(child.babyModeEnabled);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
-  const [isContactsOpen, setIsContactsOpen] = useState(
-    Boolean(
-      child.institutionName || child.institutionPhone || child.doctorName || child.doctorPhone
-    )
-  );
 
   return (
     <Surface className="app-section-surface mx-auto w-full max-w-2xl pt-2">
@@ -278,61 +269,13 @@ function EditChildProfileForm({
           ) : null}
         </div>
 
-        <div className="rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] px-4 py-3 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
-          <button
-            type="button"
-            onClick={() => setIsContactsOpen((current) => !current)}
-            className="flex w-full items-center justify-between gap-3 text-left"
-            aria-expanded={isContactsOpen}
-          >
-            <span className="text-sm font-medium text-foreground">{copy.contactsSummary}</span>
-            <span className="soft-pill app-profile-action min-h-[2.1rem] px-3 py-1 text-xs">
-              {isContactsOpen
-                ? language === "ru"
-                  ? "Свернуть"
-                  : "Collapse"
-                : language === "ru"
-                  ? "Открыть"
-                  : "Open"}
-            </span>
-          </button>
-          {isContactsOpen ? (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <InputField
-                label={copy.form.institutionNameLabel}
-                value={institutionName}
-                onChange={setInstitutionName}
-              />
-              <InputField
-                label={copy.form.institutionPhoneLabel}
-                value={institutionPhone}
-                onChange={setInstitutionPhone}
-              />
-              <InputField
-                label={copy.form.doctorNameLabel}
-                value={doctorName}
-                onChange={setDoctorName}
-              />
-              <InputField
-                label={copy.form.doctorPhoneLabel}
-                value={doctorPhone}
-                onChange={setDoctorPhone}
-              />
-            </div>
-          ) : null}
-        </div>
-
-        <div className="app-form-action-bar border-t border-border/70 pt-4">
+        <div className="border-t border-border/70 pt-4">
           <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center">
             <button
               type="button"
               onClick={() =>
                 onSave(draftName.trim(), draftBirthDate || null, {
                   babyModeEnabled,
-                  institutionName: institutionName.trim() || null,
-                  institutionPhone: institutionPhone.trim() || null,
-                  doctorName: doctorName.trim() || null,
-                  doctorPhone: doctorPhone.trim() || null,
                   allergies: allergies.trim() || null,
                   notes: notes.trim() || null,
                 })
@@ -354,28 +297,6 @@ function EditChildProfileForm({
         </div>
       </div>
     </Surface>
-  );
-}
-
-function InputField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block space-y-1.5">
-      <span className="soft-field-label">{label}</span>
-      <input
-        type="text"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="soft-input w-full px-4"
-      />
-    </label>
   );
 }
 

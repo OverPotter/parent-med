@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import {
   createAdministrationEvent,
   fetchAdministrationEventsByEpisodeId,
@@ -80,7 +81,8 @@ export function EpisodeBlock({
   const accountId = useAppStore((s) => s.accountId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
-  const liveQueryOptions = useLiveQueryOptions(3000);
+  const isIosShell = useIsIosShell();
+  const liveQueryOptions = useLiveQueryOptions(isIosShell ? 15_000 : 10_000);
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
   const canEditEpisode = canEditChild(childId, accountFamilyRole, accountAccessPolicy);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
@@ -331,7 +333,7 @@ export function EpisodeBlock({
     "all" | "temperature" | "administration" | "comment"
   >("all");
   const [timelineActorFilter, setTimelineActorFilter] = useState("all");
-  const now = useNow();
+  const now = useNow(isIosShell ? 30_000 : 15_000);
   const timelineItems = buildEpisodeTimeline(
     temperatureEntries,
     administrations,

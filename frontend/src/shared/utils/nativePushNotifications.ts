@@ -36,6 +36,14 @@ function setCachedNativeToken(token: string | null) {
   window.localStorage.setItem(NATIVE_PUSH_TOKEN_KEY, token);
 }
 
+export function clearCachedNativePushState() {
+  setCachedNativeToken(null);
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.removeItem(NATIVE_PUSH_OPT_OUT_KEY);
+}
+
 function getCachedNativeToken(): string | null {
   if (typeof window === "undefined") {
     return null;

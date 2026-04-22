@@ -595,6 +595,44 @@ export const en: Translations = {
         ],
         action: { to: "/medicine-cabinet", label: "Open cabinet" },
       },
+      {
+        title: "Family and access",
+        description: "Who can see children, tracking, pillbox, and cabinet.",
+        items: [
+          {
+            title: "Set access",
+            description: "In Family, each member can get separate access to children, pillbox, and cabinet.",
+          },
+          {
+            title: "Choose children",
+            description: "Once child access is open, choose all children or only selected ones.",
+          },
+          {
+            title: "Not everyone needs full access",
+            description: "For pillbox you can keep view-only or dose logging.",
+          },
+        ],
+        action: { to: "/family", label: "Open family" },
+      },
+      {
+        title: "Live Activity and reminders",
+        description: "Fast status on iPhone and push for important actions.",
+        items: [
+          {
+            title: "What can be enabled",
+            description: "Settings lets you enable sleep, feeding, and illness tracking separately.",
+          },
+          {
+            title: "Where it appears",
+            description: "On iPhone it appears on the lock screen and in Dynamic Island.",
+          },
+          {
+            title: "Who receives signals",
+            description: "Push reminders only go to members with the required access and notifications enabled.",
+          },
+        ],
+        action: { to: "/settings", label: "Open settings" },
+      },
     ],
     analytics: {
       title: "Child history analytics",
@@ -618,28 +656,9 @@ export const en: Translations = {
       ],
     },
     install: {
-      title: "Install on your phone",
-      description: "You can add the app to your home screen directly from the browser.",
-      cards: [
-        {
-          title: "iPhone / iPad",
-          steps: [
-            "Open the app in Safari.",
-            "Tap Share.",
-            "Choose Add to Home Screen.",
-            "Confirm the install.",
-          ],
-        },
-        {
-          title: "Android",
-          steps: [
-            "Open the app in Chrome.",
-            "Open the browser menu.",
-            "Choose Install app or Add to Home screen.",
-            "Confirm the install.",
-          ],
-        },
-      ],
+      title: "",
+      description: "",
+      cards: [],
     },
   },
 };

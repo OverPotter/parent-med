@@ -76,6 +76,10 @@ export function labelForRoute(route: string, language: AppLanguage): string {
   switch (route) {
     case "/family":
       return tWorkspaceIntro(language, "routeFamily");
+    case "/workspace":
+      return language === "ru" ? "главный экран" : "the Home screen";
+    case "/home":
+      return language === "ru" ? "раздел «Помощь»" : "the Help section";
     case "/illnesses/active":
       return tWorkspaceIntro(language, "routeTracking");
     case "/children":

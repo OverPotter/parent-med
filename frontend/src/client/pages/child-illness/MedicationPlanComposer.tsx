@@ -484,7 +484,7 @@ export function MedicationPlanComposer({
         <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">{weightHint}</div>
       )}
 
-      <div className="app-form-action-bar flex flex-wrap justify-end gap-2">
+      <div className="grid gap-2 border-t border-border/60 pt-4">
         {isIosShell && hasKeyboardFocus ? (
           <button
             type="button"
@@ -492,69 +492,71 @@ export function MedicationPlanComposer({
               blurActiveField();
               setHasKeyboardFocus(false);
             }}
-            className={reminderComposerSecondaryActionClass}
+            className={`${reminderComposerSecondaryActionClass} w-full`}
           >
             {language === "ru" ? "Скрыть клавиатуру" : "Hide keyboard"}
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={() => {
-            if (
-              parsedIntervalMinutes === null ||
-              hasInvalidDose ||
-              (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim())
-            ) {
-              return;
-            }
-
-            onSubmit({
-              householdMedicineId: planMode === "cabinet" ? selectedMedicineId : null,
-              customMedicineName: planMode === "manual" ? customMedicineName.trim() : null,
-              doseAmount: doseAmount.trim(),
-              minIntervalMinutes: parsedIntervalMinutes,
-              maxDosesPerDay: parseNullableInteger(maxDosesPerDay),
-              weightKg: parseNullableNumber(weightKg),
-              doseMgPerKg: parseNullableNumber(doseMgPerKg),
-              notes: null,
-            });
-
-            if (!initialValue) {
-              setPlanMode("cabinet");
-              setSelectedMedicineId("");
-              setCustomMedicineName("");
-              setDoseAmount("");
-              setMinIntervalInput(intervalUnit === "minutes" ? "180" : "3");
-              setMaxDosesPerDay("");
-              setDoseMgPerKg("");
-            }
-            clearCabinetPicker();
-            onCancel?.();
-          }}
-          disabled={
-            isPending ||
-            (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim()) ||
-            !minIntervalInput ||
-            hasInvalidDose ||
-            parsedIntervalMinutes === null
-          }
-          className={reminderComposerPrimaryActionClass}
-        >
-          {isPending ? (language === "ru" ? "Сохраняем…" : "Saving…") : submitLabel}
-        </button>
-        {onCancel && (
+        <div className={`grid gap-2 ${onCancel ? "grid-cols-2" : "grid-cols-1"}`}>
+          {onCancel ? (
+            <button
+              type="button"
+              onClick={() => {
+                clearCabinetPicker();
+                onCancel();
+              }}
+              disabled={isPending}
+              className={`${reminderComposerSecondaryActionClass} w-full`}
+            >
+              {language === "ru" ? "Отмена" : "Cancel"}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => {
+              if (
+                parsedIntervalMinutes === null ||
+                hasInvalidDose ||
+                (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim())
+              ) {
+                return;
+              }
+
+              onSubmit({
+                householdMedicineId: planMode === "cabinet" ? selectedMedicineId : null,
+                customMedicineName: planMode === "manual" ? customMedicineName.trim() : null,
+                doseAmount: doseAmount.trim(),
+                minIntervalMinutes: parsedIntervalMinutes,
+                maxDosesPerDay: parseNullableInteger(maxDosesPerDay),
+                weightKg: parseNullableNumber(weightKg),
+                doseMgPerKg: parseNullableNumber(doseMgPerKg),
+                notes: null,
+              });
+
+              if (!initialValue) {
+                setPlanMode("cabinet");
+                setSelectedMedicineId("");
+                setCustomMedicineName("");
+                setDoseAmount("");
+                setMinIntervalInput(intervalUnit === "minutes" ? "180" : "3");
+                setMaxDosesPerDay("");
+                setDoseMgPerKg("");
+              }
               clearCabinetPicker();
-              onCancel();
+              onCancel?.();
             }}
-            disabled={isPending}
-            className={reminderComposerSecondaryActionClass}
+            disabled={
+              isPending ||
+              (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim()) ||
+              !minIntervalInput ||
+              hasInvalidDose ||
+              parsedIntervalMinutes === null
+            }
+            className={`${reminderComposerPrimaryActionClass} w-full`}
           >
-            {language === "ru" ? "Отмена" : "Cancel"}
+            {isPending ? (language === "ru" ? "Сохраняем…" : "Saving…") : submitLabel}
           </button>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import type {
   Child,
+  EpisodeMedicationPlan,
   FeedingRecord,
   IllnessEpisode,
   IllnessEpisodeInsights,
@@ -132,8 +133,66 @@ function joinLiveActivityParts(parts: Array<string | null | undefined>) {
     .join(" · ");
 }
 
+function formatRelativeDoseLabel(value: string | Date | null | undefined, language: "ru" | "en") {
+  if (!value) {
+    return null;
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const diffMs = date.getTime() - Date.now();
+  const totalMinutes = Math.max(0, Math.ceil(diffMs / 60_000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours === 0 && minutes === 0) {
+    return language === "ru" ? "меньше чем через минуту" : "under a minute";
+  }
+  if (hours === 0) {
+    return language === "ru" ? `через ${minutes} мин` : `in ${minutes} min`;
+  }
+  if (minutes === 0) {
+    return language === "ru" ? `через ${hours} ч` : `in ${hours} h`;
+  }
+  return language === "ru" ? `через ${hours} ч ${minutes} мин` : `in ${hours} h ${minutes} min`;
+}
+
+function buildSinglePlanNextDose(
+  plan: Pick<EpisodeMedicationPlan, "minIntervalMinutes" | "customMedicineName"> | null | undefined,
+  insights:
+    | Pick<IllnessEpisodeInsights, "lastAdministrationAt" | "medicineNames">
+    | null
+    | undefined
+) {
+  if (!plan?.minIntervalMinutes || !insights?.lastAdministrationAt) {
+    return null;
+  }
+
+  const lastAdministrationAt = Date.parse(insights.lastAdministrationAt);
+  if (!Number.isFinite(lastAdministrationAt)) {
+    return null;
+  }
+
+  return {
+    nextDoseAt: new Date(lastAdministrationAt + plan.minIntervalMinutes * 60_000),
+    medicineName: plan.customMedicineName?.trim() || insights.medicineNames?.[0]?.trim() || null,
+  };
+}
+
 function buildIllnessLiveActivitySummary(
-  insights: Pick<IllnessEpisodeInsights, "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"> | null | undefined,
+  insights: Pick<
+    IllnessEpisodeInsights,
+    "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"
+  > | null | undefined,
+  nextDose:
+    | {
+        nextDoseAt: Date;
+        medicineName: string | null;
+      }
+    | null
+    | undefined,
   language: "ru" | "en"
 ): {
   primaryValue?: string | null;
@@ -145,29 +204,41 @@ function buildIllnessLiveActivitySummary(
   const lastAdministrationTime = formatTimeLabel(insights?.lastAdministrationAt, language);
   const lastEventTime = formatTimeLabel(insights?.lastEventAt, language);
   const firstMedicineName = insights?.medicineNames?.[0]?.trim() || null;
+  const nextDoseRelative = formatRelativeDoseLabel(nextDose?.nextDoseAt, language);
+  const nextDoseTime = formatTimeLabel(nextDose?.nextDoseAt?.toISOString(), language);
 
   return {
     primaryValue: lastTemperature ?? (language === "ru" ? "Нет" : "None"),
     primaryCaption: language === "ru" ? "Последняя температура" : "Latest temperature",
     secondaryValue:
+      nextDoseRelative ??
+      nextDoseTime ??
       firstMedicineName ??
       lastEventTime ??
       (language === "ru" ? "Без записей" : "No events yet"),
-    secondaryCaption: firstMedicineName
-      ? lastAdministrationTime
+    secondaryCaption: nextDose
+      ? nextDose.medicineName
         ? language === "ru"
-          ? `Лекарство · ${lastAdministrationTime}`
-          : `Medication · ${lastAdministrationTime}`
+          ? `Следующий приём · ${nextDose.medicineName}`
+          : `Next dose · ${nextDose.medicineName}`
         : language === "ru"
-          ? "Последнее лекарство"
-          : "Latest medication"
-      : lastEventTime
-        ? language === "ru"
-          ? `Последняя запись · ${lastEventTime}`
-          : `Latest event · ${lastEventTime}`
-        : language === "ru"
-          ? "Последних действий ещё нет"
-          : "No logged actions yet",
+          ? "Следующий приём"
+          : "Next dose"
+      : firstMedicineName
+        ? lastAdministrationTime
+          ? language === "ru"
+            ? `Последнее лекарство · ${lastAdministrationTime}`
+            : `Latest medication · ${lastAdministrationTime}`
+          : language === "ru"
+            ? "Последнее лекарство"
+            : "Latest medication"
+        : lastEventTime
+          ? language === "ru"
+            ? `Последняя запись · ${lastEventTime}`
+            : `Latest event · ${lastEventTime}`
+          : language === "ru"
+            ? "Последних действий ещё нет"
+            : "No logged actions yet",
   };
 }
 
@@ -204,7 +275,6 @@ function buildIllnessStatusLabel(
   language: "ru" | "en"
 ) {
   const title = episodeTitle?.trim() || null;
-  const temperature = formatTemperatureValue(insights?.lastTemperatureCelsius);
   const medicine = insights?.medicineNames?.[0]?.trim() || null;
   const administrationTime = formatTimeLabel(insights?.lastAdministrationAt, language);
   const latestEventTime = formatTimeLabel(insights?.lastEventAt, language);
@@ -212,7 +282,6 @@ function buildIllnessStatusLabel(
   return (
     joinLiveActivityParts([
       title,
-      temperature,
       medicine ? joinLiveActivityParts([medicine, administrationTime]) : latestEventTime,
     ]) ||
     (language === "ru" ? "Активное наблюдение" : "Active tracking")
@@ -316,6 +385,7 @@ export async function syncIllnessLiveActivity(
     IllnessEpisodeInsights,
     "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"
   > | null = null,
+  medicationPlans: Array<Pick<EpisodeMedicationPlan, "minIntervalMinutes" | "customMedicineName">> = [],
   language: "ru" | "en" = "ru",
   preferences?: LiveActivityPreferencesCache,
   currentAccountId?: string | null
@@ -340,7 +410,8 @@ export async function syncIllnessLiveActivity(
     return;
   }
 
-  const summary = buildIllnessLiveActivitySummary(insights, language);
+  const nextDose = medicationPlans.length === 1 ? buildSinglePlanNextDose(medicationPlans[0], insights) : null;
+  const summary = buildIllnessLiveActivitySummary(insights, nextDose, language);
   await safeUpsertLiveActivity({
     kind: "illness",
     itemId: child.id,
@@ -380,6 +451,7 @@ export async function syncLiveActivitiesSnapshot(args: {
           child,
           args.activeIllnessByChildId[child.id] ?? null,
           args.activeIllnessInsightsByChildId?.[child.id] ?? null,
+          [],
           language,
           preferences,
           args.currentAccountId

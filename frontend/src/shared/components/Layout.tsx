@@ -10,6 +10,7 @@ import { logout } from "@shared/api/auth";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
+import { cleanupDeviceSessionArtifacts } from "@shared/utils/sessionCleanup";
 import { BottomTabBar } from "./BottomTabBar";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { TopNav, type LayoutNavLink } from "./TopNav";
@@ -381,6 +382,7 @@ export function Layout({
 
   const handleLogout = async () => {
     try {
+      await cleanupDeviceSessionArtifacts();
       await logout();
     } catch {
       // Локальный выход всё равно должен отработать, даже если сессия уже истекла.

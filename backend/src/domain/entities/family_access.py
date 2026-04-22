@@ -53,8 +53,6 @@ def deserialize_family_access_policy(payload: object | None) -> FamilyAccessPoli
             except (TypeError, ValueError):
                 continue
     all_children = bool(payload.get("all_children", True))
-    if not all_children and len(child_ids) == 0:
-        all_children = True
 
     return FamilyAccessPolicy(
         all_children=all_children,

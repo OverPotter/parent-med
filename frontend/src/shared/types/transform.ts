@@ -2,6 +2,7 @@
  * Преобразование snake_case из бэка в camelCase для фронта.
  */
 
+import { LEGACY_FULL_FAMILY_ACCESS_POLICY } from "@shared/familyAccess/policy";
 import type {
   Family,
   Account,
@@ -243,24 +244,28 @@ export function toFamily(r: RawFamily): Family {
 }
 
 function toFamilyAccessPolicy(raw: RawAccount["access_policy"]): FamilyAccessPolicy {
+  if (!raw) {
+    return LEGACY_FULL_FAMILY_ACCESS_POLICY;
+  }
+
   return {
-    allChildren: raw?.all_children ?? true,
-    childIds: raw?.child_ids ?? [],
+    allChildren: raw.all_children ?? true,
+    childIds: raw.child_ids ?? [],
     childrenAccess:
-      raw?.children_access === "view" || raw?.children_access === "act"
+      raw.children_access === "view" || raw.children_access === "act"
         ? raw.children_access
         : "edit",
     cabinetAccess:
-      raw?.cabinet_access === "none" || raw?.cabinet_access === "view"
+      raw.cabinet_access === "none" || raw.cabinet_access === "view"
         ? raw.cabinet_access
         : "edit",
     pillboxAccess:
-      raw?.pillbox_access === "none" ||
-      raw?.pillbox_access === "view" ||
-      raw?.pillbox_access === "act"
+      raw.pillbox_access === "none" ||
+      raw.pillbox_access === "view" ||
+      raw.pillbox_access === "act"
         ? raw.pillbox_access
         : "edit",
-    cabinetPushEnabled: raw?.cabinet_push_enabled ?? true,
+    cabinetPushEnabled: raw.cabinet_push_enabled ?? true,
   };
 }
 
