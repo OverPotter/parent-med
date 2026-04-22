@@ -1,34 +1,11 @@
 import { Capacitor } from "@capacitor/core";
 import { useEffect, useState } from "react";
-import { AppBootSplash } from "@client/layout/AppBootSplash";
 
 const IOS_FIRST_LAUNCH_NON_CRITICAL_DELAY_MS = 1400;
 const IOS_REPEAT_LAUNCH_NON_CRITICAL_DELAY_MS = 600;
 
 export function RouteFallback() {
-  const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
-  const [isBootReady, setIsBootReady] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-    return Boolean((window as Window & { __PM_BOOT_READY?: boolean }).__PM_BOOT_READY);
-  });
-
-  if (!isNativeIos) {
-    return null;
-  }
-
-  useEffect(() => {
-    if (typeof window === "undefined" || isBootReady) {
-      return;
-    }
-
-    const handleBootReady = () => setIsBootReady(true);
-    window.addEventListener("app:boot-ready", handleBootReady, { once: true });
-    return () => window.removeEventListener("app:boot-ready", handleBootReady);
-  }, [isBootReady]);
-
-  return isBootReady ? null : <AppBootSplash />;
+  return null;
 }
 
 export function useGlobalBootReady() {

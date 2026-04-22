@@ -62,6 +62,11 @@ actor LiveActivitiesManager {
             itemId: itemId,
             title: title,
             subtitle: data["subtitle"] as? String,
+            statusLabel: data["statusLabel"] as? String,
+            primaryValue: data["primaryValue"] as? String,
+            primaryCaption: data["primaryCaption"] as? String,
+            secondaryValue: data["secondaryValue"] as? String,
+            secondaryCaption: data["secondaryCaption"] as? String,
             startedAt: startedAt,
             deepLink: data["deepLink"] as? String
         )
@@ -84,6 +89,11 @@ actor LiveActivitiesManager {
         let contentState = LiveActivityAttributes.ContentState(
             title: payload.title,
             subtitle: payload.subtitle,
+            statusLabel: payload.statusLabel,
+            primaryValue: payload.primaryValue,
+            primaryCaption: payload.primaryCaption,
+            secondaryValue: payload.secondaryValue,
+            secondaryCaption: payload.secondaryCaption,
             startedAt: payload.startedAt,
             deepLink: payload.deepLink
         )

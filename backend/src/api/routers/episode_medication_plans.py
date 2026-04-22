@@ -26,7 +26,7 @@ async def list_episode_medication_plans(
     service: EpisodeMedicationPlanService = Depends(get_episode_medication_plan_service),
 ) -> list[EpisodeMedicationPlanResponseDto]:
     """Все планы лекарства по эпизоду."""
-    return await service.get_by_episode_id(episode_id, current_account.family_id)
+    return await service.get_by_episode_id(episode_id, current_account)
 
 
 @router.post("", response_model=EpisodeMedicationPlanResponseDto, status_code=201)
@@ -36,7 +36,7 @@ async def create_episode_medication_plan(
     service: EpisodeMedicationPlanService = Depends(get_episode_medication_plan_service),
 ) -> EpisodeMedicationPlanResponseDto:
     """Создать план лекарства внутри эпизода."""
-    return await service.create(dto, current_account.family_id)
+    return await service.create(dto, current_account)
 
 
 @router.patch("/{plan_id}", response_model=EpisodeMedicationPlanResponseDto)
@@ -47,7 +47,7 @@ async def update_episode_medication_plan(
     service: EpisodeMedicationPlanService = Depends(get_episode_medication_plan_service),
 ) -> EpisodeMedicationPlanResponseDto:
     """Обновить план лекарства."""
-    return await service.update(plan_id, dto, current_account.family_id)
+    return await service.update(plan_id, dto, current_account)
 
 
 @router.delete("/{plan_id}", status_code=204)
@@ -57,4 +57,4 @@ async def delete_episode_medication_plan(
     service: EpisodeMedicationPlanService = Depends(get_episode_medication_plan_service),
 ) -> None:
     """Удалить план лекарства."""
-    await service.delete(plan_id, current_account.family_id)
+    await service.delete(plan_id, current_account)

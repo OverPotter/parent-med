@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteChild, fetchChild, updateChild } from "@shared/api/children";
 import { DateField } from "@shared/components/DateField";
@@ -7,6 +7,8 @@ import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { canEditChild } from "@shared/permissions/familyAccess";
+import { useAppStore } from "@shared/store/useAppStore";
 import { getLocalIsoDate } from "@shared/utils/date";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
@@ -33,9 +35,13 @@ export function ChildEditPage() {
   const { childId } = useParams<{ childId: string }>();
   const navigate = useNavigate();
   const isIosShell = useIsIosShell();
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const pageRef = useRef<HTMLDivElement | null>(null);
+  const canEditProfile =
+    !!childId && canEditChild(childId, accountFamilyRole, accountAccessPolicy);
 
   useEffect(() => {
     const page = pageRef.current;
@@ -54,7 +60,7 @@ export function ChildEditPage() {
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
     queryFn: () => fetchChild(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canEditProfile,
   });
 
   const updateMutation = useMutation({
@@ -84,7 +90,11 @@ export function ChildEditPage() {
     },
   });
 
-  if (!childId || isLoading || !child) {
+  if (!childId || !canEditProfile) {
+    return <Navigate to="/children" replace />;
+  }
+
+  if (isLoading || !child) {
     return <p className="text-sm text-muted">{common.loading}</p>;
   }
 

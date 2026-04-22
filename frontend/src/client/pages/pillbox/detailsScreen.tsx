@@ -23,6 +23,7 @@ export function PillboxDetailsScreen({
   selectedPlan,
   selectedPlanId,
   allGroups,
+  canEdit,
   planActionTarget,
   planActionError,
   togglePlanStatusPending,
@@ -41,6 +42,7 @@ export function PillboxDetailsScreen({
   selectedPlan: PillboxPlan;
   selectedPlanId: string;
   allGroups: PillboxGroup[];
+  canEdit: boolean;
   planActionTarget: PillboxPlanActionTarget;
   planActionError: string | null;
   togglePlanStatusPending: boolean;
@@ -116,7 +118,8 @@ export function PillboxDetailsScreen({
                     {displayPillboxText(selectedPlan.title)}
                   </p>
                 </div>
-                {selectedPlan.status === "active" || selectedPlan.status === "paused" ? (
+                {canEdit &&
+                (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
                   <button
                     type="button"
                     role="switch"
@@ -247,7 +250,7 @@ export function PillboxDetailsScreen({
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2">
-          {selectedPlan.status === "active" || selectedPlan.status === "paused" ? (
+          {canEdit && (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
             <button
               type="button"
               onClick={onGoToSetup}
@@ -257,16 +260,18 @@ export function PillboxDetailsScreen({
             </button>
           ) : null}
         </div>
-        <div>
-          <button
-            type="button"
-            onClick={onRequestDelete}
-            disabled={deletePlanPending}
-            className={`${actionCompactDangerClass} w-full disabled:cursor-not-allowed disabled:opacity-60`}
-          >
-            {tPillbox(language, "deletePlan")}
-          </button>
-        </div>
+        {canEdit ? (
+          <div>
+            <button
+              type="button"
+              onClick={onRequestDelete}
+              disabled={deletePlanPending}
+              className={`${actionCompactDangerClass} w-full disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {tPillbox(language, "deletePlan")}
+            </button>
+          </div>
+        ) : null}
       </section>
 
       <ConfirmDialog

@@ -142,7 +142,7 @@ async def test_signup_with_invite_joins_existing_family() -> None:
         family_id=family.id,
         created_by_account_id=uuid4(),
         token_hash=hash_session_token(raw_token),
-        family_role="adult",
+        family_role="member",
         created_at=datetime.now(UTC) - timedelta(minutes=5),
         expires_at=datetime.now(UTC) + timedelta(days=1),
         accepted_at=None,
@@ -171,7 +171,7 @@ async def test_signup_with_invite_joins_existing_family() -> None:
     assert result.family.id == family.id
     assert result.family.name == "Семья Петровых"
     assert result.account.family_id == family.id
-    assert result.account.family_role == "adult"
+    assert result.account.family_role == "member"
     assert result.account.login == "dad_login"
     assert result.account.display_name == "Папа"
     assert result.remember_me is True
@@ -190,7 +190,7 @@ async def test_existing_account_accepts_invite_into_other_family() -> None:
         family_id=target_family.id,
         created_by_account_id=uuid4(),
         token_hash=hash_session_token(raw_token),
-        family_role="adult",
+        family_role="member",
         created_at=now - timedelta(minutes=5),
         expires_at=now + timedelta(days=1),
         accepted_at=None,
@@ -222,7 +222,7 @@ async def test_existing_account_accepts_invite_into_other_family() -> None:
 
     assert result.family.id == target_family.id
     assert result.account.family_id == target_family.id
-    assert result.account.family_role == "adult"
+    assert result.account.family_role == "member"
     assert family_invite_repo.invite is not None
     assert family_invite_repo.invite.accepted_by_account_id == existing_account.id
     assert family_repo.deleted_ids == [source_family.id]

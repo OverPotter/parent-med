@@ -22,7 +22,7 @@ async def get_illness_comment(
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: IllnessCommentService = Depends(get_illness_comment_service),
 ) -> IllnessCommentResponseDto:
-    return await service.get_by_id(comment_id, current_account.family_id)
+    return await service.get_by_id(comment_id, current_account)
 
 
 @router.get("", response_model=list[IllnessCommentResponseDto])
@@ -31,7 +31,7 @@ async def list_illness_comments(
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: IllnessCommentService = Depends(get_illness_comment_service),
 ) -> list[IllnessCommentResponseDto]:
-    return await service.get_by_episode_id(episode_id, current_account.family_id)
+    return await service.get_by_episode_id(episode_id, current_account)
 
 
 @router.post("", response_model=IllnessCommentResponseDto, status_code=201)
@@ -42,7 +42,7 @@ async def create_illness_comment(
 ) -> IllnessCommentResponseDto:
     return await service.create(
         dto,
-        current_account.family_id,
+        current_account,
         current_account.id,
         current_account.display_name,
     )
@@ -54,4 +54,4 @@ async def delete_illness_comment(
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: IllnessCommentService = Depends(get_illness_comment_service),
 ) -> None:
-    await service.delete(comment_id, current_account.family_id)
+    await service.delete(comment_id, current_account)

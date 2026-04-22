@@ -21,6 +21,8 @@ export function PillboxHubScreen({
   isIosShell,
   listFilter,
   visibleGroups,
+  canAct,
+  canEdit,
   highlightedPlanId,
   openAnalytics,
   openCreate,
@@ -38,6 +40,8 @@ export function PillboxHubScreen({
   isIosShell: boolean;
   listFilter: PillboxPlanListFilter;
   visibleGroups: PillboxGroup[];
+  canAct: boolean;
+  canEdit: boolean;
   highlightedPlanId: string | null;
   openAnalytics: (targetPlanId?: string | null, targetFilter?: PillboxPlanListFilter) => void;
   openCreate: () => void;
@@ -63,17 +67,19 @@ export function PillboxHubScreen({
       </div>
       <div className="space-y-2.5">
         <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={openCreate}
-            className={`${actionPrimaryClass} min-w-0 px-3.5`}
-          >
-            {tPillbox(language, "createPlan")}
-          </button>
+          {canEdit ? (
+            <button
+              type="button"
+              onClick={openCreate}
+              className={`${actionPrimaryClass} min-w-0 px-3.5`}
+            >
+              {tPillbox(language, "createPlan")}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => openAnalytics(undefined, listFilter)}
-            className={`${actionSecondaryClass} min-w-0 px-3.5`}
+            className={`${actionSecondaryClass} min-w-0 px-3.5 ${canEdit ? "" : "col-span-2"}`}
           >
             {tPillbox(language, "analytics")}
           </button>
@@ -218,7 +224,7 @@ export function PillboxHubScreen({
                       </p>
                     </div>
 
-                    {canMarkNow ? (
+                    {canAct && canMarkNow ? (
                       <div className="flex justify-start">
                         <button
                           type="button"

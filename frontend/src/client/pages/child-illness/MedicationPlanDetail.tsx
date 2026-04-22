@@ -29,6 +29,7 @@ export function MedicationPlanDetail({
   childId,
   medicines,
   latestWeight,
+  canEdit = true,
   onUpdate,
   onDelete,
   onTakeDose,
@@ -41,6 +42,7 @@ export function MedicationPlanDetail({
   childId: string;
   medicines: HouseholdMedicine[];
   latestWeight: WeightEntry | null;
+  canEdit?: boolean;
   onUpdate: (planId: string, payload: MedicationPlanPayload) => void;
   onDelete: (planId: string) => void;
   onTakeDose?: (plan: EpisodeMedicationPlan) => void;
@@ -157,7 +159,7 @@ export function MedicationPlanDetail({
     setIsDeleteConfirmOpen(false);
   }, [plan.id]);
 
-  if (isEditing) {
+  if (isEditing && canEdit) {
     return (
       <section className="space-y-4">
         <MedicationPlanComposer
@@ -315,7 +317,11 @@ export function MedicationPlanDetail({
         </div>
       ) : null}
 
-      <div className={`grid gap-2 ${canLogDoseNow && onTakeDose ? "grid-cols-3" : "grid-cols-2"}`}>
+      <div
+        className={`grid gap-2 ${
+          canLogDoseNow && onTakeDose ? (canEdit ? "grid-cols-3" : "grid-cols-2") : canEdit ? "grid-cols-2" : "grid-cols-1"
+        }`}
+      >
         {canLogDoseNow && onTakeDose ? (
           <button
             type="button"
@@ -332,27 +338,31 @@ export function MedicationPlanDetail({
                 : "Log"}
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={() => setIsEditing(true)}
-          className={appBtnJournalSecondaryClass}
-        >
-          {language === "ru" ? "Изменить" : "Edit"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsDeleteConfirmOpen(true)}
-          disabled={isDeleting}
-          className={appBtnJournalDangerClass}
-        >
-          {isDeleting
-            ? language === "ru"
-              ? "Удаляем…"
-              : "Deleting…"
-            : language === "ru"
-              ? "Удалить"
-              : "Delete"}
-        </button>
+        {canEdit ? (
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className={appBtnJournalSecondaryClass}
+          >
+            {language === "ru" ? "Изменить" : "Edit"}
+          </button>
+        ) : null}
+        {canEdit ? (
+          <button
+            type="button"
+            onClick={() => setIsDeleteConfirmOpen(true)}
+            disabled={isDeleting}
+            className={appBtnJournalDangerClass}
+          >
+            {isDeleting
+              ? language === "ru"
+                ? "Удаляем…"
+                : "Deleting…"
+              : language === "ru"
+                ? "Удалить"
+                : "Delete"}
+          </button>
+        ) : null}
       </div>
     </section>
   );

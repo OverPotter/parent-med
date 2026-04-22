@@ -1,8 +1,7 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
-import { fetchChildrenByFamilyId } from "@shared/api/children";
+import { useQuery } from "@tanstack/react-query";
 import { fetchFamilies } from "@shared/api/families";
-import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
 import { useAppStore } from "@shared/store/useAppStore";
+import { resolveClientStartRoute } from "@client/startup/startupDecisions";
 
 interface ClientStartRouteResult {
   isResolving: boolean;
@@ -23,39 +22,18 @@ export function useClientStartRoute(): ClientStartRouteResult {
   });
 
   const familyId = currentFamilyId ?? families[0]?.id ?? null;
-
-  const { data: children = [], isLoading: isChildrenLoading } = useQuery({
-    queryKey: ["children", familyId],
-    queryFn: () => fetchChildrenByFamilyId(familyId!),
-    enabled: !!familyId,
-  });
-
-  const activeEpisodeQueries = useQueries({
-    queries: children.map((child) => ({
-      queryKey: ["illness-episode-active", child.id, "start-route"],
-      queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
-      enabled: !!familyId && !!child.id,
-      staleTime: 15_000,
-    })),
-  });
-
   const hasFamily = Boolean(familyId);
-  const hasChildren = children.length > 0;
-  const hasActiveEpisode = activeEpisodeQueries.some((query) => Boolean(query.data));
-  const isActiveEpisodeLoading =
-    hasChildren && activeEpisodeQueries.some((query) => query.isLoading || query.isPending);
+  const hasChildren = false;
+  const hasActiveEpisode = false;
 
-  let startRoute = "/family";
-  if (hasFamily && !hasChildren) {
-    startRoute = "/children";
-  } else if (hasActiveEpisode) {
-    startRoute = "/illnesses/active";
-  } else if (hasFamily) {
-    startRoute = "/children";
-  }
+  const startRoute = resolveClientStartRoute({
+    hasFamily,
+    hasChildren,
+    hasActiveEpisode,
+  });
 
   return {
-    isResolving: isFamiliesLoading || (hasFamily && (isChildrenLoading || isActiveEpisodeLoading)),
+    isResolving: isFamiliesLoading,
     startRoute,
     hasFamily,
     hasChildren,

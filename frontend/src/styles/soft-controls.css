@@ -399,22 +399,19 @@
 
   .soft-pill-success.app-profile-action--active {
     border-color: color-mix(in srgb, var(--color-success) 32%, transparent);
-    background: color-mix(in srgb, var(--color-success-soft) 76%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-success-soft) 84%, var(--color-surface));
     color: color-mix(in srgb, var(--color-success) 84%, var(--color-foreground));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
+      0 10px 22px -22px color-mix(in srgb, var(--color-success) 36%, transparent);
   }
 
   .soft-pill-primary.app-profile-action--selected {
     border-color: color-mix(in srgb, var(--color-primary) 36%, var(--color-border));
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--color-surface-glare-soft) 42%, transparent),
-        transparent 46%
-      ),
-      color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-primary) 20%, var(--color-surface));
     color: color-mix(in srgb, var(--color-primary) 92%, var(--color-foreground));
     box-shadow:
-      inset 0 1px 0 color-mix(in srgb, var(--color-surface-glare) 34%, transparent),
+      inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
       0 10px 24px -22px color-mix(in srgb, var(--color-primary) 42%, transparent);
   }
 
@@ -570,12 +567,10 @@
 
   [data-theme="light"] .soft-pill-primary.app-profile-action--selected {
     border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
-    background:
-      linear-gradient(180deg, rgb(255 255 255 / 0.24), transparent 42%),
-      color-mix(in srgb, var(--color-primary) 24%, var(--color-surface-soft));
+    background: color-mix(in srgb, var(--color-primary) 28%, var(--color-surface-soft));
     color: color-mix(in srgb, var(--color-primary) 96%, var(--color-foreground));
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
       0 12px 24px -20px color-mix(in srgb, var(--color-primary) 56%, transparent);
   }
 
@@ -601,10 +596,11 @@
 
   [data-theme="light"] .soft-pill-success.app-profile-action--active {
     border-color: color-mix(in srgb, var(--color-success) 34%, var(--color-border));
-    background:
-      linear-gradient(180deg, rgb(255 255 255 / 0.16), transparent 44%),
-      color-mix(in srgb, var(--color-success-soft) 84%, var(--color-surface-soft));
+    background: color-mix(in srgb, var(--color-success-soft) 88%, var(--color-surface-soft));
     color: color-mix(in srgb, var(--color-success) 88%, var(--color-foreground));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      0 12px 24px -20px color-mix(in srgb, var(--color-success) 42%, transparent);
   }
 
   [data-theme="light"] .soft-input {
@@ -807,10 +803,11 @@
 
   [data-theme="dark"] .soft-pill-success.app-profile-action--active {
     border-color: color-mix(in srgb, var(--color-success) 38%, transparent);
-    background:
-      linear-gradient(180deg, rgb(255 255 255 / 0.06), transparent 48%),
-      color-mix(in srgb, var(--color-success-soft) 76%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-success-soft) 78%, var(--color-surface));
     color: color-mix(in srgb, var(--color-success) 90%, var(--color-foreground));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 10px 22px -22px rgb(0 0 0 / 0.42);
   }
 @media (max-width: 639px) {
   .soft-field-label {

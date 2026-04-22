@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { shouldShowClientBootSplash } from "@client/startup/startupDecisions";
 import {
   IOS_FIRST_LAUNCH_SPLASH_SETTLE_MS,
   IOS_REPEAT_LAUNCH_SPLASH_SETTLE_MS,
@@ -12,10 +13,6 @@ type UseClientLayoutSplashArgs = {
   familiesCount: number;
   isFamiliesLoading: boolean;
   isFamiliesSuccess: boolean;
-  isNavChildrenLoading: boolean;
-  isNavChildrenFetched: boolean;
-  navChildrenCount: number;
-  areActiveEpisodeQueriesSettled: boolean;
   isDeferredBootReady: boolean;
   isDeferredShellWorkReady: boolean;
   isFirstNativeLaunch: boolean;
@@ -31,10 +28,6 @@ export function useClientLayoutSplash({
   familiesCount,
   isFamiliesLoading,
   isFamiliesSuccess,
-  isNavChildrenLoading,
-  isNavChildrenFetched,
-  navChildrenCount,
-  areActiveEpisodeQueriesSettled,
   isDeferredBootReady,
   isDeferredShellWorkReady,
   isFirstNativeLaunch,
@@ -48,24 +41,17 @@ export function useClientLayoutSplash({
   const [isBootSplashMounted, setIsBootSplashMounted] = useState(!wasBootReadyOnMount);
   const [isBootSplashClosing, setIsBootSplashClosing] = useState(false);
 
-  const isCurrentFamilyResolving = Boolean(isFamiliesSuccess && familiesCount > 0 && !currentFamilyId);
-  const shouldBlockOnCriticalChildren =
-    Boolean(authToken && accountId && currentFamilyId) &&
-    (!isNavChildrenFetched || isNavChildrenLoading);
-  const shouldBlockOnCriticalActiveEpisodes =
-    Boolean(authToken && accountId && currentFamilyId && navChildrenCount > 0) &&
-    !areActiveEpisodeQueriesSettled;
-
-  const shouldShowBootSplash =
-    Boolean(authToken && accountId) &&
-    (!isDeferredBootReady ||
-      isFamiliesLoading ||
-      !isFamiliesSuccess ||
-      isCurrentFamilyResolving ||
-      shouldBlockOnCriticalChildren ||
-      shouldBlockOnCriticalActiveEpisodes ||
-      !isWarmupReady ||
-      (isFirstNativeLaunch && !isDeferredShellWorkReady));
+  const shouldShowBootSplash = shouldShowClientBootSplash({
+    authToken,
+    accountId,
+    currentFamilyId,
+    familiesCount,
+    isFamiliesLoading,
+    isFamiliesSuccess,
+    isDeferredBootReady,
+    isDeferredShellWorkReady,
+    isFirstNativeLaunch,
+  });
 
   useEffect(() => {
     if (wasBootReadyOnMount) {

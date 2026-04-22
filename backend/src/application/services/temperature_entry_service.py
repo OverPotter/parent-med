@@ -3,11 +3,15 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.temperature_entry import (
     TemperatureEntryCreateDto,
     TemperatureEntryResponseDto,
 )
-from src.core.exceptions import ForbiddenError, NotFoundError
+from src.application.services.access_control import (
+    get_child_for_account,
+)
+from src.core.exceptions import NotFoundError
 from src.domain.entities.child import Child
 from src.domain.entities.illness_episode import IllnessEpisode
 from src.domain.entities.temperature_entry import TemperatureEntry
@@ -41,56 +45,63 @@ class TemperatureEntryService:
             created_by_name_snapshot=entity.created_by_name_snapshot,
         )
 
-    async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
-        child = await self._child_repo.get_by_id(child_id)
-        if not child:
-            raise NotFoundError("Ребёнок не найден", resource="child")
-        if child.family_id != current_family_id:
-            raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
-        return child
+    async def _require_child_access(
+        self,
+        child_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
+    ) -> Child:
+        return await get_child_for_account(
+            self._child_repo,
+            child_id,
+            current_account,
+            required_level,
+        )
 
     async def _get_episode_for_account(
         self,
         episode_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
     ) -> IllnessEpisode:
         episode = await self._episode_repo.get_by_id(episode_id)
         if not episode:
             raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
-        await self._require_child_access(episode.child_id, current_family_id)
+        await self._require_child_access(episode.child_id, current_account, required_level)
         return episode
 
     async def _get_entry_for_account(
         self,
         id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
     ) -> TemperatureEntry:
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Запись температуры не найдена", resource="temperature_entry")
-        await self._get_episode_for_account(entity.episode_id, current_family_id)
+        await self._get_episode_for_account(entity.episode_id, current_account, required_level)
         return entity
 
-    async def get_by_id(self, id: UUID, current_family_id: UUID) -> TemperatureEntryResponseDto:
-        return self._to_response(await self._get_entry_for_account(id, current_family_id))
+    async def get_by_id(self, id: UUID, current_account: AuthenticatedAccount) -> TemperatureEntryResponseDto:
+        return self._to_response(await self._get_entry_for_account(id, current_account))
 
     async def get_by_episode_id(
         self,
         episode_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> list[TemperatureEntryResponseDto]:
-        await self._get_episode_for_account(episode_id, current_family_id)
+        await self._get_episode_for_account(episode_id, current_account)
         entities = await self._repo.get_by_episode_id(episode_id)
         return [self._to_response(e) for e in entities]
 
     async def create(
         self,
         dto: TemperatureEntryCreateDto,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
         created_by_account_id: UUID,
         created_by_name_snapshot: str,
     ) -> TemperatureEntryResponseDto:
-        await self._get_episode_for_account(dto.episode_id, current_family_id)
+        await self._get_episode_for_account(dto.episode_id, current_account, "act")
         measured_at = dto.measured_at or datetime.now(UTC)
         entity = TemperatureEntry(
             id=uuid4(),
@@ -105,6 +116,6 @@ class TemperatureEntryService:
         created = await self._repo.add(entity)
         return self._to_response(created)
 
-    async def delete(self, id: UUID, current_family_id: UUID) -> None:
-        await self._get_entry_for_account(id, current_family_id)
+    async def delete(self, id: UUID, current_account: AuthenticatedAccount) -> None:
+        await self._get_entry_for_account(id, current_account, "edit")
         await self._repo.delete(id)

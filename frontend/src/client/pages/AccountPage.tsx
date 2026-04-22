@@ -9,10 +9,7 @@ import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { childActionSuccessClass } from "./children/shared";
-import {
-  appBtnJournalSecondaryClass,
-  SectionTitle,
-} from "./child-illness/shared";
+import { appBtnJournalSecondaryClass, SectionTitle } from "./child-illness/shared";
 
 const PROFILE_DIALOG_HISTORY_KEY = "__pm_account_profile_dialog__";
 
@@ -33,7 +30,7 @@ const accountCopy = {
     language: "Язык",
     theme: "Тема",
     notSet: "Не указано",
-    owner: "Владелец",
+    owner: "Администратор",
     member: "Участник",
     light: "День",
     dark: "Ночь",
@@ -68,7 +65,7 @@ const accountCopy = {
     language: "Language",
     theme: "Theme",
     notSet: "Not set",
-    owner: "Owner",
+    owner: "Admin",
     member: "Member",
     light: "Day",
     dark: "Night",
@@ -116,9 +113,9 @@ export function AccountPage() {
   const currentMember = familyMembers.find((member) => member.id === accountId) ?? null;
   const themeLabel = theme === "light" ? copy.light : theme === "dark" ? copy.dark : copy.auto;
   const roleLabel =
-    accountFamilyRole === "owner"
+    accountFamilyRole === "admin"
       ? copy.owner
-      : accountFamilyRole === "adult"
+      : accountFamilyRole === "member"
         ? copy.member
         : copy.notSet;
 
@@ -215,25 +212,14 @@ export function AccountPage() {
         <div className="mt-4">
           <div className="grid grid-cols-2 gap-x-6">
             <ProfileGridCell label={copy.name} value={accountDisplayName || copy.notSet} />
-            <ProfileGridCell
-              label={copy.phone}
-              value={currentMember?.phone || copy.notSet}
-            />
+            <ProfileGridCell label={copy.phone} value={currentMember?.phone || copy.notSet} />
             <ProfileGridCell
               label={copy.login}
               value={accountLogin ? `@${accountLogin}` : copy.notSet}
               borderedTop
             />
-            <ProfileGridCell
-              label={copy.role}
-              value={roleLabel}
-              borderedTop
-            />
-            <ProfileGridCell
-              label={copy.email}
-              value={accountEmail || copy.notSet}
-              borderedTop
-            />
+            <ProfileGridCell label={copy.role} value={roleLabel} borderedTop />
+            <ProfileGridCell label={copy.email} value={accountEmail || copy.notSet} borderedTop />
             <ProfileGridCell
               label={copy.relationship}
               value={currentMember?.relationshipLabel || copy.notSet}

@@ -7,38 +7,101 @@ export function SettingsLiveActivitiesSection({
   isIos,
   sleepEnabled,
   feedingEnabled,
+  illnessEnabled,
   disabled = false,
   onSleepToggle,
   onFeedingToggle,
+  onIllnessToggle,
 }: {
   language: AppLanguage;
   isIos: boolean;
   sleepEnabled: boolean;
   feedingEnabled: boolean;
+  illnessEnabled: boolean;
   disabled?: boolean;
   onSleepToggle: (enabled: boolean) => void;
   onFeedingToggle: (enabled: boolean) => void;
+  onIllnessToggle: (enabled: boolean) => void;
 }) {
+  const preferenceRows = [
+    {
+      key: "sleep",
+      title: tSettings(language, "liveActivitiesSleep"),
+      hint: tSettings(language, "liveActivitiesSleepHint"),
+      enabled: sleepEnabled,
+      onToggle: onSleepToggle,
+    },
+    {
+      key: "feeding",
+      title: tSettings(language, "liveActivitiesFeeding"),
+      hint: tSettings(language, "liveActivitiesFeedingHint"),
+      enabled: feedingEnabled,
+      onToggle: onFeedingToggle,
+    },
+    {
+      key: "illness",
+      title: tSettings(language, "liveActivitiesIllness"),
+      hint: tSettings(language, "liveActivitiesIllnessHint"),
+      enabled: illnessEnabled,
+      onToggle: onIllnessToggle,
+    },
+  ] as const;
+
+  const previewCards = [
+    {
+      key: "sleep",
+      title: tSettings(language, "liveActivitiesSleepPreviewTitle"),
+      timer: "00:43",
+      status: tSettings(language, "liveActivitiesSleepPreviewStatus"),
+      accentClassName: "from-[#748DD1] via-[#748DD1] to-[#748DD1]",
+      accentSurfaceClassName: "bg-[#748DD1]/16 text-[#748DD1] border-[#748DD1]/14",
+      surfaceClassName:
+        "border-white/[0.09] bg-[linear-gradient(135deg,rgb(36,46,79),rgb(46,60,102),rgb(30,39,69))] shadow-[0_18px_36px_rgba(15,23,42,0.16)]",
+      iconName: "moon.stars.fill",
+      enabled: sleepEnabled,
+    },
+    {
+      key: "feeding",
+      title: tSettings(language, "liveActivitiesFeedingPreviewTitle"),
+      timer: "00:12",
+      status: tSettings(language, "liveActivitiesFeedingPreviewStatus"),
+      accentClassName: "from-[#BE6787] via-[#BE6787] to-[#BE6787]",
+      accentSurfaceClassName: "bg-[#BE6787]/16 text-[#BE6787] border-[#BE6787]/14",
+      surfaceClassName:
+        "border-white/[0.09] bg-[linear-gradient(135deg,rgb(67,33,61),rgb(87,41,76),rgb(54,27,49))] shadow-[0_18px_36px_rgba(15,23,42,0.16)]",
+      iconName: "drop.fill",
+      enabled: feedingEnabled,
+    },
+    {
+      key: "illness",
+      title: tSettings(language, "liveActivitiesIllnessPreviewTitle"),
+      timer: language === "ru" ? "2 дн" : "2 d",
+      status: tSettings(language, "liveActivitiesIllnessPreviewStatus"),
+      accentClassName: "from-[#8A7BBF] via-[#8A7BBF] to-[#8A7BBF]",
+      accentSurfaceClassName: "bg-[#8A7BBF]/16 text-[#8A7BBF] border-[#8A7BBF]/14",
+      surfaceClassName:
+        "border-white/[0.09] bg-[linear-gradient(135deg,rgb(49,40,78),rgb(61,50,96),rgb(39,31,64))] shadow-[0_18px_36px_rgba(15,23,42,0.16)]",
+      iconName: "cross.case.fill",
+      enabled: illnessEnabled,
+    },
+  ] as const;
+
   return (
     <SettingsSection
       title={tSettings(language, "liveActivities")}
       hint={tSettings(language, "liveActivitiesHint")}
     >
-      <LiveActivityPreferenceRow
-        title={tSettings(language, "liveActivitiesSleep")}
-        hint={tSettings(language, "liveActivitiesSleepHint")}
-        enabled={sleepEnabled}
-        disabled={disabled}
-        onToggle={onSleepToggle}
-      />
-      <LiveActivityPreferenceRow
-        title={tSettings(language, "liveActivitiesFeeding")}
-        hint={tSettings(language, "liveActivitiesFeedingHint")}
-        enabled={feedingEnabled}
-        disabled={disabled}
-        onToggle={onFeedingToggle}
-        separated
-      />
+      {preferenceRows.map((row, index) => (
+        <LiveActivityPreferenceRow
+          key={row.key}
+          title={row.title}
+          hint={row.hint}
+          enabled={row.enabled}
+          disabled={disabled}
+          onToggle={row.onToggle}
+          separated={index > 0}
+        />
+      ))}
 
       <div className="mx-4 mt-4">
         <div className="mb-3 flex items-center justify-between gap-3">
@@ -55,34 +118,24 @@ export function SettingsLiveActivitiesSection({
           </div>
         </div>
 
-        <div className="grid gap-2.5 sm:grid-cols-2">
-          <LiveActivityPreviewCard
-            title={tSettings(language, "liveActivitiesSleepPreviewTitle")}
-            timer="00:43"
-            status={tSettings(language, "liveActivitiesSleepPreviewStatus")}
-            accentClassName="from-[#61E0FA] via-[#61E0FA] to-[#61E0FA]"
-            accentSurfaceClassName="bg-[#61E0FA]/16 text-[#61E0FA] border-[#61E0FA]/14"
-            surfaceClassName="border-white/[0.09] bg-[linear-gradient(135deg,rgb(18,28,48),rgb(10,36,56),rgb(5,20,36))] shadow-[0_18px_36px_rgba(15,23,42,0.16)]"
-            iconName="moon.stars.fill"
-            enabled={sleepEnabled}
-            muted={!isIos}
-            language={language}
-          />
-          <LiveActivityPreviewCard
-            title={tSettings(language, "liveActivitiesFeedingPreviewTitle")}
-            timer="00:12"
-            status={tSettings(language, "liveActivitiesFeedingPreviewStatus")}
-            accentClassName="from-[#B394FA] via-[#B394FA] to-[#B394FA]"
-            accentSurfaceClassName="bg-[#B394FA]/16 text-[#B394FA] border-[#B394FA]/14"
-            surfaceClassName="border-white/[0.09] bg-[linear-gradient(135deg,rgb(33,23,51),rgb(46,28,77),rgb(23,15,41))] shadow-[0_18px_36px_rgba(15,23,42,0.16)]"
-            iconName="drop.fill"
-            enabled={feedingEnabled}
-            muted={!isIos}
-            language={language}
-          />
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+          {previewCards.map((card) => (
+            <LiveActivityPreviewCard
+              key={card.key}
+              title={card.title}
+              timer={card.timer}
+              status={card.status}
+              accentClassName={card.accentClassName}
+              accentSurfaceClassName={card.accentSurfaceClassName}
+              surfaceClassName={card.surfaceClassName}
+              iconName={card.iconName}
+              enabled={card.enabled}
+              muted={!isIos}
+              language={language}
+            />
+          ))}
         </div>
       </div>
-
     </SettingsSection>
   );
 }
@@ -202,6 +255,8 @@ function LiveActivityPreviewCard({
           >
             {iconName === "moon.stars.fill" ? (
               <path d="M21 12.79A9 9 0 0 1 11.21 3c0-.45.05-.89.13-1.32A1 1 0 0 0 10.08.57 10 10 0 1 0 23.43 13.92a1 1 0 0 0-1.11-1.26c-.43.08-.87.13-1.32.13Z" />
+            ) : iconName === "cross.case.fill" ? (
+              <path d="M8.75 3.5A2.25 2.25 0 0 0 6.5 5.75V7H4.75A2.25 2.25 0 0 0 2.5 9.25v8A2.25 2.25 0 0 0 4.75 19.5h14.5a2.25 2.25 0 0 0 2.25-2.25v-8A2.25 2.25 0 0 0 19.25 7H17.5V5.75A2.25 2.25 0 0 0 15.25 3.5h-6.5Zm0 1.5h6.5c.414 0 .75.336.75.75V7h-8V5.75c0-.414.336-.75.75-.75Zm3.25 4a.75.75 0 0 1 .75.75v1.5h1.5a.75.75 0 0 1 0 1.5h-1.5v1.5a.75.75 0 0 1-1.5 0v-1.5h-1.5a.75.75 0 0 1 0-1.5h1.5v-1.5A.75.75 0 0 1 12 9Z" />
             ) : (
               <path d="M12 2.75c2.97 3.42 5.25 6.27 5.25 9.05A5.25 5.25 0 1 1 6.75 11.8c0-2.78 2.28-5.63 5.25-9.05Z" />
             )}

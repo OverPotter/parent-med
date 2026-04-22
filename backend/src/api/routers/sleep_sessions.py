@@ -23,7 +23,7 @@ async def get_active_sleep_session(
     service: SleepSessionService = Depends(get_sleep_session_service),
 ) -> SleepSessionResponseDto | None:
     """Текущая активная сессия сна по ребёнку."""
-    return await service.get_active_for_child(child_id, current_account.family_id)
+    return await service.get_active_for_child(child_id, current_account)
 
 
 @router.get("/child/{child_id}", response_model=list[SleepSessionResponseDto])
@@ -33,7 +33,7 @@ async def list_sleep_sessions(
     service: SleepSessionService = Depends(get_sleep_session_service),
 ) -> list[SleepSessionResponseDto]:
     """История сна по ребёнку."""
-    return await service.list_for_child(child_id, current_account.family_id)
+    return await service.list_for_child(child_id, current_account)
 
 
 @router.post("", response_model=SleepSessionResponseDto, status_code=201)
@@ -43,7 +43,7 @@ async def start_sleep_session(
     service: SleepSessionService = Depends(get_sleep_session_service),
 ) -> SleepSessionResponseDto:
     """Начать отслеживание сна."""
-    return await service.start(dto, current_account.family_id, current_account.id)
+    return await service.start(dto, current_account)
 
 
 @router.post("/{session_id}/stop", response_model=SleepSessionResponseDto)
@@ -54,7 +54,7 @@ async def stop_sleep_session(
     service: SleepSessionService = Depends(get_sleep_session_service),
 ) -> SleepSessionResponseDto:
     """Остановить активную сессию сна."""
-    return await service.stop(session_id, dto, current_account.family_id)
+    return await service.stop(session_id, dto, current_account)
 
 
 @router.delete("/{session_id}", status_code=204)
@@ -64,4 +64,4 @@ async def delete_sleep_session(
     service: SleepSessionService = Depends(get_sleep_session_service),
 ) -> None:
     """Удалить сессию сна."""
-    await service.delete(session_id, current_account.family_id)
+    await service.delete(session_id, current_account)

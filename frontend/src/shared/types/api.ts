@@ -6,6 +6,22 @@ export interface Family {
   id: string;
   name: string;
   cabinetMemberAccountIds: string[];
+  billingAccountId: string | null;
+  planCode: "free" | "plus" | "pro";
+  subscriptionStatus: "inactive" | "active" | "grace" | "canceled" | "expired";
+  subscriptionProvider: string | null;
+  subscriptionProductId: string | null;
+  subscriptionExpiresAt: string | null;
+  premiumActive: boolean;
+}
+
+export interface FamilyAccessPolicy {
+  allChildren: boolean;
+  childIds: string[];
+  childrenAccess: "view" | "act" | "edit";
+  cabinetAccess: "none" | "view" | "edit";
+  pillboxAccess: "none" | "view" | "act" | "edit";
+  cabinetPushEnabled: boolean;
 }
 
 export interface Account {
@@ -18,6 +34,7 @@ export interface Account {
   phone: string | null;
   preferredLanguage: "ru" | "en";
   familyRole: string;
+  accessPolicy: FamilyAccessPolicy;
 }
 
 export interface AuthSessionResponse {
@@ -271,6 +288,7 @@ export interface PushNotificationPreferences {
   cabinetNotify3Days: boolean;
   liveActivitySleepEnabled: boolean;
   liveActivityFeedingEnabled: boolean;
+  liveActivityIllnessEnabled: boolean;
 }
 
 export interface PillboxAnalyticsSeriesPoint {

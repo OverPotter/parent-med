@@ -64,7 +64,7 @@ export const pillboxCopy = {
     setupTitle: "Настройки плана",
     detailsTitle: "План приёма",
     setupSubtitle:
-      "Сначала соберите лекарства, потом назовите план и выберите, кому придут напоминания.",
+      "Сначала соберите лекарства, потом назовите план и выберите участников с доступом к приёмам.",
     medicationTitle: "Настройка лекарства",
     medicationSubtitle:
       "Добавьте одно лекарство в план: когда принимать, как долго и как связать с едой.",
@@ -91,7 +91,8 @@ export const pillboxCopy = {
     addMedicine: "Добавить лекарство",
     titleLabel: "Название плана",
     medsTitle: "Что будем принимать",
-    membersTitle: "Кому напоминать",
+    membersTitle: "Кто участвует",
+    membersHint: "Наблюдатель следит за планом, исполнитель отмечает приём, ведущий меняет план.",
     whatName: "Как называется",
     whatNamePlaceholder: "Название лекарства",
     howMuch: "Сколько принимать",
@@ -155,7 +156,7 @@ export const pillboxCopy = {
     setupTitle: "Plan settings",
     detailsTitle: "Medication plan",
     setupSubtitle:
-      "First add medicines, then name the plan and choose who should receive reminders.",
+      "Add medicines first, then name the plan and choose participants who have pillbox access.",
     medicationTitle: "Medicine setup",
     medicationSubtitle:
       "Add one medicine to the plan: when to take it, how long it lasts and how it relates to meals.",
@@ -183,7 +184,8 @@ export const pillboxCopy = {
     addMedicine: "Add medicine",
     titleLabel: "Plan name",
     medsTitle: "What will be taken",
-    membersTitle: "Who to remind",
+    membersTitle: "Who participates",
+    membersHint: "Observers follow the plan, actors log doses, and leads edit the plan.",
     whatName: "Medicine name",
     whatNamePlaceholder: "Medicine name",
     howMuch: "How much to take",

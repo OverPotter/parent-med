@@ -16,6 +16,7 @@ import {
   childActionSuccessClass,
 } from "./shared";
 import { syncFeedingLiveActivity } from "@shared/utils/liveActivities";
+import { useAppStore } from "@shared/store/useAppStore";
 
 export function FeedingRecordDialog({
   child,
@@ -28,6 +29,7 @@ export function FeedingRecordDialog({
   language: "ru" | "en";
   onClose: () => void;
 }) {
+  const currentAccountId = useAppStore((s) => s.accountId);
   const queryClient = useQueryClient();
   const [feedingType, setFeedingType] = useState<"breast" | "formula">("breast");
   const [breastSide, setBreastSide] = useState<"left" | "right" | "both">("left");
@@ -75,7 +77,7 @@ export function FeedingRecordDialog({
     onSuccess: (feeding) => {
       queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
-      void syncFeedingLiveActivity(child, feeding, language);
+      void syncFeedingLiveActivity(child, feeding, language, undefined, currentAccountId);
       onClose();
     },
   });

@@ -105,7 +105,7 @@ export function buildEpisodeTimeline(
     id: `temp-${entry.id}`,
     at: entry.measuredAt,
     kind: "temperature" as const,
-    title: `${entry.valueCelsius} °C`,
+    title: `${formatTemperatureValue(entry.valueCelsius)} °C`,
     description:
       entry.comment?.trim() || (language === "ru" ? "Замер температуры" : "Temperature reading"),
     actorName: entry.createdByNameSnapshot?.trim() || null,
@@ -155,4 +155,8 @@ export function buildEpisodeTimeline(
   return [...temperatureItems, ...administrationItems, ...commentItems].sort((left, right) =>
     right.at.localeCompare(left.at)
   );
+}
+
+function formatTemperatureValue(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }

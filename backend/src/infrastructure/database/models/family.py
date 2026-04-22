@@ -2,7 +2,7 @@
 
 from uuid import uuid4
 
-from sqlalchemy import String
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,6 +16,23 @@ class FamilyModel(Base):
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    billing_account_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    plan_code: Mapped[str] = mapped_column(String(32), nullable=False, default="free")
+    subscription_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="inactive",
+    )
+    subscription_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    subscription_product_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    subscription_expires_at: Mapped[DateTime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     cabinet_member_account_ids: Mapped[list[UUID]] = mapped_column(
         ARRAY(UUID(as_uuid=True)),
         nullable=False,
@@ -23,7 +40,15 @@ class FamilyModel(Base):
         server_default="{}",
     )
 
-    accounts: Mapped[list] = relationship("AccountModel", back_populates="family")
+    accounts: Mapped[list] = relationship(
+        "AccountModel",
+        back_populates="family",
+        foreign_keys="AccountModel.family_id",
+    )
+    billing_account: Mapped["AccountModel | None"] = relationship(
+        "AccountModel",
+        foreign_keys=[billing_account_id],
+    )
     parents: Mapped[list] = relationship("ParentModel", back_populates="family")
     children: Mapped[list] = relationship("ChildModel", back_populates="family")
     household_medicines: Mapped[list] = relationship(

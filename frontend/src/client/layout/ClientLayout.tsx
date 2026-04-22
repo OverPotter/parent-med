@@ -11,7 +11,6 @@ import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
-import { AppBootSplash } from "./AppBootSplash";
 import { PushPromptControlProvider } from "./PushPromptControlContext";
 import { useClientLayoutBoot } from "./clientLayout/useClientLayoutBoot";
 import { useClientLayoutPushPrompt } from "./clientLayout/useClientLayoutPushPrompt";
@@ -54,8 +53,6 @@ export function ClientLayout() {
 
   const {
     data: navChildren = [],
-    isLoading: isNavChildrenLoading,
-    isFetched: isNavChildrenFetched,
   } = useQuery({
     queryKey: ["children", currentFamilyId, "nav-observations"],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
@@ -73,10 +70,6 @@ export function ClientLayout() {
       refetchInterval: navRefetchInterval,
     })),
   });
-
-  const areActiveEpisodeQueriesSettled = activeEpisodeQueries.every(
-    (query) => !query.isLoading && !query.isPending
-  );
 
   const activeEpisodesCount = useMemo(
     () => activeEpisodeQueries.reduce((total, query) => total + (query.data ? 1 : 0), 0),
@@ -101,7 +94,7 @@ export function ClientLayout() {
     isDeferredBootReady,
   });
 
-  const { isBootSplashMounted, isBootSplashClosing } = useClientLayoutSplash({
+  useClientLayoutSplash({
     isIosShell,
     authToken,
     accountId,
@@ -109,10 +102,6 @@ export function ClientLayout() {
     familiesCount: families.length,
     isFamiliesLoading,
     isFamiliesSuccess: isSuccess,
-    isNavChildrenLoading,
-    isNavChildrenFetched,
-    navChildrenCount: navChildren.length,
-    areActiveEpisodeQueriesSettled,
     isDeferredBootReady,
     isDeferredShellWorkReady,
     isFirstNativeLaunch,
@@ -330,9 +319,6 @@ export function ClientLayout() {
           void pushPrompt.handleEnablePush();
         }}
       />
-      {isIosShell && isBootSplashMounted ? (
-        <AppBootSplash className="app-boot-splash--overlay" isClosing={isBootSplashClosing} />
-      ) : null}
     </>
   );
 }

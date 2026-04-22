@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  fetchPillboxPlan,
-  fetchPillboxPlans,
-} from "@shared/api/pillboxPlans";
+import { fetchPillboxPlan, fetchPillboxPlans } from "@shared/api/pillboxPlans";
 import { fetchMyFamilyMembers } from "@shared/api/families";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
+import { canActPillbox, canEditPillbox, canViewPillbox } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { PillboxAnalyticsScreen } from "./pillbox/analytics";
 import { PillboxMedicationScreen } from "./pillbox/medicationScreen";
@@ -48,6 +46,11 @@ export function PillboxPage() {
   const [searchParams] = useSearchParams();
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
+  const canSeePillbox = canViewPillbox(accountFamilyRole, accountAccessPolicy);
+  const canActInPillbox = canActPillbox(accountFamilyRole, accountAccessPolicy);
+  const canMutatePillbox = canEditPillbox(accountFamilyRole, accountAccessPolicy);
   const [draft, setDraft] = useState<SetupDraft | null>(null);
   const [editorTitle, setEditorTitle] = useState("");
   const [editorDose, setEditorDose] = useState("");
@@ -94,21 +97,35 @@ export function PillboxPage() {
   const { data: familyMembers = [] } = useQuery({
     queryKey: ["families", "me", "members", currentFamilyId],
     queryFn: fetchMyFamilyMembers,
-    enabled: Boolean(currentFamilyId),
+    enabled: Boolean(currentFamilyId && canSeePillbox),
     staleTime: 5 * 60 * 1000,
   });
+  const eligiblePillboxMembers = useMemo(
+    () =>
+      familyMembers.filter((member) => canViewPillbox(member.familyRole, member.accessPolicy)),
+    [familyMembers]
+  );
 
   const { data: planSummaries = [], isLoading: plansLoading } = useQuery({
     queryKey: ["pillbox-plans", currentFamilyId, language],
     queryFn: fetchPillboxPlans,
-    enabled: Boolean(currentFamilyId),
+    enabled: Boolean(currentFamilyId && canSeePillbox),
   });
 
   const { data: selectedPlan, isLoading: selectedPlanLoading } = useQuery({
     queryKey: ["pillbox-plan", selectedPlanId],
     queryFn: () => fetchPillboxPlan(selectedPlanId!),
-    enabled: Boolean(selectedPlanId && selectedPlanId !== "new"),
+    enabled: Boolean(selectedPlanId && selectedPlanId !== "new" && canSeePillbox),
   });
+
+  useEffect(() => {
+    if (!canSeePillbox) {
+      return;
+    }
+    if (!canMutatePillbox && (screen === "setup" || screen === "medication")) {
+      navigate("/pillbox", { replace: true });
+    }
+  }, [canMutatePillbox, canSeePillbox, navigate, screen]);
 
   const allGroups = useMemo(() => {
     const mapped = planSummaries.map((summary) => toGroupSummary(summary, language));
@@ -598,6 +615,19 @@ export function PillboxPage() {
     );
   }
 
+  if (!canSeePillbox) {
+    return (
+      <div>
+        <h1 className="app-title">{tPillbox(language, "hubTitle")}</h1>
+        <p className="mt-2 text-muted">
+          {language === "ru"
+            ? "Администратор семьи ещё не выдал вам доступ к приёмам."
+            : "Your family admin has not granted access to medication plans yet."}
+        </p>
+      </div>
+    );
+  }
+
   if (screen === "hub" && plansLoading) {
     return (
       <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
@@ -641,6 +671,7 @@ export function PillboxPage() {
         selectedPlan={selectedPlan}
         selectedPlanId={selectedPlanId}
         allGroups={allGroups}
+        canEdit={canMutatePillbox}
         planActionTarget={planActionTarget}
         planActionError={planActionError}
         togglePlanStatusPending={togglePlanStatusMutation.isPending}
@@ -669,7 +700,7 @@ export function PillboxPage() {
       <PillboxSetupScreen
         language={language}
         draft={draft}
-        familyMembers={familyMembers}
+        familyMembers={eligiblePillboxMembers}
         canSavePlan={canSavePlan}
         saveBlockedReason={saveBlockedReason}
         saveAttempted={saveAttempted}
@@ -708,6 +739,8 @@ export function PillboxPage() {
       isIosShell={isIosShell}
       listFilter={listFilter}
       visibleGroups={visibleGroups}
+      canAct={canActInPillbox}
+      canEdit={canMutatePillbox}
       highlightedPlanId={highlightedPlanId}
       openAnalytics={openAnalytics}
       openCreate={openCreate}

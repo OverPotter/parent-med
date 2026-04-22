@@ -33,11 +33,7 @@ import {
   RouteScrollReset,
   WarmRouteChunks,
 } from "@/app/mobile/runtime";
-import {
-  NativePushForegroundBannerSync,
-  NativePushNavigationSync,
-  PushSubscriptionSync,
-} from "@/app/push/sync";
+import { NativePushNavigationSync, PushSubscriptionSync } from "@/app/push/sync";
 import { LiveActivityRuntimeSync } from "@/app/live-activities/sync";
 import { AuthPage } from "@client/pages/AuthPage";
 import { appLog } from "@shared/utils/appLog";
@@ -78,6 +74,16 @@ const ClientStartPage = lazy(() =>
 );
 const FamilyPage = lazy(() =>
   import("@client/pages/FamilyPage").then((module) => ({ default: module.FamilyPage }))
+);
+const FamilyMembersPage = lazy(() =>
+  import("@client/pages/FamilyMembersPage").then((module) => ({
+    default: module.FamilyMembersPage,
+  }))
+);
+const FamilyMemberAccessPage = lazy(() =>
+  import("@client/pages/FamilyMemberAccessPage").then((module) => ({
+    default: module.FamilyMemberAccessPage,
+  }))
 );
 const JoinFamilyPage = lazy(() =>
   import("@client/pages/JoinFamilyPage").then((module) => ({ default: module.JoinFamilyPage }))
@@ -281,13 +287,6 @@ function IOSBackSwipeZone() {
     if (typeof window === "undefined") {
       return;
     }
-    const shouldHidePreviousSnapshot =
-      (location.pathname.startsWith("/children/") && location.pathname.endsWith("/illness")) ||
-      (location.pathname.startsWith("/children/") && location.pathname.endsWith("/calendar"));
-    if (shouldHidePreviousSnapshot) {
-      setPreviousScreenSnapshot({ html: "", scrollY: 0 });
-      return;
-    }
     setPreviousScreenSnapshot(
       (window as Window & {
         __PM_IOS_PREVIOUS_SCREEN_SNAPSHOT?: { html: string; scrollY: number };
@@ -295,14 +294,15 @@ function IOSBackSwipeZone() {
     );
   }, [location.pathname, location.search]);
 
+  const pillboxMode = new URLSearchParams(location.search).get("mode");
   const shouldDisableSwipeBack =
     location.pathname === "/" ||
     location.pathname === "/auth" ||
     location.pathname === "/start" ||
-    location.pathname.startsWith("/children") ||
+    location.pathname === "/children" ||
     location.pathname === "/medicine-cabinet" ||
     location.pathname === "/illnesses/active" ||
-    location.pathname === "/pillbox";
+    (location.pathname === "/pillbox" && !pillboxMode);
 
   useEffect(() => {
     if (
@@ -579,6 +579,40 @@ export default function App() {
       window.removeEventListener("cookie-consent:changed", handleConsentChanged as EventListener);
   }, []);
 
+  useEffect(() => {
+    if (!hydrated || typeof window === "undefined") {
+      return;
+    }
+
+    const bootWindow = window as Window & { __PM_BOOT_READY?: boolean };
+    if (bootWindow.__PM_BOOT_READY) {
+      return;
+    }
+
+    const firstFrameId = window.requestAnimationFrame(() => {
+      const secondFrameId = window.requestAnimationFrame(() => {
+        if (bootWindow.__PM_BOOT_READY) {
+          return;
+        }
+        bootWindow.__PM_BOOT_READY = true;
+        window.dispatchEvent(new Event("app:boot-ready"));
+      });
+
+      (bootWindow as Window & { __PM_BOOT_READY_SECOND_FRAME_ID?: number }).__PM_BOOT_READY_SECOND_FRAME_ID =
+        secondFrameId;
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrameId);
+      const secondFrameId = (
+        bootWindow as Window & { __PM_BOOT_READY_SECOND_FRAME_ID?: number }
+      ).__PM_BOOT_READY_SECOND_FRAME_ID;
+      if (typeof secondFrameId === "number") {
+        window.cancelAnimationFrame(secondFrameId);
+      }
+    };
+  }, [hydrated]);
+
   if (!hydrated) {
     return null;
   }
@@ -607,7 +641,6 @@ export default function App() {
       <AuthSync />
       {isNonCriticalStartupReady ? <PushSubscriptionSync /> : null}
       {isNonCriticalStartupReady ? <NativePushNavigationSync /> : null}
-      {isNonCriticalStartupReady ? <NativePushForegroundBannerSync /> : null}
       {isNonCriticalStartupReady ? <LiveActivityRuntimeSync /> : null}
       {isNonCriticalStartupReady ? <MobilePageResumeSync /> : null}
       {isNonCriticalStartupReady ? <PullToRefreshSync /> : null}
@@ -650,6 +683,11 @@ export default function App() {
                   <Route path="home" element={<ClientHomePage />} />
                   <Route path="intro" element={<Navigate to="/home" replace />} />
                   <Route path="family" element={<FamilyPage />} />
+                  <Route path="family/members" element={<FamilyMembersPage />} />
+                  <Route
+                    path="family/members/:memberAccountId/access"
+                    element={<FamilyMemberAccessPage />}
+                  />
                   <Route path="join-family" element={<JoinFamilyPage />} />
                   <Route path="children" element={<ChildrenPage />} />
                   <Route path="children/new" element={<ChildCreatePage />} />

@@ -31,6 +31,9 @@ export function ChildCard({
   onStartEpisode,
   isStartingEpisode,
   hasActiveEpisode,
+  canActChild,
+  canEditChild,
+  currentAccountId,
   copy,
   language,
   t,
@@ -44,6 +47,9 @@ export function ChildCard({
   onStartEpisode: () => void;
   isStartingEpisode: boolean;
   hasActiveEpisode: boolean;
+  canActChild: boolean;
+  canEditChild: boolean;
+  currentAccountId: string | null;
   copy: ReturnType<typeof getChildrenCopy>["childrenPage"];
   language: "ru" | "en";
   t: (text: string, variables?: Record<string, string | number>) => string;
@@ -56,6 +62,10 @@ export function ChildCard({
   const queryClient = useQueryClient();
   const [isStopSleepConfirmOpen, setIsStopSleepConfirmOpen] = useState(false);
   const [isStopFeedingDialogOpen, setIsStopFeedingDialogOpen] = useState(false);
+  const isActiveSleepOwnedByCurrentAccount =
+    !!activeSleep && !!currentAccountId && activeSleep.createdByAccountId === currentAccountId;
+  const isActiveFeedingOwnedByCurrentAccount =
+    !!activeFeeding && !!currentAccountId && activeFeeding.createdByAccountId === currentAccountId;
   const sleepMutation = useMutation({
     mutationFn: async () => {
       if (activeSleep) {
@@ -66,7 +76,7 @@ export function ChildCard({
     onSuccess: (nextSleep) => {
       queryClient.invalidateQueries({ queryKey: ["sleep-session-active", child.id] });
       setIsStopSleepConfirmOpen(false);
-      void syncSleepLiveActivity(child, nextSleep, language);
+      void syncSleepLiveActivity(child, nextSleep, language, undefined, currentAccountId);
     },
   });
   const activeSleepElapsedLabel = activeSleep
@@ -87,7 +97,7 @@ export function ChildCard({
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
       queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
       setIsStopFeedingDialogOpen(false);
-      void syncFeedingLiveActivity(child, null, language);
+      void syncFeedingLiveActivity(child, null, language, undefined, currentAccountId);
     },
   });
   const activeFeedingStartedAt = activeFeeding?.startedAt ?? activeFeeding?.recordedAt ?? null;
@@ -173,15 +183,25 @@ export function ChildCard({
                 <Link
                   to={`/children/${child.id}/feeding`}
                   data-live-action-target={`feeding:${child.id}`}
+                  className={`${activeFeeding ? activeFeedingActionClass : quickActionClass} ${activeFeeding && !isActiveFeedingOwnedByCurrentAccount ? "pointer-events-none opacity-60" : ""}`}
+                  aria-disabled={
+                    !canActChild || (activeFeeding ? !isActiveFeedingOwnedByCurrentAccount : false)
+                  }
                   onClick={(event) => {
+                    if (!canActChild && !activeFeeding) {
+                      event.preventDefault();
+                      return;
+                    }
                     event.preventDefault();
                     if (activeFeeding) {
+                      if (!isActiveFeedingOwnedByCurrentAccount) {
+                        return;
+                      }
                       setIsStopFeedingDialogOpen(true);
                       return;
                     }
                     onAddFeeding();
                   }}
-                  className={activeFeeding ? activeFeedingActionClass : quickActionClass}
                 >
                   {activeFeeding
                     ? t(copy.childCard.feedingInProgress, {
@@ -193,13 +213,23 @@ export function ChildCard({
                   type="button"
                   data-live-action-target={`sleep:${child.id}`}
                   onClick={() => {
+                    if (!canActChild && !activeSleep) {
+                      return;
+                    }
                     if (activeSleep) {
+                      if (!isActiveSleepOwnedByCurrentAccount) {
+                        return;
+                      }
                       setIsStopSleepConfirmOpen(true);
                       return;
                     }
                     sleepMutation.mutate();
                   }}
-                  disabled={sleepMutation.isPending}
+                  disabled={
+                    sleepMutation.isPending ||
+                    (!canActChild && !activeSleep) ||
+                    (!!activeSleep && !isActiveSleepOwnedByCurrentAccount)
+                  }
                   className={`${activeSleep ? activeSleepActionClass : quickActionClass} disabled:opacity-60`}
                 >
                   {sleepMutation.isPending
@@ -218,7 +248,7 @@ export function ChildCard({
               <button
                 type="button"
                 onClick={onStartEpisode}
-                disabled={isStartingEpisode}
+                disabled={isStartingEpisode || !canEditChild}
                 className={`${hasActiveEpisode ? activeQuickActionClass : quickActionClass} w-full disabled:opacity-50`}
               >
                 {hasActiveEpisode

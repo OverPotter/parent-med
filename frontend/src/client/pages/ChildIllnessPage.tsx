@@ -3,12 +3,13 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import {
   createIllnessEpisode,
   fetchActiveIllnessEpisodeByChildId,
+  fetchIllnessEpisodeInsights,
   fetchIllnessEpisodesByChildId,
   updateIllnessEpisode,
 } from "@shared/api/illnessEpisodes";
@@ -22,7 +23,14 @@ import { trackIllnessEpisodeStarted } from "@shared/analytics";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
+import {
+  canActChild,
+  canEditChild,
+  canReceiveIllnessPushForChild,
+  canViewChild,
+} from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { stopLiveActivitiesForChildIds, syncIllnessLiveActivity } from "@shared/utils/liveActivities";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { formatChildAgeLabel } from "@client/i18n/children";
@@ -119,6 +127,9 @@ export function ChildIllnessPage() {
   const navigate = useNavigate();
   const isIosShell = useIsIosShell();
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const accountId = useAppStore((s) => s.accountId);
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
   const historyOnlyView = searchParams.get("view") === "history";
   const historyEpisodeInsightsId = historyOnlyView ? searchParams.get("episodeId") : null;
@@ -139,32 +150,43 @@ export function ChildIllnessPage() {
   const createModeCardRef = useRef<HTMLDivElement | null>(null);
   const historySectionRef = useRef<HTMLElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const canViewIllness = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
+  const canActIllness = !!childId && canActChild(childId, accountFamilyRole, accountAccessPolicy);
+  const canEditIllness =
+    !!childId && canEditChild(childId, accountFamilyRole, accountAccessPolicy);
 
   const { data: child, isLoading: childLoading } = useQuery({
     queryKey: ["child", childId],
     queryFn: () => fetchChild(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewIllness,
     ...liveQueryOptions,
   });
 
   const { data: latestWeight = null } = useQuery({
     queryKey: ["weight-entry-latest", childId],
     queryFn: () => fetchLatestWeightEntryByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewIllness,
     ...liveQueryOptions,
   });
 
   const { data: episodes = [] } = useQuery({
     queryKey: ["illness-episodes", childId],
     queryFn: () => fetchIllnessEpisodesByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewIllness,
     ...liveQueryOptions,
   });
 
   const { data: activeEpisode, isFetched: isActiveEpisodeFetched } = useQuery({
     queryKey: ["illness-episode-active", childId],
     queryFn: () => fetchActiveIllnessEpisodeByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewIllness,
+    ...liveQueryOptions,
+  });
+
+  const { data: activeEpisodeInsights = null } = useQuery({
+    queryKey: ["illness-episode-insights", activeEpisode?.id],
+    queryFn: () => fetchIllnessEpisodeInsights(activeEpisode!.id),
+    enabled: !!activeEpisode?.id && canViewIllness,
     ...liveQueryOptions,
   });
 
@@ -178,6 +200,68 @@ export function ChildIllnessPage() {
       setSearchParams(normalized, { replace: true });
     }
   }, [activeEpisode, isActiveEpisodeFetched, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!childId || canViewIllness) {
+      return;
+    }
+
+    void stopLiveActivitiesForChildIds([childId]);
+  }, [canViewIllness, childId]);
+
+  useEffect(() => {
+    if (!child) {
+      return;
+    }
+
+    void syncIllnessLiveActivity(
+      child,
+      activeEpisode ?? null,
+      activeEpisodeInsights,
+      language,
+      undefined,
+      accountId
+    );
+  }, [accountId, activeEpisode, activeEpisodeInsights, child, language]);
+
+  useEffect(() => {
+    const hasAccessToRequestedMode = createMode || quickReminderCreateMode ? canEditIllness : canActIllness;
+    if (hasAccessToRequestedMode || !childId) {
+      return;
+    }
+
+    if (createMode) {
+      navigate(activeEpisode ? "/illnesses/active" : `/children/${childId}/illness`, {
+        replace: true,
+      });
+      return;
+    }
+
+    if (quickComposeMode) {
+      navigate(activeEpisode ? "/illnesses/active" : `/children/${childId}/illness`, {
+        replace: true,
+      });
+      return;
+    }
+
+    if (quickReminderCreateMode) {
+      navigate(
+        activeEpisode ? `/children/${childId}/illness?focus=reminders` : `/children/${childId}/illness`,
+        {
+          replace: true,
+        }
+      );
+    }
+  }, [
+    activeEpisode,
+    canActIllness,
+    canEditIllness,
+    childId,
+    createMode,
+    navigate,
+    quickComposeMode,
+    quickReminderCreateMode,
+  ]);
 
   useEffect(() => {
     if (
@@ -214,6 +298,12 @@ export function ChildIllnessPage() {
     enabled: !!currentFamilyId,
     staleTime: 5 * 60 * 1000,
   });
+  const eligibleIllnessRecipients =
+    childId == null
+      ? []
+      : familyMembers.filter((member) =>
+          canReceiveIllnessPushForChild(childId, member.familyRole, member.accessPolicy)
+        );
 
   const closeEpisodeMutation = useMutation({
     mutationFn: (episodeId: string) => updateIllnessEpisode(episodeId, { status: "closed" }),
@@ -370,14 +460,13 @@ export function ChildIllnessPage() {
     if (historyEpisodeInsightsId && !focusedHistoryEpisode) {
       setSearchParams(new URLSearchParams([["view", "history"]]), { replace: true });
     }
-  }, [
-    focusedHistoryEpisode,
-    historyEpisodeInsightsId,
-    historyOnlyView,
-    setSearchParams,
-  ]);
+  }, [focusedHistoryEpisode, historyEpisodeInsightsId, historyOnlyView, setSearchParams]);
 
-  if (!childId || childLoading || !child) {
+  if (!childId || !canViewIllness) {
+    return <Navigate to="/children" replace />;
+  }
+
+  if (childLoading || !child) {
     return (
       <div>
         <p className="text-muted">{language === "ru" ? "Загрузка…" : "Loading…"}</p>
@@ -485,12 +574,12 @@ export function ChildIllnessPage() {
         ? "Подробный разбор конкретного эпизода."
         : "Detailed breakdown of a specific episode."
       : historyEpisodes.length > 0
-          ? language === "ru"
-            ? "Сводка и завершённые наблюдения по ребёнку."
-            : "Summary and completed tracking records for this child."
-          : language === "ru"
-            ? "Сводка появится здесь, когда завершённые наблюдения накопятся."
-            : "The summary will appear here as completed tracking records build up."
+        ? language === "ru"
+          ? "Сводка и завершённые наблюдения по ребёнку."
+          : "Summary and completed tracking records for this child."
+        : language === "ru"
+          ? "Сводка появится здесь, когда завершённые наблюдения накопятся."
+          : "The summary will appear here as completed tracking records build up."
     : !activeEpisode && createMode
       ? language === "ru"
         ? "Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи."
@@ -568,7 +657,7 @@ export function ChildIllnessPage() {
               childName={child.name}
               childId={child.id}
               episode={activeEpisode}
-              familyMembers={familyMembers}
+              familyMembers={eligibleIllnessRecipients}
               onClose={() => closeEpisodeMutation.mutate(activeEpisode.id)}
               familyId={currentFamilyId}
               latestWeight={latestWeight}
@@ -616,9 +705,7 @@ export function ChildIllnessPage() {
               <HistoryEpisodeInsightsScreen episode={focusedHistoryEpisode} />
             ) : null}
 
-            {!historyEpisodeInsightsMode && (
-              <HistoryInsightsPreview childId={child.id} />
-            )}
+            {!historyEpisodeInsightsMode && <HistoryInsightsPreview childId={child.id} />}
 
             {!historyEpisodeInsightsMode && historyEpisodes.length > 0 ? (
               <ul className="grid gap-2.5">

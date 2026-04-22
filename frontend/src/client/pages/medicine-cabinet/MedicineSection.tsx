@@ -11,6 +11,7 @@ export function MedicineSection({
   count,
   medicines,
   compact,
+  canEdit = true,
   expandedMedicineId,
   isDeleting,
   deletingMedicineId,
@@ -23,6 +24,7 @@ export function MedicineSection({
   count: number;
   medicines: HouseholdMedicine[];
   compact: boolean;
+  canEdit?: boolean;
   expandedMedicineId: string | null;
   isDeleting: boolean;
   deletingMedicineId: string | null;
@@ -53,6 +55,7 @@ export function MedicineSection({
             onDelete={onDelete}
             isDeleting={isDeleting && deletingMedicineId === medicine.id}
             compact={compact}
+            canEdit={canEdit}
             isExpanded={expandedMedicineId === medicine.id}
             onExpandChange={(isExpanded) => {
               onExpandChange(isExpanded ? medicine.id : null);

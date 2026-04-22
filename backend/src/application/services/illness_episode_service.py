@@ -3,6 +3,7 @@
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID, uuid4
 
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.illness_analytics import (
     EpisodeTemperaturePointDto,
     IllnessAnalyticsDurationBucketDto,
@@ -14,6 +15,9 @@ from src.application.dto.illness_episode import (
     IllnessEpisodeCreateDto,
     IllnessEpisodeResponseDto,
     IllnessEpisodeUpdateDto,
+)
+from src.application.services.access_control import (
+    get_child_for_account,
 )
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.administration_event import AdministrationEvent
@@ -64,6 +68,7 @@ class IllnessEpisodeService:
         self,
         requested_member_ids: list[UUID] | None,
         current_family_id: UUID,
+        child_id: UUID,
     ) -> list[UUID]:
         if self._account_repo is None:
             if requested_member_ids:
@@ -81,55 +86,83 @@ class IllnessEpisodeService:
         ]
         if invalid_ids:
             raise ForbiddenError("Нельзя выбрать получателей из другой семьи")
+        eligible_account_ids = {
+            account.id
+            for account in accounts
+            if self._can_receive_illness_signals_for_child(account, child_id)
+        }
+        ineligible_ids = [
+            account_id for account_id in normalized_ids if account_id not in eligible_account_ids
+        ]
+        if ineligible_ids:
+            raise ForbiddenError("Нельзя выбрать получателей без доступа к ребёнку")
         return normalized_ids
 
-    async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
-        child = await self._child_repo.get_by_id(child_id)
-        if not child:
-            raise NotFoundError("Ребёнок не найден", resource="child")
-        if child.family_id != current_family_id:
-            raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
-        return child
+    def _can_receive_illness_signals_for_child(self, account: object, child_id: UUID) -> bool:
+        policy = getattr(account, "access_policy", None)
+        if policy is None:
+            return False
+        if getattr(policy, "all_children", False):
+            return True
+        return child_id in set(getattr(policy, "child_ids", []))
+
+    async def _require_child_access(
+        self,
+        child_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
+    ) -> Child:
+        return await get_child_for_account(
+            self._child_repo,
+            child_id,
+            current_account,
+            required_level,
+        )
 
     async def _get_episode_for_account(
         self,
         id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
     ) -> IllnessEpisode:
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
-        await self._require_child_access(entity.child_id, current_family_id)
+        await self._require_child_access(entity.child_id, current_account, required_level)
         return entity
 
-    async def get_by_id(self, id: UUID, current_family_id: UUID) -> IllnessEpisodeResponseDto:
-        return self._to_response(await self._get_episode_for_account(id, current_family_id))
+    async def get_by_id(
+        self,
+        id: UUID,
+        current_account: AuthenticatedAccount,
+    ) -> IllnessEpisodeResponseDto:
+        return self._to_response(await self._get_episode_for_account(id, current_account))
 
     async def get_by_child_id(
         self,
         child_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> list[IllnessEpisodeResponseDto]:
-        await self._require_child_access(child_id, current_family_id)
+        await self._require_child_access(child_id, current_account)
         entities = await self._repo.get_by_child_id(child_id)
         return [self._to_response(e) for e in entities]
 
     async def get_active_for_child(
         self,
         child_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> IllnessEpisodeResponseDto | None:
-        await self._require_child_access(child_id, current_family_id)
+        await self._require_child_access(child_id, current_account)
         entity = await self._repo.get_active_by_child_id(child_id)
         return self._to_response(entity) if entity else None
 
     async def get_history_summary(
         self,
         child_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
         period: str,
     ) -> IllnessHistorySummaryDto:
-        await self._require_child_access(child_id, current_family_id)
+        await self._require_child_access(child_id, current_account)
         normalized_period = self._normalize_period(period)
         temperature_repo, administration_repo, _ = self._require_analytics_repositories()
         all_episodes = await self._repo.get_by_child_id(child_id)
@@ -201,9 +234,9 @@ class IllnessEpisodeService:
     async def get_episode_insights(
         self,
         id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> IllnessEpisodeInsightsDto:
-        episode = await self._get_episode_for_account(id, current_family_id)
+        episode = await self._get_episode_for_account(id, current_account)
         temperature_repo, administration_repo, comment_repo = self._require_analytics_repositories()
         temperatures = await temperature_repo.get_by_episode_id(episode.id)
         administrations = await administration_repo.get_by_episode_id(episode.id)
@@ -259,9 +292,9 @@ class IllnessEpisodeService:
     async def create(
         self,
         dto: IllnessEpisodeCreateDto,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> IllnessEpisodeResponseDto:
-        await self._require_child_access(dto.child_id, current_family_id)
+        await self._require_child_access(dto.child_id, current_account, "edit")
         if dto.medication_mode not in {"manual", "guided"}:
             raise ValidationError("Неизвестный режим лекарств")
         active = await self._repo.get_active_by_child_id(dto.child_id)
@@ -271,7 +304,8 @@ class IllnessEpisodeService:
             )
         member_account_ids = await self._resolve_member_account_ids(
             dto.member_account_ids,
-            current_family_id,
+            current_account.family_id,
+            dto.child_id,
         )
         entity = IllnessEpisode(
             id=uuid4(),
@@ -292,9 +326,9 @@ class IllnessEpisodeService:
         self,
         id: UUID,
         dto: IllnessEpisodeUpdateDto,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> IllnessEpisodeResponseDto:
-        entity = await self._get_episode_for_account(id, current_family_id)
+        entity = await self._get_episode_for_account(id, current_account, "edit")
         fields_set = dto.model_fields_set
 
         started_at = dto.started_at if "started_at" in fields_set else entity.started_at
@@ -309,7 +343,11 @@ class IllnessEpisodeService:
         )
         note = dto.note if "note" in fields_set else entity.note
         member_account_ids = (
-            await self._resolve_member_account_ids(dto.member_account_ids, current_family_id)
+            await self._resolve_member_account_ids(
+                dto.member_account_ids,
+                current_account.family_id,
+                entity.child_id,
+            )
             if "member_account_ids" in fields_set
             else list(entity.member_account_ids)
         )
@@ -344,8 +382,8 @@ class IllnessEpisodeService:
         updated = await self._repo.update(entity)
         return self._to_response(updated)
 
-    async def delete(self, id: UUID, current_family_id: UUID) -> None:
-        await self._get_episode_for_account(id, current_family_id)
+    async def delete(self, id: UUID, current_account: AuthenticatedAccount) -> None:
+        await self._get_episode_for_account(id, current_account, "edit")
         await self._repo.delete(id)
 
     def _normalize_period(self, period: str) -> str:

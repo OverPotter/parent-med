@@ -11,7 +11,7 @@ from src.application.dto.base import ResponseBase
 class FamilyInviteCreateDto(BaseModel):
     """Создание инвайта в семью."""
 
-    family_role: str = Field("adult", description="Роль приглашаемого внутри семьи")
+    family_role: str = Field("member", description="Роль приглашаемого внутри семьи")
 
 
 class FamilyInviteResponseDto(ResponseBase):

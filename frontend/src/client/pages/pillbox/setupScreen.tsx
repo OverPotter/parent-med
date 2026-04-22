@@ -89,11 +89,11 @@ export function PillboxSetupScreen({
         subtitle={
           isEditing
             ? language === "ru"
-              ? "Обновите лекарства, название и участников плана."
+              ? "Обновите лекарства, название и участников плана. В списке только те, у кого открыт доступ к приёмам."
               : "Update medicines, plan name and participants."
             : language === "ru"
-              ? "Сначала добавьте лекарства, потом дайте плану имя и выберите участников."
-              : "Add medicines first, then name the plan and choose participants."
+              ? "Сначала добавьте лекарства, потом дайте плану имя и выберите участников с доступом к приёмам."
+              : "Add medicines first, then name the plan and choose participants with pillbox access."
         }
       />
 
@@ -202,6 +202,11 @@ export function PillboxSetupScreen({
           <section className="space-y-3 pt-1">
             <div className="space-y-1">
               <h2 className="app-card-title">{tPillbox(language, "membersTitle")}</h2>
+              <p className="text-sm leading-5 text-muted">
+                {language === "ru"
+                  ? "Здесь только участники с доступом к приёмам. Наблюдатель следит за планом, исполнитель отмечает приём, ведущий меняет план и участников."
+                  : "Only members with pillbox access are listed here. Observers follow the plan, actors log doses, and leads edit the plan and participants."}
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">

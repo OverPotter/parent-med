@@ -6,6 +6,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.pillbox import (
     PillboxAnalyticsSeriesPointDto,
     PillboxDoseLogCreateDto,
@@ -18,6 +19,7 @@ from src.application.dto.pillbox import (
     PillboxPlanUpdateDto,
     PillboxTopMedicationDto,
 )
+from src.application.services.access_control import ensure_children_edit_scope, ensure_module_access
 from src.core.config import settings
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.pillbox import PillboxDoseLog, PillboxMedication, PillboxPlan
@@ -292,6 +294,14 @@ class PillboxService:
         invalid = [member_id for member_id in member_ids if member_id not in family_account_ids]
         if invalid:
             raise ValidationError("В плане есть участники не из текущей семьи")
+        eligible_account_ids = {
+            account.id
+            for account in family_accounts
+            if getattr(getattr(account, "access_policy", None), "pillbox_access", "none") != "none"
+        }
+        ineligible = [member_id for member_id in member_ids if member_id not in eligible_account_ids]
+        if ineligible:
+            raise ValidationError("Нельзя выбрать получателей без доступа к приёмам")
         return member_ids
 
     async def _validate_household_medicine(
@@ -404,13 +414,21 @@ class PillboxService:
         return plan
 
     async def list_by_family_id(
-        self, current_family_id: UUID, preferred_language: str = "ru"
+        self,
+        current_account: AuthenticatedAccount,
+        preferred_language: str = "ru",
     ) -> list[PillboxPlanSummaryDto]:
-        entities = await self._repo.list_by_family_id(current_family_id)
+        ensure_module_access(current_account, "pillbox", "view")
+        entities = await self._repo.list_by_family_id(current_account.family_id)
         return [self._to_summary_response(entity, preferred_language) for entity in entities]
 
-    async def get_by_id(self, plan_id: UUID, current_family_id: UUID) -> PillboxPlanResponseDto:
-        entity = await self._get_plan_for_family(plan_id, current_family_id)
+    async def get_by_id(
+        self,
+        plan_id: UUID,
+        current_account: AuthenticatedAccount,
+    ) -> PillboxPlanResponseDto:
+        ensure_module_access(current_account, "pillbox", "view")
+        entity = await self._get_plan_for_family(plan_id, current_account.family_id)
         return self._to_plan_response(entity)
 
     def _normalize_period(self, period: str) -> str:
@@ -532,12 +550,13 @@ class PillboxService:
     async def get_plan_history_summary(
         self,
         plan_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
         period: str,
         preferred_language: str = "ru",
     ) -> PillboxHistorySummaryDto:
+        ensure_module_access(current_account, "pillbox", "view")
         normalized_period = self._normalize_period(period)
-        plan = await self._get_plan_for_family(plan_id, current_family_id)
+        plan = await self._get_plan_for_family(plan_id, current_account.family_id)
         plans = [plan]
         now_utc = datetime.now(UTC)
         today_local = self._to_local(now_utc).date()
@@ -658,8 +677,10 @@ class PillboxService:
         self,
         dto: PillboxPlanCreateDto,
         current_account_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> PillboxPlanResponseDto:
+        ensure_module_access(current_account, "pillbox", "edit")
+        ensure_children_edit_scope(current_account, "приёмов")
         entity = await self._build_plan_entity(
             existing=None,
             title=dto.title,
@@ -667,7 +688,7 @@ class PillboxService:
             member_account_ids=list(dto.member_account_ids),
             medications=list(dto.medications),
             current_account_id=current_account_id,
-            current_family_id=current_family_id,
+            current_family_id=current_account.family_id,
         )
         created = await self._repo.add(entity)
         return self._to_plan_response(created)
@@ -677,9 +698,11 @@ class PillboxService:
         plan_id: UUID,
         dto: PillboxPlanUpdateDto,
         current_account_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> PillboxPlanResponseDto:
-        existing = await self._get_plan_for_family(plan_id, current_family_id)
+        ensure_module_access(current_account, "pillbox", "edit")
+        ensure_children_edit_scope(current_account, "приёмов")
+        existing = await self._get_plan_for_family(plan_id, current_account.family_id)
         next_status = dto.status or existing.status
         if next_status not in {"active", "paused", "archived"}:
             raise ValidationError("Некорректный статус плана")
@@ -690,13 +713,15 @@ class PillboxService:
             member_account_ids=list(dto.member_account_ids),
             medications=list(dto.medications),
             current_account_id=current_account_id,
-            current_family_id=current_family_id,
+            current_family_id=current_account.family_id,
         )
         updated = await self._repo.update(entity)
         return self._to_plan_response(updated)
 
-    async def delete(self, plan_id: UUID, current_family_id: UUID) -> None:
-        await self._get_plan_for_family(plan_id, current_family_id)
+    async def delete(self, plan_id: UUID, current_account: AuthenticatedAccount) -> None:
+        ensure_module_access(current_account, "pillbox", "edit")
+        ensure_children_edit_scope(current_account, "приёмов")
+        await self._get_plan_for_family(plan_id, current_account.family_id)
         await self._repo.delete(plan_id)
 
     async def log_dose(
@@ -706,10 +731,11 @@ class PillboxService:
         dto: PillboxDoseLogCreateDto,
         current_account_id: UUID,
         current_account_display_name: str,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
         preferred_language: str = "ru",
     ) -> PillboxPlanSummaryDto:
-        plan = await self._get_plan_for_family(plan_id, current_family_id)
+        ensure_module_access(current_account, "pillbox", "act")
+        plan = await self._get_plan_for_family(plan_id, current_account.family_id)
         medication = next((item for item in plan.medications if item.id == medication_id), None)
         if not medication:
             raise NotFoundError("Лекарство внутри плана не найдено", resource="pillbox_medication")
@@ -728,7 +754,7 @@ class PillboxService:
         await self._repo.add_dose_log(
             PillboxDoseLog(
                 id=uuid4(),
-                family_id=current_family_id,
+                family_id=current_account.family_id,
                 plan_id=plan.id,
                 medication_id=medication.id,
                 scheduled_for=scheduled_for,
@@ -741,5 +767,5 @@ class PillboxService:
                 created_at=now,
             )
         )
-        refreshed = await self._get_plan_for_family(plan_id, current_family_id)
+        refreshed = await self._get_plan_for_family(plan_id, current_account.family_id)
         return self._to_summary_response(refreshed, preferred_language)

@@ -36,7 +36,7 @@ export function CabinetPushRecipientsCard({
         disabled={isPending}
         className={`${cabinetActionSecondaryClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
       >
-        Push
+        {language === "ru" ? "Участники" : "Participants"}
       </button>
 
       <OverlayDialog
@@ -57,12 +57,12 @@ export function CabinetPushRecipientsCard({
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
           <div className="space-y-1.5">
             <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
-              {language === "ru" ? "Кому приходят push по аптечке" : "Who gets cabinet push"}
+              {language === "ru" ? "Кто следит за аптечкой" : "Who follows the cabinet"}
             </h2>
             <p className="text-sm leading-5 text-muted">
               {language === "ru"
-                ? "Эти участники будут получать напоминания о сроках и просрочке упаковок."
-                : "These members will receive reminders about expiry dates and expired packs."}
+                ? "Эти участники будут получать напоминания о сроках и просрочке упаковок. В списке только те, у кого открыт доступ к аптечке."
+                : "These participants receive reminders about expiry dates and expired packs. Only members with cabinet access are shown here."}
             </p>
           </div>
 
@@ -85,12 +85,12 @@ export function CabinetPushRecipientsCard({
               >
                 <span className="grid min-w-0 gap-0.5 text-left">
                   <span className="min-w-0 text-sm font-semibold tracking-[-0.02em] text-foreground">
-                    {language === "ru" ? "Вся семья" : "Whole family"}
+                    {language === "ru" ? "Все доступные участники" : "All eligible members"}
                   </span>
                   <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
                     {language === "ru"
-                      ? "Напоминания по аптечке придут всем участникам семьи с включёнными push."
-                      : "Cabinet reminders will go to all family members with push enabled."}
+                      ? "Напоминания по аптечке придут всем участникам семьи, у кого открыт доступ к аптечке и включены личные уведомления."
+                      : "Cabinet reminders go to all family members who have cabinet access and personal notifications enabled."}
                   </span>
                 </span>
                 <span className="soft-choice-check">{selectedIds.length === 0 ? "✓" : null}</span>

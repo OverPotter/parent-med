@@ -53,14 +53,14 @@ async def test_create_and_preview_family_invite() -> None:
         family_id=family.id,
         current_account_id=uuid4(),
         current_family_role="owner",
-        dto=FamilyInviteCreateDto(family_role="adult"),
+        dto=FamilyInviteCreateDto(family_role="member"),
     )
     preview = await service.get_preview(created.token)
 
     assert created.family_name == "Семья Петровых"
-    assert created.family_role == "adult"
+    assert created.family_role == "member"
     assert preview.family_name == "Семья Петровых"
-    assert preview.family_role == "adult"
+    assert preview.family_role == "member"
 
 
 @pytest.mark.asyncio
@@ -71,10 +71,10 @@ async def test_create_invite_requires_owner_role() -> None:
         invite_repo=StubFamilyInviteRepository(),
     )
 
-    with pytest.raises(ForbiddenError, match="Только владелец семьи может приглашать"):
+    with pytest.raises(ForbiddenError, match="Только администратор семьи может приглашать"):
         await service.create_for_account(
             family_id=family.id,
             current_account_id=uuid4(),
             current_family_role="adult",
-            dto=FamilyInviteCreateDto(family_role="adult"),
+            dto=FamilyInviteCreateDto(family_role="member"),
         )

@@ -139,7 +139,7 @@ async function requestToken(options?: {
     attachListeners();
     const promptIfNeeded = Boolean(options?.promptIfNeeded);
     const forceRefresh = Boolean(options?.forceRefresh);
-    const allowCachedFallback = options?.allowCachedFallback ?? true;
+    const allowCachedFallback = forceRefresh ? false : (options?.allowCachedFallback ?? true);
     const existing = getCachedNativeToken();
     const permission = await ensurePermission(promptIfNeeded);
     if (permission !== "granted") {
@@ -250,7 +250,7 @@ export async function getNativePushSubscriptionPayload(options?: {
   const token = await requestToken({
     promptIfNeeded: options?.promptIfNeeded,
     forceRefresh: true,
-    allowCachedFallback: true,
+    allowCachedFallback: false,
   });
   if (!token) {
     return null;

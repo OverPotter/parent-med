@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import {
@@ -10,6 +10,8 @@ import {
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
+import { canViewChild } from "@shared/permissions/familyAccess";
+import { useAppStore } from "@shared/store/useAppStore";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { MeasurementCard } from "@client/components/MeasurementCard";
 import { getChildrenCopy } from "@client/i18n/children";
@@ -23,27 +25,30 @@ export function ChildHeightPage() {
   const { childId } = useParams<{ childId: string }>();
   const isIosShell = useIsIosShell();
   const navigate = useNavigate();
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [heightValue, setHeightValue] = useState("");
   const parsedHeight = parseMeasurement(heightValue);
+  const canViewHeight = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
     queryFn: () => fetchChild(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewHeight,
   });
 
   const { data: latestHeight = null } = useQuery({
     queryKey: ["height-entry-latest", childId],
     queryFn: () => fetchLatestHeightEntryByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewHeight,
   });
 
   const { data: heightHistory = [] } = useQuery({
     queryKey: ["height-entries", childId],
     queryFn: () => fetchHeightEntriesByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewHeight,
   });
 
   const addHeightMutation = useMutation({
@@ -60,7 +65,11 @@ export function ChildHeightPage() {
     },
   });
 
-  if (!childId || isLoading || !child) {
+  if (!childId || !canViewHeight) {
+    return <Navigate to="/children" replace />;
+  }
+
+  if (isLoading || !child) {
     return <p className="text-sm text-muted">{common.loading}</p>;
   }
 

@@ -14,7 +14,7 @@ from src.application.dto.push_notification import (
 )
 from src.core.config import settings
 from src.core.exceptions import NotFoundError, ValidationError
-from src.domain.entities.account import Account
+from src.domain.entities.account import copy_account
 from src.domain.entities.push_subscription import PushSubscription
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.push_subscription_repository import PushSubscriptionRepository
@@ -53,6 +53,7 @@ class PushNotificationService:
             cabinet_notify_3_days=account.cabinet_notify_3_days,
             live_activity_sleep_enabled=account.live_activity_sleep_enabled,
             live_activity_feeding_enabled=account.live_activity_feeding_enabled,
+            live_activity_illness_enabled=account.live_activity_illness_enabled,
         )
 
     async def update_preferences(
@@ -68,6 +69,7 @@ class PushNotificationService:
         pillbox_before_reminder_minutes = account.pillbox_push_before_reminder_minutes
         live_activity_sleep_enabled = account.live_activity_sleep_enabled
         live_activity_feeding_enabled = account.live_activity_feeding_enabled
+        live_activity_illness_enabled = account.live_activity_illness_enabled
         if dto.before_reminder_minutes is not None:
             if dto.before_reminder_minutes not in self.ALLOWED_BEFORE_REMINDER_MINUTES:
                 raise ValidationError("Можно выбрать 0, 5, 10, 15 или 20 минут")
@@ -83,6 +85,8 @@ class PushNotificationService:
             live_activity_sleep_enabled = dto.live_activity_sleep_enabled
         if dto.live_activity_feeding_enabled is not None:
             live_activity_feeding_enabled = dto.live_activity_feeding_enabled
+        if dto.live_activity_illness_enabled is not None:
+            live_activity_illness_enabled = dto.live_activity_illness_enabled
 
         if (
             dto.before_reminder_minutes is None
@@ -92,21 +96,13 @@ class PushNotificationService:
             and dto.cabinet_notify_3_days is None
             and dto.live_activity_sleep_enabled is None
             and dto.live_activity_feeding_enabled is None
+            and dto.live_activity_illness_enabled is None
         ):
             return await self.get_preferences(account_id)
 
         updated = await self._account_repo.update(
-            Account(
-                id=account.id,
-                login=account.login,
-                email=account.email,
-                password_hash=account.password_hash,
-                family_id=account.family_id,
-                display_name=account.display_name,
-                relationship_label=account.relationship_label,
-                phone=account.phone,
-                preferred_language=account.preferred_language,
-                family_role=account.family_role,
+            copy_account(
+                account,
                 push_before_reminder_minutes=before_reminder_minutes,
                 pillbox_push_before_reminder_minutes=pillbox_before_reminder_minutes,
                 cabinet_notify_10_days=(
@@ -127,7 +123,7 @@ class PushNotificationService:
                 cabinet_notify_1_day=True,
                 live_activity_sleep_enabled=live_activity_sleep_enabled,
                 live_activity_feeding_enabled=live_activity_feeding_enabled,
-                created_at=account.created_at,
+                live_activity_illness_enabled=live_activity_illness_enabled,
             )
         )
         return PushNotificationPreferencesResponseDto(
@@ -139,6 +135,7 @@ class PushNotificationService:
             cabinet_notify_3_days=updated.cabinet_notify_3_days,
             live_activity_sleep_enabled=updated.live_activity_sleep_enabled,
             live_activity_feeding_enabled=updated.live_activity_feeding_enabled,
+            live_activity_illness_enabled=updated.live_activity_illness_enabled,
         )
 
     def _to_response(self, entity: PushSubscription) -> PushSubscriptionResponseDto:

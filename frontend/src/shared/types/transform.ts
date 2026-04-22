@@ -5,6 +5,7 @@
 import type {
   Family,
   Account,
+  FamilyAccessPolicy,
   FamilyMember,
   FamilyInvite,
   FamilyInvitePreview,
@@ -27,6 +28,13 @@ interface RawFamily {
   id: string;
   name: string;
   cabinet_member_account_ids?: string[] | null;
+  billing_account_id?: string | null;
+  plan_code?: "free" | "plus" | "pro" | null;
+  subscription_status?: "inactive" | "active" | "grace" | "canceled" | "expired" | null;
+  subscription_provider?: string | null;
+  subscription_product_id?: string | null;
+  subscription_expires_at?: string | null;
+  premium_active?: boolean | null;
 }
 
 interface RawAccount {
@@ -39,6 +47,14 @@ interface RawAccount {
   phone: string | null;
   preferred_language: "ru" | "en";
   family_role: string;
+  access_policy?: {
+    all_children?: boolean;
+    child_ids?: string[] | null;
+    children_access?: "view" | "act" | "edit";
+    cabinet_access?: "none" | "view" | "edit";
+    pillbox_access?: "none" | "view" | "act" | "edit";
+    cabinet_push_enabled?: boolean;
+  } | null;
 }
 
 interface RawChild {
@@ -216,6 +232,35 @@ export function toFamily(r: RawFamily): Family {
     id: r.id,
     name: r.name,
     cabinetMemberAccountIds: r.cabinet_member_account_ids ?? [],
+    billingAccountId: r.billing_account_id ?? null,
+    planCode: r.plan_code ?? "free",
+    subscriptionStatus: r.subscription_status ?? "inactive",
+    subscriptionProvider: r.subscription_provider ?? null,
+    subscriptionProductId: r.subscription_product_id ?? null,
+    subscriptionExpiresAt: r.subscription_expires_at ?? null,
+    premiumActive: r.premium_active ?? false,
+  };
+}
+
+function toFamilyAccessPolicy(raw: RawAccount["access_policy"]): FamilyAccessPolicy {
+  return {
+    allChildren: raw?.all_children ?? true,
+    childIds: raw?.child_ids ?? [],
+    childrenAccess:
+      raw?.children_access === "view" || raw?.children_access === "act"
+        ? raw.children_access
+        : "edit",
+    cabinetAccess:
+      raw?.cabinet_access === "none" || raw?.cabinet_access === "view"
+        ? raw.cabinet_access
+        : "edit",
+    pillboxAccess:
+      raw?.pillbox_access === "none" ||
+      raw?.pillbox_access === "view" ||
+      raw?.pillbox_access === "act"
+        ? raw.pillbox_access
+        : "edit",
+    cabinetPushEnabled: raw?.cabinet_push_enabled ?? true,
   };
 }
 
@@ -230,6 +275,7 @@ export function toAccount(r: RawAccount): Account {
     phone: r.phone ?? null,
     preferredLanguage: r.preferred_language ?? "ru",
     familyRole: r.family_role,
+    accessPolicy: toFamilyAccessPolicy(r.access_policy),
   };
 }
 

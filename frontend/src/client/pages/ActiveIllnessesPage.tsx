@@ -20,6 +20,7 @@ import { EmptyState, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
+import { canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import type {
   AdministrationEvent,
@@ -51,9 +52,12 @@ export function ActiveIllnessesPage() {
   const common = getChildrenCopy(language).common;
   const pageTitle = language === "ru" ? "Журнал" : "Health";
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const now = useNow();
   const currentTime = new Date(now);
   const liveQueryOptions = useLiveQueryOptions(3000);
+  const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["children", currentFamilyId],
@@ -65,7 +69,7 @@ export function ActiveIllnessesPage() {
   const { data: householdMedicines = [] } = useQuery({
     queryKey: ["household-medicines", currentFamilyId],
     queryFn: fetchHouseholdMedicines,
-    enabled: !!currentFamilyId,
+    enabled: !!currentFamilyId && canSeeCabinet,
     ...liveQueryOptions,
   });
 

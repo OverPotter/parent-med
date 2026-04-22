@@ -3,10 +3,14 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.sleep_session import (
     SleepSessionCreateDto,
     SleepSessionResponseDto,
     SleepSessionStopDto,
+)
+from src.application.services.access_control import (
+    get_child_for_account,
 )
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
@@ -43,48 +47,55 @@ class SleepSessionService:
             created_by_account_id=entity.created_by_account_id,
         )
 
-    async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
-        child = await self._child_repo.get_by_id(child_id)
-        if not child:
-            raise NotFoundError("Ребёнок не найден", resource="child")
-        if child.family_id != current_family_id:
-            raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
-        return child
+    async def _require_child_access(
+        self,
+        child_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
+    ) -> Child:
+        return await get_child_for_account(
+            self._child_repo,
+            child_id,
+            current_account,
+            required_level,
+        )
 
     async def _get_session_for_account(
-        self, session_id: UUID, current_family_id: UUID
+        self,
+        session_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
     ) -> SleepSession:
         entity = await self._repo.get_by_id(session_id)
         if not entity:
             raise NotFoundError("Сессия сна не найдена", resource="sleep_session")
-        await self._require_child_access(entity.child_id, current_family_id)
+        await self._require_child_access(entity.child_id, current_account, required_level)
         return entity
 
     async def get_active_for_child(
         self,
         child_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> SleepSessionResponseDto | None:
-        await self._require_child_access(child_id, current_family_id)
+        await self._require_child_access(child_id, current_account)
         entity = await self._repo.get_active_by_child_id(child_id)
         return self._to_response(entity) if entity else None
 
     async def list_for_child(
         self,
         child_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> list[SleepSessionResponseDto]:
-        await self._require_child_access(child_id, current_family_id)
+        await self._require_child_access(child_id, current_account)
         items = await self._repo.get_by_child_id(child_id)
         return [self._to_response(item) for item in items]
 
     async def start(
         self,
         dto: SleepSessionCreateDto,
-        current_family_id: UUID,
-        current_account_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> SleepSessionResponseDto:
-        child = await self._require_child_access(dto.child_id, current_family_id)
+        child = await self._require_child_access(dto.child_id, current_account, "act")
         if not child.baby_mode_enabled:
             raise ValidationError("Режим малыша выключен", code="BABY_MODE_DISABLED")
 
@@ -99,7 +110,7 @@ class SleepSessionService:
             started_at=started_at,
             ended_at=None,
             status="active",
-            created_by_account_id=current_account_id,
+            created_by_account_id=current_account.id,
         )
         created = await self._repo.add(entity)
         return self._to_response(created)
@@ -108,11 +119,13 @@ class SleepSessionService:
         self,
         session_id: UUID,
         dto: SleepSessionStopDto,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> SleepSessionResponseDto:
-        entity = await self._get_session_for_account(session_id, current_family_id)
+        entity = await self._get_session_for_account(session_id, current_account, "act")
         if entity.status != "active":
             return self._to_response(entity)
+        if entity.created_by_account_id and entity.created_by_account_id != current_account.id:
+            raise ForbiddenError("Остановить активный сон может только тот, кто его запустил")
 
         ended_at = dto.ended_at or datetime.now(UTC)
         if ended_at < entity.started_at:
@@ -136,9 +149,11 @@ class SleepSessionService:
     async def delete(
         self,
         session_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> None:
-        entity = await self._get_session_for_account(session_id, current_family_id)
+        entity = await self._get_session_for_account(session_id, current_account, "edit")
+        if entity.status == "active" and entity.created_by_account_id != current_account.id:
+            raise ForbiddenError("Удалить активный сон может только тот, кто его запустил")
         deleted = await self._repo.delete(entity.id)
         if not deleted:
             raise NotFoundError("Сессия сна не найдена", resource="sleep_session")

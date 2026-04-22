@@ -10,9 +10,16 @@ from src.application.dto.family import (
     FamilyResponseDto,
     FamilyUpdateDto,
 )
+from src.application.dto.family_access import FamilyAccessPolicyDto
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
-from src.domain.entities.account import Account
+from src.domain.entities.account import Account, copy_account
 from src.domain.entities.family import Family
+from src.domain.entities.family_access import (
+    FamilyAccessPolicy,
+    deserialize_family_access_policy,
+    serialize_family_access_policy,
+)
+from src.domain.entities.family_roles import is_family_admin, normalize_family_role
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
 from src.domain.repositories.family_repository import FamilyRepository
@@ -20,6 +27,9 @@ from src.domain.repositories.family_repository import FamilyRepository
 
 class FamilyService:
     """Сервис CRUD для семей."""
+
+    PREMIUM_PLAN_CODES = {"plus", "pro"}
+    ACTIVE_SUBSCRIPTION_STATUSES = {"active", "grace"}
 
     def __init__(
         self,
@@ -31,12 +41,28 @@ class FamilyService:
         self._account_repo = account_repo
         self._session_repo = session_repo
 
+    def _is_premium_active(self, entity: Family) -> bool:
+        return (
+            entity.plan_code in self.PREMIUM_PLAN_CODES
+            and entity.subscription_status in self.ACTIVE_SUBSCRIPTION_STATUSES
+        )
+
     def _to_response(self, entity: Family) -> FamilyResponseDto:
         return FamilyResponseDto(
             id=entity.id,
             name=entity.name,
             cabinet_member_account_ids=list(entity.cabinet_member_account_ids),
+            billing_account_id=entity.billing_account_id,
+            plan_code=entity.plan_code,  # type: ignore[arg-type]
+            subscription_status=entity.subscription_status,  # type: ignore[arg-type]
+            subscription_provider=entity.subscription_provider,
+            subscription_product_id=entity.subscription_product_id,
+            subscription_expires_at=entity.subscription_expires_at,
+            premium_active=self._is_premium_active(entity),
         )
+
+    def _to_access_policy_response(self, policy: FamilyAccessPolicy) -> FamilyAccessPolicyDto:
+        return FamilyAccessPolicyDto.model_validate(serialize_family_access_policy(policy))
 
     async def _resolve_cabinet_member_account_ids(
         self,
@@ -55,6 +81,17 @@ class FamilyService:
         ]
         if invalid_ids:
             raise ForbiddenError("Нельзя выбрать получателей из другой семьи")
+        eligible_account_ids = {
+            account.id
+            for account in family_accounts
+            if account.family_role != "deleted"
+            and getattr(account.access_policy, "cabinet_access", "none") != "none"
+        }
+        ineligible_ids = [
+            account_id for account_id in normalized_ids if account_id not in eligible_account_ids
+        ]
+        if ineligible_ids:
+            raise ForbiddenError("Нельзя выбрать получателей без доступа к аптечке")
         return normalized_ids
 
     def _to_member_response(self, entity: Account) -> AccountResponseDto:
@@ -67,8 +104,46 @@ class FamilyService:
             relationship_label=entity.relationship_label,
             phone=entity.phone,
             preferred_language=entity.preferred_language,
-            family_role=entity.family_role,
+            family_role=normalize_family_role(entity.family_role),
+            access_policy=self._to_access_policy_response(entity.access_policy),
         )
+
+    def _ensure_family_admin(self, current_family_role: str) -> None:
+        if not is_family_admin(current_family_role):
+            raise ForbiddenError("Только администратор семьи может управлять участниками")
+
+    def _count_admins(self, family_accounts: list[Account]) -> int:
+        return sum(1 for account in family_accounts if is_family_admin(account.family_role))
+
+    def _merge_access_policy(
+        self,
+        current_policy: FamilyAccessPolicy,
+        update_dto,
+    ) -> FamilyAccessPolicy:
+        if update_dto is None:
+            return current_policy
+        data = serialize_family_access_policy(current_policy)
+        for field_name in update_dto.model_fields_set:
+            data[field_name] = getattr(update_dto, field_name)
+        merged = deserialize_family_access_policy(data)
+        if merged.children_access not in {"view", "act", "edit"}:
+            raise ValidationError("Права на детей могут быть только view, act или edit")
+        if merged.cabinet_access not in {"none", "view", "edit"}:
+            raise ValidationError("Права на аптечку могут быть только none, view или edit")
+        if merged.pillbox_access not in {"none", "view", "act", "edit"}:
+            raise ValidationError("Права на приёмы могут быть только none, view, act или edit")
+        if merged.children_access != "edit" and merged.pillbox_access == "edit":
+            raise ValidationError(
+                "Полный доступ к приёмам требует права на изменение детей",
+                code="PILLBOX_EDIT_REQUIRES_CHILD_EDIT_ACCESS",
+            )
+        if not merged.all_children and len(merged.child_ids) == 0:
+            merged.all_children = True
+        if merged.all_children:
+            merged.child_ids = []
+        if merged.cabinet_access == "none":
+            merged.cabinet_push_enabled = False
+        return merged
 
     async def list_all(self) -> list[FamilyResponseDto]:
         entities = await self._repo.list_all()
@@ -96,7 +171,7 @@ class FamilyService:
         accounts = sorted(
             accounts,
             key=lambda account: (
-                0 if account.family_role == "owner" else 1,
+                0 if is_family_admin(account.family_role) else 1,
                 account.created_at,
             ),
         )
@@ -110,10 +185,7 @@ class FamilyService:
         current_family_id: UUID,
         current_family_role: str,
     ) -> AccountResponseDto:
-        if current_family_role != "owner":
-            raise ForbiddenError("Только владелец семьи может управлять участниками")
-        if dto.family_role not in {"owner", "adult"}:
-            raise ValidationError("Можно установить только роли owner или adult")
+        self._ensure_family_admin(current_family_role)
 
         target = await self._account_repo.get_by_id(member_account_id)
         if not target or target.family_id != current_family_id or target.family_role == "deleted":
@@ -123,34 +195,28 @@ class FamilyService:
         family_accounts = [
             account for account in family_accounts if account.family_role != "deleted"
         ]
-        owner_count = sum(1 for account in family_accounts if account.family_role == "owner")
-        if target.family_role == "owner" and dto.family_role != "owner" and owner_count <= 1:
+        next_role = (
+            normalize_family_role(dto.family_role)
+            if dto.family_role is not None
+            else normalize_family_role(target.family_role)
+        )
+        if next_role not in {"admin", "member"}:
+            raise ValidationError("Можно установить только роли admin или member")
+        if (
+            is_family_admin(target.family_role)
+            and not is_family_admin(next_role)
+            and self._count_admins(family_accounts) <= 1
+        ):
             raise ValidationError(
-                "В семье должен остаться хотя бы один владелец",
-                code="LAST_OWNER_REQUIRED",
+                "В семье должен остаться хотя бы один администратор",
+                code="LAST_ADMIN_REQUIRED",
             )
 
         updated = await self._account_repo.update(
-            Account(
-                id=target.id,
-                login=target.login,
-                email=target.email,
-                password_hash=target.password_hash,
-                family_id=target.family_id,
-                display_name=target.display_name,
-                relationship_label=target.relationship_label,
-                phone=target.phone,
-                preferred_language=target.preferred_language,
-                family_role=dto.family_role,
-                push_before_reminder_minutes=target.push_before_reminder_minutes,
-                pillbox_push_before_reminder_minutes=target.pillbox_push_before_reminder_minutes,
-                cabinet_notify_10_days=target.cabinet_notify_10_days,
-                cabinet_notify_7_days=target.cabinet_notify_7_days,
-                cabinet_notify_3_days=target.cabinet_notify_3_days,
-                cabinet_notify_1_day=target.cabinet_notify_1_day,
-                live_activity_sleep_enabled=target.live_activity_sleep_enabled,
-                live_activity_feeding_enabled=target.live_activity_feeding_enabled,
-                created_at=target.created_at,
+            copy_account(
+                target,
+                family_role=next_role,
+                access_policy=self._merge_access_policy(target.access_policy, dto.access_policy),
             )
         )
         return self._to_member_response(updated)
@@ -162,8 +228,7 @@ class FamilyService:
         current_family_id: UUID,
         current_family_role: str,
     ) -> None:
-        if current_family_role != "owner":
-            raise ForbiddenError("Только владелец семьи может управлять участниками")
+        self._ensure_family_admin(current_family_role)
         if member_account_id == current_account_id:
             raise ValidationError(
                 "Нельзя удалить свой аккаунт через управление участниками",
@@ -178,11 +243,16 @@ class FamilyService:
         family_accounts = [
             account for account in family_accounts if account.family_role != "deleted"
         ]
-        owner_count = sum(1 for account in family_accounts if account.family_role == "owner")
-        if target.family_role == "owner" and owner_count <= 1:
+        if is_family_admin(target.family_role) and self._count_admins(family_accounts) <= 1:
             raise ValidationError(
-                "Нельзя удалить последнего владельца семьи",
-                code="LAST_OWNER_REQUIRED",
+                "Нельзя удалить последнего администратора семьи",
+                code="LAST_ADMIN_REQUIRED",
+            )
+        family = await self._repo.get_by_id(current_family_id)
+        if family and family.billing_account_id == target.id:
+            raise ValidationError(
+                "Нельзя удалить участника, пока на нём привязана семейная подписка",
+                code="BILLING_OWNER_TRANSFER_REQUIRED",
             )
 
         await self._session_repo.delete_by_account_id(target.id)
@@ -199,16 +269,12 @@ class FamilyService:
         target = await self._account_repo.get_by_id(member_account_id)
         if not target or target.family_id != current_family_id or target.family_role == "deleted":
             raise NotFoundError("Участник семьи не найден", resource="account")
-        if current_family_role != "owner" and current_account_id != member_account_id:
-            raise ForbiddenError("Можно редактировать только свой профиль в семье")
+        if current_account_id != member_account_id:
+            raise ForbiddenError("Личный профиль участника можно редактировать только самому")
 
         updated = await self._account_repo.update(
-            Account(
-                id=target.id,
-                login=target.login,
-                email=target.email,
-                password_hash=target.password_hash,
-                family_id=target.family_id,
+            copy_account(
+                target,
                 display_name=(
                     ((dto.display_name or "").strip() or target.login)
                     if "display_name" in dto.model_fields_set
@@ -224,17 +290,6 @@ class FamilyService:
                     if "phone" in dto.model_fields_set
                     else target.phone
                 ),
-                preferred_language=target.preferred_language,
-                family_role=target.family_role,
-                push_before_reminder_minutes=target.push_before_reminder_minutes,
-                pillbox_push_before_reminder_minutes=target.pillbox_push_before_reminder_minutes,
-                cabinet_notify_10_days=target.cabinet_notify_10_days,
-                cabinet_notify_7_days=target.cabinet_notify_7_days,
-                cabinet_notify_3_days=target.cabinet_notify_3_days,
-                cabinet_notify_1_day=target.cabinet_notify_1_day,
-                live_activity_sleep_enabled=target.live_activity_sleep_enabled,
-                live_activity_feeding_enabled=target.live_activity_feeding_enabled,
-                created_at=target.created_at,
             )
         )
         return self._to_member_response(updated)
@@ -257,6 +312,12 @@ class FamilyService:
                     id=entity.id,
                     name=dto.name if dto.name is not None else entity.name,
                     cabinet_member_account_ids=cabinet_member_account_ids,
+                    billing_account_id=entity.billing_account_id,
+                    plan_code=entity.plan_code,
+                    subscription_status=entity.subscription_status,
+                    subscription_provider=entity.subscription_provider,
+                    subscription_product_id=entity.subscription_product_id,
+                    subscription_expires_at=entity.subscription_expires_at,
                 )
             )
         return self._to_response(updated)
@@ -266,9 +327,11 @@ class FamilyService:
         id: UUID,
         dto: FamilyUpdateDto,
         current_family_id: UUID,
+        current_family_role: str,
     ) -> FamilyResponseDto:
         if id != current_family_id:
             raise ForbiddenError("Нет доступа к чужой семье")
+        self._ensure_family_admin(current_family_role)
         return await self.update(id, dto)
 
     async def delete(self, id: UUID) -> None:

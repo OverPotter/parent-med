@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.family_invite import FamilyInvite
+from src.domain.entities.family_roles import normalize_family_role
 from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.infrastructure.database.models.family_invite import FamilyInviteModel
 
@@ -22,7 +23,7 @@ class SqlFamilyInviteRepository(FamilyInviteRepository):
             family_id=model.family_id,
             created_by_account_id=model.created_by_account_id,
             token_hash=model.token_hash,
-            family_role=model.family_role,
+            family_role=normalize_family_role(model.family_role),
             created_at=model.created_at,
             expires_at=model.expires_at,
             accepted_at=model.accepted_at,
@@ -35,7 +36,7 @@ class SqlFamilyInviteRepository(FamilyInviteRepository):
             family_id=entity.family_id,
             created_by_account_id=entity.created_by_account_id,
             token_hash=entity.token_hash,
-            family_role=entity.family_role,
+            family_role=normalize_family_role(entity.family_role),
             created_at=entity.created_at,
             expires_at=entity.expires_at,
             accepted_at=entity.accepted_at,
@@ -73,7 +74,7 @@ class SqlFamilyInviteRepository(FamilyInviteRepository):
         row.family_id = entity.family_id
         row.created_by_account_id = entity.created_by_account_id
         row.token_hash = entity.token_hash
-        row.family_role = entity.family_role
+        row.family_role = normalize_family_role(entity.family_role)
         row.created_at = entity.created_at
         row.expires_at = entity.expires_at
         row.accepted_at = entity.accepted_at
