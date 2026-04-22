@@ -11,6 +11,7 @@ import {
   fetchMyFamilyMembers,
   updateMyFamilyCabinetRecipients,
 } from "@shared/api/families";
+import { getEligibleCabinetRecipients } from "@shared/familyAccess/recipients";
 import { PageIntro } from "@shared/components/PageIntro";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -105,9 +106,7 @@ export function MedicineCabinetPage() {
     enabled: !!currentFamilyId && canSeeCabinet,
     staleTime: 5 * 60 * 1000,
   });
-  const eligibleCabinetMembers = familyMembers.filter((member) =>
-    canViewCabinet(member.familyRole, member.accessPolicy)
-  );
+  const eligibleCabinetMembers = getEligibleCabinetRecipients(familyMembers);
 
   if (!canSeeCabinet) {
     return (

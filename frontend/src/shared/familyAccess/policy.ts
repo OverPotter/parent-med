@@ -1,4 +1,4 @@
-import type { FamilyAccessPolicy } from "@shared/types/api";
+import type { FamilyAccessPolicy } from "../types/api.js";
 
 export const DEFAULT_FAMILY_ACCESS_POLICY: FamilyAccessPolicy = {
   allChildren: false,

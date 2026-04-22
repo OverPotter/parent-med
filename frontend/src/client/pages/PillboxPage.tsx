@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { fetchPillboxPlan, fetchPillboxPlans } from "@shared/api/pillboxPlans";
 import { fetchMyFamilyMembers } from "@shared/api/families";
+import { getEligiblePillboxRecipients } from "@shared/familyAccess/recipients";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { canActPillbox, canEditPillbox, canViewPillbox } from "@shared/permissions/familyAccess";
@@ -101,8 +102,7 @@ export function PillboxPage() {
     staleTime: 5 * 60 * 1000,
   });
   const eligiblePillboxMembers = useMemo(
-    () =>
-      familyMembers.filter((member) => canViewPillbox(member.familyRole, member.accessPolicy)),
+    () => getEligiblePillboxRecipients(familyMembers),
     [familyMembers]
   );
 

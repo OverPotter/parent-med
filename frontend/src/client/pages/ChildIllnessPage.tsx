@@ -23,13 +23,13 @@ import { createAdministrationEvent } from "@shared/api/administrationEvents";
 import { createTemperatureEntry } from "@shared/api/temperatureEntries";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { trackIllnessEpisodeStarted } from "@shared/analytics";
+import { getEligibleIllnessRecipients } from "@shared/familyAccess/recipients";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import {
   canActChild,
   canEditChild,
-  canReceiveIllnessPushForChild,
   canViewChild,
 } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -239,11 +239,7 @@ export function ChildIllnessPage() {
     staleTime: 5 * 60 * 1000,
   });
   const eligibleIllnessRecipients =
-    childId == null
-      ? []
-      : familyMembers.filter((member) =>
-          canReceiveIllnessPushForChild(childId, member.familyRole, member.accessPolicy)
-        );
+    childId == null ? [] : getEligibleIllnessRecipients(familyMembers, childId);
 
   const closeEpisodeMutation = useMutation({
     mutationFn: (episodeId: string) => updateIllnessEpisode(episodeId, { status: "closed" }),

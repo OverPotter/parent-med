@@ -20,6 +20,9 @@
   },
   "include": [
     "src/client/startup/startupDecisions.ts",
-    "test/startupDecisions.test.ts"
+    "src/shared/familyAccess/policy.ts",
+    "src/shared/familyAccess/recipients.ts",
+    "test/startupDecisions.test.ts",
+    "test/familyAccessRecipients.test.ts"
   ]
 }
