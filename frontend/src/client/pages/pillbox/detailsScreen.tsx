@@ -24,6 +24,7 @@ export function PillboxDetailsScreen({
   selectedPlanId,
   allGroups,
   canEdit,
+  disableEditingActions,
   planActionTarget,
   planActionError,
   togglePlanStatusPending,
@@ -43,6 +44,7 @@ export function PillboxDetailsScreen({
   selectedPlanId: string;
   allGroups: PillboxGroup[];
   canEdit: boolean;
+  disableEditingActions: boolean;
   planActionTarget: PillboxPlanActionTarget;
   planActionError: string | null;
   togglePlanStatusPending: boolean;
@@ -119,6 +121,7 @@ export function PillboxDetailsScreen({
                   </p>
                 </div>
                 {canEdit &&
+                !disableEditingActions &&
                 (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
                   <button
                     type="button"
@@ -255,7 +258,8 @@ export function PillboxDetailsScreen({
               <button
                 type="button"
                 onClick={onGoToSetup}
-                className={`${actionCompactSecondaryClass} w-full`}
+                disabled={disableEditingActions}
+                className={`${actionCompactSecondaryClass} w-full disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {tPillbox(language, "editPlan")}
               </button>
@@ -263,7 +267,7 @@ export function PillboxDetailsScreen({
             <button
               type="button"
               onClick={onRequestDelete}
-              disabled={deletePlanPending}
+              disabled={deletePlanPending || disableEditingActions}
               className={`${actionCompactDangerClass} w-full disabled:cursor-not-allowed disabled:opacity-60 ${
                 selectedPlan.status === "active" || selectedPlan.status === "paused"
                   ? ""

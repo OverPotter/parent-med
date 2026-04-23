@@ -77,6 +77,7 @@ export function buildTimelineEvents({
     const typeLabel = record.feedingType === "formula" ? text.formula : text.breast;
     const details = [
       typeLabel,
+      record.status === "active" ? text.activeStatus : null,
       record.formulaVolumeMl ? `${record.formulaVolumeMl} мл` : null,
       record.durationMinutes ? formatDuration(record.durationMinutes, language) : null,
     ].filter(Boolean);

@@ -19,6 +19,10 @@ export const cabinetCopy = {
     back: "Назад",
     loading: "Загрузка...",
     loadError: "Ошибка загрузки",
+    networkProblemTitle: "Проблема с сетью",
+    networkProblemDescription:
+      "Для этого действия нужен интернет. Подключитесь к сети и попробуйте снова.",
+    networkProblemInline: "Для этого действия нужен интернет. Подключитесь к сети и попробуйте снова.",
     empty: "В аптечке пока нет препаратов. Нажмите «Добавить препарат».",
     searchLabel: "Найти в аптечке",
     searchPlaceholder: "Название, форма или комментарий",
@@ -134,6 +138,11 @@ export const cabinetCopy = {
     back: "Back",
     loading: "Loading...",
     loadError: "Failed to load data",
+    networkProblemTitle: "Network problem",
+    networkProblemDescription:
+      "This action requires an internet connection. Reconnect and try again.",
+    networkProblemInline:
+      "This action requires an internet connection. Reconnect and try again.",
     empty: "There are no medicines in your first aid kit yet. Tap “Add medicine”.",
     searchLabel: "Search first aid kit",
     searchPlaceholder: "Name, form or comment",

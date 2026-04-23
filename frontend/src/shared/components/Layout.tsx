@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
 import { Capacitor } from "@capacitor/core";
 import { logout } from "@shared/api/auth";
+import { setBearerToken } from "@shared/api/client";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -387,6 +388,7 @@ export function Layout({
     } catch {
       // Локальный выход всё равно должен отработать, даже если сессия уже истекла.
     } finally {
+      setBearerToken(null);
       clearSession();
     }
   };
