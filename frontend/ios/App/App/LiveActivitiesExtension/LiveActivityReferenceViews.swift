@@ -487,7 +487,7 @@ struct SleepIconBadge: View {
             Image(systemName: "moon.fill")
                 .font(.system(size: 30, weight: .semibold))
                 .foregroundStyle(Color(red: 0.43, green: 0.40, blue: 0.85))
-                .rotationEffect(.degrees(14))
+                .rotationEffect(.degrees(18))
         }
         .frame(width: 92, height: 92)
     }
@@ -578,7 +578,7 @@ struct CompactActivityGlyph: View {
                 Image(systemName: "moon.fill")
                     .font(.system(size: size, weight: .bold))
                     .foregroundStyle(activityAccentColor(for: kind))
-                    .rotationEffect(.degrees(14))
+                    .rotationEffect(.degrees(18))
             case "feeding":
                 FeedingBottleCompactGlyph(color: activityAccentColor(for: kind))
                     .frame(width: size + 2, height: size + 4)

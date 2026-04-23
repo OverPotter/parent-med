@@ -152,8 +152,8 @@ export function ChildCard({
           <div className="min-w-0">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 space-y-1.5">
-                <h2 className="app-card-title">{child.name}</h2>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5 text-muted">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="app-card-title">{child.name}</h2>
                   {hasActiveEpisode ? (
                     <span className="inline-flex shrink-0 items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-danger)_14%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-danger)_74%,var(--color-foreground))]">
                       {activeEpisodeStartedAt
@@ -163,6 +163,8 @@ export function ChildCard({
                         : copy.childCard.activeObservation}
                     </span>
                   ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5 text-muted">
                   {secondaryMeta.map((item, index) => (
                     <span key={item} className="inline-flex max-w-full items-center gap-2">
                       {index > 0 ? (
