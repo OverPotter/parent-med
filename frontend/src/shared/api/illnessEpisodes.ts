@@ -2,15 +2,16 @@
  * Запросы к API: эпизоды болезни.
  */
 
-import { apiClient } from "./client";
+import { apiClient } from "./client.js";
 import type {
   IllnessAnalyticsDurationBucket,
   IllnessAnalyticsSeriesPoint,
   IllnessEpisode,
   IllnessEpisodeInsights,
   IllnessHistorySummary,
-} from "@shared/types/api";
-import { toIllnessEpisode } from "@shared/types/transform";
+} from "../types/api.js";
+import { toIllnessEpisode } from "../types/transform.js";
+import { getOfflineIllnessOverride } from "../utils/offlineCareState.js";
 
 interface RawIllnessEpisode {
   id: string;
@@ -137,15 +138,31 @@ function toEpisodeInsights(raw: RawIllnessEpisodeInsights): IllnessEpisodeInsigh
 }
 
 export async function fetchIllnessEpisodesByChildId(childId: string): Promise<IllnessEpisode[]> {
-  const res = await apiClient.get<RawIllnessEpisode[]>("/illness-episodes", {
-    params: { child_id: childId },
-  });
-  return (res.data ?? []).map(toIllnessEpisode);
+  const offline = getOfflineIllnessOverride(childId);
+  try {
+    const res = await apiClient.get<RawIllnessEpisode[]>("/illness-episodes", {
+      params: { child_id: childId },
+    });
+    const items = (res.data ?? []).map(toIllnessEpisode);
+    if (!offline.hasOverride || !offline.value) {
+      return items;
+    }
+    return items.some((item) => item.id === offline.value?.id) ? items : [offline.value, ...items];
+  } catch (error) {
+    if (offline.hasOverride && offline.value) {
+      return [offline.value];
+    }
+    throw error;
+  }
 }
 
 export async function fetchActiveIllnessEpisodeByChildId(
   childId: string
 ): Promise<IllnessEpisode | null> {
+  const offline = getOfflineIllnessOverride(childId);
+  if (offline.hasOverride) {
+    return offline.value;
+  }
   const res = await apiClient.get<RawIllnessEpisode | null>(
     `/illness-episodes/child/${childId}/active`
   );

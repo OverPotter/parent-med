@@ -56,6 +56,7 @@ frontend/dist/
 frontend/www/
 frontend/build/
 frontend/dev-dist/
+frontend/.test-dist/
 # TypeScript incremental / project references (tsc -b)
 frontend/tsconfig.tsbuildinfo
 frontend/*.tsbuildinfo

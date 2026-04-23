@@ -1,6 +1,7 @@
-import { apiClient } from "./client";
-import type { SleepSession } from "@shared/types/api";
-import { toSleepSession } from "@shared/types/transform";
+import { apiClient } from "./client.js";
+import type { SleepSession } from "../types/api.js";
+import { toSleepSession } from "../types/transform.js";
+import { getOfflineSleepOverride } from "../utils/offlineCareState.js";
 
 interface RawSleepSession {
   id: string;
@@ -15,13 +16,29 @@ interface RawSleepSession {
 export async function fetchActiveSleepSessionByChildId(
   childId: string
 ): Promise<SleepSession | null> {
+  const offline = getOfflineSleepOverride(childId);
+  if (offline.hasOverride) {
+    return offline.value;
+  }
   const res = await apiClient.get<RawSleepSession | null>(`/sleep-sessions/child/${childId}/active`);
   return res.data ? toSleepSession(res.data) : null;
 }
 
 export async function fetchSleepSessionsByChildId(childId: string): Promise<SleepSession[]> {
-  const res = await apiClient.get<RawSleepSession[]>(`/sleep-sessions/child/${childId}`);
-  return res.data.map(toSleepSession);
+  const offline = getOfflineSleepOverride(childId);
+  try {
+    const res = await apiClient.get<RawSleepSession[]>(`/sleep-sessions/child/${childId}`);
+    const items = res.data.map(toSleepSession);
+    if (!offline.hasOverride || !offline.value) {
+      return items;
+    }
+    return items.some((item) => item.id === offline.value?.id) ? items : [offline.value, ...items];
+  } catch (error) {
+    if (offline.hasOverride && offline.value) {
+      return [offline.value];
+    }
+    throw error;
+  }
 }
 
 export async function startSleepSession(childId: string): Promise<SleepSession> {

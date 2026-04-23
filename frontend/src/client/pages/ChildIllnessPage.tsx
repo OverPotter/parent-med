@@ -7,20 +7,12 @@ import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import {
-  createIllnessEpisode,
   fetchActiveIllnessEpisodeByChildId,
   fetchIllnessEpisodeInsights,
   fetchIllnessEpisodesByChildId,
-  updateIllnessEpisode,
 } from "@shared/api/illnessEpisodes";
-import {
-  createEpisodeMedicationPlan,
-  fetchEpisodeMedicationPlansByEpisodeId,
-} from "@shared/api/episodeMedicationPlans";
+import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
 import { fetchMyFamilyMembers } from "@shared/api/families";
-import { createIllnessComment } from "@shared/api/illnessComments";
-import { createAdministrationEvent } from "@shared/api/administrationEvents";
-import { createTemperatureEntry } from "@shared/api/temperatureEntries";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { trackIllnessEpisodeStarted } from "@shared/analytics";
 import { getEligibleIllnessRecipients } from "@shared/familyAccess/recipients";
@@ -35,6 +27,10 @@ import {
 import { useAppStore } from "@shared/store/useAppStore";
 import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
 import { stopLiveActivitiesForChildIds, syncIllnessLiveActivity } from "@shared/utils/liveActivities";
+import {
+  closeIllnessEpisodeResilient,
+  createIllnessEpisodeResilient,
+} from "@shared/utils/offlineCareSync";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { formatChildAgeLabel } from "@client/i18n/children";
@@ -242,7 +238,8 @@ export function ChildIllnessPage() {
     childId == null ? [] : getEligibleIllnessRecipients(familyMembers, childId);
 
   const closeEpisodeMutation = useMutation({
-    mutationFn: (episodeId: string) => updateIllnessEpisode(episodeId, { status: "closed" }),
+    mutationFn: (episodeId: string) =>
+      closeIllnessEpisodeResilient({ childId: childId!, episodeId }),
     onSuccess: () => {
       requestLiveActivityRefresh();
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
@@ -255,7 +252,7 @@ export function ChildIllnessPage() {
   });
 
   const createEpisodeMutation = useMutation({
-    mutationFn: async (payload: {
+    mutationFn: (payload: {
       started_at: string;
       title?: string | null;
       medication_mode: string;
@@ -277,53 +274,12 @@ export function ChildIllnessPage() {
         dose_mg_per_kg?: number | null;
         notes?: string | null;
       }>;
-    }) => {
-      const episode = await createIllnessEpisode({
-        child_id: childId!,
-        started_at: payload.started_at,
-        title: payload.title,
-        medication_mode: payload.medication_mode,
-        note: payload.note,
-      });
-
-      await Promise.all([
-        ...payload.temperatures.map((item) =>
-          createTemperatureEntry({
-            episode_id: episode.id,
-            value_celsius: item.value_celsius,
-          })
-        ),
-        ...payload.administrations.map((item) =>
-          createAdministrationEvent({
-            episode_id: episode.id,
-            household_medicine_id: item.household_medicine_id,
-            custom_medicine_name: item.custom_medicine_name,
-            amount: item.amount,
-          })
-        ),
-        ...payload.comments.map((item) =>
-          createIllnessComment({
-            episode_id: episode.id,
-            text: item.text,
-          })
-        ),
-        ...payload.medication_plans.map((item) =>
-          createEpisodeMedicationPlan({
-            episode_id: episode.id,
-            household_medicine_id: item.household_medicine_id,
-            custom_medicine_name: item.custom_medicine_name,
-            dose_amount: item.dose_amount,
-            min_interval_minutes: item.min_interval_minutes,
-            max_doses_per_day: item.max_doses_per_day ?? null,
-            weight_kg: item.weight_kg ?? null,
-            dose_mg_per_kg: item.dose_mg_per_kg ?? null,
-            notes: item.notes ?? null,
-          })
-        ),
-      ]);
-
-      return episode;
-    },
+    }) =>
+      createIllnessEpisodeResilient({
+        childId: childId!,
+        currentAccountId: accountId,
+        payload,
+      }),
     onSuccess: (episode) => {
       void trackIllnessEpisodeStarted(episode.id);
       requestLiveActivityRefresh();

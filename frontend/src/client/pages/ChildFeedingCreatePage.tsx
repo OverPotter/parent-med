@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
-import { createFeedingRecord, startFeedingRecord } from "@shared/api/feedingRecords";
+import { createFeedingRecord } from "@shared/api/feedingRecords";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
@@ -15,6 +15,7 @@ import {
   getCurrentLocalTimeInputValue,
   toApiDateTime,
 } from "@client/utils/feedingRecordForm";
+import { startFeedingRecordResilient } from "@shared/utils/offlineCareSync";
 import { syncFeedingLiveActivity } from "@shared/utils/liveActivities";
 import { canActChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -125,16 +126,19 @@ export function ChildFeedingCreatePage() {
 
   const startMutation = useMutation({
     mutationFn: () =>
-      startFeedingRecord({
-        child_id: child!.id,
-        feeding_type: feedingType,
-        breast_side: feedingType === "breast" && !isExpressed ? breastSide : null,
-        is_expressed: feedingType === "breast" ? isExpressed : false,
-        formula_volume_ml:
-          feedingType === "formula" && formulaVolume.trim()
-            ? Number.parseInt(formulaVolume.trim(), 10) || null
-            : null,
-        note: note.trim() || null,
+      startFeedingRecordResilient({
+        childId: child!.id,
+        currentAccountId: accountId,
+        payload: {
+          feeding_type: feedingType,
+          breast_side: feedingType === "breast" && !isExpressed ? breastSide : null,
+          is_expressed: feedingType === "breast" ? isExpressed : false,
+          formula_volume_ml:
+            feedingType === "formula" && formulaVolume.trim()
+              ? Number.parseInt(formulaVolume.trim(), 10) || null
+              : null,
+          note: note.trim() || null,
+        },
       }),
     onSuccess: (feeding) => {
       queryClient.invalidateQueries({ queryKey: ["feeding-records", childId] });

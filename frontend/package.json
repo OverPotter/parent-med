@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "tsc -p tsconfig.startup-tests.json && node --test .test-dist/test/*.test.js",
+    "test": "rm -rf ../tmp/frontend-test-dist && tsc -p tsconfig.startup-tests.json && node --test ../tmp/frontend-test-dist/test/*.test.js",
     "build": "tsc -b && vite build",
     "build:mobile": "npm run build && npm run cap:sync:ios",
     "build:mobile:dev": "npm run build:mobile:web:dev && npm run cap:sync:ios",

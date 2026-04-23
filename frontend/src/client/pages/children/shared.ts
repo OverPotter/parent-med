@@ -88,3 +88,51 @@ export function formatElapsedDuration(startedAt: string, now: number, language: 
   const secondsWithinMinute = totalSeconds % 60;
   return `${String(totalMinutes).padStart(2, "0")}:${String(secondsWithinMinute).padStart(2, "0")}`;
 }
+
+export function formatIllnessDuration(startedAt: string, now: number, language: "ru" | "en") {
+  const startedAtMs = Date.parse(startedAt);
+  if (Number.isNaN(startedAtMs)) {
+    return language === "ru" ? "1 день" : "1 day";
+  }
+
+  const totalMinutes = Math.max(0, Math.floor((now - startedAtMs) / 60_000));
+  const totalHours = Math.floor(totalMinutes / 60);
+  const totalDays = Math.max(1, Math.floor(totalHours / 24) + 1);
+
+  if (language === "ru") {
+    const mod10 = totalDays % 10;
+    const mod100 = totalDays % 100;
+    if (mod10 === 1 && mod100 !== 11) return `${totalDays} день`;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${totalDays} дня`;
+    return `${totalDays} дней`;
+  }
+
+  return `${totalDays} ${totalDays === 1 ? "day" : "days"}`;
+}
+
+export function formatIllnessActiveLabel(startedAt: string, now: number, language: "ru" | "en") {
+  const startedAtMs = Date.parse(startedAt);
+  if (Number.isNaN(startedAtMs)) {
+    return language === "ru" ? "Наблюдение" : "Observation";
+  }
+
+  const totalMinutes = Math.max(0, Math.floor((now - startedAtMs) / 60_000));
+  const totalHours = Math.floor(totalMinutes / 60);
+  const totalDays = Math.floor(totalHours / 24);
+
+  if (totalDays > 0) {
+    const duration = formatIllnessDuration(startedAt, now, language);
+    return language === "ru" ? `Наблюдение · ${duration}` : `Observation · ${duration}`;
+  }
+
+  if (totalHours > 0) {
+    return language === "ru"
+      ? `Наблюдение · ${totalHours} ч`
+      : `Observation · ${totalHours} h`;
+  }
+
+  const minutes = Math.max(1, totalMinutes);
+  return language === "ru"
+    ? `Наблюдение · ${minutes} мин`
+    : `Observation · ${minutes} min`;
+}

@@ -6,7 +6,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": ".test-dist",
+    "outDir": "../tmp/frontend-test-dist",
     "rootDir": ".",
     "lib": ["ES2023"],
     "types": ["node"],
@@ -20,9 +20,13 @@
   },
   "include": [
     "src/client/startup/startupDecisions.ts",
+    "src/shared/api/authSessionErrors.ts",
     "src/shared/familyAccess/policy.ts",
     "src/shared/familyAccess/recipients.ts",
+    "src/shared/utils/offlineCareState.ts",
+    "test/authSessionErrors.test.ts",
     "test/startupDecisions.test.ts",
-    "test/familyAccessRecipients.test.ts"
+    "test/familyAccessRecipients.test.ts",
+    "test/offlineCareState.test.ts"
   ]
 }

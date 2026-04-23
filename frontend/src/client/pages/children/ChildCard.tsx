@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { startSleepSession, stopSleepSession } from "@shared/api/sleepSessions";
-import { stopFeedingRecord } from "@shared/api/feedingRecords";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { RowSurface } from "@shared/components/Surface";
 import { useNow } from "@shared/hooks/useNow";
 import type { Child, FeedingRecord, SleepSession, WeightEntry } from "@shared/types/api";
+import {
+  startSleepSessionResilient,
+  stopFeedingRecordResilient,
+  stopSleepSessionResilient,
+} from "@shared/utils/offlineCareSync";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 import { formatChildDate } from "@client/utils/childDateFormat";
 import {
@@ -15,6 +18,7 @@ import {
   childActionSuccessClass,
   commonLoading,
   formatElapsedDuration,
+  formatIllnessActiveLabel,
   formatTimeOnly,
   formatWeightValue,
 } from "./shared";
@@ -69,12 +73,13 @@ export function ChildCard({
   const sleepMutation = useMutation({
     mutationFn: async () => {
       if (activeSleep) {
-        return stopSleepSession(activeSleep.id);
+        return stopSleepSessionResilient({ childId: child.id, sessionId: activeSleep.id });
       }
-      return startSleepSession(child.id);
+      return startSleepSessionResilient({ childId: child.id, currentAccountId });
     },
     onSuccess: (nextSleep) => {
       queryClient.invalidateQueries({ queryKey: ["sleep-session-active", child.id] });
+      queryClient.invalidateQueries({ queryKey: ["sleep-sessions", child.id] });
       setIsStopSleepConfirmOpen(false);
       void syncSleepLiveActivity(child, nextSleep, language, undefined, currentAccountId);
     },
@@ -91,7 +96,7 @@ export function ChildCard({
       if (!activeFeeding) {
         return null;
       }
-      return stopFeedingRecord(activeFeeding.id);
+      return stopFeedingRecordResilient({ childId: child.id, recordId: activeFeeding.id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
@@ -252,7 +257,9 @@ export function ChildCard({
                 className={`${hasActiveEpisode ? activeQuickActionClass : quickActionClass} w-full disabled:opacity-50`}
               >
                 {hasActiveEpisode
-                  ? copy.childCard.openObservation
+                  ? activeEpisodeStartedAt
+                    ? formatIllnessActiveLabel(activeEpisodeStartedAt, now, language)
+                    : copy.childCard.openObservation
                   : isStartingEpisode
                     ? commonLoading(language)
                     : copy.childCard.startObservation}

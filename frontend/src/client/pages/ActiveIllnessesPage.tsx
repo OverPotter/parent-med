@@ -12,7 +12,7 @@ import {
 import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
 import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
-import { fetchIllnessEpisodesByChildId, updateIllnessEpisode } from "@shared/api/illnessEpisodes";
+import { fetchIllnessEpisodesByChildId } from "@shared/api/illnessEpisodes";
 import { trackMedicationAdministered } from "@shared/analytics";
 import { PageIntro } from "@shared/components/PageIntro";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
@@ -24,6 +24,7 @@ import { useNow } from "@shared/hooks/useNow";
 import { canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
+import { closeIllnessEpisodeResilient } from "@shared/utils/offlineCareSync";
 import type {
   AdministrationEvent,
   Child,
@@ -38,6 +39,7 @@ import {
 } from "../utils/medicationPlans";
 import { formatDate } from "@shared/utils/date";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
+import { formatIllnessDuration } from "./children/shared";
 
 const appBtnPrimaryClass =
   "soft-pill-primary app-profile-action app-profile-action--selected inline-flex min-h-[2.65rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.75rem] sm:text-[0.84rem]";
@@ -195,6 +197,7 @@ function ActiveIllnessCard({
   const [justSaved, setJustSaved] = useState(false);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
   const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
+  const illnessDurationLabel = formatIllnessDuration(episode.startedAt, now.getTime(), language);
   const prioritizedItems = getPrioritizedMedicationPlanItems(
     plans,
     administrations,
@@ -239,7 +242,7 @@ function ActiveIllnessCard({
   });
 
   const closeEpisodeMutation = useMutation({
-    mutationFn: () => updateIllnessEpisode(episode.id, { status: "closed" }),
+    mutationFn: () => closeIllnessEpisodeResilient({ childId: child.id, episodeId: episode.id }),
     onSuccess: () => {
       requestLiveActivityRefresh();
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", child.id] });
@@ -282,6 +285,11 @@ function ActiveIllnessCard({
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500" />
                   <h2 className="app-card-title">{child.name}</h2>
+                  <span className="inline-flex items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-danger)_12%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-danger)_72%,var(--color-foreground))]">
+                    {language === "ru"
+                      ? `Болеет ${illnessDurationLabel}`
+                      : `Ill for ${illnessDurationLabel}`}
+                  </span>
                 </div>
               </div>
               <button
@@ -298,7 +306,9 @@ function ActiveIllnessCard({
               </button>
             </div>
             <p className="mt-1 text-sm leading-6 text-muted">
-              {ageLabel ? `${ageLabel} • ` : ""}
+              {ageLabel || "—"}
+            </p>
+            <p className="mt-1 text-sm leading-5 text-muted">
               {t(copy.observationSince, { date: formatDate(episode.startedAt) })}
             </p>
             {episode.title && (

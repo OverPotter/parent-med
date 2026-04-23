@@ -36,6 +36,7 @@ import {
 } from "@/app/mobile/runtime";
 import { AuthPage } from "@client/pages/AuthPage";
 import { appLog } from "@shared/utils/appLog";
+import { shouldClearSessionForAuthError } from "@shared/api/authSessionErrors";
 import { cleanupDeviceSessionArtifacts } from "@shared/utils/sessionCleanup";
 const ClientLayout = lazy(() =>
   import("@client/layout/ClientLayout").then((module) => ({ default: module.ClientLayout }))
@@ -204,6 +205,10 @@ function AuthSync() {
 
   useEffect(() => {
     if (!error || !(authToken || refreshToken || accountId)) {
+      return;
+    }
+    if (!shouldClearSessionForAuthError(error)) {
+      appLog.warn("Сессия: backend недоступен, сохраняю локальный auth state");
       return;
     }
     appLog.warn("Сессия недействительна, сбрасываю локальный auth state");
