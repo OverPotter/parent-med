@@ -28,6 +28,14 @@ export const kindStyles: Record<EventKind, string> = {
   height: "bg-lime-500",
 };
 
+export const kindColorValues: Record<EventKind, string> = {
+  sleep: "#0ea5e9",
+  feeding: "#14b8a6",
+  illness: "#f43f5e",
+  weight: "#10b981",
+  height: "#84cc16",
+};
+
 export const summaryAccentStyles: Record<SummaryItem["kind"], string> = {
   sleep: "bg-sky-500",
   feeding: "bg-teal-500",
@@ -36,6 +44,16 @@ export const summaryAccentStyles: Record<SummaryItem["kind"], string> = {
   height: "bg-lime-500",
   events: "bg-violet-500",
   measurements: "bg-emerald-500",
+};
+
+export const summaryAccentColors: Record<SummaryItem["kind"], string> = {
+  sleep: kindColorValues.sleep,
+  feeding: kindColorValues.feeding,
+  illness: kindColorValues.illness,
+  weight: kindColorValues.weight,
+  height: kindColorValues.height,
+  events: "#8b5cf6",
+  measurements: kindColorValues.weight,
 };
 
 export function buildTimelineEvents({

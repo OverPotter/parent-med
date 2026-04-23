@@ -2,12 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { createAdministrationEvent, fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
 import {
-  createAdministrationEvent,
-  fetchAdministrationEventsByEpisodeId,
-} from "@shared/api/administrationEvents";
-import {
-  createEpisodeMedicationPlan,
   deleteEpisodeMedicationPlan,
   fetchEpisodeMedicationPlansByEpisodeId,
   updateEpisodeMedicationPlan,
@@ -27,6 +23,7 @@ import { canEditChild, canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { EpisodeMedicationPlan, FamilyMember, IllnessEpisode, WeightEntry } from "@shared/types/api";
 import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
+import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
 import { getPrioritizedMedicationPlanItems } from "@client/utils/medicationPlans";
 import {
@@ -44,6 +41,7 @@ import {
   ReminderOverviewPanel,
   TimelineOverviewPanel,
 } from "./EpisodeOverviewPanels";
+import { createReminderWithOptionalFirstAdministration } from "./reminderCreation";
 import { buildEpisodeTimeline } from "./timeline";
 
 export function EpisodeBlock({
@@ -154,6 +152,8 @@ export function EpisodeBlock({
     onSuccess: () => {
       void trackTemperatureLogged(episode.id);
       queryClient.invalidateQueries({ queryKey: ["temperature-entries", episode.id] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
+      requestLiveActivityRefresh();
       if (quickComposeMode) setQuickComposeSuccessMessage(quickComposeMeta.success);
     },
   });
@@ -176,12 +176,14 @@ export function EpisodeBlock({
     onSuccess: () => {
       trackMedicationAdministered("episode_detail");
       queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
+      requestLiveActivityRefresh();
       if (quickComposeMode) setQuickComposeSuccessMessage(quickComposeMeta.success);
     },
   });
 
   const createPlanMutation = useMutation({
-    mutationFn: (payload: {
+    mutationFn: async (payload: {
       household_medicine_id?: string | null;
       custom_medicine_name?: string | null;
       dose_amount: string;
@@ -190,18 +192,25 @@ export function EpisodeBlock({
       weight_kg?: number | null;
       dose_mg_per_kg?: number | null;
       notes?: string | null;
+      first_dose_status?: "already_given" | "not_given";
+      first_dose_at?: string | null;
     }) =>
-      createEpisodeMedicationPlan({
-        episode_id: episode.id,
-        household_medicine_id: payload.household_medicine_id,
-        custom_medicine_name: payload.custom_medicine_name,
-        dose_amount: payload.dose_amount,
-        min_interval_minutes: payload.min_interval_minutes,
-        max_doses_per_day: payload.max_doses_per_day ?? null,
-        weight_kg: payload.weight_kg ?? null,
-        dose_mg_per_kg: payload.dose_mg_per_kg ?? null,
-        notes: payload.notes ?? null,
-      }),
+      createReminderWithOptionalFirstAdministration(
+        {
+          episodeId: episode.id,
+          householdMedicineId: payload.household_medicine_id,
+          customMedicineName: payload.custom_medicine_name,
+          doseAmount: payload.dose_amount,
+          minIntervalMinutes: payload.min_interval_minutes,
+          maxDosesPerDay: payload.max_doses_per_day,
+          weightKg: payload.weight_kg,
+          doseMgPerKg: payload.dose_mg_per_kg,
+          notes: payload.notes,
+          firstDoseStatus: payload.first_dose_status,
+          firstDoseAt: payload.first_dose_at,
+        },
+        language
+      ),
     onSuccess: async (createdPlan) => {
       queryClient.setQueryData<EpisodeMedicationPlan[]>(
         ["episode-medication-plans", episode.id],
@@ -214,16 +223,26 @@ export function EpisodeBlock({
         }
       );
       await queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      await queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
+      await queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
+      requestLiveActivityRefresh();
       if (quickReminderCreateMode) {
         navigate(`/children/${childId}/illness?focus=reminders`, { replace: true });
       }
+    },
+    onError: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      await queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
+      await queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
     },
   });
 
   const deletePlanMutation = useMutation({
     mutationFn: deleteEpisodeMedicationPlan,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      requestLiveActivityRefresh();
+    },
   });
 
   const updatePlanMutation = useMutation({
@@ -243,8 +262,10 @@ export function EpisodeBlock({
         notes?: string | null;
       };
     }) => updateEpisodeMedicationPlan(id, payload),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      requestLiveActivityRefresh();
+    },
   });
 
   const updateEpisodeRecipientsMutation = useMutation({
@@ -329,6 +350,8 @@ export function EpisodeBlock({
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["illness-comments", episode.id] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
+      requestLiveActivityRefresh();
       setCommentText("");
       if (quickComposeMode) setQuickComposeSuccessMessage(quickComposeMeta.success);
     },
@@ -665,6 +688,8 @@ export function EpisodeBlock({
               weight_kg: payload.weightKg,
               dose_mg_per_kg: payload.doseMgPerKg,
               notes: payload.notes,
+              first_dose_status: payload.firstDoseStatus,
+              first_dose_at: payload.firstDoseAt,
             })
           }
           onCancel={() =>

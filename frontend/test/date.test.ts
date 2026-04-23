@@ -5,6 +5,7 @@ import {
   isFutureDeviceDate,
   toDeviceDateTimeIso,
 } from "../src/shared/utils/date.js";
+import { isFutureFirstAdministrationSelection } from "../src/client/pages/child-illness/reminderTiming.js";
 
 test("getCurrentDeviceTimestampIso serializes the provided device date", () => {
   const date = new Date(2026, 3, 23, 13, 45, 30, 123);
@@ -43,4 +44,11 @@ test("isFutureDeviceDate compares against the device local day", () => {
   assert.equal(isFutureDeviceDate("2026-04-23", now), false);
   assert.equal(isFutureDeviceDate("2026-04-22", now), false);
   assert.equal(isFutureDeviceDate("bad", now), false);
+});
+
+test("isFutureFirstAdministrationSelection rejects future time on the same day", () => {
+  const now = new Date(2026, 3, 24, 10, 0, 0, 0);
+
+  assert.equal(isFutureFirstAdministrationSelection("2026-04-24", "09:30", now), false);
+  assert.equal(isFutureFirstAdministrationSelection("2026-04-24", "23:50", now), true);
 });

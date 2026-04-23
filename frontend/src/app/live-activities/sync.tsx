@@ -5,7 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchPushNotificationPreferences } from "@shared/api/pushNotifications";
 import { useAppStore } from "@shared/store/useAppStore";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
-import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
+import {
+  fetchActiveIllnessEpisodeByChildId,
+  fetchIllnessEpisodeInsights,
+} from "@shared/api/illnessEpisodes";
+import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
+import { fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
 import { fetchActiveSleepSessionByChildId } from "@shared/api/sleepSessions";
 import { fetchActiveFeedingRecordByChildId } from "@shared/api/feedingRecords";
 import {
@@ -77,11 +82,32 @@ export function LiveActivityRuntimeSync() {
       }
 
       const babyChildren = children.filter((child) => child.babyModeEnabled);
-      const [illnessEntries, sleepEntries, feedingEntries] = await Promise.all([
+      const [illnessSnapshots, sleepEntries, feedingEntries] = await Promise.all([
         Promise.all(
-          children.map(
-            async (child) => [child.id, await fetchActiveIllnessEpisodeByChildId(child.id)] as const
-          )
+          children.map(async (child) => {
+            const episode = await fetchActiveIllnessEpisodeByChildId(child.id);
+            const [insights, plans, administrations] = episode
+              ? await Promise.all([
+                  fetchIllnessEpisodeInsights(episode.id),
+                  fetchEpisodeMedicationPlansByEpisodeId(episode.id),
+                  fetchAdministrationEventsByEpisodeId(episode.id),
+                ])
+              : [null, [], []];
+
+            const latestAdministration = administrations
+              .slice()
+              .sort(
+                (left, right) =>
+                  new Date(right.administeredAt).getTime() - new Date(left.administeredAt).getTime()
+              )[0];
+            const latestAdministrationMedicineName =
+              latestAdministration?.customMedicineName?.trim() || null;
+
+            return [
+              child.id,
+              { episode, insights, plans, latestAdministrationMedicineName },
+            ] as const;
+          })
         ),
         Promise.all(
           babyChildren.map(
@@ -101,7 +127,21 @@ export function LiveActivityRuntimeSync() {
 
       await syncLiveActivitiesSnapshot({
         children,
-        activeIllnessByChildId: Object.fromEntries(illnessEntries),
+        activeIllnessByChildId: Object.fromEntries(
+          illnessSnapshots.map(([childId, snapshot]) => [childId, snapshot.episode])
+        ),
+        activeIllnessInsightsByChildId: Object.fromEntries(
+          illnessSnapshots.map(([childId, snapshot]) => [childId, snapshot.insights])
+        ),
+        activeIllnessMedicationPlansByChildId: Object.fromEntries(
+          illnessSnapshots.map(([childId, snapshot]) => [childId, snapshot.plans])
+        ),
+        activeIllnessLatestAdministrationMedicineNameByChildId: Object.fromEntries(
+          illnessSnapshots.map(([childId, snapshot]) => [
+            childId,
+            snapshot.latestAdministrationMedicineName,
+          ])
+        ),
         activeSleepByChildId: Object.fromEntries(sleepEntries),
         activeFeedingByChildId: Object.fromEntries(feedingEntries),
         language: language === "en" ? "en" : "ru",
@@ -110,7 +150,7 @@ export function LiveActivityRuntimeSync() {
       });
       previousChildIdsRef.current = nextChildIds;
       updateLiveActivityDiagnostics({
-        lastSync: `done illness=${illnessEntries.filter(([, value]) => value).length} children=${babyChildren.length} sleep=${sleepEntries.filter(([, value]) => value).length} feeding=${feedingEntries.filter(([, value]) => value).length}`,
+        lastSync: `done illness=${illnessSnapshots.filter(([, value]) => value.episode).length} children=${babyChildren.length} sleep=${sleepEntries.filter(([, value]) => value).length} feeding=${feedingEntries.filter(([, value]) => value).length}`,
       });
     };
 

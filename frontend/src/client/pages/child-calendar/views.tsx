@@ -14,7 +14,7 @@ import {
   formatShortDate,
   formatTime,
   getXAxisLabels,
-  kindStyles,
+  kindColorValues,
   parseLocalDate,
   uniqueKinds,
 } from "./utils";
@@ -61,7 +61,10 @@ export function FeedView({
                 </span>
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${kindStyles[event.kind]}`} />
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: kindColorValues[event.kind] }}
+                    />
                     <p className="truncate text-sm font-semibold leading-5 text-foreground">
                       {event.title}
                     </p>
@@ -127,7 +130,10 @@ export function DayFeedDialog({
                 </span>
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${kindStyles[event.kind]}`} />
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: kindColorValues[event.kind] }}
+                    />
                     <p className="truncate text-sm font-semibold leading-5 text-foreground">
                       {event.title}
                     </p>
@@ -185,7 +191,10 @@ export function CalendarView({
             key={kind}
             className="inline-flex min-h-[1.65rem] items-center gap-1.5 rounded-full bg-surface-muted px-2.5 text-[0.7rem] font-bold text-muted"
           >
-            <span className={`h-1.5 w-1.5 rounded-full ${kindStyles[kind]}`} />
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: kindColorValues[kind] }}
+            />
             {filterLabels[kind]}
           </span>
         ))}
@@ -211,7 +220,11 @@ export function CalendarView({
             <span className="text-xs font-semibold">{Number(day.date.slice(8, 10))}</span>
             <span className="mt-2 flex flex-wrap gap-1">
               {day.kinds.map((kind) => (
-                <span key={kind} className={`h-1.5 w-1.5 rounded-full ${kindStyles[kind]}`} />
+                <span
+                  key={kind}
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: kindColorValues[kind] }}
+                />
               ))}
             </span>
           </button>

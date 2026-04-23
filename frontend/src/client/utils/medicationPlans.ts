@@ -2,13 +2,13 @@ import type {
   AdministrationEvent,
   EpisodeMedicationPlan,
   HouseholdMedicine,
-} from "@shared/types/api";
+} from "../../shared/types/api.js";
 
 const INTERVAL_MINUTE_MS = 60 * 1000;
 
 type MedicationPlanLike = Pick<
   EpisodeMedicationPlan,
-  "householdMedicineId" | "customMedicineName" | "minIntervalMinutes" | "maxDosesPerDay"
+  "householdMedicineId" | "customMedicineName" | "minIntervalMinutes" | "maxDosesPerDay" | "createdAt"
 >;
 
 export type MedicationPlanPriorityItem<TPlan extends MedicationPlanLike = EpisodeMedicationPlan> = {
@@ -36,13 +36,19 @@ export function buildPlanAdministrationStats(
   const todayCount = relatedAdministrations.filter(
     (entry) => new Date(entry.administeredAt).toDateString() === now.toDateString()
   ).length;
+  const createdAt = new Date(plan.createdAt);
+  const createdAtIsValid = !Number.isNaN(createdAt.getTime());
+  const firstDoseScheduledAt =
+    !lastAdministration && createdAtIsValid
+      ? new Date(createdAt.getTime() + plan.minIntervalMinutes * INTERVAL_MINUTE_MS)
+      : null;
 
   const nextAllowedAt = lastAdministration
     ? new Date(
         new Date(lastAdministration.administeredAt).getTime() +
           plan.minIntervalMinutes * INTERVAL_MINUTE_MS
       )
-    : null;
+    : firstDoseScheduledAt;
   const blockedByInterval = !!nextAllowedAt && nextAllowedAt > now;
   const blockedByDailyLimit = !!plan.maxDosesPerDay && todayCount >= plan.maxDosesPerDay;
 
@@ -57,9 +63,9 @@ export function buildPlanAdministrationStats(
       ? "Дневной лимит уже достигнут"
       : nextAllowedAt
         ? nextAllowedAt <= now
-          ? "Следующую дозу уже можно"
-          : `Следующую дозу можно ${formatRelativeDateTime(nextAllowedAt, now)}`
-        : "Пока не было приёма, первую дозу можно отметить сразу",
+          ? "Следующий приём уже можно отметить"
+          : `Следующий приём можно отметить ${formatRelativeDateTime(nextAllowedAt, now)}`
+        : "Пока приёмов не было, можно отметить первый",
   };
 }
 
@@ -210,6 +216,20 @@ export function formatRelativeDateTime(date: Date, now = new Date()) {
     return `через ${hours} ч`;
   }
   return `через ${hours} ч ${minutes} мин`;
+}
+
+export function formatReminderTimeWithClock(
+  date: Date,
+  language: "ru" | "en",
+  now = new Date()
+) {
+  const relative = formatRelativeDateTime(date, now);
+  const atTime = new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+  return language === "ru" ? `${relative} (в ${atTime})` : `${relative} (${atTime})`;
 }
 
 function parseMedicineConcentration(concentration: string | null) {

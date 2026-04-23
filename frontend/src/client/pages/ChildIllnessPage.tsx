@@ -162,6 +162,7 @@ export function ChildIllnessPage() {
       activeEpisode ?? null,
       activeEpisodeInsights,
       activeEpisodeMedicationPlans,
+      null,
       language,
       undefined,
       accountId

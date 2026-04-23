@@ -9,6 +9,8 @@ export type MedicationPlanPayload = {
   weightKg: number | null;
   doseMgPerKg: number | null;
   notes: string | null;
+  firstDoseStatus?: "already_given" | "not_given";
+  firstDoseAt?: string | null;
 };
 
 export function formatMedicineCountLabel(count: number) {

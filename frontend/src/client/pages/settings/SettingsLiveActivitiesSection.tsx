@@ -53,10 +53,10 @@ export function SettingsLiveActivitiesSection({
       title: tSettings(language, "liveActivitiesSleepPreviewTitle"),
       timer: "00:43",
       status: tSettings(language, "liveActivitiesSleepPreviewStatus"),
-      accentClassName: "from-[#738CD1] via-[#738CD1] to-[#738CD1]",
-      accentSurfaceClassName: "bg-[#738CD1]/16 text-[#738CD1] border-[#738CD1]/14",
+      accentClassName: "from-[#6E67D9] via-[#6E67D9] to-[#6E67D9]",
+      accentSurfaceClassName: "bg-[#6E67D9]/16 text-[#6E67D9] border-[#6E67D9]/14",
       surfaceClassName:
-        "border-slate-900/8 bg-[linear-gradient(135deg,rgb(244,248,255),rgb(229,238,255),rgb(219,231,253))] shadow-[0_18px_36px_rgba(15,23,42,0.10)] dark:border-white/[0.09] dark:bg-[linear-gradient(135deg,rgb(36,46,79),rgb(46,61,102),rgb(31,41,71))] dark:shadow-[0_18px_36px_rgba(15,23,42,0.16)]",
+        "border-slate-900/8 bg-[linear-gradient(135deg,rgb(239,243,255),rgb(225,233,255),rgb(214,224,255))] shadow-[0_18px_36px_rgba(15,23,42,0.10)] dark:border-white/[0.09] dark:bg-[linear-gradient(135deg,rgb(36,46,79),rgb(46,61,102),rgb(31,41,71))] dark:shadow-[0_18px_36px_rgba(15,23,42,0.16)]",
       iconName: "moon.stars.fill",
       enabled: sleepEnabled,
     },
@@ -75,12 +75,16 @@ export function SettingsLiveActivitiesSection({
     {
       key: "illness",
       title: tSettings(language, "liveActivitiesIllnessPreviewTitle"),
-      timer: language === "ru" ? "2 дн" : "2 d",
-      status: tSettings(language, "liveActivitiesIllnessPreviewStatus"),
-      accentClassName: "from-[#8A7ABF] via-[#8A7ABF] to-[#8A7ABF]",
-      accentSurfaceClassName: "bg-[#8A7ABF]/16 text-[#8A7ABF] border-[#8A7ABF]/14",
+      previewStyle: "illness" as const,
+      childName: language === "ru" ? "Маша" : "Mia",
+      leadingPrimary: language === "ru" ? "Нурофен · через 2 ч" : "Nurofen · in 2 h",
+      leadingSecondary: language === "ru" ? "Нурофен дали в 18:10" : "Nurofen given at 18:10",
+      trailingValue: "38.4°",
+      trailingCaption: language === "ru" ? "Была в 21:25" : "At 21:25",
+      accentClassName: "from-[#38A39A] via-[#38A39A] to-[#38A39A]",
+      accentSurfaceClassName: "bg-[#38A39A]/16 text-[#38A39A] border-[#38A39A]/14",
       surfaceClassName:
-        "border-slate-900/8 bg-[linear-gradient(135deg,rgb(245,240,255),rgb(234,227,252),rgb(225,218,247))] shadow-[0_18px_36px_rgba(15,23,42,0.10)] dark:border-white/[0.09] dark:bg-[linear-gradient(135deg,rgb(48,38,77),rgb(61,46,94),rgb(41,31,69))] dark:shadow-[0_18px_36px_rgba(15,23,42,0.16)]",
+        "border-slate-900/8 bg-[linear-gradient(135deg,rgb(238,250,247),rgb(223,243,238),rgb(212,236,229))] shadow-[0_18px_36px_rgba(15,23,42,0.10)] dark:border-white/[0.09] dark:bg-[linear-gradient(135deg,rgb(26,63,62),rgb(31,76,74),rgb(24,57,56))] dark:shadow-[0_18px_36px_rgba(15,23,42,0.16)]",
       iconName: "cross.case.fill",
       enabled: illnessEnabled,
     },
@@ -123,8 +127,8 @@ export function SettingsLiveActivitiesSection({
             <LiveActivityPreviewCard
               key={card.key}
               title={card.title}
-              timer={card.timer}
-              status={card.status}
+              timer={"timer" in card ? card.timer : undefined}
+              status={"status" in card ? card.status : undefined}
               accentClassName={card.accentClassName}
               accentSurfaceClassName={card.accentSurfaceClassName}
               surfaceClassName={card.surfaceClassName}
@@ -132,6 +136,12 @@ export function SettingsLiveActivitiesSection({
               enabled={card.enabled}
               muted={!isIos}
               language={language}
+              previewStyle={"previewStyle" in card ? card.previewStyle : undefined}
+              childName={"childName" in card ? card.childName : undefined}
+              leadingPrimary={"leadingPrimary" in card ? card.leadingPrimary : undefined}
+              leadingSecondary={"leadingSecondary" in card ? card.leadingSecondary : undefined}
+              trailingValue={"trailingValue" in card ? card.trailingValue : undefined}
+              trailingCaption={"trailingCaption" in card ? card.trailingCaption : undefined}
             />
           ))}
         </div>
@@ -225,17 +235,29 @@ function LiveActivityPreviewCard({
   iconName,
   enabled,
   muted,
+  previewStyle,
+  childName,
+  leadingPrimary,
+  leadingSecondary,
+  trailingValue,
+  trailingCaption,
 }: {
   language: AppLanguage;
   title: string;
-  timer: string;
-  status: string;
+  timer?: string;
+  status?: string;
   accentClassName: string;
   accentSurfaceClassName: string;
   surfaceClassName: string;
   iconName: string;
   enabled: boolean;
   muted: boolean;
+  previewStyle?: "illness";
+  childName?: string;
+  leadingPrimary?: string;
+  leadingSecondary?: string;
+  trailingValue?: string;
+  trailingCaption?: string;
 }) {
   return (
     <div
@@ -263,20 +285,58 @@ function LiveActivityPreviewCard({
           </svg>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3">
-            <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">
-              {title}
-            </p>
-            <p className="shrink-0 text-[1.1rem] font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
-              {timer}
-            </p>
-          </div>
-          <div className="mt-1 flex items-center gap-2">
-            <div className={`h-2 w-2 shrink-0 rounded-full bg-gradient-to-br ${accentClassName}`} />
-            <p className="truncate text-[0.8rem] font-semibold text-slate-800/90 dark:text-white/84">
-              {status}
-            </p>
-          </div>
+          {previewStyle === "illness" ? (
+            <div className="space-y-1.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">
+                    {childName}
+                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <div
+                      className={`h-2 w-2 shrink-0 rounded-full bg-gradient-to-br ${accentClassName}`}
+                    />
+                    <p className="truncate text-[0.8rem] font-semibold text-slate-800/90 dark:text-white/84">
+                      {title}
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[1.1rem] font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
+                    {trailingValue}
+                  </p>
+                  <p className="mt-0.5 text-[0.72rem] font-medium text-slate-700/80 dark:text-white/72">
+                    {trailingCaption}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-0.5 pl-4">
+                <p className="truncate text-[0.8rem] font-semibold text-slate-900/88 dark:text-white/84">
+                  {leadingPrimary}
+                </p>
+                <p className="truncate text-[0.76rem] text-slate-700/80 dark:text-white/72">
+                  {leadingSecondary}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">
+                  {title}
+                </p>
+                <p className="shrink-0 text-[1.1rem] font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
+                  {timer}
+                </p>
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                <div className={`h-2 w-2 shrink-0 rounded-full bg-gradient-to-br ${accentClassName}`} />
+                <p className="truncate text-[0.8rem] font-semibold text-slate-800/90 dark:text-white/84">
+                  {status}
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
       <div className="mt-2.5 flex items-center justify-between gap-3">

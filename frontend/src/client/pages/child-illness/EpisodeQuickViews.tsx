@@ -24,8 +24,7 @@ import {
   illnessListClass,
   illnessPanelSoftClass,
 } from "./shared";
-import type { EpisodeTimelineItem } from "./timeline";
-import { EpisodeTimelineList } from "./timeline";
+import { EpisodeTimelineList, episodeTimelineKindStyles, type EpisodeTimelineItem } from "./timeline";
 
 function EpisodeReminderRecipientsCard({
   language,
@@ -65,7 +64,7 @@ function EpisodeReminderRecipientsCard({
         disabled={isPending}
         className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
       >
-        {language === "ru" ? "Push" : "Push"}
+        {language === "ru" ? "Уведомления" : "Notifications"}
       </button>
 
       <OverlayDialog
@@ -74,7 +73,9 @@ function EpisodeReminderRecipientsCard({
         placement="bottom"
         zIndexClassName="z-[890]"
         backdropAriaLabel={
-          language === "ru" ? "Закрыть выбор получателей push" : "Close push recipients"
+          language === "ru"
+            ? "Закрыть выбор получателей уведомлений"
+            : "Close notification recipients"
         }
         containerClassName="flex items-end"
         backdropClassName="bg-[rgba(15,23,42,0.32)]"
@@ -87,13 +88,13 @@ function EpisodeReminderRecipientsCard({
           <div className="space-y-1.5">
             <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
               {language === "ru"
-                ? "Кому приходят push по наблюдению"
-                : "Who gets push reminders for this tracking"}
+                ? "Кому приходят уведомления по наблюдению"
+                : "Who gets notifications for this tracking"}
             </h2>
             <p className="text-sm leading-5 text-muted">
               {language === "ru"
-                ? "Этим получателям могут приходить push внутри эпизода, если у них включены личные уведомления."
-                : "These recipients can receive push reminders inside the episode if their personal notifications stay enabled."}
+                ? "Этим получателям могут приходить уведомления внутри эпизода, если у них включены личные уведомления."
+                : "These recipients can receive notifications inside the episode if their personal notifications stay enabled."}
             </p>
           </div>
 
@@ -230,22 +231,14 @@ export function TemperatureQuickView(props: {
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
                     <span
-                      className={`h-2 w-2 shrink-0 rounded-full ${
-                        entry.valueCelsius >= 38 ? "bg-rose-500" : "bg-emerald-500"
-                      }`}
+                      className={`h-2 w-2 shrink-0 rounded-full ${getTemperatureToneClass(entry.valueCelsius)}`}
                     />
                     <p className="truncate text-sm font-semibold leading-5 text-foreground">
                       {entry.valueCelsius.toFixed(1)}°C
                     </p>
                   </div>
                   <p className="mt-0.5 truncate text-xs leading-5 text-muted">
-                    {entry.valueCelsius >= 38
-                      ? language === "ru"
-                        ? "Нужен контроль температуры"
-                        : "Keep an eye on temperature"
-                      : language === "ru"
-                        ? "Замер сохранён"
-                        : "Reading saved"}
+                    {getTemperatureToneLabel(entry.valueCelsius, language)}
                   </p>
                 </div>
               </div>
@@ -261,6 +254,26 @@ export function TemperatureQuickView(props: {
       </section>
     </div>
   );
+}
+
+function getTemperatureToneClass(valueCelsius: number) {
+  if (valueCelsius <= 37) {
+    return "bg-emerald-500";
+  }
+  if (valueCelsius <= 38) {
+    return "bg-amber-500";
+  }
+  return "bg-rose-500";
+}
+
+function getTemperatureToneLabel(valueCelsius: number, language: "ru" | "en") {
+  if (valueCelsius <= 37) {
+    return language === "ru" ? "Замер сохранён" : "Reading saved";
+  }
+  if (valueCelsius <= 38) {
+    return language === "ru" ? "Нужен контроль температуры" : "Keep an eye on temperature";
+  }
+  return language === "ru" ? "Высокая температура" : "High temperature";
 }
 
 export function AdministrationQuickView(props: {
@@ -296,7 +309,7 @@ export function AdministrationQuickView(props: {
         title={language === "ru" ? "Приём" : "Dose"}
         subtitle={
           language === "ru"
-            ? "Быстро отметьте лекарство и дозу, если она известна."
+            ? "Быстро отметьте, что и сколько дали."
             : "Quickly log the medicine and dose if you know it."
         }
       />
@@ -541,9 +554,21 @@ export function TimelineQuickView(props: {
             {(
               [
                 ["all", language === "ru" ? "Все" : "All", null],
-                ["temperature", language === "ru" ? "Замеры" : "Readings", "bg-rose-500"],
-                ["administration", language === "ru" ? "Приёмы" : "Doses", "bg-sky-500"],
-                ["comment", language === "ru" ? "Заметки" : "Notes", "bg-sky-500"],
+                [
+                  "temperature",
+                  language === "ru" ? "Замеры" : "Readings",
+                  episodeTimelineKindStyles.temperature,
+                ],
+                [
+                  "administration",
+                  language === "ru" ? "Приёмы" : "Doses",
+                  episodeTimelineKindStyles.administration,
+                ],
+                [
+                  "comment",
+                  language === "ru" ? "Заметки" : "Notes",
+                  episodeTimelineKindStyles.comment,
+                ],
               ] as const
             ).map(([key, label, dotClass]) => {
               const isActiveFilter = timelineFilter === key;
@@ -854,6 +879,8 @@ export function ReminderCreateQuickView(props: {
     weightKg?: number | null;
     doseMgPerKg?: number | null;
     notes?: string | null;
+    firstDoseStatus?: "already_given" | "not_given";
+    firstDoseAt?: string | null;
   }) => void;
   onCancel: () => void;
   onChangeRecipients: (memberIds: string[]) => void;

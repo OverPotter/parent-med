@@ -12,6 +12,11 @@ import {
   type LiveActivityPreferencesCache,
 } from "./liveActivityPreferences";
 import {
+  buildIllnessLiveActivitySummary,
+  buildIllnessMedicationLines,
+  buildIllnessStatusLabel,
+} from "./illnessLiveActivitySummary";
+import {
   isNativeLiveActivitiesSupported,
   stopAllNativeLiveActivities,
   stopNativeLiveActivity,
@@ -118,14 +123,6 @@ function formatTimeLabel(value: string | null | undefined, language: "ru" | "en"
   }).format(new Date(timestamp));
 }
 
-function formatTemperatureValue(value: number | null | undefined): string | null {
-  if (value == null || !Number.isFinite(value)) {
-    return null;
-  }
-
-  return `${value.toFixed(1)}°`;
-}
-
 function joinLiveActivityParts(parts: Array<string | null | undefined>) {
   return parts
     .map((part) => (part ?? "").trim())
@@ -133,31 +130,6 @@ function joinLiveActivityParts(parts: Array<string | null | undefined>) {
     .join(" · ");
 }
 
-function formatRelativeDoseLabel(value: string | Date | null | undefined, language: "ru" | "en") {
-  if (!value) {
-    return null;
-  }
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  const diffMs = date.getTime() - Date.now();
-  const totalMinutes = Math.max(0, Math.ceil(diffMs / 60_000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours === 0 && minutes === 0) {
-    return language === "ru" ? "меньше чем через минуту" : "under a minute";
-  }
-  if (hours === 0) {
-    return language === "ru" ? `через ${minutes} мин` : `in ${minutes} min`;
-  }
-  if (minutes === 0) {
-    return language === "ru" ? `через ${hours} ч` : `in ${hours} h`;
-  }
-  return language === "ru" ? `через ${hours} ч ${minutes} мин` : `in ${hours} h ${minutes} min`;
-}
 
 function buildSinglePlanNextDose(
   plan: Pick<EpisodeMedicationPlan, "minIntervalMinutes" | "customMedicineName"> | null | undefined,
@@ -181,66 +153,6 @@ function buildSinglePlanNextDose(
   };
 }
 
-function buildIllnessLiveActivitySummary(
-  insights: Pick<
-    IllnessEpisodeInsights,
-    "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"
-  > | null | undefined,
-  nextDose:
-    | {
-        nextDoseAt: Date;
-        medicineName: string | null;
-      }
-    | null
-    | undefined,
-  language: "ru" | "en"
-): {
-  primaryValue?: string | null;
-  primaryCaption?: string | null;
-  secondaryValue?: string | null;
-  secondaryCaption?: string | null;
-} {
-  const lastTemperature = formatTemperatureValue(insights?.lastTemperatureCelsius);
-  const lastAdministrationTime = formatTimeLabel(insights?.lastAdministrationAt, language);
-  const lastEventTime = formatTimeLabel(insights?.lastEventAt, language);
-  const firstMedicineName = insights?.medicineNames?.[0]?.trim() || null;
-  const nextDoseRelative = formatRelativeDoseLabel(nextDose?.nextDoseAt, language);
-  const nextDoseTime = formatTimeLabel(nextDose?.nextDoseAt?.toISOString(), language);
-
-  return {
-    primaryValue: lastTemperature ?? (language === "ru" ? "Нет" : "None"),
-    primaryCaption: language === "ru" ? "Последняя температура" : "Latest temperature",
-    secondaryValue:
-      nextDoseRelative ??
-      nextDoseTime ??
-      firstMedicineName ??
-      lastEventTime ??
-      (language === "ru" ? "Без записей" : "No events yet"),
-    secondaryCaption: nextDose
-      ? nextDose.medicineName
-        ? language === "ru"
-          ? `Следующий приём · ${nextDose.medicineName}`
-          : `Next dose · ${nextDose.medicineName}`
-        : language === "ru"
-          ? "Следующий приём"
-          : "Next dose"
-      : firstMedicineName
-        ? lastAdministrationTime
-          ? language === "ru"
-            ? `Последнее лекарство · ${lastAdministrationTime}`
-            : `Latest medication · ${lastAdministrationTime}`
-          : language === "ru"
-            ? "Последнее лекарство"
-            : "Latest medication"
-        : lastEventTime
-          ? language === "ru"
-            ? `Последняя запись · ${lastEventTime}`
-            : `Latest event · ${lastEventTime}`
-          : language === "ru"
-            ? "Последних действий ещё нет"
-            : "No logged actions yet",
-  };
-}
 
 function buildSleepStatusLabel(startedAt: string, language: "ru" | "en") {
   const timeLabel = formatTimeLabel(startedAt, language);
@@ -264,28 +176,6 @@ function buildFeedingStatusLabel(startedAt: string, language: "ru" | "en") {
         : `since ${timeLabel}`
       : null,
   ]);
-}
-
-function buildIllnessStatusLabel(
-  episodeTitle: string | null | undefined,
-  insights: Pick<
-    IllnessEpisodeInsights,
-    "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"
-  > | null | undefined,
-  language: "ru" | "en"
-) {
-  const title = episodeTitle?.trim() || null;
-  const medicine = insights?.medicineNames?.[0]?.trim() || null;
-  const administrationTime = formatTimeLabel(insights?.lastAdministrationAt, language);
-  const latestEventTime = formatTimeLabel(insights?.lastEventAt, language);
-
-  return (
-    joinLiveActivityParts([
-      title,
-      medicine ? joinLiveActivityParts([medicine, administrationTime]) : latestEventTime,
-    ]) ||
-    (language === "ru" ? "Активное наблюдение" : "Active tracking")
-  );
 }
 
 export async function syncSleepLiveActivity(
@@ -386,6 +276,7 @@ export async function syncIllnessLiveActivity(
     "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"
   > | null = null,
   medicationPlans: Array<Pick<EpisodeMedicationPlan, "minIntervalMinutes" | "customMedicineName">> = [],
+  latestAdministrationMedicineName: string | null = null,
   language: "ru" | "en" = "ru",
   preferences?: LiveActivityPreferencesCache,
   currentAccountId?: string | null
@@ -411,13 +302,25 @@ export async function syncIllnessLiveActivity(
   }
 
   const nextDose = medicationPlans.length === 1 ? buildSinglePlanNextDose(medicationPlans[0], insights) : null;
-  const summary = buildIllnessLiveActivitySummary(insights, nextDose, language);
+  const summary = buildIllnessLiveActivitySummary(insights, nextDose, episode.startedAt, language);
+  const medicationLines = buildIllnessMedicationLines(
+    insights,
+    nextDose,
+    latestAdministrationMedicineName,
+    language
+  );
+  const fallbackStatusLabel = buildIllnessStatusLabel(episode.title, insights, language);
+  const statusLabel =
+    medicationLines.primaryLine ?? medicationLines.secondaryLine ?? fallbackStatusLabel ?? null;
+  const subtitle =
+    medicationLines.primaryLine && medicationLines.secondaryLine ? medicationLines.secondaryLine : null;
+
   await safeUpsertLiveActivity({
     kind: "illness",
     itemId: child.id,
     title: child.name,
-    subtitle: getKindLabel("illness", language),
-    statusLabel: buildIllnessStatusLabel(episode.title, insights, language),
+    subtitle,
+    statusLabel,
     primaryValue: summary.primaryValue,
     primaryCaption: summary.primaryCaption,
     secondaryValue: summary.secondaryValue,
@@ -431,6 +334,8 @@ export async function syncLiveActivitiesSnapshot(args: {
   children: Child[];
   activeIllnessByChildId: Record<string, IllnessEpisode | null>;
   activeIllnessInsightsByChildId?: Record<string, IllnessEpisodeInsights | null>;
+  activeIllnessMedicationPlansByChildId?: Record<string, EpisodeMedicationPlan[] | null>;
+  activeIllnessLatestAdministrationMedicineNameByChildId?: Record<string, string | null>;
   activeSleepByChildId: Record<string, SleepSession | null>;
   activeFeedingByChildId: Record<string, FeedingRecord | null>;
   language?: "ru" | "en";
@@ -451,7 +356,8 @@ export async function syncLiveActivitiesSnapshot(args: {
           child,
           args.activeIllnessByChildId[child.id] ?? null,
           args.activeIllnessInsightsByChildId?.[child.id] ?? null,
-          [],
+          args.activeIllnessMedicationPlansByChildId?.[child.id] ?? [],
+          args.activeIllnessLatestAdministrationMedicineNameByChildId?.[child.id] ?? null,
           language,
           preferences,
           args.currentAccountId

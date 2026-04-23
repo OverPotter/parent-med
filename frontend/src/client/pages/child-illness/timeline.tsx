@@ -17,6 +17,12 @@ export type EpisodeTimelineItem = {
   actorAccountId: string | null;
 };
 
+export const episodeTimelineKindStyles: Record<EpisodeTimelineItem["kind"], string> = {
+  temperature: "bg-rose-500",
+  administration: "bg-sky-500",
+  comment: "bg-amber-500",
+};
+
 export function EpisodeTimelineList({
   items,
   language,
@@ -40,7 +46,7 @@ export function EpisodeTimelineList({
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
               <span
-                className={`h-2 w-2 shrink-0 rounded-full ${getTimelineDotClass(item.kind)}`}
+                className={`h-2 w-2 shrink-0 rounded-full ${episodeTimelineKindStyles[item.kind]}`}
                 aria-hidden="true"
               />
               <p className="truncate text-sm font-semibold leading-5 text-foreground">
@@ -67,16 +73,6 @@ function getTimelineKindLabel(kind: EpisodeTimelineItem["kind"], language: "ru" 
   };
 
   return labels[kind];
-}
-
-function getTimelineDotClass(kind: EpisodeTimelineItem["kind"]) {
-  const classes: Record<EpisodeTimelineItem["kind"], string> = {
-    temperature: "bg-rose-500",
-    administration: "bg-amber-500",
-    comment: "bg-sky-500",
-  };
-
-  return classes[kind];
 }
 
 export function formatEntrySummary(

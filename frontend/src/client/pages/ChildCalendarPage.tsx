@@ -32,9 +32,9 @@ import {
   getWeekdayLabels,
   groupEventsByDay,
   isDateInRange,
-  kindStyles,
   periodOptions,
-  summaryAccentStyles,
+  kindColorValues,
+  summaryAccentColors,
   toggleKind,
 } from "./child-calendar/utils";
 import {
@@ -256,7 +256,8 @@ export function ChildCalendarPage() {
               className="inline-flex min-h-[2.35rem] min-w-0 items-start gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-1.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]"
             >
               <span
-                className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${summaryAccentStyles[item.kind]}`}
+                className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ backgroundColor: summaryAccentColors[item.kind] }}
                 aria-hidden="true"
               />
               <span className="min-w-0 flex-1">
@@ -336,7 +337,10 @@ export function ChildCalendarPage() {
               onClick={() => setEnabledKinds((current) => toggleKind(current, kind))}
               className={filterClass(kind)}
             >
-              <span className={`h-2 w-2 rounded-full ${kindStyles[kind]}`} />
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: kindColorValues[kind] }}
+              />
               {text.filters[kind]}
             </button>
           ))}
