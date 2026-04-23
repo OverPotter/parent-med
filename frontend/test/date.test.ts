@@ -7,8 +7,19 @@ import {
 } from "../src/shared/utils/date.js";
 
 test("getCurrentDeviceTimestampIso serializes the provided device date", () => {
-  const date = new Date("2026-04-23T10:15:30.000Z");
-  assert.equal(getCurrentDeviceTimestampIso(date), "2026-04-23T10:15:30.000Z");
+  const date = new Date(2026, 3, 23, 13, 45, 30, 123);
+  const iso = getCurrentDeviceTimestampIso(date);
+  const offsetMinutes = -date.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const absoluteOffsetMinutes = Math.abs(offsetMinutes);
+  const offsetHours = String(Math.floor(absoluteOffsetMinutes / 60)).padStart(2, "0");
+  const offsetRemainderMinutes = String(absoluteOffsetMinutes % 60).padStart(2, "0");
+
+  assert.equal(
+    iso,
+    `${date.getFullYear()}-04-23T13:45:30.123${sign}${offsetHours}:${offsetRemainderMinutes}`
+  );
+  assert.equal(new Date(iso).getTime(), date.getTime());
 });
 
 test("toDeviceDateTimeIso converts local device date/time inputs into an instant", () => {

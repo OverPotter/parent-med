@@ -1,6 +1,6 @@
 """Сервис эпизодов болезни."""
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from uuid import UUID, uuid4
 
 from src.application.dto.auth import AuthenticatedAccount
@@ -64,6 +64,12 @@ class IllnessEpisodeService:
             member_account_ids=list(entity.member_account_ids),
             closed_at=entity.closed_at,
         )
+
+    def _current_datetime(self) -> datetime:
+        return datetime.now().astimezone()
+
+    def _current_date(self) -> date:
+        return self._current_datetime().date()
 
     async def _resolve_member_account_ids(
         self,
@@ -207,9 +213,7 @@ class IllnessEpisodeService:
             period=normalized_period,
             total_closed_episodes=len(closed_episodes),
             episode_count=len(filtered_episodes),
-            last_episode_started_at=(
-                self._episode_started_at_as_datetime(last_episode) if last_episode else None
-            ),
+            last_episode_started_at=(last_episode.started_at if last_episode else None),
             days_since_last_episode=(
                 self._days_since_episode(last_episode) if last_episode else None
             ),
@@ -358,7 +362,7 @@ class IllnessEpisodeService:
         )
         closed_at = dto.closed_at if "closed_at" in fields_set else entity.closed_at
 
-        if "started_at" in fields_set and started_at > datetime.now(UTC).date():
+        if "started_at" in fields_set and started_at > self._current_date():
             raise ValidationError("Дата начала эпизода не может быть в будущем")
         if closed_at and closed_at.date() < started_at:
             raise ValidationError("Дата закрытия не может быть раньше даты начала эпизода")
@@ -368,7 +372,7 @@ class IllnessEpisodeService:
             raise ValidationError("Неизвестный режим лекарств")
 
         if status == "closed" and "closed_at" not in fields_set and closed_at is None:
-            closed_at = datetime.now(UTC)
+            closed_at = self._current_datetime()
         if status == "active":
             closed_at = None
 
@@ -420,7 +424,7 @@ class IllnessEpisodeService:
         if period == "all":
             return episodes
 
-        today = datetime.now(UTC).date()
+        today = self._current_date()
         days_by_period = {
             "month": 30,
             "quarter": 90,
@@ -431,18 +435,21 @@ class IllnessEpisodeService:
         return [
             episode
             for episode in episodes
-            if (episode.closed_at or datetime.now(UTC)).date() >= start_date
+            if self._episode_reference_date(episode) >= start_date
         ]
 
     def _episode_duration_days(self, episode: IllnessEpisode) -> int:
-        end_date = (episode.closed_at or datetime.now(UTC)).date()
+        end_date = self._episode_end_date(episode)
         return max(1, (end_date - episode.started_at).days + 1)
 
-    def _episode_started_at_as_datetime(self, episode: IllnessEpisode) -> datetime:
-        return datetime.combine(episode.started_at, datetime.min.time(), tzinfo=UTC)
+    def _episode_end_date(self, episode: IllnessEpisode) -> date:
+        return episode.closed_at.date() if episode.closed_at else self._current_date()
+
+    def _episode_reference_date(self, episode: IllnessEpisode) -> date:
+        return episode.closed_at.date() if episode.closed_at else episode.started_at
 
     def _days_since_episode(self, episode: IllnessEpisode) -> int:
-        return max(0, (datetime.now(UTC).date() - episode.started_at).days)
+        return max(0, (self._current_date() - episode.started_at).days)
 
     def _most_active_period_label(self, episodes: list[IllnessEpisode], period: str) -> str | None:
         timeline = self._build_timeline(episodes, period)
@@ -466,11 +473,11 @@ class IllnessEpisodeService:
         self,
         episodes: list[IllnessEpisode],
     ) -> list[IllnessAnalyticsSeriesPointDto]:
-        today = datetime.now(UTC).date()
+        today = self._current_date()
         window_start = today - timedelta(days=29)
         buckets = [0, 0, 0, 0]
         for episode in episodes:
-            delta_days = (episode.started_at - window_start).days
+            delta_days = (self._episode_reference_date(episode) - window_start).days
             if delta_days < 0 or delta_days > 29:
                 continue
             bucket_index = min(3, delta_days // 7)
@@ -490,7 +497,7 @@ class IllnessEpisodeService:
             "half_year": 6,
             "year": 12,
         }[period]
-        current = datetime.now(UTC).date().replace(day=1)
+        current = self._current_date().replace(day=1)
         months: list[date] = []
         for _ in range(months_count):
             months.append(current)
@@ -499,7 +506,8 @@ class IllnessEpisodeService:
 
         counts = {(month.year, month.month): 0 for month in months}
         for episode in episodes:
-            key = (episode.started_at.year, episode.started_at.month)
+            reference_date = self._episode_reference_date(episode)
+            key = (reference_date.year, reference_date.month)
             if key in counts:
                 counts[key] += 1
 
@@ -516,14 +524,15 @@ class IllnessEpisodeService:
         episodes: list[IllnessEpisode],
     ) -> list[IllnessAnalyticsSeriesPointDto]:
         if not episodes:
-            current_year = datetime.now(UTC).year
+            current_year = self._current_date().year
             return [IllnessAnalyticsSeriesPointDto(label=str(current_year), value=0)]
 
-        min_year = min(episode.started_at.year for episode in episodes)
-        max_year = max(episode.started_at.year for episode in episodes)
+        reference_years = [self._episode_reference_date(episode).year for episode in episodes]
+        min_year = min(reference_years)
+        max_year = max(reference_years)
         counts = {year: 0 for year in range(min_year, max_year + 1)}
         for episode in episodes:
-            counts[episode.started_at.year] += 1
+            counts[self._episode_reference_date(episode).year] += 1
         return [
             IllnessAnalyticsSeriesPointDto(label=str(year), value=counts[year])
             for year in range(min_year, max_year + 1)

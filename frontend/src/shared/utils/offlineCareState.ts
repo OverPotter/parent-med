@@ -1,4 +1,5 @@
 import type { FeedingRecord, IllnessEpisode, SleepSession } from "../types/api.js";
+import { getCurrentDeviceTimestampIso } from "./date.js";
 
 const OFFLINE_CARE_STORAGE_KEY = "pillpath-offline-care-v1";
 
@@ -240,7 +241,7 @@ export function queueOfflineSleepStart(input: {
   childId: string;
   currentAccountId: string | null;
 }): SleepSession {
-  const startedAt = new Date().toISOString();
+  const startedAt = getCurrentDeviceTimestampIso();
   const tempId = makeId("offline-sleep");
   const session: SleepSession = {
     id: tempId,
@@ -274,7 +275,7 @@ export function queueOfflineSleepStop(input: {
 }): SleepSession | null {
   const override = getOfflineSleepOverride(input.childId);
   const existing = override.value;
-  const endedAt = new Date().toISOString();
+  const endedAt = getCurrentDeviceTimestampIso();
   const completed =
     existing && existing.id === input.sessionId
       ? {
@@ -305,7 +306,7 @@ export function queueOfflineFeedingStart(input: {
   currentAccountId: string | null;
   payload: FeedingStartAction["payload"];
 }): FeedingRecord {
-  const now = new Date().toISOString();
+  const now = getCurrentDeviceTimestampIso();
   const tempId = makeId("offline-feeding");
   const record: FeedingRecord = {
     id: tempId,
@@ -347,7 +348,7 @@ export function queueOfflineFeedingStop(input: {
 }): FeedingRecord | null {
   const override = getOfflineFeedingOverride(input.childId);
   const existing = override.value;
-  const endedAt = new Date().toISOString();
+  const endedAt = getCurrentDeviceTimestampIso();
   const completed =
     existing && existing.id === input.recordId
       ? {
@@ -400,7 +401,7 @@ export function queueOfflineIllnessStart(input: {
       op: "start",
       childId: input.childId,
       tempId,
-      createdAt: new Date().toISOString(),
+      createdAt: getCurrentDeviceTimestampIso(),
       currentAccountId: input.currentAccountId,
       payload: input.payload,
     });
@@ -415,7 +416,7 @@ export function queueOfflineIllnessStop(input: {
 }): IllnessEpisode | null {
   const override = getOfflineIllnessOverride(input.childId);
   const existing = override.value;
-  const closedAt = new Date().toISOString();
+  const closedAt = getCurrentDeviceTimestampIso();
   const completed =
     existing && existing.id === input.episodeId
       ? {

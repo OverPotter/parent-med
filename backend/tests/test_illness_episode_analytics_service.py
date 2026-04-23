@@ -89,6 +89,15 @@ def make_service(
     )
 
 
+class FixedNowIllnessEpisodeService(IllnessEpisodeService):
+    def __init__(self, now: datetime, **kwargs) -> None:  # noqa: ANN003
+        super().__init__(**kwargs)
+        self._now = now
+
+    def _current_datetime(self) -> datetime:
+        return self._now
+
+
 @pytest.mark.asyncio
 async def test_get_history_summary_returns_period_aggregates() -> None:
     child = Child(id=uuid4(), family_id=uuid4(), name="Антон", birth_date=date(2021, 4, 10))
@@ -195,6 +204,7 @@ async def test_get_history_summary_returns_period_aggregates() -> None:
         "3-5 дней",
         "6+ дней",
     ]
+    assert result.last_episode_started_at == recent_episode.started_at
 
 
 @pytest.mark.asyncio
@@ -238,6 +248,41 @@ async def test_get_history_summary_includes_episode_closed_inside_period() -> No
     assert result.total_closed_episodes == 2
     assert result.episode_count == 1
     assert result.average_duration_days == 31
+    assert sum(point.value for point in result.timeline) == 1
+    assert result.most_active_period_label == "4 нед."
+
+
+@pytest.mark.asyncio
+async def test_get_history_summary_uses_closed_at_offset_date_for_periods_and_buckets() -> None:
+    child = Child(id=uuid4(), family_id=uuid4(), name="Антон", birth_date=date(2021, 4, 10))
+    now = datetime.fromisoformat("2026-04-24T00:16:35+03:00")
+    offset_episode = IllnessEpisode(
+        id=uuid4(),
+        child_id=child.id,
+        started_at=date(2026, 4, 24),
+        title="Ночной эпизод",
+        status="closed",
+        medication_mode="manual",
+        note=None,
+        closed_at=datetime.fromisoformat("2026-04-24T00:16:35+03:00"),
+        deleted_at=None,
+    )
+    service = FixedNowIllnessEpisodeService(
+        now=now,
+        episode_repo=StubIllnessEpisodeRepository([offset_episode]),
+        child_repo=StubChildRepository(child),
+        temperature_repo=StubTemperatureRepository({offset_episode.id: []}),
+        administration_repo=StubAdministrationRepository({offset_episode.id: []}),
+        comment_repo=StubCommentRepository({offset_episode.id: []}),
+    )
+
+    result = await service.get_history_summary(child.id, child.family_id, "month")
+
+    assert result.episode_count == 1
+    assert result.average_duration_days == 1
+    assert result.days_since_last_episode == 0
+    assert sum(point.value for point in result.timeline) == 1
+    assert result.most_active_period_label == "4 нед."
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,6 @@
 """Реализация репозитория эпизодов болезни."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -16,6 +16,9 @@ class SqlIllnessEpisodeRepository(IllnessEpisodeRepository):
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    def _current_datetime(self) -> datetime:
+        return datetime.now().astimezone()
 
     def _to_entity(self, m: IllnessEpisodeModel) -> IllnessEpisode:
         return IllnessEpisode(
@@ -111,10 +114,11 @@ class SqlIllnessEpisodeRepository(IllnessEpisodeRepository):
         )
         row = result.scalars().one_or_none()
         if row:
-            row.deleted_at = datetime.now(UTC)
+            now = self._current_datetime()
+            row.deleted_at = now
             if row.status == "active":
                 row.status = "closed"
-                row.closed_at = row.closed_at or datetime.now(UTC)
+                row.closed_at = row.closed_at or now
             await self._session.flush()
             return True
         return False
