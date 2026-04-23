@@ -3,11 +3,11 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.administration_event import (
     AdministrationEventCreateDto,
     AdministrationEventResponseDto,
 )
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.services.access_control import (
     get_child_for_account,
 )

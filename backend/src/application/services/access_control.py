@@ -5,8 +5,7 @@ from uuid import UUID
 
 from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.family_access import FamilyAccessPolicyDto
-from src.core.exceptions import ForbiddenError
-from src.core.exceptions import NotFoundError
+from src.core.exceptions import ForbiddenError, NotFoundError
 from src.domain.entities.child import Child
 from src.domain.repositories.child_repository import ChildRepository
 

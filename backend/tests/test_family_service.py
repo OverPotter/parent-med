@@ -12,8 +12,8 @@ from src.application.dto.family_access import FamilyAccessPolicyUpdateDto
 from src.application.services.family_service import FamilyService
 from src.core.exceptions import ForbiddenError, ValidationError
 from src.domain.entities.account import Account
-from src.domain.entities.family_access import FamilyAccessPolicy
 from src.domain.entities.family import Family
+from src.domain.entities.family_access import FamilyAccessPolicy
 
 
 class StubFamilyRepository:
