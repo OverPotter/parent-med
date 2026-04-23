@@ -91,6 +91,42 @@ def _normalize_language(value: str | None) -> str:
     return "en" if value == "en" else "ru"
 
 
+def _is_push_allowed_for_account(account: Any, channel: str) -> bool:
+    policy = getattr(account, "access_policy", None)
+    if policy is None:
+        return True
+    if channel != "cabinet":
+        return True
+    if getattr(policy, "cabinet_access", "none") == "none":
+        return False
+    return bool(getattr(policy, "cabinet_push_enabled", True))
+
+
+def _has_child_signal_access(account: Any, child_id: Any) -> bool:
+    policy = getattr(account, "access_policy", None)
+    if policy is None:
+        return False
+    if getattr(policy, "all_children", False):
+        return True
+    return child_id in set(getattr(policy, "child_ids", []))
+
+
+def _can_receive_illness_push(account: Any, child_id: Any) -> bool:
+    return _is_push_allowed_for_account(account, "illness") and _has_child_signal_access(
+        account, child_id
+    )
+
+
+def _can_receive_pillbox_push(account: Any) -> bool:
+    policy = getattr(account, "access_policy", None)
+    if policy is None:
+        return False
+    return (
+        _is_push_allowed_for_account(account, "pillbox")
+        and getattr(policy, "pillbox_access", "none") != "none"
+    )
+
+
 def _format_date(value: date, language: str) -> str:
     if language == "en":
         return value.strftime("%b %d, %Y")
@@ -396,16 +432,21 @@ class PushNotificationScheduler:
                 if not family_accounts:
                     continue
 
+                eligible_accounts = [
+                    account
+                    for account in family_accounts
+                    if _can_receive_illness_push(account, child.id)
+                ]
                 selected_account_ids = list(episode.member_account_ids or [])
                 if not selected_account_ids:
                     selected_account_ids = list(plan.member_account_ids or [])
                 if selected_account_ids:
                     selected_id_set = set(selected_account_ids)
                     accounts = [
-                        account for account in family_accounts if account.id in selected_id_set
+                        account for account in eligible_accounts if account.id in selected_id_set
                     ]
                 else:
-                    accounts = family_accounts
+                    accounts = eligible_accounts
                 if not accounts:
                     continue
 
@@ -796,6 +837,8 @@ class PushNotificationScheduler:
             account = await account_repo.get_by_id(slot["account_id"])
             if not account:
                 continue
+            if not _can_receive_pillbox_push(account):
+                continue
             subscriptions = await subscription_repo.get_by_account_id(account.id)
             if not subscriptions:
                 continue
@@ -965,6 +1008,8 @@ class PushNotificationScheduler:
                 continue
             medicines = await medicine_repo.get_by_family_id(family_id)
             for account in accounts:
+                if not _is_push_allowed_for_account(account, "cabinet"):
+                    continue
                 language = _normalize_language(account.preferred_language)
                 reminder_offsets = _get_cabinet_offsets(account)
                 subscriptions = await subscription_repo.get_by_account_id(account.id)
@@ -974,6 +1019,7 @@ class PushNotificationScheduler:
                 for medicine in medicines:
                     await self._process_single_household_medicine(
                         session=session,
+                        account_id=account.id,
                         subscriptions=subscriptions,
                         subscription_repo=subscription_repo,
                         medicine=medicine,
@@ -987,6 +1033,7 @@ class PushNotificationScheduler:
         self,
         *,
         session: Any,
+        account_id: Any,
         subscriptions: list[PushSubscription],
         subscription_repo: SqlPushSubscriptionRepository,
         medicine: HouseholdMedicine,
@@ -1004,6 +1051,7 @@ class PushNotificationScheduler:
         if days_until == -1:
             await self._send_expired_household_medicine_notification(
                 session=session,
+                account_id=account_id,
                 subscriptions=subscriptions,
                 subscription_repo=subscription_repo,
                 medicine=medicine,
@@ -1028,6 +1076,7 @@ class PushNotificationScheduler:
         already_sent_result = await session.execute(
             select(HouseholdMedicineNotificationDeliveryModel.id).where(
                 HouseholdMedicineNotificationDeliveryModel.household_medicine_id == medicine.id,
+                HouseholdMedicineNotificationDeliveryModel.account_id == account_id,
                 HouseholdMedicineNotificationDeliveryModel.notification_kind == notification_kind,
                 HouseholdMedicineNotificationDeliveryModel.target_date == target_date,
                 HouseholdMedicineNotificationDeliveryModel.days_before == days_until,
@@ -1054,6 +1103,7 @@ class PushNotificationScheduler:
         session.add(
             HouseholdMedicineNotificationDeliveryModel(
                 household_medicine_id=medicine.id,
+                account_id=account_id,
                 notification_kind=notification_kind,
                 target_date=target_date,
                 days_before=days_until,
@@ -1065,6 +1115,7 @@ class PushNotificationScheduler:
         self,
         *,
         session: Any,
+        account_id: Any,
         subscriptions: list[PushSubscription],
         subscription_repo: SqlPushSubscriptionRepository,
         medicine: HouseholdMedicine,
@@ -1077,6 +1128,7 @@ class PushNotificationScheduler:
         already_sent_result = await session.execute(
             select(HouseholdMedicineNotificationDeliveryModel.id).where(
                 HouseholdMedicineNotificationDeliveryModel.household_medicine_id == medicine.id,
+                HouseholdMedicineNotificationDeliveryModel.account_id == account_id,
                 HouseholdMedicineNotificationDeliveryModel.notification_kind == notification_kind,
                 HouseholdMedicineNotificationDeliveryModel.target_date == target_date,
                 HouseholdMedicineNotificationDeliveryModel.days_before == -1,
@@ -1102,6 +1154,7 @@ class PushNotificationScheduler:
         session.add(
             HouseholdMedicineNotificationDeliveryModel(
                 household_medicine_id=medicine.id,
+                account_id=account_id,
                 notification_kind=notification_kind,
                 target_date=target_date,
                 days_before=-1,

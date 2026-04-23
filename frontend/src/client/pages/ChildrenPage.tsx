@@ -16,10 +16,14 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useIsDesktop } from "@shared/hooks/useIsDesktop";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
+import {
+  canActChild as canActChildAccess,
+  canEditChild as canEditChildAccess,
+  canManageChildrenList,
+  canViewAnyChildren,
+} from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child } from "@shared/types/api";
-import { syncLiveActivitiesSnapshot } from "@shared/utils/liveActivities";
-import { getLiveActivityPreferencesCache } from "@shared/utils/liveActivityPreferences";
 import { getChildrenCopy } from "@client/i18n/children";
 import { ChildCard } from "./children/ChildCard";
 import { FeedingRecordDialog } from "./children/FeedingDialogs";
@@ -34,19 +38,25 @@ export function ChildrenPage() {
   const copy = getChildrenCopy(language).childrenPage;
   const common = getChildrenCopy(language).common;
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const accountId = useAppStore((s) => s.accountId);
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isDesktop = useIsDesktop();
   const isIosShell = useIsIosShell();
   const [feedingDialog, setFeedingDialog] = useState<FeedingDialogState | null>(null);
   const [isChildrenAuxReady, setIsChildrenAuxReady] = useState(!isIosShell);
-  const liveQueryOptions = useLiveQueryOptions(isIosShell ? 20000 : 10000);
+  const liveStatusQueryOptions = useLiveQueryOptions(isIosShell ? 60000 : 30000);
+  const canSeeChildren = canViewAnyChildren(accountFamilyRole, accountAccessPolicy);
+  const canCreateChild = canManageChildrenList(accountFamilyRole, accountAccessPolicy);
   const liveTargetChildId = searchParams.get("liveChild")?.trim() ?? "";
-  const liveTargetAction = searchParams.get("liveAction") === "sleep"
-    ? "sleep"
-    : searchParams.get("liveAction") === "feeding"
-      ? "feeding"
-      : null;
+  const liveTargetAction =
+    searchParams.get("liveAction") === "sleep"
+      ? "sleep"
+      : searchParams.get("liveAction") === "feeding"
+        ? "feeding"
+        : null;
 
   useEffect(() => {
     if (!isIosShell) {
@@ -81,8 +91,8 @@ export function ChildrenPage() {
   } = useQuery({
     queryKey: ["children", currentFamilyId],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
-    enabled: !!currentFamilyId,
-    ...liveQueryOptions,
+    enabled: !!currentFamilyId && canSeeChildren,
+    ...liveStatusQueryOptions,
   });
 
   const activeEpisodeQueries = useQueries({
@@ -90,7 +100,7 @@ export function ChildrenPage() {
       queryKey: ["illness-episode-active", child.id],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
       enabled: !!child.id && isChildrenAuxReady,
-      ...liveQueryOptions,
+      ...liveStatusQueryOptions,
     })),
   });
 
@@ -99,7 +109,9 @@ export function ChildrenPage() {
       queryKey: ["weight-entry-latest", child.id],
       queryFn: () => fetchLatestWeightEntryByChildId(child.id),
       enabled: !!child.id && isChildrenAuxReady,
-      ...liveQueryOptions,
+      staleTime: 60_000,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     })),
   });
 
@@ -108,7 +120,7 @@ export function ChildrenPage() {
       queryKey: ["sleep-session-active", child.id],
       queryFn: () => fetchActiveSleepSessionByChildId(child.id),
       enabled: !!child.id && child.babyModeEnabled && isChildrenAuxReady,
-      ...liveQueryOptions,
+      ...liveStatusQueryOptions,
     })),
   });
 
@@ -117,36 +129,9 @@ export function ChildrenPage() {
       queryKey: ["feeding-record-active", child.id],
       queryFn: () => fetchActiveFeedingRecordByChildId(child.id),
       enabled: !!child.id && child.babyModeEnabled && isChildrenAuxReady,
-      ...liveQueryOptions,
+      ...liveStatusQueryOptions,
     })),
   });
-
-  useEffect(() => {
-    if (!isChildrenAuxReady || children.length === 0) {
-      return;
-    }
-
-    const activeSleepByChildId = Object.fromEntries(
-      children.map((child, index) => [child.id, activeSleepQueries[index]?.data ?? null])
-    );
-    const activeFeedingByChildId = Object.fromEntries(
-      children.map((child, index) => [child.id, activeFeedingQueries[index]?.data ?? null])
-    );
-
-    void syncLiveActivitiesSnapshot({
-      children,
-      activeSleepByChildId,
-      activeFeedingByChildId,
-      language,
-      preferences: getLiveActivityPreferencesCache(),
-    });
-  }, [
-    activeFeedingQueries,
-    activeSleepQueries,
-    children,
-    isChildrenAuxReady,
-    language,
-  ]);
 
   useEffect(() => {
     if (!liveTargetChildId || children.length === 0) {
@@ -189,6 +174,32 @@ export function ChildrenPage() {
     );
   }
 
+  if (!canSeeChildren) {
+    return (
+      <div className="min-w-0 space-y-6 sm:space-y-8">
+        <PageIntro
+          title={copy.title}
+          subtitle={copy.subtitle}
+          compactOnMobile
+          hideOnMobile
+          className="children-intro-hero"
+        />
+        <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+          <div className="app-mobile-section-intro">
+            <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
+            <p className="app-mobile-section-intro__hint">{copy.mobileHint}</p>
+          </div>
+        </div>
+        <EmptyState className="text-foreground">
+          <div className="space-y-3">
+            <p className="app-card-title">{copy.noAccessTitle}</p>
+            <p className="text-sm leading-6 text-muted">{copy.noAccessDescription}</p>
+          </div>
+        </EmptyState>
+      </div>
+    );
+  }
+
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
@@ -205,6 +216,7 @@ export function ChildrenPage() {
               childActionPrimaryClass,
               "w-full sm:w-auto",
               children.length > 0 ? "hidden sm:inline-flex" : "inline-flex",
+              !canCreateChild ? "hidden" : "",
             ].join(" ")}
           >
             {copy.addChild}
@@ -237,14 +249,16 @@ export function ChildrenPage() {
       {!isLoading && !error && children.length === 0 && (
         <EmptyState className="text-foreground">
           <div className="space-y-4">
-            <p>{copy.empty}</p>
-            <button
-              type="button"
-              onClick={() => navigate("/children/new")}
-              className={`${childActionPrimaryClass} w-full sm:w-auto`}
-            >
-              {copy.addFirstChild}
-            </button>
+            <p>{canCreateChild ? copy.empty : copy.emptyMemberHint}</p>
+            {canCreateChild ? (
+              <button
+                type="button"
+                onClick={() => navigate("/children/new")}
+                className={`${childActionPrimaryClass} w-full sm:w-auto`}
+              >
+                {copy.addFirstChild}
+              </button>
+            ) : null}
           </div>
         </EmptyState>
       )}
@@ -254,6 +268,8 @@ export function ChildrenPage() {
           <ul className="grid gap-4">
             {children.map((child, index) => {
               const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
+              const canAct = canActChildAccess(child.id, accountFamilyRole, accountAccessPolicy);
+              const canEdit = canEditChildAccess(child.id, accountFamilyRole, accountAccessPolicy);
 
               return (
                 <ChildCard
@@ -264,6 +280,9 @@ export function ChildrenPage() {
                   activeSleep={activeSleepQueries[index]?.data ?? null}
                   activeFeeding={activeFeedingQueries[index]?.data ?? null}
                   onAddFeeding={() => {
+                    if (!canAct) {
+                      return;
+                    }
                     if (isDesktop) {
                       setFeedingDialog({ child });
                       return;
@@ -271,6 +290,9 @@ export function ChildrenPage() {
                     navigate(`/children/${child.id}/feeding/new`);
                   }}
                   onStartEpisode={() => {
+                    if (!canEdit) {
+                      return;
+                    }
                     if (activeEpisode) {
                       navigate("/illnesses/active");
                       return;
@@ -279,6 +301,9 @@ export function ChildrenPage() {
                   }}
                   isStartingEpisode={false}
                   hasActiveEpisode={!!activeEpisode}
+                  canActChild={canAct}
+                  canEditChild={canEdit}
+                  currentAccountId={accountId}
                   copy={copy}
                   language={language}
                   t={t}
@@ -299,6 +324,7 @@ export function ChildrenPage() {
                 type="button"
                 onClick={() => navigate("/children/new")}
                 className={childActionSecondaryClass}
+                hidden={!canCreateChild}
               >
                 {copy.addButtonShort}
               </button>

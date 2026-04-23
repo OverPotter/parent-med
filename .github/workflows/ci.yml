@@ -84,6 +84,10 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm run test
+
   # ========== Docker ==========
   docker:
     runs-on: ubuntu-latest

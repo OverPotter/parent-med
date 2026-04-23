@@ -16,6 +16,7 @@ export function useClientLayoutWarmup({
   navChildren,
   pillboxPlans,
   isDeferredBootReady,
+  isIosShell,
 }: {
   authToken: string | null;
   accountId: string | null;
@@ -24,12 +25,13 @@ export function useClientLayoutWarmup({
   navChildren: Child[];
   pillboxPlans: PillboxPlanSummary[];
   isDeferredBootReady: boolean;
+  isIosShell: boolean;
 }) {
   const queryClient = useQueryClient();
   const [isWarmupReady, setIsWarmupReady] = useState(false);
 
   useEffect(() => {
-    if (!authToken || !accountId || !currentFamilyId || !isDeferredBootReady) {
+    if (isIosShell || !authToken || !accountId || !currentFamilyId || !isDeferredBootReady) {
       setIsWarmupReady(true);
       return;
     }
@@ -81,6 +83,7 @@ export function useClientLayoutWarmup({
     authToken,
     currentFamilyId,
     isDeferredBootReady,
+    isIosShell,
     language,
     navChildren,
     pillboxPlans,

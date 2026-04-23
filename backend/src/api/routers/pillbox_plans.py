@@ -27,7 +27,7 @@ async def list_pillbox_plans(
 ) -> list[PillboxPlanSummaryDto]:
     """Все family-level планы таблетницы."""
     return await service.list_by_family_id(
-        current_account.family_id,
+        current_account,
         current_account.preferred_language,
     )
 
@@ -46,7 +46,7 @@ async def get_history_summary(
     )
     return await service.get_plan_history_summary(
         plan_id,
-        current_account.family_id,
+        current_account,
         period,
         preferred_language,
     )
@@ -59,7 +59,7 @@ async def get_pillbox_plan(
     service: PillboxService = Depends(get_pillbox_service),
 ) -> PillboxPlanResponseDto:
     """Получить полный plan detail."""
-    return await service.get_by_id(plan_id, current_account.family_id)
+    return await service.get_by_id(plan_id, current_account)
 
 
 @router.post("", response_model=PillboxPlanResponseDto, status_code=201)
@@ -69,7 +69,7 @@ async def create_pillbox_plan(
     service: PillboxService = Depends(get_pillbox_service),
 ) -> PillboxPlanResponseDto:
     """Создать семейный pillbox plan."""
-    return await service.create(dto, current_account.id, current_account.family_id)
+    return await service.create(dto, current_account.id, current_account)
 
 
 @router.patch("/{plan_id}", response_model=PillboxPlanResponseDto)
@@ -80,7 +80,7 @@ async def update_pillbox_plan(
     service: PillboxService = Depends(get_pillbox_service),
 ) -> PillboxPlanResponseDto:
     """Обновить family-level plan целиком."""
-    return await service.update(plan_id, dto, current_account.id, current_account.family_id)
+    return await service.update(plan_id, dto, current_account.id, current_account)
 
 
 @router.delete("/{plan_id}", status_code=204)
@@ -90,7 +90,7 @@ async def delete_pillbox_plan(
     service: PillboxService = Depends(get_pillbox_service),
 ) -> None:
     """Удалить family-level plan."""
-    await service.delete(plan_id, current_account.family_id)
+    await service.delete(plan_id, current_account)
 
 
 @router.post(
@@ -111,6 +111,6 @@ async def log_pillbox_dose(
         dto,
         current_account.id,
         current_account.display_name,
-        current_account.family_id,
+        current_account,
         current_account.preferred_language,
     )

@@ -22,6 +22,7 @@ class HouseholdMedicineNotificationDeliveryModel(Base):
             "notification_kind",
             "target_date",
             "days_before",
+            "account_id",
             name="uq_household_medicine_notification_delivery",
         ),
     )
@@ -30,6 +31,11 @@ class HouseholdMedicineNotificationDeliveryModel(Base):
     household_medicine_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("household_medicines.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    account_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
         nullable=False,
     )
     notification_kind: Mapped[str] = mapped_column(String(32), nullable=False)

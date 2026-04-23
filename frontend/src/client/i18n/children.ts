@@ -15,6 +15,11 @@ export const childrenCopy = {
       addChild: "Добавить ребёнка",
       loadError: "Ошибка загрузки",
       empty: "Пока нет детей. Добавьте первого ребёнка, чтобы вести записи и наблюдение.",
+      emptyMemberHint:
+        "Пока здесь пусто. Возможно, в семье ещё не добавили детей или вам пока не открыли к ним доступ.",
+      noAccessTitle: "Нет доступа к детям",
+      noAccessDescription:
+        "Сейчас вы не видите детей и их журнал. Если доступ нужен, обратитесь к администратору семьи.",
       addFirstChild: "Добавить первого ребёнка",
       addAnotherPromptTitle: "Нужно добавить ещё ребёнка?",
       addAnotherPromptText: "",
@@ -136,6 +141,7 @@ export const childrenCopy = {
       measurementTrendStable: "Почти без изменений по сравнению с прошлым измерением.",
       feedingSection: "Кормление",
       feedingSectionSubtitle: "История кормлений ребёнка и быстрый доступ к сохранённым записям.",
+      feedingSectionActive: "Кормление идёт сейчас",
       feedingSectionEmpty: "Записей кормления пока нет.",
       recordsPeriodLabel: "Период",
       recordsPeriodToday: "Сегодня",
@@ -261,6 +267,11 @@ export const childrenCopy = {
       addChild: "Add child",
       loadError: "Failed to load",
       empty: "No children yet. Add the first child to start tracking and keeping records.",
+      emptyMemberHint:
+        "Nothing is shown here yet. The family may not have children yet, or access has not been granted to you.",
+      noAccessTitle: "No access to children",
+      noAccessDescription:
+        "You cannot see children or their journal right now. Ask your family admin if access is needed.",
       addFirstChild: "Add first child",
       addAnotherPromptTitle: "Need to add another child?",
       addAnotherPromptText: "",
@@ -382,6 +393,7 @@ export const childrenCopy = {
       measurementTrendStable: "Almost unchanged from the previous measurement.",
       feedingSection: "Feeding",
       feedingSectionSubtitle: "Child feeding history with quick access to saved records.",
+      feedingSectionActive: "Feeding in progress now",
       feedingSectionEmpty: "No feeding records yet.",
       recordsPeriodLabel: "Period",
       recordsPeriodToday: "Today",

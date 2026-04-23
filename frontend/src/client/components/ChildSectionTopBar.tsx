@@ -5,6 +5,7 @@ import { logout } from "@shared/api/auth";
 import { HeaderUtilityActions } from "@shared/components/Layout";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
+import { cleanupDeviceSessionArtifacts } from "@shared/utils/sessionCleanup";
 
 type ChildSectionTopBarProps = {
   backHref?: string;
@@ -35,6 +36,7 @@ export function ChildSectionTopBar({
 
   const handleLogout = async () => {
     try {
+      await cleanupDeviceSessionArtifacts();
       await logout();
     } catch {
       // Local logout must still work if the backend session is already gone.

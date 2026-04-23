@@ -1,6 +1,7 @@
-import { apiClient } from "./client";
-import type { FeedingRecord } from "@shared/types/api";
-import { toFeedingRecord } from "@shared/types/transform";
+import { apiClient } from "./client.js";
+import type { FeedingRecord } from "../types/api.js";
+import { toFeedingRecord } from "../types/transform.js";
+import { getOfflineFeedingOverride } from "../utils/offlineCareState.js";
 
 interface RawFeedingRecord {
   id: string;
@@ -22,13 +23,29 @@ type FeedingType = "breast" | "formula";
 type BreastSide = "left" | "right" | "both";
 
 export async function fetchFeedingRecordsByChildId(childId: string): Promise<FeedingRecord[]> {
-  const res = await apiClient.get<RawFeedingRecord[]>(`/feeding-records/child/${childId}`);
-  return res.data.map(toFeedingRecord);
+  const offline = getOfflineFeedingOverride(childId);
+  try {
+    const res = await apiClient.get<RawFeedingRecord[]>(`/feeding-records/child/${childId}`);
+    const items = res.data.map(toFeedingRecord);
+    if (!offline.hasOverride || !offline.value) {
+      return items;
+    }
+    return items.some((item) => item.id === offline.value?.id) ? items : [offline.value, ...items];
+  } catch (error) {
+    if (offline.hasOverride && offline.value) {
+      return [offline.value];
+    }
+    throw error;
+  }
 }
 
 export async function fetchActiveFeedingRecordByChildId(
   childId: string
 ): Promise<FeedingRecord | null> {
+  const offline = getOfflineFeedingOverride(childId);
+  if (offline.hasOverride) {
+    return offline.value;
+  }
   const res = await apiClient.get<RawFeedingRecord | null>(`/feeding-records/child/${childId}/active`);
   return res.data ? toFeedingRecord(res.data) : null;
 }

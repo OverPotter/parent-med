@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "../tmp/frontend-test-dist",
+    "rootDir": ".",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@shared/*": ["src/shared/*"],
+      "@admin/*": ["src/admin/*"],
+      "@client/*": ["src/client/*"]
+    }
+  },
+  "include": [
+    "src/client/startup/startupDecisions.ts",
+    "src/shared/api/authSessionErrors.ts",
+    "src/shared/familyAccess/policy.ts",
+    "src/shared/familyAccess/recipients.ts",
+    "src/shared/utils/offlineCareState.ts",
+    "test/authSessionErrors.test.ts",
+    "test/startupDecisions.test.ts",
+    "test/familyAccessRecipients.test.ts",
+    "test/offlineCareState.test.ts"
+  ]
+}

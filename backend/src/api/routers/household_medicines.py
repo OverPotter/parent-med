@@ -24,7 +24,7 @@ async def get_household_medicine(
     service: HouseholdMedicineService = Depends(get_household_medicine_service),
 ) -> HouseholdMedicineResponseDto:
     """Получить упаковку по id."""
-    return await service.get_by_id(medicine_id, current_account.family_id)
+    return await service.get_by_id(medicine_id, current_account)
 
 
 @router.get("", response_model=list[HouseholdMedicineResponseDto])
@@ -33,7 +33,7 @@ async def list_household_medicines(
     service: HouseholdMedicineService = Depends(get_household_medicine_service),
 ) -> list[HouseholdMedicineResponseDto]:
     """Список упаковок в аптечке семьи."""
-    return await service.get_by_family_id(current_account.family_id)
+    return await service.get_by_family_id(current_account)
 
 
 @router.post("", response_model=HouseholdMedicineResponseDto, status_code=201)
@@ -43,7 +43,7 @@ async def create_household_medicine(
     service: HouseholdMedicineService = Depends(get_household_medicine_service),
 ) -> HouseholdMedicineResponseDto:
     """Добавить упаковку в аптечку (ручное добавление)."""
-    return await service.create(current_account.family_id, dto)
+    return await service.create(current_account, dto)
 
 
 @router.patch("/{medicine_id}", response_model=HouseholdMedicineResponseDto)
@@ -54,7 +54,7 @@ async def update_household_medicine(
     service: HouseholdMedicineService = Depends(get_household_medicine_service),
 ) -> HouseholdMedicineResponseDto:
     """Обновить упаковку (вскрытие, место, комментарий)."""
-    return await service.update(medicine_id, current_account.family_id, dto)
+    return await service.update(medicine_id, current_account, dto)
 
 
 @router.delete("/{medicine_id}", status_code=204)
@@ -64,4 +64,4 @@ async def delete_household_medicine(
     service: HouseholdMedicineService = Depends(get_household_medicine_service),
 ) -> None:
     """Удалить упаковку из аптечки."""
-    await service.delete(medicine_id, current_account.family_id)
+    await service.delete(medicine_id, current_account)

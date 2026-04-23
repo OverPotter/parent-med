@@ -3,10 +3,14 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.episode_medication_plan import (
     EpisodeMedicationPlanCreateDto,
     EpisodeMedicationPlanResponseDto,
     EpisodeMedicationPlanUpdateDto,
+)
+from src.application.services.access_control import (
+    get_child_for_account,
 )
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
@@ -65,6 +69,7 @@ class EpisodeMedicationPlanService:
         self,
         requested_member_ids: list[UUID] | None,
         current_family_id: UUID,
+        child_id: UUID,
     ) -> list[UUID]:
         accounts = await self._account_repo.list_by_family_id(current_family_id)
         if not accounts:
@@ -78,25 +83,49 @@ class EpisodeMedicationPlanService:
         ]
         if invalid_ids:
             raise ForbiddenError("Нельзя выбрать получателей из другой семьи")
+        eligible_account_ids = {
+            account.id
+            for account in accounts
+            if self._can_receive_illness_signals_for_child(account, child_id)
+        }
+        ineligible_ids = [
+            account_id for account_id in normalized_ids if account_id not in eligible_account_ids
+        ]
+        if ineligible_ids:
+            raise ForbiddenError("Нельзя выбрать получателей без доступа к ребёнку")
         return normalized_ids
 
-    async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
-        child = await self._child_repo.get_by_id(child_id)
-        if not child:
-            raise NotFoundError("Ребёнок не найден", resource="child")
-        if child.family_id != current_family_id:
-            raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
-        return child
+    def _can_receive_illness_signals_for_child(self, account: object, child_id: UUID) -> bool:
+        policy = getattr(account, "access_policy", None)
+        if policy is None:
+            return False
+        if getattr(policy, "all_children", False):
+            return True
+        return child_id in set(getattr(policy, "child_ids", []))
+
+    async def _require_child_access(
+        self,
+        child_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
+    ) -> Child:
+        return await get_child_for_account(
+            self._child_repo,
+            child_id,
+            current_account,
+            required_level,
+        )
 
     async def _get_episode_for_account(
         self,
         episode_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
     ) -> IllnessEpisode:
         episode = await self._episode_repo.get_by_id(episode_id)
         if not episode:
             raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
-        await self._require_child_access(episode.child_id, current_family_id)
+        await self._require_child_access(episode.child_id, current_account, required_level)
         return episode
 
     async def _get_household_for_account(
@@ -119,29 +148,35 @@ class EpisodeMedicationPlanService:
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("План лекарства не найден", resource="episode_medication_plan")
-        await self._get_episode_for_account(entity.episode_id, current_family_id)
+        episode = await self._episode_repo.get_by_id(entity.episode_id)
+        if not episode:
+            raise NotFoundError("Эпизод болезни не найден", resource="illness_episode")
+        child = await self._child_repo.get_by_id(episode.child_id)
+        if not child or child.family_id != current_family_id:
+            raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
         return entity
 
     async def get_by_episode_id(
         self,
         episode_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> list[EpisodeMedicationPlanResponseDto]:
-        await self._get_episode_for_account(episode_id, current_family_id)
+        await self._get_episode_for_account(episode_id, current_account)
         entities = await self._repo.get_by_episode_id(episode_id)
         return [self._to_response(entity) for entity in entities]
 
     async def create(
         self,
         dto: EpisodeMedicationPlanCreateDto,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> EpisodeMedicationPlanResponseDto:
-        episode = await self._get_episode_for_account(dto.episode_id, current_family_id)
+        episode = await self._get_episode_for_account(dto.episode_id, current_account, "edit")
         if episode.status != "active":
             raise ValidationError("Для закрытого эпизода план лекарства создавать нельзя")
         member_account_ids = await self._resolve_member_account_ids(
             dto.member_account_ids,
-            current_family_id,
+            current_account.family_id,
+            episode.child_id,
         )
 
         household_medicine_id = dto.household_medicine_id
@@ -150,7 +185,7 @@ class EpisodeMedicationPlanService:
             raise ValidationError("Выбери лекарство из аптечки или введи название вручную")
 
         if household_medicine_id:
-            await self._get_household_for_account(household_medicine_id, current_family_id)
+            await self._get_household_for_account(household_medicine_id, current_account.family_id)
 
             existing = await self._repo.get_by_episode_and_medicine(
                 dto.episode_id, household_medicine_id
@@ -193,11 +228,11 @@ class EpisodeMedicationPlanService:
         self,
         id: UUID,
         dto: EpisodeMedicationPlanUpdateDto,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> EpisodeMedicationPlanResponseDto:
-        entity = await self._get_plan_for_account(id, current_family_id)
+        entity = await self._get_plan_for_account(id, current_account.family_id)
 
-        episode = await self._get_episode_for_account(entity.episode_id, current_family_id)
+        episode = await self._get_episode_for_account(entity.episode_id, current_account, "edit")
         if episode.status != "active":
             raise ValidationError("Для закрытого эпизода план лекарства обновлять нельзя")
 
@@ -235,7 +270,11 @@ class EpisodeMedicationPlanService:
             else (None if "notes" in fields_set else entity.notes)
         )
         member_account_ids = (
-            await self._resolve_member_account_ids(dto.member_account_ids, current_family_id)
+            await self._resolve_member_account_ids(
+                dto.member_account_ids,
+                current_account.family_id,
+                episode.child_id,
+            )
             if "member_account_ids" in fields_set
             else list(entity.member_account_ids)
         )
@@ -243,7 +282,7 @@ class EpisodeMedicationPlanService:
             raise ValidationError("Выбери лекарство из аптечки или введи название вручную")
 
         if household_medicine_id:
-            await self._get_household_for_account(household_medicine_id, current_family_id)
+            await self._get_household_for_account(household_medicine_id, current_account.family_id)
 
             existing = await self._repo.get_by_episode_and_medicine(
                 entity.episode_id,
@@ -285,6 +324,7 @@ class EpisodeMedicationPlanService:
         )
         return self._to_response(updated)
 
-    async def delete(self, id: UUID, current_family_id: UUID) -> None:
-        await self._get_plan_for_account(id, current_family_id)
+    async def delete(self, id: UUID, current_account: AuthenticatedAccount) -> None:
+        entity = await self._get_plan_for_account(id, current_account.family_id)
+        await self._get_episode_for_account(entity.episode_id, current_account, "edit")
         await self._repo.delete(id)

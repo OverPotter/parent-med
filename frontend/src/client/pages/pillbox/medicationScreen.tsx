@@ -334,7 +334,7 @@ export function PillboxMedicationScreen({
                     }
                   />
                 </div>
-                <div className="app-form-action-bar pt-3">
+                <div className="border-t border-border/60 pt-4">
                   <button
                     type="button"
                     onClick={onSaveMedication}

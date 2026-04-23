@@ -11,6 +11,7 @@ from src.application.dto.family_invite import (
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.core.security import generate_session_token, hash_session_token
 from src.domain.entities.family_invite import FamilyInvite
+from src.domain.entities.family_roles import is_family_admin, normalize_family_role
 from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.domain.repositories.family_repository import FamilyRepository
 
@@ -19,7 +20,7 @@ class FamilyInviteService:
     """Создание и проверка invite-ссылок для семьи."""
 
     INVITE_TTL_DAYS = 30
-    ALLOWED_ROLES = {"adult"}
+    ALLOWED_ROLES = {"member"}
 
     def __init__(
         self,
@@ -36,13 +37,14 @@ class FamilyInviteService:
         current_family_role: str,
         dto: FamilyInviteCreateDto,
     ) -> FamilyInviteResponseDto:
-        if current_family_role != "owner":
-            raise ForbiddenError("Только владелец семьи может приглашать новых участников")
+        if not is_family_admin(current_family_role):
+            raise ForbiddenError("Только администратор семьи может приглашать новых участников")
         family = await self._family_repo.get_by_id(family_id)
         if not family:
             raise NotFoundError("Семья не найдена", resource="family")
-        if dto.family_role not in self.ALLOWED_ROLES:
-            raise ValidationError("Можно приглашать только участников с ролью adult")
+        invite_role = normalize_family_role(dto.family_role)
+        if invite_role not in self.ALLOWED_ROLES:
+            raise ValidationError("Можно приглашать только участников с ролью member")
 
         raw_token = generate_session_token()
         now = datetime.now(UTC)
@@ -51,7 +53,7 @@ class FamilyInviteService:
             family_id=family_id,
             created_by_account_id=current_account_id,
             token_hash=hash_session_token(raw_token),
-            family_role=dto.family_role,
+            family_role=invite_role,
             created_at=now,
             expires_at=now + timedelta(days=self.INVITE_TTL_DAYS),
             accepted_at=None,

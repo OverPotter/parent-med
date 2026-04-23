@@ -24,7 +24,7 @@ async def list_feeding_records(
     service: FeedingRecordService = Depends(get_feeding_record_service),
 ) -> list[FeedingRecordResponseDto]:
     """История кормлений по ребёнку."""
-    return await service.list_for_child(child_id, current_account.family_id)
+    return await service.list_for_child(child_id, current_account)
 
 
 @router.get("/child/{child_id}/active", response_model=FeedingRecordResponseDto | None)
@@ -34,7 +34,7 @@ async def get_active_feeding_record(
     service: FeedingRecordService = Depends(get_feeding_record_service),
 ) -> FeedingRecordResponseDto | None:
     """Текущее активное кормление по ребёнку."""
-    return await service.get_active_for_child(child_id, current_account.family_id)
+    return await service.get_active_for_child(child_id, current_account)
 
 
 @router.post("", response_model=FeedingRecordResponseDto, status_code=201)
@@ -44,7 +44,7 @@ async def create_feeding_record(
     service: FeedingRecordService = Depends(get_feeding_record_service),
 ) -> FeedingRecordResponseDto:
     """Создать запись кормления."""
-    return await service.create(dto, current_account.family_id, current_account.id)
+    return await service.create(dto, current_account)
 
 
 @router.post("/start", response_model=FeedingRecordResponseDto, status_code=201)
@@ -54,7 +54,7 @@ async def start_feeding_record(
     service: FeedingRecordService = Depends(get_feeding_record_service),
 ) -> FeedingRecordResponseDto:
     """Начать отслеживание кормления."""
-    return await service.start(dto, current_account.family_id, current_account.id)
+    return await service.start(dto, current_account)
 
 
 @router.post("/{record_id}/stop", response_model=FeedingRecordResponseDto)
@@ -65,7 +65,7 @@ async def stop_feeding_record(
     service: FeedingRecordService = Depends(get_feeding_record_service),
 ) -> FeedingRecordResponseDto:
     """Завершить активное кормление."""
-    return await service.stop(record_id, dto, current_account.family_id)
+    return await service.stop(record_id, dto, current_account)
 
 
 @router.delete("/{record_id}", status_code=204)
@@ -75,4 +75,4 @@ async def delete_feeding_record(
     service: FeedingRecordService = Depends(get_feeding_record_service),
 ) -> None:
     """Удалить запись кормления."""
-    await service.delete(record_id, current_account.family_id)
+    await service.delete(record_id, current_account)

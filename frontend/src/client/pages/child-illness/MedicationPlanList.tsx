@@ -1,4 +1,5 @@
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useNow } from "@shared/hooks/useNow";
 import type {
   AdministrationEvent,
@@ -33,7 +34,8 @@ export function MedicationPlanList({
   isSubmittingAdministration?: boolean;
 }) {
   const { language } = useI18n();
-  const now = useNow();
+  const isIosShell = useIsIosShell();
+  const now = useNow(isIosShell ? 30_000 : 15_000);
   const currentTime = new Date(now);
   const prioritizedPlans = administrations
     ? getPrioritizedMedicationPlanItems(plans, administrations, medicines, currentTime)

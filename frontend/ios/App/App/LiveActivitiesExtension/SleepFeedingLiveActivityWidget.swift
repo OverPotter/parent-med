@@ -8,21 +8,21 @@ struct SleepFeedingLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: LiveActivityAttributes.self) { context in
             LiveActivityLockScreenView(context: context)
-                .activityBackgroundTint(.clear)
+                .activityBackgroundTint(.black.opacity(0.16))
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    HStack(spacing: 9) {
-                        ActivityIcon(kind: context.attributes.kind, size: 36)
+                    HStack(spacing: 7) {
+                        ActivityIcon(kind: context.attributes.kind, size: 28)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(context.state.title)
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                            Text(activityTitle(for: context))
-                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .minimumScaleFactor(0.64)
+                            Text(compactActivityEyebrow(for: context))
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
                                 .foregroundStyle(.white.opacity(0.62))
                                 .lineLimit(1)
                         }
@@ -31,12 +31,21 @@ struct SleepFeedingLiveActivityWidget: Widget {
                 }
 
                 DynamicIslandExpandedRegion(.trailing) {
-                    ElapsedTimerText(
-                        startedAt: context.state.startedAt,
-                        font: .system(size: 23, weight: .bold, design: .rounded)
-                    )
-                    .foregroundStyle(.white)
-                    .frame(minWidth: 62, alignment: .trailing)
+                    if context.attributes.kind == "illness" {
+                        IllnessDayText(
+                            startedAt: context.state.startedAt,
+                            font: .system(size: 20, weight: .bold, design: .rounded)
+                        )
+                        .foregroundStyle(.white)
+                        .frame(minWidth: 62, alignment: .trailing)
+                    } else {
+                        ElapsedTimerText(
+                            startedAt: context.state.startedAt,
+                            font: .system(size: 23, weight: .bold, design: .rounded)
+                        )
+                        .foregroundStyle(.white)
+                        .frame(minWidth: 62, alignment: .trailing)
+                    }
                 }
 
                 DynamicIslandExpandedRegion(.bottom) {
@@ -46,20 +55,22 @@ struct SleepFeedingLiveActivityWidget: Widget {
                 ZStack {
                     Circle()
                         .fill(activityAccentColor(for: context.attributes.kind).opacity(0.18))
-                    Image(systemName: iconName(for: context.attributes.kind))
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(activityAccentColor(for: context.attributes.kind))
+                    CompactActivityGlyph(kind: context.attributes.kind, size: 12)
                 }
             } compactTrailing: {
-                ElapsedTimerText(startedAt: context.state.startedAt, font: .caption.weight(.semibold))
-                    .foregroundStyle(.white)
+                if context.attributes.kind == "illness" {
+                    Text(compactIllnessDayLabel(startedAt: context.state.startedAt))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white)
+                } else {
+                    CompactElapsedText(startedAt: context.state.startedAt)
+                        .foregroundStyle(.white)
+                }
             } minimal: {
                 ZStack {
                     Circle()
                         .fill(activityAccentColor(for: context.attributes.kind).opacity(0.18))
-                    Image(systemName: iconName(for: context.attributes.kind))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(activityAccentColor(for: context.attributes.kind))
+                    CompactActivityGlyph(kind: context.attributes.kind, size: 12)
                 }
             }
         }
@@ -74,49 +85,134 @@ private struct LiveActivityLockScreenView: View {
         let kind = context.attributes.kind
         let deepLink = deepLinkURL(for: context)
 
-        ZStack {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(backgroundGradient(for: kind))
-                .overlay(
+        Group {
+            if kind == "sleep" {
+                SleepReferenceLockScreenView(context: context, deepLink: deepLink)
+                    .widgetURL(deepLink)
+            } else if kind == "feeding" {
+                FeedingReferenceLockScreenView(context: context, deepLink: deepLink)
+                    .widgetURL(deepLink)
+            } else if kind == "illness" {
+                IllnessReferenceLockScreenView(context: context, deepLink: deepLink)
+                    .widgetURL(deepLink)
+            } else {
+                ZStack {
                     RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .strokeBorder(.white.opacity(0.09), lineWidth: 1)
-                )
+                        .fill(backgroundGradient(for: kind))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .strokeBorder(.black.opacity(0.38), lineWidth: 3.1)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .inset(by: 0.9)
+                                .strokeBorder(.white.opacity(0.16), lineWidth: 1.1)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .inset(by: 2.1)
+                                .strokeBorder(.white.opacity(0.07), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.34), radius: 24, x: 0, y: 14)
 
-            VStack(alignment: .leading, spacing: 15) {
-                HStack(alignment: .center, spacing: 13) {
-                    ActivityIcon(kind: kind, size: 46)
+                    VStack(alignment: .leading, spacing: 15) {
+                        HStack(alignment: .center, spacing: 13) {
+                            ActivityIcon(kind: kind, size: 46)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(context.state.title)
-                            .font(.system(size: 19, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.white)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.82)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(context.state.title)
+                                    .font(.system(size: 19, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(2)
+                                    .minimumScaleFactor(0.82)
 
-                        Text(activityTitle(for: context))
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(activityAccentColor(for: kind))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.9)
+                                Text(activitySubtitle(for: context))
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(activityAccentColor(for: kind))
+                                    .lineLimit(2)
+                                    .minimumScaleFactor(0.9)
+                            }
+
+                            Spacer(minLength: 10)
+
+                            if kind == "illness" {
+                                IllnessDayText(
+                                    startedAt: context.state.startedAt,
+                                    font: .system(size: 24, weight: .bold, design: .rounded)
+                                )
+                                .foregroundStyle(.white)
+                                .frame(minWidth: 82, alignment: .trailing)
+                            } else {
+                                ElapsedTimerText(
+                                    startedAt: context.state.startedAt,
+                                    font: .system(size: 27, weight: .bold, design: .rounded)
+                                )
+                                .foregroundStyle(.white)
+                                .frame(minWidth: 82, alignment: .trailing)
+                            }
+                        }
+
+                        if hasSupplementaryDetails(context: context) {
+                            VStack(alignment: .leading, spacing: 7) {
+                                if let primaryRow = detailRow(
+                                    value: context.state.primaryValue,
+                                    caption: context.state.primaryCaption
+                                ) {
+                                    primaryRow
+                                }
+                                if let secondaryRow = detailRow(
+                                    value: context.state.secondaryValue,
+                                    caption: context.state.secondaryCaption
+                                ) {
+                                    secondaryRow
+                                }
+                            }
+                        }
+
+                        OpenActivityLink(url: deepLink, compact: false)
                     }
-
-                    Spacer(minLength: 10)
-
-                    ElapsedTimerText(
-                        startedAt: context.state.startedAt,
-                        font: .system(size: 27, weight: .bold, design: .rounded)
-                    )
-                    .foregroundStyle(.white)
-                    .frame(minWidth: 82, alignment: .trailing)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 17)
                 }
-
-                OpenActivityLink(url: deepLink, compact: false)
+                .widgetURL(deepLink)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 17)
         }
-        .widgetURL(deepLink)
     }
+}
+
+private func hasSupplementaryDetails(context: ActivityViewContext<LiveActivityAttributes>) -> Bool {
+    if context.attributes.kind != "illness" {
+        return false
+    }
+    let primaryValue = context.state.primaryValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    let secondaryValue = context.state.secondaryValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return !primaryValue.isEmpty || !secondaryValue.isEmpty
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func detailRow(value: String?, caption: String?) -> AnyView? {
+    let trimmedValue = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if trimmedValue.isEmpty {
+        return nil
+    }
+
+    let trimmedCaption = caption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return AnyView(
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            if !trimmedCaption.isEmpty {
+                Text(trimmedCaption)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.62))
+                    .lineLimit(1)
+            }
+            Text(trimmedValue)
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.96))
+                .lineLimit(1)
+                .minimumScaleFactor(0.86)
+            Spacer(minLength: 0)
+        }
+    )
 }
 
 @available(iOSApplicationExtension 16.1, *)
@@ -135,23 +231,48 @@ private struct ElapsedTimerText: View {
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private struct ActivityIcon: View {
-    let kind: String
-    let size: CGFloat
+struct LeadingElapsedTimerText: View {
+    let startedAt: Date
+    let font: Font
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.3, style: .continuous)
-                .fill(activityAccentColor(for: kind).opacity(0.16))
-                .overlay(
-                    RoundedRectangle(cornerRadius: size * 0.3, style: .continuous)
-                        .strokeBorder(activityAccentColor(for: kind).opacity(0.14), lineWidth: 1)
-                )
-            Image(systemName: iconName(for: kind))
-                .font(.system(size: size * 0.42, weight: .semibold))
-                .foregroundStyle(activityAccentColor(for: kind))
+        Text(startedAt, style: .timer)
+            .font(font)
+            .monospacedDigit()
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private struct CompactElapsedText: View {
+    let startedAt: Date
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 60)) { timeline in
+            Text(compactElapsedLabel(startedAt: startedAt, now: timeline.date))
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
-        .frame(width: size, height: size)
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private struct IllnessDayText: View {
+    let startedAt: Date
+    let font: Font
+
+    var body: some View {
+        Text(illnessDayLabel(startedAt: startedAt))
+            .font(font)
+            .monospacedDigit()
+            .multilineTextAlignment(.trailing)
+            .lineLimit(2)
+            .minimumScaleFactor(0.8)
     }
 }
 
@@ -200,23 +321,112 @@ private func deepLinkURL(for context: ActivityViewContext<LiveActivityAttributes
 
 @available(iOSApplicationExtension 16.1, *)
 private func activityTitle(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
+    if let statusLabel = context.state.statusLabel, !statusLabel.isEmpty {
+        return statusLabel
+    }
     if let subtitle = context.state.subtitle, !subtitle.isEmpty {
         return subtitle
     }
 
-    return context.attributes.kind == "sleep" ? "Сон" : "Кормление"
+    switch context.attributes.kind {
+    case "sleep":
+        return "Сон"
+    case "feeding":
+        return "Кормление"
+    case "illness":
+        return "Наблюдение"
+    default:
+        return "Активность"
+    }
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func iconName(for kind: String) -> String {
-    kind == "sleep" ? "moon.stars.fill" : "drop.fill"
+private func activitySubtitle(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
+    let startedAtText = startedAtLabel(context.state.startedAt)
+
+    switch context.attributes.kind {
+    case "sleep":
+        return "С \(startedAtText)"
+    case "feeding":
+        return "С \(startedAtText)"
+    case "illness":
+        return activityTitle(for: context)
+    default:
+        return activityTitle(for: context)
+    }
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func activityAccentColor(for kind: String) -> Color {
-    kind == "sleep"
-        ? Color(red: 0.38, green: 0.88, blue: 0.98)
-        : Color(red: 0.70, green: 0.58, blue: 0.98)
+private func compactActivityEyebrow(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
+    switch context.attributes.kind {
+    case "sleep":
+        return "Сон"
+    case "feeding":
+        return "Кормление"
+    case "illness":
+        return activityTitle(for: context)
+    default:
+        return activityTitle(for: context)
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+func sleepReferenceSubtitle(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
+    "Спит с \(startedAtLabel(context.state.startedAt))"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+func feedingReferenceSubtitle(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
+    "Начато в \(startedAtLabel(context.state.startedAt))"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+func illnessReferenceSubtitle(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
+    "Наблюдение с \(startedAtDateLabel(context.state.startedAt))"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func startedAtLabel(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "ru_RU")
+    formatter.dateFormat = "HH:mm"
+    return formatter.string(from: date)
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func startedAtDateLabel(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "ru_RU")
+    formatter.dateFormat = "d MMM"
+    return formatter.string(from: date)
+}
+
+@available(iOSApplicationExtension 16.1, *)
+func iconName(for kind: String) -> String {
+    switch kind {
+    case "sleep":
+        return "moon.stars.fill"
+    case "feeding":
+        return "drop.fill"
+    case "illness":
+        return "cross.case.fill"
+    default:
+        return "circle.fill"
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+func activityAccentColor(for kind: String) -> Color {
+    switch kind {
+    case "sleep":
+        return Color(red: 0.43, green: 0.40, blue: 0.85)
+    case "feeding":
+        return Color(red: 0.94, green: 0.48, blue: 0.28)
+    case "illness":
+        return Color(red: 0.22, green: 0.64, blue: 0.60)
+    default:
+        return .white
+    }
 }
 
 @available(iOSApplicationExtension 16.1, *)
@@ -224,9 +434,21 @@ private func backgroundGradient(for kind: String) -> LinearGradient {
     if kind == "sleep" {
         return LinearGradient(
             colors: [
-                Color(red: 0.07, green: 0.11, blue: 0.19),
-                Color(red: 0.04, green: 0.14, blue: 0.22),
-                Color(red: 0.02, green: 0.08, blue: 0.14)
+                Color(red: 0.14, green: 0.18, blue: 0.31),
+                Color(red: 0.18, green: 0.24, blue: 0.40),
+                Color(red: 0.12, green: 0.16, blue: 0.28)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    if kind == "illness" {
+        return LinearGradient(
+            colors: [
+                Color(red: 0.19, green: 0.15, blue: 0.30),
+                Color(red: 0.24, green: 0.18, blue: 0.37),
+                Color(red: 0.16, green: 0.12, blue: 0.27)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -235,11 +457,60 @@ private func backgroundGradient(for kind: String) -> LinearGradient {
 
     return LinearGradient(
         colors: [
-            Color(red: 0.13, green: 0.09, blue: 0.20),
-            Color(red: 0.18, green: 0.11, blue: 0.30),
-            Color(red: 0.09, green: 0.06, blue: 0.16)
+            Color(red: 0.32, green: 0.18, blue: 0.12),
+            Color(red: 0.40, green: 0.24, blue: 0.15),
+            Color(red: 0.26, green: 0.15, blue: 0.09)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func illnessDayNumber(startedAt: Date) -> Int {
+    max(1, (Calendar.current.dateComponents([.day], from: startedAt, to: Date()).day ?? 0) + 1)
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func illnessDayLabel(startedAt: Date) -> String {
+    "\(illnessDayNumber(startedAt: startedAt)) день"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+func illnessDurationPhrase(startedAt: Date) -> String {
+    let days = illnessDayNumber(startedAt: startedAt)
+    let remainder10 = days % 10
+    let remainder100 = days % 100
+
+    let suffix: String
+    if remainder10 == 1 && remainder100 != 11 {
+        suffix = "день"
+    } else if (2...4).contains(remainder10) && !(12...14).contains(remainder100) {
+        suffix = "дня"
+    } else {
+        suffix = "дней"
+    }
+
+    return "\(days) \(suffix)"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func compactIllnessDayLabel(startedAt: Date) -> String {
+    "\(illnessDayNumber(startedAt: startedAt))д"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func compactElapsedLabel(startedAt: Date, now: Date) -> String {
+    let elapsedSeconds = max(0, Int(now.timeIntervalSince(startedAt)))
+    let minutes = elapsedSeconds / 60
+    let hours = minutes / 60
+    let days = hours / 24
+
+    if days > 0 {
+        return "\(days)д"
+    }
+    if hours > 0 {
+        return "\(hours)ч"
+    }
+    return "\(max(1, minutes))м"
 }

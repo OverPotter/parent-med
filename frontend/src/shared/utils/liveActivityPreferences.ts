@@ -1,17 +1,21 @@
+import type { PushNotificationPreferences } from "@shared/types/api";
+
 const LIVE_ACTIVITY_PREFERENCES_KEY = "pm_live_activity_preferences_v1";
 export const LIVE_ACTIVITY_PREFERENCES_CHANGED_EVENT = "live-activities:preferences-changed";
 
 export type LiveActivityPreferencesCache = {
   sleepEnabled: boolean;
   feedingEnabled: boolean;
+  illnessEnabled: boolean;
 };
 
 const defaultPreferences: LiveActivityPreferencesCache = {
   sleepEnabled: true,
   feedingEnabled: true,
+  illnessEnabled: true,
 };
 
-export function getLiveActivityPreferencesCache(): LiveActivityPreferencesCache {
+function getLiveActivityPreferencesMirror(): LiveActivityPreferencesCache {
   if (typeof window === "undefined") {
     return defaultPreferences;
   }
@@ -25,13 +29,14 @@ export function getLiveActivityPreferencesCache(): LiveActivityPreferencesCache 
     return {
       sleepEnabled: parsed.sleepEnabled ?? true,
       feedingEnabled: parsed.feedingEnabled ?? true,
+      illnessEnabled: parsed.illnessEnabled ?? true,
     };
   } catch {
     return defaultPreferences;
   }
 }
 
-export function setLiveActivityPreferencesCache(value: LiveActivityPreferencesCache) {
+export function syncLiveActivityPreferencesMirror(value: LiveActivityPreferencesCache) {
   if (typeof window === "undefined") {
     return;
   }
@@ -42,4 +47,29 @@ export function setLiveActivityPreferencesCache(value: LiveActivityPreferencesCa
       detail: value,
     })
   );
+}
+
+export function toLiveActivityPreferencesCache(
+  preferences: Pick<
+    PushNotificationPreferences,
+    "liveActivitySleepEnabled" | "liveActivityFeedingEnabled" | "liveActivityIllnessEnabled"
+  >
+): LiveActivityPreferencesCache {
+  return {
+    sleepEnabled: preferences.liveActivitySleepEnabled,
+    feedingEnabled: preferences.liveActivityFeedingEnabled,
+    illnessEnabled: preferences.liveActivityIllnessEnabled,
+  };
+}
+
+export function resolveLiveActivityPreferences(
+  preferences?: Pick<
+    PushNotificationPreferences,
+    "liveActivitySleepEnabled" | "liveActivityFeedingEnabled" | "liveActivityIllnessEnabled"
+  > | null
+): LiveActivityPreferencesCache {
+  if (preferences) {
+    return toLiveActivityPreferencesCache(preferences);
+  }
+  return getLiveActivityPreferencesMirror();
 }

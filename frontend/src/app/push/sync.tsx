@@ -21,6 +21,56 @@ import { appLog } from "@shared/utils/appLog";
 import { useGlobalBootReady } from "@/app/boot/state";
 
 const CONSUMED_LAUNCH_URL_SESSION_KEY = "pm_native_consumed_launch_url_v1";
+const PENDING_NATIVE_URL_SESSION_KEY = "pm_native_pending_url_v1";
+
+export function normalizeNativeNavigationUrl(rawUrl: unknown): string | null {
+  if (typeof rawUrl !== "string") {
+    return null;
+  }
+
+  let url = rawUrl;
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol === "pillpath:" && parsed.pathname.startsWith("/")) {
+      url = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } else if (parsed.pathname.startsWith("/")) {
+      url = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  } catch {
+    // noop: keep raw value
+  }
+
+  return url.startsWith("/") ? url : null;
+}
+
+export function readPendingNativeNavigationUrl(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return window.sessionStorage.getItem(PENDING_NATIVE_URL_SESSION_KEY);
+}
+
+function writePendingNativeNavigationUrl(url: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.sessionStorage.setItem(PENDING_NATIVE_URL_SESSION_KEY, url);
+}
+
+export function clearPendingNativeNavigationUrl() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.sessionStorage.removeItem(PENDING_NATIVE_URL_SESSION_KEY);
+}
+
+export function clearNativeNavigationSessionState() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.sessionStorage.removeItem(PENDING_NATIVE_URL_SESSION_KEY);
+  window.sessionStorage.removeItem(CONSUMED_LAUNCH_URL_SESSION_KEY);
+}
 
 export function PushSubscriptionSync() {
   const authToken = useAppStore((s) => s.authToken);
@@ -50,7 +100,7 @@ export function PushSubscriptionSync() {
           }
           const nativePayload = await refreshNativePushSubscriptionPayload({
             promptIfNeeded: false,
-            allowCachedFallback: true,
+            allowCachedFallback: false,
           });
           if (!nativePayload || isCancelled) {
             return;
@@ -85,10 +135,13 @@ export function PushSubscriptionSync() {
 }
 
 export function NativePushNavigationSync() {
+  const authToken = useAppStore((s) => s.authToken);
+  const accountId = useAppStore((s) => s.accountId);
   const navigate = useNavigate();
   const location = useLocation();
   const currentUrlRef = useRef("");
   const lastHandledRef = useRef<{ url: string; at: number } | null>(null);
+  const hasSession = Boolean(authToken || accountId);
 
   const isConsumedLaunchUrl = (url: string) => {
     if (typeof window === "undefined") {
@@ -110,23 +163,13 @@ export function NativePushNavigationSync() {
 
   useEffect(() => {
     const navigateToNativeUrl = (rawUrl: unknown, source: "launch" | "event" = "event") => {
-      if (typeof rawUrl !== "string") {
+      const url = normalizeNativeNavigationUrl(rawUrl);
+      if (!url) {
         return;
       }
 
-      let url = rawUrl;
-      try {
-        const parsed = new URL(rawUrl);
-        if (parsed.protocol === "pillpath:" && parsed.pathname.startsWith("/")) {
-          url = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-        } else if (parsed.pathname.startsWith("/")) {
-          url = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-        }
-      } catch {
-        // noop: keep raw value
-      }
-
-      if (!url.startsWith("/")) {
+      if (!hasSession) {
+        writePendingNativeNavigationUrl(url);
         return;
       }
 
@@ -148,6 +191,7 @@ export function NativePushNavigationSync() {
       if (source === "launch") {
         markLaunchUrlConsumed(url);
       }
+      clearPendingNativeNavigationUrl();
       navigate(url, { replace: false });
     };
 
@@ -159,6 +203,7 @@ export function NativePushNavigationSync() {
     window.addEventListener(NATIVE_PUSH_NAVIGATION_EVENT, handleNavigate);
 
     let removeAppUrlOpenListener: (() => void) | undefined;
+    let removePushActionListener: (() => void) | undefined;
 
     if (Capacitor.isNativePlatform()) {
       void CapacitorApp.getLaunchUrl().then((result) => {
@@ -172,117 +217,39 @@ export function NativePushNavigationSync() {
           void listener.remove();
         };
       });
+
+      void PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
+        const data = event.notification.data ?? {};
+        const nestedData = typeof data.data === "object" && data.data !== null ? data.data : {};
+        const url = data.url ?? (nestedData as { url?: unknown }).url;
+        navigateToNativeUrl(url, "event");
+      }).then((listener) => {
+        removePushActionListener = () => {
+          void listener.remove();
+        };
+      });
     }
 
     return () => {
       window.removeEventListener(NATIVE_PUSH_NAVIGATION_EVENT, handleNavigate);
       removeAppUrlOpenListener?.();
+      removePushActionListener?.();
     };
-  }, [navigate]);
-
-  return null;
-}
-
-type NativeForegroundBanner = {
-  id: string;
-  title: string;
-  body: string;
-  url: string | null;
-};
-
-export function NativePushForegroundBannerSync() {
-  const navigate = useNavigate();
-  const [banner, setBanner] = useState<NativeForegroundBanner | null>(null);
+  }, [hasSession, navigate]);
 
   useEffect(() => {
-    if (!(Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios")) {
+    if (!hasSession) {
       return;
     }
 
-    let dismissTimeoutId: number | null = null;
-    let removeListener: (() => void) | null = null;
+    const pendingUrl = readPendingNativeNavigationUrl();
+    if (!pendingUrl) {
+      return;
+    }
 
-    const clearBanner = () => {
-      if (dismissTimeoutId !== null) {
-        window.clearTimeout(dismissTimeoutId);
-        dismissTimeoutId = null;
-      }
-      setBanner(null);
-    };
+    clearPendingNativeNavigationUrl();
+    navigate(pendingUrl, { replace: false });
+  }, [hasSession, navigate]);
 
-    void PushNotifications.addListener("pushNotificationReceived", (notification) => {
-      const data = notification.data ?? {};
-      const nestedData = typeof data.data === "object" && data.data !== null ? data.data : {};
-      const kind = data.kind ?? (nestedData as { kind?: unknown }).kind;
-      if (kind === "test") {
-        return;
-      }
-      const rawUrl = data.url ?? (nestedData as { url?: unknown }).url;
-      const url = typeof rawUrl === "string" && rawUrl.startsWith("/") ? rawUrl : null;
-
-      setBanner({
-        id: String(notification.id ?? Date.now()),
-        title: String(notification.title ?? "PillPath"),
-        body: String(notification.body ?? ""),
-        url,
-      });
-
-      if (dismissTimeoutId !== null) {
-        window.clearTimeout(dismissTimeoutId);
-      }
-      dismissTimeoutId = window.setTimeout(() => {
-        dismissTimeoutId = null;
-        setBanner(null);
-      }, 8000);
-    }).then((listener) => {
-      removeListener = () => {
-        clearBanner();
-        void listener.remove();
-      };
-    });
-
-    return () => {
-      if (dismissTimeoutId !== null) {
-        window.clearTimeout(dismissTimeoutId);
-      }
-      removeListener?.();
-    };
-  }, []);
-
-  if (!banner) {
-    return null;
-  }
-
-  return (
-    <div className="pointer-events-none fixed inset-x-0 top-[max(env(safe-area-inset-top),0.75rem)] z-[120] flex justify-center px-3">
-      <div className="pointer-events-auto w-full max-w-md overflow-hidden rounded-[22px] border border-white/15 bg-[rgba(15,23,42,0.92)] text-white shadow-[0_18px_44px_rgba(15,23,42,0.34)] backdrop-blur-xl">
-        <div className="flex items-start gap-3 px-4 py-3.5">
-          <div className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{banner.title}</p>
-            {banner.body ? <p className="mt-1 text-sm leading-5 text-white/78">{banner.body}</p> : null}
-          </div>
-          <button
-            type="button"
-            onClick={() => setBanner(null)}
-            className="rounded-full px-2 py-1 text-xs font-semibold text-white/72 transition hover:bg-white/10 hover:text-white"
-          >
-            Close
-          </button>
-        </div>
-        {banner.url ? (
-          <button
-            type="button"
-            onClick={() => {
-              setBanner(null);
-              navigate(banner.url!);
-            }}
-            className="w-full border-t border-white/10 px-4 py-2.5 text-left text-sm font-semibold text-white/86 transition hover:bg-white/8"
-          >
-            Open
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
+  return null;
 }

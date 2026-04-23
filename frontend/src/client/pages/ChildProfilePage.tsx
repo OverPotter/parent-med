@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { fetchLatestHeightEntryByChildId } from "@shared/api/heightEntries";
@@ -6,6 +6,8 @@ import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { canEditChild, canViewChild } from "@shared/permissions/familyAccess";
+import { useAppStore } from "@shared/store/useAppStore";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
@@ -18,32 +20,40 @@ export function ChildProfilePage() {
   const { childId } = useParams<{ childId: string }>();
   const navigate = useNavigate();
   const isIosShell = useIsIosShell();
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const canViewProfile = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
     queryFn: () => fetchChild(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewProfile,
   });
 
   const { data: latestWeight = null } = useQuery({
     queryKey: ["weight-entry-latest", childId],
     queryFn: () => fetchLatestWeightEntryByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewProfile,
   });
 
   const { data: latestHeight = null } = useQuery({
     queryKey: ["height-entry-latest", childId],
     queryFn: () => fetchLatestHeightEntryByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewProfile,
   });
 
-  if (!childId || isLoading || !child) {
+  if (!childId || !canViewProfile) {
+    return <Navigate to="/children" replace />;
+  }
+
+  if (isLoading || !child) {
     return <p className="text-sm text-muted">{copy.loading}</p>;
   }
 
   const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
   const babyModeLabel = child.babyModeEnabled ? copy.babyModeEnabled : copy.babyModeDisabled;
+  const canEditProfile = canEditChild(child.id, accountFamilyRole, accountAccessPolicy);
   const profileNavActionClass = "soft-pill app-profile-action";
   const quickLinks = [
     {
@@ -80,12 +90,14 @@ export function ChildProfilePage() {
         title={`${copy.eyebrow} · ${child.name}`}
         hint={copy.subtitle}
         action={
-          <Link
-            to={`/children/${child.id}/edit`}
-            className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
-          >
-            {copy.editProfile}
-          </Link>
+          canEditProfile ? (
+            <Link
+              to={`/children/${child.id}/edit`}
+              className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
+            >
+              {copy.editProfile}
+            </Link>
+          ) : null
         }
       />
 

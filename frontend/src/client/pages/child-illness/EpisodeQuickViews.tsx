@@ -59,7 +59,7 @@ function EpisodeReminderRecipientsCard({
         disabled={isPending}
         className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
       >
-        Push
+        {language === "ru" ? "Push" : "Push"}
       </button>
 
       <OverlayDialog
@@ -80,12 +80,14 @@ function EpisodeReminderRecipientsCard({
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
           <div className="space-y-1.5">
             <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
-              {language === "ru" ? "Кому приходят push" : "Who gets push"}
+              {language === "ru"
+                ? "Кому приходят push по наблюдению"
+                : "Who gets push reminders for this tracking"}
             </h2>
             <p className="text-sm leading-5 text-muted">
               {language === "ru"
-                ? "Выбор действует для всех напоминаний внутри этого эпизода."
-                : "This applies to all reminders inside the current episode."}
+                ? "Этим получателям могут приходить push внутри эпизода, если у них включены личные уведомления."
+                : "These recipients can receive push reminders inside the episode if their personal notifications stay enabled."}
             </p>
           </div>
 
@@ -110,12 +112,12 @@ function EpisodeReminderRecipientsCard({
               >
                 <span className="grid min-w-0 gap-0.5 text-left">
                   <span className="min-w-0 text-sm font-semibold tracking-[-0.02em] text-foreground">
-                    {language === "ru" ? "Вся семья" : "Whole family"}
+                    {language === "ru" ? "Все доступные получатели" : "All eligible recipients"}
                   </span>
                   <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
                     {language === "ru"
-                      ? "Напоминания придут всем участникам семьи с включёнными push."
-                      : "Reminders go to all family members with push enabled."}
+                      ? "Push автоматически придут всем, у кого есть доступ к этому ребёнку и включены личные уведомления."
+                      : "Push reminders will go automatically to everyone with access to this child and personal notifications enabled."}
                   </span>
                 </span>
                 <span className="soft-choice-check">{selectedIds.length === 0 ? "✓" : null}</span>
@@ -448,7 +450,7 @@ export function CommentQuickView(props: {
               }
               className={illnessCompactTextareaClass}
             />
-            <div className="app-form-action-bar flex flex-wrap gap-2">
+            <div className="border-t border-border/60 pt-4">
               <button
                 type="button"
                 onClick={onSubmit}
@@ -623,6 +625,7 @@ export function ReminderListQuickView(props: {
   plans: EpisodeMedicationPlan[];
   medicines: HouseholdMedicine[];
   familyMembers: FamilyMember[];
+  canEditEpisode: boolean;
   administrations: AdministrationEvent[];
   onOpen: (planId: string) => void;
   onTakeDose: (plan: EpisodeMedicationPlan) => void;
@@ -638,6 +641,7 @@ export function ReminderListQuickView(props: {
     plans,
     medicines,
     familyMembers,
+    canEditEpisode,
     administrations,
     onOpen,
     onTakeDose,
@@ -657,20 +661,24 @@ export function ReminderListQuickView(props: {
         }
         action={
           <div className="flex items-center gap-2">
-            <EpisodeReminderRecipientsCard
-              language={language}
-              episode={episode}
-              familyMembers={familyMembers}
-              isPending={isUpdatingRecipients}
-              onSelectAll={onSelectAllRecipients}
-              onChangeSelection={onChangeRecipients}
-            />
-            <Link
-              to={`/children/${childId}/illness?focus=reminder-create`}
-              className={appPillActionClass}
-            >
-              {language === "ru" ? "Добавить" : "Add"}
-            </Link>
+            {canEditEpisode ? (
+              <EpisodeReminderRecipientsCard
+                language={language}
+                episode={episode}
+                familyMembers={familyMembers}
+                isPending={isUpdatingRecipients}
+                onSelectAll={onSelectAllRecipients}
+                onChangeSelection={onChangeRecipients}
+              />
+            ) : null}
+            {canEditEpisode ? (
+              <Link
+                to={`/children/${childId}/illness?focus=reminder-create`}
+                className={appPillActionClass}
+              >
+                {language === "ru" ? "Добавить" : "Add"}
+              </Link>
+            ) : null}
           </div>
         }
       />
@@ -698,6 +706,7 @@ export function ReminderDetailQuickView(props: {
   editingReminderName: string | null;
   medicines: HouseholdMedicine[];
   familyMembers: FamilyMember[];
+  canEditEpisode: boolean;
   isSubmittingAdministration: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
@@ -733,6 +742,7 @@ export function ReminderDetailQuickView(props: {
     editingReminderName,
     medicines,
     familyMembers,
+    canEditEpisode,
     isSubmittingAdministration,
     isUpdating,
     isDeleting,
@@ -805,14 +815,16 @@ export function ReminderDetailQuickView(props: {
               >
                 {language === "ru" ? "К списку" : "Back"}
               </Link>
-              <EpisodeReminderRecipientsCard
-                language={language}
-                episode={episode}
-                familyMembers={familyMembers}
-                isPending={isUpdatingRecipients}
-                onSelectAll={onSelectAllRecipients}
-                onChangeSelection={onChangeRecipients}
-              />
+              {canEditEpisode ? (
+                <EpisodeReminderRecipientsCard
+                  language={language}
+                  episode={episode}
+                  familyMembers={familyMembers}
+                  isPending={isUpdatingRecipients}
+                  onSelectAll={onSelectAllRecipients}
+                  onChangeSelection={onChangeRecipients}
+                />
+              ) : null}
             </div>
           }
         />
@@ -828,6 +840,7 @@ export function ReminderDetailQuickView(props: {
           isDeleting={isDeleting}
           medicines={medicines}
           onEditingChange={onEditingChange}
+          canEdit={canEditEpisode}
           onTakeDose={onTakeDose}
           onUpdate={onUpdate}
           onDelete={onDelete}
@@ -846,6 +859,7 @@ export function ReminderCreateQuickView(props: {
   episode: IllnessEpisode;
   medicines: HouseholdMedicine[];
   familyMembers: FamilyMember[];
+  canEditEpisode: boolean;
   latestWeight: WeightEntry | null;
   isReminderCabinetPickerOpen: boolean;
   submitLabel: string;
@@ -872,6 +886,7 @@ export function ReminderCreateQuickView(props: {
     episode,
     medicines,
     familyMembers,
+    canEditEpisode,
     latestWeight,
     isReminderCabinetPickerOpen,
     submitLabel,
@@ -890,14 +905,16 @@ export function ReminderCreateQuickView(props: {
           title={language === "ru" ? "Новое напоминание" : "New reminder"}
           subtitle={language === "ru" ? "Настройте схему приёма." : "Set up the dosing schedule."}
           action={
-            <EpisodeReminderRecipientsCard
-              language={language}
-              episode={episode}
-              familyMembers={familyMembers}
-              isPending={isUpdatingRecipients}
-              onSelectAll={onSelectAllRecipients}
-              onChangeSelection={onChangeRecipients}
-            />
+            canEditEpisode ? (
+              <EpisodeReminderRecipientsCard
+                language={language}
+                episode={episode}
+                familyMembers={familyMembers}
+                isPending={isUpdatingRecipients}
+                onSelectAll={onSelectAllRecipients}
+                onChangeSelection={onChangeRecipients}
+              />
+            ) : null
           }
         />
       ) : null}

@@ -21,6 +21,12 @@ class SqlFamilyRepository(FamilyRepository):
             id=m.id,
             name=m.name,
             cabinet_member_account_ids=list(m.cabinet_member_account_ids or []),
+            billing_account_id=m.billing_account_id,
+            plan_code=m.plan_code,
+            subscription_status=m.subscription_status,
+            subscription_provider=m.subscription_provider,
+            subscription_product_id=m.subscription_product_id,
+            subscription_expires_at=m.subscription_expires_at,
         )
 
     def _to_model(self, e: Family) -> FamilyModel:
@@ -28,6 +34,12 @@ class SqlFamilyRepository(FamilyRepository):
             id=e.id,
             name=e.name,
             cabinet_member_account_ids=list(e.cabinet_member_account_ids),
+            billing_account_id=e.billing_account_id,
+            plan_code=e.plan_code,
+            subscription_status=e.subscription_status,
+            subscription_provider=e.subscription_provider,
+            subscription_product_id=e.subscription_product_id,
+            subscription_expires_at=e.subscription_expires_at,
         )
 
     async def list_all(self) -> list[Family]:
@@ -53,6 +65,12 @@ class SqlFamilyRepository(FamilyRepository):
             raise ValueError(f"Family {entity.id} not found")
         row.name = entity.name
         row.cabinet_member_account_ids = list(entity.cabinet_member_account_ids)
+        row.billing_account_id = entity.billing_account_id
+        row.plan_code = entity.plan_code
+        row.subscription_status = entity.subscription_status
+        row.subscription_provider = entity.subscription_provider
+        row.subscription_product_id = entity.subscription_product_id
+        row.subscription_expires_at = entity.subscription_expires_at
         await self._session.flush()
         await self._session.refresh(row)
         return self._to_entity(row)

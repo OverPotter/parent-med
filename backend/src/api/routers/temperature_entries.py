@@ -23,7 +23,7 @@ async def get_temperature_entry(
     service: TemperatureEntryService = Depends(get_temperature_entry_service),
 ) -> TemperatureEntryResponseDto:
     """Получить запись температуры по id."""
-    return await service.get_by_id(entry_id, current_account.family_id)
+    return await service.get_by_id(entry_id, current_account)
 
 
 @router.get("", response_model=list[TemperatureEntryResponseDto])
@@ -33,7 +33,7 @@ async def list_temperature_entries(
     service: TemperatureEntryService = Depends(get_temperature_entry_service),
 ) -> list[TemperatureEntryResponseDto]:
     """Журнал температуры по эпизоду болезни."""
-    return await service.get_by_episode_id(episode_id, current_account.family_id)
+    return await service.get_by_episode_id(episode_id, current_account)
 
 
 @router.post("", response_model=TemperatureEntryResponseDto, status_code=201)
@@ -45,7 +45,7 @@ async def create_temperature_entry(
     """Добавить запись температуры."""
     return await service.create(
         dto,
-        current_account.family_id,
+        current_account,
         current_account.id,
         current_account.display_name,
     )
@@ -58,4 +58,4 @@ async def delete_temperature_entry(
     service: TemperatureEntryService = Depends(get_temperature_entry_service),
 ) -> None:
     """Удалить запись температуры."""
-    await service.delete(entry_id, current_account.family_id)
+    await service.delete(entry_id, current_account)

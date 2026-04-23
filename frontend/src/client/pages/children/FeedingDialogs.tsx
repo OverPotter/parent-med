@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFeedingRecord, startFeedingRecord } from "@shared/api/feedingRecords";
+import { createFeedingRecord } from "@shared/api/feedingRecords";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { Child, FeedingRecord } from "@shared/types/api";
+import { startFeedingRecordResilient } from "@shared/utils/offlineCareSync";
 import { FeedingRecordForm } from "@client/components/FeedingRecordForm";
 import { getChildrenCopy } from "@client/i18n/children";
 import {
@@ -16,6 +17,7 @@ import {
   childActionSuccessClass,
 } from "./shared";
 import { syncFeedingLiveActivity } from "@shared/utils/liveActivities";
+import { useAppStore } from "@shared/store/useAppStore";
 
 export function FeedingRecordDialog({
   child,
@@ -28,6 +30,7 @@ export function FeedingRecordDialog({
   language: "ru" | "en";
   onClose: () => void;
 }) {
+  const currentAccountId = useAppStore((s) => s.accountId);
   const queryClient = useQueryClient();
   const [feedingType, setFeedingType] = useState<"breast" | "formula">("breast");
   const [breastSide, setBreastSide] = useState<"left" | "right" | "both">("left");
@@ -63,19 +66,22 @@ export function FeedingRecordDialog({
 
   const startMutation = useMutation({
     mutationFn: () =>
-      startFeedingRecord({
-        child_id: child.id,
-        feeding_type: feedingType,
-        breast_side: feedingType === "breast" && !isExpressed ? breastSide : null,
-        is_expressed: feedingType === "breast" ? isExpressed : false,
-        formula_volume_ml:
-          feedingType === "formula" ? Number.parseInt(formulaVolume.trim(), 10) || null : null,
-        note: note.trim() || null,
+      startFeedingRecordResilient({
+        childId: child.id,
+        currentAccountId,
+        payload: {
+          feeding_type: feedingType,
+          breast_side: feedingType === "breast" && !isExpressed ? breastSide : null,
+          is_expressed: feedingType === "breast" ? isExpressed : false,
+          formula_volume_ml:
+            feedingType === "formula" ? Number.parseInt(formulaVolume.trim(), 10) || null : null,
+          note: note.trim() || null,
+        },
       }),
     onSuccess: (feeding) => {
       queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
-      void syncFeedingLiveActivity(child, feeding, language);
+      void syncFeedingLiveActivity(child, feeding, language, undefined, currentAccountId);
       onClose();
     },
   });

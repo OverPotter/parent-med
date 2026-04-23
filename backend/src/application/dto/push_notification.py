@@ -27,6 +27,7 @@ class PushNotificationPreferencesResponseDto(ResponseBase):
     cabinet_notify_3_days: bool
     live_activity_sleep_enabled: bool = True
     live_activity_feeding_enabled: bool = True
+    live_activity_illness_enabled: bool = True
 
 
 class PushNotificationPreferencesUpdateDto(BaseModel):
@@ -52,6 +53,9 @@ class PushNotificationPreferencesUpdateDto(BaseModel):
     )
     live_activity_feeding_enabled: bool | None = Field(
         None, description="Показывать live activity для кормления"
+    )
+    live_activity_illness_enabled: bool | None = Field(
+        None, description="Показывать live activity для болезни"
     )
 
 

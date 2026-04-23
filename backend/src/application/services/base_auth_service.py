@@ -16,8 +16,10 @@ from src.application.dto.auth import (
     UpdateLanguageDto,
 )
 from src.application.dto.family import FamilyResponseDto
+from src.application.dto.family_access import FamilyAccessPolicyDto
 from src.domain.entities.account import Account
 from src.domain.entities.family import Family
+from src.domain.entities.family_access import serialize_family_access_policy
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
 from src.domain.repositories.family_invite_repository import FamilyInviteRepository
@@ -26,6 +28,9 @@ from src.domain.repositories.family_repository import FamilyRepository
 
 class BaseAuthService(ABC):
     """Базовый auth-сервис с общими мапперами и контрактом."""
+
+    PREMIUM_PLAN_CODES = {"plus", "pro"}
+    ACTIVE_SUBSCRIPTION_STATUSES = {"active", "grace"}
 
     def __init__(
         self,
@@ -39,6 +44,12 @@ class BaseAuthService(ABC):
         self._family_repo = family_repo
         self._family_invite_repo = family_invite_repo
 
+    def _is_family_premium_active(self, entity: Family) -> bool:
+        return (
+            entity.plan_code in self.PREMIUM_PLAN_CODES
+            and entity.subscription_status in self.ACTIVE_SUBSCRIPTION_STATUSES
+        )
+
     def _account_to_response(self, entity: Account) -> AccountResponseDto:
         return AccountResponseDto(
             id=entity.id,
@@ -50,6 +61,9 @@ class BaseAuthService(ABC):
             phone=entity.phone,
             preferred_language=entity.preferred_language,
             family_role=entity.family_role,
+            access_policy=FamilyAccessPolicyDto.model_validate(
+                serialize_family_access_policy(entity.access_policy)
+            ),
         )
 
     def _family_to_response(self, entity: Family) -> FamilyResponseDto:
@@ -57,6 +71,13 @@ class BaseAuthService(ABC):
             id=entity.id,
             name=entity.name,
             cabinet_member_account_ids=list(entity.cabinet_member_account_ids),
+            billing_account_id=entity.billing_account_id,
+            plan_code=entity.plan_code,  # type: ignore[arg-type]
+            subscription_status=entity.subscription_status,  # type: ignore[arg-type]
+            subscription_provider=entity.subscription_provider,
+            subscription_product_id=entity.subscription_product_id,
+            subscription_expires_at=entity.subscription_expires_at,
+            premium_active=self._is_family_premium_active(entity),
         )
 
     @abstractmethod
@@ -89,7 +110,7 @@ class BaseAuthService(ABC):
 
     @abstractmethod
     async def delete_family(self, account_id: UUID) -> None:
-        """Удалить семью текущего owner (мягко деактивировать все аккаунты)."""
+        """Удалить семью текущего admin (мягко деактивировать все аккаунты)."""
 
     @abstractmethod
     async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:

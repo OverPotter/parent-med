@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from src.application.dto.base import ResponseBase
 from src.application.dto.family import FamilyResponseDto
+from src.application.dto.family_access import FamilyAccessPolicyDto
 
 AccountLanguage = Literal["ru", "en"]
 
@@ -70,6 +71,7 @@ class AccountResponseDto(ResponseBase):
     phone: str | None = None
     preferred_language: AccountLanguage = "ru"
     family_role: str
+    access_policy: FamilyAccessPolicyDto = Field(default_factory=FamilyAccessPolicyDto)
 
 
 @dataclass
@@ -85,6 +87,7 @@ class AuthenticatedAccount:
     relationship_label: str | None = None
     phone: str | None = None
     preferred_language: AccountLanguage = "ru"
+    access_policy: FamilyAccessPolicyDto | None = None
 
 
 class AuthStateResponseDto(ResponseBase):

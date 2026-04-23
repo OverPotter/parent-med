@@ -14,6 +14,10 @@ import {
   illnessPanelSoftClass,
 } from "./shared";
 
+function formatTemperatureValue(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
 export function HistoryEpisodeCard({
   childId,
   episode,
@@ -369,7 +373,9 @@ function EpisodeTemperatureTrend({
             <p className="text-[11px] leading-4 text-muted">
               {formatChildDateTime(item.measuredAt, language)}
             </p>
-            <p className="mt-1 text-sm font-medium text-foreground">{item.valueCelsius} °C</p>
+            <p className="mt-1 text-sm font-medium text-foreground">
+              {formatTemperatureValue(item.valueCelsius)} °C
+            </p>
           </div>
         ))}
       </div>

@@ -2,7 +2,13 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchFamilies } from "@shared/api/families";
 import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
+import {
+  canViewAnyChildren,
+  canViewCabinet,
+  canViewPillbox,
+} from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { resolveClientStartRoute } from "@client/startup/startupDecisions";
 
 interface ClientStartRouteResult {
   isResolving: boolean;
@@ -15,6 +21,8 @@ interface ClientStartRouteResult {
 export function useClientStartRoute(): ClientStartRouteResult {
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
 
   const { data: families = [], isLoading: isFamiliesLoading } = useQuery({
     queryKey: ["families", accountId],
@@ -23,39 +31,40 @@ export function useClientStartRoute(): ClientStartRouteResult {
   });
 
   const familyId = currentFamilyId ?? families[0]?.id ?? null;
-
-  const { data: children = [], isLoading: isChildrenLoading } = useQuery({
-    queryKey: ["children", familyId],
+  const hasFamily = Boolean(familyId);
+  const canSeeChildren = canViewAnyChildren(accountFamilyRole, accountAccessPolicy);
+  const canSeePillbox = canViewPillbox(accountFamilyRole, accountAccessPolicy);
+  const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
+  const { data: familyChildren = [], isLoading: isChildrenLoading } = useQuery({
+    queryKey: ["children", familyId, "start-route"],
     queryFn: () => fetchChildrenByFamilyId(familyId!),
-    enabled: !!familyId,
+    enabled: Boolean(familyId && canSeeChildren),
   });
-
   const activeEpisodeQueries = useQueries({
-    queries: children.map((child) => ({
+    queries: familyChildren.map((child) => ({
       queryKey: ["illness-episode-active", child.id, "start-route"],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
-      enabled: !!familyId && !!child.id,
-      staleTime: 15_000,
+      enabled: Boolean(familyId && canSeeChildren),
+      staleTime: 30 * 1000,
     })),
   });
-
-  const hasFamily = Boolean(familyId);
-  const hasChildren = children.length > 0;
+  const isActiveEpisodeResolving = Boolean(familyId && canSeeChildren) && (
+    isChildrenLoading ||
+    activeEpisodeQueries.some((query) => query.isLoading || query.isPending)
+  );
+  const hasChildren = familyChildren.length > 0;
   const hasActiveEpisode = activeEpisodeQueries.some((query) => Boolean(query.data));
-  const isActiveEpisodeLoading =
-    hasChildren && activeEpisodeQueries.some((query) => query.isLoading || query.isPending);
 
-  let startRoute = "/family";
-  if (hasFamily && !hasChildren) {
-    startRoute = "/children";
-  } else if (hasActiveEpisode) {
-    startRoute = "/illnesses/active";
-  } else if (hasFamily) {
-    startRoute = "/children";
-  }
+  const startRoute = resolveClientStartRoute({
+    hasFamily,
+    hasActiveEpisode,
+    canSeeChildren,
+    canSeePillbox,
+    canSeeCabinet,
+  });
 
   return {
-    isResolving: isFamiliesLoading || (hasFamily && (isChildrenLoading || isActiveEpisodeLoading)),
+    isResolving: isFamiliesLoading || isActiveEpisodeResolving,
     startRoute,
     hasFamily,
     hasChildren,

@@ -179,20 +179,6 @@ export function AddHouseholdMedicineForm({
     ? tCabinet(language, "addFromCatalogHint")
     : tCabinet(language, "addOwnMedicineHint");
   const handleSubmit = isCatalogMode ? handleAddSelected : handleCreateNewAndAdd;
-  const resetAllFields = () => {
-    setCatalogItem(null);
-    setExpiryDate("");
-    setOpenedAt("");
-    setOpenedShelfDays("");
-    setComment("");
-    setSearchName("");
-    setNewMedicineName("");
-    setNewMedicineForm("сироп");
-    setNewMedicineConcentration("");
-    setNewMedicineDescription("");
-    setNewMedicineDosage("");
-    setFormError(null);
-  };
 
   return (
     <div
@@ -208,8 +194,6 @@ export function AddHouseholdMedicineForm({
         onBack={onClose}
         title={screenTitle}
         hint={screenHint}
-        actionLabel={tCabinet(language, "reset")}
-        onAction={resetAllFields}
       />
 
       <div className="mx-auto w-full max-w-2xl space-y-3 pb-3 pt-2">
@@ -348,7 +332,7 @@ export function AddHouseholdMedicineForm({
           </>
         )}
 
-        <div className="app-form-action-bar pt-1">
+        <div className="border-t border-border/55 pt-4">
           <button
             type="button"
             onClick={handleSubmit}

@@ -19,10 +19,6 @@ import { scrollFieldIntoView } from "@shared/utils/focus";
 
 type ChildProfileDetails = {
   babyModeEnabled?: boolean;
-  institutionName?: string | null;
-  institutionPhone?: string | null;
-  doctorName?: string | null;
-  doctorPhone?: string | null;
   allergies?: string | null;
   notes?: string | null;
 };
@@ -40,10 +36,6 @@ export function ChildCreatePage() {
   const [birthDate, setBirthDate] = useState("");
   const [weightValue, setWeightValue] = useState("");
   const [heightValue, setHeightValue] = useState("");
-  const [institutionName, setInstitutionName] = useState("");
-  const [institutionPhone, setInstitutionPhone] = useState("");
-  const [doctorName, setDoctorName] = useState("");
-  const [doctorPhone, setDoctorPhone] = useState("");
   const [allergies, setAllergies] = useState("");
   const [notes, setNotes] = useState("");
   const [babyModeEnabled, setBabyModeEnabled] = useState(false);
@@ -147,10 +139,6 @@ export function ChildCreatePage() {
       childWeight: parsedWeight,
       childHeight: parsedHeight,
       details: {
-        institutionName: institutionName.trim() || null,
-        institutionPhone: institutionPhone.trim() || null,
-        doctorName: doctorName.trim() || null,
-        doctorPhone: doctorPhone.trim() || null,
         allergies: allergies.trim() || null,
         notes: notes.trim() || null,
         babyModeEnabled,
@@ -305,9 +293,7 @@ export function ChildCreatePage() {
               aria-expanded={isDetailsOpen}
             >
               <span className="text-sm font-medium text-foreground">
-                {language === "ru"
-                  ? "Медицинские и контактные данные"
-                  : "Medical and contact details"}
+                {language === "ru" ? "Аллергии и заметки" : "Allergies and notes"}
               </span>
               <span className="soft-pill app-profile-action min-h-[2.1rem] px-3 py-1 text-xs">
                 {isDetailsOpen
@@ -322,30 +308,6 @@ export function ChildCreatePage() {
 
             {isDetailsOpen ? (
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <InputField
-                  label={copy.institutionNameLabel}
-                  value={institutionName}
-                  onChange={setInstitutionName}
-                  placeholder={copy.institutionNamePlaceholder}
-                />
-                <InputField
-                  label={copy.institutionPhoneLabel}
-                  value={institutionPhone}
-                  onChange={setInstitutionPhone}
-                  placeholder={copy.institutionPhonePlaceholder}
-                />
-                <InputField
-                  label={copy.doctorNameLabel}
-                  value={doctorName}
-                  onChange={setDoctorName}
-                  placeholder={copy.doctorNamePlaceholder}
-                />
-                <InputField
-                  label={copy.doctorPhoneLabel}
-                  value={doctorPhone}
-                  onChange={setDoctorPhone}
-                  placeholder={copy.doctorPhonePlaceholder}
-                />
                 <TextField
                   label={copy.allergiesLabel}
                   value={allergies}
@@ -362,7 +324,7 @@ export function ChildCreatePage() {
             ) : null}
           </div>
 
-          <div className="app-form-action-bar border-t border-border/70 pt-4">
+          <div className="border-t border-border/70 pt-4">
             <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end">
               <button
                 type="button"
@@ -387,31 +349,6 @@ export function ChildCreatePage() {
         </form>
       </Surface>
     </div>
-  );
-}
-
-function InputField({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-}) {
-  return (
-    <label className="block space-y-1.5">
-      <span className="soft-field-label">{label}</span>
-      <input
-        type="text"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="soft-input w-full px-4"
-        placeholder={placeholder}
-      />
-    </label>
   );
 }
 

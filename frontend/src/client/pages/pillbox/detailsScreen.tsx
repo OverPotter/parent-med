@@ -23,6 +23,7 @@ export function PillboxDetailsScreen({
   selectedPlan,
   selectedPlanId,
   allGroups,
+  canEdit,
   planActionTarget,
   planActionError,
   togglePlanStatusPending,
@@ -41,6 +42,7 @@ export function PillboxDetailsScreen({
   selectedPlan: PillboxPlan;
   selectedPlanId: string;
   allGroups: PillboxGroup[];
+  canEdit: boolean;
   planActionTarget: PillboxPlanActionTarget;
   planActionError: string | null;
   togglePlanStatusPending: boolean;
@@ -116,7 +118,8 @@ export function PillboxDetailsScreen({
                     {displayPillboxText(selectedPlan.title)}
                   </p>
                 </div>
-                {selectedPlan.status === "active" || selectedPlan.status === "paused" ? (
+                {canEdit &&
+                (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
                   <button
                     type="button"
                     role="switch"
@@ -246,27 +249,31 @@ export function PillboxDetailsScreen({
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          {selectedPlan.status === "active" || selectedPlan.status === "paused" ? (
+        {canEdit ? (
+          <div className="grid grid-cols-2 gap-2">
+            {selectedPlan.status === "active" || selectedPlan.status === "paused" ? (
+              <button
+                type="button"
+                onClick={onGoToSetup}
+                className={`${actionCompactSecondaryClass} w-full`}
+              >
+                {tPillbox(language, "editPlan")}
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={onGoToSetup}
-              className={`${actionCompactSecondaryClass} sm:col-span-2`}
+              onClick={onRequestDelete}
+              disabled={deletePlanPending}
+              className={`${actionCompactDangerClass} w-full disabled:cursor-not-allowed disabled:opacity-60 ${
+                selectedPlan.status === "active" || selectedPlan.status === "paused"
+                  ? ""
+                  : "col-span-2"
+              }`}
             >
-              {tPillbox(language, "editPlan")}
+              {tPillbox(language, "deletePlan")}
             </button>
-          ) : null}
-        </div>
-        <div>
-          <button
-            type="button"
-            onClick={onRequestDelete}
-            disabled={deletePlanPending}
-            className={`${actionCompactDangerClass} w-full disabled:cursor-not-allowed disabled:opacity-60`}
-          >
-            {tPillbox(language, "deletePlan")}
-          </button>
-        </div>
+          </div>
+        ) : null}
       </section>
 
       <ConfirmDialog

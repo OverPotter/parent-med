@@ -11,10 +11,12 @@ import {
   fetchMyFamilyMembers,
   updateMyFamilyCabinetRecipients,
 } from "@shared/api/families";
+import { getEligibleCabinetRecipients } from "@shared/familyAccess/recipients";
 import { PageIntro } from "@shared/components/PageIntro";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
+import { canEditCabinet, canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { AddHouseholdMedicineForm } from "./medicine-cabinet/AddHouseholdMedicineForm";
 import { AddMedicineChoiceDialog } from "./medicine-cabinet/AddMedicineChoiceDialog";
@@ -51,7 +53,12 @@ export function MedicineCabinetPage() {
   const [expandedMedicineId, setExpandedMedicineId] = useState<string | null>(null);
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
-  const liveQueryOptions = useLiveQueryOptions(10000);
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
+  const liveQueryOptions = useLiveQueryOptions(isIosShell ? 30_000 : 15_000);
+  const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
+  const canMutateCabinet = canEditCabinet(accountFamilyRole, accountAccessPolicy);
+  const canManageCabinetRecipients = accountFamilyRole === "admin";
 
   const addFlow: AddMedicineFlow =
     location.pathname === "/medicine-cabinet/add"
@@ -82,23 +89,41 @@ export function MedicineCabinetPage() {
   } = useQuery({
     queryKey: ["household-medicines", accountId],
     queryFn: fetchHouseholdMedicines,
-    enabled: !!accountId,
+    enabled: !!accountId && canSeeCabinet,
     ...liveQueryOptions,
   });
 
   const { data: family } = useQuery({
     queryKey: ["families", "me", currentFamilyId],
     queryFn: fetchMyFamily,
-    enabled: !!currentFamilyId,
+    enabled: !!currentFamilyId && canSeeCabinet,
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: familyMembers = [] } = useQuery({
     queryKey: ["families", "me", "members", currentFamilyId],
     queryFn: fetchMyFamilyMembers,
-    enabled: !!currentFamilyId,
+    enabled: !!currentFamilyId && canSeeCabinet,
     staleTime: 5 * 60 * 1000,
   });
+  const eligibleCabinetMembers = getEligibleCabinetRecipients(familyMembers);
+
+  if (!canSeeCabinet) {
+    return (
+      <div>
+        <h1 className="app-title">{tCabinet(language, "title")}</h1>
+        <p className="mt-2 text-muted">
+          {language === "ru"
+            ? "Администратор семьи ещё не выдал вам доступ к аптечке."
+            : "Your family admin has not granted access to the cabinet yet."}
+        </p>
+      </div>
+    );
+  }
+
+  if (!canMutateCabinet && (addFlow || isNewPackFlow)) {
+    return <Navigate to="/medicine-cabinet" replace />;
+  }
 
   const deleteMutation = useMutation({
     mutationFn: deleteHouseholdMedicine,
@@ -234,11 +259,11 @@ export function MedicineCabinetPage() {
           title={
             <span className="flex flex-wrap items-center gap-2.5 sm:gap-3">
               <span>{tCabinet(language, "title")}</span>
-              {family ? (
+              {family && canManageCabinetRecipients ? (
                 <CabinetPushRecipientsCard
                   language={language}
                   family={family}
-                  familyMembers={familyMembers}
+                  familyMembers={eligibleCabinetMembers}
                   isPending={updateCabinetRecipientsMutation.isPending}
                   onSelectAll={() => updateCabinetRecipientsMutation.mutate([])}
                   onChangeSelection={(memberIds) => {
@@ -254,17 +279,19 @@ export function MedicineCabinetPage() {
           mobileLikeDesktop
           action={
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => openAddFlow("choice")}
-                className={[
-                  addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
-                  cabinetTopTabClass,
-                  "w-full",
-                ].join(" ")}
-              >
-                {tCabinet(language, "addTab")}
-              </button>
+              {canMutateCabinet ? (
+                <button
+                  type="button"
+                  onClick={() => openAddFlow("choice")}
+                  className={[
+                    addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
+                    cabinetTopTabClass,
+                    "w-full",
+                  ].join(" ")}
+                >
+                  {tCabinet(language, "addTab")}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {
@@ -289,11 +316,11 @@ export function MedicineCabinetPage() {
         <div className="app-mobile-section-intro">
           <div className="flex items-center justify-between gap-2">
             <h1 className="app-mobile-section-intro__title">{tCabinet(language, "title")}</h1>
-            {family ? (
+            {family && canManageCabinetRecipients ? (
               <CabinetPushRecipientsCard
                 language={language}
                 family={family}
-                familyMembers={familyMembers}
+                familyMembers={eligibleCabinetMembers}
                 isPending={updateCabinetRecipientsMutation.isPending}
                 onSelectAll={() => updateCabinetRecipientsMutation.mutate([])}
                 onChangeSelection={(memberIds) => {
@@ -317,17 +344,19 @@ export function MedicineCabinetPage() {
       ) : null}
       <div className={isIosShell ? "space-y-2.5" : "space-y-2.5 sm:hidden"}>
         <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => openAddFlow("choice")}
-            className={[
-              addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
-              cabinetTopTabClass,
-              "w-full",
-            ].join(" ")}
-          >
-            {tCabinet(language, "addTab")}
-          </button>
+          {canMutateCabinet ? (
+            <button
+              type="button"
+              onClick={() => openAddFlow("choice")}
+              className={[
+                addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
+                cabinetTopTabClass,
+                "w-full",
+              ].join(" ")}
+            >
+              {tCabinet(language, "addTab")}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => {
@@ -426,6 +455,7 @@ export function MedicineCabinetPage() {
           isDeleting={deleteMutation.isPending}
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
+          canEdit={canMutateCabinet}
           onExpandChange={setExpandedMedicineId}
         />
       )}
@@ -441,6 +471,7 @@ export function MedicineCabinetPage() {
           isDeleting={deleteMutation.isPending}
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
+          canEdit={canMutateCabinet}
           onExpandChange={setExpandedMedicineId}
         />
       )}
@@ -456,6 +487,7 @@ export function MedicineCabinetPage() {
           isDeleting={deleteMutation.isPending}
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
+          canEdit={canMutateCabinet}
           onExpandChange={setExpandedMedicineId}
         />
       )}
@@ -471,6 +503,7 @@ export function MedicineCabinetPage() {
           isDeleting={deleteMutation.isPending}
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
+          canEdit={canMutateCabinet}
           onExpandChange={setExpandedMedicineId}
         />
       )}

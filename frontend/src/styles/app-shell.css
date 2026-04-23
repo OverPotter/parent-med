@@ -233,32 +233,68 @@ html.ios-lock-horizontal .landing-main {
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-panel {
   backdrop-filter: none;
-  box-shadow: none;
-  border-color: transparent;
-  background: transparent;
+  border-color: color-mix(in srgb, var(--color-border) 56%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-glare-soft) 34%, transparent),
+      transparent 24%
+    ),
+    color-mix(in srgb, var(--color-surface-soft) 96%, var(--color-background) 4%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface-glare-soft) 38%, transparent),
+    0 14px 34px -30px rgb(var(--color-shadow) / 0.14);
+  -webkit-backdrop-filter: none;
 }
 
 [data-ios-shell="true"] .auth-v3-panel {
   backdrop-filter: none;
-  box-shadow: none;
-  border-color: transparent;
-  background: transparent;
+  border-color: color-mix(in srgb, var(--color-border) 56%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-glare-soft) 34%, transparent),
+      transparent 24%
+    ),
+    color-mix(in srgb, var(--color-surface-soft) 96%, var(--color-background) 4%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface-glare-soft) 38%, transparent),
+    0 14px 34px -30px rgb(var(--color-shadow) / 0.14);
+  -webkit-backdrop-filter: none;
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-card,
 [data-runtime="native"][data-platform="ios"] .auth-v3-secondary-card {
-  box-shadow: none;
-  border-color: transparent;
-  background: transparent;
+  border-color: color-mix(in srgb, var(--color-border) 58%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-glare-soft) 44%, transparent),
+      transparent 28%
+    ),
+    color-mix(in srgb, var(--color-surface) 92%, var(--color-background) 8%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface-glare-soft) 42%, transparent),
+    0 12px 24px -24px rgb(var(--color-shadow) / 0.12);
   backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 [data-ios-shell="true"] .auth-v3-card,
 [data-ios-shell="true"] .auth-v3-secondary-card {
-  box-shadow: none;
-  border-color: transparent;
-  background: transparent;
+  border-color: color-mix(in srgb, var(--color-border) 58%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-glare-soft) 44%, transparent),
+      transparent 28%
+    ),
+    color-mix(in srgb, var(--color-surface) 92%, var(--color-background) 8%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface-glare-soft) 42%, transparent),
+    0 12px 24px -24px rgb(var(--color-shadow) / 0.12);
   backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-header-control,
@@ -333,6 +369,40 @@ html.ios-lock-horizontal .landing-main {
 [data-ios-shell="true"][data-theme="dark"] .auth-v3-input,
 [data-ios-shell="true"][data-theme="dark"] .auth-v3-input-toggle {
   color-scheme: dark;
+}
+
+[data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-card,
+[data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-secondary-card,
+[data-ios-shell="true"][data-theme="dark"] .auth-v3-card,
+[data-ios-shell="true"][data-theme="dark"] .auth-v3-secondary-card {
+  border-color: color-mix(in srgb, var(--auth-v3-card-border) 96%, rgb(255 255 255 / 0.08));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-glare-soft) 22%, transparent),
+      transparent 26%
+    ),
+    color-mix(in srgb, var(--color-surface) 94%, var(--color-surface-soft) 6%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    inset 0 0 0 1px color-mix(in srgb, var(--auth-v3-card-border) 44%, transparent),
+    0 16px 34px -28px rgb(var(--color-shadow) / 0.28);
+}
+
+[data-runtime="native"][data-platform="ios"][data-theme="dark"] .auth-v3-panel,
+[data-ios-shell="true"][data-theme="dark"] .auth-v3-panel {
+  border-color: color-mix(in srgb, var(--auth-v3-card-border) 92%, rgb(255 255 255 / 0.08));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-glare-soft) 18%, transparent),
+      transparent 24%
+    ),
+    color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-soft) 4%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    inset 0 0 0 1px color-mix(in srgb, var(--auth-v3-card-border) 38%, transparent),
+    0 18px 38px -32px rgb(var(--color-shadow) / 0.3);
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-stage,
@@ -504,8 +574,8 @@ html.ios-lock-horizontal .landing-main {
 [data-runtime="native"][data-platform="ios"] .auth-v3-form--ios > .auth-v3-secondary-card,
 [data-ios-shell="true"] .auth-v3-form--ios > .auth-v3-card,
 [data-ios-shell="true"] .auth-v3-form--ios > .auth-v3-secondary-card {
-  border-radius: 0;
-  padding: 0;
+  border-radius: 1.45rem;
+  padding: 1rem;
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-submit,
@@ -1116,7 +1186,7 @@ html.ios-lock-horizontal .landing-main {
 }
 
 [data-ios-shell="true"] .app-header-notification-button--active {
-  animation: app-header-bell-button-bob 1.15s ease-in-out infinite;
+  animation: none;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.18),
     0 0 0 1px color-mix(in srgb, var(--color-danger) 18%, transparent),
@@ -1124,7 +1194,7 @@ html.ios-lock-horizontal .landing-main {
 }
 
 [data-ios-shell="true"] .app-header-notification-button--active .app-header-notification-icon {
-  animation: app-header-bell-nudge 1.15s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
+  animation: none;
 }
 
 .app-mobile-header .app-header-utility-button.app-header-notification-button--active,

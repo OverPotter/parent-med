@@ -23,7 +23,7 @@ export const appBtnJournalDangerClass =
   "soft-pill-danger app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]";
 export const illnessCompactInputClass =
   "soft-input min-h-[2.82rem] w-full px-4 py-0 text-left text-[16px] leading-[1.15] placeholder:text-left sm:min-h-[2.92rem]";
-export const illnessCompactPrimaryButtonClass = appBtnJournalPrimaryClass;
+export const illnessCompactPrimaryButtonClass = `${appBtnJournalPrimaryClass} illness-primary-action`;
 export const illnessCompactSecondaryButtonClass = appBtnJournalSecondaryClass;
 
 export function SummaryCard({ label, value }: { label: string; value: string }) {

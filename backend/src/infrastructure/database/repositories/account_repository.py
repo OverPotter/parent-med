@@ -6,6 +6,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.account import Account
+from src.domain.entities.family_access import (
+    deserialize_family_access_policy,
+    serialize_family_access_policy,
+)
+from src.domain.entities.family_roles import normalize_family_role
 from src.domain.repositories.account_repository import AccountRepository
 from src.infrastructure.database.models.account import AccountModel
 
@@ -27,7 +32,7 @@ class SqlAccountRepository(AccountRepository):
             relationship_label=model.relationship_label,
             phone=model.phone,
             preferred_language=model.preferred_language,
-            family_role=model.family_role,
+            family_role=normalize_family_role(model.family_role),
             push_before_reminder_minutes=model.push_before_reminder_minutes,
             pillbox_push_before_reminder_minutes=model.pillbox_push_before_reminder_minutes,
             cabinet_notify_10_days=model.cabinet_notify_15_days,
@@ -36,7 +41,9 @@ class SqlAccountRepository(AccountRepository):
             cabinet_notify_1_day=model.cabinet_notify_1_day,
             live_activity_sleep_enabled=model.live_activity_sleep_enabled,
             live_activity_feeding_enabled=model.live_activity_feeding_enabled,
+            live_activity_illness_enabled=model.live_activity_illness_enabled,
             created_at=model.created_at,
+            access_policy=deserialize_family_access_policy(model.access_policy),
         )
 
     def _to_model(self, entity: Account) -> AccountModel:
@@ -50,7 +57,8 @@ class SqlAccountRepository(AccountRepository):
             relationship_label=entity.relationship_label,
             phone=entity.phone,
             preferred_language=entity.preferred_language,
-            family_role=entity.family_role,
+            family_role=normalize_family_role(entity.family_role),
+            access_policy=serialize_family_access_policy(entity.access_policy),
             push_before_reminder_minutes=entity.push_before_reminder_minutes,
             pillbox_push_before_reminder_minutes=entity.pillbox_push_before_reminder_minutes,
             cabinet_notify_15_days=entity.cabinet_notify_10_days,
@@ -59,6 +67,7 @@ class SqlAccountRepository(AccountRepository):
             cabinet_notify_1_day=entity.cabinet_notify_1_day,
             live_activity_sleep_enabled=entity.live_activity_sleep_enabled,
             live_activity_feeding_enabled=entity.live_activity_feeding_enabled,
+            live_activity_illness_enabled=entity.live_activity_illness_enabled,
             created_at=entity.created_at,
         )
 
@@ -121,7 +130,8 @@ class SqlAccountRepository(AccountRepository):
         row.relationship_label = entity.relationship_label
         row.phone = entity.phone
         row.preferred_language = entity.preferred_language
-        row.family_role = entity.family_role
+        row.family_role = normalize_family_role(entity.family_role)
+        row.access_policy = serialize_family_access_policy(entity.access_policy)
         row.push_before_reminder_minutes = entity.push_before_reminder_minutes
         row.pillbox_push_before_reminder_minutes = entity.pillbox_push_before_reminder_minutes
         row.cabinet_notify_15_days = entity.cabinet_notify_10_days
@@ -130,6 +140,7 @@ class SqlAccountRepository(AccountRepository):
         row.cabinet_notify_1_day = entity.cabinet_notify_1_day
         row.live_activity_sleep_enabled = entity.live_activity_sleep_enabled
         row.live_activity_feeding_enabled = entity.live_activity_feeding_enabled
+        row.live_activity_illness_enabled = entity.live_activity_illness_enabled
         await self._session.flush()
         await self._session.refresh(row)
         return self._to_entity(row)

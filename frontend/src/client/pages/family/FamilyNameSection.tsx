@@ -11,6 +11,7 @@ interface FamilyNameSectionProps {
   language: AppLanguage;
   familyName: string;
   currentFamilyName: string | null | undefined;
+  canManageFamily: boolean;
   isEditing: boolean;
   isFamilyLoading: boolean;
   isPending: boolean;
@@ -24,6 +25,7 @@ export function FamilyNameSection({
   language,
   familyName,
   currentFamilyName,
+  canManageFamily,
   isEditing,
   isFamilyLoading,
   isPending,
@@ -37,15 +39,17 @@ export function FamilyNameSection({
       <div className="grid gap-2">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <h2 className="app-card-title">{tFamily(language, "familyNameTitle")}</h2>
-          <div className="flex shrink-0 items-center justify-end">
-            <button
-              type="button"
-              onClick={onToggleEditing}
-              className={`${appBtnJournalSecondaryClass} min-h-[2.35rem] whitespace-nowrap px-3 text-[0.78rem]`}
-            >
-              {isEditing ? tFamily(language, "hide") : tFamily(language, "edit")}
-            </button>
-          </div>
+          {canManageFamily ? (
+            <div className="flex shrink-0 items-center justify-end">
+              <button
+                type="button"
+                onClick={onToggleEditing}
+                className={`${appBtnJournalSecondaryClass} min-h-[2.35rem] whitespace-nowrap px-3 text-[0.78rem]`}
+              >
+                {isEditing ? tFamily(language, "hide") : tFamily(language, "edit")}
+              </button>
+            </div>
+          ) : null}
         </div>
         <p className="text-sm leading-6 text-muted">{tFamily(language, "familyNameDescription")}</p>
       </div>

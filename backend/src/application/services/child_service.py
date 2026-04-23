@@ -3,7 +3,14 @@
 from datetime import date
 from uuid import UUID, uuid4
 
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.child import ChildCreateDto, ChildResponseDto, ChildUpdateDto
+from src.application.services.access_control import (
+    ensure_child_edit_access,
+    ensure_children_admin_access,
+    filter_child_ids,
+    get_child_for_account,
+)
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.repositories.child_repository import ChildRepository
@@ -86,12 +93,12 @@ class ChildService:
             raise NotFoundError("Ребёнок не найден", resource="child")
         return self._to_response(entity)
 
-    async def get_by_id_for_account(self, id: UUID, current_family_id: UUID) -> ChildResponseDto:
-        entity = await self._repo.get_by_id(id)
-        if not entity:
-            raise NotFoundError("Ребёнок не найден", resource="child")
-        if entity.family_id != current_family_id:
-            raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
+    async def get_by_id_for_account(
+        self,
+        id: UUID,
+        current_account: AuthenticatedAccount,
+    ) -> ChildResponseDto:
+        entity = await get_child_for_account(self._repo, id, current_account)
         return self._to_response(entity)
 
     async def get_by_family_id(self, family_id: UUID) -> list[ChildResponseDto]:
@@ -103,10 +110,22 @@ class ChildService:
     async def get_by_family_id_for_account(
         self,
         family_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> list[ChildResponseDto]:
-        if family_id != current_family_id:
+        if family_id != current_account.family_id:
             raise ForbiddenError("Нет доступа к чужой семье")
+        children = await self.get_by_family_id(family_id)
+        allowed_child_ids = set(filter_child_ids(current_account, [child.id for child in children]))
+        return [child for child in children if child.id in allowed_child_ids]
+
+    async def get_by_family_id_for_management(
+        self,
+        family_id: UUID,
+        current_account: AuthenticatedAccount,
+    ) -> list[ChildResponseDto]:
+        if family_id != current_account.family_id:
+            raise ForbiddenError("Нет доступа к чужой семье")
+        ensure_children_admin_access(current_account)
         return await self.get_by_family_id(family_id)
 
     async def create(self, dto: ChildCreateDto) -> ChildResponseDto:
@@ -132,10 +151,11 @@ class ChildService:
     async def create_for_account(
         self,
         dto: ChildCreateDto,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> ChildResponseDto:
-        if dto.family_id != current_family_id:
+        if dto.family_id != current_account.family_id:
             raise ForbiddenError("Нет доступа к чужой семье")
+        ensure_children_admin_access(current_account)
         return await self.create(dto)
 
     async def update(self, id: UUID, dto: ChildUpdateDto) -> ChildResponseDto:
@@ -191,13 +211,14 @@ class ChildService:
         self,
         id: UUID,
         dto: ChildUpdateDto,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> ChildResponseDto:
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Ребёнок не найден", resource="child")
-        if entity.family_id != current_family_id:
+        if entity.family_id != current_account.family_id:
             raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
+        ensure_child_edit_access(current_account, entity.id)
         return await self.update(id, dto)
 
     async def delete(self, id: UUID) -> None:
@@ -206,10 +227,11 @@ class ChildService:
             raise NotFoundError("Ребёнок не найден", resource="child")
         await self._repo.delete(id)
 
-    async def delete_for_account(self, id: UUID, current_family_id: UUID) -> None:
+    async def delete_for_account(self, id: UUID, current_account: AuthenticatedAccount) -> None:
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Ребёнок не найден", resource="child")
-        if entity.family_id != current_family_id:
+        if entity.family_id != current_account.family_id:
             raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
+        ensure_children_admin_access(current_account)
         await self._repo.delete(id)

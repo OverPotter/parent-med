@@ -3,11 +3,15 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.feeding_record import (
     FeedingRecordCreateDto,
     FeedingRecordResponseDto,
     FeedingRecordStartDto,
     FeedingRecordStopDto,
+)
+from src.application.services.access_control import (
+    get_child_for_account,
 )
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
@@ -103,48 +107,55 @@ class FeedingRecordService:
             )
         return normalized_type, normalized_side, is_expressed
 
-    async def _require_child_access(self, child_id: UUID, current_family_id: UUID) -> Child:
-        child = await self._child_repo.get_by_id(child_id)
-        if not child:
-            raise NotFoundError("Ребёнок не найден", resource="child")
-        if child.family_id != current_family_id:
-            raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
-        return child
+    async def _require_child_access(
+        self,
+        child_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
+    ) -> Child:
+        return await get_child_for_account(
+            self._child_repo,
+            child_id,
+            current_account,
+            required_level,
+        )
 
     async def _get_record_for_family(
-        self, record_id: UUID, current_family_id: UUID
+        self,
+        record_id: UUID,
+        current_account: AuthenticatedAccount,
+        required_level: str = "view",
     ) -> FeedingRecord:
         entity = await self._repo.get_by_id(record_id)
         if not entity:
             raise NotFoundError("Запись кормления не найдена", resource="feeding_record")
-        await self._require_child_access(entity.child_id, current_family_id)
+        await self._require_child_access(entity.child_id, current_account, required_level)
         return entity
 
     async def get_active_for_child(
         self,
         child_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> FeedingRecordResponseDto | None:
-        await self._require_child_access(child_id, current_family_id)
+        await self._require_child_access(child_id, current_account)
         entity = await self._repo.get_active_by_child_id(child_id)
         return self._to_response(entity) if entity else None
 
     async def list_for_child(
         self,
         child_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> list[FeedingRecordResponseDto]:
-        await self._require_child_access(child_id, current_family_id)
+        await self._require_child_access(child_id, current_account)
         items = await self._repo.get_by_child_id(child_id)
         return [self._to_response(item) for item in items]
 
     async def create(
         self,
         dto: FeedingRecordCreateDto,
-        current_family_id: UUID,
-        current_account_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> FeedingRecordResponseDto:
-        child = await self._require_child_access(dto.child_id, current_family_id)
+        child = await self._require_child_access(dto.child_id, current_account, "act")
         if not child.baby_mode_enabled:
             raise ValidationError("Режим малыша выключен", code="BABY_MODE_DISABLED")
 
@@ -171,7 +182,7 @@ class FeedingRecordService:
             duration_minutes=dto.duration_minutes,
             status="completed",
             note=note,
-            created_by_account_id=current_account_id,
+            created_by_account_id=current_account.id,
         )
         created = await self._repo.add(entity)
         return self._to_response(created)
@@ -179,10 +190,9 @@ class FeedingRecordService:
     async def start(
         self,
         dto: FeedingRecordStartDto,
-        current_family_id: UUID,
-        current_account_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> FeedingRecordResponseDto:
-        child = await self._require_child_access(dto.child_id, current_family_id)
+        child = await self._require_child_access(dto.child_id, current_account, "act")
         if not child.baby_mode_enabled:
             raise ValidationError("Режим малыша выключен", code="BABY_MODE_DISABLED")
 
@@ -211,7 +221,7 @@ class FeedingRecordService:
             duration_minutes=None,
             status="active",
             note=(dto.note or "").strip() or None,
-            created_by_account_id=current_account_id,
+            created_by_account_id=current_account.id,
         )
         created = await self._repo.add(entity)
         return self._to_response(created)
@@ -220,11 +230,13 @@ class FeedingRecordService:
         self,
         record_id: UUID,
         dto: FeedingRecordStopDto,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> FeedingRecordResponseDto:
-        entity = await self._get_record_for_family(record_id, current_family_id)
+        entity = await self._get_record_for_family(record_id, current_account, "act")
         if entity.status != "active":
             return self._to_response(entity)
+        if entity.created_by_account_id and entity.created_by_account_id != current_account.id:
+            raise ForbiddenError("Остановить активное кормление может только тот, кто его запустил")
 
         ended_at = datetime.now(UTC)
         duration_minutes = max(
@@ -267,9 +279,11 @@ class FeedingRecordService:
     async def delete(
         self,
         record_id: UUID,
-        current_family_id: UUID,
+        current_account: AuthenticatedAccount,
     ) -> None:
-        entity = await self._get_record_for_family(record_id, current_family_id)
+        entity = await self._get_record_for_family(record_id, current_account, "edit")
+        if entity.status == "active" and entity.created_by_account_id != current_account.id:
+            raise ForbiddenError("Удалить активное кормление может только тот, кто его запустил")
         deleted = await self._repo.delete(entity.id)
         if not deleted:
             raise NotFoundError("Запись кормления не найдена", resource="feeding_record")

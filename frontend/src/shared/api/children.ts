@@ -26,6 +26,26 @@ export async function fetchChildrenByFamilyId(familyId: string): Promise<Child[]
   return (res.data ?? []).map(toChild);
 }
 
+export async function fetchChildrenByFamilyIdForManagement(familyId: string): Promise<Child[]> {
+  const res = await apiClient.get<
+    Array<{
+      id: string;
+      family_id: string;
+      name: string;
+      birth_date: string | null;
+      age_label: string | null;
+      baby_mode_enabled: boolean;
+      institution_name: string | null;
+      institution_phone: string | null;
+      doctor_name: string | null;
+      doctor_phone: string | null;
+      allergies: string | null;
+      notes: string | null;
+    }>
+  >("/children/management", { params: { family_id: familyId } });
+  return (res.data ?? []).map(toChild);
+}
+
 export async function fetchChild(id: string): Promise<Child> {
   const res = await apiClient.get<{
     id: string;

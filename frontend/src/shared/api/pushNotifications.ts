@@ -15,6 +15,7 @@ interface RawPushNotificationPreferences {
   cabinet_notify_3_days: boolean;
   live_activity_sleep_enabled: boolean;
   live_activity_feeding_enabled: boolean;
+  live_activity_illness_enabled: boolean;
 }
 
 interface RawPushNotificationTestResponse {
@@ -43,6 +44,7 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
     cabinetNotify3Days: res.data.cabinet_notify_3_days,
     liveActivitySleepEnabled: res.data.live_activity_sleep_enabled,
     liveActivityFeedingEnabled: res.data.live_activity_feeding_enabled,
+    liveActivityIllnessEnabled: res.data.live_activity_illness_enabled,
   };
 }
 
@@ -54,6 +56,7 @@ export async function updatePushNotificationPreferences(body: {
   cabinet_notify_3_days?: boolean;
   live_activity_sleep_enabled?: boolean;
   live_activity_feeding_enabled?: boolean;
+  live_activity_illness_enabled?: boolean;
 }): Promise<PushNotificationPreferences> {
   const res = await apiClient.patch<RawPushNotificationPreferences>(
     "/push-notifications/preferences",
@@ -68,6 +71,7 @@ export async function updatePushNotificationPreferences(body: {
     cabinetNotify3Days: res.data.cabinet_notify_3_days,
     liveActivitySleepEnabled: res.data.live_activity_sleep_enabled,
     liveActivityFeedingEnabled: res.data.live_activity_feeding_enabled,
+    liveActivityIllnessEnabled: res.data.live_activity_illness_enabled,
   };
 }
 

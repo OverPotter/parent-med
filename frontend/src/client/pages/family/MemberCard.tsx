@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
+import { Link } from "react-router-dom";
 import type { AppLanguage } from "@shared/i18n";
 import type { FamilyMember } from "@shared/types/api";
-import {
-  appBtnJournalSecondaryClass,
-} from "../child-illness/shared";
+import { appBtnJournalSecondaryClass } from "../child-illness/shared";
+import { buildMemberAccessSummaryItems } from "./accessPolicy";
 import { roleLabel, tFamily } from "./copy";
 import { ProfileEditDialog } from "./ProfileEditDialog";
 
@@ -12,13 +12,14 @@ export interface MemberCardProps {
   member: FamilyMember;
   isCurrent: boolean;
   forceEdit: boolean;
-  isOwner: boolean;
+  canManageAccess: boolean;
   canEditProfile: boolean;
-  ownersCount: number;
+  adminsCount: number;
   isPending: boolean;
   language: AppLanguage;
   onPromote: () => void;
   onDemote: () => void;
+  accessHref?: string;
   onDelete: () => void;
   onSaveProfile: (payload: {
     displayName?: string;
@@ -33,19 +34,20 @@ export function MemberCard({
   member,
   isCurrent,
   forceEdit,
-  isOwner,
+  canManageAccess,
   canEditProfile,
-  ownersCount,
+  adminsCount,
   isPending,
   language,
   onPromote,
   onDemote,
+  accessHref,
   onDelete,
   onSaveProfile,
   onHideForcedEdit,
 }: MemberCardProps) {
-  const canDemote = member.familyRole === "owner" && ownersCount > 1 && !isCurrent;
-  const canPromote = member.familyRole !== "owner" && !isCurrent;
+  const canDemote = member.familyRole === "admin" && adminsCount > 1 && !isCurrent;
+  const canPromote = member.familyRole !== "admin" && !isCurrent;
   const canDelete = !isCurrent;
   const [isEditing, setIsEditing] = useState(forceEdit);
   const [displayName, setDisplayName] = useState(member.displayName || "");
@@ -70,6 +72,8 @@ export function MemberCard({
       setIsEditing(true);
     }
   }, [forceEdit]);
+
+  const accessSummaryItems = buildMemberAccessSummaryItems(member.accessPolicy, language);
 
   return (
     <div className="py-4 first:pt-0 last:pb-0">
@@ -128,7 +132,7 @@ export function MemberCard({
             )}
             <span
               className={`rounded-full px-2.5 py-1 text-[11px] ${
-                member.familyRole === "owner" ? "soft-pill-primary" : "soft-pill"
+                member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill"
               }`}
             >
               {roleLabel(member.familyRole, language)}
@@ -156,11 +160,27 @@ export function MemberCard({
           </div>
         </div>
 
-        {(isOwner || canEditProfile) && (
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+        {canDelete ? (
+          <button
+            type="button"
+            onClick={() => setIsDeleteConfirmOpen(true)}
+            disabled={isPending}
+            className="soft-pill-danger app-profile-action min-h-[2.3rem] shrink-0 px-3 text-[0.78rem] disabled:opacity-50"
+          >
+            {tFamily(language, "deleteMemberShort")}
+          </button>
+        ) : null}
+      </div>
+
+      {(canManageAccess || canEditProfile || canPromote || canDemote) && (
+        <div className="mt-4 space-y-2.5">
+          <p className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted/85">
+            {tFamily(language, "actionsTitle")}
+          </p>
+          <div className="flex flex-wrap gap-2">
             {canEditProfile && (
-              <button
-                type="button"
+              <ActionButton
+                label={isEditing ? tFamily(language, "hideProfile") : tFamily(language, "editProfile")}
                 onClick={() =>
                   setIsEditing((current) => {
                     const next = !current;
@@ -170,44 +190,28 @@ export function MemberCard({
                     return next;
                   })
                 }
-                className={`${appBtnJournalSecondaryClass} min-h-[2.55rem] px-3 text-[0.78rem] sm:min-h-[2.35rem] sm:text-[0.76rem]`}
-              >
-                {isEditing ? tFamily(language, "hideProfile") : tFamily(language, "editProfile")}
-              </button>
+              />
             )}
             {canPromote && (
-              <button
-                type="button"
-                onClick={() => setIsPromoteConfirmOpen(true)}
+              <ActionButton
+                label={tFamily(language, "makeOwner")}
                 disabled={isPending}
-                className={`${appBtnJournalSecondaryClass} min-h-[2.55rem] px-3 text-[0.78rem] disabled:opacity-50 sm:min-h-[2.35rem] sm:text-[0.76rem]`}
-              >
-                {tFamily(language, "makeOwner")}
-              </button>
+                onClick={() => setIsPromoteConfirmOpen(true)}
+              />
             )}
             {canDemote && (
-              <button
-                type="button"
+              <ActionButton
+                label={tFamily(language, "makeAdult")}
+                disabled={isPending}
                 onClick={() => setIsDemoteConfirmOpen(true)}
-                disabled={isPending}
-                className={`${appBtnJournalSecondaryClass} min-h-[2.55rem] px-3 text-[0.78rem] disabled:opacity-50 sm:min-h-[2.35rem] sm:text-[0.76rem]`}
-              >
-                {tFamily(language, "makeAdult")}
-              </button>
+              />
             )}
-            {canDelete && (
-              <button
-                type="button"
-                onClick={() => setIsDeleteConfirmOpen(true)}
-                disabled={isPending}
-                className={`${appBtnJournalSecondaryClass} min-h-[2.55rem] px-3 text-[0.78rem] disabled:opacity-50 sm:min-h-[2.35rem] sm:text-[0.76rem]`}
-              >
-                {tFamily(language, "removeFromFamily")}
-              </button>
+            {canManageAccess && (
+              <ActionLink label={tFamily(language, "manageAccess")} href={accessHref ?? "/family"} />
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <ProfileEditDialog
         language={language}
@@ -249,6 +253,65 @@ export function MemberCard({
           }
         }}
       />
+
+      {canManageAccess ? (
+        <div className="mt-4 space-y-2.5">
+          <p className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted/85">
+            {tFamily(language, "currentAccessTitle")}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {accessSummaryItems.map((item) => (
+              <span
+                key={item.key}
+                className={[
+                  "inline-flex min-h-[2.35rem] items-center rounded-[18px] px-3 py-1.5 text-[11px] font-semibold tracking-[-0.01em]",
+                  item.toneClass,
+                ].join(" ")}
+              >
+                <span>{item.label}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+function ActionButton({
+  label,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={[
+        appBtnJournalSecondaryClass,
+        "inline-flex min-h-[2.45rem] items-center justify-center px-3.5 text-[0.76rem] disabled:opacity-50",
+      ].join(" ")}
+    >
+      <span className="text-center">{label}</span>
+    </button>
+  );
+}
+
+function ActionLink({ label, href }: { label: string; href: string }) {
+  return (
+    <Link
+      to={href}
+      className={[
+        appBtnJournalSecondaryClass,
+        "inline-flex min-h-[2.45rem] items-center justify-center px-3.5 text-[0.76rem]",
+      ].join(" ")}
+    >
+      <span className="text-center">{label}</span>
+    </Link>
   );
 }

@@ -199,16 +199,12 @@ export function formatRelativeDateTime(date: Date, now = new Date()) {
   const totalMinutes = Math.floor(totalSeconds / 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  const seconds = totalSeconds % 60;
 
   if (hours === 0 && minutes === 0) {
-    return `через ${seconds} сек`;
+    return "меньше чем через минуту";
   }
   if (hours === 0) {
-    if (seconds === 0) {
-      return `через ${minutes} мин`;
-    }
-    return `через ${minutes} мин ${seconds} сек`;
+    return `через ${minutes} мин`;
   }
   if (minutes === 0) {
     return `через ${hours} ч`;

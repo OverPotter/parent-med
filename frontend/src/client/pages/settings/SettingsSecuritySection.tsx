@@ -81,11 +81,7 @@ export function SettingsSecuritySection({
           align="start"
           forceInlineActions
           actions={
-            <button
-              type="button"
-              onClick={onDeleteAccount}
-              className={destructiveActionClass}
-            >
+            <button type="button" onClick={onDeleteAccount} className={destructiveActionClass}>
               {tSettings(language, "deleteAccount")}
             </button>
           }
@@ -95,7 +91,7 @@ export function SettingsSecuritySection({
             {deleteAccountError}
           </div>
         ) : null}
-        {accountFamilyRole === "owner" ? (
+        {accountFamilyRole === "admin" ? (
           <>
             <SettingsRow
               title={tSettings(language, "deleteFamily")}
@@ -104,11 +100,7 @@ export function SettingsSecuritySection({
               align="start"
               forceInlineActions
               actions={
-                <button
-                  type="button"
-                  onClick={onDeleteFamily}
-                  className={destructiveActionClass}
-                >
+                <button type="button" onClick={onDeleteFamily} className={destructiveActionClass}>
                   {tSettings(language, "deleteFamily")}
                 </button>
               }

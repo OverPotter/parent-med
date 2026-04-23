@@ -1,9 +1,14 @@
 """Сущность: аккаунт пользователя."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
+
+from src.domain.entities.family_access import (
+    FamilyAccessPolicy,
+    build_default_family_access_policy,
+)
 
 AccountLanguage = Literal["ru", "en"]
 
@@ -31,3 +36,11 @@ class Account:
     preferred_language: AccountLanguage = "ru"
     live_activity_sleep_enabled: bool = True
     live_activity_feeding_enabled: bool = True
+    live_activity_illness_enabled: bool = True
+    access_policy: FamilyAccessPolicy = field(default_factory=build_default_family_access_policy)
+
+
+def copy_account(account: Account, **changes: object) -> Account:
+    """Создать копию аккаунта с точечными изменениями."""
+
+    return replace(account, **changes)

@@ -36,6 +36,14 @@ function setCachedNativeToken(token: string | null) {
   window.localStorage.setItem(NATIVE_PUSH_TOKEN_KEY, token);
 }
 
+export function clearCachedNativePushState() {
+  setCachedNativeToken(null);
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.removeItem(NATIVE_PUSH_OPT_OUT_KEY);
+}
+
 function getCachedNativeToken(): string | null {
   if (typeof window === "undefined") {
     return null;
@@ -139,7 +147,7 @@ async function requestToken(options?: {
     attachListeners();
     const promptIfNeeded = Boolean(options?.promptIfNeeded);
     const forceRefresh = Boolean(options?.forceRefresh);
-    const allowCachedFallback = options?.allowCachedFallback ?? true;
+    const allowCachedFallback = forceRefresh ? false : (options?.allowCachedFallback ?? true);
     const existing = getCachedNativeToken();
     const permission = await ensurePermission(promptIfNeeded);
     if (permission !== "granted") {
@@ -250,7 +258,7 @@ export async function getNativePushSubscriptionPayload(options?: {
   const token = await requestToken({
     promptIfNeeded: options?.promptIfNeeded,
     forceRefresh: true,
-    allowCachedFallback: true,
+    allowCachedFallback: false,
   });
   if (!token) {
     return null;

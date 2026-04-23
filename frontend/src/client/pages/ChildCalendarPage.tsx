@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { fetchFeedingRecordsByChildId } from "@shared/api/feedingRecords";
@@ -11,6 +11,8 @@ import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { canViewChild } from "@shared/permissions/familyAccess";
+import { useAppStore } from "@shared/store/useAppStore";
 import { getLocalIsoDate } from "@shared/utils/date";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
@@ -49,6 +51,8 @@ export function ChildCalendarPage() {
   const navigate = useNavigate();
   const text = childCalendarCopy[language];
   const { childId } = useParams<{ childId: string }>();
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const [mode, setMode] = useState<ViewMode>("feed");
   const [period, setPeriod] = useState<PeriodKey>("week");
   const [anchorDate, setAnchorDate] = useState(getLocalIsoDate());
@@ -62,36 +66,37 @@ export function ChildCalendarPage() {
   const [enabledKinds, setEnabledKinds] = useState<EventKind[]>(eventKinds);
   const calendarFeedHistoryRef = useRef(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const canViewCalendar = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
 
   const { data: child, isLoading: isChildLoading } = useQuery({
     queryKey: ["child", childId],
     queryFn: () => fetchChild(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewCalendar,
   });
   const { data: sleepSessions = [], isLoading: isSleepLoading } = useQuery({
     queryKey: ["sleep-sessions", childId],
     queryFn: () => fetchSleepSessionsByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewCalendar,
   });
   const { data: feedingRecords = [], isLoading: isFeedingLoading } = useQuery({
     queryKey: ["feeding-records", childId],
     queryFn: () => fetchFeedingRecordsByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewCalendar,
   });
   const { data: illnessEpisodes = [], isLoading: isIllnessLoading } = useQuery({
     queryKey: ["illness-episodes", childId],
     queryFn: () => fetchIllnessEpisodesByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewCalendar,
   });
   const { data: weightEntries = [], isLoading: isWeightLoading } = useQuery({
     queryKey: ["weight-entries", childId],
     queryFn: () => fetchWeightEntriesByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewCalendar,
   });
   const { data: heightEntries = [], isLoading: isHeightLoading } = useQuery({
     queryKey: ["height-entries", childId],
     queryFn: () => fetchHeightEntriesByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewCalendar,
   });
 
   const isLoading =
@@ -172,7 +177,11 @@ export function ChildCalendarPage() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [calendarFeedDate]);
 
-  if (!childId || isLoading || !child) {
+  if (!childId || !canViewCalendar) {
+    return <Navigate to="/children" replace />;
+  }
+
+  if (isLoading || !child) {
     return <p className="text-sm text-muted">{text.loading}</p>;
   }
 

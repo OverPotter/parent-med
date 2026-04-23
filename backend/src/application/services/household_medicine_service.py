@@ -3,11 +3,13 @@
 from datetime import date
 from uuid import UUID, uuid4
 
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.household_medicine import (
     HouseholdMedicineCreateDto,
     HouseholdMedicineResponseDto,
     HouseholdMedicineUpdateDto,
 )
+from src.application.services.access_control import coerce_account_context, ensure_module_access
 from src.application.services.safety_engine import calculate_household_medicine_status
 from src.core.exceptions import NotFoundError, ValidationError
 from src.domain.entities.household_medicine import HouseholdMedicine
@@ -77,18 +79,29 @@ class HouseholdMedicineService:
             ),
         )
 
-    async def get_by_id(self, id: UUID, family_id: UUID) -> HouseholdMedicineResponseDto:
+    async def get_by_id(
+        self,
+        id: UUID,
+        current_account: AuthenticatedAccount,
+    ) -> HouseholdMedicineResponseDto:
+        current_account = coerce_account_context(current_account)
+        ensure_module_access(current_account, "cabinet", "view")
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Упаковка не найдена", resource="household_medicine")
-        if entity.family_id != family_id:
+        if entity.family_id != current_account.family_id:
             raise NotFoundError("Упаковка не найдена", resource="household_medicine")
         return await self._to_response(entity)
 
-    async def get_by_family_id(self, family_id: UUID) -> list[HouseholdMedicineResponseDto]:
-        if await self._family_repo.get_by_id(family_id) is None:
+    async def get_by_family_id(
+        self,
+        current_account: AuthenticatedAccount,
+    ) -> list[HouseholdMedicineResponseDto]:
+        current_account = coerce_account_context(current_account)
+        ensure_module_access(current_account, "cabinet", "view")
+        if await self._family_repo.get_by_id(current_account.family_id) is None:
             raise NotFoundError("Семья не найдена", resource="family")
-        entities = await self._repo.get_by_family_id(family_id)
+        entities = await self._repo.get_by_family_id(current_account.family_id)
         entities = sorted(
             entities,
             key=lambda item: (
@@ -99,9 +112,13 @@ class HouseholdMedicineService:
         return [await self._to_response(e) for e in entities]
 
     async def create(
-        self, family_id: UUID, dto: HouseholdMedicineCreateDto
+        self,
+        current_account: AuthenticatedAccount,
+        dto: HouseholdMedicineCreateDto,
     ) -> HouseholdMedicineResponseDto:
-        if await self._family_repo.get_by_id(family_id) is None:
+        current_account = coerce_account_context(current_account)
+        ensure_module_access(current_account, "cabinet", "edit")
+        if await self._family_repo.get_by_id(current_account.family_id) is None:
             raise NotFoundError("Семья не найдена", resource="family")
         if dto.opened_at is not None and dto.opened_at.date() > date.today():
             raise ValidationError(
@@ -133,7 +150,7 @@ class HouseholdMedicineService:
             opened_shelf_days = dto.opened_shelf_days
         entity = HouseholdMedicine(
             id=uuid4(),
-            family_id=family_id,
+            family_id=current_account.family_id,
             catalog_item_id=catalog_item_id,
             medicine_name=medicine_name,
             medicine_form=medicine_form,
@@ -149,12 +166,17 @@ class HouseholdMedicineService:
         return await self._to_response(created)
 
     async def update(
-        self, id: UUID, family_id: UUID, dto: HouseholdMedicineUpdateDto
+        self,
+        id: UUID,
+        current_account: AuthenticatedAccount,
+        dto: HouseholdMedicineUpdateDto,
     ) -> HouseholdMedicineResponseDto:
+        current_account = coerce_account_context(current_account)
+        ensure_module_access(current_account, "cabinet", "edit")
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Упаковка не найдена", resource="household_medicine")
-        if entity.family_id != family_id:
+        if entity.family_id != current_account.family_id:
             raise NotFoundError("Упаковка не найдена", resource="household_medicine")
         fields_set = dto.model_fields_set
         expiry_date = dto.expiry_date if "expiry_date" in fields_set else entity.expiry_date
@@ -217,9 +239,11 @@ class HouseholdMedicineService:
         updated = await self._repo.update(entity)
         return await self._to_response(updated)
 
-    async def delete(self, id: UUID, family_id: UUID) -> None:
+    async def delete(self, id: UUID, current_account: AuthenticatedAccount) -> None:
+        current_account = coerce_account_context(current_account)
+        ensure_module_access(current_account, "cabinet", "edit")
         entity = await self._repo.get_by_id(id)
-        if entity is None or entity.family_id != family_id:
+        if entity is None or entity.family_id != current_account.family_id:
             raise NotFoundError("Упаковка не найдена", resource="household_medicine")
         fallback_medicine_name = entity.medicine_name.strip()
         await self._administration_repo.clear_household_medicine_references(

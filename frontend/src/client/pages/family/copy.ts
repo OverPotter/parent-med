@@ -22,15 +22,25 @@ export const familyCopy = {
     save: "Сохранить",
     cancel: "Отмена",
     membersTitle: "Участники семьи",
-    membersDescription:
-      "Владельцы могут приглашать новых взрослых, менять роли и отзывать доступ.",
+    membersDescription: "Администраторы приглашают участников, меняют роли и настраивают доступ.",
+    yourProfileTitle: "Вы",
+    yourProfileDescription: "Ваш профиль и ваши настройки внутри семьи.",
+    otherMembersTitle: "Остальные участники",
+    otherMembersDescription: "Короткий список семьи. Полный список можно открыть отдельно.",
+    allMembersTitle: "Все участники",
+    allMembersDescription: "Полный список семьи с ролями, профилями и доступом.",
+    openAllMembers: "Открыть всех",
+    noFamilyTitle: "Семья ещё не подключена",
+    noFamilyDescription:
+      "Сейчас у вас нет семейного пространства. Попросите приглашение от администратора семьи или откройте ссылку-приглашение.",
+    noOtherMembers: "Кроме вас, в семье пока никого нет.",
     peopleShort: "чел.",
     membersLoading: "Загружаем участников…",
     noMembers: "У семьи пока нет подключённых участников.",
     inviteTitle: "Пригласить в приложение",
     inviteDescription:
       "Отправьте приглашение близкому. Он установит приложение или откроет ссылку и подключится к вашей семье под своим аккаунтом.",
-    ownerOnly: "Только для владельца",
+    ownerOnly: "Только для администратора",
     creatingInvite: "Готовим приглашение…",
     createInvite: "Пригласить",
     newLink: "Новая ссылка",
@@ -41,24 +51,23 @@ export const familyCopy = {
     inviteShareFailed: "Не удалось открыть меню «Поделиться».",
     shareInvite: "Поделиться",
     copyInvite: "Скопировать ссылку",
-    owner: "Владелец",
+    owner: "Администратор",
     member: "Участник",
     noName: "Без имени",
     thisIsYou: "Это вы",
     emailMissing: "Email не указан",
     phoneMissing: "Телефон не указан",
-    hideProfile: "Скрыть профиль",
-    editProfile: "Редактировать профиль",
-    makeOwner: "Сделать владельцем",
+    hideProfile: "Скрыть",
+    editProfile: "Редактировать",
+    makeOwner: "Сделать админом",
     makeAdult: "Сделать участником",
-    removeFromFamily: "Удалить из семьи",
-    confirmPromoteTitle: "Сделать участника владельцем?",
+    removeFromFamily: "Удалить",
+    confirmPromoteTitle: "Сделать участника администратором?",
     confirmPromoteDescription:
-      "Участник получит права владельца семьи: сможет приглашать и удалять участников, а также менять роли.",
-    confirmPromoteAction: "Да, сделать владельцем",
-    confirmDemoteTitle: "Снять роль владельца?",
-    confirmDemoteDescription:
-      "Участник останется в семье, но потеряет права владельца и станет обычным участником.",
+      "Участник сможет приглашать людей, удалять участников и менять права доступа.",
+    confirmPromoteAction: "Да, сделать админом",
+    confirmDemoteTitle: "Снять права администратора?",
+    confirmDemoteDescription: "Участник останется в семье, но потеряет права управления семьёй.",
     confirmDemoteAction: "Да, сделать участником",
     confirmRemoveTitle: "Удалить участника из семьи?",
     confirmRemoveDescription:
@@ -73,6 +82,45 @@ export const familyCopy = {
     emailPlaceholder: "you@example.com",
     invalidEmail: "Введите корректный email или оставьте поле пустым.",
     saveProfile: "Сохранить профиль",
+    accessTitle: "Доступ",
+    accessDescription: "Какие данные участник видит и может менять.",
+    allChildren: "Все дети",
+    childrenScope: "Каких детей видит",
+    childrenScopeAll: "Все дети",
+    childrenScopeSelected: "Выбранные дети",
+    childrenScopeHint: "Выберите, всех детей увидит участник или только отдельных.",
+    noChildrenForAccess: "В семье пока нет детей, которых можно выбрать.",
+    selectedChildren: "Выбранные дети",
+    selectedChildrenEmpty: "Дети не выбраны",
+    selectedChildrenAction: "Выбрать детей",
+    childrenAccess: "Доступ к детям / журналу",
+    cabinetAccess: "Аптечка",
+    pillboxAccess: "Приёмы",
+    view: "Только просмотр",
+    actAccess: "Можно отмечать",
+    editAccess: "Можно менять",
+    childrenObserve: "Только смотреть",
+    childrenAct: "Может записывать уход",
+    childrenLead: "Полный доступ",
+    cabinetObserve: "Только смотреть",
+    cabinetLead: "Полный доступ",
+    pillboxObserve: "Только смотреть",
+    pillboxAct: "Может отмечать приём",
+    pillboxLead: "Полный доступ",
+    hidden: "Нет доступа",
+    cabinetPush: "Может получать уведомления",
+    manageAccess: "Настроить",
+    hideAccess: "Скрыть",
+    saveAccess: "Сохранить настройки доступа",
+    accessSummaryAllChildren: "Все дети",
+    accessSummarySelectedChildren: "Выбранные дети",
+    actionsTitle: "Действия",
+    currentAccessTitle: "Текущие настройки",
+    accessEditorTitle: "Настройки доступа",
+    deleteMemberShort: "Удалить",
+    noFamilyAccessTitle: "Нет доступа",
+    noFamilyAccessDescription:
+      "Сейчас участник не увидит детей, приёмы и аптечку. Если нужен доступ, его сможет открыть администратор семьи.",
   },
   en: {
     title: "Family",
@@ -95,14 +143,25 @@ export const familyCopy = {
     save: "Save",
     cancel: "Cancel",
     membersTitle: "Family members",
-    membersDescription: "Owners can invite new adults, change roles and revoke access.",
+    membersDescription: "Admins invite members, change roles, and manage access.",
+    yourProfileTitle: "You",
+    yourProfileDescription: "Your profile and your settings inside the family.",
+    otherMembersTitle: "Other members",
+    otherMembersDescription: "A short family list. Open the full list separately.",
+    allMembersTitle: "All members",
+    allMembersDescription: "The full family list with roles, profiles, and access.",
+    openAllMembers: "Open all",
+    noFamilyTitle: "No family connected yet",
+    noFamilyDescription:
+      "You do not have a family workspace yet. Ask a family admin for an invite or open an invite link.",
+    noOtherMembers: "There is no one else in the family yet.",
     peopleShort: "people",
     membersLoading: "Loading members…",
     noMembers: "No family members are connected yet.",
     inviteTitle: "Invite to the app",
     inviteDescription:
       "Send an invite to a family member. They can install the app or open the link and join your family with their own account.",
-    ownerOnly: "Owners only",
+    ownerOnly: "Admins only",
     creatingInvite: "Preparing invite…",
     createInvite: "Invite",
     newLink: "New link",
@@ -113,25 +172,25 @@ export const familyCopy = {
     inviteShareFailed: "Could not open the share sheet.",
     shareInvite: "Share",
     copyInvite: "Copy link",
-    owner: "Owner",
+    owner: "Admin",
     member: "Member",
     noName: "No name",
     thisIsYou: "You",
     emailMissing: "Email is not set",
     phoneMissing: "Phone is not set",
-    hideProfile: "Hide profile",
-    editProfile: "Edit profile",
-    makeOwner: "Make owner",
-    makeAdult: "Make adult",
-    removeFromFamily: "Remove from family",
-    confirmPromoteTitle: "Promote this member to owner?",
+    hideProfile: "Hide",
+    editProfile: "Edit",
+    makeOwner: "Make admin",
+    makeAdult: "Make member",
+    removeFromFamily: "Remove",
+    confirmPromoteTitle: "Promote this member to admin?",
     confirmPromoteDescription:
-      "The member will get family owner permissions: invite/remove members and manage roles.",
-    confirmPromoteAction: "Yes, make owner",
-    confirmDemoteTitle: "Remove owner role?",
+      "The member will be able to invite people, remove members, and manage access.",
+    confirmPromoteAction: "Yes, make admin",
+    confirmDemoteTitle: "Remove admin access?",
     confirmDemoteDescription:
-      "The member will stay in the family but lose owner permissions and become an adult.",
-    confirmDemoteAction: "Yes, make adult",
+      "The member will stay in the family but lose family management permissions.",
+    confirmDemoteAction: "Yes, make member",
     confirmRemoveTitle: "Remove this member from family?",
     confirmRemoveDescription:
       "The member will lose access to your family workspace. Access can be restored only with a new invite.",
@@ -145,6 +204,45 @@ export const familyCopy = {
     emailPlaceholder: "you@example.com",
     invalidEmail: "Enter a valid email or leave the field empty.",
     saveProfile: "Save profile",
+    accessTitle: "Access",
+    accessDescription: "What data this member can view and edit.",
+    allChildren: "All children",
+    childrenScope: "Which children are visible",
+    childrenScopeAll: "All children",
+    childrenScopeSelected: "Selected children",
+    childrenScopeHint: "Choose whether this member sees all children or only selected ones.",
+    noChildrenForAccess: "There are no children in the family to choose yet.",
+    selectedChildren: "Selected children",
+    selectedChildrenEmpty: "No children selected",
+    selectedChildrenAction: "Choose children",
+    childrenAccess: "Children / journal access",
+    cabinetAccess: "Medicine cabinet",
+    pillboxAccess: "Pillbox",
+    view: "View only",
+    actAccess: "Can mark doses",
+    editAccess: "Can edit",
+    childrenObserve: "View only",
+    childrenAct: "Can log care",
+    childrenLead: "Full access",
+    cabinetObserve: "View only",
+    cabinetLead: "Full access",
+    pillboxObserve: "View only",
+    pillboxAct: "Can mark doses",
+    pillboxLead: "Full access",
+    hidden: "No access",
+    cabinetPush: "Can receive reminders",
+    manageAccess: "Configure",
+    hideAccess: "Hide",
+    saveAccess: "Save access settings",
+    accessSummaryAllChildren: "All children",
+    accessSummarySelectedChildren: "Selected children",
+    actionsTitle: "Actions",
+    currentAccessTitle: "Current settings",
+    accessEditorTitle: "Access settings",
+    deleteMemberShort: "Remove",
+    noFamilyAccessTitle: "No access",
+    noFamilyAccessDescription:
+      "This member will not see children, pillbox, or the cabinet. A family admin can open access later.",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
 
@@ -153,5 +251,31 @@ export function tFamily(language: AppLanguage, key: keyof (typeof familyCopy)["r
 }
 
 export function roleLabel(role: string, language: AppLanguage): string {
-  return role === "owner" ? tFamily(language, "owner") : tFamily(language, "member");
+  return role === "admin" ? tFamily(language, "owner") : tFamily(language, "member");
+}
+
+export function childrenAccessRoleLabel(
+  access: "view" | "act" | "edit",
+  language: AppLanguage
+) {
+  if (access === "edit") return tFamily(language, "childrenLead");
+  if (access === "act") return tFamily(language, "childrenAct");
+  return tFamily(language, "childrenObserve");
+}
+
+export function cabinetAccessRoleLabel(access: "none" | "view" | "edit", language: AppLanguage) {
+  if (access === "none") return tFamily(language, "hidden");
+  return access === "edit"
+    ? tFamily(language, "cabinetLead")
+    : tFamily(language, "cabinetObserve");
+}
+
+export function pillboxAccessRoleLabel(
+  access: "none" | "view" | "act" | "edit",
+  language: AppLanguage
+) {
+  if (access === "none") return tFamily(language, "hidden");
+  if (access === "edit") return tFamily(language, "pillboxLead");
+  if (access === "act") return tFamily(language, "pillboxAct");
+  return tFamily(language, "pillboxObserve");
 }

@@ -1,47 +1,43 @@
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useSearchParams } from "react-router-dom";
-import { updateAccountProfile } from "@shared/api/auth";
-import {
-  deleteFamilyMember,
-  fetchFamilies,
-  fetchMyFamilyMembers,
-  updateFamilyMemberProfile,
-  updateFamilyMemberRole,
-  updateMyFamily,
-} from "@shared/api/families";
-import { createFamilyInvite } from "@shared/api/familyInvites";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { fetchFamilies } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
-import { RowSurface } from "@shared/components/Surface";
+import { EmptyState, RowSurface } from "@shared/components/Surface";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
-import {
-  SectionTitle,
-} from "./child-illness/shared";
+import { normalizeFamilyAccessPolicy } from "@shared/familyAccess/policy";
+import { SectionTitle } from "./child-illness/shared";
 import { FamilyInviteSection } from "./family/FamilyInviteSection";
 import { FamilyNameSection } from "./family/FamilyNameSection";
 import { MemberCard } from "./family/MemberCard";
+import { OtherMembersSheet } from "./family/OtherMembersSheet";
 import { tFamily } from "./family/copy";
+import { useFamilyMembersData } from "./family/useFamilyMembersData";
+import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
 
 export function FamilyPage() {
   const { language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [familyName, setFamilyName] = useState("");
   const [isEditingFamilyName, setIsEditingFamilyName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [isInviteSharePending, setIsInviteSharePending] = useState(false);
   const [inviteToast, setInviteToast] = useState<string | null>(null);
+  const [isMembersSheetOpen, setIsMembersSheetOpen] = useState(false);
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
   const currentAccountId = useAppStore((s) => s.accountId);
   const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
   const setAccountEmail = useAppStore((s) => s.setAccountEmail);
+  const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
-  const queryClient = useQueryClient();
   const isIosShell = useIsIosShell();
+  const canManageFamily = currentAccountRole === "admin";
 
   const {
     data: families = [],
@@ -53,21 +49,18 @@ export function FamilyPage() {
     enabled: Boolean(accountId),
   });
 
-  const {
-    data: members = [],
-    isLoading: isMembersLoading,
-    error: membersError,
-  } = useQuery({
-    queryKey: ["family-members", currentFamilyId],
-    queryFn: fetchMyFamilyMembers,
-    enabled: Boolean(currentFamilyId),
-  });
+  const { isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
+    useFamilyMembersData(currentFamilyId, currentAccountId);
 
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
-  const ownersCount = useMemo(
-    () => members.filter((member) => member.familyRole === "owner").length,
-    [members]
-  );
+  const currentMemberPolicy = normalizeFamilyAccessPolicy(currentMember?.accessPolicy);
+  const currentMemberHasAnyFamilyAccess =
+    currentMemberPolicy.allChildren ||
+    currentMemberPolicy.childIds.length > 0 ||
+    currentMemberPolicy.pillboxAccess !== "none" ||
+    currentMemberPolicy.cabinetAccess !== "none";
+  const familyTitle =
+    family?.name?.trim() || currentFamilyName?.trim() || tFamily(language, "title");
 
   useEffect(() => {
     if (family) {
@@ -80,104 +73,29 @@ export function FamilyPage() {
     setFamilyName("");
   }, [currentFamilyId, currentFamilyName, family, setCurrentFamily]);
 
-  const updateFamilyMutation = useMutation({
-    mutationFn: (name: string) => updateMyFamily(name),
-    onSuccess: (updatedFamily) => {
-      setCurrentFamily(updatedFamily);
-      setError(null);
-      setIsEditingFamilyName(false);
-      queryClient.invalidateQueries({ queryKey: ["families", accountId] });
-    },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? tFamily(language, "updateFamilyFailed"));
-    },
-  });
-
-  const createInviteMutation = useMutation({
-    mutationFn: () => createFamilyInvite({ family_role: "adult" }),
-    onSuccess: () => {
-      setInviteCopied(false);
-      setError(null);
-    },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? tFamily(language, "createInviteFailed"));
-    },
-  });
-
-  const updateMemberRoleMutation = useMutation({
-    mutationFn: ({
-      memberAccountId,
-      familyRole,
-    }: {
-      memberAccountId: string;
-      familyRole: string;
-    }) => updateFamilyMemberRole(memberAccountId, familyRole),
-    onSuccess: () => {
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
-    },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? tFamily(language, "updateRoleFailed"));
-    },
-  });
-
-  const deleteMemberMutation = useMutation({
-    mutationFn: (memberAccountId: string) => deleteFamilyMember(memberAccountId),
-    onSuccess: () => {
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
-    },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? tFamily(language, "deleteMemberFailed"));
-    },
-  });
-
-  const updateMemberProfileMutation = useMutation({
-    mutationFn: ({
-      memberAccountId,
-      displayName,
-      relationshipLabel,
-      phone,
-    }: {
-      memberAccountId: string;
-      displayName?: string;
-      relationshipLabel?: string | null;
-      phone?: string | null;
-    }) =>
-      updateFamilyMemberProfile(memberAccountId, {
-        display_name: displayName,
-        relationship_label: relationshipLabel,
-        phone,
-      }),
-    onSuccess: () => {
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
-    },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? tFamily(language, "updateProfileFailed"));
-    },
-  });
-
-  const updateMyProfileMutation = useMutation({
-    mutationFn: ({ email }: { email: string | null }) => updateAccountProfile({ email }),
-    onSuccess: (account) => {
-      setAccountEmail(account.email);
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
-    },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? tFamily(language, "updateProfileFailed"));
-    },
+  const {
+    updateFamilyMutation,
+    createInviteMutation,
+    updateMemberMutation,
+    deleteMemberMutation,
+    updateMemberProfileMutation,
+    updateMyProfileMutation,
+  } = useFamilyPageMutations({
+    language,
+    accountId,
+    currentFamilyId,
+    currentAccountId,
+    setCurrentFamily,
+    setAccountEmail,
+    setAccountFamilyContext,
+    setError,
   });
 
   const latestInviteUrl = createInviteMutation.data
     ? `${window.location.origin}${createInviteMutation.data.invitePath}`
     : "";
-  const canManageFamily = currentAccountRole === "owner";
   const shouldOpenCurrentProfileEditor =
     searchParams.get("edit") === "profile" || searchParams.get("edit") === "me";
-  const familyTitle =
-    family?.name?.trim() || currentFamilyName?.trim() || tFamily(language, "title");
   const canShareInvite = typeof navigator !== "undefined" && typeof navigator.share === "function";
   const shouldUseDirectNativeInvite = isIosShell && canShareInvite;
 
@@ -186,13 +104,71 @@ export function FamilyPage() {
       ? `Присоединяйся к нашей семье в приложении ${familyTitle}. Открой приглашение:`
       : `Join our family in the ${familyTitle} app. Open this invite:`;
 
+  useEffect(() => {
+    if (!inviteToast) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setInviteToast(null);
+    }, 2600);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [inviteToast]);
+
+  if (!isFamilyLoading && !family) {
+    return (
+      <div className="min-w-0 space-y-6 sm:space-y-8">
+        <PageIntro
+          title={familyTitle}
+          subtitle={tFamily(language, "subtitle")}
+          action={
+            <Link
+              to="/more"
+              className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+            >
+              {language === "ru" ? "← Ещё" : "← More"}
+            </Link>
+          }
+          compactOnMobile
+          hideOnMobile
+          className="app-safe-top-standalone"
+        />
+        <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+          <div className="app-mobile-section-intro">
+            <Link
+              to="/more"
+              className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+            >
+              {language === "ru" ? "← Ещё" : "← More"}
+            </Link>
+            <h1 className="app-mobile-section-intro__title">{familyTitle}</h1>
+            <p className="app-mobile-section-intro__hint">{tFamily(language, "subtitle")}</p>
+          </div>
+        </div>
+        <EmptyState className="text-foreground">
+          <div className="space-y-3">
+            <p className="app-card-title">{tFamily(language, "noFamilyTitle")}</p>
+            <p className="text-sm leading-6 text-muted">
+              {tFamily(language, "noFamilyDescription")}
+            </p>
+          </div>
+        </EmptyState>
+      </div>
+    );
+  }
+
   const handleFamilySubmit = (event: React.FormEvent) => {
     event.preventDefault();
     const trimmedName = familyName.trim();
     if (!trimmedName || !family || trimmedName === family.name) {
       return;
     }
-    updateFamilyMutation.mutate(trimmedName);
+    updateFamilyMutation.mutate(trimmedName, {
+      onSuccess: () => {
+        setIsEditingFamilyName(false);
+      },
+    });
   };
 
   const handleCopyInvite = async () => {
@@ -259,18 +235,6 @@ export function FamilyPage() {
     }
   };
 
-  useEffect(() => {
-    if (!inviteToast) {
-      return;
-    }
-    const timeoutId = window.setTimeout(() => {
-      setInviteToast(null);
-    }, 2600);
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [inviteToast]);
-
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
@@ -314,82 +278,124 @@ export function FamilyPage() {
           {(membersError as { message?: string }).message ?? tFamily(language, "loadMembersFailed")}
         </p>
       )}
+      {currentMember && !currentMemberHasAnyFamilyAccess ? (
+        <p className="soft-note-danger">
+          <span className="font-semibold">{tFamily(language, "noFamilyAccessTitle")}. </span>
+          {language === "ru"
+            ? "Сейчас у вас нет доступа к данным семьи. Обратитесь к администратору семьи."
+            : "You currently do not have access to family data. Contact your family admin."}
+        </p>
+      ) : null}
+      {!isFamilyLoading && !family ? (
+        <EmptyState className="text-foreground">
+          <div className="space-y-3">
+            <p className="app-card-title">{tFamily(language, "noFamilyTitle")}</p>
+            <p className="text-sm leading-6 text-muted">
+              {tFamily(language, "noFamilyDescription")}
+            </p>
+          </div>
+        </EmptyState>
+      ) : null}
+
+      {family ? (
+        <>
+      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+        <SectionTitle
+          title={tFamily(language, "yourProfileTitle")}
+          subtitle={tFamily(language, "yourProfileDescription")}
+        />
+
+        {isMembersLoading ? (
+          <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
+        ) : !currentMember ? (
+          <p className="mt-4 text-sm text-muted">{tFamily(language, "noMembers")}</p>
+        ) : (
+          <div className="mt-4">
+            <MemberCard
+              key={currentMember.id}
+              member={currentMember}
+              isCurrent
+              forceEdit={Boolean(shouldOpenCurrentProfileEditor)}
+              canManageAccess={canManageFamily}
+              canEditProfile
+              adminsCount={adminsCount}
+              isPending={
+                updateMemberMutation.isPending ||
+                updateMemberProfileMutation.isPending ||
+                updateMyProfileMutation.isPending ||
+                deleteMemberMutation.isPending
+              }
+              onPromote={() =>
+                updateMemberMutation.mutate({
+                  memberAccountId: currentMember.id,
+                  payload: { family_role: "admin" },
+                })
+              }
+              onDemote={() =>
+                updateMemberMutation.mutate({
+                  memberAccountId: currentMember.id,
+                  payload: { family_role: "member" },
+                })
+              }
+              accessHref={`/family/members/${currentMember.id}/access`}
+              onDelete={() => deleteMemberMutation.mutate(currentMember.id)}
+              onSaveProfile={async (payload) => {
+                try {
+                  await updateMemberProfileMutation.mutateAsync({
+                    memberAccountId: currentMember.id,
+                    displayName: payload.displayName,
+                    relationshipLabel: payload.relationshipLabel,
+                    phone: payload.phone,
+                  });
+                  if (payload.email !== undefined) {
+                    await updateMyProfileMutation.mutateAsync({ email: payload.email });
+                  }
+                  return true;
+                } catch {
+                  return false;
+                }
+              }}
+              onHideForcedEdit={() => {
+                if (!shouldOpenCurrentProfileEditor) {
+                  return;
+                }
+                const next = new URLSearchParams(searchParams);
+                next.delete("edit");
+                setSearchParams(next, { replace: true });
+              }}
+              language={language}
+            />
+          </div>
+        )}
+      </RowSurface>
 
       <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
         <SectionTitle
-          title={tFamily(language, "membersTitle")}
-          subtitle={tFamily(language, "membersDescription")}
+          title={tFamily(language, "otherMembersTitle")}
+          subtitle={tFamily(language, "otherMembersDescription")}
           action={
-            <span className="text-sm font-semibold text-muted">
-              {members.length} {tFamily(language, "peopleShort")}
-            </span>
+            otherMembers.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setIsMembersSheetOpen(true)}
+                className="soft-pill-primary inline-flex min-h-[2.2rem] items-center px-3 text-[0.78rem] font-semibold"
+              >
+                {tFamily(language, "openAllMembers")}
+              </button>
+            ) : null
           }
         />
 
         {isMembersLoading ? (
           <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
-        ) : members.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">{tFamily(language, "noMembers")}</p>
+        ) : otherMembers.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">{tFamily(language, "noOtherMembers")}</p>
         ) : (
-          <div className="mt-4 divide-y divide-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)]">
-            {members.map((member) => (
-              <MemberCard
-                key={member.id}
-                member={member}
-                isCurrent={member.id === currentAccountId}
-                forceEdit={Boolean(
-                  shouldOpenCurrentProfileEditor && member.id === currentAccountId
-                )}
-                isOwner={canManageFamily}
-                canEditProfile={canManageFamily || member.id === currentAccountId}
-                ownersCount={ownersCount}
-                isPending={
-                  updateMemberRoleMutation.isPending ||
-                  updateMemberProfileMutation.isPending ||
-                  updateMyProfileMutation.isPending ||
-                  deleteMemberMutation.isPending
-                }
-                onPromote={() =>
-                  updateMemberRoleMutation.mutate({
-                    memberAccountId: member.id,
-                    familyRole: "owner",
-                  })
-                }
-                onDemote={() =>
-                  updateMemberRoleMutation.mutate({
-                    memberAccountId: member.id,
-                    familyRole: "adult",
-                  })
-                }
-                onDelete={() => deleteMemberMutation.mutate(member.id)}
-                onSaveProfile={async (payload) => {
-                  try {
-                    await updateMemberProfileMutation.mutateAsync({
-                      memberAccountId: member.id,
-                      displayName: payload.displayName,
-                      relationshipLabel: payload.relationshipLabel,
-                      phone: payload.phone,
-                    });
-                    if (member.id === currentAccountId && payload.email !== undefined) {
-                      await updateMyProfileMutation.mutateAsync({ email: payload.email });
-                    }
-                    return true;
-                  } catch {
-                    return false;
-                  }
-                }}
-                onHideForcedEdit={() => {
-                  if (!shouldOpenCurrentProfileEditor) {
-                    return;
-                  }
-                  const next = new URLSearchParams(searchParams);
-                  next.delete("edit");
-                  setSearchParams(next, { replace: true });
-                }}
-                language={language}
-              />
-            ))}
-          </div>
+          <p className="mt-4 text-sm leading-6 text-muted">
+            {language === "ru"
+              ? `В семье ещё ${otherMembers.length} ${otherMembers.length === 1 ? "участник" : "участника"}.`
+              : `${otherMembers.length} more member${otherMembers.length === 1 ? "" : "s"} in the family.`}
+          </p>
         )}
       </RowSurface>
 
@@ -416,6 +422,7 @@ export function FamilyPage() {
         language={language}
         familyName={familyName}
         currentFamilyName={family?.name}
+        canManageFamily={canManageFamily}
         isEditing={isEditingFamilyName}
         isFamilyLoading={isFamilyLoading}
         isPending={updateFamilyMutation.isPending}
@@ -432,6 +439,19 @@ export function FamilyPage() {
         }}
         onSubmit={handleFamilySubmit}
       />
+
+      <OtherMembersSheet
+        language={language}
+        isOpen={isMembersSheetOpen}
+        members={otherMembers}
+        onClose={() => setIsMembersSheetOpen(false)}
+        onSelectMember={(memberId) => {
+          setIsMembersSheetOpen(false);
+          navigate(canManageFamily ? `/family/members/${memberId}/access` : "/family/members");
+        }}
+      />
+        </>
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import {
@@ -10,6 +10,8 @@ import {
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
+import { canViewChild } from "@shared/permissions/familyAccess";
+import { useAppStore } from "@shared/store/useAppStore";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { MeasurementCard } from "@client/components/MeasurementCard";
 import { getChildrenCopy } from "@client/i18n/children";
@@ -23,27 +25,30 @@ export function ChildWeightPage() {
   const { childId } = useParams<{ childId: string }>();
   const isIosShell = useIsIosShell();
   const navigate = useNavigate();
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [weightValue, setWeightValue] = useState("");
   const parsedWeight = parseMeasurement(weightValue);
+  const canViewWeight = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
     queryFn: () => fetchChild(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewWeight,
   });
 
   const { data: latestWeight = null } = useQuery({
     queryKey: ["weight-entry-latest", childId],
     queryFn: () => fetchLatestWeightEntryByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewWeight,
   });
 
   const { data: weightHistory = [] } = useQuery({
     queryKey: ["weight-entries", childId],
     queryFn: () => fetchWeightEntriesByChildId(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewWeight,
   });
 
   const addWeightMutation = useMutation({
@@ -60,7 +65,11 @@ export function ChildWeightPage() {
     },
   });
 
-  if (!childId || isLoading || !child) {
+  if (!childId || !canViewWeight) {
+    return <Navigate to="/children" replace />;
+  }
+
+  if (isLoading || !child) {
     return <p className="text-sm text-muted">{common.loading}</p>;
   }
 

@@ -126,7 +126,12 @@ async def update_my_family(
     service: FamilyService = Depends(get_family_service),
 ) -> FamilyResponseDto:
     """Обновить семью текущего аккаунта."""
-    return await service.update(account.family_id, dto)
+    return await service.update_for_account(
+        account.family_id,
+        dto,
+        account.family_id,
+        account.family_role,
+    )
 
 
 @router.patch("/{family_id}", response_model=FamilyResponseDto)
@@ -137,7 +142,12 @@ async def update_family(
     service: FamilyService = Depends(get_family_service),
 ) -> FamilyResponseDto:
     """Обновить семью."""
-    return await service.update_for_account(family_id, dto, account.family_id)
+    return await service.update_for_account(
+        family_id,
+        dto,
+        account.family_id,
+        account.family_role,
+    )
 
 
 @router.delete("/{family_id}", status_code=204)

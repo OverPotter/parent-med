@@ -65,7 +65,7 @@ export function MeasurementCard({
               className="soft-input w-full px-4"
               placeholder={inputPlaceholder}
             />
-            <div className="app-form-action-bar pt-1">
+            <div className="border-t border-border/60 pt-4">
               <button
                 type="button"
                 onClick={onSubmit}

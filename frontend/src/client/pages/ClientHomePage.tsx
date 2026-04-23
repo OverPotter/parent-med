@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -75,17 +74,6 @@ export function ClientHomePage() {
         description={copy.clientHome.analytics.description}
         items={copy.clientHome.analytics.items}
       />
-
-      <HelpInstallSection
-        title={copy.clientHome.install.title}
-        description={
-          <>
-            <BrandWordmark className="brand-wordmark-inline" />{" "}
-            {copy.clientHome.install.description}
-          </>
-        }
-        cards={copy.clientHome.install.cards}
-      />
     </div>
   );
 }
@@ -137,45 +125,5 @@ function HelpCardSection({
         ))}
       </div>
     </RowSurface>
-  );
-}
-
-function HelpInstallSection({
-  title,
-  description,
-  cards,
-}: {
-  title: string;
-  description: ReactNode;
-  cards: Array<{ title: string; steps: string[] }>;
-}) {
-  return (
-    <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-      <div className="min-w-0">
-        <h2 className="app-card-title">{title}</h2>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-muted">{description}</p>
-      </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        {cards.map((item) => (
-          <InstallCard key={item.title} title={item.title} steps={item.steps} />
-        ))}
-      </div>
-    </RowSurface>
-  );
-}
-
-function InstallCard({ title, steps }: { title: string; steps: string[] }) {
-  return (
-    <div className="rounded-[22px] border border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_54%,transparent)] px-4 py-4">
-      <h3 className="app-card-title text-[1.02rem] sm:text-[1.08rem]">{title}</h3>
-      <ol className="mt-3 space-y-2 text-sm leading-7 text-muted">
-        {steps.map((step, index) => (
-          <li key={step}>
-            {index + 1}. {step}
-          </li>
-        ))}
-      </ol>
-    </div>
   );
 }

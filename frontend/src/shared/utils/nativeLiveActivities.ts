@@ -1,7 +1,7 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { updateLiveActivityDiagnostics } from "./liveActivityDiagnostics";
 
-export type NativeLiveActivityKind = "sleep" | "feeding";
+export type NativeLiveActivityKind = "sleep" | "feeding" | "illness";
 
 type NativeLiveActivityPlugin = {
   getStatus(): Promise<{
@@ -14,6 +14,11 @@ type NativeLiveActivityPlugin = {
     itemId: string;
     title: string;
     subtitle?: string | null;
+    statusLabel?: string | null;
+    primaryValue?: string | null;
+    primaryCaption?: string | null;
+    secondaryValue?: string | null;
+    secondaryCaption?: string | null;
     startedAt: string;
     deepLink?: string | null;
   }): Promise<{ activeId: string | null }>;
@@ -82,6 +87,11 @@ export async function upsertNativeLiveActivity(args: {
   itemId: string;
   title: string;
   subtitle?: string | null;
+  statusLabel?: string | null;
+  primaryValue?: string | null;
+  primaryCaption?: string | null;
+  secondaryValue?: string | null;
+  secondaryCaption?: string | null;
   startedAt: string;
   deepLink?: string | null;
 }) {

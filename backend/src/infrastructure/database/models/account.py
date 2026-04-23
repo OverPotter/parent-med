@@ -6,7 +6,8 @@ from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import text as sa_text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infrastructure.database.base import Base
@@ -33,7 +34,13 @@ class AccountModel(Base):
         String(8), nullable=False, default="ru", server_default="ru"
     )
     family_role: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="owner", server_default="owner"
+        String(32), nullable=False, default="admin", server_default="admin"
+    )
+    access_policy: Mapped[dict] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=dict,
+        server_default=sa_text("'{}'::jsonb"),
     )
     push_before_reminder_minutes: Mapped[int] = mapped_column(
         Integer, nullable=False, default=10, server_default="10"
@@ -62,11 +69,18 @@ class AccountModel(Base):
     live_activity_feeding_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
+    live_activity_illness_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    family: Mapped["FamilyModel"] = relationship("FamilyModel", back_populates="accounts")
+    family: Mapped["FamilyModel"] = relationship(
+        "FamilyModel",
+        back_populates="accounts",
+        foreign_keys=[family_id],
+    )
     sessions: Mapped[list] = relationship("AccountSessionModel", back_populates="account")
     push_subscriptions: Mapped[list] = relationship(
         "PushSubscriptionModel", back_populates="account"

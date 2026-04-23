@@ -23,7 +23,7 @@ async def get_administration_event(
     service: AdministrationService = Depends(get_administration_service),
 ) -> AdministrationEventResponseDto:
     """Получить запись приёма по id."""
-    return await service.get_by_id(event_id, current_account.family_id)
+    return await service.get_by_id(event_id, current_account)
 
 
 @router.get("", response_model=list[AdministrationEventResponseDto])
@@ -33,7 +33,7 @@ async def list_administration_events(
     service: AdministrationService = Depends(get_administration_service),
 ) -> list[AdministrationEventResponseDto]:
     """Журнал приёмов по эпизоду болезни."""
-    return await service.get_by_episode_id(episode_id, current_account.family_id)
+    return await service.get_by_episode_id(episode_id, current_account)
 
 
 @router.post("", response_model=AdministrationEventResponseDto, status_code=201)
@@ -45,7 +45,7 @@ async def create_administration_event(
     """Зафиксировать приём лекарства (проверка срока годности и вскрытия через Safety Engine)."""
     return await service.create(
         dto,
-        current_account.family_id,
+        current_account,
         current_account.id,
         current_account.display_name,
     )
@@ -58,4 +58,4 @@ async def delete_administration_event(
     service: AdministrationService = Depends(get_administration_service),
 ) -> None:
     """Удалить запись приёма."""
-    await service.delete(event_id, current_account.family_id)
+    await service.delete(event_id, current_account)

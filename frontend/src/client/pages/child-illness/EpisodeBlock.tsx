@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import {
   createAdministrationEvent,
   fetchAdministrationEventsByEpisodeId,
@@ -22,6 +23,7 @@ import { trackMedicationAdministered, trackTemperatureLogged } from "@shared/ana
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
+import { canEditChild, canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { EpisodeMedicationPlan, FamilyMember, IllnessEpisode, WeightEntry } from "@shared/types/api";
 import { getPrioritizedMedicationPlanItems } from "@client/utils/medicationPlans";
@@ -77,7 +79,12 @@ export function EpisodeBlock({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
-  const liveQueryOptions = useLiveQueryOptions(3000);
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
+  const isIosShell = useIsIosShell();
+  const liveQueryOptions = useLiveQueryOptions(isIosShell ? 15_000 : 10_000);
+  const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
+  const canEditEpisode = canEditChild(childId, accountFamilyRole, accountAccessPolicy);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
   const [searchParams] = useSearchParams();
   const isReminderCabinetPickerOpen = searchParams.get("picker") === "cabinet";
@@ -131,7 +138,7 @@ export function EpisodeBlock({
   const { data: householdMedicines = [] } = useQuery({
     queryKey: ["household-medicines", accountId],
     queryFn: fetchHouseholdMedicines,
-    enabled: !!familyId && !!accountId,
+    enabled: !!familyId && !!accountId && canSeeCabinet,
     ...liveQueryOptions,
   });
 
@@ -326,7 +333,7 @@ export function EpisodeBlock({
     "all" | "temperature" | "administration" | "comment"
   >("all");
   const [timelineActorFilter, setTimelineActorFilter] = useState("all");
-  const now = useNow();
+  const now = useNow(isIosShell ? 30_000 : 15_000);
   const timelineItems = buildEpisodeTimeline(
     temperatureEntries,
     administrations,
@@ -411,7 +418,7 @@ export function EpisodeBlock({
             tempValue={tempValue}
             onTempChange={setTempValue}
             onSubmit={() => {
-              const parsed = parseFloat(tempValue);
+              const parsed = Number.parseFloat(tempValue.replace(",", ".").trim());
               if (Number.isNaN(parsed)) return;
               addTempMutation.mutate(parsed);
               setTempValue("");
@@ -498,6 +505,7 @@ export function EpisodeBlock({
           plans={medicationPlans}
           medicines={householdMedicines}
           familyMembers={familyMembers}
+          canEditEpisode={canEditEpisode}
           administrations={administrations}
           onOpen={(planId) =>
             navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${planId}`)
@@ -533,6 +541,7 @@ export function EpisodeBlock({
           editingReminderName={editingReminderName}
           medicines={householdMedicines}
           familyMembers={familyMembers}
+          canEditEpisode={canEditEpisode}
           isSubmittingAdministration={addAdminMutation.isPending}
           isUpdating={updatePlanMutation.isPending}
           isDeleting={deletePlanMutation.isPending}
@@ -610,6 +619,7 @@ export function EpisodeBlock({
               medicine.status !== "expired" && medicine.status !== "expired_after_opening"
           )}
           familyMembers={familyMembers}
+          canEditEpisode={canEditEpisode}
           latestWeight={latestWeight}
           isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
           submitLabel={language === "ru" ? "Сохранить напоминание" : "Save reminder"}

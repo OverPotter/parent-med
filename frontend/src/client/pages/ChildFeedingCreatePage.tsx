@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
-import { createFeedingRecord, startFeedingRecord } from "@shared/api/feedingRecords";
+import { createFeedingRecord } from "@shared/api/feedingRecords";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
@@ -15,7 +15,10 @@ import {
   getCurrentLocalTimeInputValue,
   toApiDateTime,
 } from "@client/utils/feedingRecordForm";
+import { startFeedingRecordResilient } from "@shared/utils/offlineCareSync";
 import { syncFeedingLiveActivity } from "@shared/utils/liveActivities";
+import { canActChild, canViewChild } from "@shared/permissions/familyAccess";
+import { useAppStore } from "@shared/store/useAppStore";
 import { scrollFieldIntoView } from "@shared/utils/focus";
 
 export function ChildFeedingCreatePage() {
@@ -23,6 +26,9 @@ export function ChildFeedingCreatePage() {
   const copy = getChildrenCopy(language).childrenPage.childCard;
   const common = getChildrenCopy(language).common;
   const { childId } = useParams<{ childId: string }>();
+  const accountId = useAppStore((s) => s.accountId);
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const navigate = useNavigate();
   const isIosShell = useIsIosShell();
   const queryClient = useQueryClient();
@@ -36,6 +42,8 @@ export function ChildFeedingCreatePage() {
   const [note, setNote] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
   const pageRef = useRef<HTMLDivElement | null>(null);
+  const canViewFeedingChild =
+    !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
 
   useEffect(() => {
     const page = pageRef.current;
@@ -89,7 +97,7 @@ export function ChildFeedingCreatePage() {
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
     queryFn: () => fetchChild(childId!),
-    enabled: !!childId,
+    enabled: !!childId && canViewFeedingChild,
   });
 
   const createMutation = useMutation({
@@ -118,31 +126,42 @@ export function ChildFeedingCreatePage() {
 
   const startMutation = useMutation({
     mutationFn: () =>
-      startFeedingRecord({
-        child_id: child!.id,
-        feeding_type: feedingType,
-        breast_side: feedingType === "breast" && !isExpressed ? breastSide : null,
-        is_expressed: feedingType === "breast" ? isExpressed : false,
-        formula_volume_ml:
-          feedingType === "formula" && formulaVolume.trim()
-            ? Number.parseInt(formulaVolume.trim(), 10) || null
-            : null,
-        note: note.trim() || null,
+      startFeedingRecordResilient({
+        childId: child!.id,
+        currentAccountId: accountId,
+        payload: {
+          feeding_type: feedingType,
+          breast_side: feedingType === "breast" && !isExpressed ? breastSide : null,
+          is_expressed: feedingType === "breast" ? isExpressed : false,
+          formula_volume_ml:
+            feedingType === "formula" && formulaVolume.trim()
+              ? Number.parseInt(formulaVolume.trim(), 10) || null
+              : null,
+          note: note.trim() || null,
+        },
       }),
     onSuccess: (feeding) => {
       queryClient.invalidateQueries({ queryKey: ["feeding-records", childId] });
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", childId] });
-      void syncFeedingLiveActivity(child!, feeding, language);
+      void syncFeedingLiveActivity(child!, feeding, language, undefined, accountId);
       navigate("/children", { replace: true });
     },
   });
 
-  if (!childId || isLoading || !child) {
+  if (!childId || !canViewFeedingChild) {
+    return <Navigate to="/children" replace />;
+  }
+
+  if (isLoading || !child) {
     return <p className="text-sm text-muted">{common.loading}</p>;
   }
 
   if (!child.babyModeEnabled) {
     return <Navigate to={`/children/${child.id}`} replace />;
+  }
+
+  if (!canActChild(child.id, accountFamilyRole, accountAccessPolicy)) {
+    return <Navigate to={`/children/${child.id}/feeding`} replace />;
   }
 
   return (

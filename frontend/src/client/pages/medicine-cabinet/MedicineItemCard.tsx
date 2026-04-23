@@ -24,6 +24,7 @@ export function MedicineItemCard({
   onDelete,
   isDeleting = false,
   compact = false,
+  canEdit = true,
   isExpanded,
   onExpandChange,
 }: {
@@ -32,6 +33,7 @@ export function MedicineItemCard({
   onDelete: (id: string) => void;
   isDeleting?: boolean;
   compact?: boolean;
+  canEdit?: boolean;
   isExpanded: boolean;
   onExpandChange: (isExpanded: boolean) => void;
 }) {
@@ -132,7 +134,7 @@ export function MedicineItemCard({
                 >
                   {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
                 </button>
-                {!compact && (
+                {!compact && canEdit ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -144,14 +146,16 @@ export function MedicineItemCard({
                   >
                     {tCabinet(language, "newPack")}
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  className={`${cabinetActionDangerClass} col-span-2 w-full`}
-                >
-                  {tCabinet(language, "writeOff")}
-                </button>
+                ) : null}
+                {canEdit ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    className={`${cabinetActionDangerClass} col-span-2 w-full`}
+                  >
+                    {tCabinet(language, "writeOff")}
+                  </button>
+                ) : null}
               </div>
             </div>
           )}
@@ -160,24 +164,28 @@ export function MedicineItemCard({
               <button type="button" onClick={toggleDetails} className={cabinetActionSecondaryClass}>
                 {isDetailsExpanded ? tCabinet(language, "hide") : tCabinet(language, "details")}
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onExpandChange(false);
-                  setIsDetailsExpanded(false);
-                  navigate(`/medicine-cabinet/${medicine.id}/new-pack`);
-                }}
-                className={cabinetActionSecondaryClass}
-              >
-                {tCabinet(language, "newPack")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsDeleteConfirmOpen(true)}
-                className={cabinetActionDangerClass}
-              >
-                {tCabinet(language, "writeOff")}
-              </button>
+              {canEdit ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onExpandChange(false);
+                      setIsDetailsExpanded(false);
+                      navigate(`/medicine-cabinet/${medicine.id}/new-pack`);
+                    }}
+                    className={cabinetActionSecondaryClass}
+                  >
+                    {tCabinet(language, "newPack")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    className={cabinetActionDangerClass}
+                  >
+                    {tCabinet(language, "writeOff")}
+                  </button>
+                </>
+              ) : null}
             </div>
           )}
         </div>

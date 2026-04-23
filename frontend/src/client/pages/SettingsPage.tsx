@@ -34,8 +34,8 @@ import {
   setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
 import {
-  getLiveActivityPreferencesCache,
-  setLiveActivityPreferencesCache,
+  resolveLiveActivityPreferences,
+  syncLiveActivityPreferencesMirror,
 } from "@shared/utils/liveActivityPreferences";
 import { SettingsAppPreferencesSection } from "./settings/SettingsAppPreferencesSection";
 import { tSettings } from "./settings/copy";
@@ -84,7 +84,7 @@ export function SettingsPage() {
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
   const [selectedPillboxReminderMinutes, setSelectedPillboxReminderMinutes] = useState("10");
   const [liveActivitySettings, setLiveActivitySettings] = useState(() =>
-    getLiveActivityPreferencesCache()
+    resolveLiveActivityPreferences()
   );
   const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
   const isDevTestPushVisible =
@@ -131,13 +131,58 @@ export function SettingsPage() {
       cabinet_notify_10_days?: boolean;
       cabinet_notify_7_days?: boolean;
       cabinet_notify_3_days?: boolean;
+      live_activity_sleep_enabled?: boolean;
+      live_activity_feeding_enabled?: boolean;
+      live_activity_illness_enabled?: boolean;
     }) => updatePushNotificationPreferences(payload),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: ["push", "preferences", "account"] });
+      const previousPreferences = queryClient.getQueryData(["push", "preferences", "account"]);
+      const previousLiveActivitySettings = liveActivitySettings;
+
+      queryClient.setQueryData(
+        ["push", "preferences", "account"],
+        (current: typeof pushPreferences | undefined) => {
+          if (!current) {
+            return current;
+          }
+          return {
+            ...current,
+            beforeReminderMinutes:
+              payload.before_reminder_minutes ?? current.beforeReminderMinutes,
+            pillboxBeforeReminderMinutes:
+              payload.pillbox_before_reminder_minutes ?? current.pillboxBeforeReminderMinutes,
+            cabinetNotify10Days: payload.cabinet_notify_10_days ?? current.cabinetNotify10Days,
+            cabinetNotify7Days: payload.cabinet_notify_7_days ?? current.cabinetNotify7Days,
+            cabinetNotify3Days: payload.cabinet_notify_3_days ?? current.cabinetNotify3Days,
+            liveActivitySleepEnabled:
+              payload.live_activity_sleep_enabled ?? current.liveActivitySleepEnabled,
+            liveActivityFeedingEnabled:
+              payload.live_activity_feeding_enabled ?? current.liveActivityFeedingEnabled,
+            liveActivityIllnessEnabled:
+              payload.live_activity_illness_enabled ?? current.liveActivityIllnessEnabled,
+          };
+        }
+      );
+
+      return { previousPreferences, previousLiveActivitySettings };
+    },
     onSuccess: (nextPreferences) => {
       setSelectedReminderMinutes(String(nextPreferences.beforeReminderMinutes));
       setSelectedPillboxReminderMinutes(String(nextPreferences.pillboxBeforeReminderMinutes));
+      const nextLiveActivitySettings = resolveLiveActivityPreferences(nextPreferences);
+      setLiveActivitySettings(nextLiveActivitySettings);
+      syncLiveActivityPreferencesMirror(nextLiveActivitySettings);
       queryClient.setQueryData(["push", "preferences", "account"], nextPreferences);
     },
-    onError: (error) => {
+    onError: (error, _payload, context) => {
+      if (context?.previousPreferences) {
+        queryClient.setQueryData(["push", "preferences", "account"], context.previousPreferences);
+      }
+      if (context?.previousLiveActivitySettings) {
+        setLiveActivitySettings(context.previousLiveActivitySettings);
+        syncLiveActivityPreferencesMirror(context.previousLiveActivitySettings);
+      }
       setPushError(
         error instanceof Error ? error.message : tSettings(language, "reminderSaveFailed")
       );
@@ -181,6 +226,9 @@ export function SettingsPage() {
     if (pushPreferences) {
       setSelectedReminderMinutes(String(pushPreferences.beforeReminderMinutes));
       setSelectedPillboxReminderMinutes(String(pushPreferences.pillboxBeforeReminderMinutes));
+      const nextLiveActivitySettings = resolveLiveActivityPreferences(pushPreferences);
+      setLiveActivitySettings(nextLiveActivitySettings);
+      syncLiveActivityPreferencesMirror(nextLiveActivitySettings);
     }
   }, [pushPreferences]);
 
@@ -322,7 +370,16 @@ export function SettingsPage() {
     },
   });
 
+  const resetPasswordDialogState = () => {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError(null);
+    setPasswordSuccess(null);
+  };
+
   const handleEnablePush = async () => {
+    setTestPushStatus(null);
     if (isNativePushSupported()) {
       setPushError(null);
       setIsPushPending(true);
@@ -410,6 +467,7 @@ export function SettingsPage() {
 
   const handleDisablePush = async (): Promise<boolean> => {
     setPushError(null);
+    setTestPushStatus(null);
     setIsPushPending(true);
     try {
       if (isNativePushSupported()) {
@@ -519,8 +577,9 @@ export function SettingsPage() {
     setPushError(null);
     setLiveActivitySettings((current) => {
       const next = { ...current, sleepEnabled: enabled };
-      setLiveActivityPreferencesCache(next);
+      syncLiveActivityPreferencesMirror(next);
       void stopDisabledLiveActivities(next);
+      updatePushPreferencesMutation.mutate({ live_activity_sleep_enabled: enabled });
       return next;
     });
   };
@@ -529,8 +588,20 @@ export function SettingsPage() {
     setPushError(null);
     setLiveActivitySettings((current) => {
       const next = { ...current, feedingEnabled: enabled };
-      setLiveActivityPreferencesCache(next);
+      syncLiveActivityPreferencesMirror(next);
       void stopDisabledLiveActivities(next);
+      updatePushPreferencesMutation.mutate({ live_activity_feeding_enabled: enabled });
+      return next;
+    });
+  };
+
+  const handleLiveActivityIllnessToggle = (enabled: boolean) => {
+    setPushError(null);
+    setLiveActivitySettings((current) => {
+      const next = { ...current, illnessEnabled: enabled };
+      syncLiveActivityPreferencesMirror(next);
+      void stopDisabledLiveActivities(next);
+      updatePushPreferencesMutation.mutate({ live_activity_illness_enabled: enabled });
       return next;
     });
   };
@@ -600,9 +671,11 @@ export function SettingsPage() {
         isIos={isNativeIos}
         sleepEnabled={liveActivitySettings.sleepEnabled}
         feedingEnabled={liveActivitySettings.feedingEnabled}
+        illnessEnabled={liveActivitySettings.illnessEnabled}
         disabled={!isNativeIos}
         onSleepToggle={handleLiveActivitySleepToggle}
         onFeedingToggle={handleLiveActivityFeedingToggle}
+        onIllnessToggle={handleLiveActivityIllnessToggle}
       />
       <SettingsNotificationsSection
         language={language}
@@ -637,11 +710,13 @@ export function SettingsPage() {
         language={language}
         isPasswordDialogOpen={isPasswordDialogOpen}
         onOpenPasswordDialog={() => {
-          setPasswordError(null);
-          setPasswordSuccess(null);
+          resetPasswordDialogState();
           setIsPasswordDialogOpen(true);
         }}
-        onClosePasswordDialog={() => setIsPasswordDialogOpen(false)}
+        onClosePasswordDialog={() => {
+          setIsPasswordDialogOpen(false);
+          resetPasswordDialogState();
+        }}
         currentPassword={currentPassword}
         newPassword={newPassword}
         confirmPassword={confirmPassword}

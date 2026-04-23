@@ -21,8 +21,27 @@ interface RawAuthResponse {
     phone: string | null;
     preferred_language: "ru" | "en";
     family_role: string;
+    access_policy?: {
+      all_children?: boolean;
+      child_ids?: string[] | null;
+      children_access?: "view" | "act" | "edit";
+      cabinet_access?: "none" | "view" | "edit";
+      pillbox_access?: "none" | "view" | "act" | "edit";
+      cabinet_push_enabled?: boolean;
+    } | null;
   };
-  family: { id: string; name: string };
+  family: {
+    id: string;
+    name: string;
+    cabinet_member_account_ids?: string[] | null;
+    billing_account_id?: string | null;
+    plan_code?: "free" | "plus" | "pro" | null;
+    subscription_status?: "inactive" | "active" | "grace" | "canceled" | "expired" | null;
+    subscription_provider?: string | null;
+    subscription_product_id?: string | null;
+    subscription_expires_at?: string | null;
+    premium_active?: boolean | null;
+  };
 }
 
 function toAuthResponse(raw: RawAuthResponse): AuthSessionResponse {

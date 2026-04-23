@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { applyLanguageToDocument, type AppLanguage } from "@shared/i18n";
+import type { FamilyAccessPolicy } from "@shared/types/api";
 import {
   clearSecureAuthTokens,
   isNativeIOSRuntime,
@@ -10,6 +11,7 @@ import {
   readSecureAuthTokens,
   writeSecureAuthTokens,
 } from "@shared/security/authTokenStorage";
+import { appLog } from "@shared/utils/appLog";
 
 type Theme = "light" | "dark" | "system";
 type ResolvedTheme = "light" | "dark";
@@ -93,6 +95,7 @@ interface AppState {
   accountDisplayName: string | null;
   accountPreferredLanguage: AppLanguage | null;
   accountFamilyRole: string | null;
+  accountAccessPolicy: FamilyAccessPolicy | null;
   /** ID выбранной семьи для контекста (MVP: один пользователь — одна семья). */
   currentFamilyId: string | null;
   currentFamilyName: string | null;
@@ -106,6 +109,7 @@ interface AppState {
       displayName: string;
       preferredLanguage: AppLanguage;
       familyRole: string;
+      accessPolicy: FamilyAccessPolicy;
     };
     family: { id: string; name: string };
   }) => void;
@@ -118,11 +122,16 @@ interface AppState {
       displayName: string;
       preferredLanguage: AppLanguage;
       familyRole: string;
+      accessPolicy: FamilyAccessPolicy;
     };
     family: { id: string; name: string };
   }) => void;
   setAccountPreferredLanguage: (language: AppLanguage) => void;
   setAccountEmail: (email: string | null) => void;
+  setAccountFamilyContext: (family: {
+    familyRole?: string | null;
+    accessPolicy?: FamilyAccessPolicy | null;
+  }) => void;
   setAccountProfile: (profile: { displayName?: string | null; email?: string | null }) => void;
   clearSession: () => void;
   setCurrentFamily: (family: { id: string; name: string } | null) => void;
@@ -177,6 +186,7 @@ export const useAppStore = create<AppState>()(
       accountDisplayName: null,
       accountPreferredLanguage: null,
       accountFamilyRole: null,
+      accountAccessPolicy: null,
       currentFamilyId: null,
       currentFamilyName: null,
       setSession: (session) => {
@@ -192,6 +202,7 @@ export const useAppStore = create<AppState>()(
             accountPreferredLanguage: session.account.preferredLanguage,
             language: session.account.preferredLanguage,
             accountFamilyRole: session.account.familyRole,
+            accountAccessPolicy: session.account.accessPolicy,
             currentFamilyId: session.family.id,
             currentFamilyName: session.family.name,
           };
@@ -228,6 +239,7 @@ export const useAppStore = create<AppState>()(
             accountPreferredLanguage: state.account.preferredLanguage,
             language: state.account.preferredLanguage,
             accountFamilyRole: state.account.familyRole,
+            accountAccessPolicy: state.account.accessPolicy,
             currentFamilyId: state.family.id,
             currentFamilyName: state.family.name,
           };
@@ -241,6 +253,13 @@ export const useAppStore = create<AppState>()(
           };
         }),
       setAccountEmail: (email) => set({ accountEmail: email }),
+      setAccountFamilyContext: (family) =>
+        set((state) => ({
+          accountFamilyRole:
+            family.familyRole !== undefined ? family.familyRole : state.accountFamilyRole,
+          accountAccessPolicy:
+            family.accessPolicy !== undefined ? family.accessPolicy : state.accountAccessPolicy,
+        })),
       setAccountProfile: (profile) =>
         set((state) => ({
           accountDisplayName:
@@ -257,6 +276,7 @@ export const useAppStore = create<AppState>()(
           accountDisplayName: null,
           accountPreferredLanguage: null,
           accountFamilyRole: null,
+          accountAccessPolicy: null,
           currentFamilyId: null,
           currentFamilyName: null,
         });
@@ -286,6 +306,7 @@ export const useAppStore = create<AppState>()(
         accountDisplayName: s.accountDisplayName,
         accountPreferredLanguage: s.accountPreferredLanguage,
         accountFamilyRole: s.accountFamilyRole,
+        accountAccessPolicy: s.accountAccessPolicy,
         currentFamilyId: s.currentFamilyId,
         currentFamilyName: s.currentFamilyName,
       }),
@@ -299,6 +320,7 @@ export const useAppStore = create<AppState>()(
         }
 
         if (!state) {
+          useAppStore.setState({ hydrated: true });
           return;
         }
 
@@ -308,13 +330,18 @@ export const useAppStore = create<AppState>()(
         }
 
         void (async () => {
-          await migrateLegacyAuthTokensToSecureStorage();
-          const tokens = await readSecureAuthTokens();
-          useAppStore.setState({
-            authToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-          });
-          state.setHydrated(true);
+          try {
+            await migrateLegacyAuthTokensToSecureStorage();
+            const tokens = await readSecureAuthTokens();
+            useAppStore.setState({
+              authToken: tokens.accessToken,
+              refreshToken: tokens.refreshToken,
+            });
+          } catch (error) {
+            appLog.error("iOS auth bootstrap failed", error);
+          } finally {
+            state.setHydrated(true);
+          }
         })();
       },
     }

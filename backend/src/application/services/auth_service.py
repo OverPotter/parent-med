@@ -27,10 +27,12 @@ from src.core.security import (
     hash_session_token,
     verify_password,
 )
-from src.domain.entities.account import Account
+from src.domain.entities.account import Account, copy_account
 from src.domain.entities.account_session import AccountSession
 from src.domain.entities.family import Family
+from src.domain.entities.family_access import build_default_family_access_policy
 from src.domain.entities.family_invite import FamilyInvite
+from src.domain.entities.family_roles import is_family_admin, normalize_family_role
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.parent_repository import ParentRepository
@@ -117,7 +119,7 @@ class AuthService(BaseAuthService):
                 code="ACCOUNT_EMAIL_ALREADY_EXISTS",
                 status_code=409,
             )
-        family_role = "owner"
+        family_role = "admin"
         invite: FamilyInvite | None = None
         family_name = _DEFAULT_FAMILY_NAME
         if dto.invite_token:
@@ -142,7 +144,7 @@ class AuthService(BaseAuthService):
                     "Семья по приглашению не найдена",
                     code="FAMILY_INVITE_INVALID",
                 )
-            family_role = invite.family_role
+            family_role = normalize_family_role(invite.family_role)
             family_name = created_family.name
         else:
             family = Family(id=uuid4(), name=family_name)
@@ -166,7 +168,9 @@ class AuthService(BaseAuthService):
             cabinet_notify_1_day=True,
             live_activity_sleep_enabled=True,
             live_activity_feeding_enabled=True,
+            live_activity_illness_enabled=True,
             created_at=datetime.now(UTC),
+            access_policy=build_default_family_access_policy(),
         )
         created_account = await self._account_repo.add(account)
         if invite is not None:
@@ -212,6 +216,7 @@ class AuthService(BaseAuthService):
             phone=account.phone,
             preferred_language=account.preferred_language,
             family_role=account.family_role,
+            access_policy=self._account_to_response(account).access_policy,
         )
 
     async def get_me(self, account_id: UUID, family_id: UUID) -> AuthStateResponseDto:
@@ -256,64 +261,15 @@ class AuthService(BaseAuthService):
     async def _soft_delete_account(self, account: Account) -> None:
         deleted_login = f"deleted-{account.id.hex[:12]}"
         await self._account_repo.update(
-            Account(
-                id=account.id,
+            copy_account(
+                account,
                 login=deleted_login,
                 email=None,
                 password_hash=hash_password(uuid4().hex),
-                family_id=account.family_id,
                 display_name="Deleted user",
                 relationship_label=None,
                 phone=None,
-                preferred_language=account.preferred_language,
                 family_role="deleted",
-                push_before_reminder_minutes=account.push_before_reminder_minutes,
-                pillbox_push_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,
-                cabinet_notify_10_days=account.cabinet_notify_10_days,
-                cabinet_notify_7_days=account.cabinet_notify_7_days,
-                cabinet_notify_3_days=account.cabinet_notify_3_days,
-                cabinet_notify_1_day=account.cabinet_notify_1_day,
-                live_activity_sleep_enabled=account.live_activity_sleep_enabled,
-                live_activity_feeding_enabled=account.live_activity_feeding_enabled,
-                created_at=account.created_at,
-            )
-        )
-
-    async def _promote_owner_if_needed(
-        self,
-        account: Account,
-        family_accounts: list[Account],
-    ) -> None:
-        active_accounts = [item for item in family_accounts if item.family_role != "deleted"]
-        active_others = [item for item in active_accounts if item.id != account.id]
-        if account.family_role != "owner" or not active_others:
-            return
-        active_owners = [item for item in active_others if item.family_role == "owner"]
-        if active_owners:
-            return
-
-        next_owner = min(active_others, key=lambda item: item.created_at)
-        await self._account_repo.update(
-            Account(
-                id=next_owner.id,
-                login=next_owner.login,
-                email=next_owner.email,
-                password_hash=next_owner.password_hash,
-                family_id=next_owner.family_id,
-                display_name=next_owner.display_name,
-                relationship_label=next_owner.relationship_label,
-                phone=next_owner.phone,
-                preferred_language=next_owner.preferred_language,
-                family_role="owner",
-                push_before_reminder_minutes=next_owner.push_before_reminder_minutes,
-                pillbox_push_before_reminder_minutes=next_owner.pillbox_push_before_reminder_minutes,
-                cabinet_notify_10_days=next_owner.cabinet_notify_10_days,
-                cabinet_notify_7_days=next_owner.cabinet_notify_7_days,
-                cabinet_notify_3_days=next_owner.cabinet_notify_3_days,
-                cabinet_notify_1_day=next_owner.cabinet_notify_1_day,
-                live_activity_sleep_enabled=next_owner.live_activity_sleep_enabled,
-                live_activity_feeding_enabled=next_owner.live_activity_feeding_enabled,
-                created_at=next_owner.created_at,
             )
         )
 
@@ -323,7 +279,19 @@ class AuthService(BaseAuthService):
             raise UnauthorizedError()
 
         family_accounts = await self._account_repo.list_by_family_id(account.family_id)
-        await self._promote_owner_if_needed(account, family_accounts)
+        family = await self._family_repo.get_by_id(account.family_id)
+        active_accounts = [item for item in family_accounts if item.family_role != "deleted"]
+        active_admins = [item for item in active_accounts if is_family_admin(item.family_role)]
+        if is_family_admin(account.family_role) and len(active_admins) <= 1:
+            raise ValidationError(
+                "Нельзя удалить последнего администратора семьи",
+                code="LAST_ADMIN_REQUIRED",
+            )
+        if family is not None and family.billing_account_id == account.id:
+            raise ValidationError(
+                "Нельзя удалить аккаунт, пока на нём привязана семейная подписка",
+                code="BILLING_OWNER_TRANSFER_REQUIRED",
+            )
 
         await self._session_repo.delete_by_account_id(account.id)
         await self._soft_delete_account(account)
@@ -332,8 +300,8 @@ class AuthService(BaseAuthService):
         account = await self._account_repo.get_by_id(account_id)
         if account is None or account.family_role == "deleted":
             raise UnauthorizedError()
-        if account.family_role != "owner":
-            raise ForbiddenError("Только владелец семьи может удалить семью")
+        if not is_family_admin(account.family_role):
+            raise ForbiddenError("Только администратор семьи может удалить семью")
 
         family_accounts = await self._account_repo.list_by_family_id(account.family_id)
         active_accounts = [item for item in family_accounts if item.family_role != "deleted"]
@@ -353,27 +321,7 @@ class AuthService(BaseAuthService):
         if dto.current_password == dto.new_password:
             raise ValidationError("Новый пароль должен отличаться от текущего")
         await self._account_repo.update(
-            Account(
-                id=account.id,
-                login=account.login,
-                email=account.email,
-                password_hash=hash_password(dto.new_password),
-                family_id=account.family_id,
-                display_name=account.display_name,
-                relationship_label=account.relationship_label,
-                phone=account.phone,
-                preferred_language=account.preferred_language,
-                family_role=account.family_role,
-                push_before_reminder_minutes=account.push_before_reminder_minutes,
-                pillbox_push_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,
-                cabinet_notify_10_days=account.cabinet_notify_10_days,
-                cabinet_notify_7_days=account.cabinet_notify_7_days,
-                cabinet_notify_3_days=account.cabinet_notify_3_days,
-                cabinet_notify_1_day=account.cabinet_notify_1_day,
-                live_activity_sleep_enabled=account.live_activity_sleep_enabled,
-                live_activity_feeding_enabled=account.live_activity_feeding_enabled,
-                created_at=account.created_at,
-            )
+            copy_account(account, password_hash=hash_password(dto.new_password))
         )
 
     async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:
@@ -405,26 +353,10 @@ class AuthService(BaseAuthService):
 
         old_family_id = account.family_id
         updated_account = await self._account_repo.update(
-            Account(
-                id=account.id,
-                login=account.login,
-                email=account.email,
-                password_hash=account.password_hash,
+            copy_account(
+                account,
                 family_id=invite.family_id,
-                display_name=account.display_name,
-                relationship_label=account.relationship_label,
-                phone=account.phone,
-                preferred_language=account.preferred_language,
-                family_role=invite.family_role,
-                push_before_reminder_minutes=account.push_before_reminder_minutes,
-                pillbox_push_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,
-                cabinet_notify_10_days=account.cabinet_notify_10_days,
-                cabinet_notify_7_days=account.cabinet_notify_7_days,
-                cabinet_notify_3_days=account.cabinet_notify_3_days,
-                cabinet_notify_1_day=account.cabinet_notify_1_day,
-                live_activity_sleep_enabled=account.live_activity_sleep_enabled,
-                live_activity_feeding_enabled=account.live_activity_feeding_enabled,
-                created_at=account.created_at,
+                family_role=normalize_family_role(invite.family_role),
             )
         )
         await self._family_invite_repo.update(
@@ -433,7 +365,7 @@ class AuthService(BaseAuthService):
                 family_id=invite.family_id,
                 created_by_account_id=invite.created_by_account_id,
                 token_hash=invite.token_hash,
-                family_role=invite.family_role,
+                family_role=normalize_family_role(invite.family_role),
                 created_at=invite.created_at,
                 expires_at=invite.expires_at,
                 accepted_at=datetime.now(UTC),
@@ -450,27 +382,7 @@ class AuthService(BaseAuthService):
             raise UnauthorizedError()
 
         updated = await self._account_repo.update(
-            Account(
-                id=account.id,
-                login=account.login,
-                email=account.email,
-                password_hash=account.password_hash,
-                family_id=account.family_id,
-                display_name=account.display_name,
-                relationship_label=account.relationship_label,
-                phone=account.phone,
-                preferred_language=dto.preferred_language,
-                family_role=account.family_role,
-                push_before_reminder_minutes=account.push_before_reminder_minutes,
-                pillbox_push_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,
-                cabinet_notify_10_days=account.cabinet_notify_10_days,
-                cabinet_notify_7_days=account.cabinet_notify_7_days,
-                cabinet_notify_3_days=account.cabinet_notify_3_days,
-                cabinet_notify_1_day=account.cabinet_notify_1_day,
-                live_activity_sleep_enabled=account.live_activity_sleep_enabled,
-                live_activity_feeding_enabled=account.live_activity_feeding_enabled,
-                created_at=account.created_at,
-            )
+            copy_account(account, preferred_language=dto.preferred_language)
         )
         return self._account_to_response(updated)
 
@@ -491,29 +403,7 @@ class AuthService(BaseAuthService):
                     status_code=409,
                 )
 
-        updated = await self._account_repo.update(
-            Account(
-                id=account.id,
-                login=account.login,
-                email=email,
-                password_hash=account.password_hash,
-                family_id=account.family_id,
-                display_name=account.display_name,
-                relationship_label=account.relationship_label,
-                phone=account.phone,
-                preferred_language=account.preferred_language,
-                family_role=account.family_role,
-                push_before_reminder_minutes=account.push_before_reminder_minutes,
-                pillbox_push_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,
-                cabinet_notify_10_days=account.cabinet_notify_10_days,
-                cabinet_notify_7_days=account.cabinet_notify_7_days,
-                cabinet_notify_3_days=account.cabinet_notify_3_days,
-                cabinet_notify_1_day=account.cabinet_notify_1_day,
-                live_activity_sleep_enabled=account.live_activity_sleep_enabled,
-                live_activity_feeding_enabled=account.live_activity_feeding_enabled,
-                created_at=account.created_at,
-            )
-        )
+        updated = await self._account_repo.update(copy_account(account, email=email))
         return self._account_to_response(updated)
 
     async def _ensure_can_leave_current_family(self, account: Account) -> None:
