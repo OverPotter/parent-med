@@ -1,4 +1,5 @@
 import { deletePushSubscription } from "@shared/api/pushNotifications";
+import { clearNativeNavigationSessionState } from "@/app/push/sync";
 import { stopAllLiveActivities } from "./liveActivities";
 import {
   clearCachedNativePushState,
@@ -16,6 +17,8 @@ export async function cleanupDeviceSessionArtifacts() {
   } catch {
     // Ignore cleanup failures on logout/reset.
   }
+
+  clearNativeNavigationSessionState();
 
   try {
     const nativeSubscription = getCachedNativePushSubscriptionPayload();

@@ -22,6 +22,7 @@ import {
   RuntimePlatformSync,
   ThemeSync,
 } from "@/app/runtime/sync";
+import { NativePushNavigationSync } from "@/app/push/sync";
 import { ClientRuntimeMount } from "@/app/runtime/ClientRuntimeMount";
 import { IOSBackSwipeZone } from "@/app/mobile/ios/IOSBackSwipeZone";
 import {
@@ -333,6 +334,7 @@ export default function App() {
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <AuthSync />
+      {role !== "admin" ? <NativePushNavigationSync /> : null}
       <ClientRuntimeMount enabled={shouldMountClientRuntime} />
       <Suspense fallback={<RouteFallback />}>
         <div id="app-route-root" tabIndex={-1}>

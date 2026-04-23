@@ -21,6 +21,56 @@ import { appLog } from "@shared/utils/appLog";
 import { useGlobalBootReady } from "@/app/boot/state";
 
 const CONSUMED_LAUNCH_URL_SESSION_KEY = "pm_native_consumed_launch_url_v1";
+const PENDING_NATIVE_URL_SESSION_KEY = "pm_native_pending_url_v1";
+
+export function normalizeNativeNavigationUrl(rawUrl: unknown): string | null {
+  if (typeof rawUrl !== "string") {
+    return null;
+  }
+
+  let url = rawUrl;
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol === "pillpath:" && parsed.pathname.startsWith("/")) {
+      url = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } else if (parsed.pathname.startsWith("/")) {
+      url = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  } catch {
+    // noop: keep raw value
+  }
+
+  return url.startsWith("/") ? url : null;
+}
+
+export function readPendingNativeNavigationUrl(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return window.sessionStorage.getItem(PENDING_NATIVE_URL_SESSION_KEY);
+}
+
+function writePendingNativeNavigationUrl(url: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.sessionStorage.setItem(PENDING_NATIVE_URL_SESSION_KEY, url);
+}
+
+export function clearPendingNativeNavigationUrl() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.sessionStorage.removeItem(PENDING_NATIVE_URL_SESSION_KEY);
+}
+
+export function clearNativeNavigationSessionState() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.sessionStorage.removeItem(PENDING_NATIVE_URL_SESSION_KEY);
+  window.sessionStorage.removeItem(CONSUMED_LAUNCH_URL_SESSION_KEY);
+}
 
 export function PushSubscriptionSync() {
   const authToken = useAppStore((s) => s.authToken);
@@ -85,10 +135,13 @@ export function PushSubscriptionSync() {
 }
 
 export function NativePushNavigationSync() {
+  const authToken = useAppStore((s) => s.authToken);
+  const accountId = useAppStore((s) => s.accountId);
   const navigate = useNavigate();
   const location = useLocation();
   const currentUrlRef = useRef("");
   const lastHandledRef = useRef<{ url: string; at: number } | null>(null);
+  const hasSession = Boolean(authToken || accountId);
 
   const isConsumedLaunchUrl = (url: string) => {
     if (typeof window === "undefined") {
@@ -110,23 +163,13 @@ export function NativePushNavigationSync() {
 
   useEffect(() => {
     const navigateToNativeUrl = (rawUrl: unknown, source: "launch" | "event" = "event") => {
-      if (typeof rawUrl !== "string") {
+      const url = normalizeNativeNavigationUrl(rawUrl);
+      if (!url) {
         return;
       }
 
-      let url = rawUrl;
-      try {
-        const parsed = new URL(rawUrl);
-        if (parsed.protocol === "pillpath:" && parsed.pathname.startsWith("/")) {
-          url = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-        } else if (parsed.pathname.startsWith("/")) {
-          url = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-        }
-      } catch {
-        // noop: keep raw value
-      }
-
-      if (!url.startsWith("/")) {
+      if (!hasSession) {
+        writePendingNativeNavigationUrl(url);
         return;
       }
 
@@ -148,6 +191,7 @@ export function NativePushNavigationSync() {
       if (source === "launch") {
         markLaunchUrlConsumed(url);
       }
+      clearPendingNativeNavigationUrl();
       navigate(url, { replace: false });
     };
 
@@ -191,7 +235,21 @@ export function NativePushNavigationSync() {
       removeAppUrlOpenListener?.();
       removePushActionListener?.();
     };
-  }, [navigate]);
+  }, [hasSession, navigate]);
+
+  useEffect(() => {
+    if (!hasSession) {
+      return;
+    }
+
+    const pendingUrl = readPendingNativeNavigationUrl();
+    if (!pendingUrl) {
+      return;
+    }
+
+    clearPendingNativeNavigationUrl();
+    navigate(pendingUrl, { replace: false });
+  }, [hasSession, navigate]);
 
   return null;
 }

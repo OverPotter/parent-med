@@ -97,7 +97,7 @@ struct FeedingReferenceLockScreenView: View {
                 .shadow(color: Color(red: 0.86, green: 0.58, blue: 0.43).opacity(0.14), radius: 16, x: 0, y: 8)
                 .shadow(color: Color.black.opacity(0.10), radius: 20, x: 0, y: 12)
 
-            HStack(alignment: .center, spacing: 18) {
+            HStack(alignment: .center, spacing: 16) {
                 ReferenceActivityBody(
                     accentColor: Color(red: 0.94, green: 0.48, blue: 0.28),
                     label: "Кормление",
@@ -107,10 +107,7 @@ struct FeedingReferenceLockScreenView: View {
                     subtitleMinScale: 0.85,
                     badge: { FeedingIconBadge() },
                     value: {
-                        LeadingElapsedTimerText(
-                            startedAt: context.state.startedAt,
-                            font: .system(size: 42, weight: .semibold, design: .rounded)
-                        )
+                        HeaderElapsedTimerText(startedAt: context.state.startedAt)
                     },
                     trailing: {
                         ReferenceActivityOpenChip(
@@ -122,8 +119,8 @@ struct FeedingReferenceLockScreenView: View {
                     }
                 )
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
         }
         .widgetURL(deepLink)
     }
@@ -242,7 +239,7 @@ struct SleepReferenceLockScreenView: View {
                 .shadow(color: Color(red: 0.55, green: 0.66, blue: 0.95).opacity(0.12), radius: 18, x: 0, y: 8)
                 .shadow(color: Color.black.opacity(0.14), radius: 24, x: 0, y: 13)
 
-            HStack(alignment: .center, spacing: 18) {
+            HStack(alignment: .center, spacing: 16) {
                 ReferenceActivityBody(
                     accentColor: Color(red: 0.40, green: 0.38, blue: 0.82),
                     label: "Сон",
@@ -252,10 +249,7 @@ struct SleepReferenceLockScreenView: View {
                     subtitleMinScale: 0.85,
                     badge: { SleepIconBadge() },
                     value: {
-                        LeadingElapsedTimerText(
-                            startedAt: context.state.startedAt,
-                            font: .system(size: 42, weight: .semibold, design: .rounded)
-                        )
+                        HeaderElapsedTimerText(startedAt: context.state.startedAt)
                     },
                     trailing: {
                         ReferenceActivityOpenChip(
@@ -267,8 +261,8 @@ struct SleepReferenceLockScreenView: View {
                     }
                 )
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
         }
         .widgetURL(deepLink)
     }
@@ -368,7 +362,7 @@ struct IllnessReferenceLockScreenView: View {
                 .shadow(color: Color(red: 0.22, green: 0.64, blue: 0.60).opacity(0.12), radius: 16, x: 0, y: 8)
                 .shadow(color: Color.black.opacity(0.10), radius: 20, x: 0, y: 12)
 
-            HStack(alignment: .center, spacing: 18) {
+            HStack(alignment: .center, spacing: 16) {
                 ReferenceActivityBody(
                     accentColor: Color(red: 0.22, green: 0.64, blue: 0.60),
                     label: "Болезнь",
@@ -390,8 +384,8 @@ struct IllnessReferenceLockScreenView: View {
                     }
                 )
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
         }
         .widgetURL(deepLink)
     }
@@ -413,44 +407,48 @@ struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
         badge
 
         Rectangle()
-            .fill(accentColor.opacity(0.34))
-            .frame(width: 1, height: 126)
+            .fill(accentColor.opacity(0.26))
+            .frame(width: 1, height: 100)
 
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text(label)
-                    .font(.system(size: 18, weight: .medium, design: .rounded))
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 8) {
+                HStack(spacing: 7) {
+                    Text(label)
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .foregroundStyle(accentColor)
+                    Circle()
+                        .fill(Color(red: 0.36, green: 0.80, blue: 0.48))
+                        .frame(width: 9, height: 9)
+                }
+
+                Spacer(minLength: 10)
+
+                value
+                    .font(.system(size: 24, weight: .semibold, design: .rounded))
                     .foregroundStyle(accentColor)
-                Circle()
-                    .fill(Color(red: 0.36, green: 0.80, blue: 0.48))
-                    .frame(width: 10, height: 10)
+                    .shadow(color: Color.white.opacity(0.14), radius: 1, x: 0, y: -1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.74)
             }
 
             Text(title)
-                .font(.system(size: 29, weight: .semibold, design: .rounded))
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color.black.opacity(0.80))
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.78)
 
-            value
-                .font(.system(size: 42, weight: .semibold, design: .rounded))
-                .foregroundStyle(accentColor)
-                .shadow(color: Color.white.opacity(0.16), radius: 1, x: 0, y: -1)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+            HStack(alignment: .center, spacing: 8) {
+                Text(subtitle)
+                    .font(.system(size: 15, weight: .regular, design: .rounded))
+                    .foregroundStyle(secondaryTextColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(subtitleMinScale)
 
-            Text(subtitle)
-                .font(.system(size: 17, weight: .regular, design: .rounded))
-                .foregroundStyle(secondaryTextColor)
-                .lineLimit(1)
-                .minimumScaleFactor(subtitleMinScale)
+                Spacer(minLength: 8)
+                trailing
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-
-        VStack(alignment: .trailing, spacing: 0) {
-            trailing
-            Spacer(minLength: 0)
-        }
     }
 }
 
@@ -466,10 +464,11 @@ struct FeedingIconBadge: View {
                 )
 
             FeedingBottleIcon()
-                .frame(width: 28, height: 34)
+                .frame(width: 26, height: 32)
                 .rotationEffect(.degrees(14))
+                .offset(x: 0.5, y: 0.5)
         }
-        .frame(width: 92, height: 92)
+        .frame(width: 68, height: 68)
     }
 }
 
@@ -485,11 +484,12 @@ struct SleepIconBadge: View {
                 )
 
             Image(systemName: "moon.fill")
-                .font(.system(size: 30, weight: .semibold))
+                .font(.system(size: 28, weight: .semibold))
                 .foregroundStyle(Color(red: 0.43, green: 0.40, blue: 0.85))
-                .rotationEffect(.degrees(18))
+                .rotationEffect(.degrees(60))
+                .offset(x: 1, y: 0.5)
         }
-        .frame(width: 92, height: 92)
+        .frame(width: 68, height: 68)
     }
 }
 
@@ -505,11 +505,26 @@ struct IllnessIconBadge: View {
                 )
 
             Image(systemName: "thermometer.medium")
-                .font(.system(size: 34, weight: .semibold))
+                .font(.system(size: 32, weight: .semibold))
                 .foregroundStyle(Color(red: 0.22, green: 0.64, blue: 0.60))
                 .rotationEffect(.degrees(18))
+                .offset(x: 0.5, y: 0.5)
         }
-        .frame(width: 92, height: 92)
+        .frame(width: 68, height: 68)
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+struct HeaderElapsedTimerText: View {
+    let startedAt: Date
+
+    var body: some View {
+        Text(startedAt, style: .timer)
+            .font(.system(size: 24, weight: .semibold, design: .rounded))
+            .monospacedDigit()
+            .multilineTextAlignment(.trailing)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
     }
 }
 
@@ -553,7 +568,7 @@ struct ReferenceActivityOpenChip: View {
                     .font(.system(size: 12, weight: .bold))
             }
             .foregroundStyle(Color.black.opacity(foregroundOpacity))
-            .frame(width: 34, height: 34)
+            .frame(width: 30, height: 30)
             .background(
                 Circle()
                     .fill(Color.white.opacity(backgroundOpacity))
@@ -578,15 +593,16 @@ struct CompactActivityGlyph: View {
                 Image(systemName: "moon.fill")
                     .font(.system(size: size, weight: .bold))
                     .foregroundStyle(activityAccentColor(for: kind))
-                    .rotationEffect(.degrees(18))
+                    .rotationEffect(.degrees(60))
             case "feeding":
                 FeedingBottleCompactGlyph(color: activityAccentColor(for: kind))
                     .frame(width: size + 2, height: size + 4)
                     .rotationEffect(.degrees(14))
             case "illness":
-                Image(systemName: "cross.case.fill")
-                    .font(.system(size: size, weight: .bold))
+                Image(systemName: "thermometer.medium")
+                    .font(.system(size: size + 1, weight: .semibold))
                     .foregroundStyle(activityAccentColor(for: kind))
+                    .rotationEffect(.degrees(18))
             default:
                 Image(systemName: iconName(for: kind))
                     .font(.system(size: size, weight: .bold))
