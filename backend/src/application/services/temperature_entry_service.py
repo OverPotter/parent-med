@@ -82,7 +82,9 @@ class TemperatureEntryService:
         await self._get_episode_for_account(entity.episode_id, current_account, required_level)
         return entity
 
-    async def get_by_id(self, id: UUID, current_account: AuthenticatedAccount) -> TemperatureEntryResponseDto:
+    async def get_by_id(
+        self, id: UUID, current_account: AuthenticatedAccount
+    ) -> TemperatureEntryResponseDto:
         return self._to_response(await self._get_entry_for_account(id, current_account))
 
     async def get_by_episode_id(

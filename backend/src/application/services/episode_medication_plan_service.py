@@ -282,9 +282,7 @@ class EpisodeMedicationPlanService:
             raise ValidationError("Выбери лекарство из аптечки или введи название вручную")
 
         if household_medicine_id:
-            await self._get_household_for_account(
-                household_medicine_id, current_account.family_id
-            )
+            await self._get_household_for_account(household_medicine_id, current_account.family_id)
 
             existing = await self._repo.get_by_episode_and_medicine(
                 entity.episode_id,

@@ -403,9 +403,7 @@ class AuthService(BaseAuthService):
                     status_code=409,
                 )
 
-        updated = await self._account_repo.update(
-            copy_account(account, email=email)
-        )
+        updated = await self._account_repo.update(copy_account(account, email=email))
         return self._account_to_response(updated)
 
     async def _ensure_can_leave_current_family(self, account: Account) -> None:

@@ -80,7 +80,9 @@ class IllnessCommentService:
         await self._get_episode_for_account(entity.episode_id, current_account, required_level)
         return entity
 
-    async def get_by_id(self, id: UUID, current_account: AuthenticatedAccount) -> IllnessCommentResponseDto:
+    async def get_by_id(
+        self, id: UUID, current_account: AuthenticatedAccount
+    ) -> IllnessCommentResponseDto:
         return self._to_response(await self._get_comment_for_account(id, current_account))
 
     async def get_by_episode_id(

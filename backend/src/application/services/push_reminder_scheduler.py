@@ -121,9 +121,10 @@ def _can_receive_pillbox_push(account: Any) -> bool:
     policy = getattr(account, "access_policy", None)
     if policy is None:
         return False
-    return _is_push_allowed_for_account(account, "pillbox") and getattr(
-        policy, "pillbox_access", "none"
-    ) != "none"
+    return (
+        _is_push_allowed_for_account(account, "pillbox")
+        and getattr(policy, "pillbox_access", "none") != "none"
+    )
 
 
 def _format_date(value: date, language: str) -> str:

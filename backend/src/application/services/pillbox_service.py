@@ -299,7 +299,9 @@ class PillboxService:
             for account in family_accounts
             if getattr(getattr(account, "access_policy", None), "pillbox_access", "none") != "none"
         }
-        ineligible = [member_id for member_id in member_ids if member_id not in eligible_account_ids]
+        ineligible = [
+            member_id for member_id in member_ids if member_id not in eligible_account_ids
+        ]
         if ineligible:
             raise ValidationError("Нельзя выбрать получателей без доступа к приёмам")
         return member_ids

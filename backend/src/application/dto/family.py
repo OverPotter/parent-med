@@ -36,9 +36,7 @@ class FamilyResponseDto(ResponseBase):
     cabinet_member_account_ids: list[UUID]
     billing_account_id: UUID | None = None
     plan_code: Literal["free", "plus", "pro"] = "free"
-    subscription_status: Literal["inactive", "active", "grace", "canceled", "expired"] = (
-        "inactive"
-    )
+    subscription_status: Literal["inactive", "active", "grace", "canceled", "expired"] = "inactive"
     subscription_provider: str | None = None
     subscription_product_id: str | None = None
     subscription_expires_at: datetime | None = None

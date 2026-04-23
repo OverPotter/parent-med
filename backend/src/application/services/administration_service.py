@@ -101,7 +101,9 @@ class AdministrationService:
         await self._get_episode_for_account(entity.episode_id, current_account, required_level)
         return entity
 
-    async def get_by_id(self, id: UUID, current_account: AuthenticatedAccount) -> AdministrationEventResponseDto:
+    async def get_by_id(
+        self, id: UUID, current_account: AuthenticatedAccount
+    ) -> AdministrationEventResponseDto:
         return self._to_response(await self._get_event_for_account(id, current_account))
 
     async def get_by_episode_id(
@@ -128,7 +130,9 @@ class AdministrationService:
 
         household = None
         if dto.household_medicine_id:
-            household = await self._get_household_for_account(dto.household_medicine_id, current_account)
+            household = await self._get_household_for_account(
+                dto.household_medicine_id, current_account
+            )
             check_household_medicine_for_administration(household)
         administered_at = dto.administered_at or datetime.now(UTC)
         entity = AdministrationEvent(

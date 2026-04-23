@@ -603,7 +603,9 @@ async def test_update_member_rejects_pillbox_edit_without_children_edit_access()
         session_repo=StubAccountSessionRepository(),
     )
 
-    with pytest.raises(ValidationError, match="Полный доступ к приёмам требует права на изменение детей"):
+    with pytest.raises(
+        ValidationError, match="Полный доступ к приёмам требует права на изменение детей"
+    ):
         await service.update_member_for_account(
             member_account_id=member.id,
             dto=FamilyMemberUpdateDto(
