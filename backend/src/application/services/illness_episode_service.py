@@ -433,9 +433,7 @@ class IllnessEpisodeService:
         }
         start_date = today - timedelta(days=days_by_period[period] - 1)
         return [
-            episode
-            for episode in episodes
-            if self._episode_reference_date(episode) >= start_date
+            episode for episode in episodes if self._episode_reference_date(episode) >= start_date
         ]
 
     def _episode_duration_days(self, episode: IllnessEpisode) -> int:

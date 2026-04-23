@@ -7,6 +7,13 @@ import {
   getIllnessDurationMeta,
 } from "../src/shared/utils/illnessLiveActivitySummary.js";
 
+function formatExpectedTime(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 test("illness live activity keeps a simple empty card when no data exists", () => {
   const summary = buildIllnessLiveActivitySummary(null, null, "2026-04-24", "ru", new Date(2026, 3, 24, 12, 0));
 
@@ -19,12 +26,13 @@ test("illness live activity keeps a simple empty card when no data exists", () =
 });
 
 test("illness live activity prioritizes last event over empty temperature state", () => {
+  const lastEventAt = "2026-04-24T18:10:00+03:00";
   const summary = buildIllnessLiveActivitySummary(
     {
       lastTemperatureCelsius: null,
       lastAdministrationAt: null,
       medicineNames: [],
-      lastEventAt: "2026-04-24T18:10:00+03:00",
+      lastEventAt,
     },
     null,
     "2026-04-23",
@@ -33,7 +41,7 @@ test("illness live activity prioritizes last event over empty temperature state"
   );
 
   assert.deepEqual(summary, {
-    primaryValue: "18:10",
+    primaryValue: formatExpectedTime(lastEventAt),
     primaryCaption: "Последняя запись",
     secondaryValue: "1 день",
     secondaryCaption: "Длится",
@@ -41,12 +49,13 @@ test("illness live activity prioritizes last event over empty temperature state"
 });
 
 test("illness live activity prioritizes temperature and next dose when both exist", () => {
+  const eventAt = "2026-04-24T18:10:00+03:00";
   const summary = buildIllnessLiveActivitySummary(
     {
       lastTemperatureCelsius: 38.4,
-      lastAdministrationAt: "2026-04-24T18:10:00+03:00",
+      lastAdministrationAt: eventAt,
       medicineNames: ["Нурофен"],
-      lastEventAt: "2026-04-24T18:10:00+03:00",
+      lastEventAt: eventAt,
     },
     {
       nextDoseAt: new Date("2026-04-24T20:10:00+03:00"),
@@ -59,19 +68,20 @@ test("illness live activity prioritizes temperature and next dose when both exis
 
   assert.deepEqual(summary, {
     primaryValue: "38.4°",
-    primaryCaption: "Была в 18:10",
+    primaryCaption: `Была в ${formatExpectedTime(eventAt)}`,
     secondaryValue: "через 2 ч",
     secondaryCaption: "Нурофен",
   });
 });
 
 test("illness live activity shows temperature time instead of latest event label", () => {
+  const lastEventAt = "2026-04-24T21:25:00+03:00";
   const summary = buildIllnessLiveActivitySummary(
     {
       lastTemperatureCelsius: 37.8,
       lastAdministrationAt: null,
       medicineNames: [],
-      lastEventAt: "2026-04-24T21:25:00+03:00",
+      lastEventAt,
     },
     null,
     "2026-04-23",
@@ -81,17 +91,18 @@ test("illness live activity shows temperature time instead of latest event label
 
   assert.deepEqual(summary, {
     primaryValue: "37.8°",
-    primaryCaption: "Была в 21:25",
+    primaryCaption: `Была в ${formatExpectedTime(lastEventAt)}`,
     secondaryValue: "1 день",
     secondaryCaption: "Длится",
   });
 });
 
 test("illness live activity uses latest medication when it is the strongest signal", () => {
+  const lastAdministrationAt = "2026-04-24T20:40:00+03:00";
   const summary = buildIllnessLiveActivitySummary(
     {
       lastTemperatureCelsius: null,
-      lastAdministrationAt: "2026-04-24T20:40:00+03:00",
+      lastAdministrationAt,
       medicineNames: ["Нурофен"],
       lastEventAt: null,
     },
@@ -102,7 +113,7 @@ test("illness live activity uses latest medication when it is the strongest sign
   );
 
   assert.deepEqual(summary, {
-    primaryValue: "20:40",
+    primaryValue: formatExpectedTime(lastAdministrationAt),
     primaryCaption: "Последнее лекарство · Нурофен",
     secondaryValue: "2 дня",
     secondaryCaption: "Длится",
@@ -110,17 +121,19 @@ test("illness live activity uses latest medication when it is the strongest sign
 });
 
 test("illness status label prefers actionable context over episode title", () => {
+  const lastAdministrationAt = "2026-04-24T18:10:00+03:00";
+  const lastEventAt = "2026-04-24T21:10:00+03:00";
   const label = buildIllnessStatusLabel(
     "Простуда",
     {
-      lastAdministrationAt: "2026-04-24T18:10:00+03:00",
+      lastAdministrationAt,
       medicineNames: ["Нурофен"],
-      lastEventAt: "2026-04-24T21:10:00+03:00",
+      lastEventAt,
     },
     "ru"
   );
 
-  assert.equal(label, "Нурофен · запись 21:10");
+  assert.equal(label, `Нурофен · запись ${formatExpectedTime(lastEventAt)}`);
 });
 
 test("illness duration meta keeps same-day episodes on a simple started state", () => {
@@ -134,9 +147,10 @@ test("illness duration meta keeps same-day episodes on a simple started state", 
 });
 
 test("illness medication lines show next dose and last administration under child name", () => {
+  const lastAdministrationAt = "2026-04-24T18:10:00+03:00";
   const lines = buildIllnessMedicationLines(
     {
-      lastAdministrationAt: "2026-04-24T18:10:00+03:00",
+      lastAdministrationAt,
       medicineNames: ["Нурофен"],
     },
     {
@@ -150,6 +164,6 @@ test("illness medication lines show next dose and last administration under chil
 
   assert.deepEqual(lines, {
     primaryLine: "Нурофен · через 2 ч",
-    secondaryLine: "Парацетамол дали в 18:10",
+    secondaryLine: `Парацетамол дали в ${formatExpectedTime(lastAdministrationAt)}`,
   });
 });
