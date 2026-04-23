@@ -34,6 +34,13 @@ export function setRefreshHandler(handler: (() => Promise<string | null>) | null
 }
 
 apiClient.interceptors.request.use((config) => {
+  if (shouldSkipRefresh(config.url)) {
+    if (config.headers && "Authorization" in config.headers) {
+      delete config.headers.Authorization;
+    }
+    return config;
+  }
+
   const token = bearerToken ?? useAppStore.getState().authToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

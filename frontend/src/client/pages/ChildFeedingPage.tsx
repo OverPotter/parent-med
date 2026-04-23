@@ -25,7 +25,7 @@ import {
 } from "@client/components/ChildRecordsPeriodSelector";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
-import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
+import { RecordHistoryRow } from "./children/RecordHistoryRow";
 import {
   childActionSuccessClass,
   formatDurationMinutesHuman,
@@ -190,52 +190,46 @@ export function ChildFeedingPage() {
         ) : (
           <div className="overflow-hidden rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
             {filteredRecords.map((item) => {
+              const isActiveRecord = item.status === "active";
               const canDeleteRecord =
                 canEditFeedingRecords &&
-                (item.status !== "active" || item.createdByAccountId === currentAccountId);
+                (!isActiveRecord || item.createdByAccountId === currentAccountId);
+              const title = isActiveRecord
+                ? copy.feedingStatusActive
+                : item.feedingType === "breast"
+                  ? copy.feedingTypeBreastLabel
+                  : copy.feedingTypeFormulaLabel;
+              const description = [
+                !isActiveRecord ? copy.feedingStatusCompleted : null,
+                formatBreastSide(item.breastSide, language),
+                item.formulaVolumeMl ? `${item.formulaVolumeMl} мл` : null,
+                formatFeedingDuration(item.durationMinutes, language, item.status, copy),
+                item.note,
+              ]
+                .filter(Boolean)
+                .join(" · ");
 
               return (
-                <div
+                <RecordHistoryRow
                   key={item.id}
-                  className="grid grid-cols-[4.1rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:px-4"
-                >
-                  <span className="min-w-0 text-xs font-semibold tabular-nums text-muted">
-                    <span className="block leading-4 text-foreground">
-                      {formatChildTime(item.recordedAt, language)}
-                    </span>
-                    <span className="block truncate text-[0.68rem] leading-4">
-                      {formatChildDate(item.recordedAt, language, { month: "short" })}
-                    </span>
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-teal-500" />
-                      <p className="truncate text-sm font-semibold leading-5 text-foreground">
-                        {item.feedingType === "breast"
-                          ? copy.feedingTypeBreastLabel
-                          : copy.feedingTypeFormulaLabel}
-                      </p>
-                    </div>
-                    <p className="mt-0.5 truncate text-xs leading-5 text-muted">
-                      {[
-                        formatBreastSide(item.breastSide, language),
-                        item.formulaVolumeMl ? `${item.formulaVolumeMl} мл` : null,
-                        formatFeedingDuration(item.durationMinutes, language),
-                        item.note,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setRecordToDelete(item)}
-                    disabled={deleteMutation.isPending || !canDeleteRecord}
-                    className="soft-pill app-profile-action shrink-0 text-danger disabled:opacity-50"
-                  >
-                    {copy.feedingSectionDelete}
-                  </button>
-                </div>
+                  at={item.recordedAt}
+                  language={language}
+                  dotClassName={isActiveRecord ? "bg-emerald-500" : "bg-teal-500"}
+                  title={title}
+                  description={description}
+                  action={
+                    isActiveRecord ? undefined : (
+                      <button
+                        type="button"
+                        onClick={() => setRecordToDelete(item)}
+                        disabled={deleteMutation.isPending || !canDeleteRecord}
+                        className="soft-pill app-profile-action shrink-0 text-danger disabled:opacity-50"
+                      >
+                        {copy.feedingSectionDelete}
+                      </button>
+                    )
+                  }
+                />
               );
             })}
           </div>
@@ -259,7 +253,15 @@ function formatBreastSide(side: string | null, language: "ru" | "en") {
   return "Both";
 }
 
-function formatFeedingDuration(durationMinutes: number | null, language: "ru" | "en") {
+function formatFeedingDuration(
+  durationMinutes: number | null,
+  language: "ru" | "en",
+  status: string,
+  copy: ReturnType<typeof getChildrenCopy>["childProfile"]
+) {
+  if (durationMinutes === null) {
+    return status === "active" ? copy.feedingStatusActive : "—";
+  }
   return formatDurationMinutesHuman(durationMinutes, language);
 }
 

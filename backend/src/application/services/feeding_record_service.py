@@ -207,7 +207,7 @@ class FeedingRecordService:
             formula_volume_ml=dto.formula_volume_ml,
             duration_minutes=None,
         )
-        started_at = datetime.now(UTC)
+        started_at = dto.started_at or dto.recorded_at or datetime.now(UTC)
         entity = FeedingRecord(
             id=uuid4(),
             child_id=dto.child_id,
@@ -215,7 +215,7 @@ class FeedingRecordService:
             breast_side=breast_side,
             is_expressed=is_expressed,
             formula_volume_ml=dto.formula_volume_ml,
-            recorded_at=started_at,
+            recorded_at=dto.recorded_at or started_at,
             started_at=started_at,
             ended_at=None,
             duration_minutes=None,
@@ -238,7 +238,12 @@ class FeedingRecordService:
         if entity.created_by_account_id and entity.created_by_account_id != current_account.id:
             raise ForbiddenError("Остановить активное кормление может только тот, кто его запустил")
 
-        ended_at = datetime.now(UTC)
+        ended_at = dto.ended_at or datetime.now(UTC)
+        if ended_at < (entity.started_at or entity.recorded_at):
+            raise ValidationError(
+                "Окончание кормления не может быть раньше начала",
+                code="FEEDING_END_BEFORE_START",
+            )
         duration_minutes = max(
             0,
             int((ended_at - (entity.started_at or entity.recorded_at)).total_seconds() // 60),

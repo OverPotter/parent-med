@@ -25,6 +25,7 @@ import { canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
 import { closeIllnessEpisodeResilient } from "@shared/utils/offlineCareSync";
+import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import type {
   AdministrationEvent,
   Child,
@@ -229,6 +230,7 @@ function ActiveIllnessCard({
         episode_id: episode.id,
         household_medicine_id: plan.householdMedicineId,
         custom_medicine_name: plan.customMedicineName ?? undefined,
+        administered_at: getCurrentDeviceTimestampIso(),
         amount: plan.doseAmount,
         reason: copy.reminderReason,
       });

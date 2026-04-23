@@ -2,7 +2,7 @@
  * Аптечка: список упаковок по семье, добавление из справочника или вручную.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { deleteHouseholdMedicine, fetchHouseholdMedicines } from "@shared/api/householdMedicines";
@@ -18,6 +18,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { canEditCabinet, canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
 import { AddHouseholdMedicineForm } from "./medicine-cabinet/AddHouseholdMedicineForm";
 import { AddMedicineChoiceDialog } from "./medicine-cabinet/AddMedicineChoiceDialog";
 import { CabinetPushRecipientsCard } from "./medicine-cabinet/CabinetPushRecipientsCard";
@@ -138,6 +139,31 @@ export function MedicineCabinetPage() {
       queryClient.invalidateQueries({ queryKey: ["families"] });
     },
   });
+
+  useEffect(() => {
+    if (
+      !family ||
+      !canManageCabinetRecipients ||
+      updateCabinetRecipientsMutation.isPending ||
+      !shouldAutoAssignCurrentRecipient(
+        family.cabinetMemberAccountIds,
+        accountId,
+        eligibleCabinetMembers.map((member) => member.id)
+      )
+    ) {
+      return;
+    }
+    if (!accountId) {
+      return;
+    }
+    updateCabinetRecipientsMutation.mutate([accountId]);
+  }, [
+    accountId,
+    canManageCabinetRecipients,
+    eligibleCabinetMembers,
+    family,
+    updateCabinetRecipientsMutation,
+  ]);
 
   const normalizedCabinetSearch = cabinetSearch.trim().toLowerCase();
   const isSearchMode = normalizedCabinetSearch.length > 0;
@@ -264,8 +290,8 @@ export function MedicineCabinetPage() {
                   language={language}
                   family={family}
                   familyMembers={eligibleCabinetMembers}
+                  currentAccountId={accountId}
                   isPending={updateCabinetRecipientsMutation.isPending}
-                  onSelectAll={() => updateCabinetRecipientsMutation.mutate([])}
                   onChangeSelection={(memberIds) => {
                     updateCabinetRecipientsMutation.mutate(memberIds);
                   }}
@@ -321,8 +347,8 @@ export function MedicineCabinetPage() {
                 language={language}
                 family={family}
                 familyMembers={eligibleCabinetMembers}
+                currentAccountId={accountId}
                 isPending={updateCabinetRecipientsMutation.isPending}
-                onSelectAll={() => updateCabinetRecipientsMutation.mutate([])}
                 onChangeSelection={(memberIds) => {
                   updateCabinetRecipientsMutation.mutate(memberIds);
                 }}

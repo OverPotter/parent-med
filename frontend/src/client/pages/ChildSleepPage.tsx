@@ -25,8 +25,8 @@ import {
 } from "@client/components/ChildRecordsPeriodSelector";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
+import { RecordHistoryRow } from "./children/RecordHistoryRow";
 import {
-  formatChildDate,
   formatChildDateTime,
   formatChildTime,
 } from "@client/utils/childDateFormat";
@@ -184,58 +184,42 @@ export function ChildSleepPage() {
         ) : (
           <div className="overflow-hidden rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
             {filteredSessions.map((session) => {
+              const isActiveSession = session.status === "active";
               const canDeleteSession =
                 canEditSleepRecords &&
-                (session.status !== "active" || session.createdByAccountId === currentAccountId);
+                (!isActiveSession || session.createdByAccountId === currentAccountId);
+              const description = [
+                session.endedAt
+                  ? `${copy.sleepEndedAt}: ${formatSleepEndLabel(
+                      session.startedAt,
+                      session.endedAt,
+                      language
+                    )}`
+                  : copy.sleepStatusActive,
+                formatSleepDuration(session.durationMinutes, language, session.status),
+              ].join(" · ");
 
               return (
-                <div
+                <RecordHistoryRow
                   key={session.id}
-                  className="grid grid-cols-[4.1rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:px-4"
-                >
-                  <span className="min-w-0 text-xs font-semibold tabular-nums text-muted">
-                    <span className="block leading-4 text-foreground">
-                      {formatChildTime(session.startedAt, language)}
-                    </span>
-                    <span className="block truncate text-[0.68rem] leading-4">
-                      {formatChildDate(session.startedAt, language, { month: "short" })}
-                    </span>
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${
-                          session.status === "active" ? "bg-emerald-500" : "bg-sky-500"
-                        }`}
-                      />
-                      <p className="truncate text-sm font-semibold leading-5 text-foreground">
-                        {session.status === "active"
-                          ? copy.sleepStatusActive
-                          : copy.sleepStatusCompleted}
-                      </p>
-                    </div>
-                    <p className="mt-0.5 truncate text-xs leading-5 text-muted">
-                      {[
-                        session.endedAt
-                          ? `${copy.sleepEndedAt}: ${formatSleepEndLabel(
-                              session.startedAt,
-                              session.endedAt,
-                              language
-                            )}`
-                          : copy.sleepStatusActive,
-                        formatSleepDuration(session.durationMinutes, language, session.status),
-                      ].join(" · ")}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSleepToDelete(session)}
-                    disabled={deleteSleepMutation.isPending || !canDeleteSession}
-                    className="soft-pill app-profile-action shrink-0 text-danger disabled:opacity-50"
-                  >
-                    {copy.sleepSectionDelete}
-                  </button>
-                </div>
+                  at={session.startedAt}
+                  language={language}
+                  dotClassName={isActiveSession ? "bg-emerald-500" : "bg-sky-500"}
+                  title={isActiveSession ? copy.sleepStatusActive : copy.sleepStatusCompleted}
+                  description={description}
+                  action={
+                    isActiveSession ? undefined : (
+                      <button
+                        type="button"
+                        onClick={() => setSleepToDelete(session)}
+                        disabled={deleteSleepMutation.isPending || !canDeleteSession}
+                        className="soft-pill app-profile-action shrink-0 text-danger disabled:opacity-50"
+                      >
+                        {copy.sleepSectionDelete}
+                      </button>
+                    )
+                  }
+                />
               );
             })}
           </div>

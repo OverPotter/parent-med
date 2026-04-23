@@ -10,6 +10,7 @@ import {
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
+import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import { canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
@@ -56,6 +57,7 @@ export function ChildWeightPage() {
       createWeightEntry({
         child_id: child!.id,
         value_kg: Number.parseFloat(weightValue),
+        measured_at: getCurrentDeviceTimestampIso(),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["weight-entry-latest", childId] });

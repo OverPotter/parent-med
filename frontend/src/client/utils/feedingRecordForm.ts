@@ -1,3 +1,5 @@
+import { toDeviceDateTimeIso } from "@shared/utils/date";
+
 export function getCurrentLocalDateTimeInputValue() {
   const now = new Date();
   const year = now.getFullYear();
@@ -17,10 +19,7 @@ export function getCurrentLocalTimeInputValue() {
 }
 
 export function toApiDateTime(dateValue: string, timeValue: string) {
-  if (!dateValue || !timeValue) {
-    return null;
-  }
-  return `${dateValue}T${timeValue}:00`;
+  return toDeviceDateTimeIso(dateValue, timeValue);
 }
 
 function normalizeTimePart(raw: string, max: number) {

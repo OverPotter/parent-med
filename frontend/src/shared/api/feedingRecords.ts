@@ -70,6 +70,8 @@ export async function startFeedingRecord(payload: {
   breast_side?: BreastSide | null;
   is_expressed?: boolean;
   formula_volume_ml?: number | null;
+  recorded_at?: string | null;
+  started_at?: string | null;
   note?: string | null;
 }): Promise<FeedingRecord> {
   const res = await apiClient.post<RawFeedingRecord>("/feeding-records/start", payload);
@@ -79,6 +81,7 @@ export async function startFeedingRecord(payload: {
 export async function stopFeedingRecord(
   recordId: string,
   payload?: {
+    ended_at?: string | null;
     formula_volume_ml?: number | null;
     note?: string | null;
   }

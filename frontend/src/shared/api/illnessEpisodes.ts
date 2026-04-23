@@ -11,7 +11,12 @@ import type {
   IllnessHistorySummary,
 } from "../types/api.js";
 import { toIllnessEpisode } from "../types/transform.js";
-import { getOfflineIllnessOverride } from "../utils/offlineCareState.js";
+import { clearIllnessStartHint, resolveIllnessStartedAt } from "../utils/illnessStartHints.js";
+import {
+  clearOfflineOverride,
+  getOfflineCareActions,
+  getOfflineIllnessOverride,
+} from "../utils/offlineCareState.js";
 
 interface RawIllnessEpisode {
   id: string;
@@ -143,7 +148,13 @@ export async function fetchIllnessEpisodesByChildId(childId: string): Promise<Il
     const res = await apiClient.get<RawIllnessEpisode[]>("/illness-episodes", {
       params: { child_id: childId },
     });
-    const items = (res.data ?? []).map(toIllnessEpisode);
+    const items = (res.data ?? []).map((item) => {
+      const episode = toIllnessEpisode(item);
+      return {
+        ...episode,
+        startedAt: resolveIllnessStartedAt(childId, episode.id, episode.startedAt) ?? episode.startedAt,
+      };
+    });
     if (!offline.hasOverride || !offline.value) {
       return items;
     }
@@ -161,12 +172,31 @@ export async function fetchActiveIllnessEpisodeByChildId(
 ): Promise<IllnessEpisode | null> {
   const offline = getOfflineIllnessOverride(childId);
   if (offline.hasOverride) {
-    return offline.value;
+    if (offline.value === null) {
+      const hasPendingIllnessAction = getOfflineCareActions().some(
+        (action) => action.kind === "illness" && action.childId === childId
+      );
+      if (!hasPendingIllnessAction) {
+        clearOfflineOverride("illness", childId);
+      } else {
+        return null;
+      }
+    } else {
+      return offline.value;
+    }
   }
   const res = await apiClient.get<RawIllnessEpisode | null>(
     `/illness-episodes/child/${childId}/active`
   );
-  return res.data ? toIllnessEpisode(res.data) : null;
+  if (!res.data) {
+    clearIllnessStartHint(childId);
+    return null;
+  }
+  const episode = toIllnessEpisode(res.data);
+  return {
+    ...episode,
+    startedAt: resolveIllnessStartedAt(childId, episode.id, episode.startedAt) ?? episode.startedAt,
+  };
 }
 
 export async function fetchIllnessEpisode(id: string): Promise<IllnessEpisode> {

@@ -99,8 +99,28 @@ export function buildEpisodeTimeline(
   administrations: AdministrationEvent[],
   comments: IllnessComment[],
   medicines: HouseholdMedicine[],
-  language: "ru" | "en" = "ru"
+  language: "ru" | "en" = "ru",
+  currentActor?: {
+    accountId: string | null;
+    displayName: string | null;
+  }
 ): EpisodeTimelineItem[] {
+  const resolveActorName = (actorName: string | null | undefined, actorAccountId: string | null) => {
+    const explicitName = actorName?.trim() || null;
+    if (explicitName) {
+      return explicitName;
+    }
+    if (
+      currentActor?.accountId &&
+      currentActor.displayName &&
+      actorAccountId &&
+      actorAccountId === currentActor.accountId
+    ) {
+      return currentActor.displayName;
+    }
+    return null;
+  };
+
   const temperatureItems = temperatures.map((entry) => ({
     id: `temp-${entry.id}`,
     at: entry.measuredAt,
@@ -108,7 +128,7 @@ export function buildEpisodeTimeline(
     title: `${formatTemperatureValue(entry.valueCelsius)} °C`,
     description:
       entry.comment?.trim() || (language === "ru" ? "Замер температуры" : "Temperature reading"),
-    actorName: entry.createdByNameSnapshot?.trim() || null,
+    actorName: resolveActorName(entry.createdByNameSnapshot, entry.createdByAccountId),
     actorAccountId: entry.createdByAccountId,
   }));
 
@@ -137,7 +157,7 @@ export function buildEpisodeTimeline(
         medicine?.medicineName ??
         (language === "ru" ? "Приём лекарства" : "Dose logged"),
       description: descriptionLines.join("\n"),
-      actorName: entry.administeredByNameSnapshot?.trim() || null,
+      actorName: resolveActorName(entry.administeredByNameSnapshot, entry.administeredByAccountId),
       actorAccountId: entry.administeredByAccountId,
     };
   });
@@ -148,7 +168,7 @@ export function buildEpisodeTimeline(
     kind: "comment" as const,
     title: language === "ru" ? "Комментарий" : "Comment",
     description: entry.text,
-    actorName: entry.createdByNameSnapshot?.trim() || null,
+    actorName: resolveActorName(entry.createdByNameSnapshot, entry.createdByAccountId),
     actorAccountId: entry.createdByAccountId,
   }));
 
