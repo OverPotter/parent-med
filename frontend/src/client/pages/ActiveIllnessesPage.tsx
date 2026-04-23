@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createAdministrationEvent,
@@ -193,7 +193,6 @@ function ActiveIllnessCard({
   t: (text: string, variables?: Record<string, string | number>) => string;
 }) {
   const { language } = useI18n();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [justSaved, setJustSaved] = useState(false);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
@@ -252,7 +251,6 @@ function ActiveIllnessCard({
       queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] });
       queryClient.invalidateQueries({ queryKey: ["children"] });
-      navigate("/children");
     },
   });
 

@@ -25,6 +25,8 @@ export function MedicineItemCard({
   isDeleting = false,
   compact = false,
   canEdit = true,
+  isOffline = false,
+  onNetworkRequired,
   isExpanded,
   onExpandChange,
 }: {
@@ -34,6 +36,8 @@ export function MedicineItemCard({
   isDeleting?: boolean;
   compact?: boolean;
   canEdit?: boolean;
+  isOffline?: boolean;
+  onNetworkRequired?: () => void;
   isExpanded: boolean;
   onExpandChange: (isExpanded: boolean) => void;
 }) {
@@ -67,6 +71,24 @@ export function MedicineItemCard({
       onExpandChange(true);
     }
     setIsDetailsExpanded((value) => !value);
+  };
+
+  const handleNewPack = () => {
+    if (isOffline) {
+      onNetworkRequired?.();
+      return;
+    }
+    onExpandChange(false);
+    setIsDetailsExpanded(false);
+    navigate(`/medicine-cabinet/${medicine.id}/new-pack`);
+  };
+
+  const handleDelete = () => {
+    if (isOffline) {
+      onNetworkRequired?.();
+      return;
+    }
+    setIsDeleteConfirmOpen(true);
   };
 
   return (
@@ -137,12 +159,9 @@ export function MedicineItemCard({
                 {!compact && canEdit ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      onExpandChange(false);
-                      setIsDetailsExpanded(false);
-                      navigate(`/medicine-cabinet/${medicine.id}/new-pack`);
-                    }}
-                    className={`${cabinetActionSecondaryClass} w-full`}
+                    onClick={handleNewPack}
+                    aria-disabled={isOffline}
+                    className={`${cabinetActionSecondaryClass} w-full ${isOffline ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     {tCabinet(language, "newPack")}
                   </button>
@@ -150,8 +169,9 @@ export function MedicineItemCard({
                 {canEdit ? (
                   <button
                     type="button"
-                    onClick={() => setIsDeleteConfirmOpen(true)}
-                    className={`${cabinetActionDangerClass} col-span-2 w-full`}
+                    onClick={handleDelete}
+                    aria-disabled={isOffline}
+                    className={`${cabinetActionDangerClass} col-span-2 w-full ${isOffline ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     {tCabinet(language, "writeOff")}
                   </button>
@@ -168,19 +188,17 @@ export function MedicineItemCard({
                 <>
                   <button
                     type="button"
-                    onClick={() => {
-                      onExpandChange(false);
-                      setIsDetailsExpanded(false);
-                      navigate(`/medicine-cabinet/${medicine.id}/new-pack`);
-                    }}
-                    className={cabinetActionSecondaryClass}
+                    onClick={handleNewPack}
+                    aria-disabled={isOffline}
+                    className={`${cabinetActionSecondaryClass} ${isOffline ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     {tCabinet(language, "newPack")}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsDeleteConfirmOpen(true)}
-                    className={cabinetActionDangerClass}
+                    onClick={handleDelete}
+                    aria-disabled={isOffline}
+                    className={`${cabinetActionDangerClass} ${isOffline ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     {tCabinet(language, "writeOff")}
                   </button>

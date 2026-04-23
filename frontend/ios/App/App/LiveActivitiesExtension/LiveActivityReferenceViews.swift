@@ -103,6 +103,10 @@ struct FeedingReferenceLockScreenView: View {
                     label: "Кормление",
                     title: context.state.title,
                     subtitle: feedingReferenceSubtitle(for: context),
+                    detailText: nil,
+                    titleTopOffset: 0,
+                    titleFontSize: 24,
+                    titleMinScale: 0.78,
                     secondaryTextColor: Color(red: 0.55, green: 0.43, blue: 0.39),
                     subtitleMinScale: 0.85,
                     badge: { FeedingIconBadge() },
@@ -245,6 +249,10 @@ struct SleepReferenceLockScreenView: View {
                     label: "Сон",
                     title: context.state.title,
                     subtitle: sleepReferenceSubtitle(for: context),
+                    detailText: nil,
+                    titleTopOffset: 0,
+                    titleFontSize: 24,
+                    titleMinScale: 0.78,
                     secondaryTextColor: Color(red: 0.49, green: 0.47, blue: 0.60),
                     subtitleMinScale: 0.85,
                     badge: { SleepIconBadge() },
@@ -367,12 +375,16 @@ struct IllnessReferenceLockScreenView: View {
                     accentColor: Color(red: 0.22, green: 0.64, blue: 0.60),
                     label: "Болезнь",
                     title: context.state.title,
-                    subtitle: illnessReferenceSubtitle(for: context),
+                    subtitle: illnessReferenceSummary(for: context),
+                    detailText: illnessReferenceDetail(for: context),
+                    titleTopOffset: -1.2,
+                    titleFontSize: 22,
+                    titleMinScale: 0.66,
                     secondaryTextColor: Color(red: 0.44, green: 0.50, blue: 0.49),
                     subtitleMinScale: 0.68,
                     badge: { IllnessIconBadge() },
                     value: {
-                        Text(illnessDurationPhrase(startedAt: context.state.startedAt))
+                        IllnessReferenceMetricBlock(context: context)
                     },
                     trailing: {
                         ReferenceActivityOpenChip(
@@ -392,11 +404,63 @@ struct IllnessReferenceLockScreenView: View {
 }
 
 @available(iOSApplicationExtension 16.1, *)
+private struct IllnessReferenceMetricBlock: View {
+    let context: ActivityViewContext<LiveActivityAttributes>
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(primaryText)
+                    .font(.system(size: 24, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.22, green: 0.64, blue: 0.60))
+                    .shadow(color: Color.white.opacity(0.14), radius: 1, x: 0, y: -1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.74)
+
+                if let primaryCaption, !primaryCaption.isEmpty {
+                    Text(primaryCaption)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(red: 0.44, green: 0.50, blue: 0.49))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.76)
+                }
+            }
+        }
+    }
+
+    private var primaryText: String {
+        let trimmed = context.state.primaryValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmed.isEmpty {
+            return trimmed
+        }
+        return illnessDurationPhrase(startedAt: context.state.startedAt)
+    }
+
+    private var secondaryText: String? {
+        let value = context.state.secondaryValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !value.isEmpty else {
+            return nil
+        }
+
+        let caption = context.state.secondaryCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return caption.isEmpty ? value : "\(caption) · \(value)"
+    }
+    private var primaryCaption: String? {
+        let caption = context.state.primaryCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return caption.isEmpty ? nil : caption
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
 struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
     let accentColor: Color
     let label: String
     let title: String
     let subtitle: String
+    let detailText: String?
+    let titleTopOffset: CGFloat
+    let titleFontSize: CGFloat
+    let titleMinScale: CGFloat
     let secondaryTextColor: Color
     let subtitleMinScale: CGFloat
     @ViewBuilder let badge: Badge
@@ -404,14 +468,17 @@ struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
     @ViewBuilder let trailing: Trailing
 
     var body: some View {
+        let hasLowerMeta = !subtitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !(detailText?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+
         badge
 
         Rectangle()
             .fill(accentColor.opacity(0.26))
             .frame(width: 1, height: 100)
 
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .center, spacing: 8) {
+        VStack(alignment: .leading, spacing: hasLowerMeta ? 6 : 3) {
+            HStack(alignment: .top, spacing: 8) {
                 HStack(spacing: 7) {
                     Text(label)
                         .font(.system(size: 16, weight: .medium, design: .rounded))
@@ -432,24 +499,54 @@ struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
             }
 
             Text(title)
-                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                .font(.system(size: titleFontSize, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color.black.opacity(0.80))
                 .lineLimit(1)
-                .minimumScaleFactor(0.78)
+                .minimumScaleFactor(titleMinScale)
+                .padding(.top, hasLowerMeta ? titleTopOffset : titleTopOffset - 2)
 
-            HStack(alignment: .center, spacing: 8) {
-                Text(subtitle)
-                    .font(.system(size: 15, weight: .regular, design: .rounded))
-                    .foregroundStyle(secondaryTextColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(subtitleMinScale)
+            if hasLowerMeta {
+                HStack(alignment: .center, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if !subtitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text(subtitle)
+                                .font(.system(size: 15, weight: .regular, design: .rounded))
+                                .foregroundStyle(secondaryTextColor)
+                                .lineLimit(1)
+                                .minimumScaleFactor(subtitleMinScale)
+                        }
 
-                Spacer(minLength: 8)
-                trailing
+                        if let detailText, !detailText.isEmpty {
+                            Text(detailText)
+                                .font(.system(size: 13, weight: .regular, design: .rounded))
+                                .foregroundStyle(secondaryTextColor.opacity(0.95))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.76)
+                        }
+                    }
+
+                    Spacer(minLength: 8)
+                    trailing
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func illnessReferenceSummary(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
+    let statusLabel = context.state.statusLabel?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if !statusLabel.isEmpty {
+        return statusLabel
+    }
+    return ""
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func illnessReferenceDetail(for context: ActivityViewContext<LiveActivityAttributes>) -> String? {
+    let subtitle = context.state.subtitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return subtitle.isEmpty ? nil : subtitle
 }
 
 @available(iOSApplicationExtension 16.1, *)

@@ -144,6 +144,37 @@ async def test_update_rejects_closed_at_before_started_at() -> None:
 
 
 @pytest.mark.asyncio
+async def test_update_accepts_closed_at_with_positive_offset_on_same_local_day() -> None:
+    child = Child(id=uuid4(), family_id=uuid4(), name="Маша", birth_date=date(2021, 1, 1))
+    entity = IllnessEpisode(
+        id=uuid4(),
+        child_id=child.id,
+        started_at=date(2026, 4, 24),
+        title="ОРВИ",
+        status="active",
+        medication_mode="manual",
+        note=None,
+        closed_at=None,
+        deleted_at=None,
+    )
+    service, repo = make_service(entity, child)
+    closed_at = datetime.fromisoformat("2026-04-24T00:16:35+03:00")
+
+    result = await service.update(
+        entity.id,
+        IllnessEpisodeUpdateDto(
+            status="closed",
+            closed_at=closed_at,
+        ),
+        child.family_id,
+    )
+
+    assert result.closed_at == closed_at
+    assert repo.updated is not None
+    assert repo.updated.closed_at == closed_at
+
+
+@pytest.mark.asyncio
 async def test_update_rejects_foreign_family() -> None:
     child = Child(id=uuid4(), family_id=uuid4(), name="Маша", birth_date=date(2021, 1, 1))
     entity = IllnessEpisode(

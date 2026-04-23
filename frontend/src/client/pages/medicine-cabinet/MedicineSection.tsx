@@ -12,6 +12,8 @@ export function MedicineSection({
   medicines,
   compact,
   canEdit = true,
+  isOffline = false,
+  onNetworkRequired,
   expandedMedicineId,
   isDeleting,
   deletingMedicineId,
@@ -25,6 +27,8 @@ export function MedicineSection({
   medicines: HouseholdMedicine[];
   compact: boolean;
   canEdit?: boolean;
+  isOffline?: boolean;
+  onNetworkRequired?: () => void;
   expandedMedicineId: string | null;
   isDeleting: boolean;
   deletingMedicineId: string | null;
@@ -56,6 +60,8 @@ export function MedicineSection({
             isDeleting={isDeleting && deletingMedicineId === medicine.id}
             compact={compact}
             canEdit={canEdit}
+            isOffline={isOffline}
+            onNetworkRequired={onNetworkRequired}
             isExpanded={expandedMedicineId === medicine.id}
             onExpandChange={(isExpanded) => {
               onExpandChange(isExpanded ? medicine.id : null);

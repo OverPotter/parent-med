@@ -1,6 +1,6 @@
 """DTO для аналитики истории болезней и разбора эпизода."""
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -25,7 +25,7 @@ class IllnessHistorySummaryDto(BaseModel):
     period: str = Field(..., description="Выбранный период аналитики")
     total_closed_episodes: int = Field(..., description="Всего завершённых эпизодов в истории")
     episode_count: int = Field(..., description="Количество завершённых эпизодов за период")
-    last_episode_started_at: datetime | None = Field(
+    last_episode_started_at: date | None = Field(
         None,
         description="Когда начался последний эпизод за всю историю",
     )

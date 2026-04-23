@@ -7,7 +7,11 @@ from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.child import ChildCreateDto
 from src.application.dto.episode_medication_plan import EpisodeMedicationPlanCreateDto
 from src.application.dto.family_access import FamilyAccessPolicyDto
-from src.application.dto.feeding_record import FeedingRecordCreateDto, FeedingRecordStopDto
+from src.application.dto.feeding_record import (
+    FeedingRecordCreateDto,
+    FeedingRecordStartDto,
+    FeedingRecordStopDto,
+)
 from src.application.dto.household_medicine import HouseholdMedicineUpdateDto
 from src.application.dto.illness_episode import IllnessEpisodeCreateDto
 from src.application.dto.pillbox import (
@@ -1314,6 +1318,90 @@ async def test_feeding_create_allows_children_act_access() -> None:
     )
 
     assert result.child_id == child.id
+
+
+@pytest.mark.asyncio
+async def test_feeding_start_uses_device_timestamp_when_provided() -> None:
+    family_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(children_access="edit"),
+    )
+    child = Child(
+        id=uuid4(),
+        family_id=family_id,
+        name="Миша",
+        birth_date=None,
+        baby_mode_enabled=True,
+    )
+    service = FeedingRecordService(
+        feeding_repo=StubFeedingRecordRepository([]),
+        child_repo=StubChildRepository([child]),
+    )
+    started_at = datetime(2026, 4, 23, 7, 15, tzinfo=UTC)
+
+    result = await service.start(
+        FeedingRecordStartDto(
+            child_id=child.id,
+            feeding_type="breast",
+            breast_side="left",
+            is_expressed=False,
+            formula_volume_ml=None,
+            recorded_at=started_at,
+            started_at=started_at,
+            note=None,
+        ),
+        account,
+    )
+
+    assert result.started_at == started_at
+    assert result.recorded_at == started_at
+
+
+@pytest.mark.asyncio
+async def test_feeding_stop_uses_device_timestamp_when_provided() -> None:
+    family_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(children_access="edit"),
+    )
+    child = Child(
+        id=uuid4(),
+        family_id=family_id,
+        name="Миша",
+        birth_date=None,
+        baby_mode_enabled=True,
+    )
+    started_at = datetime(2026, 4, 23, 7, 15, tzinfo=UTC)
+    ended_at = datetime(2026, 4, 23, 7, 42, tzinfo=UTC)
+    record = FeedingRecord(
+        id=uuid4(),
+        child_id=child.id,
+        feeding_type="breast",
+        breast_side="left",
+        is_expressed=False,
+        formula_volume_ml=None,
+        recorded_at=started_at,
+        started_at=started_at,
+        ended_at=None,
+        duration_minutes=None,
+        status="active",
+        note=None,
+        created_by_account_id=account.id,
+    )
+    service = FeedingRecordService(
+        feeding_repo=StubFeedingRecordRepository([record]),
+        child_repo=StubChildRepository([child]),
+    )
+
+    result = await service.stop(
+        record.id,
+        FeedingRecordStopDto(ended_at=ended_at),
+        account,
+    )
+
+    assert result.ended_at == ended_at
+    assert result.duration_minutes == 27
 
 
 @pytest.mark.asyncio

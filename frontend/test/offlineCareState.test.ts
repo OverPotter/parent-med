@@ -12,6 +12,7 @@ import {
   queueOfflineSleepStart,
   queueOfflineSleepStop,
 } from "../src/shared/utils/offlineCareState.js";
+import { getCurrentDeviceTimestampIso } from "../src/shared/utils/date.js";
 
 class MemoryStorage {
   private map = new Map<string, string>();
@@ -92,6 +93,10 @@ test("offline feeding start/stop stores payload and clears active override", () 
   assert.equal(stopped?.status, "completed");
   assert.equal(getOfflineFeedingOverride("child-feeding").value, null);
   assert.equal(getOfflineCareActions().length, 2);
+  assert.equal(
+    getOfflineCareActions()[1]?.createdAt,
+    getCurrentDeviceTimestampIso(new Date(getOfflineCareActions()[1]!.createdAt))
+  );
 });
 
 test("offline illness start/stop stores active episode locally", () => {
@@ -123,4 +128,8 @@ test("offline illness start/stop stores active episode locally", () => {
   assert.equal(stopped?.status, "closed");
   assert.equal(getOfflineIllnessOverride("child-illness").value, null);
   assert.equal(getOfflineCareActions().length, 2);
+  assert.equal(
+    getOfflineCareActions()[1]?.createdAt,
+    getCurrentDeviceTimestampIso(new Date(getOfflineCareActions()[1]!.createdAt))
+  );
 });

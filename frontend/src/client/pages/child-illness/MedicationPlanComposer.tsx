@@ -6,7 +6,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { HouseholdMedicine, WeightEntry } from "@shared/types/api";
-import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
+import { getCurrentDeviceTimestampIso, getLocalIsoDate } from "@shared/utils/date";
 import { formatChildDate } from "@client/utils/childDateFormat";
 import { blurActiveField, scrollFieldIntoView } from "@shared/utils/focus";
 import { buildWeightDoseHint } from "../../utils/medicationPlans";
@@ -26,9 +26,34 @@ import {
   reminderModeButtonClass,
 } from "./reminderUtils";
 import { CabinetMedicinePicker } from "./CabinetMedicinePicker";
+import { ReminderFirstAdministrationSection } from "./ReminderFirstAdministrationSection";
+import { isFutureFirstAdministrationSelection } from "./reminderTiming";
 
 const reminderComposerPrimaryActionClass = `${illnessCompactPrimaryButtonClass} min-h-[2.45rem] px-3.5 text-[0.79rem] sm:min-h-[2.55rem] sm:text-[0.81rem]`;
 const reminderComposerSecondaryActionClass = `${illnessCompactSecondaryButtonClass} min-h-[2.45rem] px-3.5 text-[0.79rem] sm:min-h-[2.55rem] sm:text-[0.81rem]`;
+
+function getCurrentLocalTimeValue(date = new Date()) {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function toLocalDeviceTimestampIso(dateValue: string, timeValue: string) {
+  const [parsedYear, parsedMonth, parsedDay] = dateValue
+    .split("-")
+    .map((part) => Number.parseInt(part, 10));
+  const [parsedHours, parsedMinutes] = timeValue
+    .split(":")
+    .map((part) => Number.parseInt(part, 10));
+  const year = parsedYear ?? 0;
+  const month = parsedMonth ?? 1;
+  const day = parsedDay ?? 1;
+  const hours = parsedHours ?? 0;
+  const minutes = parsedMinutes ?? 0;
+  return getCurrentDeviceTimestampIso(
+    new Date(year, month - 1, day, hours, minutes, 0, 0)
+  );
+}
 
 function InlineHint({ text }: { text: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -94,9 +119,7 @@ export function MedicationPlanComposer({
   const isCabinetPickerOpen = searchParams.get("picker") === "cabinet";
   const defaultPlanMode: "cabinet" | "manual" = initialValue?.householdMedicineId
     ? "cabinet"
-    : medicines.length > 0
-      ? "cabinet"
-      : "manual";
+    : "manual";
   const hasAdvancedInitialValue = Boolean(
     initialValue?.maxDosesPerDay || initialValue?.weightKg || initialValue?.doseMgPerKg
   );
@@ -129,6 +152,11 @@ export function MedicationPlanComposer({
   const [doseMgPerKg, setDoseMgPerKg] = useState(
     initialValue?.doseMgPerKg ? String(initialValue.doseMgPerKg) : ""
   );
+  const [firstDoseStatus, setFirstDoseStatus] = useState<"already_given" | "not_given">(
+    initialValue?.firstDoseStatus ?? "not_given"
+  );
+  const [firstDoseDate, setFirstDoseDate] = useState(getLocalIsoDate());
+  const [firstDoseTime, setFirstDoseTime] = useState(getCurrentLocalTimeValue());
   const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const selectedMedicine = medicines.find((medicine) => medicine.id === selectedMedicineId) ?? null;
@@ -141,6 +169,14 @@ export function MedicationPlanComposer({
   const hasDoseUnitHint = doseAmount.trim().length > 0 && !/[A-Za-zА-Яа-я]/.test(doseAmount);
   const hasInvalidDose = doseAmount.trim().length > 0 && hasDoseUnitHint;
   const parsedIntervalMinutes = parseIntervalInputToMinutes(minIntervalInput, intervalUnit);
+  const firstDoseAt =
+    !initialValue && firstDoseStatus === "already_given"
+      ? toLocalDeviceTimestampIso(firstDoseDate, firstDoseTime)
+      : null;
+  const hasFutureFirstDoseSelection =
+    !initialValue &&
+    firstDoseStatus === "already_given" &&
+    isFutureFirstAdministrationSelection(firstDoseDate, firstDoseTime);
   const latestWeightValue = latestWeight?.valueKg ?? null;
   const shouldOfferWeightSync =
     parsedWeightKg !== null &&
@@ -242,13 +278,6 @@ export function MedicationPlanComposer({
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => setPlanMode("cabinet")}
-              className={reminderModeButtonClass(planMode === "cabinet", appBtnSecondaryClass)}
-            >
-              {language === "ru" ? "Из аптечки" : "From cabinet"}
-            </button>
-            <button
-              type="button"
               onClick={() => {
                 clearCabinetPicker();
                 setPlanMode("manual");
@@ -256,6 +285,13 @@ export function MedicationPlanComposer({
               className={reminderModeButtonClass(planMode === "manual", appBtnSecondaryClass)}
             >
               {language === "ru" ? "Вручную" : "Manual"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlanMode("cabinet")}
+              className={reminderModeButtonClass(planMode === "cabinet", appBtnSecondaryClass)}
+            >
+              {language === "ru" ? "Из аптечки" : "From cabinet"}
             </button>
           </div>
         ) : null}
@@ -293,8 +329,8 @@ export function MedicationPlanComposer({
             <label className="block space-y-1.5">
               <span className="soft-field-label">
                 {language === "ru"
-                  ? "Сколько дать сейчас (разовая доза)"
-                  : "Dose for now (single dose)"}
+                  ? "Сколько дать"
+                  : "How much to give"}
               </span>
               <input
                 type="text"
@@ -339,7 +375,21 @@ export function MedicationPlanComposer({
             </label>
           </div>
         </div>
+
       </div>
+
+      {!initialValue ? (
+        <ReminderFirstAdministrationSection
+          language={language}
+          firstDoseStatus={firstDoseStatus}
+          firstDoseDate={firstDoseDate}
+          firstDoseTime={firstDoseTime}
+          hasFutureFirstDoseSelection={hasFutureFirstDoseSelection}
+          onStatusChange={setFirstDoseStatus}
+          onDateChange={setFirstDoseDate}
+          onTimeChange={setFirstDoseTime}
+        />
+      ) : null}
 
       <div className={`${illnessPanelSoftClass} rounded-[28px] p-4 sm:p-5`}>
         <div>
@@ -519,6 +569,7 @@ export function MedicationPlanComposer({
               if (
                 parsedIntervalMinutes === null ||
                 hasInvalidDose ||
+                hasFutureFirstDoseSelection ||
                 (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim())
               ) {
                 return;
@@ -533,16 +584,21 @@ export function MedicationPlanComposer({
                 weightKg: parseNullableNumber(weightKg),
                 doseMgPerKg: parseNullableNumber(doseMgPerKg),
                 notes: null,
+                firstDoseStatus: initialValue ? undefined : firstDoseStatus,
+                firstDoseAt,
               });
 
               if (!initialValue) {
-                setPlanMode("cabinet");
+                setPlanMode("manual");
                 setSelectedMedicineId("");
                 setCustomMedicineName("");
                 setDoseAmount("");
                 setMinIntervalInput(intervalUnit === "minutes" ? "180" : "3");
                 setMaxDosesPerDay("");
                 setDoseMgPerKg("");
+                setFirstDoseStatus("not_given");
+                setFirstDoseDate(getLocalIsoDate());
+                setFirstDoseTime(getCurrentLocalTimeValue());
               }
               clearCabinetPicker();
               onCancel?.();
@@ -552,6 +608,7 @@ export function MedicationPlanComposer({
               (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim()) ||
               !minIntervalInput ||
               hasInvalidDose ||
+              hasFutureFirstDoseSelection ||
               parsedIntervalMinutes === null
             }
             className={`${reminderComposerPrimaryActionClass} w-full`}

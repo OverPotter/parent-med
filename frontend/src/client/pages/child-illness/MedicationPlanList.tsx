@@ -8,7 +8,7 @@ import type {
 } from "@shared/types/api";
 import {
   buildPlanAdministrationStats,
-  formatRelativeDateTime,
+  formatReminderTimeWithClock,
   getPrioritizedMedicationPlanItems,
 } from "../../utils/medicationPlans";
 import {
@@ -67,8 +67,8 @@ export function MedicationPlanList({
                   ? "Следующий приём: можно сейчас"
                   : "Next dose: available now"
                 : language === "ru"
-                  ? `Следующий приём: ${formatRelativeDateTime(stats.nextAllowedAt, currentTime)}`
-                  : `Next dose: ${formatRelativeDateTime(stats.nextAllowedAt, currentTime)}`
+                  ? `Следующий приём: ${formatReminderTimeWithClock(stats.nextAllowedAt, language, currentTime)}`
+                  : `Next dose: ${formatReminderTimeWithClock(stats.nextAllowedAt, language, currentTime)}`
               : language === "ru"
                 ? "Следующий приём: можно сейчас"
                 : "Next dose: available now";

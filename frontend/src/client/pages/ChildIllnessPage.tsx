@@ -162,6 +162,7 @@ export function ChildIllnessPage() {
       activeEpisode ?? null,
       activeEpisodeInsights,
       activeEpisodeMedicationPlans,
+      null,
       language,
       undefined,
       accountId
@@ -260,7 +261,7 @@ export function ChildIllnessPage() {
       queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] });
       queryClient.invalidateQueries({ queryKey: ["children"] });
-      navigate("/children");
+      navigate("/illnesses/active");
     },
   });
 

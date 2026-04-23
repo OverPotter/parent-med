@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { usePushPromptControls } from "@client/layout/PushPromptControlContext";
 import { logout } from "@shared/api/auth";
+import { setBearerToken } from "@shared/api/client";
 import { HeaderUtilityActions } from "@shared/components/Layout";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -41,6 +42,7 @@ export function ChildSectionTopBar({
     } catch {
       // Local logout must still work if the backend session is already gone.
     } finally {
+      setBearerToken(null);
       clearSession();
     }
   };

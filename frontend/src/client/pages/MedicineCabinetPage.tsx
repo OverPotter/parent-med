@@ -52,6 +52,7 @@ export function MedicineCabinetPage() {
   const [cabinetSearch, setCabinetSearch] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<CabinetFilterKey | null>(null);
   const [expandedMedicineId, setExpandedMedicineId] = useState<string | null>(null);
+  const [networkRequiredNotice, setNetworkRequiredNotice] = useState(false);
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
@@ -60,6 +61,7 @@ export function MedicineCabinetPage() {
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
   const canMutateCabinet = canEditCabinet(accountFamilyRole, accountAccessPolicy);
   const canManageCabinetRecipients = accountFamilyRole === "admin";
+  const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
 
   const addFlow: AddMedicineFlow =
     location.pathname === "/medicine-cabinet/add"
@@ -81,6 +83,16 @@ export function MedicineCabinetPage() {
 
   const closeAddFlow = (options?: { replace?: boolean }) => {
     navigate("/medicine-cabinet", { replace: options?.replace ?? false });
+  };
+
+  useEffect(() => {
+    if (!isOffline) {
+      setNetworkRequiredNotice(false);
+    }
+  }, [isOffline]);
+
+  const handleNetworkRequired = () => {
+    setNetworkRequiredNotice(true);
   };
 
   const {
@@ -292,6 +304,8 @@ export function MedicineCabinetPage() {
                   familyMembers={eligibleCabinetMembers}
                   currentAccountId={accountId}
                   isPending={updateCabinetRecipientsMutation.isPending}
+                  isOffline={isOffline}
+                  onNetworkRequired={handleNetworkRequired}
                   onChangeSelection={(memberIds) => {
                     updateCabinetRecipientsMutation.mutate(memberIds);
                   }}
@@ -349,6 +363,8 @@ export function MedicineCabinetPage() {
                 familyMembers={eligibleCabinetMembers}
                 currentAccountId={accountId}
                 isPending={updateCabinetRecipientsMutation.isPending}
+                isOffline={isOffline}
+                onNetworkRequired={handleNetworkRequired}
                 onChangeSelection={(memberIds) => {
                   updateCabinetRecipientsMutation.mutate(memberIds);
                 }}
@@ -413,6 +429,11 @@ export function MedicineCabinetPage() {
       )}
       {medicines.length > 0 && (
         <div className={`mt-4 ${cabinetPanelClass} px-4 py-4 sm:px-5 sm:py-5`}>
+          {networkRequiredNotice ? (
+            <p className="soft-note-warning mb-3 rounded-2xl px-4 py-3 text-sm">
+              {tCabinet(language, "networkProblemInline")}
+            </p>
+          ) : null}
           <label className="block">
             <span className="soft-field-label">{tCabinet(language, "searchLabel")}</span>
             <input
@@ -482,6 +503,8 @@ export function MedicineCabinetPage() {
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
           canEdit={canMutateCabinet}
+          isOffline={isOffline}
+          onNetworkRequired={handleNetworkRequired}
           onExpandChange={setExpandedMedicineId}
         />
       )}
@@ -498,6 +521,8 @@ export function MedicineCabinetPage() {
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
           canEdit={canMutateCabinet}
+          isOffline={isOffline}
+          onNetworkRequired={handleNetworkRequired}
           onExpandChange={setExpandedMedicineId}
         />
       )}
@@ -514,6 +539,8 @@ export function MedicineCabinetPage() {
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
           canEdit={canMutateCabinet}
+          isOffline={isOffline}
+          onNetworkRequired={handleNetworkRequired}
           onExpandChange={setExpandedMedicineId}
         />
       )}
@@ -530,6 +557,8 @@ export function MedicineCabinetPage() {
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
           canEdit={canMutateCabinet}
+          isOffline={isOffline}
+          onNetworkRequired={handleNetworkRequired}
           onExpandChange={setExpandedMedicineId}
         />
       )}

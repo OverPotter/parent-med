@@ -50,8 +50,25 @@ export function isFutureDeviceDate(dateValue: string | null | undefined, now = n
   return dateValue.trim() > getLocalIsoDate(now);
 }
 
+function padDatePart(value: number, length = 2): string {
+  return String(Math.trunc(Math.abs(value))).padStart(length, "0");
+}
+
 export function getCurrentDeviceTimestampIso(date = new Date()): string {
-  return date.toISOString();
+  const year = date.getFullYear();
+  const month = padDatePart(date.getMonth() + 1);
+  const day = padDatePart(date.getDate());
+  const hours = padDatePart(date.getHours());
+  const minutes = padDatePart(date.getMinutes());
+  const seconds = padDatePart(date.getSeconds());
+  const milliseconds = padDatePart(date.getMilliseconds(), 3);
+  const offsetMinutes = -date.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const absoluteOffsetMinutes = Math.abs(offsetMinutes);
+  const offsetHours = padDatePart(Math.floor(absoluteOffsetMinutes / 60));
+  const offsetRemainderMinutes = padDatePart(absoluteOffsetMinutes % 60);
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}${sign}${offsetHours}:${offsetRemainderMinutes}`;
 }
 
 export function toDeviceDateTimeIso(
