@@ -9,6 +9,7 @@ from src.application.dto.administration_event import (
 )
 from src.application.dto.auth import AuthenticatedAccount
 from src.application.services.access_control import (
+    coerce_account_context,
     get_child_for_account,
 )
 from src.application.services.safety_engine import check_household_medicine_for_administration
@@ -82,6 +83,7 @@ class AdministrationService:
         household_medicine_id: UUID,
         current_account: AuthenticatedAccount,
     ) -> HouseholdMedicine:
+        current_account = coerce_account_context(current_account)
         household = await self._household_repo.get_by_id(household_medicine_id)
         if not household:
             raise NotFoundError("Упаковка не найдена", resource="household_medicine")
@@ -122,6 +124,7 @@ class AdministrationService:
         administered_by_account_id: UUID,
         administered_by_name_snapshot: str,
     ) -> AdministrationEventResponseDto:
+        current_account = coerce_account_context(current_account)
         episode = await self._get_episode_for_account(dto.episode_id, current_account, "act")
         if episode.status != "active":
             raise ValidationError("Эпизод закрыт, приёмы добавлять нельзя")

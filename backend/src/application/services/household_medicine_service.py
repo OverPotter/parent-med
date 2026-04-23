@@ -9,7 +9,7 @@ from src.application.dto.household_medicine import (
     HouseholdMedicineResponseDto,
     HouseholdMedicineUpdateDto,
 )
-from src.application.services.access_control import ensure_module_access
+from src.application.services.access_control import coerce_account_context, ensure_module_access
 from src.application.services.safety_engine import calculate_household_medicine_status
 from src.core.exceptions import NotFoundError, ValidationError
 from src.domain.entities.household_medicine import HouseholdMedicine
@@ -84,6 +84,7 @@ class HouseholdMedicineService:
         id: UUID,
         current_account: AuthenticatedAccount,
     ) -> HouseholdMedicineResponseDto:
+        current_account = coerce_account_context(current_account)
         ensure_module_access(current_account, "cabinet", "view")
         entity = await self._repo.get_by_id(id)
         if not entity:
@@ -96,6 +97,7 @@ class HouseholdMedicineService:
         self,
         current_account: AuthenticatedAccount,
     ) -> list[HouseholdMedicineResponseDto]:
+        current_account = coerce_account_context(current_account)
         ensure_module_access(current_account, "cabinet", "view")
         if await self._family_repo.get_by_id(current_account.family_id) is None:
             raise NotFoundError("Семья не найдена", resource="family")
@@ -114,6 +116,7 @@ class HouseholdMedicineService:
         current_account: AuthenticatedAccount,
         dto: HouseholdMedicineCreateDto,
     ) -> HouseholdMedicineResponseDto:
+        current_account = coerce_account_context(current_account)
         ensure_module_access(current_account, "cabinet", "edit")
         if await self._family_repo.get_by_id(current_account.family_id) is None:
             raise NotFoundError("Семья не найдена", resource="family")
@@ -168,6 +171,7 @@ class HouseholdMedicineService:
         current_account: AuthenticatedAccount,
         dto: HouseholdMedicineUpdateDto,
     ) -> HouseholdMedicineResponseDto:
+        current_account = coerce_account_context(current_account)
         ensure_module_access(current_account, "cabinet", "edit")
         entity = await self._repo.get_by_id(id)
         if not entity:
@@ -236,6 +240,7 @@ class HouseholdMedicineService:
         return await self._to_response(updated)
 
     async def delete(self, id: UUID, current_account: AuthenticatedAccount) -> None:
+        current_account = coerce_account_context(current_account)
         ensure_module_access(current_account, "cabinet", "edit")
         entity = await self._repo.get_by_id(id)
         if entity is None or entity.family_id != current_account.family_id:

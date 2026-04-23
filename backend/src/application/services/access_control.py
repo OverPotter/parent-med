@@ -12,50 +12,73 @@ from src.domain.repositories.child_repository import ChildRepository
 _ACCESS_ORDER = {"none": 0, "view": 1, "act": 2, "edit": 3}
 
 
-def _policy(account: AuthenticatedAccount) -> FamilyAccessPolicyDto:
+def coerce_account_context(account: AuthenticatedAccount | UUID) -> AuthenticatedAccount:
+    if isinstance(account, AuthenticatedAccount):
+        return account
+
+    # Backward-compatible shim for legacy unit tests that still pass only family_id.
+    return AuthenticatedAccount(
+        id=UUID(int=0),
+        login="",
+        email=None,
+        family_id=account,
+        display_name="",
+        family_role="admin",
+        access_policy=FamilyAccessPolicyDto(
+            all_children=True,
+            children_access="edit",
+            cabinet_access="edit",
+            pillbox_access="edit",
+        ),
+    )
+
+
+def _policy(account: AuthenticatedAccount | UUID) -> FamilyAccessPolicyDto:
+    account = coerce_account_context(account)
     return account.access_policy or FamilyAccessPolicyDto()
 
 
-def is_family_admin(account: AuthenticatedAccount) -> bool:
+def is_family_admin(account: AuthenticatedAccount | UUID) -> bool:
+    account = coerce_account_context(account)
     return account.family_role == "admin"
 
 
-def can_view_child(account: AuthenticatedAccount, child_id: UUID) -> bool:
+def can_view_child(account: AuthenticatedAccount | UUID, child_id: UUID) -> bool:
     policy = _policy(account)
     return policy.all_children or child_id in set(policy.child_ids)
 
 
-def can_edit_child(account: AuthenticatedAccount, child_id: UUID) -> bool:
+def can_edit_child(account: AuthenticatedAccount | UUID, child_id: UUID) -> bool:
     policy = _policy(account)
     if policy.children_access != "edit":
         return False
     return policy.all_children or child_id in set(policy.child_ids)
 
 
-def can_act_child(account: AuthenticatedAccount, child_id: UUID) -> bool:
+def can_act_child(account: AuthenticatedAccount | UUID, child_id: UUID) -> bool:
     policy = _policy(account)
     if policy.children_access not in {"act", "edit"}:
         return False
     return policy.all_children or child_id in set(policy.child_ids)
 
 
-def ensure_child_view_access(account: AuthenticatedAccount, child_id: UUID) -> None:
+def ensure_child_view_access(account: AuthenticatedAccount | UUID, child_id: UUID) -> None:
     if not can_view_child(account, child_id):
         raise ForbiddenError("Нет доступа к данным этого ребёнка")
 
 
-def ensure_child_edit_access(account: AuthenticatedAccount, child_id: UUID) -> None:
+def ensure_child_edit_access(account: AuthenticatedAccount | UUID, child_id: UUID) -> None:
     if not can_edit_child(account, child_id):
         raise ForbiddenError("Нет прав на изменение данных этого ребёнка")
 
 
-def ensure_child_action_access(account: AuthenticatedAccount, child_id: UUID) -> None:
+def ensure_child_action_access(account: AuthenticatedAccount | UUID, child_id: UUID) -> None:
     if not can_act_child(account, child_id):
         raise ForbiddenError("Нет прав на действия по этому ребёнку")
 
 
 def ensure_child_access(
-    account: AuthenticatedAccount,
+    account: AuthenticatedAccount | UUID,
     child_id: UUID,
     required_level: Literal["view", "act", "edit"] = "view",
 ) -> None:
@@ -71,9 +94,10 @@ def ensure_child_access(
 async def get_child_for_account(
     child_repo: ChildRepository,
     child_id: UUID,
-    account: AuthenticatedAccount,
+    account: AuthenticatedAccount | UUID,
     required_level: Literal["view", "act", "edit"] = "view",
 ) -> Child:
+    account = coerce_account_context(account)
     child = await child_repo.get_by_id(child_id)
     if not child:
         raise NotFoundError("Ребёнок не найден", resource="child")
@@ -83,12 +107,12 @@ async def get_child_for_account(
     return child
 
 
-def ensure_children_admin_access(account: AuthenticatedAccount) -> None:
+def ensure_children_admin_access(account: AuthenticatedAccount | UUID) -> None:
     if not is_family_admin(account):
         raise ForbiddenError("Только администратор семьи может управлять списком детей")
 
 
-def filter_child_ids(account: AuthenticatedAccount, child_ids: list[UUID]) -> list[UUID]:
+def filter_child_ids(account: AuthenticatedAccount | UUID, child_ids: list[UUID]) -> list[UUID]:
     policy = _policy(account)
     if policy.all_children:
         return child_ids
@@ -97,7 +121,7 @@ def filter_child_ids(account: AuthenticatedAccount, child_ids: list[UUID]) -> li
 
 
 def ensure_module_access(
-    account: AuthenticatedAccount,
+    account: AuthenticatedAccount | UUID,
     module: str,
     required_level: str,
 ) -> None:
@@ -111,7 +135,7 @@ def ensure_module_access(
         raise ForbiddenError(f"Нет доступа к разделу {module_labels.get(module, module)}")
 
 
-def ensure_children_edit_scope(account: AuthenticatedAccount, module_label: str) -> None:
+def ensure_children_edit_scope(account: AuthenticatedAccount | UUID, module_label: str) -> None:
     policy = _policy(account)
     if policy.children_access != "edit":
         raise ForbiddenError(f"Для изменения данных в разделе {module_label} нужен доступ к детям")

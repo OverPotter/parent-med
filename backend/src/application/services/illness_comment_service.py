@@ -9,6 +9,7 @@ from src.application.dto.illness_comment import (
     IllnessCommentResponseDto,
 )
 from src.application.services.access_control import (
+    coerce_account_context,
     get_child_for_account,
 )
 from src.core.exceptions import NotFoundError, ValidationError
@@ -101,6 +102,7 @@ class IllnessCommentService:
         created_by_account_id: UUID | None = None,
         created_by_name_snapshot: str | None = None,
     ) -> IllnessCommentResponseDto:
+        current_account = coerce_account_context(current_account)
         episode = await self._get_episode_for_account(dto.episode_id, current_account, "act")
         if episode.status != "active":
             raise ValidationError("Эпизод закрыт, комментарии добавлять нельзя")

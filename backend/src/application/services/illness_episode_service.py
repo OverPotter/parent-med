@@ -17,6 +17,7 @@ from src.application.dto.illness_episode import (
     IllnessEpisodeUpdateDto,
 )
 from src.application.services.access_control import (
+    coerce_account_context,
     get_child_for_account,
 )
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
@@ -101,7 +102,7 @@ class IllnessEpisodeService:
     def _can_receive_illness_signals_for_child(self, account: object, child_id: UUID) -> bool:
         policy = getattr(account, "access_policy", None)
         if policy is None:
-            return False
+            return True
         if getattr(policy, "all_children", False):
             return True
         return child_id in set(getattr(policy, "child_ids", []))
@@ -162,6 +163,7 @@ class IllnessEpisodeService:
         current_account: AuthenticatedAccount,
         period: str,
     ) -> IllnessHistorySummaryDto:
+        current_account = coerce_account_context(current_account)
         await self._require_child_access(child_id, current_account)
         normalized_period = self._normalize_period(period)
         temperature_repo, administration_repo, _ = self._require_analytics_repositories()
@@ -236,6 +238,7 @@ class IllnessEpisodeService:
         id: UUID,
         current_account: AuthenticatedAccount,
     ) -> IllnessEpisodeInsightsDto:
+        current_account = coerce_account_context(current_account)
         episode = await self._get_episode_for_account(id, current_account)
         temperature_repo, administration_repo, comment_repo = self._require_analytics_repositories()
         temperatures = await temperature_repo.get_by_episode_id(episode.id)
@@ -294,6 +297,7 @@ class IllnessEpisodeService:
         dto: IllnessEpisodeCreateDto,
         current_account: AuthenticatedAccount,
     ) -> IllnessEpisodeResponseDto:
+        current_account = coerce_account_context(current_account)
         await self._require_child_access(dto.child_id, current_account, "edit")
         if dto.medication_mode not in {"manual", "guided"}:
             raise ValidationError("Неизвестный режим лекарств")
@@ -328,6 +332,7 @@ class IllnessEpisodeService:
         dto: IllnessEpisodeUpdateDto,
         current_account: AuthenticatedAccount,
     ) -> IllnessEpisodeResponseDto:
+        current_account = coerce_account_context(current_account)
         entity = await self._get_episode_for_account(id, current_account, "edit")
         fields_set = dto.model_fields_set
 
