@@ -42,3 +42,47 @@ export function getLocalIsoDate(date = new Date()): string {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
+export function isFutureDeviceDate(dateValue: string | null | undefined, now = new Date()): boolean {
+  if (!dateValue || !/^\d{4}-\d{2}-\d{2}$/.test(dateValue.trim())) {
+    return false;
+  }
+  return dateValue.trim() > getLocalIsoDate(now);
+}
+
+export function getCurrentDeviceTimestampIso(date = new Date()): string {
+  return date.toISOString();
+}
+
+export function toDeviceDateTimeIso(
+  dateValue: string | null | undefined,
+  timeValue: string | null | undefined
+): string | null {
+  if (!dateValue || !timeValue) {
+    return null;
+  }
+
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const [hours, minutes] = timeValue.split(":").map(Number);
+  if (
+    year === undefined ||
+    month === undefined ||
+    day === undefined ||
+    hours === undefined ||
+    minutes === undefined ||
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    !Number.isFinite(hours) ||
+    !Number.isFinite(minutes)
+  ) {
+    return null;
+  }
+
+  const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  if (Number.isNaN(localDate.getTime())) {
+    return null;
+  }
+
+  return localDate.toISOString();
+}

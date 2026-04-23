@@ -29,12 +29,15 @@ class FeedingRecordStartDto(BaseModel):
     breast_side: str | None = Field(None, description="Сторона груди")
     is_expressed: bool = Field(False, description="Сцеженное молоко")
     formula_volume_ml: int | None = Field(None, description="Объём смеси в мл")
+    recorded_at: datetime | None = Field(None, description="Фактическое время начала кормления")
+    started_at: datetime | None = Field(None, description="Время старта кормления")
     note: str | None = Field(None, description="Заметка")
 
 
 class FeedingRecordStopDto(BaseModel):
     """Завершение активного кормления."""
 
+    ended_at: datetime | None = Field(None, description="Время окончания кормления")
     formula_volume_ml: int | None = Field(None, description="Объём смеси в мл")
     note: str | None = Field(None, description="Заметка")
 

@@ -38,6 +38,7 @@ export interface BootSplashInputs {
   familiesCount: number;
   isFamiliesLoading: boolean;
   isFamiliesSuccess: boolean;
+  isFamiliesError?: boolean;
   isDeferredBootReady: boolean;
   isDeferredShellWorkReady: boolean;
   isFirstNativeLaunch: boolean;
@@ -50,6 +51,7 @@ export function shouldShowClientBootSplash({
   familiesCount,
   isFamiliesLoading,
   isFamiliesSuccess,
+  isFamiliesError = false,
   isDeferredBootReady,
   isDeferredShellWorkReady,
   isFirstNativeLaunch,
@@ -58,6 +60,7 @@ export function shouldShowClientBootSplash({
     authToken &&
       accountId &&
       !currentFamilyId &&
+      !isFamiliesError &&
       (isFamiliesLoading || (!isFamiliesSuccess && familiesCount === 0))
   );
   const isCurrentFamilyResolving = Boolean(

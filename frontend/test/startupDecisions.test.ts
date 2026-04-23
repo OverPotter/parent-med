@@ -87,6 +87,24 @@ test("shouldShowClientBootSplash blocks while families bootstrap is unresolved",
   );
 });
 
+test("shouldShowClientBootSplash does not block authenticated boot on families network error", () => {
+  assert.equal(
+    shouldShowClientBootSplash({
+      authToken: "token",
+      accountId: "account",
+      currentFamilyId: null,
+      familiesCount: 0,
+      isFamiliesLoading: false,
+      isFamiliesSuccess: false,
+      isFamiliesError: true,
+      isDeferredBootReady: true,
+      isDeferredShellWorkReady: true,
+      isFirstNativeLaunch: false,
+    }),
+    false
+  );
+});
+
 test("shouldShowClientBootSplash blocks while resolving current family from loaded families", () => {
   assert.equal(
     shouldShowClientBootSplash({

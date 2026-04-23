@@ -6,6 +6,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { HouseholdMedicine, WeightEntry } from "@shared/types/api";
+import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import { formatChildDate } from "@client/utils/childDateFormat";
 import { blurActiveField, scrollFieldIntoView } from "@shared/utils/focus";
 import { buildWeightDoseHint } from "../../utils/medicationPlans";
@@ -150,6 +151,7 @@ export function MedicationPlanComposer({
       createWeightEntry({
         child_id: childId,
         value_kg: valueKg,
+        measured_at: getCurrentDeviceTimestampIso(),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["weight-entry-latest", childId] });

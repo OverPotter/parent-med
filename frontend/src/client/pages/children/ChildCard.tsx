@@ -11,7 +11,6 @@ import {
   stopSleepSessionResilient,
 } from "@shared/utils/offlineCareSync";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
-import { formatChildDate } from "@client/utils/childDateFormat";
 import {
   childActionPrimaryClass,
   childActionSecondaryClass,
@@ -62,7 +61,7 @@ export function ChildCard({
   const latestWeightLabel = latestWeightEntry
     ? formatWeightValue(latestWeightEntry.valueKg, language)
     : null;
-  const now = useNow(activeSleep || activeFeeding ? 1_000 : 60_000);
+  const now = useNow(activeSleep || activeFeeding || hasActiveEpisode ? 1_000 : 60_000);
   const queryClient = useQueryClient();
   const [isStopSleepConfirmOpen, setIsStopSleepConfirmOpen] = useState(false);
   const [isStopFeedingDialogOpen, setIsStopFeedingDialogOpen] = useState(false);
@@ -157,9 +156,7 @@ export function ChildCard({
                   {hasActiveEpisode ? (
                     <span className="inline-flex shrink-0 items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-danger)_14%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-danger)_74%,var(--color-foreground))]">
                       {activeEpisodeStartedAt
-                        ? t(copy.childCard.activeSince, {
-                            date: formatChildDate(activeEpisodeStartedAt, language),
-                          })
+                        ? formatIllnessActiveLabel(activeEpisodeStartedAt, now, language)
                         : copy.childCard.activeObservation}
                     </span>
                   ) : null}

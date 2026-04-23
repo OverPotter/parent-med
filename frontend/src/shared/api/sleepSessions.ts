@@ -41,13 +41,22 @@ export async function fetchSleepSessionsByChildId(childId: string): Promise<Slee
   }
 }
 
-export async function startSleepSession(childId: string): Promise<SleepSession> {
-  const res = await apiClient.post<RawSleepSession>("/sleep-sessions", { child_id: childId });
+export async function startSleepSession(
+  childId: string,
+  payload?: { started_at?: string | null }
+): Promise<SleepSession> {
+  const res = await apiClient.post<RawSleepSession>("/sleep-sessions", {
+    child_id: childId,
+    ...(payload?.started_at ? { started_at: payload.started_at } : {}),
+  });
   return toSleepSession(res.data);
 }
 
-export async function stopSleepSession(sessionId: string): Promise<SleepSession> {
-  const res = await apiClient.post<RawSleepSession>(`/sleep-sessions/${sessionId}/stop`, {});
+export async function stopSleepSession(
+  sessionId: string,
+  payload?: { ended_at?: string | null }
+): Promise<SleepSession> {
+  const res = await apiClient.post<RawSleepSession>(`/sleep-sessions/${sessionId}/stop`, payload ?? {});
   return toSleepSession(res.data);
 }
 

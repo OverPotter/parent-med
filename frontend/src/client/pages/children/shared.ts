@@ -90,6 +90,42 @@ export function formatElapsedDuration(startedAt: string, now: number, language: 
 }
 
 export function formatIllnessDuration(startedAt: string, now: number, language: "ru" | "en") {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(startedAt.trim())) {
+    const [year, month, day] = startedAt.split("-").map(Number);
+    if (
+      year !== undefined &&
+      month !== undefined &&
+      day !== undefined &&
+      Number.isFinite(year) &&
+      Number.isFinite(month) &&
+      Number.isFinite(day)
+    ) {
+      const startDate = new Date(year, month - 1, day);
+      const currentDate = new Date(now);
+      const startMidnight = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate()
+      ).getTime();
+      const currentMidnight = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        currentDate.getDate()
+      ).getTime();
+      const totalDays = Math.max(1, Math.floor((currentMidnight - startMidnight) / 86_400_000) + 1);
+
+      if (language === "ru") {
+        const mod10 = totalDays % 10;
+        const mod100 = totalDays % 100;
+        if (mod10 === 1 && mod100 !== 11) return `${totalDays} день`;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${totalDays} дня`;
+        return `${totalDays} дней`;
+      }
+
+      return `${totalDays} ${totalDays === 1 ? "day" : "days"}`;
+    }
+  }
+
   const startedAtMs = Date.parse(startedAt);
   if (Number.isNaN(startedAtMs)) {
     return language === "ru" ? "1 день" : "1 day";
@@ -111,6 +147,14 @@ export function formatIllnessDuration(startedAt: string, now: number, language: 
 }
 
 export function formatIllnessActiveLabel(startedAt: string, now: number, language: "ru" | "en") {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(startedAt.trim())) {
+    const duration = formatIllnessDuration(startedAt, now, language);
+    if (duration === (language === "ru" ? "1 день" : "1 day")) {
+      return language === "ru" ? "Наблюдение" : "Observation";
+    }
+    return language === "ru" ? `Наблюдение · ${duration}` : `Observation · ${duration}`;
+  }
+
   const startedAtMs = Date.parse(startedAt);
   if (Number.isNaN(startedAtMs)) {
     return language === "ru" ? "Наблюдение" : "Observation";

@@ -2,7 +2,7 @@
  * Эпизоды болезни ребёнка: список, создание, журнал температуры и приёмы.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
@@ -25,8 +25,15 @@ import {
   canViewChild,
 } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import type { IllnessEpisode } from "@shared/types/api";
 import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
 import { stopLiveActivitiesForChildIds, syncIllnessLiveActivity } from "@shared/utils/liveActivities";
+import {
+  clearIllnessStartHint,
+  setIllnessStartHint,
+  shouldKeepIllnessTimerHint,
+} from "@shared/utils/illnessStartHints";
+import { getLocalIsoDate, isFutureDeviceDate } from "@shared/utils/date";
 import {
   closeIllnessEpisodeResilient,
   createIllnessEpisodeResilient,
@@ -76,6 +83,7 @@ export function ChildIllnessPage() {
   const reminderPlanId = searchParams.get("plan");
   const initialComposerMode = quickComposeMode ?? "temperature";
   const liveQueryOptions = useLiveQueryOptions(isIosShell ? 15_000 : 10_000);
+  const [createEpisodeValidationError, setCreateEpisodeValidationError] = useState<string | null>(null);
   const createModeCardRef = useRef<HTMLDivElement | null>(null);
   const historySectionRef = useRef<HTMLElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -240,8 +248,13 @@ export function ChildIllnessPage() {
   const closeEpisodeMutation = useMutation({
     mutationFn: (episodeId: string) =>
       closeIllnessEpisodeResilient({ childId: childId!, episodeId }),
-    onSuccess: () => {
+    onSuccess: (closedEpisode) => {
+      clearIllnessStartHint(childId!);
       requestLiveActivityRefresh();
+      queryClient.setQueryData(["illness-episode-active", childId], null);
+      queryClient.setQueryData<IllnessEpisode[]>(["illness-episodes", childId], (current) =>
+        (current ?? []).map((item) => (closedEpisode && item.id === closedEpisode.id ? closedEpisode : item))
+      );
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
@@ -280,11 +293,44 @@ export function ChildIllnessPage() {
         currentAccountId: accountId,
         payload,
       }),
-    onSuccess: (episode) => {
+    onSuccess: (episode, payload) => {
+      setCreateEpisodeValidationError(null);
+      const startedAtHint = new Date().toISOString();
+      const shouldKeepExactStartedAt = shouldKeepIllnessTimerHint(
+        payload.started_at,
+        new Date(startedAtHint)
+      );
+      if (shouldKeepExactStartedAt) {
+        setIllnessStartHint({
+          childId: childId!,
+          episodeId: episode.id,
+          startedAt: startedAtHint,
+        });
+      } else {
+        clearIllnessStartHint(childId!);
+      }
       void trackIllnessEpisodeStarted(episode.id);
       requestLiveActivityRefresh();
+      const episodeForUi =
+        shouldKeepExactStartedAt
+          ? {
+              ...episode,
+              startedAt: startedAtHint,
+            }
+          : episode;
+      queryClient.setQueryData(["illness-episode-active", childId], episodeForUi);
+      queryClient.setQueryData<IllnessEpisode[]>(["illness-episodes", childId], (current) => {
+        const items = current ?? [];
+        if (items.some((item) => item.id === episode.id)) {
+          return items.map((item) => (item.id === episode.id ? episodeForUi : item));
+        }
+        return [episodeForUi, ...items];
+      });
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] });
+      queryClient.invalidateQueries({ queryKey: ["children"] });
       navigate("/illnesses/active");
     },
     onError: async (error) => {
@@ -488,13 +534,26 @@ export function ChildIllnessPage() {
               <EpisodeActivationCard
                 isPending={createEpisodeMutation.isPending}
                 errorMessage={
+                  createEpisodeValidationError ??
                   (
                     createEpisodeMutation.error as {
                       response?: { data?: { detail?: string } };
                     }
-                  )?.response?.data?.detail ?? null
+                  )?.response?.data?.detail ??
+                  null
                 }
-                onActivate={(payload) => createEpisodeMutation.mutate(payload)}
+                onActivate={(payload) => {
+                  if (isFutureDeviceDate(payload.started_at)) {
+                    setCreateEpisodeValidationError(
+                      language === "ru"
+                        ? `Дата начала не может быть позже даты на устройстве (${getLocalIsoDate()}).`
+                        : `Start date cannot be later than the device date (${getLocalIsoDate()}).`
+                    );
+                    return;
+                  }
+                  setCreateEpisodeValidationError(null);
+                  createEpisodeMutation.mutate(payload);
+                }}
                 onCancel={() => navigate("/children")}
               />
             </div>

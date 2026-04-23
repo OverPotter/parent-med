@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createChild } from "@shared/api/children";
 import { createHeightEntry } from "@shared/api/heightEntries";
 import { createWeightEntry } from "@shared/api/weightEntries";
+import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import { trackChildCreated } from "@shared/analytics";
 import { DateField } from "@shared/components/DateField";
 import { Surface } from "@shared/components/Surface";
@@ -80,6 +81,7 @@ export function ChildCreatePage() {
             createWeightEntry({
               child_id: child.id,
               value_kg: childWeight,
+              measured_at: getCurrentDeviceTimestampIso(),
             })
           );
         }
@@ -88,6 +90,7 @@ export function ChildCreatePage() {
             createHeightEntry({
               child_id: child.id,
               value_cm: childHeight,
+              measured_at: getCurrentDeviceTimestampIso(),
             })
           );
         }

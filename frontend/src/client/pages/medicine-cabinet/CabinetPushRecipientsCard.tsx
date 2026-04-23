@@ -1,40 +1,57 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { Family, FamilyMember } from "@shared/types/api";
+import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
 import { cabinetActionSecondaryClass, cabinetPanelClass } from "./styles";
 
 export function CabinetPushRecipientsCard({
   language,
   family,
   familyMembers,
+  currentAccountId,
   isPending,
-  onSelectAll,
+  isOffline = false,
+  onNetworkRequired,
   onChangeSelection,
 }: {
   language: "ru" | "en";
   family: Family;
   familyMembers: FamilyMember[];
+  currentAccountId: string | null;
   isPending: boolean;
-  onSelectAll: () => void;
+  isOffline?: boolean;
+  onNetworkRequired?: () => void;
   onChangeSelection: (memberIds: string[]) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>(() => family.cabinetMemberAccountIds);
+  const eligibleMemberIds = useMemo(() => familyMembers.map((member) => member.id), [familyMembers]);
+  const [selectedIds, setSelectedIds] = useState<string[]>(() =>
+    resolveRecipientSelection(family.cabinetMemberAccountIds, currentAccountId, eligibleMemberIds)
+  );
 
   useEffect(() => {
     if (isPending) {
       return;
     }
-    setSelectedIds(family.cabinetMemberAccountIds);
-  }, [family.cabinetMemberAccountIds, isPending]);
+    setSelectedIds(
+      resolveRecipientSelection(family.cabinetMemberAccountIds, currentAccountId, eligibleMemberIds)
+    );
+  }, [currentAccountId, eligibleMemberIds, family.cabinetMemberAccountIds, isPending]);
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          if (isOffline) {
+            onNetworkRequired?.();
+            return;
+          }
+          setIsOpen(true);
+        }}
         disabled={isPending}
-        className={`${cabinetActionSecondaryClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
+        aria-disabled={isOffline}
+        className={`${cabinetActionSecondaryClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60 ${isOffline ? "cursor-not-allowed opacity-60" : ""}`}
       >
         {language === "ru" ? "Уведомления" : "Reminders"}
       </button>
@@ -70,34 +87,6 @@ export function CabinetPushRecipientsCard({
 
           <div className={`${cabinetPanelClass} mt-4 max-h-[min(23rem,58vh)] overflow-y-auto p-2.5`}>
             <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedIds([]);
-                  onSelectAll();
-                }}
-                disabled={isPending}
-                className={[
-                  "soft-choice-row w-full",
-                  selectedIds.length === 0 ? "soft-choice-row-active" : "",
-                  isPending ? "cursor-not-allowed opacity-60" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                <span className="grid min-w-0 gap-0.5 text-left">
-                  <span className="min-w-0 text-sm font-semibold tracking-[-0.02em] text-foreground">
-                    {language === "ru" ? "Все доступные получатели" : "All eligible recipients"}
-                  </span>
-                  <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
-                    {language === "ru"
-                      ? "Push по аптечке придут всем, у кого открыт доступ к аптечке и включены личные уведомления."
-                      : "Cabinet push reminders go to everyone who has cabinet access and personal notifications enabled."}
-                  </span>
-                </span>
-                <span className="soft-choice-check">{selectedIds.length === 0 ? "✓" : null}</span>
-              </button>
-
               {familyMembers.map((member) => {
                 const selected = selectedIds.includes(member.id);
                 const label = member.displayName || member.login || member.id;

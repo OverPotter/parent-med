@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 type LiveQueryOptions = {
+  staleTime: number;
   refetchOnWindowFocus: true;
   refetchOnReconnect: true;
   refetchInterval: number | false;
@@ -26,6 +27,7 @@ export function useLiveQueryOptions(intervalMs = 15000): LiveQueryOptions {
   }, []);
 
   return {
+    staleTime: intervalMs,
     refetchOnWindowFocus: true as const,
     refetchOnReconnect: true as const,
     refetchInterval: isVisible ? intervalMs : false,

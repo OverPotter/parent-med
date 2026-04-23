@@ -26,6 +26,8 @@ import { useNow } from "@shared/hooks/useNow";
 import { canEditChild, canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { EpisodeMedicationPlan, FamilyMember, IllnessEpisode, WeightEntry } from "@shared/types/api";
+import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
+import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
 import { getPrioritizedMedicationPlanItems } from "@client/utils/medicationPlans";
 import {
   AdministrationQuickView,
@@ -144,7 +146,11 @@ export function EpisodeBlock({
 
   const addTempMutation = useMutation({
     mutationFn: (valueCelsius: number) =>
-      createTemperatureEntry({ episode_id: episode.id, value_celsius: valueCelsius }),
+      createTemperatureEntry({
+        episode_id: episode.id,
+        value_celsius: valueCelsius,
+        measured_at: getCurrentDeviceTimestampIso(),
+      }),
     onSuccess: () => {
       void trackTemperatureLogged(episode.id);
       queryClient.invalidateQueries({ queryKey: ["temperature-entries", episode.id] });
@@ -163,6 +169,7 @@ export function EpisodeBlock({
         episode_id: episode.id,
         household_medicine_id: payload.household_medicine_id,
         custom_medicine_name: payload.custom_medicine_name,
+        administered_at: getCurrentDeviceTimestampIso(),
         amount: payload.amount,
         reason: payload.reason,
       }),
@@ -318,6 +325,7 @@ export function EpisodeBlock({
       createIllnessComment({
         episode_id: episode.id,
         text: commentText.trim(),
+        created_at: getCurrentDeviceTimestampIso(),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["illness-comments", episode.id] });
@@ -370,6 +378,23 @@ export function EpisodeBlock({
     setRecipientDraftIds(memberIds);
     updateEpisodeRecipientsMutation.mutate(memberIds);
   };
+
+  useEffect(() => {
+    if (
+      isUpdatingRecipients ||
+      !shouldAutoAssignCurrentRecipient(
+        episode.memberAccountIds,
+        accountId,
+        familyMembers.map((member) => member.id)
+      )
+    ) {
+      return;
+    }
+    if (!accountId) {
+      return;
+    }
+    updateEpisodeRecipients([accountId]);
+  }, [accountId, episode.memberAccountIds, familyMembers, isUpdatingRecipients]);
 
   useEffect(() => {
     if (!quickReminderDetailMode || !reminderPlanId || selectedReminderItem) {
@@ -505,6 +530,7 @@ export function EpisodeBlock({
           plans={medicationPlans}
           medicines={householdMedicines}
           familyMembers={familyMembers}
+          currentAccountId={accountId}
           canEditEpisode={canEditEpisode}
           administrations={administrations}
           onOpen={(planId) =>
@@ -520,7 +546,6 @@ export function EpisodeBlock({
           }
           isSubmittingAdministration={addAdminMutation.isPending}
           isUpdatingRecipients={isUpdatingRecipients}
-          onSelectAllRecipients={() => updateEpisodeRecipientsMutation.mutate([])}
           onChangeRecipients={updateEpisodeRecipients}
         />
       </div>
@@ -541,6 +566,7 @@ export function EpisodeBlock({
           editingReminderName={editingReminderName}
           medicines={householdMedicines}
           familyMembers={familyMembers}
+          currentAccountId={accountId}
           canEditEpisode={canEditEpisode}
           isSubmittingAdministration={addAdminMutation.isPending}
           isUpdating={updatePlanMutation.isPending}
@@ -600,7 +626,6 @@ export function EpisodeBlock({
               },
             });
           }}
-          onSelectAllRecipients={() => updateEpisodeRecipientsMutation.mutate([])}
           onChangeRecipients={updateEpisodeRecipients}
         />
       </div>
@@ -619,6 +644,7 @@ export function EpisodeBlock({
               medicine.status !== "expired" && medicine.status !== "expired_after_opening"
           )}
           familyMembers={familyMembers}
+          currentAccountId={accountId}
           canEditEpisode={canEditEpisode}
           latestWeight={latestWeight}
           isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
@@ -649,7 +675,6 @@ export function EpisodeBlock({
               { replace: true }
             )
           }
-          onSelectAllRecipients={() => updateEpisodeRecipientsMutation.mutate([])}
           onChangeRecipients={updateEpisodeRecipients}
         />
       </div>

@@ -42,10 +42,12 @@ export function ClientLayout() {
     data: families = [],
     isSuccess,
     isLoading: isFamiliesLoading,
+    isError: isFamiliesError,
   } = useQuery({
     queryKey: ["families", accountId],
     queryFn: fetchFamilies,
     enabled: !!accountId,
+    retry: false,
   });
 
   const {
@@ -113,6 +115,7 @@ export function ClientLayout() {
     familiesCount: families.length,
     isFamiliesLoading,
     isFamiliesSuccess: isSuccess,
+    isFamiliesError,
     isDeferredBootReady,
     isDeferredShellWorkReady,
     isFirstNativeLaunch,

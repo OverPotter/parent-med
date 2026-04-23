@@ -10,6 +10,7 @@ import { startSleepSession, stopSleepSession } from "@shared/api/sleepSessions";
 import { createTemperatureEntry } from "@shared/api/temperatureEntries";
 import type { FeedingRecord, IllnessEpisode, SleepSession } from "@shared/types/api";
 import { appLog } from "@shared/utils/appLog";
+import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import {
   clearOfflineOverride,
   clearOfflineTempServerId,
@@ -43,7 +44,9 @@ export async function startSleepSessionResilient(input: {
   currentAccountId: string | null;
 }): Promise<SleepSession> {
   try {
-    return await startSleepSession(input.childId);
+    return await startSleepSession(input.childId, {
+      started_at: getCurrentDeviceTimestampIso(),
+    });
   } catch (error) {
     if (!isOfflineLikeError(error)) {
       throw error;
@@ -57,7 +60,9 @@ export async function stopSleepSessionResilient(input: {
   sessionId: string;
 }): Promise<SleepSession | null> {
   try {
-    return await stopSleepSession(input.sessionId);
+    return await stopSleepSession(input.sessionId, {
+      ended_at: getCurrentDeviceTimestampIso(),
+    });
   } catch (error) {
     if (!isOfflineLikeError(error)) {
       throw error;
@@ -78,9 +83,12 @@ export async function startFeedingRecordResilient(input: {
   };
 }): Promise<FeedingRecord> {
   try {
+    const startedAt = getCurrentDeviceTimestampIso();
     return await startFeedingRecord({
       child_id: input.childId,
       ...input.payload,
+      recorded_at: startedAt,
+      started_at: startedAt,
     });
   } catch (error) {
     if (!isOfflineLikeError(error)) {
@@ -99,7 +107,10 @@ export async function stopFeedingRecordResilient(input: {
   };
 }): Promise<FeedingRecord | null> {
   try {
-    return await stopFeedingRecord(input.recordId, input.payload);
+    return await stopFeedingRecord(input.recordId, {
+      ended_at: getCurrentDeviceTimestampIso(),
+      ...input.payload,
+    });
   } catch (error) {
     if (!isOfflineLikeError(error)) {
       throw error;
@@ -151,6 +162,7 @@ export async function createIllnessEpisodeResilient(input: {
         createTemperatureEntry({
           episode_id: episode.id,
           value_celsius: item.value_celsius,
+          measured_at: getCurrentDeviceTimestampIso(),
         })
       ),
       ...input.payload.administrations.map((item) =>
@@ -158,6 +170,7 @@ export async function createIllnessEpisodeResilient(input: {
           episode_id: episode.id,
           household_medicine_id: item.household_medicine_id,
           custom_medicine_name: item.custom_medicine_name,
+          administered_at: getCurrentDeviceTimestampIso(),
           amount: item.amount,
         })
       ),
@@ -165,6 +178,7 @@ export async function createIllnessEpisodeResilient(input: {
         createIllnessComment({
           episode_id: episode.id,
           text: item.text,
+          created_at: getCurrentDeviceTimestampIso(),
         })
       ),
       ...input.payload.medication_plans.map((item) =>
@@ -196,7 +210,10 @@ export async function closeIllnessEpisodeResilient(input: {
   episodeId: string;
 }): Promise<IllnessEpisode | null> {
   try {
-    return await updateIllnessEpisode(input.episodeId, { status: "closed" });
+    return await updateIllnessEpisode(input.episodeId, {
+      status: "closed",
+      closed_at: getCurrentDeviceTimestampIso(),
+    });
   } catch (error) {
     if (!isOfflineLikeError(error)) {
       throw error;
@@ -209,7 +226,9 @@ let flushPromise: Promise<boolean> | null = null;
 
 async function flushAction(action: OfflineCareAction): Promise<void> {
   if (action.kind === "sleep" && action.op === "start") {
-    const session = await startSleepSession(action.childId);
+    const session = await startSleepSession(action.childId, {
+      started_at: action.createdAt,
+    });
     setOfflineTempServerId(action.tempId, session.id);
     removeOfflineAction(action.id);
     clearOfflineOverride("sleep", action.childId);
@@ -224,7 +243,9 @@ async function flushAction(action: OfflineCareAction): Promise<void> {
       clearOfflineOverride("sleep", action.childId);
       return;
     }
-    await stopSleepSession(resolvedId);
+    await stopSleepSession(resolvedId, {
+      ended_at: action.createdAt,
+    });
     removeOfflineAction(action.id);
     clearOfflineOverride("sleep", action.childId);
     if (action.tempId) {
@@ -237,6 +258,8 @@ async function flushAction(action: OfflineCareAction): Promise<void> {
     const feeding = await startFeedingRecord({
       child_id: action.childId,
       ...action.payload,
+      recorded_at: action.createdAt,
+      started_at: action.createdAt,
     });
     setOfflineTempServerId(action.tempId, feeding.id);
     removeOfflineAction(action.id);
@@ -252,7 +275,10 @@ async function flushAction(action: OfflineCareAction): Promise<void> {
       clearOfflineOverride("feeding", action.childId);
       return;
     }
-    await stopFeedingRecord(resolvedId, action.payload ?? undefined);
+    await stopFeedingRecord(resolvedId, {
+      ended_at: action.createdAt,
+      ...(action.payload ?? {}),
+    });
     removeOfflineAction(action.id);
     clearOfflineOverride("feeding", action.childId);
     if (action.tempId) {
@@ -276,6 +302,7 @@ async function flushAction(action: OfflineCareAction): Promise<void> {
         createTemperatureEntry({
           episode_id: episode.id,
           value_celsius: item.value_celsius,
+          measured_at: action.createdAt,
         })
       ),
       ...action.payload.administrations.map((item) =>
@@ -283,6 +310,7 @@ async function flushAction(action: OfflineCareAction): Promise<void> {
           episode_id: episode.id,
           household_medicine_id: item.household_medicine_id,
           custom_medicine_name: item.custom_medicine_name,
+          administered_at: action.createdAt,
           amount: item.amount,
         })
       ),
@@ -290,6 +318,7 @@ async function flushAction(action: OfflineCareAction): Promise<void> {
         createIllnessComment({
           episode_id: episode.id,
           text: item.text,
+          created_at: action.createdAt,
         })
       ),
       ...action.payload.medication_plans.map((item) =>
@@ -321,7 +350,10 @@ async function flushAction(action: OfflineCareAction): Promise<void> {
       clearOfflineOverride("illness", action.childId);
       return;
     }
-    await updateIllnessEpisode(resolvedId, { status: "closed" });
+    await updateIllnessEpisode(resolvedId, {
+      status: "closed",
+      closed_at: action.createdAt,
+    });
     removeOfflineAction(action.id);
     clearOfflineOverride("illness", action.childId);
     if (action.tempId) {

@@ -13,6 +13,7 @@ type UseClientLayoutSplashArgs = {
   familiesCount: number;
   isFamiliesLoading: boolean;
   isFamiliesSuccess: boolean;
+  isFamiliesError: boolean;
   isDeferredBootReady: boolean;
   isDeferredShellWorkReady: boolean;
   isFirstNativeLaunch: boolean;
@@ -28,6 +29,7 @@ export function useClientLayoutSplash({
   familiesCount,
   isFamiliesLoading,
   isFamiliesSuccess,
+  isFamiliesError,
   isDeferredBootReady,
   isDeferredShellWorkReady,
   isFirstNativeLaunch,
@@ -48,6 +50,7 @@ export function useClientLayoutSplash({
     familiesCount,
     isFamiliesLoading,
     isFamiliesSuccess,
+    isFamiliesError,
     isDeferredBootReady,
     isDeferredShellWorkReady,
     isFirstNativeLaunch,

@@ -28,6 +28,7 @@ export function useClientStartRoute(): ClientStartRouteResult {
     queryKey: ["families", accountId],
     queryFn: fetchFamilies,
     enabled: !!accountId,
+    retry: false,
   });
 
   const familyId = currentFamilyId ?? families[0]?.id ?? null;
