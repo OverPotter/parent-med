@@ -52,6 +52,7 @@ export function PillboxPage() {
   const canSeePillbox = canViewPillbox(accountFamilyRole, accountAccessPolicy);
   const canActInPillbox = canActPillbox(accountFamilyRole, accountAccessPolicy);
   const canMutatePillbox = canEditPillbox(accountFamilyRole, accountAccessPolicy);
+  const disablePillboxEditingActions = !canMutatePillbox;
   const [draft, setDraft] = useState<SetupDraft | null>(null);
   const [editorTitle, setEditorTitle] = useState("");
   const [editorDose, setEditorDose] = useState("");
@@ -671,7 +672,8 @@ export function PillboxPage() {
         selectedPlan={selectedPlan}
         selectedPlanId={selectedPlanId}
         allGroups={allGroups}
-        canEdit={canMutatePillbox}
+        canEdit={canActInPillbox}
+        disableEditingActions={disablePillboxEditingActions}
         planActionTarget={planActionTarget}
         planActionError={planActionError}
         togglePlanStatusPending={togglePlanStatusMutation.isPending}
