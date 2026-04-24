@@ -34,6 +34,8 @@ class SqlAccountRepository(AccountRepository):
             preferred_language=model.preferred_language,
             family_role=normalize_family_role(model.family_role),
             push_before_reminder_minutes=model.push_before_reminder_minutes,
+            children_push_enabled=model.children_push_enabled,
+            pillbox_push_enabled=model.pillbox_push_enabled,
             pillbox_push_before_reminder_minutes=model.pillbox_push_before_reminder_minutes,
             cabinet_notify_10_days=model.cabinet_notify_15_days,
             cabinet_notify_7_days=model.cabinet_notify_7_days,
@@ -60,6 +62,8 @@ class SqlAccountRepository(AccountRepository):
             family_role=normalize_family_role(entity.family_role),
             access_policy=serialize_family_access_policy(entity.access_policy),
             push_before_reminder_minutes=entity.push_before_reminder_minutes,
+            children_push_enabled=entity.children_push_enabled,
+            pillbox_push_enabled=entity.pillbox_push_enabled,
             pillbox_push_before_reminder_minutes=entity.pillbox_push_before_reminder_minutes,
             cabinet_notify_15_days=entity.cabinet_notify_10_days,
             cabinet_notify_7_days=entity.cabinet_notify_7_days,
@@ -133,6 +137,8 @@ class SqlAccountRepository(AccountRepository):
         row.family_role = normalize_family_role(entity.family_role)
         row.access_policy = serialize_family_access_policy(entity.access_policy)
         row.push_before_reminder_minutes = entity.push_before_reminder_minutes
+        row.children_push_enabled = entity.children_push_enabled
+        row.pillbox_push_enabled = entity.pillbox_push_enabled
         row.pillbox_push_before_reminder_minutes = entity.pillbox_push_before_reminder_minutes
         row.cabinet_notify_15_days = entity.cabinet_notify_10_days
         row.cabinet_notify_7_days = entity.cabinet_notify_7_days

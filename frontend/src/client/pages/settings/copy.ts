@@ -47,7 +47,7 @@ export const settingsCopy = {
     themeAuto: "Авто",
     notifications: "Уведомления",
     notificationsHint:
-      "Здесь настраиваются только напоминания заранее.",
+      "Выберите, по каким категориям получать push и за сколько минут напоминать заранее.",
     liveActivities: "Live Activity",
     liveActivitiesHint:
       "Большой живой статус на экране блокировки iPhone для сна, кормления и наблюдения за болезнью.",
@@ -70,8 +70,8 @@ export const settingsCopy = {
     liveActivitiesPreviewFromLockScreen: "Тап открывает нужного ребёнка в разделе «Дети»",
     childrenReminders: "По детям",
     pillboxReminders: "По таблетнице",
-    childrenRemindersSoftText: "Напомнить заранее перед событием.",
-    pillboxRemindersSoftText: "Короткое напоминание заранее.",
+    childrenRemindersSoftText: "Полностью включить или выключить push по детям.",
+    pillboxRemindersSoftText: "Полностью включить или выключить push по таблетнице.",
     pushServerMissing: "Push на сервере пока не настроен.",
     disableNotifications: "Выключить уведомления",
     enableNotifications: "Включить уведомления",
@@ -149,7 +149,7 @@ export const settingsCopy = {
     themeAuto: "Auto",
     notifications: "Notifications",
     notificationsHint:
-      "Only advance reminders are configured here.",
+      "Choose which categories can send push and how early advance reminders should arrive.",
     liveActivities: "Live Activity",
     liveActivitiesHint:
       "A large live status on the iPhone lock screen for sleep, feeding, and illness tracking.",
@@ -171,8 +171,8 @@ export const settingsCopy = {
     liveActivitiesPreviewFromLockScreen: "Tap opens the right child in the Children section",
     childrenReminders: "For children",
     pillboxReminders: "For pillbox",
-    childrenRemindersSoftText: "Remind me before the event.",
-    pillboxRemindersSoftText: "A short reminder in advance.",
+    childrenRemindersSoftText: "Turn all children push notifications on or off.",
+    pillboxRemindersSoftText: "Turn all pillbox push notifications on or off.",
     pushServerMissing: "Push is not configured on the server yet.",
     disableNotifications: "Turn off notifications",
     enableNotifications: "Turn on notifications",

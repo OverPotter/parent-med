@@ -92,6 +92,10 @@ def _normalize_language(value: str | None) -> str:
 
 
 def _is_push_allowed_for_account(account: Any, channel: str) -> bool:
+    if channel == "illness":
+        return bool(getattr(account, "children_push_enabled", True))
+    if channel == "pillbox":
+        return bool(getattr(account, "pillbox_push_enabled", True))
     policy = getattr(account, "access_policy", None)
     if policy is None:
         return True
@@ -418,7 +422,6 @@ class PushNotificationScheduler:
 
             plans = await plan_repo.get_for_push_notifications()
             now = datetime.now(UTC)
-
             for plan in plans:
                 episode = await episode_repo.get_by_id(plan.episode_id)
                 if not episode or episode.status != "active":
@@ -517,9 +520,10 @@ class PushNotificationScheduler:
                         preferred_before_minutes,
                         max(plan.min_interval_minutes - 1, 0),
                     )
+                    remind_at = next_allowed_at - timedelta(minutes=reminder_before_minutes)
+                    overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
 
                     if reminder_before_minutes > 0:
-                        remind_at = next_allowed_at - timedelta(minutes=reminder_before_minutes)
                         if (
                             remind_at <= now < next_allowed_at
                             and plan.last_before_notification_for_at != next_allowed_at
@@ -595,7 +599,6 @@ class PushNotificationScheduler:
                             or sent_due
                         )
 
-                    overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
                     if (
                         now >= overdue_at
                         and plan.last_overdue_notification_for_at != next_allowed_at

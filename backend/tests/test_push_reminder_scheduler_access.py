@@ -48,6 +48,16 @@ def test_push_access_respects_only_cabinet_policy_flag() -> None:
     assert _is_push_allowed_for_account(account, "pillbox") is True
 
 
+def test_push_access_respects_account_level_children_and_pillbox_switches() -> None:
+    account = build_account(FamilyAccessPolicy())
+    account.children_push_enabled = False
+    account.pillbox_push_enabled = False
+
+    assert _is_push_allowed_for_account(account, "illness") is False
+    assert _is_push_allowed_for_account(account, "pillbox") is False
+    assert _is_push_allowed_for_account(account, "cabinet") is True
+
+
 def test_push_access_rejects_cabinet_when_module_hidden_even_with_stale_flag() -> None:
     account = build_account(
         FamilyAccessPolicy(

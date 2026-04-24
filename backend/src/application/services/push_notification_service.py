@@ -45,9 +45,10 @@ class PushNotificationService:
         if not account:
             raise NotFoundError("Аккаунт не найден", resource="account")
         return PushNotificationPreferencesResponseDto(
+            children_enabled=account.children_push_enabled,
             before_reminder_minutes=account.push_before_reminder_minutes,
+            pillbox_enabled=account.pillbox_push_enabled,
             pillbox_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,
-            due_reminder_enabled=True,
             cabinet_notify_10_days=account.cabinet_notify_10_days,
             cabinet_notify_7_days=account.cabinet_notify_7_days,
             cabinet_notify_3_days=account.cabinet_notify_3_days,
@@ -66,14 +67,20 @@ class PushNotificationService:
             raise NotFoundError("Аккаунт не найден", resource="account")
 
         before_reminder_minutes = account.push_before_reminder_minutes
+        children_enabled = account.children_push_enabled
+        pillbox_enabled = account.pillbox_push_enabled
         pillbox_before_reminder_minutes = account.pillbox_push_before_reminder_minutes
         live_activity_sleep_enabled = account.live_activity_sleep_enabled
         live_activity_feeding_enabled = account.live_activity_feeding_enabled
         live_activity_illness_enabled = account.live_activity_illness_enabled
+        if dto.children_enabled is not None:
+            children_enabled = dto.children_enabled
         if dto.before_reminder_minutes is not None:
             if dto.before_reminder_minutes not in self.ALLOWED_BEFORE_REMINDER_MINUTES:
                 raise ValidationError("Можно выбрать 0, 5, 10, 15 или 20 минут")
             before_reminder_minutes = dto.before_reminder_minutes
+        if dto.pillbox_enabled is not None:
+            pillbox_enabled = dto.pillbox_enabled
         if dto.pillbox_before_reminder_minutes is not None:
             if (
                 dto.pillbox_before_reminder_minutes
@@ -89,7 +96,9 @@ class PushNotificationService:
             live_activity_illness_enabled = dto.live_activity_illness_enabled
 
         if (
-            dto.before_reminder_minutes is None
+            dto.children_enabled is None
+            and dto.before_reminder_minutes is None
+            and dto.pillbox_enabled is None
             and dto.pillbox_before_reminder_minutes is None
             and dto.cabinet_notify_10_days is None
             and dto.cabinet_notify_7_days is None
@@ -104,6 +113,8 @@ class PushNotificationService:
             copy_account(
                 account,
                 push_before_reminder_minutes=before_reminder_minutes,
+                children_push_enabled=children_enabled,
+                pillbox_push_enabled=pillbox_enabled,
                 pillbox_push_before_reminder_minutes=pillbox_before_reminder_minutes,
                 cabinet_notify_10_days=(
                     dto.cabinet_notify_10_days
@@ -127,9 +138,10 @@ class PushNotificationService:
             )
         )
         return PushNotificationPreferencesResponseDto(
+            children_enabled=updated.children_push_enabled,
             before_reminder_minutes=updated.push_before_reminder_minutes,
+            pillbox_enabled=updated.pillbox_push_enabled,
             pillbox_before_reminder_minutes=updated.pillbox_push_before_reminder_minutes,
-            due_reminder_enabled=True,
             cabinet_notify_10_days=updated.cabinet_notify_10_days,
             cabinet_notify_7_days=updated.cabinet_notify_7_days,
             cabinet_notify_3_days=updated.cabinet_notify_3_days,

@@ -89,8 +89,6 @@ export function SettingsPage() {
   const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
   const isDevTestPushVisible =
     import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
-  const childrenEarlyReminderEnabled = Number(selectedReminderMinutes) > 0;
-  const pillboxEarlyReminderEnabled = Number(selectedPillboxReminderMinutes) > 0;
   const pushSupportIssue = getPushSupportIssue();
   const isPushEnabled = pushStatus === "enabled";
 
@@ -112,6 +110,8 @@ export function SettingsPage() {
     queryFn: fetchPushNotificationPreferences,
     staleTime: 5 * 60 * 1000,
   });
+  const childrenPushEnabled = pushPreferences?.childrenEnabled ?? true;
+  const pillboxPushEnabled = pushPreferences?.pillboxEnabled ?? true;
   const cabinetEarlyReminderEnabled =
     (pushPreferences?.cabinetNotify10Days ?? false) ||
     (pushPreferences?.cabinetNotify7Days ?? false) ||
@@ -126,7 +126,9 @@ export function SettingsPage() {
 
   const updatePushPreferencesMutation = useMutation({
     mutationFn: (payload: {
+      children_enabled?: boolean;
       before_reminder_minutes?: number;
+      pillbox_enabled?: boolean;
       pillbox_before_reminder_minutes?: number;
       cabinet_notify_10_days?: boolean;
       cabinet_notify_7_days?: boolean;
@@ -148,8 +150,10 @@ export function SettingsPage() {
           }
           return {
             ...current,
+            childrenEnabled: payload.children_enabled ?? current.childrenEnabled,
             beforeReminderMinutes:
               payload.before_reminder_minutes ?? current.beforeReminderMinutes,
+            pillboxEnabled: payload.pillbox_enabled ?? current.pillboxEnabled,
             pillboxBeforeReminderMinutes:
               payload.pillbox_before_reminder_minutes ?? current.pillboxBeforeReminderMinutes,
             cabinetNotify10Days: payload.cabinet_notify_10_days ?? current.cabinetNotify10Days,
@@ -534,21 +538,21 @@ export function SettingsPage() {
   };
 
   const handleChildrenEarlyReminderToggle = (enabled: boolean) => {
-    if (enabled) {
-      handleReminderMinutesChange(selectedReminderMinutes === "0" ? "10" : selectedReminderMinutes);
-      return;
-    }
-    handleReminderMinutesChange("0");
+    setPushError(null);
+    updatePushPreferencesMutation.mutate({
+      children_enabled: enabled,
+      before_reminder_minutes:
+        enabled && selectedReminderMinutes === "0" ? 10 : undefined,
+    });
   };
 
   const handlePillboxEarlyReminderToggle = (enabled: boolean) => {
-    if (enabled) {
-      handlePillboxReminderMinutesChange(
-        selectedPillboxReminderMinutes === "0" ? "10" : selectedPillboxReminderMinutes
-      );
-      return;
-    }
-    handlePillboxReminderMinutesChange("0");
+    setPushError(null);
+    updatePushPreferencesMutation.mutate({
+      pillbox_enabled: enabled,
+      pillbox_before_reminder_minutes:
+        enabled && selectedPillboxReminderMinutes === "0" ? 10 : undefined,
+    });
   };
 
   const handleCabinetReminderSelect = (days: 10 | 7 | 3) => {
@@ -691,8 +695,8 @@ export function SettingsPage() {
         onGlobalPushSwitchToggle={handleGlobalPushSwitchToggle}
         onSendTestPush={handleSendTestPush}
         onOpenSystemSettingsDialog={() => setIsNativePushSettingsDialogOpen(true)}
-        childrenEarlyReminderEnabled={childrenEarlyReminderEnabled}
-        pillboxEarlyReminderEnabled={pillboxEarlyReminderEnabled}
+        childrenEarlyReminderEnabled={childrenPushEnabled}
+        pillboxEarlyReminderEnabled={pillboxPushEnabled}
         cabinetEarlyReminderEnabled={cabinetEarlyReminderEnabled}
         selectedReminderMinutes={selectedReminderMinutes}
         selectedPillboxReminderMinutes={selectedPillboxReminderMinutes}
