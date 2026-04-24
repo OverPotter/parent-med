@@ -36,6 +36,7 @@ export function PillboxDetailsScreen({
   onGoToSetup,
   onOpenMedication,
   familyMembers,
+  currentAccountId,
   recipientsSummary,
   onToggleRecipient,
   recipientSelectionPending,
@@ -66,6 +67,7 @@ export function PillboxDetailsScreen({
     login?: string | null;
     relationshipLabel?: string | null;
   }>;
+  currentAccountId: string | null;
   recipientsSummary: string | null;
   onToggleRecipient: (memberIds: string[]) => void | Promise<void>;
   recipientSelectionPending: boolean;
@@ -220,6 +222,7 @@ export function PillboxDetailsScreen({
                 <PlanPushRecipientsField
                   language={language}
                   familyMembers={familyMembers}
+                  currentAccountId={currentAccountId}
                   selectedMemberIds={selectedPlan.memberAccountIds}
                   onSubmit={onToggleRecipient}
                   isPending={recipientSelectionPending}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
 import { appPillActionClass } from "../child-illness/shared";
 import { tPillbox } from "./shared";
 
@@ -14,12 +15,14 @@ type FamilyMemberLike = {
 export function PlanPushRecipientsField({
   language,
   familyMembers,
+  currentAccountId,
   selectedMemberIds,
   onSubmit,
   isPending = false,
 }: {
   language: AppLanguage;
   familyMembers: FamilyMemberLike[];
+  currentAccountId: string | null;
   selectedMemberIds: string[];
   onSubmit: (memberIds: string[]) => void | Promise<void>;
   isPending?: boolean;
@@ -27,12 +30,12 @@ export function PlanPushRecipientsField({
   const [isOpen, setIsOpen] = useState(false);
   const eligibleMemberIds = useMemo(() => familyMembers.map((member) => member.id), [familyMembers]);
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
-    selectedMemberIds.filter((id) => eligibleMemberIds.includes(id))
+    resolveRecipientSelection(selectedMemberIds, currentAccountId, eligibleMemberIds)
   );
 
   useEffect(() => {
-    setSelectedIds(selectedMemberIds.filter((id) => eligibleMemberIds.includes(id)));
-  }, [eligibleMemberIds, selectedMemberIds]);
+    setSelectedIds(resolveRecipientSelection(selectedMemberIds, currentAccountId, eligibleMemberIds));
+  }, [currentAccountId, eligibleMemberIds, selectedMemberIds]);
 
   const handleToggle = (memberId: string) => {
     if (isPending) {
@@ -42,10 +45,15 @@ export function PlanPushRecipientsField({
       const nextIds = current.includes(memberId)
         ? current.filter((id) => id !== memberId)
         : [...current, memberId];
-      void Promise.resolve(onSubmit(nextIds)).catch(() => {
+      const normalizedNextIds = resolveRecipientSelection(
+        nextIds,
+        currentAccountId,
+        eligibleMemberIds
+      );
+      void Promise.resolve(onSubmit(normalizedNextIds)).catch(() => {
         setSelectedIds(current);
       });
-      return nextIds;
+      return normalizedNextIds;
     });
   };
 

@@ -38,6 +38,7 @@ export function PillboxSetupScreen({
   language,
   draft,
   familyMembers,
+  currentAccountId,
   canSavePlan,
   saveBlockedReason,
   saveAttempted,
@@ -58,6 +59,7 @@ export function PillboxSetupScreen({
   language: AppLanguage;
   draft: SetupDraft;
   familyMembers: FamilyMemberLike[];
+  currentAccountId: string | null;
   canSavePlan: boolean;
   saveBlockedReason: string | null;
   saveAttempted: boolean;
@@ -211,6 +213,7 @@ export function PillboxSetupScreen({
                   <PlanPushRecipientsField
                     language={language}
                     familyMembers={familyMembers}
+                    currentAccountId={currentAccountId}
                     selectedMemberIds={draft.members}
                     onSubmit={onToggleMember}
                   />

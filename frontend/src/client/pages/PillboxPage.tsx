@@ -808,6 +808,7 @@ export function PillboxPage() {
         onGoToSetup={goToSetup}
         onOpenMedication={goToMedication}
         familyMembers={eligiblePillboxMembers}
+        currentAccountId={accountId}
         recipientsSummary={selectedPlanRecipientsSummary}
         onToggleRecipient={toggleSelectedPlanRecipient}
         recipientSelectionPending={updatePlanMutation.isPending}
@@ -832,6 +833,7 @@ export function PillboxPage() {
         language={language}
         draft={draft}
         familyMembers={eligiblePillboxMembers}
+        currentAccountId={accountId}
         canSavePlan={canSavePlan}
         saveBlockedReason={saveBlockedReason}
         saveAttempted={saveAttempted}
