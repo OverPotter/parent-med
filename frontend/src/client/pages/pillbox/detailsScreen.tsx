@@ -1,6 +1,8 @@
 import type { PillboxPlan } from "@shared/api/pillboxPlans.contract";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { appPillActionClass } from "../child-illness/shared";
+import { PlanPushRecipientsField } from "./PlanPushRecipientsField";
 import {
   actionCompactDangerClass,
   actionCompactSecondaryClass,
@@ -34,6 +36,14 @@ export function PillboxDetailsScreen({
   onToggleStatus,
   onGoToSetup,
   onOpenMedication,
+  familyMembers,
+  recipientsSummary,
+  showTestPushAction,
+  testPushLabel,
+  onSendTestPush,
+  isTestPushPending,
+  testPushStatus,
+  onToggleRecipient,
   onRequestDelete,
   onConfirmPlanAction,
   onClosePlanAction,
@@ -55,6 +65,19 @@ export function PillboxDetailsScreen({
   onToggleStatus: () => void;
   onGoToSetup: () => void;
   onOpenMedication: (medicationId: string) => void;
+  familyMembers: Array<{
+    id: string;
+    displayName?: string | null;
+    login?: string | null;
+    relationshipLabel?: string | null;
+  }>;
+  recipientsSummary: string | null;
+  showTestPushAction: boolean;
+  testPushLabel: string;
+  onSendTestPush: () => void;
+  isTestPushPending: boolean;
+  testPushStatus: string | null;
+  onToggleRecipient: (memberId: string) => void;
   onRequestDelete: () => void;
   onConfirmPlanAction: () => void;
   onClosePlanAction: () => void;
@@ -197,6 +220,40 @@ export function PillboxDetailsScreen({
             </div>
           </div>
         </div>
+
+        {canEdit && !disableEditingActions ? (
+          <div className="soft-panel rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="app-card-title">{tPillbox(language, "membersTitle")}</h2>
+                <PlanPushRecipientsField
+                  language={language}
+                  familyMembers={familyMembers}
+                  selectedMemberIds={selectedPlan.memberAccountIds}
+                  onToggleMember={onToggleRecipient}
+                />
+              </div>
+              {recipientsSummary ? (
+                <p className="text-sm leading-6 text-muted">{recipientsSummary}</p>
+              ) : null}
+              {showTestPushAction ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onSendTestPush}
+                    disabled={isTestPushPending}
+                    className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
+                    {testPushLabel}
+                  </button>
+                  {testPushStatus ? (
+                    <p className="text-sm leading-6 text-muted">{testPushStatus}</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
 
         <div className="divide-y divide-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] overflow-hidden rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
           <div className="px-4 pb-2 pt-3 sm:px-5">

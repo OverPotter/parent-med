@@ -906,15 +906,9 @@ class PushNotificationScheduler:
             if remind_at <= now < scheduled_for and not await slot_delivered("before"):
                 payload = {
                     "title": (
-                        (
-                            f"In {pillbox_before_minutes} min: "
-                            f"{summary_label} for {recipient_label}"
-                        )
+                        (f"In {pillbox_before_minutes} min: {summary_label}")
                         if language == "en"
-                        else (
-                            f"Через {pillbox_before_minutes} мин: "
-                            f"{summary_label} для {recipient_label}"
-                        )
+                        else (f"Через {pillbox_before_minutes} мин: {summary_label}")
                     ),
                     "body": _format_pillbox_before_body(
                         summary_label,
@@ -963,9 +957,9 @@ class PushNotificationScheduler:
             if now >= overdue_at and not await slot_delivered("overdue"):
                 payload = {
                     "title": (
-                        f"Check dose: {summary_label} for {recipient_label}"
+                        f"Check dose: {summary_label}"
                         if language == "en"
-                        else f"Проверьте приём: {summary_label} · {recipient_label}"
+                        else f"Проверьте приём: {summary_label}"
                     ),
                     "body": _format_pillbox_overdue_body(
                         summary_label,

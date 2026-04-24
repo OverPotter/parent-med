@@ -295,10 +295,10 @@ class PushNotificationService:
         plan_id = "test-pillbox-plan"
         medication_id = "test-pillbox-medication"
         if language == "en":
-            title = "In 10 min: Ibuprofen · 1 pill · after meal for " + recipient_label
+            title = "In 10 min: Ibuprofen · 1 pill · after meal"
             body = f"For: {recipient_label} · at {scheduled_time_label}"
         else:
-            title = "Через 10 мин: Ибупрофен · 1 таблетка · после еды для " + recipient_label
+            title = "Через 10 мин: Ибупрофен · 1 таблетка · после еды"
             body = f"Кому: {recipient_label} · в {scheduled_time_label}"
 
         payload = {

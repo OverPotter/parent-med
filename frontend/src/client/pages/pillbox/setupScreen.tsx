@@ -104,8 +104,8 @@ export function PillboxSetupScreen({
         subtitle={
           isEditing
             ? language === "ru"
-              ? "Обновите лекарства, название и push по плану. В списке только те, у кого открыт доступ к приёмам."
-              : "Update medicines, the plan name, and push recipients."
+              ? "Обновите лекарства и название плана. Настройки уведомлений доступны в карточке плана."
+              : "Update medicines and the plan name. Notification settings are available in plan details."
             : language === "ru"
               ? "Сначала добавьте лекарства, потом дайте плану имя и выберите, кому приходят push."
               : "Add medicines first, then name the plan and choose who gets push reminders."
@@ -215,32 +215,36 @@ export function PillboxSetupScreen({
           </section>
 
           <section className="space-y-3 pt-1">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="app-card-title">{tPillbox(language, "membersTitle")}</h2>
-              <PlanPushRecipientsField
-                language={language}
-                familyMembers={familyMembers}
-                selectedMemberIds={draft.members}
-                onToggleMember={onToggleMember}
-              />
-            </div>
-            {recipientsSummary ? (
-              <p className="text-sm leading-6 text-muted">{recipientsSummary}</p>
-            ) : null}
-            {showTestPushAction ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onSendTestPush}
-                  disabled={isTestPushPending}
-                  className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                  {testPushLabel}
-                </button>
-                {testPushStatus ? (
-                  <p className="text-sm leading-6 text-muted">{testPushStatus}</p>
+            {!isEditing ? (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="app-card-title">{tPillbox(language, "membersTitle")}</h2>
+                  <PlanPushRecipientsField
+                    language={language}
+                    familyMembers={familyMembers}
+                    selectedMemberIds={draft.members}
+                    onToggleMember={onToggleMember}
+                  />
+                </div>
+                {recipientsSummary ? (
+                  <p className="text-sm leading-6 text-muted">{recipientsSummary}</p>
                 ) : null}
-              </div>
+                {showTestPushAction ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={onSendTestPush}
+                      disabled={isTestPushPending}
+                      className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
+                    >
+                      {testPushLabel}
+                    </button>
+                    {testPushStatus ? (
+                      <p className="text-sm leading-6 text-muted">{testPushStatus}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </>
             ) : null}
             {!canSavePlan && saveBlockedReason && saveAttempted ? (
               <p className="text-[0.78rem] leading-5 text-[color:var(--color-danger)]">

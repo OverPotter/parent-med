@@ -132,7 +132,6 @@ export function PillboxPage() {
       ? `Получатели уведомлений: ${visible} и ещё ${remaining}`
       : `Reminder recipients: ${visible} and ${remaining} more`;
   }, [draft, eligiblePillboxMembers, language]);
-
   const { data: planSummaries = [], isLoading: plansLoading } = useQuery({
     queryKey: ["pillbox-plans", currentFamilyId, language],
     queryFn: fetchPillboxPlans,
@@ -144,6 +143,30 @@ export function PillboxPage() {
     queryFn: () => fetchPillboxPlan(selectedPlanId!),
     enabled: Boolean(selectedPlanId && selectedPlanId !== "new" && canSeePillbox),
   });
+  const selectedPlanRecipientsSummary = useMemo(() => {
+    if (!selectedPlan) {
+      return null;
+    }
+    const labels = eligiblePillboxMembers
+      .filter((member) => selectedPlan.memberAccountIds.includes(member.id))
+      .map((member) => member.displayName || member.login || member.id);
+
+    if (labels.length === 0) {
+      return language === "ru"
+        ? "Уведомления по плану сейчас никому не отправляются."
+        : "Plan reminders are currently not sent to anyone.";
+    }
+    if (labels.length <= 2) {
+      return language === "ru"
+        ? `Получатели уведомлений: ${labels.join(", ")}`
+        : `Reminder recipients: ${labels.join(", ")}`;
+    }
+    const visible = labels.slice(0, 2).join(", ");
+    const remaining = labels.length - 2;
+    return language === "ru"
+      ? `Получатели уведомлений: ${visible} и ещё ${remaining}`
+      : `Reminder recipients: ${visible} and ${remaining} more`;
+  }, [eligiblePillboxMembers, language, selectedPlan]);
 
   useEffect(() => {
     if (!canSeePillbox) {
@@ -484,6 +507,29 @@ export function PillboxPage() {
     createPlanMutation.mutate(payload);
   };
 
+  const toggleSelectedPlanRecipient = (memberId: string) => {
+    if (
+      !selectedPlanId ||
+      !selectedPlan ||
+      updatePlanMutation.isPending ||
+      disablePillboxEditingActions
+    ) {
+      return;
+    }
+
+    const nextMemberAccountIds = selectedPlan.memberAccountIds.includes(memberId)
+      ? selectedPlan.memberAccountIds.filter((item) => item !== memberId)
+      : [...selectedPlan.memberAccountIds, memberId];
+
+    updatePlanMutation.mutate({
+      planId: selectedPlanId,
+      payload: {
+        ...toPlanWriteFromPlan(selectedPlan),
+        memberAccountIds: nextMemberAccountIds,
+      },
+    });
+  };
+
   const deleteGroup = () => {
     const targetPlanId = draft?.id ?? selectedPlanId;
     if (!targetPlanId) {
@@ -713,6 +759,28 @@ export function PillboxPage() {
         onToggleStatus={toggleSelectedPlanStatus}
         onGoToSetup={goToSetup}
         onOpenMedication={goToMedication}
+        familyMembers={eligiblePillboxMembers}
+        recipientsSummary={selectedPlanRecipientsSummary}
+        showTestPushAction={isDevTestPushVisible}
+        testPushLabel={
+          language === "ru"
+            ? sendPillboxTestPushMutation.isPending
+              ? "Отправляем..."
+              : "Тестовый push плана"
+            : sendPillboxTestPushMutation.isPending
+              ? "Sending..."
+              : "Plan test push"
+        }
+        onSendTestPush={() => sendPillboxTestPushMutation.mutate()}
+        isTestPushPending={sendPillboxTestPushMutation.isPending}
+        testPushStatus={
+          sendPillboxTestPushMutation.data
+            ? language === "ru"
+              ? `Подписок: ${sendPillboxTestPushMutation.data.subscriptionCount}`
+              : `Subscriptions: ${sendPillboxTestPushMutation.data.subscriptionCount}`
+            : null
+        }
+        onToggleRecipient={toggleSelectedPlanRecipient}
         onRequestDelete={requestDeletePlan}
         onConfirmPlanAction={confirmPlanAction}
         onClosePlanAction={() => {
