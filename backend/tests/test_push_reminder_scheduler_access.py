@@ -5,6 +5,7 @@ from src.application.services.push_reminder_scheduler import (
     _can_receive_illness_push,
     _can_receive_pillbox_push,
     _get_cabinet_offsets,
+    _get_pillbox_target_account_ids,
     _is_push_allowed_for_account,
 )
 from src.domain.entities.account import Account
@@ -108,6 +109,23 @@ def test_pillbox_push_requires_current_pillbox_access() -> None:
 
     account.access_policy = FamilyAccessPolicy(pillbox_access="view")
     assert _can_receive_pillbox_push(account) is True
+
+
+def test_pillbox_target_accounts_use_only_explicit_recipients() -> None:
+    recipient_id = uuid4()
+    creator_id = uuid4()
+    plan = type(
+        "Plan",
+        (),
+        {
+            "member_account_ids": [],
+            "created_by_account_id": creator_id,
+        },
+    )()
+    assert _get_pillbox_target_account_ids(plan) == []
+
+    plan.member_account_ids = [recipient_id]
+    assert _get_pillbox_target_account_ids(plan) == [recipient_id]
 
 
 def test_cabinet_delivery_log_is_scoped_per_account() -> None:

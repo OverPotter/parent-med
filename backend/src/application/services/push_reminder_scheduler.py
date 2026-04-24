@@ -131,6 +131,10 @@ def _can_receive_pillbox_push(account: Any) -> bool:
     )
 
 
+def _get_pillbox_target_account_ids(plan: Any) -> list[Any]:
+    return list(getattr(plan, "member_account_ids", []) or [])
+
+
 def _format_date(value: date, language: str) -> str:
     if language == "en":
         return value.strftime("%b %d, %Y")
@@ -812,9 +816,9 @@ class PushNotificationScheduler:
             if not plan.medications:
                 continue
 
-            target_account_ids = list(plan.member_account_ids or [])
+            target_account_ids = _get_pillbox_target_account_ids(plan)
             if not target_account_ids:
-                target_account_ids = [plan.created_by_account_id]
+                continue
 
             schedule_candidates = self._get_pillbox_schedule_candidates(plan, now)
             if not schedule_candidates:
