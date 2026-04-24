@@ -3,8 +3,10 @@ from uuid import uuid4
 
 import pytest
 
-from src.application.dto.push_notification import PushNotificationPreferencesUpdateDto
-from src.application.dto.push_notification import PushSubscriptionUpsertDto
+from src.application.dto.push_notification import (
+    PushNotificationPreferencesUpdateDto,
+    PushSubscriptionUpsertDto,
+)
 from src.application.services.push_notification_service import PushNotificationService
 from src.domain.entities.account import Account
 from src.domain.entities.family_access import FamilyAccessPolicy
