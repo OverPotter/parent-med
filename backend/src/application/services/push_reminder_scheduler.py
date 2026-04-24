@@ -536,13 +536,9 @@ class PushNotificationScheduler:
                         ):
                             payload = {
                                 "title": (
-                                    (
-                                        f"In {reminder_before_minutes} min: {medicine_name}"
-                                    )
+                                    (f"In {reminder_before_minutes} min: {medicine_name}")
                                     if language == "en"
-                                    else (
-                                        f"Через {reminder_before_minutes} мин: {medicine_name}"
-                                    )
+                                    else (f"Через {reminder_before_minutes} мин: {medicine_name}")
                                 ),
                                 "body": _format_before_body(
                                     child.name,

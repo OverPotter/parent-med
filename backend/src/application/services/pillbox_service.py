@@ -307,7 +307,9 @@ class PillboxService:
                 return [current_account_id]
             raise ValidationError("В плане должен быть хотя бы один получатель")
         ineligible = [
-            member_id for member_id in normalized_member_ids if member_id not in eligible_account_ids
+            member_id
+            for member_id in normalized_member_ids
+            if member_id not in eligible_account_ids
         ]
         if ineligible:
             raise ValidationError("Нельзя выбрать получателей без доступа к приёмам")

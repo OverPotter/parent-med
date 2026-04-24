@@ -150,6 +150,12 @@ def test_cabinet_delivery_log_is_scoped_per_account() -> None:
 
 
 def test_illness_push_bodies_keep_child_name_in_body_for_shorter_titles() -> None:
-    assert _format_before_body("Маша", "Ибупрофен", "5 мл", 10, "14:30", "ru") == "5 мл · Маша · в 14:30"
+    assert (
+        _format_before_body("Маша", "Ибупрофен", "5 мл", 10, "14:30", "ru")
+        == "5 мл · Маша · в 14:30"
+    )
     assert _format_due_body("Маша", "Ибупрофен", "5 мл", "14:30", "ru") == "5 мл · Маша · в 14:30"
-    assert _format_overdue_body("Маша", "Ибупрофен", "5 мл", "14:30", "ru") == "5 мл · Маша · не отмечено с 14:30"
+    assert (
+        _format_overdue_body("Маша", "Ибупрофен", "5 мл", "14:30", "ru")
+        == "5 мл · Маша · не отмечено с 14:30"
+    )
