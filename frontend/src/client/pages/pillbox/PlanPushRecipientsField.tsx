@@ -16,11 +16,13 @@ export function PlanPushRecipientsField({
   familyMembers,
   selectedMemberIds,
   onSubmit,
+  isPending = false,
 }: {
   language: AppLanguage;
   familyMembers: FamilyMemberLike[];
   selectedMemberIds: string[];
   onSubmit: (memberIds: string[]) => void | Promise<void>;
+  isPending?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const eligibleMemberIds = useMemo(() => familyMembers.map((member) => member.id), [familyMembers]);
@@ -33,14 +35,16 @@ export function PlanPushRecipientsField({
   }, [eligibleMemberIds, selectedMemberIds]);
 
   const handleToggle = (memberId: string) => {
+    if (isPending) {
+      return;
+    }
     setSelectedIds((current) => {
       const nextIds = current.includes(memberId)
         ? current.filter((id) => id !== memberId)
         : [...current, memberId];
-      if (nextIds.length === 0) {
-        return current;
-      }
-      void onSubmit(nextIds);
+      void Promise.resolve(onSubmit(nextIds)).catch(() => {
+        setSelectedIds(current);
+      });
       return nextIds;
     });
   };
@@ -50,7 +54,8 @@ export function PlanPushRecipientsField({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className={`${appPillActionClass} shrink-0 px-4`}
+        disabled={isPending}
+        className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
       >
         {language === "ru" ? "Уведомления" : "Notifications"}
       </button>
@@ -90,7 +95,12 @@ export function PlanPushRecipientsField({
                   key={member.id}
                   type="button"
                   onClick={() => handleToggle(member.id)}
-                  className={["soft-choice-row", selected ? "soft-choice-row-active" : ""].join(" ")}
+                  disabled={isPending}
+                  className={[
+                    "soft-choice-row",
+                    selected ? "soft-choice-row-active" : "",
+                    isPending ? "cursor-not-allowed opacity-60" : "",
+                  ].join(" ")}
                 >
                   <span className="grid min-w-0 gap-0.5 text-left">
                     <span className="min-w-0 text-sm font-semibold tracking-[-0.02em] text-foreground">

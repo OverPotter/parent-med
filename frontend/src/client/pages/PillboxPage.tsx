@@ -427,6 +427,7 @@ export function PillboxPage() {
     if (
       !selectedPlanId ||
       !selectedPlan ||
+      disablePillboxEditingActions ||
       updatePlanMutation.isPending ||
       !accountId ||
       !shouldAutoAssignCurrentRecipient(
@@ -563,16 +564,18 @@ export function PillboxPage() {
       updatePlanMutation.isPending ||
       disablePillboxEditingActions
     ) {
-      return;
+      return Promise.resolve();
     }
 
-    updatePlanMutation.mutate({
-      planId: selectedPlanId,
-      payload: {
-        ...toPlanWriteFromPlan(selectedPlan),
-        memberAccountIds: memberIds,
-      },
-    });
+    return updatePlanMutation
+      .mutateAsync({
+        planId: selectedPlanId,
+        payload: {
+          ...toPlanWriteFromPlan(selectedPlan),
+          memberAccountIds: memberIds,
+        },
+      })
+      .then(() => undefined);
   };
 
   const deleteGroup = () => {
@@ -807,6 +810,7 @@ export function PillboxPage() {
         familyMembers={eligiblePillboxMembers}
         recipientsSummary={selectedPlanRecipientsSummary}
         onToggleRecipient={toggleSelectedPlanRecipient}
+        recipientSelectionPending={updatePlanMutation.isPending}
         onRequestDelete={requestDeletePlan}
         onConfirmPlanAction={confirmPlanAction}
         onClosePlanAction={() => {
