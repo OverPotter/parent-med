@@ -60,10 +60,12 @@ export function getHistoryPeriodHint(
 export function SectionTitle({
   title,
   subtitle,
+  subtitleAddon,
   action,
 }: {
   title: string;
   subtitle: string;
+  subtitleAddon?: ReactNode;
   action?: ReactNode;
 }) {
   return (
@@ -77,6 +79,9 @@ export function SectionTitle({
       <div className="min-w-0">
         <h2 className="app-card-title">{title}</h2>
         <p className="mt-1 text-sm leading-6 text-muted">{subtitle}</p>
+        {subtitleAddon ? (
+          <p className="mt-1 text-xs leading-5 text-muted">{subtitleAddon}</p>
+        ) : null}
       </div>
       {action ? <div className="flex shrink-0 items-center justify-end">{action}</div> : null}
     </div>
