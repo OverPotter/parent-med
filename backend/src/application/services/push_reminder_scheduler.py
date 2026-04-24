@@ -251,8 +251,7 @@ def _get_cabinet_offsets(account: Any) -> list[int]:
         (7, account.cabinet_notify_7_days),
         (3, account.cabinet_notify_3_days),
     )
-    optional_offsets = [days for days, enabled in mapping if enabled]
-    return sorted({*optional_offsets, 1}, reverse=True)
+    return sorted([days for days, enabled in mapping if enabled], reverse=True)
 
 
 def _build_cabinet_payload(
@@ -1015,6 +1014,8 @@ class PushNotificationScheduler:
                     continue
                 language = _normalize_language(account.preferred_language)
                 reminder_offsets = _get_cabinet_offsets(account)
+                if not reminder_offsets:
+                    continue
                 subscriptions = await subscription_repo.get_by_account_id(account.id)
                 if not subscriptions:
                     continue

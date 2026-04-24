@@ -4,6 +4,7 @@ from uuid import uuid4
 from src.application.services.push_reminder_scheduler import (
     _can_receive_illness_push,
     _can_receive_pillbox_push,
+    _get_cabinet_offsets,
     _is_push_allowed_for_account,
 )
 from src.domain.entities.account import Account
@@ -67,6 +68,22 @@ def test_push_access_rejects_cabinet_when_module_hidden_even_with_stale_flag() -
     )
 
     assert _is_push_allowed_for_account(account, "cabinet") is False
+
+
+def test_cabinet_offsets_match_only_explicit_account_settings() -> None:
+    account = build_account(FamilyAccessPolicy())
+
+    assert _get_cabinet_offsets(account) == [10, 7, 3]
+
+    account.cabinet_notify_10_days = False
+    account.cabinet_notify_7_days = False
+    account.cabinet_notify_3_days = True
+
+    assert _get_cabinet_offsets(account) == [3]
+
+    account.cabinet_notify_3_days = False
+
+    assert _get_cabinet_offsets(account) == []
 
 
 def test_illness_push_requires_current_child_access() -> None:
