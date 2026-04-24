@@ -334,8 +334,8 @@ export function MedicationPlanDetail({
                 ? "Отмечаем…"
                 : "Logging…"
               : language === "ru"
-                ? "Отметить"
-                : "Log"}
+                ? "Отметить сейчас"
+                : "Log now"}
           </button>
         ) : null}
         {canEdit ? (

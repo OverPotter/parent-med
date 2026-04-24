@@ -153,8 +153,8 @@ export function MedicationPlanList({
                           ? "Недоступно"
                           : "Unavailable"
                         : language === "ru"
-                          ? "Записать"
-                          : "Log"}
+                          ? "Отметить сейчас"
+                          : "Log now"}
                   </button>
                 )}
                 <div className={illnessCompactSecondaryButtonClass} aria-hidden="true">
