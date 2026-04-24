@@ -119,7 +119,10 @@ export function EpisodeActivationCard({
 
 const illnessTemperatureInputClass =
   "soft-input illness-fast-input !min-h-[2.68rem] w-full px-4 py-0 text-left text-[16px] leading-[1.15] placeholder:text-left sm:!min-h-[2.76rem]";
-const illnessTemperatureButtonClass = `${illnessCompactPrimaryButtonClass} min-h-[2.68rem] px-4 sm:min-h-[2.76rem]`;
+const illnessTemperatureButtonClass =
+  `${illnessCompactPrimaryButtonClass} min-h-[2.82rem] px-4 shadow-[0_14px_30px_rgba(15,23,42,0.14)] transition hover:-translate-y-[1px] hover:shadow-[0_18px_34px_rgba(15,23,42,0.18)] sm:min-h-[2.92rem]`;
+const illnessAdministrationButtonClass =
+  `${illnessCompactPrimaryButtonClass} min-h-[2.82rem] px-4 shadow-[0_14px_30px_rgba(15,23,42,0.14)] transition hover:-translate-y-[1px] hover:shadow-[0_18px_34px_rgba(15,23,42,0.18)] sm:min-h-[2.92rem]`;
 export const illnessCompactTextareaClass =
   "soft-input min-h-[7.5rem] w-full px-4 py-3 text-left text-[16px] leading-6 placeholder:text-left";
 
@@ -136,8 +139,8 @@ export function TemperatureForm({
 }) {
   const { language } = useI18n();
   return (
-    <div className="grid gap-3 sm:grid-cols-[7.9rem_auto] sm:items-end sm:gap-2">
-      <label className="block w-[7.9rem] shrink-0 space-y-1.5 sm:w-[8.4rem]">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+      <label className="block min-w-0 space-y-1.5">
         <span className="soft-field-label">
           {language === "ru" ? "Температура" : "Temperature"}
         </span>
@@ -150,22 +153,20 @@ export function TemperatureForm({
           className={illnessTemperatureInputClass}
         />
       </label>
-      <div className="border-t border-border/60 pt-4 sm:border-t-0 sm:pt-0">
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={isPending || !value}
-          className={`${illnessTemperatureButtonClass} w-full sm:w-auto`}
-        >
-          {isPending
-            ? language === "ru"
-              ? "Сохраняем…"
-              : "Saving…"
-            : language === "ru"
-              ? "Добавить"
-              : "Add"}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={isPending || !value}
+        className={`${illnessTemperatureButtonClass} shrink-0 whitespace-nowrap`}
+      >
+        {isPending
+          ? language === "ru"
+            ? "Сохраняем…"
+            : "Saving…"
+          : language === "ru"
+            ? "Добавить"
+            : "Add"}
+      </button>
     </div>
   );
 }
@@ -221,7 +222,7 @@ export function AdministrationForm({
           type="button"
           onClick={onSubmit}
           disabled={isPending || !customMedicineName.trim()}
-          className={`${illnessCompactPrimaryButtonClass} w-full md:w-auto`}
+          className={`${illnessAdministrationButtonClass} w-full md:w-auto`}
         >
           {isPending
             ? language === "ru"

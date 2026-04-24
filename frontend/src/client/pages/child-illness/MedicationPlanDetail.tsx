@@ -10,8 +10,8 @@ import type {
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
 import {
   buildWeightDoseHint,
+  formatDoseStatusLabel,
   formatIntervalForDisplay,
-  formatRelativeDateTime,
   type MedicationPlanPriorityItem,
 } from "../../utils/medicationPlans";
 import {
@@ -71,13 +71,9 @@ export function MedicationPlanDetail({
         ? "Лимит на сегодня"
         : "Daily limit reached"
       : stats?.nextAllowedAt
-        ? stats.nextAllowedAt <= new Date()
-          ? language === "ru"
-            ? "Можно сейчас"
-            : "Available now"
-          : formatRelativeDateTime(stats.nextAllowedAt, new Date())
+        ? formatDoseStatusLabel(stats.nextAllowedAt, language, new Date())
         : language === "ru"
-          ? "Можно сейчас"
+          ? "Можно дать"
           : "Available now";
   const canLogDoseNow = Boolean(onTakeDose) && !isUnavailable && !stats?.isBlocked;
   const reminderSummaryItems = [
@@ -262,13 +258,13 @@ export function MedicationPlanDetail({
                   : stats?.nextAllowedAt
                     ? stats.nextAllowedAt <= new Date()
                       ? language === "ru"
-                        ? "Приём можно отметить сейчас."
+                        ? "Можно дать."
                         : "A dose can be logged now."
                       : language === "ru"
-                        ? `Следующий приём ${formatRelativeDateTime(stats.nextAllowedAt, new Date())}.`
-                        : `Next dose ${formatRelativeDateTime(stats.nextAllowedAt, new Date())}.`
+                        ? `${formatDoseStatusLabel(stats.nextAllowedAt, language, new Date())}.`
+                        : `${formatDoseStatusLabel(stats.nextAllowedAt, language, new Date())}.`
                     : language === "ru"
-                      ? "Приём можно отметить сейчас."
+                      ? "Можно дать."
                       : "A dose can be logged now."}
             </p>
           </div>

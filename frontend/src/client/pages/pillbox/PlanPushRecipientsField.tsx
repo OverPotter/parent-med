@@ -111,10 +111,10 @@ export function PlanPushRecipientsField({
                   ].join(" ")}
                 >
                   <span className="grid min-w-0 gap-0.5 text-left">
-                    <span className="min-w-0 text-sm font-semibold tracking-[-0.02em] text-foreground">
+                    <span className="min-w-0 truncate whitespace-nowrap text-sm font-semibold tracking-[-0.02em] text-foreground">
                       {memberLabel}
                     </span>
-                    <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
+                    <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
                       {memberMeta}
                     </span>
                   </span>

@@ -169,17 +169,9 @@ function formatIllnessRecipientsSummary(params: {
       : "Reminder notifications are currently not sent to anyone.";
   }
 
-  if (labels.length <= 2) {
-    return params.language === "ru"
-      ? `Получатели уведомлений: ${labels.join(", ")}`
-      : `Reminder recipients: ${labels.join(", ")}`;
-  }
-
-  const visible = labels.slice(0, 2).join(", ");
-  const remaining = labels.length - 2;
   return params.language === "ru"
-    ? `Получатели уведомлений: ${visible} и ещё ${remaining}`
-    : `Reminder recipients: ${visible} and ${remaining} more`;
+    ? `Получатели уведомлений: ${labels.join(", ")}`
+    : `Reminder recipients: ${labels.join(", ")}`;
 }
 
 export function TemperatureQuickView(props: {
@@ -707,7 +699,7 @@ export function ReminderListQuickView(props: {
             ? "Список схем приёма для текущего наблюдения."
             : "Dose plans for the current tracking session."
         }
-        subtitleAddon={recipientsSummary}
+        actionInlineOnMobile
         action={
           <div className="flex items-center gap-2">
             {canEditEpisode ? (
@@ -731,6 +723,9 @@ export function ReminderListQuickView(props: {
           </div>
         }
       />
+      <p className="overflow-x-auto whitespace-nowrap text-xs leading-5 text-muted [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {recipientsSummary}
+      </p>
 
       <MedicationPlanList
         plans={plans}
@@ -885,16 +880,11 @@ export function ReminderDetailQuickView(props: {
 export function ReminderCreateQuickView(props: {
   language: "ru" | "en";
   childId: string;
-  episode: IllnessEpisode;
   medicines: HouseholdMedicine[];
-  familyMembers: FamilyMember[];
-  currentAccountId: string | null;
-  canEditEpisode: boolean;
   latestWeight: WeightEntry | null;
   isReminderCabinetPickerOpen: boolean;
   submitLabel: string;
   isPending: boolean;
-  isUpdatingRecipients: boolean;
   errorDetail: string | null;
   onSubmit: (payload: {
     householdMedicineId?: string | null;
@@ -909,55 +899,25 @@ export function ReminderCreateQuickView(props: {
     firstDoseAt?: string | null;
   }) => void;
   onCancel: () => void;
-  onChangeRecipients: (memberIds: string[]) => void;
 }) {
   const {
     language,
     childId,
-    episode,
     medicines,
-    familyMembers,
-    currentAccountId,
-    canEditEpisode,
     latestWeight,
     isReminderCabinetPickerOpen,
     submitLabel,
     isPending,
-    isUpdatingRecipients,
     errorDetail,
     onSubmit,
     onCancel,
-    onChangeRecipients,
   } = props;
-  const recipientsSummary = useMemo(
-    () =>
-      formatIllnessRecipientsSummary({
-        language,
-        selectedIds: episode.memberAccountIds,
-        familyMembers,
-        currentAccountId,
-      }),
-    [currentAccountId, episode.memberAccountIds, familyMembers, language]
-  );
   return (
     <div className={isReminderCabinetPickerOpen ? "min-w-0 overflow-hidden" : "min-w-0 space-y-5"}>
       {!isReminderCabinetPickerOpen ? (
         <SectionTitle
           title={language === "ru" ? "Новое напоминание" : "New reminder"}
           subtitle={language === "ru" ? "Настройте схему приёма." : "Set up the dosing schedule."}
-          subtitleAddon={recipientsSummary}
-          action={
-            canEditEpisode ? (
-                <EpisodeReminderRecipientsCard
-                  language={language}
-                  episode={episode}
-                  familyMembers={familyMembers}
-                  currentAccountId={currentAccountId}
-                  isPending={isUpdatingRecipients}
-                  onChangeSelection={onChangeRecipients}
-                />
-            ) : null
-          }
         />
       ) : null}
 

@@ -14,7 +14,7 @@ import {
 import {
   buildIllnessLiveActivitySummary,
   buildIllnessMedicationLines,
-  buildIllnessStatusLabel,
+  getIllnessDurationMeta,
 } from "./illnessLiveActivitySummary";
 import {
   isNativeLiveActivitiesSupported,
@@ -309,7 +309,9 @@ export async function syncIllnessLiveActivity(
     latestAdministrationMedicineName,
     language
   );
-  const fallbackStatusLabel = buildIllnessStatusLabel(episode.title, insights, language);
+  const durationMeta = getIllnessDurationMeta(episode.startedAt, language);
+  const fallbackStatusLabel =
+    language === "ru" ? `Болеет ${durationMeta.value}` : `Sick ${durationMeta.value}`;
   const statusLabel =
     medicationLines.primaryLine ?? medicationLines.secondaryLine ?? fallbackStatusLabel ?? null;
   const subtitle =

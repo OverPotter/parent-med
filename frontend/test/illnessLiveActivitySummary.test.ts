@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import {
   buildIllnessLiveActivitySummary,
   buildIllnessMedicationLines,
-  buildIllnessStatusLabel,
   getIllnessDurationMeta,
 } from "../src/shared/utils/illnessLiveActivitySummary.js";
 
@@ -69,8 +68,8 @@ test("illness live activity prioritizes temperature and next dose when both exis
   assert.deepEqual(summary, {
     primaryValue: "38.4°",
     primaryCaption: `Была в ${formatExpectedTime(eventAt)}`,
-    secondaryValue: "через 2 ч",
-    secondaryCaption: "Нурофен",
+    secondaryValue: null,
+    secondaryCaption: null,
   });
 });
 
@@ -92,8 +91,8 @@ test("illness live activity shows temperature time instead of latest event label
   assert.deepEqual(summary, {
     primaryValue: "37.8°",
     primaryCaption: `Была в ${formatExpectedTime(lastEventAt)}`,
-    secondaryValue: "1 день",
-    secondaryCaption: "Длится",
+    secondaryValue: null,
+    secondaryCaption: null,
   });
 });
 
@@ -118,22 +117,6 @@ test("illness live activity uses latest medication when it is the strongest sign
     secondaryValue: "2 дня",
     secondaryCaption: "Длится",
   });
-});
-
-test("illness status label prefers actionable context over episode title", () => {
-  const lastAdministrationAt = "2026-04-24T18:10:00+03:00";
-  const lastEventAt = "2026-04-24T21:10:00+03:00";
-  const label = buildIllnessStatusLabel(
-    "Простуда",
-    {
-      lastAdministrationAt,
-      medicineNames: ["Нурофен"],
-      lastEventAt,
-    },
-    "ru"
-  );
-
-  assert.equal(label, `Нурофен · запись ${formatExpectedTime(lastEventAt)}`);
 });
 
 test("illness duration meta keeps same-day episodes on a simple started state", () => {
@@ -163,7 +146,28 @@ test("illness medication lines show next dose and last administration under chil
   );
 
   assert.deepEqual(lines, {
-    primaryLine: "Нурофен · через 2 ч",
-    secondaryLine: `Парацетамол дали в ${formatExpectedTime(lastAdministrationAt)}`,
+    primaryLine: `Дать Нурофен в ${formatExpectedTime("2026-04-24T20:10:00+03:00")}`,
+    secondaryLine: `Дали Парацетамол в ${formatExpectedTime(lastAdministrationAt)}`,
+  });
+});
+
+test("illness medication lines switch to ready state when dose time is reached", () => {
+  const lines = buildIllnessMedicationLines(
+    {
+      lastAdministrationAt: null,
+      medicineNames: ["Нурофен"],
+    },
+    {
+      nextDoseAt: new Date("2026-04-24T20:10:00+03:00"),
+      medicineName: "Нурофен",
+    },
+    null,
+    "ru",
+    new Date("2026-04-24T20:10:00+03:00")
+  );
+
+  assert.deepEqual(lines, {
+    primaryLine: "Можно дать Нурофен",
+    secondaryLine: null,
   });
 });

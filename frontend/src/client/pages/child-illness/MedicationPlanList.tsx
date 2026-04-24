@@ -8,7 +8,7 @@ import type {
 } from "@shared/types/api";
 import {
   buildPlanAdministrationStats,
-  formatReminderTimeWithClock,
+  formatDoseStatusLabel,
   getPrioritizedMedicationPlanItems,
 } from "../../utils/medicationPlans";
 import {
@@ -57,21 +57,15 @@ export function MedicationPlanList({
           ? language === "ru"
             ? "Упаковка сейчас недоступна"
             : "This pack is currently unavailable"
-          : stats?.blockedByDailyLimit
-            ? language === "ru"
-              ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
-              : `${planName}: today's dose limit is already reached`
-            : stats?.nextAllowedAt
-              ? stats.nextAllowedAt <= currentTime
-                ? language === "ru"
-                  ? "Следующий приём: можно сейчас"
-                  : "Next dose: available now"
-                : language === "ru"
-                  ? `Следующий приём: ${formatReminderTimeWithClock(stats.nextAllowedAt, language, currentTime)}`
-                  : `Next dose: ${formatReminderTimeWithClock(stats.nextAllowedAt, language, currentTime)}`
+            : stats?.blockedByDailyLimit
+              ? language === "ru"
+                ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
+                : `${planName}: today's dose limit is already reached`
+              : stats?.nextAllowedAt
+                ? formatDoseStatusLabel(stats.nextAllowedAt, language, currentTime)
               : language === "ru"
-                ? "Следующий приём: можно сейчас"
-                : "Next dose: available now";
+                ? "Можно дать"
+                : "Available now";
         const statusDotClass = isUnavailable
           ? "bg-rose-500"
           : stats?.blockedByDailyLimit

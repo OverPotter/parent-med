@@ -229,7 +229,9 @@ export function PillboxDetailsScreen({
                 />
               </div>
               {recipientsSummary ? (
-                <p className="text-sm leading-6 text-muted">{recipientsSummary}</p>
+                <p className="overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-6 text-muted">
+                  {recipientsSummary}
+                </p>
               ) : null}
             </div>
           </div>

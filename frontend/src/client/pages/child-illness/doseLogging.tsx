@@ -1,0 +1,177 @@
+import { useState } from "react";
+import { DateField } from "@shared/components/DateField";
+import { FullscreenOverlay } from "@shared/components/FullscreenOverlay";
+import { getLocalIsoDate } from "@shared/utils/date";
+import {
+  finalizeTimeInput,
+  getCurrentLocalTimeInputValue,
+  normalizeTimeInput,
+  toApiDateTime,
+} from "@client/utils/feedingRecordForm";
+import { illnessCompactInputClass, illnessCompactPrimaryButtonClass, illnessCompactSecondaryButtonClass } from "./shared";
+import { shouldRequestDoseTimeConfirmation } from "../../utils/medicationPlans";
+
+export type DoseLoggingCandidate<T> = {
+  item: T;
+  nextAllowedAt?: Date | null;
+  planName: string;
+};
+
+export function useDoseLoggingFlow<T>(params: {
+  language: "ru" | "en";
+  now: Date;
+  onSubmit: (item: T, administeredAt?: string | null) => void;
+}) {
+  const { language, now, onSubmit } = params;
+  const [pendingCandidate, setPendingCandidate] = useState<DoseLoggingCandidate<T> | null>(null);
+  const [pendingDate, setPendingDate] = useState(getLocalIsoDate());
+  const [pendingTime, setPendingTime] = useState(getCurrentLocalTimeInputValue());
+
+  const open = (candidate: DoseLoggingCandidate<T>) => {
+    if (shouldRequestDoseTimeConfirmation(candidate.nextAllowedAt, now)) {
+      setPendingCandidate(candidate);
+      setPendingDate(getLocalIsoDate());
+      setPendingTime(getCurrentLocalTimeInputValue());
+      return;
+    }
+
+    onSubmit(candidate.item);
+  };
+
+  const close = () => setPendingCandidate(null);
+  const pendingDoseAt = toApiDateTime(pendingDate, pendingTime);
+  const hasFuturePendingDoseSelection = pendingDoseAt
+    ? new Date(pendingDoseAt).getTime() > Date.now()
+    : false;
+  const submitPending = () => {
+    if (!pendingCandidate || !pendingDoseAt || hasFuturePendingDoseSelection) {
+      return;
+    }
+
+    onSubmit(pendingCandidate.item, pendingDoseAt);
+  };
+
+  const hint =
+    language === "ru"
+      ? `Поставили текущее время по умолчанию. Если лекарство дали раньше, просто поправьте дату и время.${pendingCandidate ? ` ${pendingCandidate.planName}.` : ""}`
+      : `The current time is prefilled. If the medicine was given earlier, just adjust the date and time.${pendingCandidate ? ` ${pendingCandidate.planName}.` : ""}`;
+
+  return {
+    close,
+    hasFuturePendingDoseSelection,
+    hint,
+    isOpen: pendingCandidate !== null,
+    open,
+    pendingCandidate,
+    pendingDate,
+    pendingDoseAt,
+    pendingTime,
+    setPendingDate,
+    setPendingTime,
+    submitPending,
+  };
+}
+
+export function DoseTimeSheet({
+  language,
+  isOpen,
+  closeDisabled,
+  hint,
+  pendingDate,
+  pendingTime,
+  hasFuturePendingDoseSelection,
+  isPending,
+  submitLabel,
+  onClose,
+  onDateChange,
+  onTimeChange,
+  onSubmit,
+}: {
+  language: "ru" | "en";
+  isOpen: boolean;
+  closeDisabled: boolean;
+  hint: string;
+  pendingDate: string;
+  pendingTime: string;
+  hasFuturePendingDoseSelection: boolean;
+  isPending: boolean;
+  submitLabel: string;
+  onClose: () => void;
+  onDateChange: (value: string) => void;
+  onTimeChange: (value: string) => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <FullscreenOverlay
+      isOpen={isOpen}
+      onClose={onClose}
+      closeDisabled={closeDisabled}
+      backLabel={language === "ru" ? "Назад" : "Back"}
+      title={language === "ru" ? "Отметить приём" : "Log dose"}
+      hint={hint}
+      maxWidthClassName="max-w-[34rem]"
+    >
+      <div className="space-y-4 pb-2">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block space-y-1.5">
+            <span className="soft-field-label">
+              {language === "ru" ? "Когда давали" : "When was it given"}
+            </span>
+            <DateField
+              value={pendingDate}
+              onChange={onDateChange}
+              language={language}
+              max={getLocalIsoDate()}
+              allowClear={false}
+              panelPortalClassName="fixed inset-0 z-[10040]"
+              hideBadge
+              triggerClassName="justify-center text-center"
+              valueClassName="text-center font-semibold tracking-[-0.03em]"
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="soft-field-label">
+              {language === "ru" ? "Во сколько" : "Time"}
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={pendingTime}
+              onChange={(event) => onTimeChange(normalizeTimeInput(event.target.value))}
+              onBlur={() => onTimeChange(finalizeTimeInput(pendingTime))}
+              placeholder="08:30"
+              className={`${illnessCompactInputClass} text-center font-semibold tracking-[-0.03em] tabular-nums`}
+            />
+          </label>
+        </div>
+
+        {hasFuturePendingDoseSelection ? (
+          <p className="soft-note-danger mt-3 rounded-2xl px-3 py-2.5 text-xs leading-5">
+            {language === "ru"
+              ? "Нельзя указать время приёма в будущем. Выберите текущее время или раньше."
+              : "You cannot set the administration time in the future. Choose the current time or earlier."}
+          </p>
+        ) : null}
+
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={closeDisabled}
+            className={`${illnessCompactSecondaryButtonClass} w-full`}
+          >
+            {language === "ru" ? "Отмена" : "Cancel"}
+          </button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={isPending || hasFuturePendingDoseSelection}
+            className={`${illnessCompactPrimaryButtonClass} w-full`}
+          >
+            {submitLabel}
+          </button>
+        </div>
+      </div>
+    </FullscreenOverlay>
+  );
+}

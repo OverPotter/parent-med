@@ -377,14 +377,18 @@ struct IllnessReferenceLockScreenView: View {
                     title: context.state.title,
                     subtitle: illnessReferenceSummary(for: context),
                     detailText: illnessReferenceDetail(for: context),
-                    titleTopOffset: -1.2,
-                    titleFontSize: 22,
-                    titleMinScale: 0.66,
+                    titleTopOffset: 0,
+                    titleFontSize: 24,
+                    titleMinScale: 0.78,
                     secondaryTextColor: Color(red: 0.44, green: 0.50, blue: 0.49),
-                    subtitleMinScale: 0.68,
+                    subtitleMinScale: 0.85,
                     badge: { IllnessIconBadge() },
                     value: {
-                        IllnessReferenceMetricBlock(context: context)
+                        if illnessShowsTemperatureMetric(context: context) {
+                            IllnessReferenceMetricBlock(context: context)
+                        } else {
+                            HeaderElapsedTimerText(startedAt: context.state.startedAt)
+                        }
                     },
                     trailing: {
                         ReferenceActivityOpenChip(
@@ -408,47 +412,39 @@ private struct IllnessReferenceMetricBlock: View {
     let context: ActivityViewContext<LiveActivityAttributes>
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 4) {
-            VStack(alignment: .trailing, spacing: 1) {
-                Text(primaryText)
-                    .font(.system(size: 24, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Color(red: 0.22, green: 0.64, blue: 0.60))
-                    .shadow(color: Color.white.opacity(0.14), radius: 1, x: 0, y: -1)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.74)
+        VStack(alignment: .trailing, spacing: 2) {
+            Text(primaryText)
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color(red: 0.22, green: 0.64, blue: 0.60))
+                .shadow(color: Color.white.opacity(0.14), radius: 1, x: 0, y: -1)
+                .lineLimit(1)
+                .minimumScaleFactor(0.74)
 
-                if let primaryCaption, !primaryCaption.isEmpty {
-                    Text(primaryCaption)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color(red: 0.44, green: 0.50, blue: 0.49))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.76)
-                }
+            if let primaryCaption, !primaryCaption.isEmpty {
+                Text(primaryCaption)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color(red: 0.44, green: 0.50, blue: 0.49))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.76)
             }
         }
+        .multilineTextAlignment(.trailing)
     }
 
     private var primaryText: String {
-        let trimmed = context.state.primaryValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if !trimmed.isEmpty {
-            return trimmed
-        }
-        return illnessDurationPhrase(startedAt: context.state.startedAt)
+        context.state.primaryValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
-    private var secondaryText: String? {
-        let value = context.state.secondaryValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !value.isEmpty else {
-            return nil
-        }
-
-        let caption = context.state.secondaryCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return caption.isEmpty ? value : "\(caption) · \(value)"
-    }
     private var primaryCaption: String? {
         let caption = context.state.primaryCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return caption.isEmpty ? nil : caption
     }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func illnessShowsTemperatureMetric(context: ActivityViewContext<LiveActivityAttributes>) -> Bool {
+    let primaryText = context.state.primaryValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return primaryText.contains("°") || primaryText.contains("℃")
 }
 
 @available(iOSApplicationExtension 16.1, *)
@@ -538,15 +534,77 @@ struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
 private func illnessReferenceSummary(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
     let statusLabel = context.state.statusLabel?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     if !statusLabel.isEmpty {
-        return statusLabel
+        return compactIllnessStatusLine(statusLabel)
     }
-    return ""
+    return "Болеет \(illnessDurationPhrase(startedAt: context.state.startedAt))"
 }
 
 @available(iOSApplicationExtension 16.1, *)
 private func illnessReferenceDetail(for context: ActivityViewContext<LiveActivityAttributes>) -> String? {
     let subtitle = context.state.subtitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    return subtitle.isEmpty ? nil : subtitle
+    guard !subtitle.isEmpty else {
+        return nil
+    }
+
+    return compactIllnessDetailLine(subtitle)
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func compactIllnessStatusLine(_ value: String) -> String {
+    let parts = value.split(separator: "·", maxSplits: 1).map {
+        $0.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    guard parts.count == 2 else {
+        return value
+    }
+
+    let medicine = parts[0]
+    let timing = compactIllnessRelativeLabel(parts[1])
+    return "\(medicine) · \(timing)"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func compactIllnessDetailLine(_ value: String) -> String {
+    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    if let range = trimmed.range(of: " дали в ") {
+        let medicine = String(trimmed[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let time = String(trimmed[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        if !medicine.isEmpty && !time.isEmpty {
+            return "Дали: \(medicine) · \(time)"
+        }
+    }
+
+    if let range = trimmed.range(of: " given at ") {
+        let medicine = String(trimmed[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let time = String(trimmed[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        if !medicine.isEmpty && !time.isEmpty {
+            return "Given: \(medicine) · \(time)"
+        }
+    }
+
+    return trimmed
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func compactIllnessRelativeLabel(_ value: String) -> String {
+    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    switch trimmed {
+    case "Можно дать":
+        return "Можно дать"
+    case "можно дать":
+        return "можно дать"
+    case "Ready now":
+        return "Ready now"
+    case "ready now":
+        return "ready now"
+    default:
+        break
+    }
+
+    return trimmed
 }
 
 @available(iOSApplicationExtension 16.1, *)

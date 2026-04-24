@@ -34,16 +34,18 @@ import type {
   IllnessEpisode,
 } from "@shared/types/api";
 import {
-  formatRelativeDateTime,
+  formatDoseStatusLabel,
   type MedicationPlanPriorityItem,
   getPrioritizedMedicationPlanItems,
 } from "../utils/medicationPlans";
 import { formatDate } from "@shared/utils/date";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 import { formatIllnessDuration } from "./children/shared";
+import { DoseTimeSheet, useDoseLoggingFlow } from "./child-illness/doseLogging";
+import { invalidateIllnessQueriesForChild } from "./child-illness/episodeCache";
 
 const appBtnPrimaryClass =
-  "soft-pill-primary app-profile-action app-profile-action--selected inline-flex min-h-[2.65rem] items-center justify-center px-3.5 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.75rem] sm:text-[0.84rem]";
+  "soft-pill-primary app-profile-action app-profile-action--selected inline-flex min-h-[2.72rem] items-center justify-center px-3.75 text-[0.82rem] tracking-[-0.025em] shadow-[0_16px_34px_rgba(15,23,42,0.16)] transition hover:-translate-y-[1px] hover:shadow-[0_20px_40px_rgba(15,23,42,0.2)] sm:min-h-[2.82rem] sm:text-[0.84rem]";
 const appGridPillActionClass =
   "soft-pill app-profile-action inline-flex min-h-[2.65rem] w-full items-center justify-center px-3.5 text-center text-[0.82rem] font-semibold leading-4 tracking-[-0.025em] text-foreground transition hover:opacity-90 sm:min-h-[2.75rem] sm:text-[0.84rem]";
 const appWidePillActionClass =
@@ -221,7 +223,13 @@ function ActiveIllnessCard({
   const availableNowOverflowCount = Math.max(0, availableNowItems.length - 1);
   const upcomingLead = upcomingItems[0] ?? null;
   const takeDoseMutation = useMutation({
-    mutationFn: (plan: EpisodeMedicationPlan) => {
+    mutationFn: ({
+      plan,
+      administeredAt,
+    }: {
+      plan: EpisodeMedicationPlan;
+      administeredAt?: string | null;
+    }) => {
       if (!plan) {
         throw new Error(copy.noReminder);
       }
@@ -229,7 +237,7 @@ function ActiveIllnessCard({
         episode_id: episode.id,
         household_medicine_id: plan.householdMedicineId,
         custom_medicine_name: plan.customMedicineName ?? undefined,
-        administered_at: getCurrentDeviceTimestampIso(),
+        administered_at: administeredAt ?? getCurrentDeviceTimestampIso(),
         amount: plan.doseAmount,
         reason: copy.reminderReason,
       });
@@ -238,19 +246,27 @@ function ActiveIllnessCard({
       trackMedicationAdministered("active_illnesses");
       queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
       queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
+      requestLiveActivityRefresh();
       setJustSaved(true);
+      doseLogging.close();
     },
+  });
+  const doseLogging = useDoseLoggingFlow<MedicationPlanPriorityItem<EpisodeMedicationPlan>>({
+    language,
+    now,
+    onSubmit: (item, administeredAt) =>
+      takeDoseMutation.mutate({
+        plan: item.plan,
+        administeredAt,
+      }),
   });
 
   const closeEpisodeMutation = useMutation({
     mutationFn: () => closeIllnessEpisodeResilient({ childId: child.id, episodeId: episode.id }),
     onSuccess: () => {
       requestLiveActivityRefresh();
-      queryClient.invalidateQueries({ queryKey: ["illness-episodes", child.id] });
-      queryClient.invalidateQueries({ queryKey: ["illness-episode-active", child.id] });
-      queryClient.invalidateQueries({ queryKey: ["illness-episodes"] });
-      queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] });
-      queryClient.invalidateQueries({ queryKey: ["children"] });
+      invalidateIllnessQueriesForChild(queryClient, child.id);
     },
   });
 
@@ -323,7 +339,7 @@ function ActiveIllnessCard({
                 <span className="truncate text-muted">
                   {getPlanDisplayName(upcomingLead)}
                   {upcomingLead.stats.nextAllowedAt
-                    ? ` · ${formatRelativeDateTime(upcomingLead.stats.nextAllowedAt, now)}`
+                    ? ` · ${formatDoseStatusLabel(upcomingLead.stats.nextAllowedAt, language, now)}`
                     : ""}
                 </span>
               </div>
@@ -357,7 +373,13 @@ function ActiveIllnessCard({
                       </div>
                       <button
                         type="button"
-                        onClick={() => takeDoseMutation.mutate(availableNowLead.plan)}
+                        onClick={() =>
+                          doseLogging.open({
+                            item: availableNowLead,
+                            nextAllowedAt: availableNowLead.stats.nextAllowedAt,
+                            planName: getPlanDisplayName(availableNowLead),
+                          })
+                        }
                         disabled={takeDoseMutation.isPending}
                         className={`${appBtnPrimaryClass} w-full disabled:opacity-50 md:w-auto md:px-4`}
                       >
@@ -416,6 +438,26 @@ function ActiveIllnessCard({
           </Link>
         </div>
       </Surface>
+      <DoseTimeSheet
+        language={language}
+        isOpen={doseLogging.isOpen}
+        closeDisabled={takeDoseMutation.isPending}
+        hint={doseLogging.hint}
+        pendingDate={doseLogging.pendingDate}
+        pendingTime={doseLogging.pendingTime}
+        hasFuturePendingDoseSelection={doseLogging.hasFuturePendingDoseSelection}
+        isPending={takeDoseMutation.isPending || !doseLogging.pendingDoseAt}
+        submitLabel={takeDoseMutation.isPending ? copy.saving : copy.logDose}
+        onClose={() => {
+          if (takeDoseMutation.isPending) {
+            return;
+          }
+          doseLogging.close();
+        }}
+        onDateChange={doseLogging.setPendingDate}
+        onTimeChange={doseLogging.setPendingTime}
+        onSubmit={doseLogging.submitPending}
+      />
     </li>
   );
 }

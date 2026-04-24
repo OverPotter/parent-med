@@ -62,16 +62,18 @@ export function SectionTitle({
   subtitle,
   subtitleAddon,
   action,
+  actionInlineOnMobile = false,
 }: {
   title: string;
   subtitle: string;
   subtitleAddon?: ReactNode;
   action?: ReactNode;
+  actionInlineOnMobile?: boolean;
 }) {
   return (
     <div
       className={
-        action
+        actionInlineOnMobile
           ? "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
           : "grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start"
       }
@@ -80,7 +82,9 @@ export function SectionTitle({
         <h2 className="app-card-title">{title}</h2>
         <p className="mt-1 text-sm leading-6 text-muted">{subtitle}</p>
         {subtitleAddon ? (
-          <p className="mt-1 text-xs leading-5 text-muted">{subtitleAddon}</p>
+          <p className="mt-1 overflow-x-auto whitespace-nowrap text-xs leading-5 text-muted [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {subtitleAddon}
+          </p>
         ) : null}
       </div>
       {action ? <div className="flex shrink-0 items-center justify-end">{action}</div> : null}
