@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
 import { appPillActionClass } from "../child-illness/shared";
@@ -23,43 +23,33 @@ export function PlanPushRecipientsField({
   onSubmit: (memberIds: string[]) => void | Promise<void>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [draftMemberIds, setDraftMemberIds] = useState<string[]>(selectedMemberIds);
-  const [isSaving, setIsSaving] = useState(false);
+  const eligibleMemberIds = useMemo(() => familyMembers.map((member) => member.id), [familyMembers]);
+  const [selectedIds, setSelectedIds] = useState<string[]>(() =>
+    selectedMemberIds.filter((id) => eligibleMemberIds.includes(id))
+  );
 
-  const openSheet = () => {
-    setDraftMemberIds(selectedMemberIds);
-    setIsOpen(true);
-  };
+  useEffect(() => {
+    setSelectedIds(selectedMemberIds.filter((id) => eligibleMemberIds.includes(id)));
+  }, [eligibleMemberIds, selectedMemberIds]);
 
-  const toggleDraftMember = (memberId: string) => {
-    if (draftMemberIds.length === 1 && draftMemberIds.includes(memberId)) {
-      return;
-    }
-    setDraftMemberIds((current) =>
-      current.includes(memberId)
-        ? current.filter((item) => item !== memberId)
-        : [...current, memberId]
-    );
-  };
-
-  const handleSave = async () => {
-    if (isSaving) {
-      return;
-    }
-    try {
-      setIsSaving(true);
-      await onSubmit(draftMemberIds);
-      setIsOpen(false);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleToggle = (memberId: string) => {
+    setSelectedIds((current) => {
+      const nextIds = current.includes(memberId)
+        ? current.filter((id) => id !== memberId)
+        : [...current, memberId];
+      if (nextIds.length === 0) {
+        return current;
+      }
+      void onSubmit(nextIds);
+      return nextIds;
+    });
   };
 
   return (
     <>
       <button
         type="button"
-        onClick={openSheet}
+        onClick={() => setIsOpen(true)}
         className={`${appPillActionClass} shrink-0 px-4`}
       >
         {language === "ru" ? "Уведомления" : "Notifications"}
@@ -85,21 +75,21 @@ export function PlanPushRecipientsField({
             </h2>
             <p className="text-sm leading-5 text-muted">
               {language === "ru"
-                ? "Можно выбрать сразу несколько получателей, но хотя бы один должен остаться."
-                : "Choose several recipients and save them in one action."}
+                ? "Можно выбрать сразу несколько получателей. Хотя бы один должен остаться."
+                : "Choose several recipients. At least one recipient must remain selected."}
             </p>
           </div>
 
           <div className="soft-choice-list mt-4">
             {familyMembers.map((member) => {
-              const selected = draftMemberIds.includes(member.id);
+              const selected = selectedIds.includes(member.id);
               const memberLabel = member.displayName || member.login || member.id;
               const memberMeta = member.relationshipLabel || member.login || member.id;
               return (
                 <button
                   key={member.id}
                   type="button"
-                  onClick={() => toggleDraftMember(member.id)}
+                  onClick={() => handleToggle(member.id)}
                   className={["soft-choice-row", selected ? "soft-choice-row-active" : ""].join(" ")}
                 >
                   <span className="grid min-w-0 gap-0.5 text-left">
@@ -114,27 +104,6 @@ export function PlanPushRecipientsField({
                 </button>
               );
             })}
-          </div>
-
-          <div className="mt-4 flex items-center justify-end gap-2 pb-1">
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              disabled={isSaving}
-              className="inline-flex min-h-[2.6rem] items-center justify-center rounded-full px-4 text-sm font-semibold text-muted transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {language === "ru" ? "Отмена" : "Cancel"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void handleSave();
-              }}
-              disabled={isSaving || draftMemberIds.length === 0}
-              className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-              {language === "ru" ? (isSaving ? "Сохраняем..." : "Сохранить") : isSaving ? "Saving..." : "Save"}
-            </button>
           </div>
         </div>
       </OverlayDialog>
