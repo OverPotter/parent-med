@@ -79,14 +79,3 @@ async def send_test_push_notification(
     scheduler = get_push_scheduler()
     return await service.send_test_notification(current_account.id, scheduler)
 
-
-@router.post("/test/cabinet", response_model=PushNotificationTestResponseDto)
-async def send_cabinet_test_push_notification(
-    current_account: AuthenticatedAccount = Depends(get_current_account),
-    service: PushNotificationService = Depends(get_push_notification_service),
-) -> PushNotificationTestResponseDto:
-    """Отправить тестовый push именно в формате аптечки."""
-    if not settings.debug:
-        raise HTTPException(status_code=404, detail="Not Found")
-    scheduler = get_push_scheduler()
-    return await service.send_cabinet_test_notification(current_account.id, scheduler)

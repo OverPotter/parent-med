@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { deleteHouseholdMedicine, fetchHouseholdMedicines } from "@shared/api/householdMedicines";
-import { sendCabinetTestPushNotification } from "@shared/api/pushNotifications";
 import {
   fetchMyFamily,
   fetchMyFamilyMembers,
@@ -63,7 +62,6 @@ export function MedicineCabinetPage() {
   const canMutateCabinet = canEditCabinet(accountFamilyRole, accountAccessPolicy);
   const canManageCabinetRecipients = accountFamilyRole === "admin";
   const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
-  const isDevTestPushVisible = import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
 
   const addFlow: AddMedicineFlow =
     location.pathname === "/medicine-cabinet/add"
@@ -155,10 +153,6 @@ export function MedicineCabinetPage() {
     mutationFn: deleteHouseholdMedicine,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] }),
-  });
-
-  const sendCabinetTestPushMutation = useMutation({
-    mutationFn: sendCabinetTestPushNotification,
   });
 
   const updateCabinetRecipientsMutation = useMutation({
@@ -352,36 +346,9 @@ export function MedicineCabinetPage() {
           hideOnMobile
           mobileLikeDesktop
           afterSubtitle={
-            cabinetRecipientsSummary || isDevTestPushVisible ? (
-              <div className="mt-2 space-y-2">
-                {cabinetRecipientsSummary ? (
-                  <p className="text-sm leading-6 text-muted">{cabinetRecipientsSummary}</p>
-                ) : null}
-                {isDevTestPushVisible ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => sendCabinetTestPushMutation.mutate()}
-                      disabled={sendCabinetTestPushMutation.isPending}
-                      className={`${cabinetActionSecondaryClass} px-4 disabled:cursor-not-allowed disabled:opacity-60`}
-                    >
-                      {language === "ru"
-                        ? sendCabinetTestPushMutation.isPending
-                          ? "Отправляем..."
-                          : "Тестовый push аптечки"
-                        : sendCabinetTestPushMutation.isPending
-                          ? "Sending..."
-                          : "Cabinet test push"}
-                    </button>
-                    {sendCabinetTestPushMutation.data ? (
-                      <p className="text-sm leading-6 text-muted">
-                        {language === "ru"
-                          ? `Подписок: ${sendCabinetTestPushMutation.data.subscriptionCount}`
-                          : `Subscriptions: ${sendCabinetTestPushMutation.data.subscriptionCount}`}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
+            cabinetRecipientsSummary ? (
+              <div className="mt-2">
+                <p className="text-sm leading-6 text-muted">{cabinetRecipientsSummary}</p>
               </div>
             ) : null
           }
@@ -442,35 +409,10 @@ export function MedicineCabinetPage() {
           <p className="app-mobile-section-intro__hint app-mobile-section-intro__hint--single-line">
             {tCabinet(language, "mobileHint")}
           </p>
-          {cabinetRecipientsSummary || isDevTestPushVisible ? (
-            <div className="mt-2 space-y-2">
+          {cabinetRecipientsSummary ? (
+            <div className="mt-2">
               {cabinetRecipientsSummary ? (
                 <p className="text-sm leading-6 text-muted">{cabinetRecipientsSummary}</p>
-              ) : null}
-              {isDevTestPushVisible ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => sendCabinetTestPushMutation.mutate()}
-                    disabled={sendCabinetTestPushMutation.isPending}
-                    className={`${cabinetActionSecondaryClass} px-4 disabled:cursor-not-allowed disabled:opacity-60`}
-                  >
-                    {language === "ru"
-                      ? sendCabinetTestPushMutation.isPending
-                        ? "Отправляем..."
-                        : "Тестовый push аптечки"
-                      : sendCabinetTestPushMutation.isPending
-                        ? "Sending..."
-                        : "Cabinet test push"}
-                  </button>
-                  {sendCabinetTestPushMutation.data ? (
-                    <p className="text-sm leading-6 text-muted">
-                      {language === "ru"
-                        ? `Подписок: ${sendCabinetTestPushMutation.data.subscriptionCount}`
-                        : `Subscriptions: ${sendCabinetTestPushMutation.data.subscriptionCount}`}
-                    </p>
-                  ) : null}
-                </div>
               ) : null}
             </div>
           ) : null}

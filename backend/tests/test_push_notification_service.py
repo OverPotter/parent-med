@@ -74,27 +74,6 @@ class StubAccountRepository:
         return entity
 
 
-class StubScheduler:
-    def __init__(self) -> None:
-        self.calls: list[dict] = []
-
-    async def _send_to_subscriptions(  # noqa: ANN001
-        self,
-        *,
-        subscriptions,
-        subscription_repo,
-        payload,
-    ) -> bool:
-        self.calls.append(
-            {
-                "subscriptions": subscriptions,
-                "subscription_repo": subscription_repo,
-                "payload": payload,
-            }
-        )
-        return True
-
-
 def build_account() -> Account:
     return Account(
         id=uuid4(),
@@ -248,31 +227,3 @@ async def test_update_preferences_persists_category_switches_without_zeroing_min
     assert result.pillbox_enabled is False
     assert result.before_reminder_minutes == 10
     assert result.pillbox_before_reminder_minutes == 10
-
-
-@pytest.mark.asyncio
-async def test_send_cabinet_test_notification_uses_cabinet_style_payload() -> None:
-    account = build_account()
-    account.preferred_language = "ru"
-    repo = StubPushSubscriptionRepository()
-    subscription = build_native_subscription(
-        account_id=account.id,
-        token="token-1",
-        device_id="device-1",
-    )
-    await repo.add(subscription)
-    scheduler = StubScheduler()
-    service = PushNotificationService(repo, StubAccountRepository(account))
-
-    result = await service.send_cabinet_test_notification(account.id, scheduler)
-
-    assert result.sent is True
-    assert result.subscription_count == 1
-    assert len(scheduler.calls) == 1
-    payload = scheduler.calls[0]["payload"]
-    assert payload["title"] == "Через 3 дня истекает срок: Ибупрофен сироп"
-    assert payload["url"] == "/medicine-cabinet"
-    assert payload["data"]["daysBefore"] == 3
-    assert payload["data"]["kind"] == "expiry"
-    assert payload["data"]["source"] == "cabinet_test"
-    assert payload["body"].startswith("Срок годности · до ")
