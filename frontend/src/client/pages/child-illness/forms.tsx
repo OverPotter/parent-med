@@ -136,7 +136,7 @@ export function TemperatureForm({
 }) {
   const { language } = useI18n();
   return (
-    <div className="space-y-3">
+    <div className="grid gap-3 sm:grid-cols-[7.9rem_auto] sm:items-end sm:gap-2">
       <label className="block w-[7.9rem] shrink-0 space-y-1.5 sm:w-[8.4rem]">
         <span className="soft-field-label">
           {language === "ru" ? "Температура" : "Temperature"}
@@ -150,7 +150,7 @@ export function TemperatureForm({
           className={illnessTemperatureInputClass}
         />
       </label>
-      <div className="border-t border-border/60 pt-4">
+      <div className="border-t border-border/60 pt-4 sm:border-t-0 sm:pt-0">
         <button
           type="button"
           onClick={onSubmit}
