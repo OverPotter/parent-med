@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import {
   fetchPushNotificationConfig,
   fetchPushNotificationPreferences,
@@ -55,18 +57,12 @@ type PushCopy = {
 type UseClientLayoutPushPromptArgs = {
   authToken: string | null;
   accountId: string | null;
-  isDeferredShellWorkReady: boolean;
-  isIosPushUiReady: boolean;
-  isInteractiveDataReady: boolean;
   copy: PushCopy;
 };
 
 export function useClientLayoutPushPrompt({
   authToken,
   accountId,
-  isDeferredShellWorkReady,
-  isIosPushUiReady,
-  isInteractiveDataReady,
   copy,
 }: UseClientLayoutPushPromptArgs) {
   const [pushStatus, setPushStatus] = useState<"checking" | "enabled" | "disabled">("checking");
@@ -77,35 +73,23 @@ export function useClientLayoutPushPrompt({
   const [categoryPushIssue, setCategoryPushIssue] = useState(false);
   const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
 
+  const isPushCheckReady = Boolean(authToken && accountId);
+
   const { data: pushConfig } = useQuery({
     queryKey: ["push", "config", accountId],
     queryFn: fetchPushNotificationConfig,
-    enabled: Boolean(
-      authToken &&
-        accountId &&
-        isDeferredShellWorkReady &&
-        isIosPushUiReady &&
-        isInteractiveDataReady
-    ),
+    enabled: isPushCheckReady,
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: pushPreferences } = useQuery({
     queryKey: ["push", "preferences", "account", accountId],
     queryFn: fetchPushNotificationPreferences,
-    enabled: Boolean(
-      authToken &&
-        accountId &&
-        isDeferredShellWorkReady &&
-        isIosPushUiReady &&
-        isInteractiveDataReady
-    ),
+    enabled: isPushCheckReady,
     staleTime: 5 * 60 * 1000,
   });
 
-  const isPushPromptReady = Boolean(
-    authToken && accountId && isDeferredShellWorkReady && isIosPushUiReady && pushConfig?.enabled
-  );
+  const isPushPromptReady = isPushCheckReady;
 
   useEffect(() => {
     setPushPromptError(null);
@@ -125,9 +109,9 @@ export function useClientLayoutPushPrompt({
     let lastCheckAt = 0;
     const MIN_PUSH_CHECK_INTERVAL_MS = 2500;
 
-    const checkPush = async () => {
+    const checkPush = async (force = false) => {
       const nowTs = Date.now();
-      if (isChecking || nowTs - lastCheckAt < MIN_PUSH_CHECK_INTERVAL_MS) {
+      if (!force && (isChecking || nowTs - lastCheckAt < MIN_PUSH_CHECK_INTERVAL_MS)) {
         return;
       }
       isChecking = true;
@@ -196,22 +180,39 @@ export function useClientLayoutPushPrompt({
     void checkPush();
 
     const handlePushSubscriptionChanged = () => {
-      void checkPush();
+      void checkPush(true);
+    };
+
+    const handleAppActive = () => {
+      void checkPush(true);
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        void checkPush();
+        void checkPush(true);
       }
     };
 
+    let removeAppStateListener: (() => void) | undefined;
     window.addEventListener("push:subscription-changed", handlePushSubscriptionChanged);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    if (Capacitor.isNativePlatform()) {
+      void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+        if (isActive) {
+          handleAppActive();
+        }
+      }).then((listener) => {
+        removeAppStateListener = () => {
+          void listener.remove();
+        };
+      });
+    }
 
     return () => {
       isCancelled = true;
       window.removeEventListener("push:subscription-changed", handlePushSubscriptionChanged);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      removeAppStateListener?.();
     };
   }, [isPushPromptReady]);
 
@@ -225,7 +226,11 @@ export function useClientLayoutPushPrompt({
   }, [isPushPromptReady, nativePushIssue, pushPreferences, pushStatus]);
 
   const shouldShowPushPrompt =
-    isPushPromptReady && !isNativePushSupported() && isPushSupported() && pushStatus === "disabled";
+    Boolean(pushConfig?.enabled) &&
+    isPushPromptReady &&
+    !isNativePushSupported() &&
+    isPushSupported() &&
+    pushStatus === "disabled";
   const {
     shouldShowNotificationPrompt,
     isNotificationBellActive,

@@ -54,8 +54,6 @@ export function ClientLayout() {
   const {
     isDeferredBootReady,
     isDeferredShellWorkReady,
-    isIosPushUiReady,
-    isInteractiveDataReady,
     isFirstNativeLaunch,
     firstNativeLaunchStorageKey,
   } = useClientLayoutBoot({
@@ -255,9 +253,6 @@ export function ClientLayout() {
   const pushPrompt = useClientLayoutPushPrompt({
     authToken,
     accountId,
-    isDeferredShellWorkReady,
-    isIosPushUiReady,
-    isInteractiveDataReady,
     copy,
   });
 
@@ -350,7 +345,7 @@ export function ClientLayout() {
           }
           if (pushPrompt.categoryPushIssue) {
             pushPrompt.setIsPushDialogOpen(false);
-            navigate("/settings");
+            navigate("/settings#notifications");
             return;
           }
           void pushPrompt.handleEnablePush();

@@ -28,7 +28,12 @@ export function ChildSectionTopBar({
   containerClassName = "max-w-2xl",
 }: ChildSectionTopBarProps) {
   const { copy } = useI18n();
-  const { showNotificationBell, isNotificationBellActive, onNotificationBellClick } =
+  const {
+    showNotificationBell,
+    isNotificationBellActive,
+    notificationBellVariant,
+    onNotificationBellClick,
+  } =
     usePushPromptControls();
   const accountLogin = useAppStore((s) => s.accountLogin);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
@@ -80,6 +85,7 @@ export function ChildSectionTopBar({
                 notificationLabel={copy.clientLayout.pushPrompt.title}
                 showNotificationBell={showNotificationBell}
                 isNotificationBellActive={isNotificationBellActive}
+                notificationBellVariant={notificationBellVariant}
                 onNotificationBellClick={onNotificationBellClick}
               />
             </div>
