@@ -18,6 +18,8 @@ import {
   illnessPanelSoftClass,
 } from "./shared";
 import {
+  canSubmitMedicationPlanComposer,
+  hasDoseUnitHint,
   MedicationPlanPayload,
   intervalMinutesToInputValue,
   parseIntervalInputToMinutes,
@@ -166,8 +168,7 @@ export function MedicationPlanComposer({
     parsedWeightKg,
     parseNullableNumber(doseMgPerKg)
   );
-  const hasDoseUnitHint = doseAmount.trim().length > 0 && !/[A-Za-zА-Яа-я]/.test(doseAmount);
-  const hasInvalidDose = doseAmount.trim().length > 0 && hasDoseUnitHint;
+  const shouldShowDoseUnitHint = hasDoseUnitHint(doseAmount);
   const parsedIntervalMinutes = parseIntervalInputToMinutes(minIntervalInput, intervalUnit);
   const firstDoseAt =
     !initialValue && firstDoseStatus === "already_given"
@@ -177,6 +178,15 @@ export function MedicationPlanComposer({
     !initialValue &&
     firstDoseStatus === "already_given" &&
     isFutureFirstAdministrationSelection(firstDoseDate, firstDoseTime);
+  const canSubmit = canSubmitMedicationPlanComposer({
+    isPending,
+    planMode,
+    selectedMedicineId,
+    customMedicineName,
+    minIntervalInput,
+    parsedIntervalMinutes,
+    hasFutureFirstDoseSelection,
+  });
   const latestWeightValue = latestWeight?.valueKg ?? null;
   const shouldOfferWeightSync =
     parsedWeightKg !== null &&
@@ -341,11 +351,11 @@ export function MedicationPlanComposer({
                 }
                 className={illnessCompactInputClass}
               />
-              {hasInvalidDose && (
-                <p className="soft-text-danger mt-2 text-xs">
+              {shouldShowDoseUnitHint && (
+                <p className="mt-2 text-xs text-muted">
                   {language === "ru"
-                    ? "Укажи единицу дозы: мл, таб., мг, кап. и т.д."
-                    : "Add a dose unit: ml, tab, mg, drops, etc."}
+                    ? "Лучше добавить единицу дозы: мл, таб., мг, кап. и т.д."
+                    : "Better add a dose unit: ml, tab, mg, drops, etc."}
                 </p>
               )}
             </label>
@@ -566,12 +576,7 @@ export function MedicationPlanComposer({
           <button
             type="button"
             onClick={() => {
-              if (
-                parsedIntervalMinutes === null ||
-                hasInvalidDose ||
-                hasFutureFirstDoseSelection ||
-                (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim())
-              ) {
+              if (!canSubmit || parsedIntervalMinutes === null) {
                 return;
               }
 
@@ -603,14 +608,7 @@ export function MedicationPlanComposer({
               clearCabinetPicker();
               onCancel?.();
             }}
-            disabled={
-              isPending ||
-              (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim()) ||
-              !minIntervalInput ||
-              hasInvalidDose ||
-              hasFutureFirstDoseSelection ||
-              parsedIntervalMinutes === null
-            }
+            disabled={!canSubmit}
             className={`${reminderComposerPrimaryActionClass} w-full`}
           >
             {isPending ? (language === "ru" ? "Сохраняем…" : "Saving…") : submitLabel}

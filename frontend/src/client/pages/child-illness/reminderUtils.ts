@@ -1,4 +1,4 @@
-import type { HouseholdMedicine } from "@shared/types/api";
+import type { HouseholdMedicine } from "../../../shared/types/api.js";
 
 export type MedicationPlanPayload = {
   householdMedicineId: string | null;
@@ -82,6 +82,39 @@ export function parseNullableNumber(value: string) {
 
   const parsed = parseFloat(trimmed);
   return Number.isNaN(parsed) ? null : parsed;
+}
+
+export function hasDoseUnitHint(value: string) {
+  const trimmed = value.trim();
+  return trimmed.length > 0 && !/[A-Za-zА-Яа-я]/.test(trimmed);
+}
+
+export function canSubmitMedicationPlanComposer(params: {
+  isPending: boolean;
+  planMode: "cabinet" | "manual";
+  selectedMedicineId: string;
+  customMedicineName: string;
+  minIntervalInput: string;
+  parsedIntervalMinutes: number | null;
+  hasFutureFirstDoseSelection: boolean;
+}) {
+  if (params.isPending) {
+    return false;
+  }
+
+  if (params.planMode === "cabinet" ? !params.selectedMedicineId : !params.customMedicineName.trim()) {
+    return false;
+  }
+
+  if (!params.minIntervalInput || params.parsedIntervalMinutes === null) {
+    return false;
+  }
+
+  if (params.hasFutureFirstDoseSelection) {
+    return false;
+  }
+
+  return true;
 }
 
 export function reminderModeButtonClass(isActive: boolean, secondaryClass: string) {
