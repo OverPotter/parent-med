@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { PushNotifications, Token, PermissionStatus } from "@capacitor/push-notifications";
+import { getCachedNativeDeviceId, getOrCreateNativeDeviceId } from "@shared/security/nativeDeviceId";
 
 type NativePushPlatform = "ios" | "android";
 export type NativePushPermissionStatus = PermissionStatus["receive"];
@@ -147,7 +148,7 @@ async function requestToken(options?: {
     attachListeners();
     const promptIfNeeded = Boolean(options?.promptIfNeeded);
     const forceRefresh = Boolean(options?.forceRefresh);
-    const allowCachedFallback = forceRefresh ? false : (options?.allowCachedFallback ?? true);
+    const allowCachedFallback = options?.allowCachedFallback ?? !forceRefresh;
     const existing = getCachedNativeToken();
     const permission = await ensurePermission(promptIfNeeded);
     if (permission !== "granted") {
@@ -244,6 +245,7 @@ export async function getNativePushSubscriptionPayload(options?: {
   endpoint: string;
   native_token: string;
   platform: NativePushPlatform;
+  device_id: string;
   user_agent: string;
   device_label: string;
 } | null> {
@@ -252,6 +254,10 @@ export async function getNativePushSubscriptionPayload(options?: {
   }
   const platform = getNativePlatform();
   if (!platform) {
+    return null;
+  }
+  const deviceId = await getOrCreateNativeDeviceId();
+  if (!deviceId) {
     return null;
   }
 
@@ -269,6 +275,7 @@ export async function getNativePushSubscriptionPayload(options?: {
     endpoint: token,
     native_token: token,
     platform,
+    device_id: deviceId,
     user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "native",
     device_label: `App · ${platform === "ios" ? "iOS" : "Android"}`,
   };
@@ -282,6 +289,7 @@ export async function refreshNativePushSubscriptionPayload(options?: {
   endpoint: string;
   native_token: string;
   platform: NativePushPlatform;
+  device_id: string;
   user_agent: string;
   device_label: string;
 } | null> {
@@ -291,6 +299,10 @@ export async function refreshNativePushSubscriptionPayload(options?: {
 
   const platform = getNativePlatform();
   if (!platform) {
+    return null;
+  }
+  const deviceId = await getOrCreateNativeDeviceId();
+  if (!deviceId) {
     return null;
   }
 
@@ -308,6 +320,7 @@ export async function refreshNativePushSubscriptionPayload(options?: {
     endpoint: token,
     native_token: token,
     platform,
+    device_id: deviceId,
     user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "native",
     device_label: `App · ${platform === "ios" ? "iOS" : "Android"}`,
   };
@@ -318,6 +331,7 @@ export function getCachedNativePushSubscriptionPayload(): {
   endpoint: string;
   native_token: string;
   platform: NativePushPlatform;
+  device_id: string;
   user_agent: string;
   device_label: string;
 } | null {
@@ -326,7 +340,8 @@ export function getCachedNativePushSubscriptionPayload(): {
   }
   const platform = getNativePlatform();
   const token = getCachedNativeToken();
-  if (!platform || !token) {
+  const deviceId = getCachedNativeDeviceId();
+  if (!platform || !token || !deviceId) {
     return null;
   }
 
@@ -335,6 +350,7 @@ export function getCachedNativePushSubscriptionPayload(): {
     endpoint: token,
     native_token: token,
     platform,
+    device_id: deviceId,
     user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "native",
     device_label: `App · ${platform === "ios" ? "iOS" : "Android"}`,
   };

@@ -26,6 +26,7 @@ class SqlPushSubscriptionRepository(PushSubscriptionRepository):
             auth_key=model.auth_key,
             native_token=model.native_token,
             platform=model.platform,
+            device_id=model.device_id,
             expiration_time=model.expiration_time,
             user_agent=model.user_agent,
             device_label=model.device_label,
@@ -43,6 +44,7 @@ class SqlPushSubscriptionRepository(PushSubscriptionRepository):
             auth_key=entity.auth_key,
             native_token=entity.native_token,
             platform=entity.platform,
+            device_id=entity.device_id,
             expiration_time=entity.expiration_time,
             user_agent=entity.user_agent,
             device_label=entity.device_label,
@@ -67,6 +69,22 @@ class SqlPushSubscriptionRepository(PushSubscriptionRepository):
     async def get_by_native_token(self, native_token: str) -> PushSubscription | None:
         result = await self._session.execute(
             select(PushSubscriptionModel).where(PushSubscriptionModel.native_token == native_token)
+        )
+        row = result.scalars().one_or_none()
+        return self._to_entity(row) if row else None
+
+    async def get_by_account_platform_device(
+        self,
+        account_id: UUID,
+        platform: str,
+        device_id: str,
+    ) -> PushSubscription | None:
+        result = await self._session.execute(
+            select(PushSubscriptionModel).where(
+                PushSubscriptionModel.account_id == account_id,
+                PushSubscriptionModel.platform == platform,
+                PushSubscriptionModel.device_id == device_id,
+            )
         )
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
@@ -100,6 +118,7 @@ class SqlPushSubscriptionRepository(PushSubscriptionRepository):
         row.auth_key = entity.auth_key
         row.native_token = entity.native_token
         row.platform = entity.platform
+        row.device_id = entity.device_id
         row.expiration_time = entity.expiration_time
         row.user_agent = entity.user_agent
         row.device_label = entity.device_label

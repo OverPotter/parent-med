@@ -20,6 +20,7 @@ class PushSubscription:
     auth_key: str | None
     native_token: str | None
     platform: str | None
+    device_id: str | None
     expiration_time: datetime | None
     user_agent: str | None
     device_label: str | None

@@ -146,6 +146,7 @@ class PushNotificationService:
             endpoint=entity.endpoint,
             native_token=entity.native_token,
             platform=entity.platform,
+            device_id=entity.device_id,
             expiration_time=entity.expiration_time,
             user_agent=entity.user_agent,
             device_label=entity.device_label,
@@ -165,8 +166,20 @@ class PushNotificationService:
                 raise ValidationError("Для native push требуется token устройства")
             if dto.platform not in {"ios", "android"}:
                 raise ValidationError("Для native push требуется platform: ios или android")
-            endpoint = f"native:{dto.platform}:{native_token}"
-            existing = await self._repo.get_by_native_token(native_token)
+            device_id = (dto.device_id or "").strip() or None
+            existing = None
+            token_owner = await self._repo.get_by_native_token(native_token)
+            if device_id:
+                endpoint = f"native:{dto.platform}:{device_id}"
+                existing = await self._repo.get_by_account_platform_device(
+                    account_id,
+                    dto.platform,
+                    device_id,
+                )
+            else:
+                endpoint = f"native:{dto.platform}:{native_token}"
+            if existing is None and token_owner is not None:
+                existing = token_owner
             p256dh_key = None
             auth_key = None
         else:
@@ -177,6 +190,7 @@ class PushNotificationService:
                 raise ValidationError("Для web push требуется endpoint")
             existing = await self._repo.get_by_endpoint(endpoint)
             native_token = None
+            device_id = None
             p256dh_key = dto.keys.p256dh
             auth_key = dto.keys.auth
 
@@ -190,6 +204,7 @@ class PushNotificationService:
             auth_key=auth_key,
             native_token=native_token,
             platform=dto.platform if channel == "native" else None,
+            device_id=device_id,
             expiration_time=dto.expiration_time,
             user_agent=dto.user_agent,
             device_label=dto.device_label,
