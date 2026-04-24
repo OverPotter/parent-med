@@ -4,6 +4,9 @@ from uuid import uuid4
 from src.application.services.push_reminder_scheduler import (
     _can_receive_illness_push,
     _can_receive_pillbox_push,
+    _format_before_body,
+    _format_due_body,
+    _format_overdue_body,
     _get_cabinet_offsets,
     _get_pillbox_target_account_ids,
     _is_push_allowed_for_account,
@@ -144,3 +147,9 @@ def test_cabinet_delivery_log_is_scoped_per_account() -> None:
         "account_id",
     )
     assert HouseholdMedicineNotificationDeliveryModel.__table__.c.account_id.nullable is False
+
+
+def test_illness_push_bodies_keep_child_name_in_body_for_shorter_titles() -> None:
+    assert _format_before_body("Маша", "Ибупрофен", "5 мл", 10, "14:30", "ru") == "5 мл · Маша · в 14:30"
+    assert _format_due_body("Маша", "Ибупрофен", "5 мл", "14:30", "ru") == "5 мл · Маша · в 14:30"
+    assert _format_overdue_body("Маша", "Ибупрофен", "5 мл", "14:30", "ru") == "5 мл · Маша · не отмечено с 14:30"

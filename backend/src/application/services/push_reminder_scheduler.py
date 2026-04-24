@@ -149,9 +149,10 @@ def _format_due_body(
     language: str,
 ) -> str:
     dose_text = dose_amount.strip()
+    summary_label = dose_text or medicine_name
     if language == "en":
-        return f"{dose_text or medicine_name} · {scheduled_time_label}"
-    return f"{dose_text or medicine_name} · в {scheduled_time_label}"
+        return f"{summary_label} · {child_name} · {scheduled_time_label}"
+    return f"{summary_label} · {child_name} · в {scheduled_time_label}"
 
 
 def _format_overdue_body(
@@ -162,9 +163,10 @@ def _format_overdue_body(
     language: str,
 ) -> str:
     dose_text = dose_amount.strip()
+    summary_label = dose_text or medicine_name
     if language == "en":
-        return f"{dose_text or medicine_name} · not marked since {scheduled_time_label}"
-    return f"{dose_text or medicine_name} · не отмечено с {scheduled_time_label}"
+        return f"{summary_label} · {child_name} · not marked since {scheduled_time_label}"
+    return f"{summary_label} · {child_name} · не отмечено с {scheduled_time_label}"
 
 
 def _format_before_body(
@@ -176,9 +178,10 @@ def _format_before_body(
     language: str,
 ) -> str:
     dose_text = dose_amount.strip()
+    summary_label = dose_text or medicine_name
     if language == "en":
-        return f"{dose_text or medicine_name} · at {scheduled_time_label}"
-    return f"{dose_text or medicine_name} · в {scheduled_time_label}"
+        return f"{summary_label} · {child_name} · at {scheduled_time_label}"
+    return f"{summary_label} · {child_name} · в {scheduled_time_label}"
 
 
 def _format_pillbox_due_body(
@@ -534,13 +537,11 @@ class PushNotificationScheduler:
                             payload = {
                                 "title": (
                                     (
-                                        f"In {reminder_before_minutes} min: "
-                                        f"{medicine_name} for {child.name}"
+                                        f"In {reminder_before_minutes} min: {medicine_name}"
                                     )
                                     if language == "en"
                                     else (
-                                        f"Через {reminder_before_minutes} мин: "
-                                        f"{medicine_name} для {child.name}"
+                                        f"Через {reminder_before_minutes} мин: {medicine_name}"
                                     )
                                 ),
                                 "body": _format_before_body(
@@ -574,9 +575,9 @@ class PushNotificationScheduler:
                     ):
                         payload = {
                             "title": (
-                                f"Time to give {medicine_name} to {child.name}"
+                                f"Time to give: {medicine_name}"
                                 if language == "en"
-                                else f"Пора дать {medicine_name} · {child.name}"
+                                else f"Пора дать: {medicine_name}"
                             ),
                             "body": _format_due_body(
                                 child.name,
@@ -608,9 +609,9 @@ class PushNotificationScheduler:
                     ):
                         payload = {
                             "title": (
-                                f"Check dose: {medicine_name} for {child.name}"
+                                f"Check dose: {medicine_name}"
                                 if language == "en"
-                                else f"Проверьте приём: {medicine_name} · {child.name}"
+                                else f"Проверьте приём: {medicine_name}"
                             ),
                             "body": _format_overdue_body(
                                 child.name,
