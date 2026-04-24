@@ -19,7 +19,10 @@ class StubPushSubscriptionRepository:
         return next((item for item in self.items.values() if item.endpoint == endpoint), None)
 
     async def get_by_native_token(self, native_token):  # noqa: ANN001
-        return next((item for item in self.items.values() if item.native_token == native_token), None)
+        return next(
+            (item for item in self.items.values() if item.native_token == native_token),
+            None,
+        )
 
     async def get_by_account_platform_device(self, account_id, platform, device_id):  # noqa: ANN001
         return next(
@@ -61,7 +64,12 @@ class StubAccountRepository:
         return None
 
 
-def build_native_subscription(*, account_id, token: str, device_id: str | None) -> PushSubscription:  # noqa: ANN001
+def build_native_subscription(
+    *,
+    account_id,
+    token: str,
+    device_id: str | None,
+) -> PushSubscription:  # noqa: ANN001
     now = datetime.now(UTC)
     return PushSubscription(
         id=uuid4(),
@@ -82,7 +90,9 @@ def build_native_subscription(*, account_id, token: str, device_id: str | None) 
 
 
 @pytest.mark.asyncio
-async def test_upsert_native_subscription_updates_existing_device_record_when_token_rotates() -> None:
+async def test_upsert_native_subscription_updates_existing_device_record_when_token_rotates() -> (
+    None
+):
     account_id = uuid4()
     repo = StubPushSubscriptionRepository()
     existing = build_native_subscription(
