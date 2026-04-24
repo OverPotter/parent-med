@@ -33,6 +33,7 @@ interface LayoutProps {
   compactHiddenChrome?: boolean;
   showNotificationBell?: boolean;
   isNotificationBellActive?: boolean;
+  notificationBellVariant?: "danger" | "warning";
   onNotificationBellClick?: (() => void) | null;
 }
 
@@ -289,6 +290,7 @@ export function HeaderUtilityActions({
   notificationLabel,
   showNotificationBell = false,
   isNotificationBellActive = false,
+  notificationBellVariant = "danger",
   onNotificationBellClick = null,
 }: {
   accountLabel: string;
@@ -301,6 +303,7 @@ export function HeaderUtilityActions({
   notificationLabel: string;
   showNotificationBell?: boolean;
   isNotificationBellActive?: boolean;
+  notificationBellVariant?: "danger" | "warning";
   onNotificationBellClick?: (() => void) | null;
 }) {
   return (
@@ -312,6 +315,9 @@ export function HeaderUtilityActions({
           className={[
             "app-header-utility-button app-header-icon-button app-header-notification-button inline-flex items-center justify-center p-0",
             isNotificationBellActive ? "app-header-notification-button--active" : "",
+            isNotificationBellActive
+              ? `app-header-notification-button--${notificationBellVariant}`
+              : "",
           ]
             .filter(Boolean)
             .join(" ")}
@@ -355,6 +361,7 @@ export function Layout({
   compactHiddenChrome = false,
   showNotificationBell = false,
   isNotificationBellActive = false,
+  notificationBellVariant = "danger",
   onNotificationBellClick = null,
 }: LayoutProps) {
   const { copy } = useI18n();
@@ -453,6 +460,7 @@ export function Layout({
                           notificationLabel={copy.clientLayout.pushPrompt.title}
                           showNotificationBell={showNotificationBell}
                           isNotificationBellActive={isNotificationBellActive}
+                          notificationBellVariant={notificationBellVariant}
                           onNotificationBellClick={onNotificationBellClick}
                         />
                       ) : (
@@ -516,6 +524,7 @@ export function Layout({
                             notificationLabel={copy.clientLayout.pushPrompt.title}
                             showNotificationBell={showNotificationBell}
                             isNotificationBellActive={isNotificationBellActive}
+                            notificationBellVariant={notificationBellVariant}
                             onNotificationBellClick={onNotificationBellClick}
                           />
                         </div>

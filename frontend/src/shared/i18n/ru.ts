@@ -37,6 +37,10 @@ export const ru: Translations = {
       nativeBlockedTitle: "Уведомления выключены в iOS",
       nativeBlockedDescription:
         "Напоминания не будут приходить, пока уведомления для PillPath выключены в настройках iPhone.",
+      categoriesDisabledTitle: "Часть уведомлений выключена",
+      categoriesDisabledDescription:
+        "Push в целом работают, но одна или несколько категорий отключены в настройках аккаунта.",
+      categoriesDisabledCta: "Настроить уведомления",
       openSettings: "Открыть настройки",
       enable: "Включить уведомления",
       enabling: "Подключаем…",

@@ -37,6 +37,10 @@ export const en: Translations = {
       nativeBlockedTitle: "Notifications are off in iOS",
       nativeBlockedDescription:
         "Reminders will not arrive while notifications for PillPath are disabled in iPhone settings.",
+      categoriesDisabledTitle: "Some notification groups are off",
+      categoriesDisabledDescription:
+        "Push works overall, but one or more reminder categories are disabled in account settings.",
+      categoriesDisabledCta: "Review settings",
       openSettings: "Open Settings",
       enable: "Enable notifications",
       enabling: "Enabling…",
