@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DateField } from "@shared/components/DateField";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { createAdministrationEvent, fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
 import {
   deleteEpisodeMedicationPlan,
@@ -21,9 +23,15 @@ import { useNow } from "@shared/hooks/useNow";
 import { canEditChild, canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { EpisodeMedicationPlan, FamilyMember, IllnessEpisode, WeightEntry } from "@shared/types/api";
-import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
+import { getCurrentDeviceTimestampIso, getLocalIsoDate } from "@shared/utils/date";
 import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
+import {
+  finalizeTimeInput,
+  getCurrentLocalTimeInputValue,
+  normalizeTimeInput,
+  toApiDateTime,
+} from "@client/utils/feedingRecordForm";
 import { getPrioritizedMedicationPlanItems } from "@client/utils/medicationPlans";
 import {
   AdministrationQuickView,
@@ -41,6 +49,12 @@ import {
   TimelineOverviewPanel,
 } from "./EpisodeOverviewPanels";
 import { createReminderWithOptionalFirstAdministration } from "./reminderCreation";
+import { isFutureFirstAdministrationSelection } from "./reminderTiming";
+import {
+  illnessCompactInputClass,
+  illnessCompactPrimaryButtonClass,
+  illnessCompactSecondaryButtonClass,
+} from "./shared";
 import { buildEpisodeTimeline } from "./timeline";
 
 export function EpisodeBlock({
@@ -91,6 +105,9 @@ export function EpisodeBlock({
   const [recipientDraftIds, setRecipientDraftIds] = useState<string[]>(() => episode.memberAccountIds);
   const [commentText, setCommentText] = useState("");
   const [quickComposeSuccessMessage, setQuickComposeSuccessMessage] = useState<string | null>(null);
+  const [pendingDosePlan, setPendingDosePlan] = useState<EpisodeMedicationPlan | null>(null);
+  const [pendingDoseDate, setPendingDoseDate] = useState(getLocalIsoDate());
+  const [pendingDoseTime, setPendingDoseTime] = useState(getCurrentLocalTimeInputValue());
   const composerMode = quickComposeMode ?? initialComposerMode;
   const quickComposeMeta =
     composerMode === "temperature"
@@ -162,12 +179,13 @@ export function EpisodeBlock({
       custom_medicine_name?: string;
       amount: string;
       reason?: string;
+      administered_at?: string | null;
     }) =>
       createAdministrationEvent({
         episode_id: episode.id,
         household_medicine_id: payload.household_medicine_id,
         custom_medicine_name: payload.custom_medicine_name,
-        administered_at: getCurrentDeviceTimestampIso(),
+        administered_at: payload.administered_at ?? getCurrentDeviceTimestampIso(),
         amount: payload.amount,
         reason: payload.reason,
       }),
@@ -176,6 +194,7 @@ export function EpisodeBlock({
       queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
       requestLiveActivityRefresh();
+      setPendingDosePlan(null);
       if (quickComposeMode) setQuickComposeSuccessMessage(quickComposeMeta.success);
     },
   });
@@ -395,10 +414,147 @@ export function EpisodeBlock({
   const selectedReminderItem = reminderPlanId
     ? (reminderItems.find((item) => item.plan.id === reminderPlanId) ?? null)
     : null;
+  const pendingDosePlanName = useMemo(() => {
+    if (!pendingDosePlan) {
+      return null;
+    }
+    return (
+      pendingDosePlan.customMedicineName ??
+      householdMedicines.find((medicine) => medicine.id === pendingDosePlan.householdMedicineId)
+        ?.medicineName ??
+      (language === "ru" ? "Лекарство" : "Medicine")
+    );
+  }, [householdMedicines, language, pendingDosePlan]);
   const updateEpisodeRecipients = (memberIds: string[]) => {
     setRecipientDraftIds(memberIds);
     updateEpisodeRecipientsMutation.mutate(memberIds);
   };
+
+  const openTakeDoseSheet = (plan: EpisodeMedicationPlan) => {
+    setPendingDosePlan(plan);
+    setPendingDoseDate(getLocalIsoDate());
+    setPendingDoseTime(getCurrentLocalTimeInputValue());
+  };
+
+  const closeTakeDoseSheet = () => {
+    if (addAdminMutation.isPending) {
+      return;
+    }
+    setPendingDosePlan(null);
+  };
+
+  const hasFuturePendingDoseSelection = isFutureFirstAdministrationSelection(
+    pendingDoseDate,
+    pendingDoseTime
+  );
+  const pendingDoseAt = toApiDateTime(pendingDoseDate, pendingDoseTime);
+  const renderTakeDoseSheet = () => (
+    <OverlayDialog
+      isOpen={pendingDosePlan !== null}
+      onClose={closeTakeDoseSheet}
+      closeDisabled={addAdminMutation.isPending}
+      placement="bottom"
+      zIndexClassName="z-[890]"
+      backdropAriaLabel={language === "ru" ? "Закрыть время приёма" : "Close dose time"}
+      containerClassName="flex items-end"
+      backdropClassName="bg-[rgba(15,23,42,0.32)]"
+    >
+      <div
+        data-ios-disable-back-swipe="true"
+        className="relative z-[1] w-full rounded-t-[30px] bg-background px-4 pb-[max(1.25rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))] pt-4 shadow-[0_-24px_64px_rgba(15,23,42,0.24)] sm:mx-auto sm:max-w-xl"
+      >
+        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
+        <div className="space-y-1.5">
+          <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
+            {language === "ru" ? "Отметить приём" : "Log dose"}
+          </h2>
+          <p className="text-sm leading-5 text-muted">
+            {language === "ru"
+              ? `По умолчанию ставим текущее время. Если дали раньше, поправьте его перед сохранением.${pendingDosePlanName ? ` ${pendingDosePlanName}.` : ""}`
+              : `The current time is prefilled. If the medicine was given earlier, adjust it before saving.${pendingDosePlanName ? ` ${pendingDosePlanName}.` : ""}`}
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="block space-y-1.5">
+            <span className="soft-field-label">
+              {language === "ru" ? "Когда давали" : "When was it given"}
+            </span>
+            <DateField
+              value={pendingDoseDate}
+              onChange={setPendingDoseDate}
+              language={language}
+              max={getLocalIsoDate()}
+              allowClear={false}
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="soft-field-label">
+              {language === "ru" ? "Во сколько" : "Time"}
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={pendingDoseTime}
+              onChange={(event) => setPendingDoseTime(normalizeTimeInput(event.target.value))}
+              onBlur={() => setPendingDoseTime(finalizeTimeInput(pendingDoseTime))}
+              placeholder="08:30"
+              className={`${illnessCompactInputClass} text-center font-semibold tracking-[-0.03em] tabular-nums`}
+            />
+          </label>
+        </div>
+
+        {hasFuturePendingDoseSelection ? (
+          <p className="soft-note-danger mt-3 rounded-2xl px-3 py-2.5 text-xs leading-5">
+            {language === "ru"
+              ? "Нельзя указать время приёма в будущем. Выберите текущее время или раньше."
+              : "You cannot set the administration time in the future. Choose the current time or earlier."}
+          </p>
+        ) : null}
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={closeTakeDoseSheet}
+            disabled={addAdminMutation.isPending}
+            className={`${illnessCompactSecondaryButtonClass} w-full`}
+          >
+            {language === "ru" ? "Отмена" : "Cancel"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!pendingDosePlan || !pendingDoseAt || hasFuturePendingDoseSelection) {
+                return;
+              }
+              addAdminMutation.mutate({
+                household_medicine_id: pendingDosePlan.householdMedicineId,
+                custom_medicine_name: pendingDosePlan.customMedicineName ?? undefined,
+                administered_at: pendingDoseAt,
+                amount: pendingDosePlan.doseAmount,
+                reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
+              });
+            }}
+            disabled={
+              addAdminMutation.isPending ||
+              !pendingDosePlan ||
+              !pendingDoseAt ||
+              hasFuturePendingDoseSelection
+            }
+            className={`${illnessCompactPrimaryButtonClass} w-full`}
+          >
+            {addAdminMutation.isPending
+              ? language === "ru"
+                ? "Сохраняем…"
+                : "Saving…"
+              : language === "ru"
+                ? "Сохранить приём"
+                : "Save dose"}
+          </button>
+        </div>
+      </div>
+    </OverlayDialog>
+  );
 
   useEffect(() => {
     if (
@@ -543,40 +699,38 @@ export function EpisodeBlock({
 
   if (quickReminderMode) {
     return (
-      <div className="mx-auto w-full max-w-2xl">
-        <ReminderListQuickView
-          language={language}
-          childId={childId}
-          episode={recipientsEpisode}
-          plans={medicationPlans}
-          medicines={householdMedicines}
-          familyMembers={familyMembers}
-          currentAccountId={accountId}
-          canEditEpisode={canEditEpisode}
-          administrations={administrations}
-          onOpen={(planId) =>
-            navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${planId}`)
-          }
-          onTakeDose={(plan) =>
-            addAdminMutation.mutate({
-              household_medicine_id: plan.householdMedicineId,
-              custom_medicine_name: plan.customMedicineName ?? undefined,
-              amount: plan.doseAmount,
-              reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
-            })
-          }
-          isSubmittingAdministration={addAdminMutation.isPending}
-          isUpdatingRecipients={isUpdatingRecipients}
-          onChangeRecipients={updateEpisodeRecipients}
-        />
-      </div>
+      <>
+        {renderTakeDoseSheet()}
+        <div className="mx-auto w-full max-w-2xl">
+          <ReminderListQuickView
+            language={language}
+            childId={childId}
+            episode={recipientsEpisode}
+            plans={medicationPlans}
+            medicines={householdMedicines}
+            familyMembers={familyMembers}
+            currentAccountId={accountId}
+            canEditEpisode={canEditEpisode}
+            administrations={administrations}
+            onOpen={(planId) =>
+              navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${planId}`)
+            }
+            onTakeDose={openTakeDoseSheet}
+            isSubmittingAdministration={addAdminMutation.isPending}
+            isUpdatingRecipients={isUpdatingRecipients}
+            onChangeRecipients={updateEpisodeRecipients}
+          />
+        </div>
+      </>
     );
   }
 
   if (quickReminderDetailMode) {
     return (
-      <div className="mx-auto w-full max-w-2xl">
-        <ReminderDetailQuickView
+      <>
+        {renderTakeDoseSheet()}
+        <div className="mx-auto w-full max-w-2xl">
+          <ReminderDetailQuickView
           language={language}
           childId={childId}
           selectedReminderItem={selectedReminderItem}
@@ -600,14 +754,7 @@ export function EpisodeBlock({
             setIsReminderEditing(nextIsEditing);
             setEditingReminderName(nextIsEditing ? planName : null);
           }}
-          onTakeDose={(plan) =>
-            addAdminMutation.mutate({
-              household_medicine_id: plan.householdMedicineId,
-              custom_medicine_name: plan.customMedicineName ?? undefined,
-              amount: plan.doseAmount,
-              reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
-            })
-          }
+          onTakeDose={openTakeDoseSheet}
           onUpdate={(planId, payload) =>
             updatePlanMutation.mutate({
               id: planId,
@@ -643,8 +790,9 @@ export function EpisodeBlock({
               },
             });
           }}
-        />
-      </div>
+          />
+        </div>
+      </>
     );
   }
 
@@ -700,30 +848,33 @@ export function EpisodeBlock({
   }
 
   return (
-    <EpisodeMainPanel
-      language={language}
-      childName={childName}
-      episode={episode}
-      isCloseConfirmOpen={isCloseConfirmOpen}
-      setIsCloseConfirmOpen={setIsCloseConfirmOpen}
-      onClose={onClose}
-      manualComposerSection={<ManualComposerOverview language={language} childId={childId} />}
-      reminderOverviewSection={
-        <ReminderOverviewPanel
-          language={language}
-          childId={childId}
-          episode={episode}
-          medicationPlans={medicationPlans}
-          reminderLead={reminderLead}
-        />
-      }
-      timelineSection={
-        <TimelineOverviewPanel
-          language={language}
-          childId={childId}
-          timelineCount={timelineItems.length}
-        />
-      }
-    />
+    <>
+      {renderTakeDoseSheet()}
+      <EpisodeMainPanel
+        language={language}
+        childName={childName}
+        episode={episode}
+        isCloseConfirmOpen={isCloseConfirmOpen}
+        setIsCloseConfirmOpen={setIsCloseConfirmOpen}
+        onClose={onClose}
+        manualComposerSection={<ManualComposerOverview language={language} childId={childId} />}
+        reminderOverviewSection={
+          <ReminderOverviewPanel
+            language={language}
+            childId={childId}
+            episode={episode}
+            medicationPlans={medicationPlans}
+            reminderLead={reminderLead}
+          />
+        }
+        timelineSection={
+          <TimelineOverviewPanel
+            language={language}
+            childId={childId}
+            timelineCount={timelineItems.length}
+          />
+        }
+      />
+    </>
   );
 }
