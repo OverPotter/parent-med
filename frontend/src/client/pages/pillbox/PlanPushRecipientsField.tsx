@@ -15,19 +15,48 @@ export function PlanPushRecipientsField({
   language,
   familyMembers,
   selectedMemberIds,
-  onToggleMember,
+  onSubmit,
 }: {
   language: AppLanguage;
   familyMembers: FamilyMemberLike[];
   selectedMemberIds: string[];
-  onToggleMember: (memberId: string) => void;
+  onSubmit: (memberIds: string[]) => void | Promise<void>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [draftMemberIds, setDraftMemberIds] = useState<string[]>(selectedMemberIds);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const openSheet = () => {
+    setDraftMemberIds(selectedMemberIds);
+    setIsOpen(true);
+  };
+
+  const toggleDraftMember = (memberId: string) => {
+    setDraftMemberIds((current) =>
+      current.includes(memberId)
+        ? current.filter((item) => item !== memberId)
+        : [...current, memberId]
+    );
+  };
+
+  const handleSave = async () => {
+    if (isSaving) {
+      return;
+    }
+    try {
+      setIsSaving(true);
+      await onSubmit(draftMemberIds);
+      setIsOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={openSheet}
         className={`${appPillActionClass} shrink-0 px-4`}
       >
         {language === "ru" ? "Уведомления" : "Notifications"}
@@ -51,18 +80,23 @@ export function PlanPushRecipientsField({
             <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
               {tPillbox(language, "membersTitle")}
             </h2>
+            <p className="text-sm leading-5 text-muted">
+              {language === "ru"
+                ? "Можно выбрать сразу несколько получателей и сохранить одним действием."
+                : "Choose several recipients and save them in one action."}
+            </p>
           </div>
 
           <div className="soft-choice-list mt-4">
             {familyMembers.map((member) => {
-              const selected = selectedMemberIds.includes(member.id);
+              const selected = draftMemberIds.includes(member.id);
               const memberLabel = member.displayName || member.login || member.id;
               const memberMeta = member.relationshipLabel || member.login || member.id;
               return (
                 <button
                   key={member.id}
                   type="button"
-                  onClick={() => onToggleMember(member.id)}
+                  onClick={() => toggleDraftMember(member.id)}
                   className={["soft-choice-row", selected ? "soft-choice-row-active" : ""].join(" ")}
                 >
                   <span className="grid min-w-0 gap-0.5 text-left">
@@ -77,6 +111,27 @@ export function PlanPushRecipientsField({
                 </button>
               );
             })}
+          </div>
+
+          <div className="mt-4 flex items-center justify-end gap-2 pb-1">
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              disabled={isSaving}
+              className="inline-flex min-h-[2.6rem] items-center justify-center rounded-full px-4 text-sm font-semibold text-muted transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {language === "ru" ? "Отмена" : "Cancel"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void handleSave();
+              }}
+              disabled={isSaving}
+              className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {language === "ru" ? (isSaving ? "Сохраняем..." : "Сохранить") : isSaving ? "Saving..." : "Save"}
+            </button>
           </div>
         </div>
       </OverlayDialog>

@@ -501,13 +501,20 @@ export function PillboxPage() {
     if (!draft || !canSavePlan) return;
     const payload = toPlanWrite(draft);
     if (draft.id) {
-      updatePlanMutation.mutate({ planId: draft.id, payload });
+      updatePlanMutation.mutate(
+        { planId: draft.id, payload },
+        {
+          onSuccess: () => {
+            goToHub();
+          },
+        }
+      );
       return;
     }
     createPlanMutation.mutate(payload);
   };
 
-  const toggleSelectedPlanRecipient = (memberId: string) => {
+  const toggleSelectedPlanRecipient = (memberIds: string[]) => {
     if (
       !selectedPlanId ||
       !selectedPlan ||
@@ -517,15 +524,11 @@ export function PillboxPage() {
       return;
     }
 
-    const nextMemberAccountIds = selectedPlan.memberAccountIds.includes(memberId)
-      ? selectedPlan.memberAccountIds.filter((item) => item !== memberId)
-      : [...selectedPlan.memberAccountIds, memberId];
-
     updatePlanMutation.mutate({
       planId: selectedPlanId,
       payload: {
         ...toPlanWriteFromPlan(selectedPlan),
-        memberAccountIds: nextMemberAccountIds,
+        memberAccountIds: memberIds,
       },
     });
   };
@@ -814,15 +817,12 @@ export function PillboxPage() {
         onTitleChange={(value) =>
           setDraft((current) => (current ? { ...current, title: value } : current))
         }
-        onToggleMember={(memberId) =>
+        onToggleMember={(memberIds) =>
           setDraft((current) => {
             if (!current) return current;
-            const hasMember = current.members.includes(memberId);
             return {
               ...current,
-              members: hasMember
-                ? current.members.filter((item) => item !== memberId)
-                : [...current.members, memberId],
+              members: memberIds,
             };
           })
         }

@@ -77,7 +77,7 @@ export function PillboxDetailsScreen({
   onSendTestPush: () => void;
   isTestPushPending: boolean;
   testPushStatus: string | null;
-  onToggleRecipient: (memberId: string) => void;
+  onToggleRecipient: (memberIds: string[]) => void | Promise<void>;
   onRequestDelete: () => void;
   onConfirmPlanAction: () => void;
   onClosePlanAction: () => void;
@@ -230,7 +230,7 @@ export function PillboxDetailsScreen({
                   language={language}
                   familyMembers={familyMembers}
                   selectedMemberIds={selectedPlan.memberAccountIds}
-                  onToggleMember={onToggleRecipient}
+                  onSubmit={onToggleRecipient}
                 />
               </div>
               {recipientsSummary ? (

@@ -188,8 +188,8 @@ def _format_pillbox_due_body(
     language: str,
 ) -> str:
     if language == "en":
-        return f"For: {recipient_label} · {scheduled_time_label}"
-    return f"Кому: {recipient_label} · в {scheduled_time_label}"
+        return f"{summary_label} · For: {recipient_label} · {scheduled_time_label}"
+    return f"{summary_label} · Кому: {recipient_label} · в {scheduled_time_label}"
 
 
 def _format_pillbox_before_body(
@@ -200,8 +200,8 @@ def _format_pillbox_before_body(
     language: str,
 ) -> str:
     if language == "en":
-        return f"For: {recipient_label} · at {scheduled_time_label}"
-    return f"Кому: {recipient_label} · в {scheduled_time_label}"
+        return f"{summary_label} · For: {recipient_label} · at {scheduled_time_label}"
+    return f"{summary_label} · Кому: {recipient_label} · в {scheduled_time_label}"
 
 
 def _format_pillbox_overdue_body(
@@ -211,8 +211,8 @@ def _format_pillbox_overdue_body(
     language: str,
 ) -> str:
     if language == "en":
-        return f"For: {recipient_label} · not marked since {scheduled_time_label}"
-    return f"Кому: {recipient_label} · не отмечено с {scheduled_time_label}"
+        return f"{summary_label} · For: {recipient_label} · not marked since {scheduled_time_label}"
+    return f"{summary_label} · Кому: {recipient_label} · не отмечено с {scheduled_time_label}"
 
 
 def _format_pillbox_meal_rule(meal_rule: str, language: str) -> str:
@@ -705,6 +705,20 @@ class PushNotificationScheduler:
             return f"{labels[0]}, {labels[1]} +{len(labels) - 2} more"
         return f"{labels[0]}, {labels[1]} +{len(labels) - 2}"
 
+    def _build_pillbox_slot_title_label(
+        self,
+        items: list[tuple[PillboxPlanModel, PillboxMedicationModel]],
+        language: str,
+    ) -> str:
+        names = [self._resolve_pillbox_medicine_name(medication) for _, medication in items]
+        if not names:
+            return "Medicines" if language == "en" else "Лекарства"
+        if len(names) == 1:
+            return names[0]
+        if language == "en":
+            return f"{names[0]} +{len(names) - 1}"
+        return f"{names[0]} +{len(names) - 1}"
+
     def _get_pillbox_schedule_candidates(
         self,
         plan: PillboxPlanModel,
@@ -856,6 +870,7 @@ class PushNotificationScheduler:
             scheduled_time_label = scheduled_for.astimezone(self._timezone).strftime("%H:%M")
             timestamp = int(scheduled_for.timestamp())
             summary_label = self._build_pillbox_slot_summary_label(items, language)
+            title_label = self._build_pillbox_slot_title_label(items, language)
             recipient_label = _resolve_account_recipient_label(account, language)
             pillbox_before_minutes = account.pillbox_push_before_reminder_minutes
 
@@ -906,9 +921,9 @@ class PushNotificationScheduler:
             if remind_at <= now < scheduled_for and not await slot_delivered("before"):
                 payload = {
                     "title": (
-                        (f"In {pillbox_before_minutes} min: {summary_label}")
+                        (f"In {pillbox_before_minutes} min: {title_label}")
                         if language == "en"
-                        else (f"Через {pillbox_before_minutes} мин: {summary_label}")
+                        else (f"Через {pillbox_before_minutes} мин: {title_label}")
                     ),
                     "body": _format_pillbox_before_body(
                         summary_label,
@@ -932,9 +947,9 @@ class PushNotificationScheduler:
             if scheduled_for <= now < overdue_at and not await slot_delivered("due"):
                 payload = {
                     "title": (
-                        f"Time to take {summary_label}"
+                        f"Time to take {title_label}"
                         if language == "en"
-                        else f"Пора принять {summary_label}"
+                        else f"Пора принять {title_label}"
                     ),
                     "body": _format_pillbox_due_body(
                         summary_label,
@@ -957,9 +972,9 @@ class PushNotificationScheduler:
             if now >= overdue_at and not await slot_delivered("overdue"):
                 payload = {
                     "title": (
-                        f"Check dose: {summary_label}"
+                        f"Check dose: {title_label}"
                         if language == "en"
-                        else f"Проверьте приём: {summary_label}"
+                        else f"Проверьте приём: {title_label}"
                     ),
                     "body": _format_pillbox_overdue_body(
                         summary_label,

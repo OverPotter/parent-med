@@ -74,7 +74,7 @@ export function PillboxSetupScreen({
   onOpenMedication: (medicationId: string) => void;
   onRequestDeleteMedication: (medicationId: string, medicationName: string) => void;
   onTitleChange: (value: string) => void;
-  onToggleMember: (memberId: string) => void;
+  onToggleMember: (memberIds: string[]) => void | Promise<void>;
   onSavePlan: () => void;
   recipientsSummary: string | null;
   showTestPushAction: boolean;
@@ -223,7 +223,7 @@ export function PillboxSetupScreen({
                     language={language}
                     familyMembers={familyMembers}
                     selectedMemberIds={draft.members}
-                    onToggleMember={onToggleMember}
+                    onSubmit={onToggleMember}
                   />
                 </div>
                 {recipientsSummary ? (

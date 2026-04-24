@@ -270,7 +270,8 @@ async def test_send_pillbox_test_notification_uses_pillbox_style_payload() -> No
     assert result.subscription_count == 1
     assert len(scheduler.calls) == 1
     payload = scheduler.calls[0]["payload"]
-    assert payload["title"].startswith("Через 10 мин:")
+    assert payload["title"] == "Через 10 мин: Ибупрофен"
+    assert payload["body"].startswith("1 таблетка · после еды · Кому: Tester · в ")
     assert payload["url"].startswith("/pillbox?plan=test-pillbox-plan")
     assert payload["data"]["kind"] == "before"
     assert payload["data"]["source"] == "pillbox_test"
