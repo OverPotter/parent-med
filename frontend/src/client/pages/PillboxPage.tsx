@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { fetchPillboxPlan, fetchPillboxPlans } from "@shared/api/pillboxPlans";
 import { fetchMyFamilyMembers } from "@shared/api/families";
-import { sendPillboxTestPushNotification } from "@shared/api/pushNotifications";
 import { getEligiblePillboxRecipients } from "@shared/familyAccess/recipients";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -55,7 +54,6 @@ export function PillboxPage() {
   const canActInPillbox = canActPillbox(accountFamilyRole, accountAccessPolicy);
   const canMutatePillbox = canEditPillbox(accountFamilyRole, accountAccessPolicy);
   const disablePillboxEditingActions = !canMutatePillbox;
-  const isDevTestPushVisible = import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
   const [draft, setDraft] = useState<SetupDraft | null>(null);
   const [editorTitle, setEditorTitle] = useState("");
   const [editorDose, setEditorDose] = useState("");
@@ -425,10 +423,6 @@ export function PillboxPage() {
     setPlanActionTarget,
     goToHub,
   });
-  const sendPillboxTestPushMutation = useMutation({
-    mutationFn: sendPillboxTestPushNotification,
-  });
-
   useEffect(() => {
     if (
       !selectedPlanId ||
@@ -812,25 +806,6 @@ export function PillboxPage() {
         onOpenMedication={goToMedication}
         familyMembers={eligiblePillboxMembers}
         recipientsSummary={selectedPlanRecipientsSummary}
-        showTestPushAction={isDevTestPushVisible}
-        testPushLabel={
-          language === "ru"
-            ? sendPillboxTestPushMutation.isPending
-              ? "Отправляем..."
-              : "Тестовый push плана"
-            : sendPillboxTestPushMutation.isPending
-              ? "Sending..."
-              : "Plan test push"
-        }
-        onSendTestPush={() => sendPillboxTestPushMutation.mutate()}
-        isTestPushPending={sendPillboxTestPushMutation.isPending}
-        testPushStatus={
-          sendPillboxTestPushMutation.data
-            ? language === "ru"
-              ? `Подписок: ${sendPillboxTestPushMutation.data.subscriptionCount}`
-              : `Subscriptions: ${sendPillboxTestPushMutation.data.subscriptionCount}`
-            : null
-        }
         onToggleRecipient={toggleSelectedPlanRecipient}
         onRequestDelete={requestDeletePlan}
         onConfirmPlanAction={confirmPlanAction}
@@ -876,25 +851,6 @@ export function PillboxPage() {
         }
         onSavePlan={saveGroup}
         recipientsSummary={pillboxRecipientsSummary}
-        showTestPushAction={isDevTestPushVisible}
-        testPushLabel={
-          language === "ru"
-            ? sendPillboxTestPushMutation.isPending
-              ? "Отправляем..."
-              : "Тестовый push плана"
-            : sendPillboxTestPushMutation.isPending
-              ? "Sending..."
-              : "Plan test push"
-        }
-        onSendTestPush={() => sendPillboxTestPushMutation.mutate()}
-        isTestPushPending={sendPillboxTestPushMutation.isPending}
-        testPushStatus={
-          sendPillboxTestPushMutation.data
-            ? language === "ru"
-              ? `Подписок: ${sendPillboxTestPushMutation.data.subscriptionCount}`
-              : `Subscriptions: ${sendPillboxTestPushMutation.data.subscriptionCount}`
-            : null
-        }
         deleteTarget={deleteTarget}
         onConfirmDelete={confirmDelete}
         onCloseDeleteDialog={() => setDeleteTarget(null)}
