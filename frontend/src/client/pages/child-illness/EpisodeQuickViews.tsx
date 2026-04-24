@@ -701,20 +701,16 @@ export function ReminderListQuickView(props: {
 export function ReminderDetailQuickView(props: {
   language: "ru" | "en";
   childId: string;
-  episode: IllnessEpisode;
   selectedReminderItem: MedicationPlanPriorityItem | null;
   latestWeight: WeightEntry | null;
   isReminderCabinetPickerOpen: boolean;
   isReminderEditing: boolean;
   editingReminderName: string | null;
   medicines: HouseholdMedicine[];
-  familyMembers: FamilyMember[];
-  currentAccountId: string | null;
   canEditEpisode: boolean;
   isSubmittingAdministration: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
-  isUpdatingRecipients: boolean;
   errorDetail: string | null;
   onEditingChange: (nextIsEditing: boolean, planName: string | null) => void;
   onTakeDose: (plan: EpisodeMedicationPlan) => void;
@@ -732,31 +728,25 @@ export function ReminderDetailQuickView(props: {
     }
   ) => void;
   onDelete: (planId: string) => void;
-  onChangeRecipients: (memberIds: string[]) => void;
 }) {
   const {
     language,
     childId,
-    episode,
     selectedReminderItem,
     latestWeight,
     isReminderCabinetPickerOpen,
     isReminderEditing,
     editingReminderName,
     medicines,
-    familyMembers,
-    currentAccountId,
     canEditEpisode,
     isSubmittingAdministration,
     isUpdating,
     isDeleting,
-    isUpdatingRecipients,
     errorDetail,
     onEditingChange,
     onTakeDose,
     onUpdate,
     onDelete,
-    onChangeRecipients,
   } = props;
 
   if (!selectedReminderItem) {
@@ -818,16 +808,6 @@ export function ReminderDetailQuickView(props: {
               >
                 {language === "ru" ? "К списку" : "Back"}
               </Link>
-              {canEditEpisode ? (
-                <EpisodeReminderRecipientsCard
-                  language={language}
-                  episode={episode}
-                  familyMembers={familyMembers}
-                  currentAccountId={currentAccountId}
-                  isPending={isUpdatingRecipients}
-                  onChangeSelection={onChangeRecipients}
-                />
-              ) : null}
             </div>
           }
         />

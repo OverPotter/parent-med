@@ -581,20 +581,16 @@ export function EpisodeBlock({
         <ReminderDetailQuickView
           language={language}
           childId={childId}
-          episode={recipientsEpisode}
           selectedReminderItem={selectedReminderItem}
           latestWeight={latestWeight}
           isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
           isReminderEditing={isReminderEditing}
           editingReminderName={editingReminderName}
           medicines={householdMedicines}
-          familyMembers={familyMembers}
-          currentAccountId={accountId}
           canEditEpisode={canEditEpisode}
           isSubmittingAdministration={addAdminMutation.isPending}
           isUpdating={updatePlanMutation.isPending}
           isDeleting={deletePlanMutation.isPending}
-          isUpdatingRecipients={isUpdatingRecipients}
           errorDetail={
             (
               (updatePlanMutation.error ?? deletePlanMutation.error) as {
@@ -649,7 +645,6 @@ export function EpisodeBlock({
               },
             });
           }}
-          onChangeRecipients={updateEpisodeRecipients}
         />
       </div>
     );
