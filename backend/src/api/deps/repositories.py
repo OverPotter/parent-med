@@ -21,6 +21,9 @@ from src.domain.repositories.illness_comment_repository import IllnessCommentRep
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 from src.domain.repositories.medicine_catalog_repository import MedicineCatalogRepository
 from src.domain.repositories.parent_repository import ParentRepository
+from src.domain.repositories.password_recovery_token_repository import (
+    PasswordRecoveryTokenRepository,
+)
 from src.domain.repositories.pillbox_repository import PillboxRepository
 from src.domain.repositories.push_subscription_repository import PushSubscriptionRepository
 from src.domain.repositories.sleep_session_repository import SleepSessionRepository
@@ -63,6 +66,9 @@ from src.infrastructure.database.repositories.medicine_catalog_repository import
     SqlMedicineCatalogRepository,
 )
 from src.infrastructure.database.repositories.parent_repository import SqlParentRepository
+from src.infrastructure.database.repositories.password_recovery_token_repository import (
+    SqlPasswordRecoveryTokenRepository,
+)
 from src.infrastructure.database.repositories.pillbox_repository import SqlPillboxRepository
 from src.infrastructure.database.repositories.push_subscription_repository import (
     SqlPushSubscriptionRepository,
@@ -128,6 +134,12 @@ def get_episode_medication_plan_repo(
 
 def get_parent_repo(session: AsyncSession = Depends(get_db_session)) -> ParentRepository:
     return SqlParentRepository(session)
+
+
+def get_password_recovery_token_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> PasswordRecoveryTokenRepository:
+    return SqlPasswordRecoveryTokenRepository(session)
 
 
 def get_pillbox_repo(session: AsyncSession = Depends(get_db_session)) -> PillboxRepository:

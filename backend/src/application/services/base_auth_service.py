@@ -10,6 +10,9 @@ from src.application.dto.auth import (
     AuthStateResponseDto,
     ChangePasswordDto,
     LoginDto,
+    RecoverPasswordResetDto,
+    RecoverPasswordVerifyDto,
+    RecoverPasswordVerifyResponseDto,
     RefreshDto,
     RegisterDto,
     UpdateAccountProfileDto,
@@ -115,6 +118,16 @@ class BaseAuthService(ABC):
     @abstractmethod
     async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
         """Сменить пароль текущего аккаунта."""
+
+    @abstractmethod
+    async def verify_recovery(
+        self, dto: RecoverPasswordVerifyDto
+    ) -> RecoverPasswordVerifyResponseDto:
+        """Проверить recovery-данные и выдать временный токен."""
+
+    @abstractmethod
+    async def reset_password_by_recovery(self, dto: RecoverPasswordResetDto) -> None:
+        """Сбросить пароль по временному recovery token."""
 
     @abstractmethod
     async def update_language(self, account_id: UUID, dto: UpdateLanguageDto) -> AccountResponseDto:

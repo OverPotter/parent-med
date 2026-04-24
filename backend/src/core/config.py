@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     access_token_ttl_minutes: int = 30
     refresh_token_ttl_days: int = 7
     refresh_token_ttl_days_remember_me: int = 60
+    password_recovery_token_ttl_minutes: int = 15
     cors_allowed_origins: CorsAllowedOrigins = list(_DEFAULT_CORS_ORIGINS)
     access_cookie_name: str = "pillpath_access_token"
     refresh_cookie_name: str = "pillpath_refresh_token"

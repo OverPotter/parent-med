@@ -10,6 +10,9 @@ from src.application.dto.auth import (
     AuthStateResponseDto,
     ChangePasswordDto,
     LoginDto,
+    RecoverPasswordResetDto,
+    RecoverPasswordVerifyDto,
+    RecoverPasswordVerifyResponseDto,
     RefreshDto,
     RegisterDto,
     UpdateAccountProfileDto,
@@ -23,6 +26,7 @@ from src.core.security import (
     create_refresh_token,
     decode_access_token,
     decode_refresh_token,
+    generate_session_token,
     hash_password,
     hash_session_token,
     verify_password,
@@ -33,9 +37,16 @@ from src.domain.entities.family import Family
 from src.domain.entities.family_access import build_default_family_access_policy
 from src.domain.entities.family_invite import FamilyInvite
 from src.domain.entities.family_roles import is_family_admin, normalize_family_role
+from src.domain.entities.password_recovery_token import (
+    PasswordRecoveryToken,
+    copy_password_recovery_token,
+)
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.parent_repository import ParentRepository
+from src.domain.repositories.password_recovery_token_repository import (
+    PasswordRecoveryTokenRepository,
+)
 
 _DEFAULT_FAMILY_NAME = "Моя семья"
 
@@ -52,6 +63,7 @@ class AuthService(BaseAuthService):
         child_repo: ChildRepository | None = None,
         household_repo: HouseholdMedicineRepository | None = None,
         parent_repo: ParentRepository | None = None,
+        recovery_token_repo: PasswordRecoveryTokenRepository | None = None,
     ) -> None:
         super().__init__(
             account_repo=account_repo,
@@ -62,6 +74,10 @@ class AuthService(BaseAuthService):
         self._child_repo = child_repo
         self._household_repo = household_repo
         self._parent_repo = parent_repo
+        self._recovery_token_repo = recovery_token_repo
+
+    def _normalize_recovery_display_name(self, value: str) -> str:
+        return " ".join(value.strip().split()).casefold()
 
     async def _create_auth_response(
         self,
@@ -155,7 +171,7 @@ class AuthService(BaseAuthService):
             email=email,
             password_hash=hash_password(dto.password),
             family_id=created_family.id,
-            display_name=(dto.display_name or "").strip() or login,
+            display_name=dto.display_name,
             relationship_label=(dto.relationship_label or "").strip() or None,
             phone=(dto.phone or "").strip() or None,
             preferred_language="ru",
@@ -325,6 +341,65 @@ class AuthService(BaseAuthService):
         await self._account_repo.update(
             copy_account(account, password_hash=hash_password(dto.new_password))
         )
+
+    async def verify_recovery(
+        self, dto: RecoverPasswordVerifyDto
+    ) -> RecoverPasswordVerifyResponseDto:
+        if self._recovery_token_repo is None:
+            raise ValidationError("Recovery flow is not configured", code="RECOVERY_NOT_CONFIGURED")
+        account = await self._account_repo.get_by_login(dto.login.strip())
+        if (
+            account is None
+            or account.family_role == "deleted"
+            or not account.email
+            or account.email.strip().lower() != dto.email
+            or self._normalize_recovery_display_name(account.display_name)
+            != self._normalize_recovery_display_name(dto.display_name)
+        ):
+            raise UnauthorizedError(
+                "Не удалось подтвердить данные для восстановления",
+                code="RECOVERY_IDENTITY_MISMATCH",
+            )
+
+        raw_token = generate_session_token()
+        now = datetime.now(UTC)
+        expires_at = now + timedelta(minutes=settings.password_recovery_token_ttl_minutes)
+        await self._recovery_token_repo.delete_by_account_id(account.id)
+        await self._recovery_token_repo.add(
+            PasswordRecoveryToken(
+                id=uuid4(),
+                account_id=account.id,
+                token_hash=hash_session_token(raw_token),
+                expires_at=expires_at,
+                created_at=now,
+            )
+        )
+        return RecoverPasswordVerifyResponseDto(recovery_token=raw_token)
+
+    async def reset_password_by_recovery(self, dto: RecoverPasswordResetDto) -> None:
+        if self._recovery_token_repo is None:
+            raise ValidationError("Recovery flow is not configured", code="RECOVERY_NOT_CONFIGURED")
+        token_hash = hash_session_token(dto.recovery_token)
+        token = await self._recovery_token_repo.get_by_token_hash(token_hash)
+        now = datetime.now(UTC)
+        if token is None or token.used_at is not None or token.expires_at <= now:
+            raise UnauthorizedError(
+                "Ссылка для восстановления недействительна или устарела",
+                code="RECOVERY_TOKEN_INVALID",
+            )
+        account = await self._account_repo.get_by_id(token.account_id)
+        if account is None or account.family_role == "deleted":
+            raise UnauthorizedError()
+        if verify_password(dto.new_password, account.password_hash):
+            raise ValidationError(
+                "Новый пароль должен отличаться от текущего",
+                code="PASSWORD_REUSE_NOT_ALLOWED",
+            )
+        await self._account_repo.update(
+            copy_account(account, password_hash=hash_password(dto.new_password))
+        )
+        await self._recovery_token_repo.update(copy_password_recovery_token(token, used_at=now))
+        await self._session_repo.delete_by_account_id(account.id)
 
     async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:
         account = await self._account_repo.get_by_id(account_id)

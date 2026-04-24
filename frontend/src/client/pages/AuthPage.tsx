@@ -138,6 +138,8 @@ function getLocalizedAuthError(
     "Неверный логин или пароль": "Invalid login or password.",
     "Аккаунт с таким логином уже существует": "An account with this login already exists.",
     "Аккаунт с таким email уже существует": "An account with this email already exists.",
+    "Укажите корректный email": "Enter a valid email.",
+    "Укажите имя в семье": "Enter your family display name.",
   };
 
   return knownMessages[detail] ?? fallback;
@@ -289,9 +291,9 @@ export function AuthPage() {
   const registerMutation = useMutation({
     mutationFn: (payload: {
       login: string;
-      email?: string;
+      email: string;
       password: string;
-      display_name?: string;
+      display_name: string;
       relationship_label?: string;
       phone?: string;
       remember_me: boolean;
@@ -317,11 +319,16 @@ export function AuthPage() {
     e.preventDefault();
     const trimmedLogin = loginValue.trim();
     const trimmedEmail = email.trim();
+    const trimmedDisplayName = displayName.trim();
     if (!trimmedLogin || password.length < 6) {
       return;
     }
     if (mode === "register" && password !== passwordConfirm) {
       setError(copy.auth.errors.passwordsMismatch);
+      return;
+    }
+    if (mode === "register" && (!trimmedEmail || !trimmedDisplayName)) {
+      setError(copy.auth.errors.registerFailed);
       return;
     }
     if (mode === "register" && !acceptLegal) {
@@ -336,9 +343,9 @@ export function AuthPage() {
     setError(null);
     registerMutation.mutate({
       login: trimmedLogin,
-      email: trimmedEmail || undefined,
+      email: trimmedEmail,
       password,
-      display_name: displayName.trim() || undefined,
+      display_name: trimmedDisplayName,
       relationship_label: relationshipLabel.trim() || undefined,
       phone: phone.trim() || undefined,
       remember_me: rememberMe,
@@ -604,6 +611,31 @@ export function AuthPage() {
                     icon={<MailIcon />}
                     hint={isRegisterMode ? copy.auth.fields.loginHint : undefined}
                   />
+                  {isRegisterMode ? (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <AuthField
+                        label={copy.auth.fields.email}
+                        value={email}
+                        onChange={setEmail}
+                        placeholder={copy.auth.fields.emailPlaceholder}
+                        type="email"
+                        name="email"
+                        autoComplete="email"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        inputMode="email"
+                      />
+                      <AuthField
+                        label={copy.auth.fields.displayName}
+                        value={displayName}
+                        onChange={setDisplayName}
+                        placeholder={copy.auth.fields.displayNamePlaceholder}
+                        name="display-name"
+                        autoComplete="name"
+                      />
+                    </div>
+                  ) : null}
 
                   <div className={joinClasses("grid gap-4", isRegisterMode && "sm:grid-cols-2")}>
                     <AuthField
@@ -681,9 +713,9 @@ export function AuthPage() {
                       </span>
                       <span>{copy.auth.page.rememberMe}</span>
                     </label>
-                    <button type="button" className="auth-v3-linkish">
+                    <Link to="/recover-password" className="auth-v3-linkish">
                       {copy.auth.page.forgotPassword}
-                    </button>
+                    </Link>
                   </div>
                   {isRegisterMode ? (
                     <label className="auth-v3-checkbox">
@@ -718,27 +750,6 @@ export function AuthPage() {
                   <summary className="auth-v3-summary">{copy.auth.page.extraProfileFields}</summary>
                   <p className="auth-v3-section-copy mt-2">{copy.auth.page.extraProfileCopy}</p>
                   <div className="mt-4 space-y-4">
-                    <AuthField
-                      label={copy.auth.fields.email}
-                      value={email}
-                      onChange={setEmail}
-                      placeholder={copy.auth.fields.emailPlaceholder}
-                      type="email"
-                      name="email"
-                      autoComplete="email"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      inputMode="email"
-                    />
-                    <AuthField
-                      label={copy.auth.fields.displayName}
-                      value={displayName}
-                      onChange={setDisplayName}
-                      placeholder={copy.auth.fields.displayNamePlaceholder}
-                      name="display-name"
-                      autoComplete="name"
-                    />
                     <div className="grid gap-4 sm:grid-cols-2">
                       <AuthField
                         label={copy.auth.fields.relationship}
@@ -779,7 +790,11 @@ export function AuthPage() {
                   !loginValue.trim() ||
                   password.length < 6 ||
                   (isRegisterMode &&
-                    (!passwordConfirm || password !== passwordConfirm || !acceptLegal))
+                    (!email.trim() ||
+                      !displayName.trim() ||
+                      !passwordConfirm ||
+                      password !== passwordConfirm ||
+                      !acceptLegal))
                 }
                 className="auth-v3-submit"
               >

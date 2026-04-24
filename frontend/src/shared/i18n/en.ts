@@ -356,7 +356,7 @@ export const en: Translations = {
       forgotPassword: "Forgot password?",
       extraProfileFields: "Additional profile fields",
       extraProfileCopy:
-        "These fields are optional at the start, but they help label family members correctly.",
+        "Use this section for family role and phone. Email and family display name are already required for registration and recovery.",
       invitationNote:
         "If you were already invited into a family, open the invite link from the message. It will lead you into the right flow automatically.",
       passwordsMismatch: "Passwords must match.",
@@ -376,7 +376,7 @@ export const en: Translations = {
       passwordPlaceholder: "At least 6 characters",
       passwordConfirm: "Repeat password",
       passwordConfirmPlaceholder: "Repeat password",
-      email: "Email",
+      email: "Recovery email",
       emailPlaceholder: "you@example.com",
       displayName: "Family name",
       displayNamePlaceholder: "Example: Anna",

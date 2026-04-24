@@ -87,9 +87,9 @@ export function JoinFamilyPage() {
   const registerMutation = useMutation({
     mutationFn: (payload: {
       login: string;
-      email?: string;
+      email: string;
       password: string;
-      display_name?: string;
+      display_name: string;
       relationship_label?: string;
       phone?: string;
       remember_me: boolean;
@@ -135,6 +135,7 @@ export function JoinFamilyPage() {
     event.preventDefault();
     const trimmedLogin = loginValue.trim();
     const trimmedEmail = email.trim();
+    const trimmedDisplayName = displayName.trim();
     if (!token || !trimmedLogin || password.length < 6) {
       return;
     }
@@ -147,12 +148,16 @@ export function JoinFamilyPage() {
       setError("Пароли не совпадают.");
       return;
     }
+    if (!trimmedEmail || !trimmedDisplayName) {
+      setError("Для регистрации нужны email и имя в семье.");
+      return;
+    }
     setError(null);
     registerMutation.mutate({
       login: trimmedLogin,
-      email: trimmedEmail || undefined,
+      email: trimmedEmail,
       password,
-      display_name: displayName.trim() || undefined,
+      display_name: trimmedDisplayName,
       relationship_label: relationshipLabel.trim() || undefined,
       phone: phone.trim() || undefined,
       remember_me: rememberMe,
@@ -261,13 +266,15 @@ export function JoinFamilyPage() {
                 <div>
                   <p className="app-card-title">Обязательные поля</p>
                   <p className="soft-field-hint mt-1">
-                    Для входа и быстрой регистрации нужен только логин для входа и пароль.
+                    Для регистрации нужны логин, пароль, recovery email и имя в семье.
                   </p>
                 </div>
               </div>
 
               <div className="mt-4 grid gap-3">
-                <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
+                <div
+                  className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}
+                >
                   <label className="block">
                     <span className="soft-field-label">Логин</span>
                     <input
@@ -283,9 +290,42 @@ export function JoinFamilyPage() {
                       Логин нужен только для входа. Имя в семье задаётся отдельно.
                     </span>
                   </label>
+                  {isRegisterMode ? (
+                    <label className="block">
+                      <span className="soft-field-label">Recovery email</span>
+                      <input
+                        name="email"
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        className="soft-input w-full px-4"
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                      />
+                      <span className="soft-field-hint">
+                        Email нужен для будущего восстановления доступа.
+                      </span>
+                    </label>
+                  ) : null}
                 </div>
 
-                <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
+                <div
+                  className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}
+                >
+                  {isRegisterMode ? (
+                    <label className="block">
+                      <span className="soft-field-label">Имя в семье</span>
+                      <input
+                        name="display-name"
+                        type="text"
+                        value={displayName}
+                        onChange={(event) => setDisplayName(event.target.value)}
+                        className="soft-input w-full px-4"
+                        placeholder="Например: Дима"
+                        autoComplete="name"
+                      />
+                    </label>
+                  ) : null}
                   <AuthPasswordField
                     label="Пароль"
                     value={password}
@@ -320,39 +360,8 @@ export function JoinFamilyPage() {
                   Дополнительные поля
                 </summary>
                 <p className="soft-field-hint mt-2">
-                  Здесь можно указать, как вас будут видеть в семье.
+                  Здесь можно указать дополнительные подписи и контакты.
                 </p>
-                <label className="mt-4 block">
-                  <span className="soft-field-label">Email</span>
-                  <input
-                    name="email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    className="soft-input w-full px-4"
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                  />
-                  <span className="soft-field-hint">
-                    Для beta необязательно. Можно добавить позже в настройках.
-                  </span>
-                </label>
-                <label className="mt-4 block">
-                  <span className="soft-field-label">Имя в семье</span>
-                  <input
-                    name="display-name"
-                    type="text"
-                    value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                    className="soft-input w-full px-4"
-                    placeholder="Например: Дима"
-                    autoComplete="name"
-                  />
-                  <span className="soft-field-hint">
-                    Так имя будет показано в семье и в истории действий. Если пусто, используем
-                    логин.
-                  </span>
-                </label>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <label className="block">
                     <span className="soft-field-label">Кто вы в семье</span>
@@ -395,7 +404,11 @@ export function JoinFamilyPage() {
                 isPending ||
                 !loginValue.trim() ||
                 password.length < 6 ||
-                (isRegisterMode && (!passwordConfirm || password !== passwordConfirm))
+                (isRegisterMode &&
+                  (!email.trim() ||
+                    !displayName.trim() ||
+                    !passwordConfirm ||
+                    password !== passwordConfirm))
               }
               className={`${appBtnPrimaryClass} w-full disabled:opacity-50`}
             >

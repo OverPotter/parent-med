@@ -353,7 +353,7 @@ export const ru: Translations = {
       forgotPassword: "Забыли пароль?",
       extraProfileFields: "Дополнительные поля профиля",
       extraProfileCopy:
-        "Эти данные необязательны на старте, но помогут корректно подписывать участников семьи.",
+        "Здесь можно добавить роль в семье и телефон. Email и имя в семье уже обязательны для регистрации и восстановления доступа.",
       invitationNote:
         "Если вас уже пригласили в семью, откройте ссылку приглашения из сообщения. Она сама приведёт в нужный сценарий.",
       passwordsMismatch: "Пароли должны совпадать.",
@@ -373,7 +373,7 @@ export const ru: Translations = {
       passwordPlaceholder: "Минимум 6 символов",
       passwordConfirm: "Повторите пароль",
       passwordConfirmPlaceholder: "Повторите пароль",
-      email: "Email",
+      email: "Recovery email",
       emailPlaceholder: "you@example.com",
       displayName: "Имя в семье",
       displayNamePlaceholder: "Например: Аня",

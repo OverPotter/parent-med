@@ -12,6 +12,9 @@ from src.application.dto.auth import (
     AuthStateResponseDto,
     ChangePasswordDto,
     LoginDto,
+    RecoverPasswordResetDto,
+    RecoverPasswordVerifyDto,
+    RecoverPasswordVerifyResponseDto,
     RefreshDto,
     RegisterDto,
     UpdateAccountProfileDto,
@@ -120,6 +123,25 @@ async def change_password(
 ) -> None:
     logger.info(f"Смена пароля | account_id={current_account.id}")
     await service.change_password(current_account.id, dto)
+
+
+@router.post("/recover-password/verify", response_model=RecoverPasswordVerifyResponseDto)
+async def verify_recovery(
+    dto: RecoverPasswordVerifyDto,
+    service: BaseAuthService = Depends(get_auth_service),
+) -> RecoverPasswordVerifyResponseDto:
+    logger.info("Проверка восстановления | login={}", dto.login)
+    return await service.verify_recovery(dto)
+
+
+@router.post("/recover-password/reset", status_code=204)
+async def reset_password_by_recovery(
+    response: Response,
+    dto: RecoverPasswordResetDto,
+    service: BaseAuthService = Depends(get_auth_service),
+) -> None:
+    await service.reset_password_by_recovery(dto)
+    clear_auth_cookies(response)
 
 
 @router.patch("/language", response_model=AccountResponseDto)

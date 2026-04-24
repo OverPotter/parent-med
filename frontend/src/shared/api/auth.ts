@@ -76,9 +76,9 @@ function toAuthState(raw: {
 
 export async function register(payload: {
   login: string;
-  email?: string;
+  email: string;
   password: string;
-  display_name?: string;
+  display_name: string;
   relationship_label?: string;
   phone?: string;
   remember_me?: boolean;
@@ -145,6 +145,25 @@ export async function changePassword(payload: {
   new_password: string;
 }): Promise<void> {
   await apiClient.patch("/auth/password", payload);
+}
+
+export async function verifyPasswordRecovery(payload: {
+  login: string;
+  email: string;
+  display_name: string;
+}): Promise<{ recoveryToken: string }> {
+  const res = await apiClient.post<{ recovery_token: string }>(
+    "/auth/recover-password/verify",
+    payload
+  );
+  return { recoveryToken: res.data.recovery_token };
+}
+
+export async function resetPasswordByRecovery(payload: {
+  recovery_token: string;
+  new_password: string;
+}): Promise<void> {
+  await apiClient.post("/auth/recover-password/reset", payload);
 }
 
 export async function updateAccountLanguage(preferredLanguage: "ru" | "en") {
