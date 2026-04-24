@@ -85,7 +85,17 @@ export function MedicationPlanList({
         return (
           <article
             key={plan.id}
-            className="border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-4 py-4 last:border-b-0"
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpen(plan.id)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") {
+                return;
+              }
+              event.preventDefault();
+              onOpen(plan.id);
+            }}
+            className="cursor-pointer border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-4 py-4 transition hover:bg-[color:color-mix(in_srgb,var(--color-surface)_78%,var(--color-background)_22%)] focus:outline-none focus-visible:bg-[color:color-mix(in_srgb,var(--color-surface)_78%,var(--color-background)_22%)] last:border-b-0"
           >
             <div className="flex flex-col gap-3">
               <div className="min-w-0">
@@ -123,7 +133,10 @@ export function MedicationPlanList({
                 {onTakeDose && (
                   <button
                     type="button"
-                    onClick={() => onTakeDose(plan)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onTakeDose(plan);
+                    }}
                     disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
                     className={`transition ${
                       isUnavailable || stats?.isBlocked
@@ -144,13 +157,9 @@ export function MedicationPlanList({
                           : "Log"}
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => onOpen(plan.id)}
-                  className={illnessCompactSecondaryButtonClass}
-                >
-                  {language === "ru" ? "Открыть" : "Open"}
-                </button>
+                <div className={illnessCompactSecondaryButtonClass} aria-hidden="true">
+                  {language === "ru" ? "Открыть детали" : "Open details"}
+                </div>
               </div>
             </div>
           </article>
