@@ -30,7 +30,7 @@ export function PlanPushRecipientsField({
         onClick={() => setIsOpen(true)}
         className={`${appPillActionClass} shrink-0 px-4`}
       >
-        {language === "ru" ? "Push" : "Push"}
+        {language === "ru" ? "Уведомления" : "Notifications"}
       </button>
 
       <OverlayDialog

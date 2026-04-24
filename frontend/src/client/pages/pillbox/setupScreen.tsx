@@ -1,5 +1,6 @@
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { appPillActionClass } from "../child-illness/shared";
 import { PlanPushRecipientsField } from "./PlanPushRecipientsField";
 import {
   actionPrimaryClass,
@@ -50,6 +51,12 @@ export function PillboxSetupScreen({
   onTitleChange,
   onToggleMember,
   onSavePlan,
+  recipientsSummary,
+  showTestPushAction,
+  testPushLabel,
+  onSendTestPush,
+  isTestPushPending,
+  testPushStatus,
   deleteTarget,
   onConfirmDelete,
   onCloseDeleteDialog,
@@ -69,6 +76,12 @@ export function PillboxSetupScreen({
   onTitleChange: (value: string) => void;
   onToggleMember: (memberId: string) => void;
   onSavePlan: () => void;
+  recipientsSummary: string | null;
+  showTestPushAction: boolean;
+  testPushLabel: string;
+  onSendTestPush: () => void;
+  isTestPushPending: boolean;
+  testPushStatus: string | null;
   deleteTarget: PillboxDeleteTarget | null;
   onConfirmDelete: () => void;
   onCloseDeleteDialog: () => void;
@@ -211,6 +224,24 @@ export function PillboxSetupScreen({
                 onToggleMember={onToggleMember}
               />
             </div>
+            {recipientsSummary ? (
+              <p className="text-sm leading-6 text-muted">{recipientsSummary}</p>
+            ) : null}
+            {showTestPushAction ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onSendTestPush}
+                  disabled={isTestPushPending}
+                  className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  {testPushLabel}
+                </button>
+                {testPushStatus ? (
+                  <p className="text-sm leading-6 text-muted">{testPushStatus}</p>
+                ) : null}
+              </div>
+            ) : null}
             {!canSavePlan && saveBlockedReason && saveAttempted ? (
               <p className="text-[0.78rem] leading-5 text-[color:var(--color-danger)]">
                 {saveBlockedReason}

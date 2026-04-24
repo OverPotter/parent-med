@@ -1,6 +1,6 @@
 """Сервис управления push-подписками устройства (web/native)."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from src.application.dto.push_notification import (
@@ -39,6 +39,10 @@ class PushNotificationService:
             enabled=settings.web_push_enabled or settings.apns_enabled,
             vapid_public_key=settings.web_push_public_key,
         )
+
+    @staticmethod
+    def _normalize_language(value: str | None) -> str:
+        return "en" if value == "en" else "ru"
 
     async def get_preferences(self, account_id: UUID) -> PushNotificationPreferencesResponseDto:
         account = await self._account_repo.get_by_id(account_id)
@@ -257,6 +261,65 @@ class PushNotificationService:
                 "kind": "test",
                 "source": "settings",
             },
+        }
+        sent = await scheduler._send_to_subscriptions(  # noqa: SLF001
+            subscriptions=subscriptions,
+            subscription_repo=self._repo,
+            payload=payload,
+        )
+        return PushNotificationTestResponseDto(
+            sent=sent,
+            subscription_count=len(subscriptions),
+        )
+
+    async def send_pillbox_test_notification(
+        self,
+        account_id: UUID,
+        scheduler,
+    ) -> PushNotificationTestResponseDto:
+        subscriptions = await self._repo.get_by_account_id(account_id)
+        if not subscriptions:
+            return PushNotificationTestResponseDto(sent=False, subscription_count=0)
+
+        account = await self._account_repo.get_by_id(account_id)
+        language = self._normalize_language(account.preferred_language if account else None)
+        recipient_label = "you" if language == "en" else "вас"
+        if account:
+            recipient_label = (
+                (getattr(account, "display_name", None) or "").strip()
+                or f"@{account.login}".strip()
+                or recipient_label
+            )
+        scheduled_for = datetime.now(UTC) + timedelta(minutes=10)
+        scheduled_time_label = scheduled_for.strftime("%H:%M")
+        plan_id = "test-pillbox-plan"
+        medication_id = "test-pillbox-medication"
+        if language == "en":
+            title = "In 10 min: Ibuprofen · 1 pill · after meal for " + recipient_label
+            body = f"For: {recipient_label} · at {scheduled_time_label}"
+        else:
+            title = "Через 10 мин: Ибупрофен · 1 таблетка · после еды для " + recipient_label
+            body = f"Кому: {recipient_label} · в {scheduled_time_label}"
+
+        payload = {
+            "title": title,
+            "body": body,
+            "url": f"/pillbox?plan={plan_id}&highlightPlan={plan_id}&action=take",
+            "tag": f"pillbox-test-{account_id}",
+            "data": {
+                "planId": plan_id,
+                "medicationId": medication_id,
+                "scheduledFor": scheduled_for.isoformat(),
+                "slotCount": 1,
+                "kind": "before",
+                "source": "pillbox_test",
+            },
+            "actions": [
+                {
+                    "action": "open-pillbox",
+                    "title": "Open" if language == "en" else "Открыть",
+                }
+            ],
         }
         sent = await scheduler._send_to_subscriptions(  # noqa: SLF001
             subscriptions=subscriptions,

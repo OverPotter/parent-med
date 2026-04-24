@@ -33,6 +33,7 @@ export function PillboxDetailsScreen({
   onBack,
   onToggleStatus,
   onGoToSetup,
+  onOpenMedication,
   onRequestDelete,
   onConfirmPlanAction,
   onClosePlanAction,
@@ -53,6 +54,7 @@ export function PillboxDetailsScreen({
   onBack: () => void;
   onToggleStatus: () => void;
   onGoToSetup: () => void;
+  onOpenMedication: (medicationId: string) => void;
   onRequestDelete: () => void;
   onConfirmPlanAction: () => void;
   onClosePlanAction: () => void;
@@ -216,36 +218,73 @@ export function PillboxDetailsScreen({
                       {formatTimesPerDayLabel(normalizedTimes.length, language)}
                     </span>
                   </span>
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${
-                          isNextMedication
-                            ? "bg-[color:var(--color-success)]"
-                            : "bg-[color:color-mix(in_srgb,var(--color-primary)_70%,white)]"
-                        }`}
-                        aria-hidden="true"
-                      />
-                      <p className="truncate text-sm font-semibold leading-5 text-foreground">
-                        {displayPillboxText(
-                          medication.customMedicineName ||
-                            tPillbox(language, "unnamedMedicine", { index: index + 1 })
+                  {canEdit && !disableEditingActions ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenMedication(medication.id)}
+                      className="min-w-0 text-left transition hover:opacity-85"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${
+                            isNextMedication
+                              ? "bg-[color:var(--color-success)]"
+                              : "bg-[color:color-mix(in_srgb,var(--color-primary)_70%,white)]"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <p className="truncate text-sm font-semibold leading-5 text-foreground">
+                          {displayPillboxText(
+                            medication.customMedicineName ||
+                              tPillbox(language, "unnamedMedicine", { index: index + 1 })
+                          )}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 text-xs leading-5 text-muted">
+                        {formatMealRule(medication.mealRule, language)}
+                        {" · "}
+                        {formatPillboxDoseAmount(
+                          medication.doseAmount || tPillbox(language, "amountMissing"),
+                          language
                         )}
+                        {" · "}
+                        {medication.courseMode === "period"
+                          ? `${medication.courseStartDate ?? "—"} — ${medication.courseEndDate ?? "—"}`
+                          : tPillbox(language, "continuous")}
+                      </p>
+                    </button>
+                  ) : (
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${
+                            isNextMedication
+                              ? "bg-[color:var(--color-success)]"
+                              : "bg-[color:color-mix(in_srgb,var(--color-primary)_70%,white)]"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <p className="truncate text-sm font-semibold leading-5 text-foreground">
+                          {displayPillboxText(
+                            medication.customMedicineName ||
+                              tPillbox(language, "unnamedMedicine", { index: index + 1 })
+                          )}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 text-xs leading-5 text-muted">
+                        {formatMealRule(medication.mealRule, language)}
+                        {" · "}
+                        {formatPillboxDoseAmount(
+                          medication.doseAmount || tPillbox(language, "amountMissing"),
+                          language
+                        )}
+                        {" · "}
+                        {medication.courseMode === "period"
+                          ? `${medication.courseStartDate ?? "—"} — ${medication.courseEndDate ?? "—"}`
+                          : tPillbox(language, "continuous")}
                       </p>
                     </div>
-                    <p className="mt-0.5 text-xs leading-5 text-muted">
-                      {formatMealRule(medication.mealRule, language)}
-                      {" · "}
-                      {formatPillboxDoseAmount(
-                        medication.doseAmount || tPillbox(language, "amountMissing"),
-                        language
-                      )}
-                      {" · "}
-                      {medication.courseMode === "period"
-                        ? `${medication.courseStartDate ?? "—"} — ${medication.courseEndDate ?? "—"}`
-                        : tPillbox(language, "continuous")}
-                    </p>
-                  </div>
+                  )}
                 </div>
               );
             })}
