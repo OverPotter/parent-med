@@ -9,6 +9,7 @@ import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { canActPillbox, canEditPillbox, canViewPillbox } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
 import { PillboxAnalyticsScreen } from "./pillbox/analytics";
 import { PillboxMedicationScreen } from "./pillbox/medicationScreen";
 import {
@@ -256,6 +257,29 @@ export function PillboxPage() {
   }, [accountId, draft?.id, isCreating, isEditorScreen, screen, selectedPlan, selectedPlanId]);
 
   useEffect(() => {
+    if (
+      !draft ||
+      !accountId ||
+      !shouldAutoAssignCurrentRecipient(
+        draft.members,
+        accountId,
+        eligiblePillboxMembers.map((member) => member.id)
+      )
+    ) {
+      return;
+    }
+
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            members: [accountId],
+          }
+        : current
+    );
+  }, [accountId, draft, eligiblePillboxMembers]);
+
+  useEffect(() => {
     if (screen !== "medication" || !activeMedicationId) {
       resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
       setEditorCoursePreset("custom");
@@ -404,6 +428,30 @@ export function PillboxPage() {
   const sendPillboxTestPushMutation = useMutation({
     mutationFn: sendPillboxTestPushNotification,
   });
+
+  useEffect(() => {
+    if (
+      !selectedPlanId ||
+      !selectedPlan ||
+      updatePlanMutation.isPending ||
+      !accountId ||
+      !shouldAutoAssignCurrentRecipient(
+        selectedPlan.memberAccountIds,
+        accountId,
+        eligiblePillboxMembers.map((member) => member.id)
+      )
+    ) {
+      return;
+    }
+
+    updatePlanMutation.mutate({
+      planId: selectedPlanId,
+      payload: {
+        ...toPlanWriteFromPlan(selectedPlan),
+        memberAccountIds: [accountId],
+      },
+    });
+  }, [accountId, eligiblePillboxMembers, selectedPlan, selectedPlanId, updatePlanMutation]);
 
   const goToSetup = () => {
     const targetPlanId = draft?.id ?? selectedPlanId;

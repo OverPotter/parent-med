@@ -287,11 +287,14 @@ class PillboxService:
         )
 
     async def _require_member_ids_in_family(
-        self, member_ids: list[UUID], current_family_id: UUID
+        self, member_ids: list[UUID], current_family_id: UUID, current_account_id: UUID
     ) -> list[UUID]:
         family_accounts = await self._account_repo.list_by_family_id(current_family_id)
         family_account_ids = {account.id for account in family_accounts}
-        invalid = [member_id for member_id in member_ids if member_id not in family_account_ids]
+        normalized_member_ids = list(member_ids)
+        invalid = [
+            member_id for member_id in normalized_member_ids if member_id not in family_account_ids
+        ]
         if invalid:
             raise ValidationError("В плане есть участники не из текущей семьи")
         eligible_account_ids = {
@@ -299,12 +302,16 @@ class PillboxService:
             for account in family_accounts
             if getattr(getattr(account, "access_policy", None), "pillbox_access", "none") != "none"
         }
+        if not normalized_member_ids:
+            if current_account_id in eligible_account_ids:
+                return [current_account_id]
+            raise ValidationError("В плане должен быть хотя бы один получатель")
         ineligible = [
-            member_id for member_id in member_ids if member_id not in eligible_account_ids
+            member_id for member_id in normalized_member_ids if member_id not in eligible_account_ids
         ]
         if ineligible:
             raise ValidationError("Нельзя выбрать получателей без доступа к приёмам")
-        return member_ids
+        return normalized_member_ids
 
     async def _validate_household_medicine(
         self, household_medicine_id: UUID, current_family_id: UUID
@@ -377,7 +384,11 @@ class PillboxService:
         current_family_id: UUID,
     ) -> PillboxPlan:
         normalized_title = title.strip() or "Новый план"
-        await self._require_member_ids_in_family(member_account_ids, current_family_id)
+        normalized_member_account_ids = await self._require_member_ids_in_family(
+            member_account_ids,
+            current_family_id,
+            current_account_id,
+        )
         if not medications:
             raise ValidationError("В плане должно быть хотя бы одно лекарство")
 
@@ -398,7 +409,7 @@ class PillboxService:
             family_id=current_family_id,
             title=normalized_title,
             status=status,
-            member_account_ids=member_account_ids,
+            member_account_ids=normalized_member_account_ids,
             created_by_account_id=(
                 existing.created_by_account_id if existing else current_account_id
             ),

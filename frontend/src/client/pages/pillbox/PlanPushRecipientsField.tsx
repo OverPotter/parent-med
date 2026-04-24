@@ -32,6 +32,9 @@ export function PlanPushRecipientsField({
   };
 
   const toggleDraftMember = (memberId: string) => {
+    if (draftMemberIds.length === 1 && draftMemberIds.includes(memberId)) {
+      return;
+    }
     setDraftMemberIds((current) =>
       current.includes(memberId)
         ? current.filter((item) => item !== memberId)
@@ -82,7 +85,7 @@ export function PlanPushRecipientsField({
             </h2>
             <p className="text-sm leading-5 text-muted">
               {language === "ru"
-                ? "Можно выбрать сразу несколько получателей и сохранить одним действием."
+                ? "Можно выбрать сразу несколько получателей, но хотя бы один должен остаться."
                 : "Choose several recipients and save them in one action."}
             </p>
           </div>
@@ -127,7 +130,7 @@ export function PlanPushRecipientsField({
               onClick={() => {
                 void handleSave();
               }}
-              disabled={isSaving}
+              disabled={isSaving || draftMemberIds.length === 0}
               className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
             >
               {language === "ru" ? (isSaving ? "Сохраняем..." : "Сохранить") : isSaving ? "Saving..." : "Save"}
