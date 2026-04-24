@@ -204,7 +204,7 @@ export function AdministrationForm({
 
         <label className="block space-y-1.5">
           <span className="soft-field-label">
-            {language === "ru" ? "Доза, если нужно" : "Dose, if needed"}
+            {language === "ru" ? "Сколько дали, если нужно" : "Dose given, if needed"}
           </span>
           <input
             type="text"
