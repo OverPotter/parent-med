@@ -44,6 +44,8 @@ interface RawAccount {
   email: string | null;
   family_id: string;
   display_name: string;
+  needs_profile_completion?: boolean | null;
+  has_recovery_code?: boolean | null;
   relationship_label: string | null;
   phone: string | null;
   preferred_language: "ru" | "en";
@@ -276,6 +278,8 @@ export function toAccount(r: RawAccount): Account {
     email: r.email,
     familyId: r.family_id,
     displayName: r.display_name,
+    needsProfileCompletion: Boolean(r.needs_profile_completion),
+    hasRecoveryCode: Boolean(r.has_recovery_code),
     relationshipLabel: r.relationship_label ?? null,
     phone: r.phone ?? null,
     preferredLanguage: r.preferred_language ?? "ru",

@@ -9,39 +9,36 @@ const PROFILE_DIALOG_HISTORY_KEY = "__pm_family_profile_dialog__";
 interface ProfileEditDialogProps {
   language: AppLanguage;
   isOpen: boolean;
-  isCurrent: boolean;
   displayName: string;
   relationshipLabel: string;
   phone: string;
-  email: string;
-  emailError: string | null;
   isPending: boolean;
   onClose: () => void;
   onDisplayNameChange: (value: string) => void;
   onRelationshipLabelChange: (value: string) => void;
   onPhoneChange: (value: string) => void;
-  onEmailChange: (value: string) => void;
   onSubmit: () => Promise<void>;
 }
 
 export function ProfileEditDialog({
   language,
   isOpen,
-  isCurrent,
   displayName,
   relationshipLabel,
   phone,
-  email,
-  emailError,
   isPending,
   onClose,
   onDisplayNameChange,
   onRelationshipLabelChange,
   onPhoneChange,
-  onEmailChange,
   onSubmit,
 }: ProfileEditDialogProps) {
   const isClosingFromHistoryRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") {
@@ -56,7 +53,7 @@ export function ProfileEditDialog({
 
     const handlePopState = () => {
       isClosingFromHistoryRef.current = true;
-      onClose();
+      onCloseRef.current();
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -73,7 +70,7 @@ export function ProfileEditDialog({
       }
       isClosingFromHistoryRef.current = false;
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const handleClose = () => {
     if (
@@ -133,25 +130,6 @@ export function ProfileEditDialog({
                 placeholder="+375 ..."
               />
             </label>
-
-            <label className="block">
-              <span className="soft-field-label">{tFamily(language, "email")}</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => onEmailChange(event.target.value)}
-                disabled={!isCurrent}
-                className="soft-input w-full px-4 disabled:opacity-80"
-                placeholder={tFamily(language, "emailPlaceholder")}
-                autoComplete="email"
-              />
-            </label>
-
-            {emailError ? (
-              <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm sm:col-span-2">
-                {emailError}
-              </div>
-            ) : null}
           </div>
         </div>
 

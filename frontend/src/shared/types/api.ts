@@ -30,6 +30,8 @@ export interface Account {
   email: string | null;
   familyId: string;
   displayName: string;
+  needsProfileCompletion: boolean;
+  hasRecoveryCode: boolean;
   relationshipLabel: string | null;
   phone: string | null;
   preferredLanguage: "ru" | "en";

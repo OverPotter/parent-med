@@ -13,19 +13,29 @@ const destructiveActionClass =
 
 export function SettingsSecuritySection({
   language,
+  hasRecoveryCode,
   isPasswordDialogOpen,
+  isRecoveryCodeDialogOpen,
   onOpenPasswordDialog,
+  onOpenRecoveryCodeDialog,
   onClosePasswordDialog,
+  onCloseRecoveryCodeDialog,
   currentPassword,
   newPassword,
   confirmPassword,
+  recoveryCode,
   onCurrentPasswordChange,
   onNewPasswordChange,
   onConfirmPasswordChange,
+  onRecoveryCodeChange,
   onSubmitPasswordChange,
+  onSubmitRecoveryCode,
   isPasswordPending,
+  isRecoveryCodePending,
   passwordSuccess,
   passwordError,
+  recoveryCodeSuccess,
+  recoveryCodeError,
   accountFamilyRole,
   deleteAccountError,
   deleteFamilyError,
@@ -33,19 +43,29 @@ export function SettingsSecuritySection({
   onDeleteFamily,
 }: {
   language: AppLanguage;
+  hasRecoveryCode: boolean;
   isPasswordDialogOpen: boolean;
+  isRecoveryCodeDialogOpen: boolean;
   onOpenPasswordDialog: () => void;
+  onOpenRecoveryCodeDialog: () => void;
   onClosePasswordDialog: () => void;
+  onCloseRecoveryCodeDialog: () => void;
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+  recoveryCode: string;
   onCurrentPasswordChange: (value: string) => void;
   onNewPasswordChange: (value: string) => void;
   onConfirmPasswordChange: (value: string) => void;
+  onRecoveryCodeChange: (value: string) => void;
   onSubmitPasswordChange: () => void;
+  onSubmitRecoveryCode: () => void;
   isPasswordPending: boolean;
+  isRecoveryCodePending: boolean;
   passwordSuccess: string | null;
   passwordError: string | null;
+  recoveryCodeSuccess: string | null;
+  recoveryCodeError: string | null;
   accountFamilyRole: string | null;
   deleteAccountError: string | null;
   deleteFamilyError: string | null;
@@ -65,6 +85,35 @@ export function SettingsSecuritySection({
           >
             {tSettings(language, "changePassword")}
           </button>
+        }
+      >
+        {null}
+      </SettingsSection>
+
+      <SettingsSection
+        title={tSettings(language, "recoveryCode")}
+        hint={
+          hasRecoveryCode
+            ? tSettings(language, "recoveryCodeLockedHint")
+            : tSettings(language, "recoveryCodeHint")
+        }
+        badge={
+          hasRecoveryCode ? (
+            <span
+              className="soft-pill-success inline-flex h-[2.08rem] w-[2.08rem] items-center justify-center rounded-full px-0 text-[0.82rem] sm:h-[2.16rem] sm:w-[2.16rem]"
+              aria-label={tSettings(language, "recoveryCodeConfigured")}
+            >
+              <span aria-hidden="true">✓</span>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenRecoveryCodeDialog}
+              className={compactPrimaryActionClass}
+            >
+              {tSettings(language, "recoveryCode")}
+            </button>
+          )
         }
       >
         {null}
@@ -129,9 +178,22 @@ export function SettingsSecuritySection({
         passwordSuccess={passwordSuccess}
         passwordError={passwordError}
       />
+      <RecoveryCodeDialog
+        language={language}
+        isOpen={isRecoveryCodeDialogOpen}
+        onClose={onCloseRecoveryCodeDialog}
+        recoveryCode={recoveryCode}
+        onRecoveryCodeChange={onRecoveryCodeChange}
+        onSubmit={onSubmitRecoveryCode}
+        isPending={isRecoveryCodePending}
+        successMessage={recoveryCodeSuccess}
+        errorMessage={recoveryCodeError}
+      />
     </>
   );
 }
+
+const RECOVERY_CODE_DIALOG_HISTORY_KEY = "__pm_settings_recovery_code_dialog__";
 
 function PasswordChangeDialog({
   language,
@@ -163,6 +225,11 @@ function PasswordChangeDialog({
   passwordError: string | null;
 }) {
   const isClosingFromHistoryRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") {
@@ -177,7 +244,7 @@ function PasswordChangeDialog({
 
     const handlePopState = () => {
       isClosingFromHistoryRef.current = true;
-      onClose();
+      onCloseRef.current();
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -194,7 +261,7 @@ function PasswordChangeDialog({
       }
       isClosingFromHistoryRef.current = false;
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const handleClose = () => {
     if (
@@ -282,5 +349,126 @@ function PasswordField({
         className={illnessCompactInputClass}
       />
     </label>
+  );
+}
+
+function RecoveryCodeDialog({
+  language,
+  isOpen,
+  onClose,
+  recoveryCode,
+  onRecoveryCodeChange,
+  onSubmit,
+  isPending,
+  successMessage,
+  errorMessage,
+}: {
+  language: AppLanguage;
+  isOpen: boolean;
+  onClose: () => void;
+  recoveryCode: string;
+  onRecoveryCodeChange: (value: string) => void;
+  onSubmit: () => void;
+  isPending: boolean;
+  successMessage: string | null;
+  errorMessage: string | null;
+}) {
+  const isClosingFromHistoryRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen || typeof window === "undefined") {
+      return;
+    }
+
+    const currentState =
+      window.history.state && typeof window.history.state === "object" ? window.history.state : {};
+    const dialogState = { ...currentState, [RECOVERY_CODE_DIALOG_HISTORY_KEY]: true };
+
+    window.history.pushState(dialogState, "", window.location.href);
+
+    const handlePopState = () => {
+      isClosingFromHistoryRef.current = true;
+      onCloseRef.current();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      if (
+        !isClosingFromHistoryRef.current &&
+        window.history.state &&
+        typeof window.history.state === "object" &&
+        window.history.state[RECOVERY_CODE_DIALOG_HISTORY_KEY]
+      ) {
+        window.history.back();
+      }
+      isClosingFromHistoryRef.current = false;
+    };
+  }, [isOpen]);
+
+  const handleClose = () => {
+    if (
+      typeof window !== "undefined" &&
+      window.history.state &&
+      typeof window.history.state === "object" &&
+      window.history.state[RECOVERY_CODE_DIALOG_HISTORY_KEY]
+    ) {
+      window.history.back();
+      return;
+    }
+
+    onClose();
+  };
+
+  return (
+    <FullscreenOverlay
+      isOpen={isOpen}
+      onClose={handleClose}
+      backLabel={language === "ru" ? "← Настройки" : "← Settings"}
+      title={tSettings(language, "recoveryCode")}
+      hint={tSettings(language, "recoveryCodeHint")}
+      maxWidthClassName="max-w-[32rem]"
+      closeDisabled={isPending}
+    >
+      <div className="soft-panel overflow-hidden rounded-[28px] border border-border shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
+        <div className="p-4 sm:p-5">
+          <label className="block space-y-1.5">
+            <span className="soft-field-label">{tSettings(language, "recoveryCodeLabel")}</span>
+            <input
+              type="text"
+              value={recoveryCode}
+              onChange={(event) => onRecoveryCodeChange(event.target.value)}
+              className={illnessCompactInputClass}
+              placeholder={tSettings(language, "recoveryCodePlaceholder")}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+          </label>
+          {successMessage ? <p className="soft-text-success mt-4 text-sm">{successMessage}</p> : null}
+          {errorMessage ? (
+            <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
+              {errorMessage}
+            </div>
+          ) : null}
+        </div>
+        <div className="border-t border-border/60 p-4 sm:px-5 sm:pb-5 sm:pt-4">
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={isPending}
+            className={`${compactPrimaryActionClass} w-full justify-center disabled:opacity-50`}
+          >
+            {isPending ? tSettings(language, "saving") : tSettings(language, "recoveryCode")}
+          </button>
+        </div>
+      </div>
+    </FullscreenOverlay>
   );
 }

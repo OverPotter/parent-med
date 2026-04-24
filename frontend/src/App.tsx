@@ -35,6 +35,7 @@ import {
   RouteScrollReset,
   WarmRouteChunks,
 } from "@/app/mobile/runtime";
+import { DisplayNameOnboardingOverlay } from "@client/components/DisplayNameOnboardingOverlay";
 import { AuthPage } from "@client/pages/AuthPage";
 import { appLog } from "@shared/utils/appLog";
 import { shouldClearSessionForAuthError } from "@shared/api/authSessionErrors";
@@ -339,6 +340,7 @@ export default function App() {
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <AuthSync />
+      <DisplayNameOnboardingOverlay />
       {role !== "admin" ? <NativePushNavigationSync /> : null}
       <ClientRuntimeMount enabled={shouldMountClientRuntime} />
       <Suspense fallback={<RouteFallback />}>

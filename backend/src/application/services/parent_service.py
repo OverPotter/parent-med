@@ -5,6 +5,7 @@ from uuid import UUID
 from src.application.dto.parent import ParentCreateDto, ParentResponseDto, ParentUpdateDto
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.account import Account
+from src.domain.entities.account_identity import resolve_display_name
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.family_repository import FamilyRepository
 
@@ -24,7 +25,7 @@ class ParentService:
         return ParentResponseDto(
             id=entity.id,
             family_id=entity.family_id,
-            name=entity.display_name,
+            name=resolve_display_name(entity.display_name),
             role=entity.family_role,
         )
 

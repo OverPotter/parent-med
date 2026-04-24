@@ -18,7 +18,6 @@ from src.api.deps.repositories import (
     get_illness_episode_repo,
     get_medicine_catalog_repo,
     get_parent_repo,
-    get_password_recovery_token_repo,
     get_pillbox_repo,
     get_push_subscription_repo,
     get_sleep_session_repo,
@@ -63,7 +62,6 @@ def get_auth_service(
     child_repo=Depends(get_child_repo),
     household_repo=Depends(get_household_medicine_repo),
     parent_repo=Depends(get_parent_repo),
-    recovery_token_repo=Depends(get_password_recovery_token_repo),
 ) -> BaseAuthService:
     return AuthService(
         account_repo=account_repo,
@@ -73,7 +71,6 @@ def get_auth_service(
         child_repo=child_repo,
         household_repo=household_repo,
         parent_repo=parent_repo,
-        recovery_token_repo=recovery_token_repo,
     )
 
 

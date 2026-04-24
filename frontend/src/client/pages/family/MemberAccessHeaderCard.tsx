@@ -35,7 +35,7 @@ export function MemberAccessHeaderCard({
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <p className="app-card-title text-base">
-                {member.displayName || member.login || tFamily(language, "noName")}
+                {member.displayName || tFamily(language, "noName")}
               </p>
               {member.relationshipLabel ? (
                 <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
@@ -50,9 +50,6 @@ export function MemberAccessHeaderCard({
                 {roleLabel(member.familyRole, language)}
               </span>
             </div>
-            <p className="text-sm text-muted">
-              <span className="font-semibold text-foreground/90">Login: </span>@{member.login}
-            </p>
             <p className="text-sm text-muted">
               <span className="font-semibold text-foreground/90">Email: </span>
               {member.email || tFamily(language, "emailMissing")}

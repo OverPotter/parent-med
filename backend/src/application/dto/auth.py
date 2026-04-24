@@ -19,10 +19,6 @@ def _normalize_email(value: str) -> str:
     return value.strip().lower()
 
 
-def _normalize_display_name(value: str) -> str:
-    return " ".join(value.strip().split())
-
-
 def _validate_email(value: str) -> str:
     normalized = _normalize_email(value)
     if not _EMAIL_RE.match(normalized):
@@ -30,33 +26,32 @@ def _validate_email(value: str) -> str:
     return normalized
 
 
+def _normalize_recovery_code(value: str) -> str:
+    normalized = " ".join(value.strip().split())
+    if len(normalized) < 8:
+        raise ValueError("Recovery code must be at least 8 characters long")
+    return normalized
+
+
 class RegisterDto(BaseModel):
     """Регистрация аккаунта с созданием семьи."""
 
-    login: str = Field(..., min_length=3, description="Логин аккаунта")
     email: str = Field(..., min_length=5, description="Email аккаунта для связи и восстановления")
     password: str = Field(..., min_length=6, description="Пароль")
-    display_name: str = Field(..., min_length=1, description="Как показывать пользователя в семье")
-    relationship_label: str | None = Field(None, description="Кем пользователь является в семье")
-    phone: str | None = Field(None, description="Контактный телефон")
     remember_me: bool = Field(False, description="Оставаться в системе на этом устройстве")
     invite_token: str | None = Field(None, description="Токен приглашения в существующую семью")
+    preferred_language: AccountLanguage = Field(
+        "en",
+        description="Предпочитаемый язык аккаунта",
+    )
 
     _normalized_email = field_validator("email")(_validate_email)
 
-    @field_validator("display_name")
-    @classmethod
-    def normalize_display_name(cls, value: str) -> str:
-        normalized = _normalize_display_name(value)
-        if not normalized:
-            raise ValueError("Укажите имя в семье")
-        return normalized
-
 
 class LoginDto(BaseModel):
-    """Вход по login и паролю."""
+    """Вход по email и паролю с legacy-fallback на login."""
 
-    login: str = Field(..., min_length=3, description="Логин аккаунта")
+    email: str = Field(..., min_length=3, description="Email аккаунта")
     password: str = Field(..., min_length=6, description="Пароль")
     remember_me: bool = Field(False, description="Оставаться в системе на этом устройстве")
 
@@ -77,44 +72,30 @@ class UpdateLanguageDto(BaseModel):
 class UpdateAccountProfileDto(BaseModel):
     """Частичное обновление профиля аккаунта."""
 
-    email: str | None = Field(None, description="Email аккаунта для связи; null/пусто очищает поле")
+
+class UpdateRecoveryCodeDto(BaseModel):
+    """Настройка или обновление recovery code у текущего аккаунта."""
+
+    recovery_code: str = Field(..., min_length=8, description="Recovery code")
+
+    _normalized_recovery_code = field_validator("recovery_code")(_normalize_recovery_code)
+
+
+class RecoverPasswordByCodeDto(BaseModel):
+    """Сброс пароля по email и recovery code."""
+
+    email: str = Field(..., min_length=5, description="Email аккаунта")
+    recovery_code: str = Field(..., min_length=8, description="Recovery code")
+    new_password: str = Field(..., min_length=6, description="Новый пароль")
+
+    _normalized_email = field_validator("email")(_validate_email)
+    _normalized_recovery_code = field_validator("recovery_code")(_normalize_recovery_code)
 
 
 class RefreshDto(BaseModel):
     """Обновление access token по refresh token."""
 
     refresh_token: str | None = Field(None, description="Refresh token")
-
-
-class RecoverPasswordVerifyDto(BaseModel):
-    """Проверка recovery-данных для выдачи временного токена."""
-
-    login: str = Field(..., min_length=3, description="Логин аккаунта")
-    email: str = Field(..., min_length=5, description="Recovery email")
-    display_name: str = Field(..., min_length=1, description="Имя в семье")
-
-    _normalized_email = field_validator("email")(_validate_email)
-
-    @field_validator("display_name")
-    @classmethod
-    def normalize_recovery_display_name(cls, value: str) -> str:
-        normalized = _normalize_display_name(value)
-        if not normalized:
-            raise ValueError("Укажите имя в семье")
-        return normalized
-
-
-class RecoverPasswordResetDto(BaseModel):
-    """Сброс пароля по временному recovery token."""
-
-    recovery_token: str = Field(..., min_length=20, description="Временный recovery token")
-    new_password: str = Field(..., min_length=6, description="Новый пароль")
-
-
-class RecoverPasswordVerifyResponseDto(ResponseBase):
-    """Ответ после успешной проверки recovery-данных."""
-
-    recovery_token: str
 
 
 class AccountResponseDto(ResponseBase):
@@ -125,6 +106,8 @@ class AccountResponseDto(ResponseBase):
     email: str | None
     family_id: UUID
     display_name: str
+    needs_profile_completion: bool = False
+    has_recovery_code: bool = False
     relationship_label: str | None = None
     phone: str | None = None
     preferred_language: AccountLanguage = "ru"
@@ -142,6 +125,8 @@ class AuthenticatedAccount:
     family_id: UUID
     display_name: str
     family_role: str
+    needs_profile_completion: bool = False
+    has_recovery_code: bool = False
     relationship_label: str | None = None
     phone: str | None = None
     preferred_language: AccountLanguage = "ru"

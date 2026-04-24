@@ -135,11 +135,9 @@ function getLocalizedAuthError(
   }
 
   const knownMessages: Record<string, string> = {
-    "Неверный логин или пароль": "Invalid login or password.",
-    "Аккаунт с таким логином уже существует": "An account with this login already exists.",
+    "Неверный email или пароль": "Invalid email or password.",
     "Аккаунт с таким email уже существует": "An account with this email already exists.",
     "Укажите корректный email": "Enter a valid email.",
-    "Укажите имя в семье": "Enter your family display name.",
   };
 
   return knownMessages[detail] ?? fallback;
@@ -247,13 +245,9 @@ export function AuthPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedMode = searchParams.get("mode");
   const [mode, setMode] = useState<Mode>(requestedMode === "login" ? "login" : "register");
-  const [loginValue, setLoginValue] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [relationshipLabel, setRelationshipLabel] = useState("");
-  const [phone, setPhone] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [acceptLegal, setAcceptLegal] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -269,11 +263,11 @@ export function AuthPage() {
   }, [requestedMode]);
 
   const loginMutation = useMutation({
-    mutationFn: (payload: { login: string; password: string; remember_me: boolean }) =>
+    mutationFn: (payload: { email: string; password: string; remember_me: boolean }) =>
       login(payload),
     onSuccess: (data, variables) => {
       setSession(data);
-      void tryStoreCredentials(variables.login, variables.password);
+      void tryStoreCredentials(variables.email, variables.password);
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "auth_page" });
     },
@@ -290,17 +284,14 @@ export function AuthPage() {
 
   const registerMutation = useMutation({
     mutationFn: (payload: {
-      login: string;
       email: string;
       password: string;
-      display_name: string;
-      relationship_label?: string;
-      phone?: string;
       remember_me: boolean;
+      preferred_language: "ru" | "en";
     }) => register(payload),
     onSuccess: (data, variables) => {
       setSession(data);
-      void tryStoreCredentials(variables.login, variables.password);
+      void tryStoreCredentials(variables.email, variables.password);
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "auth_page" });
     },
@@ -317,18 +308,12 @@ export function AuthPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedLogin = loginValue.trim();
     const trimmedEmail = email.trim();
-    const trimmedDisplayName = displayName.trim();
-    if (!trimmedLogin || password.length < 6) {
+    if (!trimmedEmail || password.length < 6) {
       return;
     }
     if (mode === "register" && password !== passwordConfirm) {
       setError(copy.auth.errors.passwordsMismatch);
-      return;
-    }
-    if (mode === "register" && (!trimmedEmail || !trimmedDisplayName)) {
-      setError(copy.auth.errors.registerFailed);
       return;
     }
     if (mode === "register" && !acceptLegal) {
@@ -337,18 +322,15 @@ export function AuthPage() {
     }
     if (mode === "login") {
       setError(null);
-      loginMutation.mutate({ login: trimmedLogin, password, remember_me: rememberMe });
+      loginMutation.mutate({ email: trimmedEmail, password, remember_me: rememberMe });
       return;
     }
     setError(null);
     registerMutation.mutate({
-      login: trimmedLogin,
       email: trimmedEmail,
       password,
-      display_name: trimmedDisplayName,
-      relationship_label: relationshipLabel.trim() || undefined,
-      phone: phone.trim() || undefined,
       remember_me: rememberMe,
+      preferred_language: language,
     });
   };
 
@@ -360,13 +342,9 @@ export function AuthPage() {
     ? copy.auth.page.registerDescription
     : copy.auth.page.loginDescription;
   const resetAuthFormState = () => {
-    setLoginValue("");
     setEmail("");
     setPassword("");
     setPasswordConfirm("");
-    setDisplayName("");
-    setRelationshipLabel("");
-    setPhone("");
     setAcceptLegal(false);
     setIsPasswordVisible(false);
   };
@@ -427,12 +405,12 @@ export function AuthPage() {
   };
 
   useEffect(() => {
-    if (!isNativeIOS || mode !== "login" || (!loginValue.trim() && !password.trim())) {
+    if (!isNativeIOS || mode !== "login" || (!email.trim() && !password.trim())) {
       return;
     }
 
     ensureSubmitVisible();
-  }, [ensureSubmitVisible, isNativeIOS, loginValue, mode, password]);
+  }, [email, ensureSubmitVisible, isNativeIOS, mode, password]);
 
   const authAboutAction =
     isNativeRuntime && hasAbsoluteMarketingUrl ? (
@@ -593,49 +571,20 @@ export function AuthPage() {
 
                 <div className="mt-5 space-y-4">
                   <AuthField
-                    label={
-                      mode === "login" ? copy.auth.fields.login : copy.auth.fields.loginForEntry
-                    }
-                    value={loginValue}
-                    onChange={setLoginValue}
-                    placeholder={
-                      mode === "login"
-                        ? copy.auth.fields.loginPlaceholder
-                        : copy.auth.fields.loginPlaceholderRegister
-                    }
-                    name="username"
-                    autoComplete="username"
+                    label={copy.auth.fields.email}
+                    value={email}
+                    onChange={setEmail}
+                    placeholder={copy.auth.fields.emailPlaceholder}
+                    type="email"
+                    name="email"
+                    autoComplete="email"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
+                    inputMode="email"
                     icon={<MailIcon />}
-                    hint={isRegisterMode ? copy.auth.fields.loginHint : undefined}
+                    hint={isRegisterMode ? copy.auth.page.registerCardCopy : undefined}
                   />
-                  {isRegisterMode ? (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <AuthField
-                        label={copy.auth.fields.email}
-                        value={email}
-                        onChange={setEmail}
-                        placeholder={copy.auth.fields.emailPlaceholder}
-                        type="email"
-                        name="email"
-                        autoComplete="email"
-                        autoCapitalize="none"
-                        autoCorrect="off"
-                        spellCheck={false}
-                        inputMode="email"
-                      />
-                      <AuthField
-                        label={copy.auth.fields.displayName}
-                        value={displayName}
-                        onChange={setDisplayName}
-                        placeholder={copy.auth.fields.displayNamePlaceholder}
-                        name="display-name"
-                        autoComplete="name"
-                      />
-                    </div>
-                  ) : null}
 
                   <div className={joinClasses("grid gap-4", isRegisterMode && "sm:grid-cols-2")}>
                     <AuthField
@@ -745,35 +694,6 @@ export function AuthPage() {
                 </div>
               </div>
 
-              {isRegisterMode ? (
-                <details className={joinClasses("auth-v3-secondary-card", isNativeIOS && "auth-v3-secondary-card--ios")}>
-                  <summary className="auth-v3-summary">{copy.auth.page.extraProfileFields}</summary>
-                  <p className="auth-v3-section-copy mt-2">{copy.auth.page.extraProfileCopy}</p>
-                  <div className="mt-4 space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <AuthField
-                        label={copy.auth.fields.relationship}
-                        value={relationshipLabel}
-                        onChange={setRelationshipLabel}
-                        placeholder={copy.auth.fields.relationshipPlaceholder}
-                        name="relationship-label"
-                        autoComplete="organization-title"
-                      />
-                      <AuthField
-                        label={copy.auth.fields.phone}
-                        value={phone}
-                        onChange={setPhone}
-                        placeholder={copy.auth.fields.phonePlaceholder}
-                        type="tel"
-                        name="tel"
-                        autoComplete="tel"
-                        inputMode="tel"
-                      />
-                    </div>
-                  </div>
-                </details>
-              ) : null}
-
               {passwordsMismatch ? (
                 <p className="auth-v3-error auth-v3-error-warning">
                   {copy.auth.page.passwordsMismatch}
@@ -787,12 +707,10 @@ export function AuthPage() {
                 type="submit"
                 disabled={
                   isPending ||
-                  !loginValue.trim() ||
+                  !email.trim() ||
                   password.length < 6 ||
                   (isRegisterMode &&
-                    (!email.trim() ||
-                      !displayName.trim() ||
-                      !passwordConfirm ||
+                    (!passwordConfirm ||
                       password !== passwordConfirm ||
                       !acceptLegal))
                 }

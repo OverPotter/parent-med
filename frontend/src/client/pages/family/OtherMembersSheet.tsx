@@ -55,7 +55,7 @@ export function OtherMembersSheet({
               >
                 <span className="min-w-0 text-left">
                   <span className="block text-sm font-semibold tracking-[-0.02em] text-foreground">
-                    {member.displayName || member.login || tFamily(language, "noName")}
+                    {member.displayName || tFamily(language, "noName")}
                   </span>
                   <span className="mt-1 block text-[0.82rem] leading-5 text-muted">
                     {member.relationshipLabel || roleLabel(member.familyRole, language)}

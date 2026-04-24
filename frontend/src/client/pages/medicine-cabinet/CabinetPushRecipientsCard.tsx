@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { Family, FamilyMember } from "@shared/types/api";
 import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
+import { tFamily } from "../family/copy";
 import { cabinetActionSecondaryClass, cabinetPanelClass } from "./styles";
 
 export function CabinetPushRecipientsCard({
@@ -89,7 +90,17 @@ export function CabinetPushRecipientsCard({
             <div className="space-y-2">
               {familyMembers.map((member) => {
                 const selected = selectedIds.includes(member.id);
-                const label = member.displayName || member.login || member.id;
+                const label =
+                  member.displayName ||
+                  (currentAccountId && member.id === currentAccountId
+                    ? tFamily(language, "yourProfileTitle")
+                    : tFamily(language, "noName"));
+                const meta =
+                  member.relationshipLabel ||
+                  member.email ||
+                  (currentAccountId && member.id === currentAccountId
+                    ? tFamily(language, "thisIsYou")
+                    : tFamily(language, "member"));
                 return (
                   <button
                     key={member.id}
@@ -117,7 +128,7 @@ export function CabinetPushRecipientsCard({
                         {label}
                       </span>
                       <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
-                        {member.relationshipLabel || member.login || member.email || member.id}
+                        {meta}
                       </span>
                     </span>
                     <span className="soft-choice-check">{selected ? "✓" : null}</span>

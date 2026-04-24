@@ -27,6 +27,7 @@ class SqlAccountRepository(AccountRepository):
             login=model.login,
             email=model.email,
             password_hash=model.password_hash,
+            recovery_code_hash=model.recovery_code_hash,
             family_id=model.family_id,
             display_name=model.display_name,
             relationship_label=model.relationship_label,
@@ -54,6 +55,7 @@ class SqlAccountRepository(AccountRepository):
             login=entity.login,
             email=entity.email,
             password_hash=entity.password_hash,
+            recovery_code_hash=entity.recovery_code_hash,
             family_id=entity.family_id,
             display_name=entity.display_name,
             relationship_label=entity.relationship_label,
@@ -129,6 +131,7 @@ class SqlAccountRepository(AccountRepository):
         row.login = entity.login
         row.email = entity.email
         row.password_hash = entity.password_hash
+        row.recovery_code_hash = entity.recovery_code_hash
         row.family_id = entity.family_id
         row.display_name = entity.display_name
         row.relationship_label = entity.relationship_label

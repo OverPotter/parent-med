@@ -13,6 +13,11 @@ from src.application.dto.family import (
 from src.application.dto.family_access import FamilyAccessPolicyDto
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.account import Account, copy_account
+from src.domain.entities.account_identity import (
+    needs_profile_completion,
+    normalize_optional_display_name,
+    resolve_display_name,
+)
 from src.domain.entities.family import Family
 from src.domain.entities.family_access import (
     FamilyAccessPolicy,
@@ -100,7 +105,8 @@ class FamilyService:
             login=entity.login,
             email=entity.email,
             family_id=entity.family_id,
-            display_name=entity.display_name,
+            display_name=resolve_display_name(entity.display_name),
+            needs_profile_completion=needs_profile_completion(entity.display_name),
             relationship_label=entity.relationship_label,
             phone=entity.phone,
             preferred_language=entity.preferred_language,
@@ -274,7 +280,7 @@ class FamilyService:
             copy_account(
                 target,
                 display_name=(
-                    ((dto.display_name or "").strip() or target.login)
+                    normalize_optional_display_name(dto.display_name)
                     if "display_name" in dto.model_fields_set
                     else target.display_name
                 ),

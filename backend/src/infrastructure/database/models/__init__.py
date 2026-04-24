@@ -18,7 +18,6 @@ from src.infrastructure.database.models.illness_episode import IllnessEpisodeMod
 from src.infrastructure.database.models.illness_episode_event import IllnessEpisodeEventModel
 from src.infrastructure.database.models.medicine_catalog_item import MedicineCatalogItemModel
 from src.infrastructure.database.models.parent import ParentModel
-from src.infrastructure.database.models.password_recovery_token import PasswordRecoveryTokenModel
 from src.infrastructure.database.models.pillbox import (
     PillboxDoseLogModel,
     PillboxMedicationModel,
@@ -43,7 +42,6 @@ __all__ = [
     "WeightEntryModel",
     "MedicineCatalogItemModel",
     "ParentModel",
-    "PasswordRecoveryTokenModel",
     "PillboxPlanModel",
     "PillboxMedicationModel",
     "PillboxDoseLogModel",

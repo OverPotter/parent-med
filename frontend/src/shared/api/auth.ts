@@ -16,6 +16,8 @@ interface RawAuthResponse {
     email: string | null;
     family_id: string;
     display_name: string;
+    needs_profile_completion?: boolean | null;
+    has_recovery_code?: boolean | null;
     relationship_label: string | null;
     phone: string | null;
     preferred_language: "ru" | "en";
@@ -60,6 +62,7 @@ function toAuthState(raw: {
     email: string | null;
     family_id: string;
     display_name: string;
+    needs_profile_completion?: boolean | null;
     relationship_label: string | null;
     phone: string | null;
     preferred_language: "ru" | "en";
@@ -75,21 +78,18 @@ function toAuthState(raw: {
 }
 
 export async function register(payload: {
-  login: string;
   email: string;
   password: string;
-  display_name: string;
-  relationship_label?: string;
-  phone?: string;
   remember_me?: boolean;
   invite_token?: string;
+  preferred_language?: "ru" | "en";
 }): Promise<AuthSessionResponse> {
   const res = await apiClient.post<RawAuthResponse>("/auth/signup", payload);
   return toAuthResponse(res.data);
 }
 
 export async function login(payload: {
-  login: string;
+  email: string;
   password: string;
   remember_me?: boolean;
 }): Promise<AuthSessionResponse> {
@@ -117,6 +117,7 @@ export async function fetchMe(): Promise<AuthStateResponse> {
       email: string | null;
       family_id: string;
       display_name: string;
+      has_recovery_code?: boolean | null;
       relationship_label: string | null;
       phone: string | null;
       preferred_language: "ru" | "en";
@@ -147,23 +148,18 @@ export async function changePassword(payload: {
   await apiClient.patch("/auth/password", payload);
 }
 
-export async function verifyPasswordRecovery(payload: {
-  login: string;
-  email: string;
-  display_name: string;
-}): Promise<{ recoveryToken: string }> {
-  const res = await apiClient.post<{ recovery_token: string }>(
-    "/auth/recover-password/verify",
-    payload
-  );
-  return { recoveryToken: res.data.recovery_token };
+export async function updateRecoveryCode(payload: {
+  recovery_code: string;
+}): Promise<void> {
+  await apiClient.patch("/auth/recovery-code", payload);
 }
 
-export async function resetPasswordByRecovery(payload: {
-  recovery_token: string;
+export async function resetPasswordByRecoveryCode(payload: {
+  email: string;
+  recovery_code: string;
   new_password: string;
 }): Promise<void> {
-  await apiClient.post("/auth/recover-password/reset", payload);
+  await apiClient.post("/auth/recover-password/code/reset", payload);
 }
 
 export async function updateAccountLanguage(preferredLanguage: "ru" | "en") {
@@ -173,6 +169,8 @@ export async function updateAccountLanguage(preferredLanguage: "ru" | "en") {
     email: string | null;
     family_id: string;
     display_name: string;
+    needs_profile_completion?: boolean | null;
+    has_recovery_code?: boolean | null;
     relationship_label: string | null;
     phone: string | null;
     preferred_language: "ru" | "en";
@@ -181,21 +179,5 @@ export async function updateAccountLanguage(preferredLanguage: "ru" | "en") {
   }>("/auth/language", {
     preferred_language: preferredLanguage,
   });
-  return toAccount(res.data);
-}
-
-export async function updateAccountProfile(payload: { email: string | null }) {
-  const res = await apiClient.patch<{
-    id: string;
-    login: string;
-    email: string | null;
-    family_id: string;
-    display_name: string;
-    relationship_label: string | null;
-    phone: string | null;
-    preferred_language: "ru" | "en";
-    family_role: string;
-    access_policy?: RawAuthResponse["account"]["access_policy"];
-  }>("/auth/profile", payload);
   return toAccount(res.data);
 }

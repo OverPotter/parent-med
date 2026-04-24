@@ -1,9 +1,7 @@
-export function canSubmitRecoveryIdentity(
-  login: string,
-  email: string,
-  displayName: string
-): boolean {
-  return Boolean(login.trim() && email.trim() && displayName.trim());
+import { isRecoveryCodeValid } from "../../shared/utils/recoveryCode.js";
+
+export function canSubmitRecoveryCode(email: string, recoveryCode: string): boolean {
+  return Boolean(email.trim() && isRecoveryCodeValid(recoveryCode));
 }
 
 export function canSubmitRecoveryPassword(

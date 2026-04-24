@@ -85,6 +85,9 @@ APNS_STALE_REASONS = {
     "DeviceTokenNotForTopic",
     "Unregistered",
 }
+WEB_PUSH_STALE_REASONS = {
+    "VapidPkHashMismatch",
+}
 
 
 def _normalize_language(value: str | None) -> str:
@@ -250,6 +253,32 @@ def _format_days_label(days: int) -> str:
 
 def _format_days_label_en(days: int) -> str:
     return f"{days} day" if days == 1 else f"{days} days"
+
+
+def _extract_web_push_error_reason(response: Any) -> str | None:
+    if response is None:
+        return None
+    try:
+        payload = response.json()
+    except Exception:
+        payload = None
+    if isinstance(payload, dict):
+        reason = payload.get("reason")
+        return str(reason) if reason else None
+    body = getattr(response, "text", None)
+    if isinstance(body, str):
+        try:
+            payload = json.loads(body)
+        except Exception:
+            return None
+        if isinstance(payload, dict):
+            reason = payload.get("reason")
+            return str(reason) if reason else None
+    return None
+
+
+def _is_stale_web_push_response(status_code: int | None, reason: str | None) -> bool:
+    return status_code in {404, 410} or reason in WEB_PUSH_STALE_REASONS
 
 
 def _get_cabinet_offsets(account: Any) -> list[int]:
@@ -1232,8 +1261,13 @@ class PushNotificationScheduler:
             status_code = getattr(response, "status_code", None) or getattr(
                 response, "status", None
             )
-            if status_code in {404, 410}:
-                logger.info(f"stale_push_subscription | endpoint={subscription.endpoint}")
+            reason = _extract_web_push_error_reason(response)
+            if _is_stale_web_push_response(status_code, reason):
+                logger.info(
+                    "stale_push_subscription | endpoint={} reason={}",
+                    subscription.endpoint,
+                    reason or status_code,
+                )
                 await subscription_repo.delete(subscription.id)
                 return False
             logger.warning(

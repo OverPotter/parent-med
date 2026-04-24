@@ -12,13 +12,12 @@ from src.application.dto.auth import (
     AuthStateResponseDto,
     ChangePasswordDto,
     LoginDto,
-    RecoverPasswordResetDto,
-    RecoverPasswordVerifyDto,
-    RecoverPasswordVerifyResponseDto,
+    RecoverPasswordByCodeDto,
     RefreshDto,
     RegisterDto,
     UpdateAccountProfileDto,
     UpdateLanguageDto,
+    UpdateRecoveryCodeDto,
 )
 from src.application.services.base_auth_service import BaseAuthService
 from src.core.config import settings
@@ -38,7 +37,7 @@ async def signup(
     service: BaseAuthService = Depends(get_auth_service),
 ) -> AuthResponseDto:
     auth = await service.signup(dto)
-    logger.info(f"Регистрация | login={dto.login}")
+    logger.info("Регистрация | email={}", dto.email)
     set_auth_cookies(response, auth)
     return auth
 
@@ -51,7 +50,7 @@ async def signin(
     service: BaseAuthService = Depends(get_auth_service),
 ) -> AuthResponseDto:
     auth = await service.signin(dto)
-    logger.info(f"Вход | login={dto.login}")
+    logger.info("Вход | identifier={}", dto.email)
     set_auth_cookies(response, auth)
     return auth
 
@@ -125,22 +124,23 @@ async def change_password(
     await service.change_password(current_account.id, dto)
 
 
-@router.post("/recover-password/verify", response_model=RecoverPasswordVerifyResponseDto)
-async def verify_recovery(
-    dto: RecoverPasswordVerifyDto,
-    service: BaseAuthService = Depends(get_auth_service),
-) -> RecoverPasswordVerifyResponseDto:
-    logger.info("Проверка восстановления | login={}", dto.login)
-    return await service.verify_recovery(dto)
-
-
-@router.post("/recover-password/reset", status_code=204)
-async def reset_password_by_recovery(
-    response: Response,
-    dto: RecoverPasswordResetDto,
+@router.patch("/recovery-code", status_code=204)
+async def update_recovery_code(
+    dto: UpdateRecoveryCodeDto,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
     service: BaseAuthService = Depends(get_auth_service),
 ) -> None:
-    await service.reset_password_by_recovery(dto)
+    logger.info("Обновление recovery code | account_id={}", current_account.id)
+    await service.update_recovery_code(current_account.id, dto)
+
+
+@router.post("/recover-password/code/reset", status_code=204)
+async def reset_password_by_recovery_code(
+    response: Response,
+    dto: RecoverPasswordByCodeDto,
+    service: BaseAuthService = Depends(get_auth_service),
+) -> None:
+    await service.reset_password_by_recovery_code(dto)
     clear_auth_cookies(response)
 
 

@@ -107,7 +107,7 @@ export async function updateFamilyMember(
 export async function updateFamilyMemberProfile(
   memberAccountId: string,
   payload: {
-    display_name?: string;
+    display_name?: string | null;
     relationship_label?: string | null;
     phone?: string | null;
   }

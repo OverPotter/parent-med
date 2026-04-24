@@ -200,6 +200,7 @@ export function ChildCreatePage() {
                 }}
                 language={language}
                 max={getLocalIsoDate()}
+                hideBadge
                 className="mt-1"
               />
             </label>

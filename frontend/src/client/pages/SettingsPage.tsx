@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { Link, useLocation } from "react-router-dom";
-import { changePassword, deleteMyAccount, deleteMyFamily } from "@shared/api/auth";
+import {
+  changePassword,
+  deleteMyAccount,
+  deleteMyFamily,
+  updateRecoveryCode,
+} from "@shared/api/auth";
 import {
   deletePushSubscription,
   fetchPushNotificationConfig,
@@ -37,6 +42,7 @@ import {
   resolveLiveActivityPreferences,
   syncLiveActivityPreferencesMirror,
 } from "@shared/utils/liveActivityPreferences";
+import { isRecoveryCodeValid, normalizeRecoveryCode } from "@shared/utils/recoveryCode";
 import { SettingsAppPreferencesSection } from "./settings/SettingsAppPreferencesSection";
 import { tSettings } from "./settings/copy";
 import { SettingsLiveActivitiesSection } from "./settings/SettingsLiveActivitiesSection";
@@ -60,6 +66,8 @@ export function SettingsPage() {
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const accountHasRecoveryCode = useAppStore((s) => s.accountHasRecoveryCode);
+  const setAccountProfile = useAppStore((s) => s.setAccountProfile);
   const medicationIntervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const setMedicationIntervalUnit = useAppStore((s) => s.setMedicationIntervalUnit);
   const theme = useAppStore((s) => s.theme);
@@ -74,13 +82,17 @@ export function SettingsPage() {
   const [isNativePushBlocked, setIsNativePushBlocked] = useState(false);
   const [isNativePushSettingsDialogOpen, setIsNativePushSettingsDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isRecoveryCodeDialogOpen, setIsRecoveryCodeDialogOpen] = useState(false);
   const [isDeleteAccountConfirmOpen, setIsDeleteAccountConfirmOpen] = useState(false);
   const [isDeleteFamilyConfirmOpen, setIsDeleteFamilyConfirmOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [recoveryCodeError, setRecoveryCodeError] = useState<string | null>(null);
+  const [recoveryCodeSuccess, setRecoveryCodeSuccess] = useState<string | null>(null);
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
   const [deleteFamilyError, setDeleteFamilyError] = useState<string | null>(null);
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
@@ -228,6 +240,23 @@ export function SettingsPage() {
           : language === "ru"
             ? "Тестовый push не отправлен"
             : "Test push failed"
+      );
+    },
+  });
+
+  const updateRecoveryCodeMutation = useMutation({
+    mutationFn: (payload: { recovery_code: string }) => updateRecoveryCode(payload),
+    onSuccess: () => {
+      setAccountProfile({ hasRecoveryCode: true });
+      setRecoveryCodeError(null);
+      setRecoveryCodeSuccess(tSettings(language, "recoveryCodeUpdated"));
+      setRecoveryCode("");
+      setIsRecoveryCodeDialogOpen(false);
+    },
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      setRecoveryCodeSuccess(null);
+      setRecoveryCodeError(
+        error.response?.data?.detail ?? tSettings(language, "recoveryCodeTooShort")
       );
     },
   });
@@ -659,6 +688,20 @@ export function SettingsPage() {
     });
   };
 
+  const handleSubmitRecoveryCode = () => {
+    const normalizedRecoveryCode = normalizeRecoveryCode(recoveryCode);
+    if (!isRecoveryCodeValid(recoveryCode)) {
+      setRecoveryCodeSuccess(null);
+      setRecoveryCodeError(tSettings(language, "recoveryCodeTooShort"));
+      return;
+    }
+    setRecoveryCodeError(null);
+    setRecoveryCodeSuccess(null);
+    updateRecoveryCodeMutation.mutate({
+      recovery_code: normalizedRecoveryCode,
+    });
+  };
+
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
@@ -739,18 +782,36 @@ export function SettingsPage() {
       </div>
       <SettingsSecuritySection
         language={language}
+        hasRecoveryCode={accountHasRecoveryCode}
         isPasswordDialogOpen={isPasswordDialogOpen}
+        isRecoveryCodeDialogOpen={isRecoveryCodeDialogOpen}
         onOpenPasswordDialog={() => {
           resetPasswordDialogState();
           setIsPasswordDialogOpen(true);
+        }}
+        onOpenRecoveryCodeDialog={() => {
+          if (accountHasRecoveryCode) {
+            return;
+          }
+          setRecoveryCode("");
+          setRecoveryCodeError(null);
+          setRecoveryCodeSuccess(null);
+          setIsRecoveryCodeDialogOpen(true);
         }}
         onClosePasswordDialog={() => {
           setIsPasswordDialogOpen(false);
           resetPasswordDialogState();
         }}
+        onCloseRecoveryCodeDialog={() => {
+          setIsRecoveryCodeDialogOpen(false);
+          setRecoveryCode("");
+          setRecoveryCodeError(null);
+          setRecoveryCodeSuccess(null);
+        }}
         currentPassword={currentPassword}
         newPassword={newPassword}
         confirmPassword={confirmPassword}
+        recoveryCode={recoveryCode}
         onCurrentPasswordChange={(value) => {
           setCurrentPassword(value);
           setPasswordError(null);
@@ -766,10 +827,19 @@ export function SettingsPage() {
           setPasswordError(null);
           setPasswordSuccess(null);
         }}
+        onRecoveryCodeChange={(value) => {
+          setRecoveryCode(value);
+          setRecoveryCodeError(null);
+          setRecoveryCodeSuccess(null);
+        }}
         onSubmitPasswordChange={handleSubmitPasswordChange}
+        onSubmitRecoveryCode={handleSubmitRecoveryCode}
         isPasswordPending={changePasswordMutation.isPending}
+        isRecoveryCodePending={updateRecoveryCodeMutation.isPending}
         passwordSuccess={passwordSuccess}
         passwordError={passwordError}
+        recoveryCodeSuccess={recoveryCodeSuccess}
+        recoveryCodeError={recoveryCodeError}
         accountFamilyRole={accountFamilyRole}
         deleteAccountError={deleteAccountError}
         deleteFamilyError={deleteFamilyError}

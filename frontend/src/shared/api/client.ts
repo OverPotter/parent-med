@@ -57,6 +57,7 @@ function shouldSkipRefresh(url?: string): boolean {
     url.includes("/auth/signup") ||
     url.includes("/auth/recover-password/verify") ||
     url.includes("/auth/recover-password/reset") ||
+    url.includes("/auth/recover-password/code/reset") ||
     url.includes("/auth/refresh")
   );
 }
