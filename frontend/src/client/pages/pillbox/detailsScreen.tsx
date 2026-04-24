@@ -251,6 +251,17 @@ export function PillboxDetailsScreen({
                   ) : null}
                 </div>
               ) : null}
+              {selectedPlan.status === "active" || selectedPlan.status === "paused" ? (
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={onGoToSetup}
+                    className={`${actionCompactSecondaryClass} w-full`}
+                  >
+                    {tPillbox(language, "editPlan")}
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -350,24 +361,12 @@ export function PillboxDetailsScreen({
 
         {canEdit ? (
           <div className="grid grid-cols-2 gap-2">
-            {selectedPlan.status === "active" || selectedPlan.status === "paused" ? (
-              <button
-                type="button"
-                onClick={onGoToSetup}
-                disabled={disableEditingActions}
-                className={`${actionCompactSecondaryClass} w-full disabled:cursor-not-allowed disabled:opacity-60`}
-              >
-                {tPillbox(language, "editPlan")}
-              </button>
-            ) : null}
             <button
               type="button"
               onClick={onRequestDelete}
               disabled={deletePlanPending || disableEditingActions}
               className={`${actionCompactDangerClass} w-full disabled:cursor-not-allowed disabled:opacity-60 ${
-                selectedPlan.status === "active" || selectedPlan.status === "paused"
-                  ? ""
-                  : "col-span-2"
+                "col-span-2"
               }`}
             >
               {tPillbox(language, "deletePlan")}
