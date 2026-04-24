@@ -20,6 +20,14 @@ class PushSubscriptionRepository(BaseRepository[PushSubscription]):
     async def get_by_native_token(self, native_token: str) -> PushSubscription | None: ...
 
     @abstractmethod
+    async def get_by_account_platform_device(
+        self,
+        account_id: UUID,
+        platform: str,
+        device_id: str,
+    ) -> PushSubscription | None: ...
+
+    @abstractmethod
     async def get_by_account_id(self, account_id: UUID) -> list[PushSubscription]: ...
 
     @abstractmethod

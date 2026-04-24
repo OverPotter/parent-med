@@ -80,6 +80,7 @@ export async function upsertPushSubscription(body: {
   endpoint: string;
   native_token?: string | null;
   platform?: "ios" | "android";
+  device_id?: string | null;
   expiration_time?: string | null;
   keys?: { p256dh: string; auth: string } | null;
   user_agent?: string | null;

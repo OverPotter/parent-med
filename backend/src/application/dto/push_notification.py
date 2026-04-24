@@ -77,6 +77,7 @@ class PushSubscriptionUpsertDto(BaseModel):
     platform: Literal["ios", "android"] | None = Field(
         None, description="Платформа нативного токена"
     )
+    device_id: str | None = Field(None, description="Стабильный идентификатор устройства")
     expiration_time: datetime | None = Field(None, description="Время истечения подписки браузера")
     keys: PushSubscriptionKeysDto | None = None
     user_agent: str | None = Field(None, description="User-Agent устройства")
@@ -98,6 +99,7 @@ class PushSubscriptionResponseDto(ResponseBase):
     endpoint: str
     native_token: str | None
     platform: str | None
+    device_id: str | None
     expiration_time: datetime | None
     user_agent: str | None
     device_label: str | None

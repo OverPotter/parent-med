@@ -27,6 +27,7 @@ class PushSubscriptionModel(Base):
     auth_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
     native_token: Mapped[str | None] = mapped_column(Text, nullable=True, unique=True)
     platform: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    device_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     expiration_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
     device_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
