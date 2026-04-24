@@ -2,10 +2,11 @@
  * Аптечка: список упаковок по семье, добавление из справочника или вручную.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { deleteHouseholdMedicine, fetchHouseholdMedicines } from "@shared/api/householdMedicines";
+import { sendCabinetTestPushNotification } from "@shared/api/pushNotifications";
 import {
   fetchMyFamily,
   fetchMyFamilyMembers,
@@ -62,6 +63,7 @@ export function MedicineCabinetPage() {
   const canMutateCabinet = canEditCabinet(accountFamilyRole, accountAccessPolicy);
   const canManageCabinetRecipients = accountFamilyRole === "admin";
   const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
+  const isDevTestPushVisible = import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
 
   const addFlow: AddMedicineFlow =
     location.pathname === "/medicine-cabinet/add"
@@ -120,28 +122,43 @@ export function MedicineCabinetPage() {
     staleTime: 5 * 60 * 1000,
   });
   const eligibleCabinetMembers = getEligibleCabinetRecipients(familyMembers);
+  const cabinetRecipientsSummary = useMemo(() => {
+    if (!family || !canManageCabinetRecipients) {
+      return null;
+    }
 
-  if (!canSeeCabinet) {
-    return (
-      <div>
-        <h1 className="app-title">{tCabinet(language, "title")}</h1>
-        <p className="mt-2 text-muted">
-          {language === "ru"
-            ? "Администратор семьи ещё не выдал вам доступ к аптечке."
-            : "Your family admin has not granted access to the cabinet yet."}
-        </p>
-      </div>
+    const selectedMembers = eligibleCabinetMembers.filter((member) =>
+      family.cabinetMemberAccountIds.includes(member.id)
     );
-  }
+    const labels = selectedMembers.map((member) => member.displayName || member.login || member.id);
 
-  if (!canMutateCabinet && (addFlow || isNewPackFlow)) {
-    return <Navigate to="/medicine-cabinet" replace />;
-  }
+    if (labels.length === 0) {
+      return language === "ru"
+        ? "Уведомления по аптечке сейчас никому не отправляются."
+        : "Cabinet reminders are currently not sent to anyone.";
+    }
+
+    if (labels.length <= 2) {
+      return language === "ru"
+        ? `Получатели уведомлений: ${labels.join(", ")}`
+        : `Reminder recipients: ${labels.join(", ")}`;
+    }
+
+    const visible = labels.slice(0, 2).join(", ");
+    const remaining = labels.length - 2;
+    return language === "ru"
+      ? `Получатели уведомлений: ${visible} и ещё ${remaining}`
+      : `Reminder recipients: ${visible} and ${remaining} more`;
+  }, [canManageCabinetRecipients, eligibleCabinetMembers, family, language]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteHouseholdMedicine,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] }),
+  });
+
+  const sendCabinetTestPushMutation = useMutation({
+    mutationFn: sendCabinetTestPushNotification,
   });
 
   const updateCabinetRecipientsMutation = useMutation({
@@ -176,6 +193,23 @@ export function MedicineCabinetPage() {
     family,
     updateCabinetRecipientsMutation,
   ]);
+
+  if (!canSeeCabinet) {
+    return (
+      <div>
+        <h1 className="app-title">{tCabinet(language, "title")}</h1>
+        <p className="mt-2 text-muted">
+          {language === "ru"
+            ? "Администратор семьи ещё не выдал вам доступ к аптечке."
+            : "Your family admin has not granted access to the cabinet yet."}
+        </p>
+      </div>
+    );
+  }
+
+  if (!canMutateCabinet && (addFlow || isNewPackFlow)) {
+    return <Navigate to="/medicine-cabinet" replace />;
+  }
 
   const normalizedCabinetSearch = cabinetSearch.trim().toLowerCase();
   const isSearchMode = normalizedCabinetSearch.length > 0;
@@ -317,6 +351,40 @@ export function MedicineCabinetPage() {
           compactOnMobile
           hideOnMobile
           mobileLikeDesktop
+          afterSubtitle={
+            cabinetRecipientsSummary || isDevTestPushVisible ? (
+              <div className="mt-2 space-y-2">
+                {cabinetRecipientsSummary ? (
+                  <p className="text-sm leading-6 text-muted">{cabinetRecipientsSummary}</p>
+                ) : null}
+                {isDevTestPushVisible ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => sendCabinetTestPushMutation.mutate()}
+                      disabled={sendCabinetTestPushMutation.isPending}
+                      className={`${cabinetActionSecondaryClass} px-4 disabled:cursor-not-allowed disabled:opacity-60`}
+                    >
+                      {language === "ru"
+                        ? sendCabinetTestPushMutation.isPending
+                          ? "Отправляем..."
+                          : "Тестовый push аптечки"
+                        : sendCabinetTestPushMutation.isPending
+                          ? "Sending..."
+                          : "Cabinet test push"}
+                    </button>
+                    {sendCabinetTestPushMutation.data ? (
+                      <p className="text-sm leading-6 text-muted">
+                        {language === "ru"
+                          ? `Подписок: ${sendCabinetTestPushMutation.data.subscriptionCount}`
+                          : `Subscriptions: ${sendCabinetTestPushMutation.data.subscriptionCount}`}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null
+          }
           action={
             <div className="grid grid-cols-2 gap-2">
               {canMutateCabinet ? (
@@ -374,6 +442,38 @@ export function MedicineCabinetPage() {
           <p className="app-mobile-section-intro__hint app-mobile-section-intro__hint--single-line">
             {tCabinet(language, "mobileHint")}
           </p>
+          {cabinetRecipientsSummary || isDevTestPushVisible ? (
+            <div className="mt-2 space-y-2">
+              {cabinetRecipientsSummary ? (
+                <p className="text-sm leading-6 text-muted">{cabinetRecipientsSummary}</p>
+              ) : null}
+              {isDevTestPushVisible ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => sendCabinetTestPushMutation.mutate()}
+                    disabled={sendCabinetTestPushMutation.isPending}
+                    className={`${cabinetActionSecondaryClass} px-4 disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
+                    {language === "ru"
+                      ? sendCabinetTestPushMutation.isPending
+                        ? "Отправляем..."
+                        : "Тестовый push аптечки"
+                      : sendCabinetTestPushMutation.isPending
+                        ? "Sending..."
+                        : "Cabinet test push"}
+                  </button>
+                  {sendCabinetTestPushMutation.data ? (
+                    <p className="text-sm leading-6 text-muted">
+                      {language === "ru"
+                        ? `Подписок: ${sendCabinetTestPushMutation.data.subscriptionCount}`
+                        : `Subscriptions: ${sendCabinetTestPushMutation.data.subscriptionCount}`}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
       {addFlow === "choice" ? (

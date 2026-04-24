@@ -1,6 +1,6 @@
 """Сервис управления push-подписками устройства (web/native)."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from src.application.dto.push_notification import (
@@ -39,6 +39,10 @@ class PushNotificationService:
             enabled=settings.web_push_enabled or settings.apns_enabled,
             vapid_public_key=settings.web_push_public_key,
         )
+
+    @staticmethod
+    def _normalize_language(value: str | None) -> str:
+        return "en" if value == "en" else "ru"
 
     async def get_preferences(self, account_id: UUID) -> PushNotificationPreferencesResponseDto:
         account = await self._account_repo.get_by_id(account_id)
@@ -258,6 +262,58 @@ class PushNotificationService:
                 "source": "settings",
             },
         }
+        sent = await scheduler._send_to_subscriptions(  # noqa: SLF001
+            subscriptions=subscriptions,
+            subscription_repo=self._repo,
+            payload=payload,
+        )
+        return PushNotificationTestResponseDto(
+            sent=sent,
+            subscription_count=len(subscriptions),
+        )
+
+    async def send_cabinet_test_notification(
+        self,
+        account_id: UUID,
+        scheduler,
+    ) -> PushNotificationTestResponseDto:
+        subscriptions = await self._repo.get_by_account_id(account_id)
+        if not subscriptions:
+            return PushNotificationTestResponseDto(sent=False, subscription_count=0)
+
+        account = await self._account_repo.get_by_id(account_id)
+        language = self._normalize_language(account.preferred_language if account else None)
+        target_date = datetime.now(UTC).date() + timedelta(days=3)
+
+        if language == "en":
+            payload = {
+                "title": "Expires in 3 days: Ibuprofen syrup",
+                "body": f"Expiry date · by {target_date.strftime('%b %d, %Y')}\nCheck the package in your cabinet.",
+                "url": "/medicine-cabinet",
+                "tag": f"cabinet-test-{account_id}",
+                "data": {
+                    "medicineId": "test-cabinet-medicine",
+                    "targetDate": target_date.isoformat(),
+                    "daysBefore": 3,
+                    "kind": "expiry",
+                    "source": "cabinet_test",
+                },
+            }
+        else:
+            payload = {
+                "title": "Через 3 дня истекает срок: Ибупрофен сироп",
+                "body": f"Срок годности · до {target_date.strftime('%d.%m.%Y')}\nПроверьте упаковку в аптечке.",
+                "url": "/medicine-cabinet",
+                "tag": f"cabinet-test-{account_id}",
+                "data": {
+                    "medicineId": "test-cabinet-medicine",
+                    "targetDate": target_date.isoformat(),
+                    "daysBefore": 3,
+                    "kind": "expiry",
+                    "source": "cabinet_test",
+                },
+            }
+
         sent = await scheduler._send_to_subscriptions(  # noqa: SLF001
             subscriptions=subscriptions,
             subscription_repo=self._repo,

@@ -108,3 +108,14 @@ export async function sendTestPushNotification(): Promise<{
     subscriptionCount: res.data.subscription_count,
   };
 }
+
+export async function sendCabinetTestPushNotification(): Promise<{
+  sent: boolean;
+  subscriptionCount: number;
+}> {
+  const res = await apiClient.post<RawPushNotificationTestResponse>("/push-notifications/test/cabinet");
+  return {
+    sent: res.data.sent,
+    subscriptionCount: res.data.subscription_count,
+  };
+}
