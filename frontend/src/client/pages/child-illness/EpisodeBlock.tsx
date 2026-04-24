@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DateField } from "@shared/components/DateField";
-import { OverlayDialog } from "@shared/components/OverlayDialog";
+import { FullscreenOverlay } from "@shared/components/FullscreenOverlay";
 import { createAdministrationEvent, fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
 import {
   deleteEpisodeMedicationPlan,
@@ -449,33 +449,21 @@ export function EpisodeBlock({
   );
   const pendingDoseAt = toApiDateTime(pendingDoseDate, pendingDoseTime);
   const renderTakeDoseSheet = () => (
-    <OverlayDialog
+    <FullscreenOverlay
       isOpen={pendingDosePlan !== null}
       onClose={closeTakeDoseSheet}
       closeDisabled={addAdminMutation.isPending}
-      placement="bottom"
-      zIndexClassName="z-[890]"
-      backdropAriaLabel={language === "ru" ? "Закрыть время приёма" : "Close dose time"}
-      containerClassName="flex items-end"
-      backdropClassName="bg-[rgba(15,23,42,0.32)]"
+      backLabel={language === "ru" ? "Назад" : "Back"}
+      title={language === "ru" ? "Отметить приём" : "Log dose"}
+      hint={
+        language === "ru"
+          ? `По умолчанию ставим текущее время. Если дали раньше, поправьте его перед сохранением.${pendingDosePlanName ? ` ${pendingDosePlanName}.` : ""}`
+          : `The current time is prefilled. If the medicine was given earlier, adjust it before saving.${pendingDosePlanName ? ` ${pendingDosePlanName}.` : ""}`
+      }
+      maxWidthClassName="max-w-[34rem]"
     >
-      <div
-        data-ios-disable-back-swipe="true"
-        className="relative z-[1] w-full rounded-t-[30px] bg-background px-4 pb-[max(1.25rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))] pt-4 shadow-[0_-24px_64px_rgba(15,23,42,0.24)] sm:mx-auto sm:max-w-xl"
-      >
-        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
-        <div className="space-y-1.5">
-          <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
-            {language === "ru" ? "Отметить приём" : "Log dose"}
-          </h2>
-          <p className="text-sm leading-5 text-muted">
-            {language === "ru"
-              ? `По умолчанию ставим текущее время. Если дали раньше, поправьте его перед сохранением.${pendingDosePlanName ? ` ${pendingDosePlanName}.` : ""}`
-              : `The current time is prefilled. If the medicine was given earlier, adjust it before saving.${pendingDosePlanName ? ` ${pendingDosePlanName}.` : ""}`}
-          </p>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="space-y-4 pb-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="block space-y-1.5">
             <span className="soft-field-label">
               {language === "ru" ? "Когда давали" : "When was it given"}
@@ -512,7 +500,7 @@ export function EpisodeBlock({
           </p>
         ) : null}
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 pt-1">
           <button
             type="button"
             onClick={closeTakeDoseSheet}
@@ -553,7 +541,7 @@ export function EpisodeBlock({
           </button>
         </div>
       </div>
-    </OverlayDialog>
+    </FullscreenOverlay>
   );
 
   useEffect(() => {
