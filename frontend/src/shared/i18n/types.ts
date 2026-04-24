@@ -36,6 +36,9 @@ export interface Translations {
       description: string;
       nativeBlockedTitle: string;
       nativeBlockedDescription: string;
+      categoriesDisabledTitle: string;
+      categoriesDisabledDescription: string;
+      categoriesDisabledCta: string;
       openSettings: string;
       enable: string;
       enabling: string;

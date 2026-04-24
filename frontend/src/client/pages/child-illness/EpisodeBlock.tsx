@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { createAdministrationEvent, fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
 import {
   deleteEpisodeMedicationPlan,
@@ -42,6 +41,11 @@ import {
   TimelineOverviewPanel,
 } from "./EpisodeOverviewPanels";
 import { createReminderWithOptionalFirstAdministration } from "./reminderCreation";
+import {
+  DoseTimeSheet,
+  useDoseLoggingFlow,
+} from "./doseLogging";
+import { upsertIllnessEpisodeForChild } from "./episodeCache";
 import { buildEpisodeTimeline } from "./timeline";
 
 export function EpisodeBlock({
@@ -81,8 +85,7 @@ export function EpisodeBlock({
   const accountId = useAppStore((s) => s.accountId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
-  const isIosShell = useIsIosShell();
-  const liveQueryOptions = useLiveQueryOptions(isIosShell ? 15_000 : 10_000);
+  const liveQueryOptions = useLiveQueryOptions(5_000);
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
   const canEditEpisode = canEditChild(childId, accountFamilyRole, accountAccessPolicy);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
@@ -93,6 +96,7 @@ export function EpisodeBlock({
   const [recipientDraftIds, setRecipientDraftIds] = useState<string[]>(() => episode.memberAccountIds);
   const [commentText, setCommentText] = useState("");
   const [quickComposeSuccessMessage, setQuickComposeSuccessMessage] = useState<string | null>(null);
+  const now = useNow(5_000);
   const composerMode = quickComposeMode ?? initialComposerMode;
   const quickComposeMeta =
     composerMode === "temperature"
@@ -164,12 +168,13 @@ export function EpisodeBlock({
       custom_medicine_name?: string;
       amount: string;
       reason?: string;
+      administered_at?: string | null;
     }) =>
       createAdministrationEvent({
         episode_id: episode.id,
         household_medicine_id: payload.household_medicine_id,
         custom_medicine_name: payload.custom_medicine_name,
-        administered_at: getCurrentDeviceTimestampIso(),
+        administered_at: payload.administered_at ?? getCurrentDeviceTimestampIso(),
         amount: payload.amount,
         reason: payload.reason,
       }),
@@ -178,8 +183,21 @@ export function EpisodeBlock({
       queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
       requestLiveActivityRefresh();
+      doseLogging.close();
       if (quickComposeMode) setQuickComposeSuccessMessage(quickComposeMeta.success);
     },
+  });
+  const doseLogging = useDoseLoggingFlow<EpisodeMedicationPlan>({
+    language,
+    now: new Date(now),
+    onSubmit: (plan, administeredAt) =>
+      addAdminMutation.mutate({
+        household_medicine_id: plan.householdMedicineId,
+        custom_medicine_name: plan.customMedicineName ?? undefined,
+        administered_at: administeredAt ?? getCurrentDeviceTimestampIso(),
+        amount: plan.doseAmount,
+        reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
+      }),
   });
 
   const createPlanMutation = useMutation({
@@ -288,18 +306,10 @@ export function EpisodeBlock({
         childId,
       ]);
 
-      queryClient.setQueryData<IllnessEpisode | null>(
-        ["illness-episode-active", childId],
-        (current) =>
-          current && current.id === episode.id
-            ? { ...current, memberAccountIds: [...memberAccountIds] }
-            : current
-      );
-      queryClient.setQueryData<IllnessEpisode[]>(["illness-episodes", childId], (current) =>
-        (current ?? []).map((item) =>
-          item.id === episode.id ? { ...item, memberAccountIds: [...memberAccountIds] } : item
-        )
-      );
+      upsertIllnessEpisodeForChild(queryClient, childId, {
+        ...episode,
+        memberAccountIds: [...memberAccountIds],
+      });
 
       return { previousActiveEpisode, previousEpisodes };
     },
@@ -314,13 +324,7 @@ export function EpisodeBlock({
     },
     onSuccess: (updatedEpisode) => {
       setRecipientDraftIds(updatedEpisode.memberAccountIds);
-      queryClient.setQueryData<IllnessEpisode | null>(
-        ["illness-episode-active", childId],
-        (current) => (current && current.id === updatedEpisode.id ? updatedEpisode : current)
-      );
-      queryClient.setQueryData<IllnessEpisode[]>(["illness-episodes", childId], (current) =>
-        (current ?? []).map((item) => (item.id === updatedEpisode.id ? updatedEpisode : item))
-      );
+      upsertIllnessEpisodeForChild(queryClient, childId, updatedEpisode);
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] });
@@ -364,7 +368,6 @@ export function EpisodeBlock({
     "all" | "temperature" | "administration" | "comment"
   >("all");
   const [timelineActorFilter, setTimelineActorFilter] = useState("all");
-  const now = useNow(isIosShell ? 30_000 : 15_000);
   const timelineItems = buildEpisodeTimeline(
     temperatureEntries,
     administrations,
@@ -401,6 +404,48 @@ export function EpisodeBlock({
     setRecipientDraftIds(memberIds);
     updateEpisodeRecipientsMutation.mutate(memberIds);
   };
+
+  const handleTakeDose = (plan: EpisodeMedicationPlan) => {
+    const selectedReminder = reminderItems.find((item) => item.plan.id === plan.id) ?? null;
+    doseLogging.open({
+      item: plan,
+      nextAllowedAt: selectedReminder?.stats.nextAllowedAt,
+      planName:
+        plan.customMedicineName ??
+        selectedReminder?.medicine?.medicineName ??
+        (language === "ru" ? "Лекарство" : "Medicine"),
+    });
+  };
+  const doseTimeSheet = (
+    <DoseTimeSheet
+      language={language}
+      isOpen={doseLogging.isOpen}
+      closeDisabled={addAdminMutation.isPending}
+      hint={doseLogging.hint}
+      pendingDate={doseLogging.pendingDate}
+      pendingTime={doseLogging.pendingTime}
+      hasFuturePendingDoseSelection={doseLogging.hasFuturePendingDoseSelection}
+      isPending={addAdminMutation.isPending || !doseLogging.pendingDoseAt}
+      submitLabel={
+        addAdminMutation.isPending
+          ? language === "ru"
+            ? "Сохраняем…"
+            : "Saving…"
+          : language === "ru"
+            ? "Сохранить приём"
+            : "Save dose"
+      }
+      onClose={() => {
+        if (addAdminMutation.isPending) {
+          return;
+        }
+        doseLogging.close();
+      }}
+      onDateChange={doseLogging.setPendingDate}
+      onTimeChange={doseLogging.setPendingTime}
+      onSubmit={doseLogging.submitPending}
+    />
+  );
 
   useEffect(() => {
     if (
@@ -545,56 +590,50 @@ export function EpisodeBlock({
 
   if (quickReminderMode) {
     return (
-      <div className="mx-auto w-full max-w-2xl">
-        <ReminderListQuickView
-          language={language}
-          childId={childId}
-          episode={recipientsEpisode}
-          plans={medicationPlans}
-          medicines={householdMedicines}
-          familyMembers={familyMembers}
-          currentAccountId={accountId}
-          canEditEpisode={canEditEpisode}
-          administrations={administrations}
-          onOpen={(planId) =>
-            navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${planId}`)
-          }
-          onTakeDose={(plan) =>
-            addAdminMutation.mutate({
-              household_medicine_id: plan.householdMedicineId,
-              custom_medicine_name: plan.customMedicineName ?? undefined,
-              amount: plan.doseAmount,
-              reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
-            })
-          }
-          isSubmittingAdministration={addAdminMutation.isPending}
-          isUpdatingRecipients={isUpdatingRecipients}
-          onChangeRecipients={updateEpisodeRecipients}
-        />
-      </div>
+      <>
+        {doseTimeSheet}
+        <div className="mx-auto w-full max-w-2xl">
+          <ReminderListQuickView
+            language={language}
+            childId={childId}
+            episode={recipientsEpisode}
+            plans={medicationPlans}
+            medicines={householdMedicines}
+            familyMembers={familyMembers}
+            currentAccountId={accountId}
+            canEditEpisode={canEditEpisode}
+            administrations={administrations}
+            onOpen={(planId) =>
+              navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${planId}`)
+            }
+            onTakeDose={handleTakeDose}
+            isSubmittingAdministration={addAdminMutation.isPending}
+            isUpdatingRecipients={isUpdatingRecipients}
+            onChangeRecipients={updateEpisodeRecipients}
+          />
+        </div>
+      </>
     );
   }
 
   if (quickReminderDetailMode) {
     return (
-      <div className="mx-auto w-full max-w-2xl">
-        <ReminderDetailQuickView
+      <>
+        {doseTimeSheet}
+        <div className="mx-auto w-full max-w-2xl">
+          <ReminderDetailQuickView
           language={language}
           childId={childId}
-          episode={recipientsEpisode}
           selectedReminderItem={selectedReminderItem}
           latestWeight={latestWeight}
           isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
           isReminderEditing={isReminderEditing}
           editingReminderName={editingReminderName}
           medicines={householdMedicines}
-          familyMembers={familyMembers}
-          currentAccountId={accountId}
           canEditEpisode={canEditEpisode}
           isSubmittingAdministration={addAdminMutation.isPending}
           isUpdating={updatePlanMutation.isPending}
           isDeleting={deletePlanMutation.isPending}
-          isUpdatingRecipients={isUpdatingRecipients}
           errorDetail={
             (
               (updatePlanMutation.error ?? deletePlanMutation.error) as {
@@ -606,14 +645,7 @@ export function EpisodeBlock({
             setIsReminderEditing(nextIsEditing);
             setEditingReminderName(nextIsEditing ? planName : null);
           }}
-          onTakeDose={(plan) =>
-            addAdminMutation.mutate({
-              household_medicine_id: plan.householdMedicineId,
-              custom_medicine_name: plan.customMedicineName ?? undefined,
-              amount: plan.doseAmount,
-              reason: language === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
-            })
-          }
+          onTakeDose={handleTakeDose}
           onUpdate={(planId, payload) =>
             updatePlanMutation.mutate({
               id: planId,
@@ -649,9 +681,9 @@ export function EpisodeBlock({
               },
             });
           }}
-          onChangeRecipients={updateEpisodeRecipients}
-        />
-      </div>
+          />
+        </div>
+      </>
     );
   }
 
@@ -661,19 +693,14 @@ export function EpisodeBlock({
         <ReminderCreateQuickView
           language={language}
           childId={childId}
-          episode={recipientsEpisode}
           medicines={householdMedicines.filter(
             (medicine) =>
               medicine.status !== "expired" && medicine.status !== "expired_after_opening"
           )}
-          familyMembers={familyMembers}
-          currentAccountId={accountId}
-          canEditEpisode={canEditEpisode}
           latestWeight={latestWeight}
           isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
           submitLabel={language === "ru" ? "Сохранить напоминание" : "Save reminder"}
           isPending={createPlanMutation.isPending}
-          isUpdatingRecipients={isUpdatingRecipients}
           errorDetail={
             (createPlanMutation.error as { response?: { data?: { detail?: string } } })?.response
               ?.data?.detail ?? null
@@ -700,37 +727,39 @@ export function EpisodeBlock({
               { replace: true }
             )
           }
-          onChangeRecipients={updateEpisodeRecipients}
         />
       </div>
     );
   }
 
   return (
-    <EpisodeMainPanel
-      language={language}
-      childName={childName}
-      episode={episode}
-      isCloseConfirmOpen={isCloseConfirmOpen}
-      setIsCloseConfirmOpen={setIsCloseConfirmOpen}
-      onClose={onClose}
-      manualComposerSection={<ManualComposerOverview language={language} childId={childId} />}
-      reminderOverviewSection={
-        <ReminderOverviewPanel
-          language={language}
-          childId={childId}
-          episode={episode}
-          medicationPlans={medicationPlans}
-          reminderLead={reminderLead}
-        />
-      }
-      timelineSection={
-        <TimelineOverviewPanel
-          language={language}
-          childId={childId}
-          timelineCount={timelineItems.length}
-        />
-      }
-    />
+    <>
+      {doseTimeSheet}
+      <EpisodeMainPanel
+        language={language}
+        childName={childName}
+        episode={episode}
+        isCloseConfirmOpen={isCloseConfirmOpen}
+        setIsCloseConfirmOpen={setIsCloseConfirmOpen}
+        onClose={onClose}
+        manualComposerSection={<ManualComposerOverview language={language} childId={childId} />}
+        reminderOverviewSection={
+          <ReminderOverviewPanel
+            language={language}
+            childId={childId}
+            episode={episode}
+            medicationPlans={medicationPlans}
+            reminderLead={reminderLead}
+          />
+        }
+        timelineSection={
+          <TimelineOverviewPanel
+            language={language}
+            childId={childId}
+            timelineCount={timelineItems.length}
+          />
+        }
+      />
+    </>
   );
 }

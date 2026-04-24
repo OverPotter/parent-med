@@ -8,7 +8,7 @@ import type {
 } from "@shared/types/api";
 import {
   buildPlanAdministrationStats,
-  formatReminderTimeWithClock,
+  formatDoseStatusLabel,
   getPrioritizedMedicationPlanItems,
 } from "../../utils/medicationPlans";
 import {
@@ -57,21 +57,15 @@ export function MedicationPlanList({
           ? language === "ru"
             ? "Упаковка сейчас недоступна"
             : "This pack is currently unavailable"
-          : stats?.blockedByDailyLimit
-            ? language === "ru"
-              ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
-              : `${planName}: today's dose limit is already reached`
-            : stats?.nextAllowedAt
-              ? stats.nextAllowedAt <= currentTime
-                ? language === "ru"
-                  ? "Следующий приём: можно сейчас"
-                  : "Next dose: available now"
-                : language === "ru"
-                  ? `Следующий приём: ${formatReminderTimeWithClock(stats.nextAllowedAt, language, currentTime)}`
-                  : `Next dose: ${formatReminderTimeWithClock(stats.nextAllowedAt, language, currentTime)}`
+            : stats?.blockedByDailyLimit
+              ? language === "ru"
+                ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
+                : `${planName}: today's dose limit is already reached`
+              : stats?.nextAllowedAt
+                ? formatDoseStatusLabel(stats.nextAllowedAt, language, currentTime)
               : language === "ru"
-                ? "Следующий приём: можно сейчас"
-                : "Next dose: available now";
+                ? "Можно дать"
+                : "Available now";
         const statusDotClass = isUnavailable
           ? "bg-rose-500"
           : stats?.blockedByDailyLimit
@@ -85,7 +79,17 @@ export function MedicationPlanList({
         return (
           <article
             key={plan.id}
-            className="border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-4 py-4 last:border-b-0"
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpen(plan.id)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") {
+                return;
+              }
+              event.preventDefault();
+              onOpen(plan.id);
+            }}
+            className="cursor-pointer border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-4 py-4 transition hover:bg-[color:color-mix(in_srgb,var(--color-surface)_78%,var(--color-background)_22%)] focus:outline-none focus-visible:bg-[color:color-mix(in_srgb,var(--color-surface)_78%,var(--color-background)_22%)] last:border-b-0"
           >
             <div className="flex flex-col gap-3">
               <div className="min-w-0">
@@ -123,7 +127,10 @@ export function MedicationPlanList({
                 {onTakeDose && (
                   <button
                     type="button"
-                    onClick={() => onTakeDose(plan)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onTakeDose(plan);
+                    }}
                     disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
                     className={`transition ${
                       isUnavailable || stats?.isBlocked
@@ -140,17 +147,13 @@ export function MedicationPlanList({
                           ? "Недоступно"
                           : "Unavailable"
                         : language === "ru"
-                          ? "Записать"
-                          : "Log"}
+                          ? "Отметить сейчас"
+                          : "Log now"}
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => onOpen(plan.id)}
-                  className={illnessCompactSecondaryButtonClass}
-                >
-                  {language === "ru" ? "Открыть" : "Open"}
-                </button>
+                <div className={illnessCompactSecondaryButtonClass} aria-hidden="true">
+                  {language === "ru" ? "Открыть детали" : "Open details"}
+                </div>
               </div>
             </div>
           </article>

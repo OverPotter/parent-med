@@ -1,6 +1,6 @@
 """Сервис управления push-подписками устройства (web/native)."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from src.application.dto.push_notification import (
@@ -40,14 +40,19 @@ class PushNotificationService:
             vapid_public_key=settings.web_push_public_key,
         )
 
+    @staticmethod
+    def _normalize_language(value: str | None) -> str:
+        return "en" if value == "en" else "ru"
+
     async def get_preferences(self, account_id: UUID) -> PushNotificationPreferencesResponseDto:
         account = await self._account_repo.get_by_id(account_id)
         if not account:
             raise NotFoundError("Аккаунт не найден", resource="account")
         return PushNotificationPreferencesResponseDto(
+            children_enabled=account.children_push_enabled,
             before_reminder_minutes=account.push_before_reminder_minutes,
+            pillbox_enabled=account.pillbox_push_enabled,
             pillbox_before_reminder_minutes=account.pillbox_push_before_reminder_minutes,
-            due_reminder_enabled=True,
             cabinet_notify_10_days=account.cabinet_notify_10_days,
             cabinet_notify_7_days=account.cabinet_notify_7_days,
             cabinet_notify_3_days=account.cabinet_notify_3_days,
@@ -66,14 +71,20 @@ class PushNotificationService:
             raise NotFoundError("Аккаунт не найден", resource="account")
 
         before_reminder_minutes = account.push_before_reminder_minutes
+        children_enabled = account.children_push_enabled
+        pillbox_enabled = account.pillbox_push_enabled
         pillbox_before_reminder_minutes = account.pillbox_push_before_reminder_minutes
         live_activity_sleep_enabled = account.live_activity_sleep_enabled
         live_activity_feeding_enabled = account.live_activity_feeding_enabled
         live_activity_illness_enabled = account.live_activity_illness_enabled
+        if dto.children_enabled is not None:
+            children_enabled = dto.children_enabled
         if dto.before_reminder_minutes is not None:
             if dto.before_reminder_minutes not in self.ALLOWED_BEFORE_REMINDER_MINUTES:
                 raise ValidationError("Можно выбрать 0, 5, 10, 15 или 20 минут")
             before_reminder_minutes = dto.before_reminder_minutes
+        if dto.pillbox_enabled is not None:
+            pillbox_enabled = dto.pillbox_enabled
         if dto.pillbox_before_reminder_minutes is not None:
             if (
                 dto.pillbox_before_reminder_minutes
@@ -89,7 +100,9 @@ class PushNotificationService:
             live_activity_illness_enabled = dto.live_activity_illness_enabled
 
         if (
-            dto.before_reminder_minutes is None
+            dto.children_enabled is None
+            and dto.before_reminder_minutes is None
+            and dto.pillbox_enabled is None
             and dto.pillbox_before_reminder_minutes is None
             and dto.cabinet_notify_10_days is None
             and dto.cabinet_notify_7_days is None
@@ -104,6 +117,8 @@ class PushNotificationService:
             copy_account(
                 account,
                 push_before_reminder_minutes=before_reminder_minutes,
+                children_push_enabled=children_enabled,
+                pillbox_push_enabled=pillbox_enabled,
                 pillbox_push_before_reminder_minutes=pillbox_before_reminder_minutes,
                 cabinet_notify_10_days=(
                     dto.cabinet_notify_10_days
@@ -127,9 +142,10 @@ class PushNotificationService:
             )
         )
         return PushNotificationPreferencesResponseDto(
+            children_enabled=updated.children_push_enabled,
             before_reminder_minutes=updated.push_before_reminder_minutes,
+            pillbox_enabled=updated.pillbox_push_enabled,
             pillbox_before_reminder_minutes=updated.pillbox_push_before_reminder_minutes,
-            due_reminder_enabled=True,
             cabinet_notify_10_days=updated.cabinet_notify_10_days,
             cabinet_notify_7_days=updated.cabinet_notify_7_days,
             cabinet_notify_3_days=updated.cabinet_notify_3_days,
@@ -245,6 +261,65 @@ class PushNotificationService:
                 "kind": "test",
                 "source": "settings",
             },
+        }
+        sent = await scheduler._send_to_subscriptions(  # noqa: SLF001
+            subscriptions=subscriptions,
+            subscription_repo=self._repo,
+            payload=payload,
+        )
+        return PushNotificationTestResponseDto(
+            sent=sent,
+            subscription_count=len(subscriptions),
+        )
+
+    async def send_pillbox_test_notification(
+        self,
+        account_id: UUID,
+        scheduler,
+    ) -> PushNotificationTestResponseDto:
+        subscriptions = await self._repo.get_by_account_id(account_id)
+        if not subscriptions:
+            return PushNotificationTestResponseDto(sent=False, subscription_count=0)
+
+        account = await self._account_repo.get_by_id(account_id)
+        language = self._normalize_language(account.preferred_language if account else None)
+        recipient_label = "you" if language == "en" else "вас"
+        if account:
+            recipient_label = (
+                (getattr(account, "display_name", None) or "").strip()
+                or f"@{account.login}".strip()
+                or recipient_label
+            )
+        scheduled_for = datetime.now(UTC) + timedelta(minutes=10)
+        scheduled_time_label = scheduled_for.strftime("%H:%M")
+        plan_id = "test-pillbox-plan"
+        medication_id = "test-pillbox-medication"
+        if language == "en":
+            title = "In 10 min: Ibuprofen"
+            body = f"1 pill · after meal · For: {recipient_label} · at {scheduled_time_label}"
+        else:
+            title = "Через 10 мин: Ибупрофен"
+            body = f"1 таблетка · после еды · Кому: {recipient_label} · в {scheduled_time_label}"
+
+        payload = {
+            "title": title,
+            "body": body,
+            "url": f"/pillbox?plan={plan_id}&highlightPlan={plan_id}&action=take",
+            "tag": f"pillbox-test-{account_id}",
+            "data": {
+                "planId": plan_id,
+                "medicationId": medication_id,
+                "scheduledFor": scheduled_for.isoformat(),
+                "slotCount": 1,
+                "kind": "before",
+                "source": "pillbox_test",
+            },
+            "actions": [
+                {
+                    "action": "open-pillbox",
+                    "title": "Open" if language == "en" else "Открыть",
+                }
+            ],
         }
         sent = await scheduler._send_to_subscriptions(  # noqa: SLF001
             subscriptions=subscriptions,

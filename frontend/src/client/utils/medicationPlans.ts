@@ -5,6 +5,7 @@ import type {
 } from "../../shared/types/api.js";
 
 const INTERVAL_MINUTE_MS = 60 * 1000;
+export const DOSE_TIME_CONFIRMATION_GRACE_MS = 7 * 60 * 1000;
 
 type MedicationPlanLike = Pick<
   EpisodeMedicationPlan,
@@ -63,8 +64,8 @@ export function buildPlanAdministrationStats(
       ? "Дневной лимит уже достигнут"
       : nextAllowedAt
         ? nextAllowedAt <= now
-          ? "Следующий приём уже можно отметить"
-          : `Следующий приём можно отметить ${formatRelativeDateTime(nextAllowedAt, now)}`
+          ? "Можно дать"
+          : formatDoseTimeLabel(nextAllowedAt)
         : "Пока приёмов не было, можно отметить первый",
   };
 }
@@ -121,7 +122,7 @@ export function getEpisodeMedicationReminder(
   if (availableNow) {
     return {
       tone: "success" as const,
-      text: `Сейчас можно отметить приём: ${
+      text: `Можно дать: ${
         availableNow.plan.customMedicineName ?? availableNow.medicine?.medicineName ?? "лекарство"
       }`,
     };
@@ -138,9 +139,9 @@ export function getEpisodeMedicationReminder(
   if (upcoming?.stats.nextAllowedAt) {
     return {
       tone: "warning" as const,
-      text: `Следующий приём: ${
+      text: `${
         upcoming.plan.customMedicineName ?? upcoming.medicine?.medicineName ?? "лекарство"
-      } ${formatRelativeDateTime(upcoming.stats.nextAllowedAt, now)}`,
+      } ${formatDoseTimeLabel(upcoming.stats.nextAllowedAt)}`,
     };
   }
 
@@ -199,37 +200,55 @@ export function getAdministrationActorLabel(
   return actor ? `${language === "ru" ? "Дал(а)" : "Given by"}: ${actor}` : null;
 }
 
-export function formatRelativeDateTime(date: Date, now = new Date()) {
-  const diffMs = date.getTime() - now.getTime();
-  const totalSeconds = Math.max(0, Math.ceil(diffMs / 1000));
-  const totalMinutes = Math.floor(totalSeconds / 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours === 0 && minutes === 0) {
-    return "меньше чем через минуту";
-  }
-  if (hours === 0) {
-    return `через ${minutes} мин`;
-  }
-  if (minutes === 0) {
-    return `через ${hours} ч`;
-  }
-  return `через ${hours} ч ${minutes} мин`;
-}
-
-export function formatReminderTimeWithClock(
-  date: Date,
-  language: "ru" | "en",
-  now = new Date()
-) {
-  const relative = formatRelativeDateTime(date, now);
-  const atTime = new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
+export function formatDoseClock(date: Date, language: "ru" | "en" = "ru") {
+  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
+}
 
-  return language === "ru" ? `${relative} (в ${atTime})` : `${relative} (${atTime})`;
+export function formatDoseTimeLabel(date: Date, language: "ru" | "en" = "ru") {
+  return language === "ru"
+    ? `дать в ${formatDoseClock(date, language)}`
+    : `give at ${formatDoseClock(date, language)}`;
+}
+
+export function formatDoseStatusLabel(
+  date: Date | null | undefined,
+  language: "ru" | "en" = "ru",
+  now = new Date()
+) {
+  if (!date) {
+    return language === "ru" ? "Можно дать" : "Available now";
+  }
+
+  return date <= now
+    ? language === "ru"
+      ? "Можно дать"
+      : "Available now"
+    : language === "ru"
+      ? `Дать в ${formatDoseClock(date, language)}`
+      : `Give at ${formatDoseClock(date, language)}`;
+}
+
+export function formatRelativeDateTime(date: Date, now = new Date()) {
+  return formatDoseStatusLabel(date, "ru", now);
+}
+
+export function formatReminderTimeWithClock(date: Date, language: "ru" | "en", now = new Date()) {
+  return formatDoseStatusLabel(date, language, now);
+}
+
+export function shouldRequestDoseTimeConfirmation(
+  nextAllowedAt: Date | null | undefined,
+  now = new Date(),
+  graceMs = DOSE_TIME_CONFIRMATION_GRACE_MS
+) {
+  if (!nextAllowedAt) {
+    return false;
+  }
+
+  return now.getTime() - nextAllowedAt.getTime() > graceMs;
 }
 
 function parseMedicineConcentration(concentration: string | null) {

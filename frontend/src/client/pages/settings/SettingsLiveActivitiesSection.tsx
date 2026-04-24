@@ -75,12 +75,9 @@ export function SettingsLiveActivitiesSection({
     {
       key: "illness",
       title: tSettings(language, "liveActivitiesIllnessPreviewTitle"),
-      previewStyle: "illness" as const,
-      childName: language === "ru" ? "Маша" : "Mia",
-      leadingPrimary: language === "ru" ? "Нурофен · через 2 ч" : "Nurofen · in 2 h",
-      leadingSecondary: language === "ru" ? "Нурофен дали в 18:10" : "Nurofen given at 18:10",
-      trailingValue: "38.4°",
-      trailingCaption: language === "ru" ? "Была в 21:25" : "At 21:25",
+      timer: language === "ru" ? "3 день" : "Day 3",
+      status:
+        language === "ru" ? "Маша · Дать Нурофен в 23:10" : "Mia · Give Nurofen at 11:10 PM",
       accentClassName: "from-[#38A39A] via-[#38A39A] to-[#38A39A]",
       accentSurfaceClassName: "bg-[#38A39A]/16 text-[#38A39A] border-[#38A39A]/14",
       surfaceClassName:
@@ -136,12 +133,6 @@ export function SettingsLiveActivitiesSection({
               enabled={card.enabled}
               muted={!isIos}
               language={language}
-              previewStyle={"previewStyle" in card ? card.previewStyle : undefined}
-              childName={"childName" in card ? card.childName : undefined}
-              leadingPrimary={"leadingPrimary" in card ? card.leadingPrimary : undefined}
-              leadingSecondary={"leadingSecondary" in card ? card.leadingSecondary : undefined}
-              trailingValue={"trailingValue" in card ? card.trailingValue : undefined}
-              trailingCaption={"trailingCaption" in card ? card.trailingCaption : undefined}
             />
           ))}
         </div>
@@ -235,12 +226,6 @@ function LiveActivityPreviewCard({
   iconName,
   enabled,
   muted,
-  previewStyle,
-  childName,
-  leadingPrimary,
-  leadingSecondary,
-  trailingValue,
-  trailingCaption,
 }: {
   language: AppLanguage;
   title: string;
@@ -252,12 +237,6 @@ function LiveActivityPreviewCard({
   iconName: string;
   enabled: boolean;
   muted: boolean;
-  previewStyle?: "illness";
-  childName?: string;
-  leadingPrimary?: string;
-  leadingSecondary?: string;
-  trailingValue?: string;
-  trailingCaption?: string;
 }) {
   return (
     <div
@@ -285,58 +264,20 @@ function LiveActivityPreviewCard({
           </svg>
         </div>
         <div className="min-w-0 flex-1">
-          {previewStyle === "illness" ? (
-            <div className="space-y-1.5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">
-                    {childName}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <div
-                      className={`h-2 w-2 shrink-0 rounded-full bg-gradient-to-br ${accentClassName}`}
-                    />
-                    <p className="truncate text-[0.8rem] font-semibold text-slate-800/90 dark:text-white/84">
-                      {title}
-                    </p>
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-[1.1rem] font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
-                    {trailingValue}
-                  </p>
-                  <p className="mt-0.5 text-[0.72rem] font-medium text-slate-700/80 dark:text-white/72">
-                    {trailingCaption}
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-0.5 pl-4">
-                <p className="truncate text-[0.8rem] font-semibold text-slate-900/88 dark:text-white/84">
-                  {leadingPrimary}
-                </p>
-                <p className="truncate text-[0.76rem] text-slate-700/80 dark:text-white/72">
-                  {leadingSecondary}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between gap-3">
-                <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">
-                  {title}
-                </p>
-                <p className="shrink-0 text-[1.1rem] font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
-                  {timer}
-                </p>
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                <div className={`h-2 w-2 shrink-0 rounded-full bg-gradient-to-br ${accentClassName}`} />
-                <p className="truncate text-[0.8rem] font-semibold text-slate-800/90 dark:text-white/84">
-                  {status}
-                </p>
-              </div>
-            </>
-          )}
+          <div className="flex items-center justify-between gap-3">
+            <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">
+              {title}
+            </p>
+            <p className="shrink-0 text-[1.1rem] font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
+              {timer}
+            </p>
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <div className={`h-2 w-2 shrink-0 rounded-full bg-gradient-to-br ${accentClassName}`} />
+            <p className="truncate text-[0.8rem] font-semibold text-slate-800/90 dark:text-white/84">
+              {status}
+            </p>
+          </div>
         </div>
       </div>
       <div className="mt-2.5 flex items-center justify-between gap-3">

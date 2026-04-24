@@ -19,9 +19,10 @@ class PushNotificationConfigResponseDto(ResponseBase):
 class PushNotificationPreferencesResponseDto(ResponseBase):
     """Настройки push-напоминаний на уровне аккаунта."""
 
+    children_enabled: bool = True
     before_reminder_minutes: int
+    pillbox_enabled: bool = True
     pillbox_before_reminder_minutes: int
-    due_reminder_enabled: bool = True
     cabinet_notify_10_days: bool
     cabinet_notify_7_days: bool
     cabinet_notify_3_days: bool
@@ -33,9 +34,11 @@ class PushNotificationPreferencesResponseDto(ResponseBase):
 class PushNotificationPreferencesUpdateDto(BaseModel):
     """Обновление настроек push-напоминаний аккаунта."""
 
+    children_enabled: bool | None = Field(None, description="Разрешены push по детям")
     before_reminder_minutes: int | None = Field(
         None, description="За сколько минут прислать раннее напоминание"
     )
+    pillbox_enabled: bool | None = Field(None, description="Разрешены push по таблетнице")
     pillbox_before_reminder_minutes: int | None = Field(
         None, description="За сколько минут прислать раннее напоминание для таблетницы"
     )

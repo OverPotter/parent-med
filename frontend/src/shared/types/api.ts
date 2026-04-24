@@ -280,9 +280,10 @@ export interface PushNotificationConfig {
 }
 
 export interface PushNotificationPreferences {
+  childrenEnabled: boolean;
   beforeReminderMinutes: number;
+  pillboxEnabled: boolean;
   pillboxBeforeReminderMinutes: number;
-  dueReminderEnabled: boolean;
   cabinetNotify10Days: boolean;
   cabinetNotify7Days: boolean;
   cabinetNotify3Days: boolean;

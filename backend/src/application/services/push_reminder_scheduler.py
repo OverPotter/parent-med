@@ -92,6 +92,10 @@ def _normalize_language(value: str | None) -> str:
 
 
 def _is_push_allowed_for_account(account: Any, channel: str) -> bool:
+    if channel == "illness":
+        return bool(getattr(account, "children_push_enabled", True))
+    if channel == "pillbox":
+        return bool(getattr(account, "pillbox_push_enabled", True))
     policy = getattr(account, "access_policy", None)
     if policy is None:
         return True
@@ -127,6 +131,10 @@ def _can_receive_pillbox_push(account: Any) -> bool:
     )
 
 
+def _get_pillbox_target_account_ids(plan: Any) -> list[Any]:
+    return list(getattr(plan, "member_account_ids", []) or [])
+
+
 def _format_date(value: date, language: str) -> str:
     if language == "en":
         return value.strftime("%b %d, %Y")
@@ -141,9 +149,10 @@ def _format_due_body(
     language: str,
 ) -> str:
     dose_text = dose_amount.strip()
+    summary_label = dose_text or medicine_name
     if language == "en":
-        return f"{dose_text or medicine_name} · {scheduled_time_label}"
-    return f"{dose_text or medicine_name} · в {scheduled_time_label}"
+        return f"{summary_label} · {child_name} · {scheduled_time_label}"
+    return f"{summary_label} · {child_name} · в {scheduled_time_label}"
 
 
 def _format_overdue_body(
@@ -154,9 +163,10 @@ def _format_overdue_body(
     language: str,
 ) -> str:
     dose_text = dose_amount.strip()
+    summary_label = dose_text or medicine_name
     if language == "en":
-        return f"{dose_text or medicine_name} · not marked since {scheduled_time_label}"
-    return f"{dose_text or medicine_name} · не отмечено с {scheduled_time_label}"
+        return f"{summary_label} · {child_name} · not marked since {scheduled_time_label}"
+    return f"{summary_label} · {child_name} · не отмечено с {scheduled_time_label}"
 
 
 def _format_before_body(
@@ -168,9 +178,10 @@ def _format_before_body(
     language: str,
 ) -> str:
     dose_text = dose_amount.strip()
+    summary_label = dose_text or medicine_name
     if language == "en":
-        return f"{dose_text or medicine_name} · at {scheduled_time_label}"
-    return f"{dose_text or medicine_name} · в {scheduled_time_label}"
+        return f"{summary_label} · {child_name} · at {scheduled_time_label}"
+    return f"{summary_label} · {child_name} · в {scheduled_time_label}"
 
 
 def _format_pillbox_due_body(
@@ -180,8 +191,8 @@ def _format_pillbox_due_body(
     language: str,
 ) -> str:
     if language == "en":
-        return f"For: {recipient_label} · {scheduled_time_label}"
-    return f"Кому: {recipient_label} · в {scheduled_time_label}"
+        return f"{summary_label} · For: {recipient_label} · {scheduled_time_label}"
+    return f"{summary_label} · Кому: {recipient_label} · в {scheduled_time_label}"
 
 
 def _format_pillbox_before_body(
@@ -192,8 +203,8 @@ def _format_pillbox_before_body(
     language: str,
 ) -> str:
     if language == "en":
-        return f"For: {recipient_label} · at {scheduled_time_label}"
-    return f"Кому: {recipient_label} · в {scheduled_time_label}"
+        return f"{summary_label} · For: {recipient_label} · at {scheduled_time_label}"
+    return f"{summary_label} · Кому: {recipient_label} · в {scheduled_time_label}"
 
 
 def _format_pillbox_overdue_body(
@@ -203,8 +214,8 @@ def _format_pillbox_overdue_body(
     language: str,
 ) -> str:
     if language == "en":
-        return f"For: {recipient_label} · not marked since {scheduled_time_label}"
-    return f"Кому: {recipient_label} · не отмечено с {scheduled_time_label}"
+        return f"{summary_label} · For: {recipient_label} · not marked since {scheduled_time_label}"
+    return f"{summary_label} · Кому: {recipient_label} · не отмечено с {scheduled_time_label}"
 
 
 def _format_pillbox_meal_rule(meal_rule: str, language: str) -> str:
@@ -247,8 +258,7 @@ def _get_cabinet_offsets(account: Any) -> list[int]:
         (7, account.cabinet_notify_7_days),
         (3, account.cabinet_notify_3_days),
     )
-    optional_offsets = [days for days, enabled in mapping if enabled]
-    return sorted({*optional_offsets, 1}, reverse=True)
+    return sorted([days for days, enabled in mapping if enabled], reverse=True)
 
 
 def _build_cabinet_payload(
@@ -418,7 +428,6 @@ class PushNotificationScheduler:
 
             plans = await plan_repo.get_for_push_notifications()
             now = datetime.now(UTC)
-
             for plan in plans:
                 episode = await episode_repo.get_by_id(plan.episode_id)
                 if not episode or episode.status != "active":
@@ -517,24 +526,19 @@ class PushNotificationScheduler:
                         preferred_before_minutes,
                         max(plan.min_interval_minutes - 1, 0),
                     )
+                    remind_at = next_allowed_at - timedelta(minutes=reminder_before_minutes)
+                    overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
 
                     if reminder_before_minutes > 0:
-                        remind_at = next_allowed_at - timedelta(minutes=reminder_before_minutes)
                         if (
                             remind_at <= now < next_allowed_at
                             and plan.last_before_notification_for_at != next_allowed_at
                         ):
                             payload = {
                                 "title": (
-                                    (
-                                        f"In {reminder_before_minutes} min: "
-                                        f"{medicine_name} for {child.name}"
-                                    )
+                                    (f"In {reminder_before_minutes} min: {medicine_name}")
                                     if language == "en"
-                                    else (
-                                        f"Через {reminder_before_minutes} мин: "
-                                        f"{medicine_name} для {child.name}"
-                                    )
+                                    else (f"Через {reminder_before_minutes} мин: {medicine_name}")
                                 ),
                                 "body": _format_before_body(
                                     child.name,
@@ -567,9 +571,9 @@ class PushNotificationScheduler:
                     ):
                         payload = {
                             "title": (
-                                f"Time to give {medicine_name} to {child.name}"
+                                f"Time to give: {medicine_name}"
                                 if language == "en"
-                                else f"Пора дать {medicine_name} · {child.name}"
+                                else f"Пора дать: {medicine_name}"
                             ),
                             "body": _format_due_body(
                                 child.name,
@@ -595,16 +599,15 @@ class PushNotificationScheduler:
                             or sent_due
                         )
 
-                    overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
                     if (
                         now >= overdue_at
                         and plan.last_overdue_notification_for_at != next_allowed_at
                     ):
                         payload = {
                             "title": (
-                                f"Check dose: {medicine_name} for {child.name}"
+                                f"Check dose: {medicine_name}"
                                 if language == "en"
-                                else f"Проверьте приём: {medicine_name} · {child.name}"
+                                else f"Проверьте приём: {medicine_name}"
                             ),
                             "body": _format_overdue_body(
                                 child.name,
@@ -698,6 +701,20 @@ class PushNotificationScheduler:
         if language == "en":
             return f"{labels[0]}, {labels[1]} +{len(labels) - 2} more"
         return f"{labels[0]}, {labels[1]} +{len(labels) - 2}"
+
+    def _build_pillbox_slot_title_label(
+        self,
+        items: list[tuple[PillboxPlanModel, PillboxMedicationModel]],
+        language: str,
+    ) -> str:
+        names = [self._resolve_pillbox_medicine_name(medication) for _, medication in items]
+        if not names:
+            return "Medicines" if language == "en" else "Лекарства"
+        if len(names) == 1:
+            return names[0]
+        if language == "en":
+            return f"{names[0]} +{len(names) - 1}"
+        return f"{names[0]} +{len(names) - 1}"
 
     def _get_pillbox_schedule_candidates(
         self,
@@ -810,9 +827,9 @@ class PushNotificationScheduler:
             if not plan.medications:
                 continue
 
-            target_account_ids = list(plan.member_account_ids or [])
+            target_account_ids = _get_pillbox_target_account_ids(plan)
             if not target_account_ids:
-                target_account_ids = [plan.created_by_account_id]
+                continue
 
             schedule_candidates = self._get_pillbox_schedule_candidates(plan, now)
             if not schedule_candidates:
@@ -850,6 +867,7 @@ class PushNotificationScheduler:
             scheduled_time_label = scheduled_for.astimezone(self._timezone).strftime("%H:%M")
             timestamp = int(scheduled_for.timestamp())
             summary_label = self._build_pillbox_slot_summary_label(items, language)
+            title_label = self._build_pillbox_slot_title_label(items, language)
             recipient_label = _resolve_account_recipient_label(account, language)
             pillbox_before_minutes = account.pillbox_push_before_reminder_minutes
 
@@ -900,15 +918,9 @@ class PushNotificationScheduler:
             if remind_at <= now < scheduled_for and not await slot_delivered("before"):
                 payload = {
                     "title": (
-                        (
-                            f"In {pillbox_before_minutes} min: "
-                            f"{summary_label} for {recipient_label}"
-                        )
+                        (f"In {pillbox_before_minutes} min: {title_label}")
                         if language == "en"
-                        else (
-                            f"Через {pillbox_before_minutes} мин: "
-                            f"{summary_label} для {recipient_label}"
-                        )
+                        else (f"Через {pillbox_before_minutes} мин: {title_label}")
                     ),
                     "body": _format_pillbox_before_body(
                         summary_label,
@@ -932,9 +944,9 @@ class PushNotificationScheduler:
             if scheduled_for <= now < overdue_at and not await slot_delivered("due"):
                 payload = {
                     "title": (
-                        f"Time to take {summary_label}"
+                        f"Time to take {title_label}"
                         if language == "en"
-                        else f"Пора принять {summary_label}"
+                        else f"Пора принять {title_label}"
                     ),
                     "body": _format_pillbox_due_body(
                         summary_label,
@@ -957,9 +969,9 @@ class PushNotificationScheduler:
             if now >= overdue_at and not await slot_delivered("overdue"):
                 payload = {
                     "title": (
-                        f"Check dose: {summary_label} for {recipient_label}"
+                        f"Check dose: {title_label}"
                         if language == "en"
-                        else f"Проверьте приём: {summary_label} · {recipient_label}"
+                        else f"Проверьте приём: {title_label}"
                     ),
                     "body": _format_pillbox_overdue_body(
                         summary_label,
@@ -1012,6 +1024,8 @@ class PushNotificationScheduler:
                     continue
                 language = _normalize_language(account.preferred_language)
                 reminder_offsets = _get_cabinet_offsets(account)
+                if not reminder_offsets:
+                    continue
                 subscriptions = await subscription_repo.get_by_account_id(account.id)
                 if not subscriptions:
                     continue

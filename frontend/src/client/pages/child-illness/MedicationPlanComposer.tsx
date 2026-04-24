@@ -18,6 +18,8 @@ import {
   illnessPanelSoftClass,
 } from "./shared";
 import {
+  canSubmitMedicationPlanComposer,
+  hasDoseUnitHint,
   MedicationPlanPayload,
   intervalMinutesToInputValue,
   parseIntervalInputToMinutes,
@@ -29,8 +31,11 @@ import { CabinetMedicinePicker } from "./CabinetMedicinePicker";
 import { ReminderFirstAdministrationSection } from "./ReminderFirstAdministrationSection";
 import { isFutureFirstAdministrationSelection } from "./reminderTiming";
 
-const reminderComposerPrimaryActionClass = `${illnessCompactPrimaryButtonClass} min-h-[2.45rem] px-3.5 text-[0.79rem] sm:min-h-[2.55rem] sm:text-[0.81rem]`;
+const reminderComposerPrimaryActionClass =
+  `${illnessCompactPrimaryButtonClass} min-h-[2.58rem] px-3.75 text-[0.8rem] shadow-[0_16px_34px_rgba(15,23,42,0.16)] transition hover:-translate-y-[1px] hover:shadow-[0_20px_40px_rgba(15,23,42,0.2)] sm:min-h-[2.68rem] sm:text-[0.82rem]`;
 const reminderComposerSecondaryActionClass = `${illnessCompactSecondaryButtonClass} min-h-[2.45rem] px-3.5 text-[0.79rem] sm:min-h-[2.55rem] sm:text-[0.81rem]`;
+const reminderComposerDisabledActionClass =
+  `${reminderComposerSecondaryActionClass} border border-border/70 bg-[color:color-mix(in_srgb,var(--color-surface)_78%,var(--color-background)_22%)] text-foreground/72 disabled:opacity-100`;
 
 function getCurrentLocalTimeValue(date = new Date()) {
   const hours = String(date.getHours()).padStart(2, "0");
@@ -166,8 +171,7 @@ export function MedicationPlanComposer({
     parsedWeightKg,
     parseNullableNumber(doseMgPerKg)
   );
-  const hasDoseUnitHint = doseAmount.trim().length > 0 && !/[A-Za-zА-Яа-я]/.test(doseAmount);
-  const hasInvalidDose = doseAmount.trim().length > 0 && hasDoseUnitHint;
+  const shouldShowDoseUnitHint = hasDoseUnitHint(doseAmount);
   const parsedIntervalMinutes = parseIntervalInputToMinutes(minIntervalInput, intervalUnit);
   const firstDoseAt =
     !initialValue && firstDoseStatus === "already_given"
@@ -177,6 +181,15 @@ export function MedicationPlanComposer({
     !initialValue &&
     firstDoseStatus === "already_given" &&
     isFutureFirstAdministrationSelection(firstDoseDate, firstDoseTime);
+  const canSubmit = canSubmitMedicationPlanComposer({
+    isPending,
+    planMode,
+    selectedMedicineId,
+    customMedicineName,
+    minIntervalInput,
+    parsedIntervalMinutes,
+    hasFutureFirstDoseSelection,
+  });
   const latestWeightValue = latestWeight?.valueKg ?? null;
   const shouldOfferWeightSync =
     parsedWeightKg !== null &&
@@ -341,11 +354,11 @@ export function MedicationPlanComposer({
                 }
                 className={illnessCompactInputClass}
               />
-              {hasInvalidDose && (
-                <p className="soft-text-danger mt-2 text-xs">
+              {shouldShowDoseUnitHint && (
+                <p className="mt-2 text-xs text-muted">
                   {language === "ru"
-                    ? "Укажи единицу дозы: мл, таб., мг, кап. и т.д."
-                    : "Add a dose unit: ml, tab, mg, drops, etc."}
+                    ? "Лучше добавить единицу дозы: мл, таб., мг, кап. и т.д."
+                    : "Better add a dose unit: ml, tab, mg, drops, etc."}
                 </p>
               )}
             </label>
@@ -566,12 +579,7 @@ export function MedicationPlanComposer({
           <button
             type="button"
             onClick={() => {
-              if (
-                parsedIntervalMinutes === null ||
-                hasInvalidDose ||
-                hasFutureFirstDoseSelection ||
-                (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim())
-              ) {
+              if (!canSubmit || parsedIntervalMinutes === null) {
                 return;
               }
 
@@ -603,15 +611,10 @@ export function MedicationPlanComposer({
               clearCabinetPicker();
               onCancel?.();
             }}
-            disabled={
-              isPending ||
-              (planMode === "cabinet" ? !selectedMedicineId : !customMedicineName.trim()) ||
-              !minIntervalInput ||
-              hasInvalidDose ||
-              hasFutureFirstDoseSelection ||
-              parsedIntervalMinutes === null
-            }
-            className={`${reminderComposerPrimaryActionClass} w-full`}
+            disabled={!canSubmit}
+            className={`w-full ${
+              canSubmit ? reminderComposerPrimaryActionClass : reminderComposerDisabledActionClass
+            }`}
           >
             {isPending ? (language === "ru" ? "Сохраняем…" : "Saving…") : submitLabel}
           </button>

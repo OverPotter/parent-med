@@ -18,6 +18,7 @@ from src.application.dto.pillbox import (
     PillboxDoseLogCreateDto,
     PillboxMedicationWriteDto,
     PillboxPlanCreateDto,
+    PillboxPlanUpdateDto,
 )
 from src.application.dto.sleep_session import SleepSessionCreateDto, SleepSessionStopDto
 from src.application.services.child_service import ChildService
@@ -1016,6 +1017,142 @@ async def test_pillbox_create_recipient_matrix(
 
     with pytest.raises(ValidationError, match="доступа к приёмам"):
         await service.create(dto, account.id, account)
+
+
+@pytest.mark.asyncio
+async def test_pillbox_create_defaults_empty_recipients_to_current_account() -> None:
+    family_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(children_access="edit", pillbox_access="edit"),
+    )
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository([]),
+        account_repo=StubAccountRepository(
+            family_id,
+            members=[
+                type(
+                    "Member",
+                    (),
+                    {
+                        "id": account.id,
+                        "access_policy": FamilyAccessPolicyDto(pillbox_access="edit"),
+                    },
+                )(),
+            ],
+        ),
+        household_repo=StubHouseholdMedicineRepository([]),
+    )
+
+    result = await service.create(
+        PillboxPlanCreateDto(
+            title="Курс",
+            member_account_ids=[],
+            medications=[
+                PillboxMedicationWriteDto(
+                    household_medicine_id=None,
+                    custom_medicine_name="Ибупрофен",
+                    dose_amount="5 мл",
+                    meal_rule="after_meal",
+                    repeat_days=[1, 2, 3],
+                    times=[time(9, 0)],
+                    course_mode="continuous",
+                    course_start_date=None,
+                    course_end_date=None,
+                    position=0,
+                )
+            ],
+        ),
+        account.id,
+        account,
+    )
+
+    assert result.member_account_ids == [account.id]
+
+
+@pytest.mark.asyncio
+async def test_pillbox_update_defaults_empty_recipients_to_current_account() -> None:
+    family_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(children_access="edit", pillbox_access="edit"),
+    )
+    plan_id = uuid4()
+    now = datetime.now(UTC)
+    existing_plan = PillboxPlan(
+        id=plan_id,
+        family_id=family_id,
+        title="Курс",
+        status="active",
+        member_account_ids=[uuid4()],
+        created_by_account_id=account.id,
+        created_at=now,
+        updated_at=now,
+        medications=[
+            PillboxMedication(
+                id=uuid4(),
+                plan_id=plan_id,
+                household_medicine_id=None,
+                custom_medicine_name="Ибупрофен",
+                dose_amount="5 мл",
+                meal_rule="after_meal",
+                repeat_days=[1, 2, 3],
+                times=[time(9, 0)],
+                course_mode="continuous",
+                course_start_date=None,
+                course_end_date=None,
+                position=0,
+                created_at=now,
+                updated_at=now,
+            )
+        ],
+        dose_logs=[],
+    )
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository([existing_plan]),
+        account_repo=StubAccountRepository(
+            family_id,
+            members=[
+                type(
+                    "Member",
+                    (),
+                    {
+                        "id": account.id,
+                        "access_policy": FamilyAccessPolicyDto(pillbox_access="edit"),
+                    },
+                )(),
+            ],
+        ),
+        household_repo=StubHouseholdMedicineRepository([]),
+    )
+
+    result = await service.update(
+        plan_id,
+        PillboxPlanUpdateDto(
+            title="Курс",
+            status="active",
+            member_account_ids=[],
+            medications=[
+                PillboxMedicationWriteDto(
+                    id=existing_plan.medications[0].id,
+                    household_medicine_id=None,
+                    custom_medicine_name="Ибупрофен",
+                    dose_amount="5 мл",
+                    meal_rule="after_meal",
+                    repeat_days=[1, 2, 3],
+                    times=[time(9, 0)],
+                    course_mode="continuous",
+                    course_start_date=None,
+                    course_end_date=None,
+                    position=0,
+                )
+            ],
+        ),
+        account.id,
+        account,
+    )
+
+    assert result.member_account_ids == [account.id]
 
 
 @pytest.mark.asyncio

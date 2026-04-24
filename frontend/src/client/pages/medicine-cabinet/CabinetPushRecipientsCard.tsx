@@ -116,7 +116,7 @@ export function CabinetPushRecipientsCard({
                       <span className="min-w-0 truncate text-sm font-semibold tracking-[-0.02em] text-foreground">
                         {label}
                       </span>
-                      <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
+                      <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
                         {member.relationshipLabel || member.login || member.email || member.id}
                       </span>
                     </span>

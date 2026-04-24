@@ -1,7 +1,7 @@
 import type { AppLanguage } from "@shared/i18n";
 import type { Child, IllnessEpisode } from "@shared/types/api";
 
-const QUICK_FOCUS_VALUES = new Set([
+export const QUICK_FOCUS_VALUES = new Set([
   "temperature",
   "administration",
   "comment",
@@ -10,6 +10,85 @@ const QUICK_FOCUS_VALUES = new Set([
   "reminder-create",
   "reminder-detail",
 ]);
+
+export type ChildIllnessActiveFocus =
+  | "overview"
+  | "temperature"
+  | "administration"
+  | "comment"
+  | "timeline"
+  | "reminders"
+  | "reminder-create"
+  | "reminder-detail";
+
+export type ChildIllnessRouteState =
+  | { screen: "history"; episodeId: string | null }
+  | { screen: "create" }
+  | {
+      screen: "active";
+      focus: ChildIllnessActiveFocus;
+      reminderPlanId: string | null;
+      picker: "cabinet" | null;
+    };
+
+export function parseChildIllnessRoute(source: URLSearchParams): ChildIllnessRouteState {
+  const view = source.get("view");
+  const mode = source.get("mode");
+  const episodeId = source.get("episodeId");
+  const focus = source.get("focus") ?? source.get("compose");
+  const plan = source.get("plan");
+  const picker = source.get("picker") === "cabinet" ? "cabinet" : null;
+
+  if (view === "history") {
+    return {
+      screen: "history",
+      episodeId,
+    };
+  }
+
+  if (mode === "create") {
+    return { screen: "create" };
+  }
+
+  const activeFocus: ChildIllnessActiveFocus =
+    focus && QUICK_FOCUS_VALUES.has(focus) ? (focus as ChildIllnessActiveFocus) : "overview";
+
+  return {
+    screen: "active",
+    focus: activeFocus,
+    reminderPlanId: activeFocus === "reminder-detail" ? plan : null,
+    picker,
+  };
+}
+
+export function buildChildIllnessUrl(childId: string, route: ChildIllnessRouteState) {
+  if (route.screen === "history") {
+    return route.episodeId
+      ? `/children/${childId}/illness?view=history&episodeId=${route.episodeId}`
+      : `/children/${childId}/illness?view=history`;
+  }
+
+  if (route.screen === "create") {
+    return `/children/${childId}/illness?mode=create`;
+  }
+
+  if (route.focus === "overview") {
+    return `/children/${childId}/illness`;
+  }
+
+  const params = new URLSearchParams([["focus", route.focus]]);
+  if (route.focus === "reminder-detail" && route.reminderPlanId) {
+    params.set("plan", route.reminderPlanId);
+  }
+  if (
+    route.picker === "cabinet" &&
+    (route.focus === "reminder-create" || route.focus === "reminder-detail")
+  ) {
+    params.set("picker", "cabinet");
+  }
+
+  return `/children/${childId}/illness?${params.toString()}`;
+}
 
 export function normalizeChildIllnessSearchParams(
   source: URLSearchParams,
@@ -77,73 +156,158 @@ export function normalizeChildIllnessSearchParams(
   return next;
 }
 
+export function resolveChildIllnessGuard(args: {
+  childId: string;
+  route: ChildIllnessRouteState;
+  canActIllness: boolean;
+  canEditIllness: boolean;
+  activeEpisode: Pick<IllnessEpisode, "medicationMode"> | null | undefined;
+  isActiveEpisodeFetched: boolean;
+  hasFocusedHistoryEpisode: boolean;
+  hasSelectedReminderPlan?: boolean | null;
+}): string | null {
+  const {
+    childId,
+    route,
+    canActIllness,
+    canEditIllness,
+    activeEpisode,
+    isActiveEpisodeFetched,
+    hasFocusedHistoryEpisode,
+    hasSelectedReminderPlan = null,
+  } = args;
+  const activeOverviewRoute = buildChildIllnessUrl(childId, {
+    screen: "active",
+    focus: "overview",
+    reminderPlanId: null,
+    picker: null,
+  });
+  const activeRemindersRoute = buildChildIllnessUrl(childId, {
+    screen: "active",
+    focus: "reminders",
+    reminderPlanId: null,
+    picker: null,
+  });
+
+  if (route.screen === "create" && !canEditIllness) {
+    return activeEpisode ? "/illnesses/active" : activeOverviewRoute;
+  }
+
+  if (route.screen === "create" && isActiveEpisodeFetched && activeEpisode) {
+    return "/illnesses/active";
+  }
+
+  if (
+    route.screen === "active" &&
+    (route.focus === "temperature" || route.focus === "administration" || route.focus === "comment") &&
+    !canActIllness
+  ) {
+    return activeEpisode ? "/illnesses/active" : activeOverviewRoute;
+  }
+
+  if (route.screen === "active" && route.focus === "reminder-create" && !canEditIllness) {
+    return activeEpisode
+      ? activeRemindersRoute
+      : activeOverviewRoute;
+  }
+
+  if (
+    route.screen === "active" &&
+    isActiveEpisodeFetched &&
+    !activeEpisode &&
+    route.focus !== "overview"
+  ) {
+    return activeOverviewRoute;
+  }
+
+  if (
+    route.screen === "active" &&
+    (route.focus === "reminders" ||
+      route.focus === "reminder-create" ||
+      route.focus === "reminder-detail") &&
+    activeEpisode?.medicationMode !== "guided"
+  ) {
+    return activeEpisode ? "/illnesses/active" : activeOverviewRoute;
+  }
+
+  if (route.screen === "active" && route.focus === "reminder-detail" && !route.reminderPlanId) {
+    return activeEpisode ? activeRemindersRoute : activeOverviewRoute;
+  }
+
+  if (
+    route.screen === "active" &&
+    route.focus === "reminder-detail" &&
+    route.reminderPlanId &&
+    hasSelectedReminderPlan === false
+  ) {
+    return activeEpisode ? activeRemindersRoute : activeOverviewRoute;
+  }
+
+  if (
+    isActiveEpisodeFetched &&
+    activeEpisode &&
+    route.screen === "active" &&
+    route.focus === "overview"
+  ) {
+    return "/illnesses/active";
+  }
+
+  if (route.screen === "history" && route.episodeId && !hasFocusedHistoryEpisode) {
+    return buildChildIllnessUrl(childId, { screen: "history", episodeId: null });
+  }
+
+  return null;
+}
+
 export function buildChildIllnessBackState(args: {
   language: AppLanguage;
   childId: string;
-  searchParams: URLSearchParams;
+  route: ChildIllnessRouteState;
   activeEpisode: Pick<IllnessEpisode, "medicationMode"> | null | undefined;
-  historyOnlyView: boolean;
-  historyEpisodeInsightsMode: boolean;
-  createMode: boolean;
-  quickComposeMode: string | null;
-  quickTimelineMode: boolean;
-  quickReminderMode: boolean;
-  quickReminderCreateMode: boolean;
-  quickReminderDetailMode: boolean;
-  reminderPlanId: string | null;
 }): { href: string; label: string } {
-  const {
-    language,
-    childId,
-    searchParams,
-    activeEpisode,
-    historyOnlyView,
-    historyEpisodeInsightsMode,
-    createMode,
-    quickComposeMode,
-    quickTimelineMode,
-    quickReminderMode,
-    quickReminderCreateMode,
-    quickReminderDetailMode,
-    reminderPlanId,
-  } = args;
+  const { language, childId, route, activeEpisode } = args;
 
-  if (searchParams.get("picker") === "cabinet" && quickReminderDetailMode && reminderPlanId) {
+  if (
+    route.screen === "active" &&
+    route.picker === "cabinet" &&
+    route.focus === "reminder-detail" &&
+    route.reminderPlanId
+  ) {
     return {
-      href: `/children/${childId}/illness?focus=reminder-detail&plan=${reminderPlanId}`,
+      href: `/children/${childId}/illness?focus=reminder-detail&plan=${route.reminderPlanId}`,
       label: language === "ru" ? "← К напоминанию" : "← Back to reminder",
     };
   }
 
-  if (searchParams.get("picker") === "cabinet" && quickReminderCreateMode) {
+  if (route.screen === "active" && route.picker === "cabinet" && route.focus === "reminder-create") {
     return {
       href: `/children/${childId}/illness?focus=reminder-create`,
       label: language === "ru" ? "← К созданию" : "← Back to create",
     };
   }
 
-  if (historyEpisodeInsightsMode) {
+  if (route.screen === "history" && route.episodeId) {
     return {
       href: `/children/${childId}/illness?view=history`,
       label: language === "ru" ? "← Ко всей истории" : "← Back to history",
     };
   }
 
-  if (historyOnlyView) {
+  if (route.screen === "history") {
     return {
       href: `/children/${childId}`,
       label: language === "ru" ? "← К профилю ребёнка" : "← Back to child profile",
     };
   }
 
-  if (quickReminderDetailMode) {
+  if (route.screen === "active" && route.focus === "reminder-detail") {
     return {
       href: `/children/${childId}/illness?focus=reminders`,
       label: language === "ru" ? "← К напоминаниям" : "← Back to reminders",
     };
   }
 
-  if (quickReminderCreateMode) {
+  if (route.screen === "active" && route.focus === "reminder-create") {
     const href =
       activeEpisode?.medicationMode === "guided"
         ? `/children/${childId}/illness?focus=reminders`
@@ -161,14 +325,17 @@ export function buildChildIllnessBackState(args: {
     };
   }
 
-  if (quickReminderMode || quickComposeMode || quickTimelineMode || (activeEpisode && !historyOnlyView)) {
+  if (
+    route.screen === "active" &&
+    (route.focus !== "overview" || activeEpisode)
+  ) {
     return {
       href: `/children/${childId}`,
       label: language === "ru" ? "← К профилю ребёнка" : "← Back to child profile",
     };
   }
 
-  if (createMode) {
+  if (route.screen === "create") {
     return {
       href: `/children/${childId}`,
       label: language === "ru" ? "← К профилю ребёнка" : "← Back to child profile",
@@ -185,20 +352,13 @@ export function buildChildIllnessTopBarState(args: {
   language: AppLanguage;
   child: Pick<Child, "name">;
   activeEpisode: IllnessEpisode | null | undefined;
-  historyOnlyView: boolean;
-  historyEpisodeInsightsMode: boolean;
+  route: ChildIllnessRouteState;
   historyEpisodesCount: number;
-  createMode: boolean;
 }): { title?: string; hint?: string } {
-  const {
-    language,
-    child,
-    activeEpisode,
-    historyOnlyView,
-    historyEpisodeInsightsMode,
-    historyEpisodesCount,
-    createMode,
-  } = args;
+  const { language, child, activeEpisode, route, historyEpisodesCount } = args;
+  const historyOnlyView = route.screen === "history";
+  const historyEpisodeInsightsMode = route.screen === "history" && Boolean(route.episodeId);
+  const createMode = route.screen === "create";
 
   const title =
     historyOnlyView || (!activeEpisode && !createMode)

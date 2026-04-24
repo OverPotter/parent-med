@@ -78,7 +78,6 @@ export function usePillboxMutations({
     onSuccess: async (plan) => {
       setSavePlanError(null);
       await refreshPillboxQueries(queryClient, currentFamilyId, plan.id);
-      goToHub();
     },
     onError: (error) => {
       if (isAxiosError(error)) {

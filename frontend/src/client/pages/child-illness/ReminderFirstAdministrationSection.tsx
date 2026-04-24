@@ -7,6 +7,9 @@ import {
 } from "./shared";
 import { reminderModeButtonClass } from "./reminderUtils";
 
+const firstDoseActionButtonClass =
+  "shadow-[0_14px_28px_rgba(15,23,42,0.08)] transition hover:-translate-y-[1px] hover:shadow-[0_18px_32px_rgba(15,23,42,0.12)]";
+
 export function ReminderFirstAdministrationSection({
   language,
   firstDoseStatus,
@@ -44,20 +47,20 @@ export function ReminderFirstAdministrationSection({
           <button
             type="button"
             onClick={() => onStatusChange("already_given")}
-            className={reminderModeButtonClass(
+            className={`${reminderModeButtonClass(
               firstDoseStatus === "already_given",
               appBtnSecondaryClass
-            )}
+            )} ${firstDoseActionButtonClass}`}
           >
             {language === "ru" ? "Да, уже давали" : "Yes, already given"}
           </button>
           <button
             type="button"
             onClick={() => onStatusChange("not_given")}
-            className={reminderModeButtonClass(
+            className={`${reminderModeButtonClass(
               firstDoseStatus === "not_given",
               appBtnSecondaryClass
-            )}
+            )} ${firstDoseActionButtonClass}`}
           >
             {language === "ru" ? "Нет, ещё не давали" : "No, not yet"}
           </button>

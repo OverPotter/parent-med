@@ -161,6 +161,8 @@ class AuthService(BaseAuthService):
             preferred_language="ru",
             family_role=family_role,
             push_before_reminder_minutes=10,
+            children_push_enabled=True,
+            pillbox_push_enabled=True,
             pillbox_push_before_reminder_minutes=10,
             cabinet_notify_10_days=True,
             cabinet_notify_7_days=True,

@@ -101,12 +101,18 @@ function attachListeners() {
 
 export { NATIVE_PUSH_NAVIGATION_EVENT };
 
-async function ensurePermission(promptIfNeeded: boolean): Promise<PermissionStatus["receive"]> {
-  if (cachedPermissionStatus === "granted" || (!promptIfNeeded && cachedPermissionStatus)) {
+async function ensurePermission(
+  promptIfNeeded: boolean,
+  forceRefresh = false
+): Promise<PermissionStatus["receive"]> {
+  if (
+    !forceRefresh &&
+    (cachedPermissionStatus === "granted" || (!promptIfNeeded && cachedPermissionStatus))
+  ) {
     return cachedPermissionStatus;
   }
 
-  if (permissionStatusPromise) {
+  if (!forceRefresh && permissionStatusPromise) {
     const existing = await permissionStatusPromise;
     if (existing === "granted" || !promptIfNeeded) {
       return existing;
@@ -204,7 +210,7 @@ export async function getNativePushPermissionStatus(): Promise<NativePushPermiss
   if (!isNativePushSupported()) {
     return null;
   }
-  return ensurePermission(false);
+  return ensurePermission(false, true);
 }
 
 export function openNativeNotificationSettings(): boolean {

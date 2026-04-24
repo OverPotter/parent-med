@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { changePassword, deleteMyAccount, deleteMyFamily } from "@shared/api/auth";
 import {
   deletePushSubscription,
@@ -56,7 +56,9 @@ function getInitialPushStatus() {
 
 export function SettingsPage() {
   const { language } = useI18n();
+  const location = useLocation();
   const queryClient = useQueryClient();
+  const accountId = useAppStore((s) => s.accountId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const medicationIntervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const setMedicationIntervalUnit = useAppStore((s) => s.setMedicationIntervalUnit);
@@ -89,13 +91,11 @@ export function SettingsPage() {
   const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
   const isDevTestPushVisible =
     import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
-  const childrenEarlyReminderEnabled = Number(selectedReminderMinutes) > 0;
-  const pillboxEarlyReminderEnabled = Number(selectedPillboxReminderMinutes) > 0;
   const pushSupportIssue = getPushSupportIssue();
   const isPushEnabled = pushStatus === "enabled";
 
   const { data: pushConfig, isLoading: isPushConfigLoading } = useQuery({
-    queryKey: ["push", "config", "account"],
+    queryKey: ["push", "config", accountId],
     queryFn: () =>
       withTimeout(
         fetchPushNotificationConfig(),
@@ -108,10 +108,12 @@ export function SettingsPage() {
   });
 
   const { data: pushPreferences, isLoading: isPushPreferencesLoading } = useQuery({
-    queryKey: ["push", "preferences", "account"],
+    queryKey: ["push", "preferences", "account", accountId],
     queryFn: fetchPushNotificationPreferences,
     staleTime: 5 * 60 * 1000,
   });
+  const childrenPushEnabled = pushPreferences?.childrenEnabled ?? true;
+  const pillboxPushEnabled = pushPreferences?.pillboxEnabled ?? true;
   const cabinetEarlyReminderEnabled =
     (pushPreferences?.cabinetNotify10Days ?? false) ||
     (pushPreferences?.cabinetNotify7Days ?? false) ||
@@ -126,7 +128,9 @@ export function SettingsPage() {
 
   const updatePushPreferencesMutation = useMutation({
     mutationFn: (payload: {
+      children_enabled?: boolean;
       before_reminder_minutes?: number;
+      pillbox_enabled?: boolean;
       pillbox_before_reminder_minutes?: number;
       cabinet_notify_10_days?: boolean;
       cabinet_notify_7_days?: boolean;
@@ -136,20 +140,23 @@ export function SettingsPage() {
       live_activity_illness_enabled?: boolean;
     }) => updatePushNotificationPreferences(payload),
     onMutate: async (payload) => {
-      await queryClient.cancelQueries({ queryKey: ["push", "preferences", "account"] });
-      const previousPreferences = queryClient.getQueryData(["push", "preferences", "account"]);
+      const preferencesQueryKey = ["push", "preferences", "account", accountId];
+      await queryClient.cancelQueries({ queryKey: preferencesQueryKey });
+      const previousPreferences = queryClient.getQueryData(preferencesQueryKey);
       const previousLiveActivitySettings = liveActivitySettings;
 
       queryClient.setQueryData(
-        ["push", "preferences", "account"],
+        preferencesQueryKey,
         (current: typeof pushPreferences | undefined) => {
           if (!current) {
             return current;
           }
           return {
             ...current,
+            childrenEnabled: payload.children_enabled ?? current.childrenEnabled,
             beforeReminderMinutes:
               payload.before_reminder_minutes ?? current.beforeReminderMinutes,
+            pillboxEnabled: payload.pillbox_enabled ?? current.pillboxEnabled,
             pillboxBeforeReminderMinutes:
               payload.pillbox_before_reminder_minutes ?? current.pillboxBeforeReminderMinutes,
             cabinetNotify10Days: payload.cabinet_notify_10_days ?? current.cabinetNotify10Days,
@@ -173,11 +180,14 @@ export function SettingsPage() {
       const nextLiveActivitySettings = resolveLiveActivityPreferences(nextPreferences);
       setLiveActivitySettings(nextLiveActivitySettings);
       syncLiveActivityPreferencesMirror(nextLiveActivitySettings);
-      queryClient.setQueryData(["push", "preferences", "account"], nextPreferences);
+      queryClient.setQueryData(["push", "preferences", "account", accountId], nextPreferences);
     },
     onError: (error, _payload, context) => {
       if (context?.previousPreferences) {
-        queryClient.setQueryData(["push", "preferences", "account"], context.previousPreferences);
+        queryClient.setQueryData(
+          ["push", "preferences", "account", accountId],
+          context.previousPreferences
+        );
       }
       if (context?.previousLiveActivitySettings) {
         setLiveActivitySettings(context.previousLiveActivitySettings);
@@ -263,7 +273,7 @@ export function SettingsPage() {
             if (!isCancelled) {
               setPushStatus("disabled");
               setIsNativePushBlocked(true);
-              setIsNativePushSettingsDialogOpen(true);
+              setIsNativePushSettingsDialogOpen(false);
             }
             return;
           }
@@ -321,6 +331,25 @@ export function SettingsPage() {
       document.removeEventListener("visibilitychange", refreshSubscription);
     };
   }, [language]);
+
+  useEffect(() => {
+    if (location.hash !== "#notifications") {
+      return;
+    }
+
+    const target = document.getElementById("settings-notifications");
+    if (!target) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [location.hash]);
 
   const changePasswordMutation = useMutation({
     mutationFn: (payload: { current_password: string; new_password: string }) =>
@@ -534,21 +563,21 @@ export function SettingsPage() {
   };
 
   const handleChildrenEarlyReminderToggle = (enabled: boolean) => {
-    if (enabled) {
-      handleReminderMinutesChange(selectedReminderMinutes === "0" ? "10" : selectedReminderMinutes);
-      return;
-    }
-    handleReminderMinutesChange("0");
+    setPushError(null);
+    updatePushPreferencesMutation.mutate({
+      children_enabled: enabled,
+      before_reminder_minutes:
+        enabled && selectedReminderMinutes === "0" ? 10 : undefined,
+    });
   };
 
   const handlePillboxEarlyReminderToggle = (enabled: boolean) => {
-    if (enabled) {
-      handlePillboxReminderMinutesChange(
-        selectedPillboxReminderMinutes === "0" ? "10" : selectedPillboxReminderMinutes
-      );
-      return;
-    }
-    handlePillboxReminderMinutesChange("0");
+    setPushError(null);
+    updatePushPreferencesMutation.mutate({
+      pillbox_enabled: enabled,
+      pillbox_before_reminder_minutes:
+        enabled && selectedPillboxReminderMinutes === "0" ? 10 : undefined,
+    });
   };
 
   const handleCabinetReminderSelect = (days: 10 | 7 | 3) => {
@@ -677,35 +706,37 @@ export function SettingsPage() {
         onFeedingToggle={handleLiveActivityFeedingToggle}
         onIllnessToggle={handleLiveActivityIllnessToggle}
       />
-      <SettingsNotificationsSection
-        language={language}
-        isPushEnabled={isPushEnabled}
-        pushError={pushError}
-        showTestPushAction={isDevTestPushVisible}
-        testPushStatus={testPushStatus}
-        isTestPushPending={sendTestPushMutation.isPending}
-        isNativePushBlocked={isNativePushBlocked}
-        isPushConfigLoading={isPushConfigLoading}
-        pushConfigEnabled={pushConfig?.enabled}
-        isGlobalPushSwitchDisabled={isGlobalPushSwitchDisabled}
-        onGlobalPushSwitchToggle={handleGlobalPushSwitchToggle}
-        onSendTestPush={handleSendTestPush}
-        onOpenSystemSettingsDialog={() => setIsNativePushSettingsDialogOpen(true)}
-        childrenEarlyReminderEnabled={childrenEarlyReminderEnabled}
-        pillboxEarlyReminderEnabled={pillboxEarlyReminderEnabled}
-        cabinetEarlyReminderEnabled={cabinetEarlyReminderEnabled}
-        selectedReminderMinutes={selectedReminderMinutes}
-        selectedPillboxReminderMinutes={selectedPillboxReminderMinutes}
-        selectedCabinetReminderDays={selectedCabinetReminderDays}
-        isPushPreferencesLoading={isPushPreferencesLoading}
-        isUpdatePending={updatePushPreferencesMutation.isPending}
-        onChildrenToggle={handleChildrenEarlyReminderToggle}
-        onPillboxToggle={handlePillboxEarlyReminderToggle}
-        onCabinetToggle={handleCabinetEarlyReminderToggle}
-        onChildrenMinutesChange={handleReminderMinutesChange}
-        onPillboxMinutesChange={handlePillboxReminderMinutesChange}
-        onCabinetReminderSelect={handleCabinetReminderSelect}
-      />
+      <div id="settings-notifications">
+        <SettingsNotificationsSection
+          language={language}
+          isPushEnabled={isPushEnabled}
+          pushError={pushError}
+          showTestPushAction={isDevTestPushVisible}
+          testPushStatus={testPushStatus}
+          isTestPushPending={sendTestPushMutation.isPending}
+          isNativePushBlocked={isNativePushBlocked}
+          isPushConfigLoading={isPushConfigLoading}
+          pushConfigEnabled={pushConfig?.enabled}
+          isGlobalPushSwitchDisabled={isGlobalPushSwitchDisabled}
+          onGlobalPushSwitchToggle={handleGlobalPushSwitchToggle}
+          onSendTestPush={handleSendTestPush}
+          onOpenSystemSettingsDialog={() => setIsNativePushSettingsDialogOpen(true)}
+          childrenEarlyReminderEnabled={childrenPushEnabled}
+          pillboxEarlyReminderEnabled={pillboxPushEnabled}
+          cabinetEarlyReminderEnabled={cabinetEarlyReminderEnabled}
+          selectedReminderMinutes={selectedReminderMinutes}
+          selectedPillboxReminderMinutes={selectedPillboxReminderMinutes}
+          selectedCabinetReminderDays={selectedCabinetReminderDays}
+          isPushPreferencesLoading={isPushPreferencesLoading}
+          isUpdatePending={updatePushPreferencesMutation.isPending}
+          onChildrenToggle={handleChildrenEarlyReminderToggle}
+          onPillboxToggle={handlePillboxEarlyReminderToggle}
+          onCabinetToggle={handleCabinetEarlyReminderToggle}
+          onChildrenMinutesChange={handleReminderMinutesChange}
+          onPillboxMinutesChange={handlePillboxReminderMinutesChange}
+          onCabinetReminderSelect={handleCabinetReminderSelect}
+        />
+      </div>
       <SettingsSecuritySection
         language={language}
         isPasswordDialogOpen={isPasswordDialogOpen}

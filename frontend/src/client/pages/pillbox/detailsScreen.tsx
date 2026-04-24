@@ -1,6 +1,7 @@
 import type { PillboxPlan } from "@shared/api/pillboxPlans.contract";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { PlanPushRecipientsField } from "./PlanPushRecipientsField";
 import {
   actionCompactDangerClass,
   actionCompactSecondaryClass,
@@ -33,6 +34,12 @@ export function PillboxDetailsScreen({
   onBack,
   onToggleStatus,
   onGoToSetup,
+  onOpenMedication,
+  familyMembers,
+  currentAccountId,
+  recipientsSummary,
+  onToggleRecipient,
+  recipientSelectionPending,
   onRequestDelete,
   onConfirmPlanAction,
   onClosePlanAction,
@@ -53,6 +60,17 @@ export function PillboxDetailsScreen({
   onBack: () => void;
   onToggleStatus: () => void;
   onGoToSetup: () => void;
+  onOpenMedication: (medicationId: string) => void;
+  familyMembers: Array<{
+    id: string;
+    displayName?: string | null;
+    login?: string | null;
+    relationshipLabel?: string | null;
+  }>;
+  currentAccountId: string | null;
+  recipientsSummary: string | null;
+  onToggleRecipient: (memberIds: string[]) => void | Promise<void>;
+  recipientSelectionPending: boolean;
   onRequestDelete: () => void;
   onConfirmPlanAction: () => void;
   onClosePlanAction: () => void;
@@ -196,6 +214,29 @@ export function PillboxDetailsScreen({
           </div>
         </div>
 
+        {canEdit && !disableEditingActions ? (
+          <div className="soft-panel rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="app-card-title">{tPillbox(language, "membersTitle")}</h2>
+                <PlanPushRecipientsField
+                  language={language}
+                  familyMembers={familyMembers}
+                  currentAccountId={currentAccountId}
+                  selectedMemberIds={selectedPlan.memberAccountIds}
+                  onSubmit={onToggleRecipient}
+                  isPending={recipientSelectionPending}
+                />
+              </div>
+              {recipientsSummary ? (
+                <p className="overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-6 text-muted">
+                  {recipientsSummary}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         <div className="divide-y divide-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] overflow-hidden rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
           <div className="px-4 pb-2 pt-3 sm:px-5">
             <h2 className="app-card-title">{tPillbox(language, "medsTitle")}</h2>
@@ -216,36 +257,73 @@ export function PillboxDetailsScreen({
                       {formatTimesPerDayLabel(normalizedTimes.length, language)}
                     </span>
                   </span>
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${
-                          isNextMedication
-                            ? "bg-[color:var(--color-success)]"
-                            : "bg-[color:color-mix(in_srgb,var(--color-primary)_70%,white)]"
-                        }`}
-                        aria-hidden="true"
-                      />
-                      <p className="truncate text-sm font-semibold leading-5 text-foreground">
-                        {displayPillboxText(
-                          medication.customMedicineName ||
-                            tPillbox(language, "unnamedMedicine", { index: index + 1 })
+                  {canEdit && !disableEditingActions ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenMedication(medication.id)}
+                      className="min-w-0 text-left transition hover:opacity-85"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${
+                            isNextMedication
+                              ? "bg-[color:var(--color-success)]"
+                              : "bg-[color:color-mix(in_srgb,var(--color-primary)_70%,white)]"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <p className="truncate text-sm font-semibold leading-5 text-foreground">
+                          {displayPillboxText(
+                            medication.customMedicineName ||
+                              tPillbox(language, "unnamedMedicine", { index: index + 1 })
+                          )}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 text-xs leading-5 text-muted">
+                        {formatMealRule(medication.mealRule, language)}
+                        {" · "}
+                        {formatPillboxDoseAmount(
+                          medication.doseAmount || tPillbox(language, "amountMissing"),
+                          language
                         )}
+                        {" · "}
+                        {medication.courseMode === "period"
+                          ? `${medication.courseStartDate ?? "—"} — ${medication.courseEndDate ?? "—"}`
+                          : tPillbox(language, "continuous")}
+                      </p>
+                    </button>
+                  ) : (
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${
+                            isNextMedication
+                              ? "bg-[color:var(--color-success)]"
+                              : "bg-[color:color-mix(in_srgb,var(--color-primary)_70%,white)]"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <p className="truncate text-sm font-semibold leading-5 text-foreground">
+                          {displayPillboxText(
+                            medication.customMedicineName ||
+                              tPillbox(language, "unnamedMedicine", { index: index + 1 })
+                          )}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 text-xs leading-5 text-muted">
+                        {formatMealRule(medication.mealRule, language)}
+                        {" · "}
+                        {formatPillboxDoseAmount(
+                          medication.doseAmount || tPillbox(language, "amountMissing"),
+                          language
+                        )}
+                        {" · "}
+                        {medication.courseMode === "period"
+                          ? `${medication.courseStartDate ?? "—"} — ${medication.courseEndDate ?? "—"}`
+                          : tPillbox(language, "continuous")}
                       </p>
                     </div>
-                    <p className="mt-0.5 text-xs leading-5 text-muted">
-                      {formatMealRule(medication.mealRule, language)}
-                      {" · "}
-                      {formatPillboxDoseAmount(
-                        medication.doseAmount || tPillbox(language, "amountMissing"),
-                        language
-                      )}
-                      {" · "}
-                      {medication.courseMode === "period"
-                        ? `${medication.courseStartDate ?? "—"} — ${medication.courseEndDate ?? "—"}`
-                        : tPillbox(language, "continuous")}
-                    </p>
-                  </div>
+                  )}
                 </div>
               );
             })}

@@ -39,6 +39,29 @@ function isOfflineLikeError(error: unknown): boolean {
   return !axiosError?.response && (code === "ERR_NETWORK" || code === "ECONNABORTED" || !code);
 }
 
+function isStaleOfflineIllnessStopError(action: OfflineCareAction, error: unknown): boolean {
+  if (action.kind !== "illness" || action.op !== "stop") {
+    return false;
+  }
+  const axiosError = error as AxiosError | undefined;
+  return axiosError?.response?.status === 404;
+}
+
+function discardStaleOfflineAction(action: OfflineCareAction): void {
+  removeOfflineAction(action.id);
+  clearOfflineOverride(action.kind, action.childId);
+  if (action.tempId) {
+    clearOfflineTempServerId(action.tempId);
+  }
+}
+
+function getOfflineIllnessStopTargetId(action: OfflineCareAction): string | null {
+  if (action.kind !== "illness" || action.op !== "stop") {
+    return null;
+  }
+  return action.serverId ?? action.tempId;
+}
+
 export async function startSleepSessionResilient(input: {
   childId: string;
   currentAccountId: string | null;
@@ -385,6 +408,16 @@ export async function flushOfflineCareActions(): Promise<boolean> {
       } catch (error) {
         if (isOfflineLikeError(error)) {
           break;
+        }
+        if (isStaleOfflineIllnessStopError(action, error)) {
+          appLog.warn("Discarding stale offline illness stop action after 404", {
+            actionId: action.id,
+            childId: action.childId,
+            episodeId: getOfflineIllnessStopTargetId(action),
+          });
+          discardStaleOfflineAction(action);
+          changed = true;
+          continue;
         }
         appLog.error("Offline care action flush failed", error);
         break;

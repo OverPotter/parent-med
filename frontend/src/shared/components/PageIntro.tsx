@@ -8,6 +8,7 @@ function joinClasses(...parts: Array<string | false | null | undefined>) {
 export function PageIntro({
   title,
   subtitle,
+  afterSubtitle,
   action,
   eyebrow,
   className,
@@ -17,6 +18,7 @@ export function PageIntro({
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
+  afterSubtitle?: ReactNode;
   action?: ReactNode;
   eyebrow?: string;
   className?: string;
@@ -69,6 +71,7 @@ export function PageIntro({
               {subtitle}
             </p>
           )}
+          {afterSubtitle}
         </div>
         {action && (
           <div className="flex w-full shrink-0 items-center sm:w-auto sm:justify-end">{action}</div>

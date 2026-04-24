@@ -25,13 +25,6 @@ function formatTemperatureValue(value: number | null | undefined): string | null
   return `${value.toFixed(1)}°`;
 }
 
-function joinLiveActivityParts(parts: Array<string | null | undefined>) {
-  return parts
-    .map((part) => (part ?? "").trim())
-    .filter(Boolean)
-    .join(" · ");
-}
-
 function parseLiveActivityDate(value: string | null | undefined): Date | null {
   const raw = (value ?? "").trim();
   if (!raw) {
@@ -52,6 +45,21 @@ function parseLiveActivityDate(value: string | null | undefined): Date | null {
   return new Date(timestamp);
 }
 
+function formatDoseClock(value: string | Date | null | undefined, language: "ru" | "en") {
+  if (!value) {
+    return null;
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function formatRelativeDoseLabel(
   value: string | Date | null | undefined,
   language: "ru" | "en",
@@ -66,20 +74,16 @@ export function formatRelativeDoseLabel(
   }
 
   const diffMs = date.getTime() - nowMs;
-  const totalMinutes = Math.max(0, Math.ceil(diffMs / 60_000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
+  if (diffMs <= 0) {
+    return language === "ru" ? "Можно дать" : "Ready now";
+  }
 
-  if (hours === 0 && minutes === 0) {
-    return language === "ru" ? "меньше чем через минуту" : "under a minute";
+  const timeLabel = formatDoseClock(date, language);
+  if (!timeLabel) {
+    return null;
   }
-  if (hours === 0) {
-    return language === "ru" ? `через ${minutes} мин` : `in ${minutes} min`;
-  }
-  if (minutes === 0) {
-    return language === "ru" ? `через ${hours} ч` : `in ${hours} h`;
-  }
-  return language === "ru" ? `через ${hours} ч ${minutes} мин` : `in ${hours} h ${minutes} min`;
+
+  return language === "ru" ? `Дать в ${timeLabel}` : `Give at ${timeLabel}`;
 }
 
 export function getIllnessDurationMeta(
@@ -138,36 +142,6 @@ export function getIllnessDurationMeta(
   };
 }
 
-export function buildIllnessStatusLabel(
-  _episodeTitle: string | null | undefined,
-  insights: Pick<
-    IllnessEpisodeInsights,
-    "lastAdministrationAt" | "medicineNames" | "lastEventAt"
-  > | null | undefined,
-  language: "ru" | "en"
-) {
-  const medicine = insights?.medicineNames?.[0]?.trim() || null;
-  const administrationTime = formatTimeLabel(insights?.lastAdministrationAt, language);
-  const latestEventTime = formatTimeLabel(insights?.lastEventAt, language);
-
-  if (medicine && latestEventTime) {
-    return joinLiveActivityParts([
-      medicine,
-      language === "ru" ? `запись ${latestEventTime}` : `entry ${latestEventTime}`,
-    ]);
-  }
-
-  if (latestEventTime) {
-    return language === "ru" ? `Последняя запись ${latestEventTime}` : `Latest event ${latestEventTime}`;
-  }
-
-  if (medicine) {
-    return medicine;
-  }
-
-  return administrationTime;
-}
-
 export function buildIllnessMedicationLines(
   insights: Pick<IllnessEpisodeInsights, "lastAdministrationAt" | "medicineNames"> | null | undefined,
   nextDose:
@@ -192,18 +166,29 @@ export function buildIllnessMedicationLines(
     insights?.medicineNames?.[0]?.trim() ||
     nextDose?.medicineName?.trim() ||
     null;
-  const nextDoseRelative = formatRelativeDoseLabel(nextDose?.nextDoseAt, language, now.getTime());
+  const nextDoseTime = formatDoseClock(nextDose?.nextDoseAt, language);
+  const canGiveNow =
+    !!nextDose?.nextDoseAt && new Date(nextDose.nextDoseAt).getTime() <= now.getTime();
+  const medicineFallback = language === "ru" ? "лекарство" : "medicine";
+  const nextDoseMedicineLabel = nextDoseMedicineName ?? medicineFallback;
+  const lastDoseMedicineLabel = lastAdministrationMedicine ?? medicineFallback;
 
-  const primaryLine = nextDoseRelative
-    ? language === "ru"
-      ? `${nextDoseMedicineName ?? "Таблетка"} · ${nextDoseRelative}`
-      : `${nextDoseMedicineName ?? "Medicine"} · ${nextDoseRelative}`
+  const primaryLine = nextDose?.nextDoseAt
+    ? canGiveNow
+      ? language === "ru"
+        ? `Можно дать ${nextDoseMedicineLabel}`
+        : `Can give ${nextDoseMedicineLabel}`
+      : nextDoseTime
+        ? language === "ru"
+          ? `Дать ${nextDoseMedicineLabel} в ${nextDoseTime}`
+          : `Give ${nextDoseMedicineLabel} at ${nextDoseTime}`
+        : null
     : null;
 
   const secondaryLine = lastAdministrationTime
     ? language === "ru"
-      ? `${lastAdministrationMedicine ?? "Таблетка"} дали в ${lastAdministrationTime}`
-      : `${lastAdministrationMedicine ?? "Medicine"} given at ${lastAdministrationTime}`
+      ? `Дали ${lastDoseMedicineLabel} в ${lastAdministrationTime}`
+      : `Gave ${lastDoseMedicineLabel} at ${lastAdministrationTime}`
     : null;
 
   return { primaryLine, secondaryLine };
@@ -214,7 +199,7 @@ export function buildIllnessLiveActivitySummary(
     IllnessEpisodeInsights,
     "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"
   > | null | undefined,
-  nextDose:
+  _nextDose:
     | {
         nextDoseAt: Date;
         medicineName: string | null;
@@ -234,7 +219,6 @@ export function buildIllnessLiveActivitySummary(
   const lastAdministrationTime = formatTimeLabel(insights?.lastAdministrationAt, language);
   const lastEventTime = formatTimeLabel(insights?.lastEventAt, language);
   const firstMedicineName = insights?.medicineNames?.[0]?.trim() || null;
-  const nextDoseRelative = formatRelativeDoseLabel(nextDose?.nextDoseAt, language, now.getTime());
   const durationMeta = getIllnessDurationMeta(startedAt, language, now);
   const temperatureCaption = lastEventTime
     ? language === "ru"
@@ -243,42 +227,12 @@ export function buildIllnessLiveActivitySummary(
     : language === "ru"
       ? "Температура"
       : "Temperature";
-  const nextDoseCaption = nextDose
-    ? nextDose.medicineName
-      ? nextDose.medicineName
-      : language === "ru"
-        ? "Таблетка"
-        : "Medicine"
-    : null;
-
-  if (nextDoseRelative && lastTemperature) {
-    return {
-      primaryValue: lastTemperature,
-      primaryCaption: temperatureCaption,
-      secondaryValue: nextDoseRelative,
-      secondaryCaption: nextDoseCaption,
-    };
-  }
-
-  if (nextDoseRelative) {
-    return {
-      primaryValue: nextDoseRelative,
-      primaryCaption: nextDoseCaption,
-      secondaryValue: lastEventTime ?? durationMeta.value,
-      secondaryCaption: lastEventTime
-        ? language === "ru"
-          ? "Последняя запись"
-          : "Latest event"
-        : durationMeta.caption,
-    };
-  }
-
   if (lastTemperature) {
     return {
       primaryValue: lastTemperature,
       primaryCaption: temperatureCaption,
-      secondaryValue: durationMeta.value,
-      secondaryCaption: durationMeta.caption,
+      secondaryValue: null,
+      secondaryCaption: null,
     };
   }
 

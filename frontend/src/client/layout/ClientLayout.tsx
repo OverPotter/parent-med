@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { matchPath, Outlet, useLocation } from "react-router-dom";
+import { matchPath, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchFamilies } from "@shared/api/families";
 import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
@@ -24,6 +24,7 @@ import { useClientLayoutWarmup } from "./clientLayout/useClientLayoutWarmup";
 export function ClientLayout() {
   const { copy, language } = useI18n();
   const location = useLocation();
+  const navigate = useNavigate();
   const accountId = useAppStore((s) => s.accountId);
   const authToken = useAppStore((s) => s.authToken);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
@@ -53,8 +54,6 @@ export function ClientLayout() {
   const {
     isDeferredBootReady,
     isDeferredShellWorkReady,
-    isIosPushUiReady,
-    isInteractiveDataReady,
     isFirstNativeLaunch,
     firstNativeLaunchStorageKey,
   } = useClientLayoutBoot({
@@ -254,9 +253,6 @@ export function ClientLayout() {
   const pushPrompt = useClientLayoutPushPrompt({
     authToken,
     accountId,
-    isDeferredShellWorkReady,
-    isIosPushUiReady,
-    isInteractiveDataReady,
     copy,
   });
 
@@ -287,6 +283,7 @@ export function ClientLayout() {
         value={{
           showNotificationBell: pushPrompt.shouldShowNotificationPrompt,
           isNotificationBellActive: pushPrompt.isNotificationBellActive,
+          notificationBellVariant: pushPrompt.notificationBellVariant,
           onNotificationBellClick: pushPrompt.shouldShowNotificationPrompt
             ? () => pushPrompt.setIsPushDialogOpen(true)
             : null,
@@ -300,6 +297,7 @@ export function ClientLayout() {
           compactHiddenChrome={isCompactNestedChrome}
           showNotificationBell={pushPrompt.shouldShowNotificationPrompt}
           isNotificationBellActive={pushPrompt.isNotificationBellActive}
+          notificationBellVariant={pushPrompt.notificationBellVariant}
           onNotificationBellClick={
             pushPrompt.shouldShowNotificationPrompt ? () => pushPrompt.setIsPushDialogOpen(true) : null
           }
@@ -312,12 +310,16 @@ export function ClientLayout() {
         title={
           pushPrompt.nativePushIssue === "system"
             ? copy.clientLayout.pushPrompt.nativeBlockedTitle
-            : copy.clientLayout.pushPrompt.title
+            : pushPrompt.categoryPushIssue
+              ? copy.clientLayout.pushPrompt.categoriesDisabledTitle
+              : copy.clientLayout.pushPrompt.title
         }
         description={[
           pushPrompt.nativePushIssue === "system"
             ? copy.clientLayout.pushPrompt.nativeBlockedDescription
-            : copy.clientLayout.pushPrompt.description,
+            : pushPrompt.categoryPushIssue
+              ? copy.clientLayout.pushPrompt.categoriesDisabledDescription
+              : copy.clientLayout.pushPrompt.description,
           pushPrompt.pushPromptError,
           pushPrompt.pushPromptSuccess,
         ]
@@ -326,6 +328,8 @@ export function ClientLayout() {
         confirmLabel={
           pushPrompt.nativePushIssue === "system"
             ? copy.clientLayout.pushPrompt.openSettings
+            : pushPrompt.categoryPushIssue
+              ? copy.clientLayout.pushPrompt.categoriesDisabledCta
             : pushPrompt.isPushPending
               ? copy.clientLayout.pushPrompt.enabling
               : copy.clientLayout.pushPrompt.enable
@@ -337,6 +341,11 @@ export function ClientLayout() {
           if (pushPrompt.nativePushIssue === "system") {
             pushPrompt.openNativeNotificationSettings();
             pushPrompt.setIsPushDialogOpen(false);
+            return;
+          }
+          if (pushPrompt.categoryPushIssue) {
+            pushPrompt.setIsPushDialogOpen(false);
+            navigate("/settings#notifications");
             return;
           }
           void pushPrompt.handleEnablePush();

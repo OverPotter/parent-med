@@ -42,7 +42,7 @@ const DATE_FIELD_COPY: Record<
     year: "Год",
     today: "Сегодня",
     clear: "Очистить",
-    dateBadge: "Дата",
+    dateBadge: "Календарь",
   },
   en: {
     months: [
@@ -67,7 +67,7 @@ const DATE_FIELD_COPY: Record<
     year: "Year",
     today: "Today",
     clear: "Clear",
-    dateBadge: "Date",
+    dateBadge: "Calendar",
   },
 };
 
@@ -169,6 +169,9 @@ interface DateFieldProps {
   allowClear?: boolean;
   className?: string;
   panelPortalClassName?: string;
+  hideBadge?: boolean;
+  triggerClassName?: string;
+  valueClassName?: string;
 }
 
 interface PanelPosition {
@@ -189,6 +192,9 @@ export function DateField({
   allowClear = true,
   className = "",
   panelPortalClassName = "fixed inset-0 z-[940]",
+  hideBadge = false,
+  triggerClassName = "",
+  valueClassName = "",
 }: DateFieldProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -588,16 +594,30 @@ export function DateField({
         disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
         className={[
-          "soft-input flex min-h-[2.95rem] w-full items-center justify-between gap-3 px-4 text-left text-[0.92rem] tracking-[-0.02em] sm:min-h-[3.1rem]",
+          "soft-input flex min-h-[2.95rem] w-full items-center justify-between gap-3 border border-border/70 bg-[color:color-mix(in_srgb,var(--color-surface)_82%,var(--color-background)_18%)] px-4 text-left text-[0.92rem] tracking-[-0.02em] shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition hover:-translate-y-[1px] hover:border-primary/28 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:min-h-[3.1rem]",
+          triggerClassName,
           disabled ? "cursor-not-allowed opacity-60" : "",
         ].join(" ")}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
       >
-        <span className={value ? "text-foreground" : "text-muted"}>
+        <span
+          className={[
+            value ? "text-foreground" : "text-muted",
+            "min-w-0 flex-1",
+            valueClassName,
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
           {value ? formatDisplayDate(value, language) : (placeholder ?? copy.placeholder)}
         </span>
-        <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">{copy.dateBadge}</span>
+        {!hideBadge ? (
+          <span className="soft-pill inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px]">
+            <span aria-hidden="true">▦</span>
+            {copy.dateBadge}
+          </span>
+        ) : null}
       </button>
       {panel}
     </div>

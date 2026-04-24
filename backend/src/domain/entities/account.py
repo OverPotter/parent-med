@@ -30,6 +30,8 @@ class Account:
     cabinet_notify_3_days: bool
     cabinet_notify_1_day: bool
     created_at: datetime
+    children_push_enabled: bool = True
+    pillbox_push_enabled: bool = True
     pillbox_push_before_reminder_minutes: int = 10
     relationship_label: str | None = None
     phone: str | None = None

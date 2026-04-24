@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
 import { appPillActionClass } from "../child-illness/shared";
 import { tPillbox } from "./shared";
 
@@ -14,23 +15,57 @@ type FamilyMemberLike = {
 export function PlanPushRecipientsField({
   language,
   familyMembers,
+  currentAccountId,
   selectedMemberIds,
-  onToggleMember,
+  onSubmit,
+  isPending = false,
 }: {
   language: AppLanguage;
   familyMembers: FamilyMemberLike[];
+  currentAccountId: string | null;
   selectedMemberIds: string[];
-  onToggleMember: (memberId: string) => void;
+  onSubmit: (memberIds: string[]) => void | Promise<void>;
+  isPending?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const eligibleMemberIds = useMemo(() => familyMembers.map((member) => member.id), [familyMembers]);
+  const [selectedIds, setSelectedIds] = useState<string[]>(() =>
+    resolveRecipientSelection(selectedMemberIds, currentAccountId, eligibleMemberIds)
+  );
+
+  useEffect(() => {
+    setSelectedIds(resolveRecipientSelection(selectedMemberIds, currentAccountId, eligibleMemberIds));
+  }, [currentAccountId, eligibleMemberIds, selectedMemberIds]);
+
+  const handleToggle = (memberId: string) => {
+    if (isPending) {
+      return;
+    }
+    setSelectedIds((current) => {
+      const nextIds = current.includes(memberId)
+        ? current.filter((id) => id !== memberId)
+        : [...current, memberId];
+      const normalizedNextIds = resolveRecipientSelection(
+        nextIds,
+        currentAccountId,
+        eligibleMemberIds
+      );
+      void Promise.resolve(onSubmit(normalizedNextIds)).catch(() => {
+        setSelectedIds(current);
+      });
+      return normalizedNextIds;
+    });
+  };
+
   return (
     <>
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className={`${appPillActionClass} shrink-0 px-4`}
+        disabled={isPending}
+        className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
       >
-        {language === "ru" ? "Push" : "Push"}
+        {language === "ru" ? "Уведомления" : "Notifications"}
       </button>
 
       <OverlayDialog
@@ -51,25 +86,35 @@ export function PlanPushRecipientsField({
             <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
               {tPillbox(language, "membersTitle")}
             </h2>
+            <p className="text-sm leading-5 text-muted">
+              {language === "ru"
+                ? "Можно выбрать сразу несколько получателей. Хотя бы один должен остаться."
+                : "Choose several recipients. At least one recipient must remain selected."}
+            </p>
           </div>
 
           <div className="soft-choice-list mt-4">
             {familyMembers.map((member) => {
-              const selected = selectedMemberIds.includes(member.id);
+              const selected = selectedIds.includes(member.id);
               const memberLabel = member.displayName || member.login || member.id;
               const memberMeta = member.relationshipLabel || member.login || member.id;
               return (
                 <button
                   key={member.id}
                   type="button"
-                  onClick={() => onToggleMember(member.id)}
-                  className={["soft-choice-row", selected ? "soft-choice-row-active" : ""].join(" ")}
+                  onClick={() => handleToggle(member.id)}
+                  disabled={isPending}
+                  className={[
+                    "soft-choice-row",
+                    selected ? "soft-choice-row-active" : "",
+                    isPending ? "cursor-not-allowed opacity-60" : "",
+                  ].join(" ")}
                 >
                   <span className="grid min-w-0 gap-0.5 text-left">
-                    <span className="min-w-0 text-sm font-semibold tracking-[-0.02em] text-foreground">
+                    <span className="min-w-0 truncate whitespace-nowrap text-sm font-semibold tracking-[-0.02em] text-foreground">
                       {memberLabel}
                     </span>
-                    <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
+                    <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
                       {memberMeta}
                     </span>
                   </span>

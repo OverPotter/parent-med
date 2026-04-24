@@ -147,6 +147,33 @@ function EpisodeReminderRecipientsCard({
   );
 }
 
+function formatIllnessRecipientsSummary(params: {
+  language: "ru" | "en";
+  selectedIds: string[];
+  familyMembers: FamilyMember[];
+  currentAccountId: string | null;
+}) {
+  const eligibleMemberIds = params.familyMembers.map((member) => member.id);
+  const resolvedIds = resolveRecipientSelection(
+    params.selectedIds,
+    params.currentAccountId,
+    eligibleMemberIds
+  );
+  const labels = params.familyMembers
+    .filter((member) => resolvedIds.includes(member.id))
+    .map((member) => member.displayName || member.login || member.id);
+
+  if (labels.length === 0) {
+    return params.language === "ru"
+      ? "Сейчас уведомления по напоминаниям никому не отправляются."
+      : "Reminder notifications are currently not sent to anyone.";
+  }
+
+  return params.language === "ru"
+    ? `Получатели уведомлений: ${labels.join(", ")}`
+    : `Reminder recipients: ${labels.join(", ")}`;
+}
+
 export function TemperatureQuickView(props: {
   language: "ru" | "en";
   childName: string;
@@ -653,6 +680,16 @@ export function ReminderListQuickView(props: {
     isUpdatingRecipients,
     onChangeRecipients,
   } = props;
+  const recipientsSummary = useMemo(
+    () =>
+      formatIllnessRecipientsSummary({
+        language,
+        selectedIds: episode.memberAccountIds,
+        familyMembers,
+        currentAccountId,
+      }),
+    [currentAccountId, episode.memberAccountIds, familyMembers, language]
+  );
   return (
     <div className="min-w-0 space-y-5">
       <SectionTitle
@@ -662,6 +699,7 @@ export function ReminderListQuickView(props: {
             ? "Список схем приёма для текущего наблюдения."
             : "Dose plans for the current tracking session."
         }
+        actionInlineOnMobile
         action={
           <div className="flex items-center gap-2">
             {canEditEpisode ? (
@@ -685,6 +723,9 @@ export function ReminderListQuickView(props: {
           </div>
         }
       />
+      <p className="overflow-x-auto whitespace-nowrap text-xs leading-5 text-muted [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {recipientsSummary}
+      </p>
 
       <MedicationPlanList
         plans={plans}
@@ -701,20 +742,16 @@ export function ReminderListQuickView(props: {
 export function ReminderDetailQuickView(props: {
   language: "ru" | "en";
   childId: string;
-  episode: IllnessEpisode;
   selectedReminderItem: MedicationPlanPriorityItem | null;
   latestWeight: WeightEntry | null;
   isReminderCabinetPickerOpen: boolean;
   isReminderEditing: boolean;
   editingReminderName: string | null;
   medicines: HouseholdMedicine[];
-  familyMembers: FamilyMember[];
-  currentAccountId: string | null;
   canEditEpisode: boolean;
   isSubmittingAdministration: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
-  isUpdatingRecipients: boolean;
   errorDetail: string | null;
   onEditingChange: (nextIsEditing: boolean, planName: string | null) => void;
   onTakeDose: (plan: EpisodeMedicationPlan) => void;
@@ -732,31 +769,25 @@ export function ReminderDetailQuickView(props: {
     }
   ) => void;
   onDelete: (planId: string) => void;
-  onChangeRecipients: (memberIds: string[]) => void;
 }) {
   const {
     language,
     childId,
-    episode,
     selectedReminderItem,
     latestWeight,
     isReminderCabinetPickerOpen,
     isReminderEditing,
     editingReminderName,
     medicines,
-    familyMembers,
-    currentAccountId,
     canEditEpisode,
     isSubmittingAdministration,
     isUpdating,
     isDeleting,
-    isUpdatingRecipients,
     errorDetail,
     onEditingChange,
     onTakeDose,
     onUpdate,
     onDelete,
-    onChangeRecipients,
   } = props;
 
   if (!selectedReminderItem) {
@@ -818,16 +849,6 @@ export function ReminderDetailQuickView(props: {
               >
                 {language === "ru" ? "К списку" : "Back"}
               </Link>
-              {canEditEpisode ? (
-                <EpisodeReminderRecipientsCard
-                  language={language}
-                  episode={episode}
-                  familyMembers={familyMembers}
-                  currentAccountId={currentAccountId}
-                  isPending={isUpdatingRecipients}
-                  onChangeSelection={onChangeRecipients}
-                />
-              ) : null}
             </div>
           }
         />
@@ -859,16 +880,11 @@ export function ReminderDetailQuickView(props: {
 export function ReminderCreateQuickView(props: {
   language: "ru" | "en";
   childId: string;
-  episode: IllnessEpisode;
   medicines: HouseholdMedicine[];
-  familyMembers: FamilyMember[];
-  currentAccountId: string | null;
-  canEditEpisode: boolean;
   latestWeight: WeightEntry | null;
   isReminderCabinetPickerOpen: boolean;
   submitLabel: string;
   isPending: boolean;
-  isUpdatingRecipients: boolean;
   errorDetail: string | null;
   onSubmit: (payload: {
     householdMedicineId?: string | null;
@@ -883,25 +899,18 @@ export function ReminderCreateQuickView(props: {
     firstDoseAt?: string | null;
   }) => void;
   onCancel: () => void;
-  onChangeRecipients: (memberIds: string[]) => void;
 }) {
   const {
     language,
     childId,
-    episode,
     medicines,
-    familyMembers,
-    currentAccountId,
-    canEditEpisode,
     latestWeight,
     isReminderCabinetPickerOpen,
     submitLabel,
     isPending,
-    isUpdatingRecipients,
     errorDetail,
     onSubmit,
     onCancel,
-    onChangeRecipients,
   } = props;
   return (
     <div className={isReminderCabinetPickerOpen ? "min-w-0 overflow-hidden" : "min-w-0 space-y-5"}>
@@ -909,18 +918,6 @@ export function ReminderCreateQuickView(props: {
         <SectionTitle
           title={language === "ru" ? "Новое напоминание" : "New reminder"}
           subtitle={language === "ru" ? "Настройте схему приёма." : "Set up the dosing schedule."}
-          action={
-            canEditEpisode ? (
-                <EpisodeReminderRecipientsCard
-                  language={language}
-                  episode={episode}
-                  familyMembers={familyMembers}
-                  currentAccountId={currentAccountId}
-                  isPending={isUpdatingRecipients}
-                  onChangeSelection={onChangeRecipients}
-                />
-            ) : null
-          }
         />
       ) : null}
 

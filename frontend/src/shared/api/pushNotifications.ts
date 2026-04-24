@@ -7,9 +7,10 @@ interface RawPushNotificationConfig {
 }
 
 interface RawPushNotificationPreferences {
+  children_enabled: boolean;
   before_reminder_minutes: number;
+  pillbox_enabled: boolean;
   pillbox_before_reminder_minutes: number;
-  due_reminder_enabled: boolean;
   cabinet_notify_10_days: boolean;
   cabinet_notify_7_days: boolean;
   cabinet_notify_3_days: boolean;
@@ -36,9 +37,10 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
     "/push-notifications/preferences"
   );
   return {
+    childrenEnabled: res.data.children_enabled,
     beforeReminderMinutes: res.data.before_reminder_minutes,
+    pillboxEnabled: res.data.pillbox_enabled,
     pillboxBeforeReminderMinutes: res.data.pillbox_before_reminder_minutes,
-    dueReminderEnabled: res.data.due_reminder_enabled,
     cabinetNotify10Days: res.data.cabinet_notify_10_days,
     cabinetNotify7Days: res.data.cabinet_notify_7_days,
     cabinetNotify3Days: res.data.cabinet_notify_3_days,
@@ -49,7 +51,9 @@ export async function fetchPushNotificationPreferences(): Promise<PushNotificati
 }
 
 export async function updatePushNotificationPreferences(body: {
+  children_enabled?: boolean;
   before_reminder_minutes?: number;
+  pillbox_enabled?: boolean;
   pillbox_before_reminder_minutes?: number;
   cabinet_notify_10_days?: boolean;
   cabinet_notify_7_days?: boolean;
@@ -63,9 +67,10 @@ export async function updatePushNotificationPreferences(body: {
     body
   );
   return {
+    childrenEnabled: res.data.children_enabled,
     beforeReminderMinutes: res.data.before_reminder_minutes,
+    pillboxEnabled: res.data.pillbox_enabled,
     pillboxBeforeReminderMinutes: res.data.pillbox_before_reminder_minutes,
-    dueReminderEnabled: res.data.due_reminder_enabled,
     cabinetNotify10Days: res.data.cabinet_notify_10_days,
     cabinetNotify7Days: res.data.cabinet_notify_7_days,
     cabinetNotify3Days: res.data.cabinet_notify_3_days,
@@ -98,6 +103,17 @@ export async function sendTestPushNotification(): Promise<{
   subscriptionCount: number;
 }> {
   const res = await apiClient.post<RawPushNotificationTestResponse>("/push-notifications/test");
+  return {
+    sent: res.data.sent,
+    subscriptionCount: res.data.subscription_count,
+  };
+}
+
+export async function sendPillboxTestPushNotification(): Promise<{
+  sent: boolean;
+  subscriptionCount: number;
+}> {
+  const res = await apiClient.post<RawPushNotificationTestResponse>("/push-notifications/test/pillbox");
   return {
     sent: res.data.sent,
     subscriptionCount: res.data.subscription_count,
