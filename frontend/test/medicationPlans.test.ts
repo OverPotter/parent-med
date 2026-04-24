@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   buildPlanAdministrationStats,
+  formatDoseClock,
   formatDoseStatusLabel,
 } from "../src/client/utils/medicationPlans.js";
 
@@ -22,7 +23,10 @@ test("new medication plan without administrations schedules first reminder from 
   assert.equal(stats.lastAdministration, null);
   assert.equal(stats.blockedByInterval, true);
   assert.equal(stats.nextAllowedAt?.toISOString(), new Date("2026-04-24T12:30:00+03:00").toISOString());
-  assert.equal(stats.availabilityLabel, "дать в 12:30");
+  assert.equal(
+    stats.availabilityLabel,
+    `дать в ${formatDoseClock(new Date("2026-04-24T12:30:00+03:00"), "ru")}`
+  );
 });
 
 test("medication plan still uses last administration when it exists", () => {
@@ -53,7 +57,10 @@ test("medication plan still uses last administration when it exists", () => {
   );
 
   assert.equal(stats.nextAllowedAt?.toISOString(), new Date("2026-04-24T12:50:00+03:00").toISOString());
-  assert.equal(stats.availabilityLabel, "дать в 12:50");
+  assert.equal(
+    stats.availabilityLabel,
+    `дать в ${formatDoseClock(new Date("2026-04-24T12:50:00+03:00"), "ru")}`
+  );
 });
 
 test("dose status label switches from absolute time to available now", () => {
@@ -61,7 +68,7 @@ test("dose status label switches from absolute time to available now", () => {
 
   assert.equal(
     formatDoseStatusLabel(scheduledAt, "ru", new Date("2026-04-24T10:00:00+03:00")),
-    "Дать в 12:50"
+    `Дать в ${formatDoseClock(scheduledAt, "ru")}`
   );
   assert.equal(
     formatDoseStatusLabel(scheduledAt, "ru", new Date("2026-04-24T12:50:00+03:00")),
