@@ -12,6 +12,7 @@ import {
   toPushSubscriptionPayload,
 } from "@shared/utils/pushNotifications";
 import {
+  getCachedNativePushSubscriptionPayload,
   isNativePushOptedOut,
   isNativePushSupported,
   NATIVE_PUSH_NAVIGATION_EVENT,
@@ -98,14 +99,32 @@ export function PushSubscriptionSync() {
           if (isNativePushOptedOut()) {
             return;
           }
-          const nativePayload = await refreshNativePushSubscriptionPayload({
+
+          const cachedPayload = getCachedNativePushSubscriptionPayload();
+          if (cachedPayload && !isCancelled) {
+            await upsertPushSubscription(cachedPayload);
+            window.dispatchEvent(new Event("push:subscription-changed"));
+          }
+
+          const freshPayload = await refreshNativePushSubscriptionPayload({
             promptIfNeeded: false,
             allowCachedFallback: false,
           });
-          if (!nativePayload || isCancelled) {
+          if (!freshPayload || isCancelled) {
             return;
           }
-          await upsertPushSubscription(nativePayload);
+
+          const payloadChanged =
+            !cachedPayload ||
+            cachedPayload.endpoint !== freshPayload.endpoint ||
+            cachedPayload.device_id !== freshPayload.device_id ||
+            cachedPayload.platform !== freshPayload.platform;
+
+          if (!payloadChanged) {
+            return;
+          }
+
+          await upsertPushSubscription(freshPayload);
           window.dispatchEvent(new Event("push:subscription-changed"));
           return;
         }
