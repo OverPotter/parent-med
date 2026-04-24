@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { applyLanguageToDocument, type AppLanguage } from "@shared/i18n";
+import { applyLanguageToDocument, detectPreferredLanguage, type AppLanguage } from "@shared/i18n";
 import type { FamilyAccessPolicy } from "@shared/types/api";
 import {
   clearSecureAuthTokens,
@@ -51,6 +51,7 @@ function resolveTheme(theme: Theme): ResolvedTheme {
 }
 
 const initialTheme = readInitialTheme();
+const initialLanguage = detectPreferredLanguage();
 
 function applyThemeToDocument(theme: Theme): ResolvedTheme {
   const resolvedTheme = resolveTheme(theme);
@@ -169,7 +170,7 @@ export const useAppStore = create<AppState>()(
           return { effectiveTheme };
         });
       },
-      language: "ru",
+      language: initialLanguage,
       setLanguage: (language) => {
         set({ language });
         applyLanguageToDocument(language);

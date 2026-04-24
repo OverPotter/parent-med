@@ -7,6 +7,7 @@ import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analy
 import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 
 type Mode = "register" | "login";
@@ -18,6 +19,7 @@ function roleLabel(role: string): string {
 }
 
 export function JoinFamilyPage() {
+  const { language } = useI18n();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -94,6 +96,7 @@ export function JoinFamilyPage() {
       phone?: string;
       remember_me: boolean;
       invite_token: string;
+      preferred_language: "ru" | "en";
     }) => register(payload),
     onSuccess: (data) => {
       setSession(data);
@@ -162,6 +165,7 @@ export function JoinFamilyPage() {
       phone: phone.trim() || undefined,
       remember_me: rememberMe,
       invite_token: token,
+      preferred_language: language,
     });
   };
 

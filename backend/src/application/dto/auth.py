@@ -41,6 +41,10 @@ class RegisterDto(BaseModel):
     phone: str | None = Field(None, description="Контактный телефон")
     remember_me: bool = Field(False, description="Оставаться в системе на этом устройстве")
     invite_token: str | None = Field(None, description="Токен приглашения в существующую семью")
+    preferred_language: AccountLanguage = Field(
+        "en",
+        description="Предпочитаемый язык аккаунта",
+    )
 
     _normalized_email = field_validator("email")(_validate_email)
 

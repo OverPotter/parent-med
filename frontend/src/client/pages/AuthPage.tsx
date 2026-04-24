@@ -297,6 +297,7 @@ export function AuthPage() {
       relationship_label?: string;
       phone?: string;
       remember_me: boolean;
+      preferred_language: "ru" | "en";
     }) => register(payload),
     onSuccess: (data, variables) => {
       setSession(data);
@@ -349,6 +350,7 @@ export function AuthPage() {
       relationship_label: relationshipLabel.trim() || undefined,
       phone: phone.trim() || undefined,
       remember_me: rememberMe,
+      preferred_language: language,
     });
   };
 

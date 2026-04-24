@@ -174,7 +174,7 @@ class AuthService(BaseAuthService):
             display_name=dto.display_name,
             relationship_label=(dto.relationship_label or "").strip() or None,
             phone=(dto.phone or "").strip() or None,
-            preferred_language="ru",
+            preferred_language=dto.preferred_language,
             family_role=family_role,
             push_before_reminder_minutes=10,
             children_push_enabled=True,

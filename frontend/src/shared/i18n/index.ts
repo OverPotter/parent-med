@@ -9,6 +9,34 @@ export const translations: Record<AppLanguage, Translations> = {
   en,
 };
 
+function parseLanguageTag(tag: string | null | undefined): AppLanguage | null {
+  if (!tag) {
+    return null;
+  }
+
+  const normalized = tag.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  return normalized.startsWith("ru") ? "ru" : "en";
+}
+
+export function detectPreferredLanguage(): AppLanguage {
+  if (typeof navigator === "undefined") {
+    return "en";
+  }
+
+  for (const tag of navigator.languages ?? []) {
+    const language = parseLanguageTag(tag);
+    if (language) {
+      return language;
+    }
+  }
+
+  return parseLanguageTag(navigator.language) ?? "en";
+}
+
 export function applyLanguageToDocument(language: AppLanguage) {
   document.documentElement.lang = language;
 }

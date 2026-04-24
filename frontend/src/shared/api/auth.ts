@@ -83,6 +83,7 @@ export async function register(payload: {
   phone?: string;
   remember_me?: boolean;
   invite_token?: string;
+  preferred_language?: "ru" | "en";
 }): Promise<AuthSessionResponse> {
   const res = await apiClient.post<RawAuthResponse>("/auth/signup", payload);
   return toAuthResponse(res.data);
