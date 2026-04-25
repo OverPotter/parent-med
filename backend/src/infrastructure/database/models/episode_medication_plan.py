@@ -49,6 +49,14 @@ class EpisodeMedicationPlanModel(Base):
     max_doses_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
     dose_mg_per_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    calculated_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    calculated_dose_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    calculated_dose_unit: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    dose_calc_mode: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    dose_calc_warning: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    manual_dose_override: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     notes: Mapped[str | None] = mapped_column(Text(), nullable=True)
     member_account_ids: Mapped[list[UUID]] = mapped_column(
         ARRAY(UUID(as_uuid=True)),

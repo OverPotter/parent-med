@@ -169,26 +169,37 @@ export function buildIllnessMedicationLines(
   const nextDoseTime = formatDoseClock(nextDose?.nextDoseAt, language);
   const canGiveNow =
     !!nextDose?.nextDoseAt && new Date(nextDose.nextDoseAt).getTime() <= now.getTime();
-  const medicineFallback = language === "ru" ? "лекарство" : "medicine";
-  const nextDoseMedicineLabel = nextDoseMedicineName ?? medicineFallback;
-  const lastDoseMedicineLabel = lastAdministrationMedicine ?? medicineFallback;
+  const nextDoseMedicineLabel = nextDoseMedicineName ?? null;
+  const lastDoseMedicineLabel = lastAdministrationMedicine ?? null;
 
   const primaryLine = nextDose?.nextDoseAt
     ? canGiveNow
       ? language === "ru"
-        ? `Можно дать ${nextDoseMedicineLabel}`
-        : `Can give ${nextDoseMedicineLabel}`
+        ? nextDoseMedicineLabel
+          ? `${nextDoseMedicineLabel} · Можно дать`
+          : "Можно дать"
+        : nextDoseMedicineLabel
+          ? `${nextDoseMedicineLabel} · Ready now`
+          : "Ready now"
       : nextDoseTime
         ? language === "ru"
-          ? `Дать ${nextDoseMedicineLabel} в ${nextDoseTime}`
-          : `Give ${nextDoseMedicineLabel} at ${nextDoseTime}`
+          ? nextDoseMedicineLabel
+            ? `${nextDoseMedicineLabel} · дать в ${nextDoseTime}`
+            : `Дать в ${nextDoseTime}`
+          : nextDoseMedicineLabel
+            ? `${nextDoseMedicineLabel} · give at ${nextDoseTime}`
+            : `Give at ${nextDoseTime}`
         : null
     : null;
 
   const secondaryLine = lastAdministrationTime
     ? language === "ru"
-      ? `Дали ${lastDoseMedicineLabel} в ${lastAdministrationTime}`
-      : `Gave ${lastDoseMedicineLabel} at ${lastAdministrationTime}`
+      ? lastDoseMedicineLabel
+        ? `${lastDoseMedicineLabel} · дали в ${lastAdministrationTime}`
+        : `Дали в ${lastAdministrationTime}`
+      : lastDoseMedicineLabel
+        ? `${lastDoseMedicineLabel} · given at ${lastAdministrationTime}`
+        : `Given at ${lastAdministrationTime}`
     : null;
 
   return { primaryLine, secondaryLine };

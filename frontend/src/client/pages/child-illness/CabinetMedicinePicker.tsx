@@ -10,6 +10,44 @@ import {
 } from "./shared";
 import { formatMedicineCountLabel, getMedicineStatusLabel } from "./reminderUtils";
 
+function canUseMedicineInReminder(medicine: HouseholdMedicine) {
+  return medicine.status !== "expired" && medicine.status !== "expired_after_opening";
+}
+
+function getMedicineValidUntilText(medicine: HouseholdMedicine, language: "ru" | "en") {
+  const dateText = formatDate(medicine.expiryDate);
+  return language === "ru" ? `Годен до ${dateText}` : `Good until ${dateText}`;
+}
+
+function getMedicineTitle(medicine: HouseholdMedicine) {
+  return medicine.medicineConcentration
+    ? `${medicine.medicineName} · ${medicine.medicineConcentration}`
+    : medicine.medicineName;
+}
+
+function getMedicineDoseCalcText(medicine: HouseholdMedicine, language: "ru" | "en") {
+  const minDose = medicine.pediatricDoseMgPerKgMin;
+  const maxDose = medicine.pediatricDoseMgPerKgMax;
+
+  if (minDose == null && maxDose == null) {
+    return language === "ru" ? "Нет" : "None";
+  }
+
+  const formatValue = (value: number) =>
+    new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
+      minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+      maximumFractionDigits: 1,
+    }).format(value);
+
+  if (minDose != null && maxDose != null && Math.abs(minDose - maxDose) > 0.001) {
+    return `${formatValue(minDose)}-${formatValue(maxDose)} ${
+      language === "ru" ? "мг/кг" : "mg/kg"
+    }`;
+  }
+
+  return `${formatValue(maxDose ?? minDose ?? 0)} ${language === "ru" ? "мг/кг" : "mg/kg"}`;
+}
+
 export function CabinetMedicinePicker({
   medicines,
   value,
@@ -30,19 +68,21 @@ export function CabinetMedicinePicker({
   const isOpen = searchParams.get("picker") === "cabinet";
   const selectedMedicine = medicines.find((medicine) => medicine.id === value) ?? null;
   const normalizedQuery = query.trim().toLowerCase();
+  const availableMedicines = medicines.filter(canUseMedicineInReminder);
   const filteredMedicines = normalizedQuery
-    ? medicines.filter((medicine) =>
+    ? availableMedicines.filter((medicine) =>
         [
           medicine.medicineName,
           medicine.medicineConcentration ?? "",
           medicine.medicineForm ?? "",
+          medicine.medicineDosage ?? "",
           getMedicineStatusLabel(medicine, language),
         ]
           .join(" ")
           .toLowerCase()
           .includes(normalizedQuery)
       )
-    : medicines;
+    : availableMedicines;
 
   const selectMedicine = (medicineId: string) => {
     onChange(medicineId);
@@ -51,16 +91,6 @@ export function CabinetMedicinePicker({
     setSearchParams(next, { replace: true });
     setQuery("");
   };
-
-  useEffect(() => {
-    if (!value || !searchParams.get("picker")) {
-      return;
-    }
-    const next = new URLSearchParams(searchParams);
-    next.delete("picker");
-    setSearchParams(next, { replace: true });
-    setQuery("");
-  }, [value, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -82,6 +112,7 @@ export function CabinetMedicinePicker({
               ? "Выберите готовую упаковку из аптечки."
               : "Choose an available pack from the cabinet."
         }
+        actionInlineOnMobile
         action={
           <button
             type="button"
@@ -97,7 +128,7 @@ export function CabinetMedicinePicker({
         }
       />
 
-      {medicines.length > 0 ? (
+      {availableMedicines.length > 0 ? (
         <input
           type="text"
           value={query}
@@ -136,18 +167,18 @@ export function CabinetMedicinePicker({
                     aria-hidden="true"
                   />
                   <span className="min-w-0 flex-1 text-sm font-semibold leading-5 text-foreground">
-                    {medicine.medicineName}
-                    {medicine.medicineConcentration ? ` · ${medicine.medicineConcentration}` : ""}
+                    {getMedicineTitle(medicine)}
                   </span>
                 </span>
-                <span className="mt-1 block pl-4 text-xs text-muted">
-                  {[
-                    medicine.medicineForm ? `${medicine.medicineForm}` : null,
-                    formatDate(medicine.expiryDate),
-                    getMedicineStatusLabel(medicine, language),
-                  ]
+                <span className="mt-1 block truncate pl-4 text-xs text-muted">
+                  {[medicine.medicineForm, getMedicineValidUntilText(medicine, language)]
                     .filter(Boolean)
                     .join(" · ")}
+                </span>
+                <span className="mt-1 block truncate pl-4 text-xs text-muted">
+                  {language === "ru"
+                    ? `Дозировка: ${getMedicineDoseCalcText(medicine, language)}`
+                    : `Dosage: ${getMedicineDoseCalcText(medicine, language)}`}
                 </span>
               </span>
               <span
@@ -171,7 +202,13 @@ export function CabinetMedicinePicker({
         })}
         {filteredMedicines.length === 0 && (
           <div className="px-4 py-4 text-sm text-muted">
-            {language === "ru" ? "Ничего не найдено." : "Nothing found."}
+            {availableMedicines.length === 0
+              ? language === "ru"
+                ? "Сейчас нет упаковок, которые можно использовать в напоминании."
+                : "There are no packs that can be used in a reminder right now."
+              : language === "ru"
+                ? "Ничего не найдено."
+                : "Nothing found."}
           </div>
         )}
       </div>
@@ -194,47 +231,46 @@ export function CabinetMedicinePicker({
             setSearchParams(next, { replace: false });
           }}
           aria-expanded={isOpen}
-          className={`${illnessCompactSecondaryButtonClass} flex w-full justify-between gap-3 text-left`}
+          className={`${illnessCompactSecondaryButtonClass} flex w-full items-start justify-between gap-3 text-left`}
         >
-          <span className="min-w-0">
+          <span className="min-w-0 flex-1 overflow-hidden">
             {selectedMedicine ? (
               <>
                 <span className="block truncate text-sm font-semibold text-foreground">
-                  {selectedMedicine.medicineName}
-                  {selectedMedicine.medicineConcentration
-                    ? ` · ${selectedMedicine.medicineConcentration}`
-                    : ""}
+                  {getMedicineTitle(selectedMedicine)}
                 </span>
-                <span className="mt-1 block text-xs text-muted">
-                  {selectedMedicine.medicineForm ? `${selectedMedicine.medicineForm} · ` : ""}
-                  {formatDate(selectedMedicine.expiryDate)}
+                <span className="mt-1 block truncate text-xs text-muted">
+                  {[selectedMedicine.medicineForm, getMedicineValidUntilText(selectedMedicine, language)]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+                <span className="mt-1 block truncate text-xs text-muted">
+                  {language === "ru"
+                    ? `Дозировка: ${getMedicineDoseCalcText(selectedMedicine, language)}`
+                    : `Dosage: ${getMedicineDoseCalcText(selectedMedicine, language)}`}
                 </span>
               </>
             ) : (
               <>
-                <span className="block text-sm font-semibold text-foreground">
+                <span className="block truncate text-sm font-semibold text-foreground">
                   {language === "ru" ? "Выбрать из аптечки" : "Choose from first aid kit"}
                 </span>
-                <span className="mt-1 block text-xs text-muted">
-                  {medicines.length}{" "}
+                <span className="mt-1 block truncate text-xs text-muted">
+                  {availableMedicines.length}{" "}
                   {language === "ru"
-                    ? formatMedicineCountLabel(medicines.length)
-                    : medicines.length === 1
+                    ? formatMedicineCountLabel(availableMedicines.length)
+                    : availableMedicines.length === 1
                       ? "medicine"
                       : "medicines"}
                 </span>
               </>
             )}
           </span>
-          <span className="soft-choice-check" aria-hidden="true">
-            {selectedMedicine
-              ? language === "ru"
-                ? "Изменить"
-                : "Change"
-              : language === "ru"
-                ? "Выбрать"
-                : "Choose"}
-          </span>
+          {!selectedMedicine ? (
+            <span className="soft-choice-check shrink-0" aria-hidden="true">
+              {language === "ru" ? "Выбрать" : "Choose"}
+            </span>
+          ) : null}
         </button>
       </div>
     </div>

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from uuid import uuid4
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,16 +21,15 @@ class HouseholdMedicineModel(Base):
     family_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("families.id", ondelete="CASCADE"), nullable=False
     )
-    catalog_item_id: Mapped[UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("medicine_catalog_items.id", ondelete="SET NULL"),
-        nullable=True,
-    )
     medicine_name: Mapped[str] = mapped_column(String(255), nullable=False)
     medicine_form: Mapped[str] = mapped_column(String(64), nullable=False)
+    medicine_category: Mapped[str | None] = mapped_column(String(64), nullable=True)
     medicine_concentration: Mapped[str | None] = mapped_column(String(128), nullable=True)
     medicine_description: Mapped[str | None] = mapped_column(Text(), nullable=True)
     medicine_dosage: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    pediatric_dose_mg_per_kg_min: Mapped[float | None] = mapped_column(Float, nullable=True)
+    pediatric_dose_mg_per_kg_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    pediatric_dose_note: Mapped[str | None] = mapped_column(Text(), nullable=True)
     expiry_date: Mapped[date] = mapped_column(Date, nullable=False)
     opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     opened_shelf_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -39,9 +38,6 @@ class HouseholdMedicineModel(Base):
 
     family: Mapped["FamilyModel"] = relationship(
         "FamilyModel", back_populates="household_medicines"
-    )
-    catalog_item: Mapped["MedicineCatalogItemModel | None"] = relationship(
-        "MedicineCatalogItemModel", back_populates="household_medicines"
     )
     administration_events: Mapped[list] = relationship(
         "AdministrationEventModel",

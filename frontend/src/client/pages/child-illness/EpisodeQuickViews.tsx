@@ -13,6 +13,7 @@ import type {
 import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
 import type { MedicationPlanPriorityItem } from "../../utils/medicationPlans";
+import type { MedicationPlanPayload } from "./reminderUtils";
 import { AdministrationForm, TemperatureForm, illnessCompactTextareaClass } from "./forms";
 import { MedicationPlanComposer, MedicationPlanDetail, MedicationPlanList } from "./reminders";
 import {
@@ -741,6 +742,7 @@ export function ReminderListQuickView(props: {
 
 export function ReminderDetailQuickView(props: {
   language: "ru" | "en";
+  childName: string;
   childId: string;
   selectedReminderItem: MedicationPlanPriorityItem | null;
   latestWeight: WeightEntry | null;
@@ -757,21 +759,13 @@ export function ReminderDetailQuickView(props: {
   onTakeDose: (plan: EpisodeMedicationPlan) => void;
   onUpdate: (
     planId: string,
-    payload: {
-      householdMedicineId?: string | null;
-      customMedicineName?: string | null;
-      doseAmount: string;
-      minIntervalMinutes: number;
-      maxDosesPerDay?: number | null;
-      weightKg?: number | null;
-      doseMgPerKg?: number | null;
-      notes?: string | null;
-    }
+    payload: MedicationPlanPayload
   ) => void;
   onDelete: (planId: string) => void;
 }) {
   const {
     language,
+    childName,
     childId,
     selectedReminderItem,
     latestWeight,
@@ -851,13 +845,14 @@ export function ReminderDetailQuickView(props: {
               </Link>
             </div>
           }
+          actionInlineOnMobile
         />
       ) : null}
 
       <div className="space-y-4">
         <MedicationPlanDetail
           item={selectedReminderItem}
-          childId={childId}
+          childName={childName}
           latestWeight={latestWeight}
           isSubmittingAdministration={isSubmittingAdministration}
           isUpdating={isUpdating}
@@ -879,30 +874,19 @@ export function ReminderDetailQuickView(props: {
 
 export function ReminderCreateQuickView(props: {
   language: "ru" | "en";
-  childId: string;
+  childName: string;
   medicines: HouseholdMedicine[];
   latestWeight: WeightEntry | null;
   isReminderCabinetPickerOpen: boolean;
   submitLabel: string;
   isPending: boolean;
   errorDetail: string | null;
-  onSubmit: (payload: {
-    householdMedicineId?: string | null;
-    customMedicineName?: string | null;
-    doseAmount: string;
-    minIntervalMinutes: number;
-    maxDosesPerDay?: number | null;
-    weightKg?: number | null;
-    doseMgPerKg?: number | null;
-    notes?: string | null;
-    firstDoseStatus?: "already_given" | "not_given";
-    firstDoseAt?: string | null;
-  }) => void;
+  onSubmit: (payload: MedicationPlanPayload) => void;
   onCancel: () => void;
 }) {
   const {
     language,
-    childId,
+    childName,
     medicines,
     latestWeight,
     isReminderCabinetPickerOpen,
@@ -923,7 +907,7 @@ export function ReminderCreateQuickView(props: {
 
       <div className="space-y-4">
         <MedicationPlanComposer
-          childId={childId}
+          childName={childName}
           medicines={medicines}
           latestWeight={latestWeight}
           onSubmit={onSubmit}

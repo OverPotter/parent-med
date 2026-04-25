@@ -5,6 +5,9 @@ from src.infrastructure.database.models.account_feedback import AccountFeedbackM
 from src.infrastructure.database.models.account_session import AccountSessionModel
 from src.infrastructure.database.models.administration_event import AdministrationEventModel
 from src.infrastructure.database.models.child import ChildModel
+from src.infrastructure.database.models.curated_medicine_catalog_item import (
+    CuratedMedicineCatalogItemModel,
+)
 from src.infrastructure.database.models.episode_medication_plan import EpisodeMedicationPlanModel
 from src.infrastructure.database.models.family import FamilyModel
 from src.infrastructure.database.models.family_invite import FamilyInviteModel
@@ -16,7 +19,6 @@ from src.infrastructure.database.models.household_medicine_notification_delivery
 )
 from src.infrastructure.database.models.illness_episode import IllnessEpisodeModel
 from src.infrastructure.database.models.illness_episode_event import IllnessEpisodeEventModel
-from src.infrastructure.database.models.medicine_catalog_item import MedicineCatalogItemModel
 from src.infrastructure.database.models.parent import ParentModel
 from src.infrastructure.database.models.pillbox import (
     PillboxDoseLogModel,
@@ -36,11 +38,11 @@ __all__ = [
     "FamilyModel",
     "FamilyInviteModel",
     "ChildModel",
+    "CuratedMedicineCatalogItemModel",
     "FeedingRecordModel",
     "HeightEntryModel",
     "EpisodeMedicationPlanModel",
     "WeightEntryModel",
-    "MedicineCatalogItemModel",
     "ParentModel",
     "PillboxPlanModel",
     "PillboxMedicationModel",

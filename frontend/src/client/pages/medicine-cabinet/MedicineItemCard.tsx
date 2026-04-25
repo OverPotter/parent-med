@@ -7,10 +7,13 @@ import { formatDate } from "@shared/utils/date";
 import { tCabinet } from "./copy";
 import {
   cabinetActionDangerClass,
+  cabinetActionPrimaryClass,
   cabinetActionSecondaryClass,
+  cabinetCompactInputClass,
   cabinetListRowClass,
 } from "./styles";
 import {
+  formatDoseCalcValue,
   getLocalizedMedicineForm,
   getMedicineStatusDateClass,
   getMedicineStatusDotClass,
@@ -25,8 +28,10 @@ export function MedicineItemCard({
   isDeleting = false,
   compact = false,
   canEdit = true,
+  isUpdatingDoseCalc = false,
   isOffline = false,
   onNetworkRequired,
+  onUpdateDoseCalc,
   isExpanded,
   onExpandChange,
 }: {
@@ -36,8 +41,10 @@ export function MedicineItemCard({
   isDeleting?: boolean;
   compact?: boolean;
   canEdit?: boolean;
+  isUpdatingDoseCalc?: boolean;
   isOffline?: boolean;
   onNetworkRequired?: () => void;
+  onUpdateDoseCalc?: (id: string, minValue: number | null, maxValue: number | null) => void;
   isExpanded: boolean;
   onExpandChange: (isExpanded: boolean) => void;
 }) {
@@ -64,6 +71,7 @@ export function MedicineItemCard({
       return;
     }
     onExpandChange(true);
+    setIsDetailsExpanded(true);
   };
 
   const toggleDetails = () => {
@@ -143,6 +151,11 @@ export function MedicineItemCard({
                 medicine={medicine}
                 localizedMedicineForm={localizedMedicineForm}
                 useUntilText={useUntilText}
+                canEdit={canEdit}
+                isOffline={isOffline}
+                isUpdatingDoseCalc={isUpdatingDoseCalc}
+                onNetworkRequired={onNetworkRequired}
+                onUpdateDoseCalc={onUpdateDoseCalc}
               />
             )}
           </div>
@@ -258,17 +271,175 @@ function MedicineDetails({
   medicine,
   localizedMedicineForm,
   useUntilText,
+  canEdit,
+  isOffline,
+  isUpdatingDoseCalc,
+  onNetworkRequired,
+  onUpdateDoseCalc,
 }: {
   language: AppLanguage;
   medicine: HouseholdMedicine;
   localizedMedicineForm: string;
   useUntilText: string;
+  canEdit: boolean;
+  isOffline: boolean;
+  isUpdatingDoseCalc: boolean;
+  onNetworkRequired?: () => void;
+  onUpdateDoseCalc?: (id: string, minValue: number | null, maxValue: number | null) => void;
 }) {
+  const [isDoseCalcEditorOpen, setIsDoseCalcEditorOpen] = useState(false);
+  const [minInput, setMinInput] = useState("");
+  const [maxInput, setMaxInput] = useState("");
+  const [doseCalcError, setDoseCalcError] = useState<string | null>(null);
+  const doseCalcValue = formatDoseCalcValue(medicine, language);
+
+  const handleDoseCalcSave = () => {
+    if (isOffline) {
+      onNetworkRequired?.();
+      return;
+    }
+
+    const parsedMin = minInput.trim() ? Number.parseFloat(minInput) : null;
+    const parsedMax = maxInput.trim() ? Number.parseFloat(maxInput) : null;
+
+    if (
+      (parsedMin !== null && (!Number.isFinite(parsedMin) || parsedMin <= 0)) ||
+      (parsedMax !== null && (!Number.isFinite(parsedMax) || parsedMax <= 0))
+    ) {
+      setDoseCalcError(
+        language === "ru"
+          ? "Укажите значение больше нуля."
+          : "Use a value greater than zero."
+      );
+      return;
+    }
+
+    if (parsedMin === null && parsedMax === null) {
+      setDoseCalcError(
+        language === "ru"
+          ? "Добавьте минимум или максимум."
+          : "Add a minimum or maximum value."
+      );
+      return;
+    }
+
+    if (parsedMin !== null && parsedMax !== null && parsedMax < parsedMin) {
+      setDoseCalcError(
+        language === "ru" ? "Максимум должен быть не меньше минимума." : "Max must be at least min."
+      );
+      return;
+    }
+
+    setDoseCalcError(null);
+    onUpdateDoseCalc?.(medicine.id, parsedMin, parsedMax);
+  };
+
   return (
     <div className="mt-3 space-y-2 border-t border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] pt-3 text-xs leading-5 text-muted">
       <p className="break-words">
-        {tCabinet(language, "formField", { value: localizedMedicineForm })}
+        {tCabinet(language, medicine.medicineCategory ? "manualCategoryField" : "formField", {
+          value: localizedMedicineForm,
+        })}
       </p>
+      {medicine.medicineDescription && (
+        <p className="break-words">
+          {tCabinet(language, "descriptionField", {
+            value: medicine.medicineDescription,
+          })}
+        </p>
+      )}
+      <p className="break-words">
+        {medicine.medicineDosage
+          ? tCabinet(language, "usageField", { value: medicine.medicineDosage })
+          : tCabinet(language, "usageMissingField")}
+      </p>
+      <p className="break-words">
+        {doseCalcValue
+          ? tCabinet(language, "doseCalcField", { value: doseCalcValue })
+          : tCabinet(language, "doseCalcMissingField")}
+      </p>
+      {!doseCalcValue && canEdit ? (
+        <div className="space-y-2 rounded-2xl border border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_74%,transparent)] px-3 py-3">
+          {!isDoseCalcEditorOpen ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (isOffline) {
+                  onNetworkRequired?.();
+                  return;
+                }
+                setDoseCalcError(null);
+                setIsDoseCalcEditorOpen(true);
+              }}
+              className={`${cabinetActionSecondaryClass} w-full`}
+            >
+              {language === "ru" ? "Добавить дозировку" : "Add dosage"}
+            </button>
+          ) : (
+            <div className="space-y-2.5">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className="block space-y-1">
+                  <span className="soft-field-label">
+                    {language === "ru" ? "Минимум, мг/кг" : "Min, mg/kg"}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    inputMode="decimal"
+                    value={minInput}
+                    onChange={(event) => setMinInput(event.target.value)}
+                    className={cabinetCompactInputClass}
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="soft-field-label">
+                    {language === "ru" ? "Максимум, мг/кг" : "Max, mg/kg"}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    inputMode="decimal"
+                    value={maxInput}
+                    onChange={(event) => setMaxInput(event.target.value)}
+                    className={cabinetCompactInputClass}
+                  />
+                </label>
+              </div>
+              {doseCalcError ? <p className="text-xs text-rose-600">{doseCalcError}</p> : null}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDoseCalcEditorOpen(false);
+                    setMinInput("");
+                    setMaxInput("");
+                    setDoseCalcError(null);
+                  }}
+                  className={`${cabinetActionSecondaryClass} w-full`}
+                >
+                  {language === "ru" ? "Отмена" : "Cancel"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDoseCalcSave}
+                  disabled={isUpdatingDoseCalc}
+                  className={`${cabinetActionPrimaryClass} w-full`}
+                >
+                  {isUpdatingDoseCalc
+                    ? language === "ru"
+                      ? "Сохраняем..."
+                      : "Saving..."
+                    : language === "ru"
+                      ? "Сохранить"
+                      : "Save"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
       {medicine.openedAt && (
         <p className="break-words">
           {medicine.effectiveOpenedShelfDays
@@ -281,18 +452,6 @@ function MedicineDetails({
                 date: formatDate(medicine.openedAt),
                 untilText: useUntilText,
               })}
-        </p>
-      )}
-      {medicine.medicineDosage && (
-        <p className="break-words">
-          {tCabinet(language, "usageField", { value: medicine.medicineDosage })}
-        </p>
-      )}
-      {medicine.medicineDescription && (
-        <p className="break-words">
-          {tCabinet(language, "descriptionField", {
-            value: medicine.medicineDescription,
-          })}
         </p>
       )}
       {medicine.comment && (

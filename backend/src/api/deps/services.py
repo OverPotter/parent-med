@@ -8,6 +8,7 @@ from src.api.deps.repositories import (
     get_account_session_repo,
     get_administration_repo,
     get_child_repo,
+    get_curated_medicine_catalog_repo,
     get_episode_medication_plan_repo,
     get_family_invite_repo,
     get_family_repo,
@@ -16,7 +17,6 @@ from src.api.deps.repositories import (
     get_household_medicine_repo,
     get_illness_comment_repo,
     get_illness_episode_repo,
-    get_medicine_catalog_repo,
     get_parent_repo,
     get_pillbox_repo,
     get_push_subscription_repo,
@@ -29,6 +29,9 @@ from src.application.services.administration_service import AdministrationServic
 from src.application.services.auth_service import AuthService
 from src.application.services.base_auth_service import BaseAuthService
 from src.application.services.child_service import ChildService
+from src.application.services.curated_medicine_catalog_service import (
+    CuratedMedicineCatalogService,
+)
 from src.application.services.episode_medication_plan_service import (
     EpisodeMedicationPlanService,
 )
@@ -39,7 +42,6 @@ from src.application.services.height_entry_service import HeightEntryService
 from src.application.services.household_medicine_service import HouseholdMedicineService
 from src.application.services.illness_comment_service import IllnessCommentService
 from src.application.services.illness_episode_service import IllnessEpisodeService
-from src.application.services.medicine_catalog_service import MedicineCatalogService
 from src.application.services.parent_service import ParentService
 from src.application.services.pillbox_service import PillboxService
 from src.application.services.push_notification_service import PushNotificationService
@@ -98,6 +100,12 @@ def get_child_service(
     family_repo=Depends(get_family_repo),
 ) -> ChildService:
     return ChildService(child_repo=child_repo, family_repo=family_repo)
+
+
+def get_curated_medicine_catalog_service(
+    catalog_repo=Depends(get_curated_medicine_catalog_repo),
+) -> CuratedMedicineCatalogService:
+    return CuratedMedicineCatalogService(catalog_repo=catalog_repo)
 
 
 def get_feeding_record_service(
@@ -170,23 +178,15 @@ def get_sleep_session_service(
     return SleepSessionService(sleep_repo=sleep_repo, child_repo=child_repo)
 
 
-def get_medicine_catalog_service(
-    catalog_repo=Depends(get_medicine_catalog_repo),
-) -> MedicineCatalogService:
-    return MedicineCatalogService(catalog_repo=catalog_repo)
-
-
 def get_household_medicine_service(
     household_repo=Depends(get_household_medicine_repo),
     family_repo=Depends(get_family_repo),
-    catalog_repo=Depends(get_medicine_catalog_repo),
     administration_repo=Depends(get_administration_repo),
     plan_repo=Depends(get_episode_medication_plan_repo),
 ) -> HouseholdMedicineService:
     return HouseholdMedicineService(
         household_repo=household_repo,
         family_repo=family_repo,
-        catalog_repo=catalog_repo,
         administration_repo=administration_repo,
         plan_repo=plan_repo,
     )

@@ -8,23 +8,37 @@ import {
   cabinetCatalogRowClass,
   cabinetCompactInputClass,
   cabinetCompactTextareaClass,
+  cabinetFilterPillClass,
   cabinetListClass,
   cabinetListRowClass,
   cabinetManualPillClass,
   cabinetPanelClass,
 } from "./styles";
-import { getLocalizedMedicineForm, type getMedicineFormOptions } from "./utils";
+import {
+  formatDoseCalcValue,
+  getLocalizedMedicineForm,
+  type MedicineCatalogCategory,
+  type getMedicineCatalogCategoryOptions,
+  type getManualMedicineCategoryOptions,
+} from "./utils";
 
-type MedicineFormOption = ReturnType<typeof getMedicineFormOptions>[number];
+type ManualMedicineCategoryOption = ReturnType<typeof getManualMedicineCategoryOptions>[number];
+type MedicineCategoryOption = ReturnType<typeof getMedicineCatalogCategoryOptions>[number];
 
 export function CatalogSearchSection({
   language,
   searchName,
+  selectedCategory,
+  categoryOptions,
   onSearchNameChange,
+  onSelectCategory,
 }: {
   language: AppLanguage;
   searchName: string;
+  selectedCategory: MedicineCatalogCategory;
+  categoryOptions: MedicineCategoryOption[];
   onSearchNameChange: (value: string) => void;
+  onSelectCategory: (value: MedicineCatalogCategory) => void;
 }) {
   return (
     <div className={`${cabinetPanelClass} px-3.5 py-3`}>
@@ -38,6 +52,26 @@ export function CatalogSearchSection({
           placeholder={tCabinet(language, "catalogSearchPlaceholder")}
         />
       </label>
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {categoryOptions.map((option) => {
+          const isSelected = selectedCategory === option.value;
+          return (
+            <button
+              key={option.value || "all"}
+              type="button"
+              onClick={() => onSelectCategory(option.value as MedicineCatalogCategory)}
+              className={`${cabinetFilterPillClass} ${
+                isSelected
+                  ? "soft-pill-primary app-profile-action app-profile-action--selected"
+                  : "soft-pill app-profile-action"
+              } shrink-0`}
+              aria-pressed={isSelected}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
       <p className="mt-2 text-xs font-semibold leading-5 text-muted">
         {tCabinet(language, "catalogSearchHint")}
       </p>
@@ -55,53 +89,62 @@ export function CatalogSearchResults({
   onSelect: (item: MedicineCatalogItem) => void;
 }) {
   return (
-    <ul className={cabinetCatalogListClass}>
-      {catalogItems.map((item) => (
-        <li
-          key={item.id}
-          className="border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] last:border-b-0"
-        >
-          <button type="button" onClick={() => onSelect(item)} className={cabinetCatalogRowClass}>
-            <span className="min-w-0">
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_72%,var(--color-info)_28%)]" />
-                <span className="min-w-0 break-words text-sm font-semibold leading-5 text-foreground">
-                  {item.name}
+    <ul className={`${cabinetCatalogListClass} max-h-[26rem] overflow-y-auto`}>
+      {catalogItems.map((item) => {
+        const doseCalcValue = formatDoseCalcValue(item, language);
+
+        return (
+          <li
+            key={item.id}
+            className="border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] last:border-b-0"
+          >
+            <button type="button" onClick={() => onSelect(item)} className={cabinetCatalogRowClass}>
+              <span className="min-w-0">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_72%,var(--color-info)_28%)]" />
+                  <span className="min-w-0 break-words text-sm font-semibold leading-5 text-foreground">
+                    {item.name}
+                  </span>
                 </span>
-              </span>
-              <span className="mt-0.5 block pl-4 text-xs font-semibold leading-5 text-muted">
-                {[
-                  getLocalizedMedicineForm(item.form, language),
-                  item.concentration,
-                  item.defaultOpenedShelfDays
-                    ? tCabinet(language, "openedShelfHint", {
-                        days: item.defaultOpenedShelfDays,
-                      })
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
-              {item.dosage ? (
+                <span className="mt-0.5 block pl-4 text-xs font-semibold leading-5 text-muted">
+                  {[
+                    getLocalizedMedicineForm(item.form, language),
+                    item.concentration,
+                    item.defaultOpenedShelfDays
+                      ? tCabinet(language, "openedShelfHint", {
+                          days: item.defaultOpenedShelfDays,
+                        })
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
                 <span className="mt-0.5 block pl-4 text-xs leading-5 text-muted/90">
-                  {tCabinet(language, "dosageHint", { value: item.dosage })}
+                  {tCabinet(language, "doseCalcField", {
+                    value: doseCalcValue ?? (language === "ru" ? "Нет" : "None"),
+                  })}
                 </span>
-              ) : null}
-              {item.description ? (
-                <span className="mt-0.5 line-clamp-2 block pl-4 text-xs leading-5 text-muted/80">
-                  {item.description}
-                </span>
-              ) : null}
-            </span>
-            <span
-              aria-hidden="true"
-              className="text-right text-lg font-semibold leading-none text-muted"
-            >
-              ›
-            </span>
-          </button>
-        </li>
-      ))}
+                {item.dosage ? (
+                  <span className="mt-0.5 block pl-4 text-xs leading-5 text-muted/90">
+                    {tCabinet(language, "dosageHint", { value: item.dosage })}
+                  </span>
+                ) : null}
+                {item.description ? (
+                  <span className="mt-0.5 line-clamp-2 block pl-4 text-xs leading-5 text-muted/80">
+                    {item.description}
+                  </span>
+                ) : null}
+              </span>
+              <span
+                aria-hidden="true"
+                className="text-right text-lg font-semibold leading-none text-muted"
+              >
+                ›
+              </span>
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -115,20 +158,32 @@ export function SelectedCatalogMedicine({
   catalogItem: MedicineCatalogItem;
   onChangeMedicine: () => void;
 }) {
+  const doseCalcValue = formatDoseCalcValue(catalogItem, language);
+
   return (
     <div className={cabinetListClass}>
       <div className={cabinetListRowClass}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="font-semibold text-foreground">
-              {catalogItem.name} ({getLocalizedMedicineForm(catalogItem.form, language)}
-              {catalogItem.concentration ? `, ${catalogItem.concentration}` : ""})
+            <p className="font-semibold text-foreground">{catalogItem.name}</p>
+            <p className="mt-1 text-sm text-muted">
+              {[
+                getLocalizedMedicineForm(catalogItem.form, language),
+                catalogItem.concentration,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
             {catalogItem.dosage ? (
               <p className="mt-1 text-sm text-muted">
                 {tCabinet(language, "dosageHint", { value: catalogItem.dosage })}
               </p>
             ) : null}
+            <p className="mt-1 text-sm text-muted">
+              {tCabinet(language, "doseCalcField", {
+                value: doseCalcValue ?? (language === "ru" ? "Нет" : "None"),
+              })}
+            </p>
             {catalogItem.description ? (
               <p className="mt-2 text-sm text-muted">
                 {tCabinet(language, "descriptionLabel", { value: catalogItem.description })}
@@ -153,21 +208,21 @@ export function SelectedCatalogMedicine({
 
 export function ManualMedicineMainSection({
   language,
-  medicineFormOptions,
+  medicineCategoryOptions,
   newMedicineName,
-  newMedicineForm,
+  newMedicineCategory,
   newMedicineConcentration,
   onNameChange,
-  onFormChange,
+  onCategoryChange,
   onConcentrationChange,
 }: {
   language: AppLanguage;
-  medicineFormOptions: MedicineFormOption[];
+  medicineCategoryOptions: ManualMedicineCategoryOption[];
   newMedicineName: string;
-  newMedicineForm: string;
+  newMedicineCategory: string;
   newMedicineConcentration: string;
   onNameChange: (value: string) => void;
-  onFormChange: (value: string) => void;
+  onCategoryChange: (value: string) => void;
   onConcentrationChange: (value: string) => void;
 }) {
   return (
@@ -189,19 +244,19 @@ export function ManualMedicineMainSection({
         />
       </label>
       <div className="space-y-1.5">
-        <span className="soft-field-label">{tCabinet(language, "medicineForm")}</span>
+        <span className="soft-field-label">{tCabinet(language, "manualMedicineCategory")}</span>
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {medicineFormOptions.map((option) => (
+          {medicineCategoryOptions.map((option) => (
             <button
               key={option.value}
               type="button"
-              onClick={() => onFormChange(option.value)}
+              onClick={() => onCategoryChange(option.value)}
               className={`${cabinetManualPillClass} ${
-                newMedicineForm === option.value
+                newMedicineCategory === option.value
                   ? "soft-pill-primary app-profile-action app-profile-action--selected"
                   : "soft-pill app-profile-action"
               }`}
-              aria-pressed={newMedicineForm === option.value}
+              aria-pressed={newMedicineCategory === option.value}
             >
               {option.label}
             </button>
@@ -214,7 +269,7 @@ export function ManualMedicineMainSection({
           type="text"
           value={newMedicineConcentration}
           onChange={(event) => onConcentrationChange(event.target.value)}
-          placeholder={tCabinet(language, "concentrationPlaceholder")}
+          placeholder={tCabinet(language, "manualConcentrationPlaceholder")}
           className={cabinetCompactInputClass}
         />
       </label>

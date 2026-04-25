@@ -18,6 +18,9 @@ export function MedicineSection({
   isDeleting,
   deletingMedicineId,
   onDelete,
+  isUpdatingDoseCalc,
+  updatingDoseCalcMedicineId,
+  onUpdateDoseCalc,
   onExpandChange,
 }: {
   language: AppLanguage;
@@ -33,6 +36,9 @@ export function MedicineSection({
   isDeleting: boolean;
   deletingMedicineId: string | null;
   onDelete: (id: string) => void;
+  isUpdatingDoseCalc: boolean;
+  updatingDoseCalcMedicineId: string | null;
+  onUpdateDoseCalc: (id: string, minValue: number | null, maxValue: number | null) => void;
   onExpandChange: (value: string | null) => void;
 }) {
   return (
@@ -58,10 +64,12 @@ export function MedicineSection({
             medicine={medicine}
             onDelete={onDelete}
             isDeleting={isDeleting && deletingMedicineId === medicine.id}
+            isUpdatingDoseCalc={isUpdatingDoseCalc && updatingDoseCalcMedicineId === medicine.id}
             compact={compact}
             canEdit={canEdit}
             isOffline={isOffline}
             onNetworkRequired={onNetworkRequired}
+            onUpdateDoseCalc={onUpdateDoseCalc}
             isExpanded={expandedMedicineId === medicine.id}
             onExpandChange={(isExpanded) => {
               onExpandChange(isExpanded ? medicine.id : null);

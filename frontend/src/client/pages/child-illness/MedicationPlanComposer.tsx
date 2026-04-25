@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { createWeightEntry } from "@shared/api/weightEntries";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { HouseholdMedicine, WeightEntry } from "@shared/types/api";
 import { getCurrentDeviceTimestampIso, getLocalIsoDate } from "@shared/utils/date";
-import { formatChildDate } from "@client/utils/childDateFormat";
 import { blurActiveField, scrollFieldIntoView } from "@shared/utils/focus";
-import { buildWeightDoseHint } from "../../utils/medicationPlans";
+import {
+  calculateMedicationDoseRecommendation,
+  getMedicationDosePerKgReference,
+} from "../../utils/medicationPlans";
 import {
   appBtnSecondaryClass,
   illnessCompactInputClass,
@@ -17,6 +17,7 @@ import {
   illnessCompactSecondaryButtonClass,
   illnessPanelSoftClass,
 } from "./shared";
+import { MedicationDoseCalculationCard } from "./MedicationDoseCalculationCard";
 import {
   canSubmitMedicationPlanComposer,
   hasDoseUnitHint,
@@ -43,6 +44,20 @@ function getCurrentLocalTimeValue(date = new Date()) {
   return `${hours}:${minutes}`;
 }
 
+function formatDoseSummaryNumber(value: number, language: "ru" | "en") {
+  return new Intl.NumberFormat(language === "ru" ? "ru-RU" : "en-US", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function toPositiveNumber(value: number | null) {
+  if (value === null || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+  return value;
+}
+
 function toLocalDeviceTimestampIso(dateValue: string, timeValue: string) {
   const [parsedYear, parsedMonth, parsedDay] = dateValue
     .split("-")
@@ -60,45 +75,8 @@ function toLocalDeviceTimestampIso(dateValue: string, timeValue: string) {
   );
 }
 
-function InlineHint({ text }: { text: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const showTouchHint = () => {
-    setIsOpen(true);
-    window.setTimeout(() => {
-      setIsOpen(false);
-    }, 1400);
-  };
-
-  return (
-    <span className="relative inline-flex">
-      <button
-        type="button"
-        title={text}
-        aria-label={text}
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}
-        onFocus={() => setIsOpen(true)}
-        onBlur={() => setIsOpen(false)}
-        onTouchStart={(event) => {
-          event.preventDefault();
-          showTouchHint();
-        }}
-        className="soft-pill-primary inline-flex h-5 w-5 items-center justify-center rounded-full px-0 text-[11px] font-semibold leading-none"
-      >
-        !
-      </button>
-      {isOpen && (
-        <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-56 -translate-x-1/2 rounded-2xl border border-border/80 bg-[color:var(--color-surface-soft)] px-3 py-2 text-xs font-normal leading-5 text-foreground shadow-lg shadow-black/10">
-          {text}
-        </span>
-      )}
-    </span>
-  );
-}
-
 export function MedicationPlanComposer({
-  childId,
+  childName,
   medicines,
   latestWeight,
   onSubmit,
@@ -107,7 +85,7 @@ export function MedicationPlanComposer({
   initialValue,
   onCancel,
 }: {
-  childId: string;
+  childName?: string;
   medicines: HouseholdMedicine[];
   latestWeight: WeightEntry | null;
   onSubmit: (payload: MedicationPlanPayload) => void;
@@ -118,18 +96,13 @@ export function MedicationPlanComposer({
 }) {
   const { language } = useI18n();
   const isIosShell = useIsIosShell();
-  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const isCabinetPickerOpen = searchParams.get("picker") === "cabinet";
   const defaultPlanMode: "cabinet" | "manual" = initialValue?.householdMedicineId
     ? "cabinet"
     : "manual";
-  const hasAdvancedInitialValue = Boolean(
-    initialValue?.maxDosesPerDay || initialValue?.weightKg || initialValue?.doseMgPerKg
-  );
   const [planMode, setPlanMode] = useState<"cabinet" | "manual">(defaultPlanMode);
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(hasAdvancedInitialValue);
   const [selectedMedicineId, setSelectedMedicineId] = useState(
     initialValue?.householdMedicineId ?? ""
   );
@@ -157,20 +130,36 @@ export function MedicationPlanComposer({
   const [doseMgPerKg, setDoseMgPerKg] = useState(
     initialValue?.doseMgPerKg ? String(initialValue.doseMgPerKg) : ""
   );
+  const [manualDoseOverride, setManualDoseOverride] = useState(
+    initialValue?.manualDoseOverride ?? false
+  );
+  const [isDoseSettingsOpen, setIsDoseSettingsOpen] = useState(false);
   const [firstDoseStatus, setFirstDoseStatus] = useState<"already_given" | "not_given">(
     initialValue?.firstDoseStatus ?? "not_given"
   );
   const [firstDoseDate, setFirstDoseDate] = useState(getLocalIsoDate());
   const [firstDoseTime, setFirstDoseTime] = useState(getCurrentLocalTimeValue());
   const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
+  const autoAppliedWeightRef = useRef<string | null>(null);
+  const autoAppliedDosePerKgRef = useRef<string | null>(null);
+  const autoFillWeightEnabledRef = useRef(true);
+  const autoFillDosePerKgEnabledRef = useRef(true);
+  const autoFillDoseEnabledRef = useRef(true);
+  const lastSuggestedDoseRef = useRef("");
+  const previousPlanModeRef = useRef<"cabinet" | "manual">(defaultPlanMode);
+  const previousSelectedMedicineIdRef = useRef(initialValue?.householdMedicineId ?? "");
   const rootRef = useRef<HTMLDivElement | null>(null);
   const selectedMedicine = medicines.find((medicine) => medicine.id === selectedMedicineId) ?? null;
-  const parsedWeightKg = parseNullableNumber(weightKg);
-  const weightHint = buildWeightDoseHint(
+  const referenceDosePerKg = getMedicationDosePerKgReference(selectedMedicine, language);
+  const parsedWeightKg = toPositiveNumber(parseNullableNumber(weightKg));
+  const parsedDoseMgPerKg = toPositiveNumber(parseNullableNumber(doseMgPerKg));
+  const doseCalculation = calculateMedicationDoseRecommendation(
     selectedMedicine,
     parsedWeightKg,
-    parseNullableNumber(doseMgPerKg)
+    parsedDoseMgPerKg,
+    language
   );
+  const suggestedDoseText = doseCalculation?.suggestedDoseText ?? "";
   const shouldShowDoseUnitHint = hasDoseUnitHint(doseAmount);
   const parsedIntervalMinutes = parseIntervalInputToMinutes(minIntervalInput, intervalUnit);
   const firstDoseAt =
@@ -186,26 +175,57 @@ export function MedicationPlanComposer({
     planMode,
     selectedMedicineId,
     customMedicineName,
+    doseAmount,
     minIntervalInput,
     parsedIntervalMinutes,
     hasFutureFirstDoseSelection,
   });
   const latestWeightValue = latestWeight?.valueKg ?? null;
-  const shouldOfferWeightSync =
-    parsedWeightKg !== null &&
-    (latestWeightValue === null || Math.abs(parsedWeightKg - latestWeightValue) >= 0.1);
-
-  const syncWeightMutation = useMutation({
-    mutationFn: (valueKg: number) =>
-      createWeightEntry({
-        child_id: childId,
-        value_kg: valueKg,
-        measured_at: getCurrentDeviceTimestampIso(),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["weight-entry-latest", childId] });
-    },
-  });
+  const latestWeightText = latestWeightValue !== null ? String(latestWeightValue) : "";
+  const latestWeightMeta = latestWeight
+    ? language === "ru"
+      ? `${latestWeight.valueKg} кг`
+      : `${latestWeight.valueKg} kg`
+    : null;
+  const childWeightSummaryLabel =
+    language === "ru"
+      ? childName && childName.trim().length > 0
+        ? `${childName.trim()} вес`
+        : "Вес"
+      : childName && childName.trim().length > 0
+        ? `${childName.trim()} weight`
+        : "Weight";
+  const referenceDoseLabel = referenceDosePerKg?.sourceLabel ?? null;
+  const effectiveDosePerKgText =
+    parsedDoseMgPerKg !== null
+      ? `${parsedDoseMgPerKg} ${language === "ru" ? "мг/кг" : "mg/kg"}`
+      : referenceDoseLabel;
+  const canUseDoseCalculation =
+    planMode === "cabinet" &&
+    !!selectedMedicine &&
+    (referenceDosePerKg !== null || parsedDoseMgPerKg !== null || !!initialValue?.doseMgPerKg);
+  const formulaSummary =
+    canUseDoseCalculation && parsedWeightKg !== null && parsedDoseMgPerKg !== null
+      ? language === "ru"
+        ? `${formatDoseSummaryNumber(parsedWeightKg, language)} кг × ${formatDoseSummaryNumber(parsedDoseMgPerKg, language)} мг/кг = ${doseCalculation ? `${formatDoseSummaryNumber(doseCalculation.calculatedDoseMg, language)} мг${doseCalculation.calculatedDoseUnit && doseCalculation.calculatedDoseUnit !== "mg" && doseCalculation.calculatedDoseValue !== null ? ` = ${doseCalculation.suggestedDoseText}` : ""}` : `${formatDoseSummaryNumber(parsedWeightKg * parsedDoseMgPerKg, language)} мг`}`
+        : `${formatDoseSummaryNumber(parsedWeightKg, language)} kg × ${formatDoseSummaryNumber(parsedDoseMgPerKg, language)} mg/kg = ${doseCalculation ? `${formatDoseSummaryNumber(doseCalculation.calculatedDoseMg, language)} mg${doseCalculation.calculatedDoseUnit && doseCalculation.calculatedDoseUnit !== "mg" && doseCalculation.calculatedDoseValue !== null ? ` = ${doseCalculation.suggestedDoseText}` : ""}` : `${formatDoseSummaryNumber(parsedWeightKg * parsedDoseMgPerKg, language)} mg`}`
+      : null;
+  const concentrationSummary =
+    selectedMedicine && canUseDoseCalculation
+      ? [selectedMedicine.medicineForm, selectedMedicine.medicineConcentration]
+          .filter((value) => !!value)
+          .join(" · ")
+      : null;
+  const showDoseReferenceSummary = Boolean(
+    canUseDoseCalculation &&
+      (latestWeightMeta || effectiveDosePerKgText || concentrationSummary || formulaSummary)
+  );
+  const summaryDosePerKgLabel =
+    parsedDoseMgPerKg !== null
+      ? `${parsedDoseMgPerKg} ${language === "ru" ? "мг/кг" : "mg/kg"}`
+      : referenceDosePerKg
+        ? `${referenceDosePerKg.value} ${language === "ru" ? "мг/кг" : "mg/kg"}`
+        : null;
 
   const clearCabinetPicker = () => {
     if (!searchParams.get("picker")) {
@@ -221,6 +241,50 @@ export function MedicationPlanComposer({
       clearCabinetPicker();
     }
   }, [planMode]);
+
+  useEffect(() => {
+    if (!latestWeightText || !autoFillWeightEnabledRef.current) {
+      autoAppliedWeightRef.current = null;
+      return;
+    }
+
+    const trimmedWeight = weightKg.trim();
+    if (
+      !trimmedWeight ||
+      (autoAppliedWeightRef.current !== null && trimmedWeight === autoAppliedWeightRef.current)
+    ) {
+      setWeightKg(latestWeightText);
+      autoAppliedWeightRef.current = latestWeightText;
+    }
+  }, [latestWeightText]);
+
+  useEffect(() => {
+    const referenceText =
+      referenceDosePerKg && Number.isFinite(referenceDosePerKg.value)
+        ? String(referenceDosePerKg.value)
+        : "";
+
+    if (!canUseDoseCalculation || !referenceText || !autoFillDosePerKgEnabledRef.current) {
+      if (
+        autoAppliedDosePerKgRef.current !== null &&
+        doseMgPerKg.trim() === autoAppliedDosePerKgRef.current
+      ) {
+        setDoseMgPerKg("");
+      }
+      autoAppliedDosePerKgRef.current = null;
+      return;
+    }
+
+    const trimmedDosePerKg = doseMgPerKg.trim();
+    if (
+      !trimmedDosePerKg ||
+      (autoAppliedDosePerKgRef.current !== null &&
+        trimmedDosePerKg === autoAppliedDosePerKgRef.current)
+    ) {
+      setDoseMgPerKg(referenceText);
+      autoAppliedDosePerKgRef.current = referenceText;
+    }
+  }, [canUseDoseCalculation, referenceDosePerKg]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -264,6 +328,89 @@ export function MedicationPlanComposer({
       root.removeEventListener("focusout", handleFocusOut);
     };
   }, []);
+
+  useEffect(() => {
+    if (planMode !== "cabinet" || !suggestedDoseText || !autoFillDoseEnabledRef.current) {
+      return;
+    }
+    const trimmedDose = doseAmount.trim();
+    if (manualDoseOverride && trimmedDose) {
+      return;
+    }
+    if (
+      trimmedDose &&
+      trimmedDose !== lastSuggestedDoseRef.current &&
+      trimmedDose !== suggestedDoseText
+    ) {
+      return;
+    }
+    setDoseAmount(suggestedDoseText);
+    setManualDoseOverride(false);
+    lastSuggestedDoseRef.current = suggestedDoseText;
+  }, [doseAmount, manualDoseOverride, planMode, suggestedDoseText]);
+
+  useEffect(() => {
+    if (planMode !== "cabinet" || suggestedDoseText || manualDoseOverride) {
+      return;
+    }
+
+    if (doseAmount.trim() && doseAmount.trim() === lastSuggestedDoseRef.current) {
+      setDoseAmount("");
+      lastSuggestedDoseRef.current = "";
+    }
+  }, [doseAmount, manualDoseOverride, planMode, suggestedDoseText]);
+
+  useEffect(() => {
+    if (selectedMedicineId === previousSelectedMedicineIdRef.current) {
+      return;
+    }
+    previousSelectedMedicineIdRef.current = selectedMedicineId;
+    autoFillWeightEnabledRef.current = true;
+    autoFillDosePerKgEnabledRef.current = true;
+    autoFillDoseEnabledRef.current = true;
+    lastSuggestedDoseRef.current = "";
+    autoAppliedWeightRef.current = null;
+    autoAppliedDosePerKgRef.current = null;
+    if (!selectedMedicineId) {
+      return;
+    }
+    if (latestWeightText) {
+      setWeightKg(latestWeightText);
+      autoAppliedWeightRef.current = latestWeightText;
+    }
+    const referenceText =
+      referenceDosePerKg && Number.isFinite(referenceDosePerKg.value)
+        ? String(referenceDosePerKg.value)
+        : "";
+    if (referenceText) {
+      setDoseMgPerKg(referenceText);
+      autoAppliedDosePerKgRef.current = referenceText;
+    } else {
+      setDoseMgPerKg("");
+    }
+    setManualDoseOverride(false);
+  }, [latestWeightText, referenceDosePerKg, selectedMedicineId]);
+
+  useEffect(() => {
+    if (initialValue) {
+      previousPlanModeRef.current = planMode;
+      setIsDoseSettingsOpen(false);
+      return;
+    }
+    setIsDoseSettingsOpen(false);
+    if (previousPlanModeRef.current === "cabinet" && planMode === "manual") {
+      setSelectedMedicineId("");
+      setDoseAmount("");
+      setManualDoseOverride(false);
+      setWeightKg("");
+      setDoseMgPerKg("");
+      autoFillWeightEnabledRef.current = true;
+      autoFillDosePerKgEnabledRef.current = true;
+      autoFillDoseEnabledRef.current = true;
+      lastSuggestedDoseRef.current = "";
+    }
+    previousPlanModeRef.current = planMode;
+  }, [canUseDoseCalculation, initialValue, planMode]);
 
   if (planMode === "cabinet" && isCabinetPickerOpen) {
     return (
@@ -338,33 +485,83 @@ export function MedicationPlanComposer({
             )}
           </div>
 
-          <div>
-            <label className="block space-y-1.5">
-              <span className="soft-field-label">
-                {language === "ru"
-                  ? "Сколько дать"
-                  : "How much to give"}
-              </span>
-              <input
-                type="text"
-                value={doseAmount}
-                onChange={(e) => setDoseAmount(e.target.value)}
-                placeholder={
-                  language === "ru" ? "Например: 10 мл или 1 таб." : "Example: 10 ml or 1 tab"
-                }
-                className={illnessCompactInputClass}
+          <div className="min-w-0">
+            <div className="space-y-3">
+              <MedicationDoseCalculationCard
+                language={language}
+                show={showDoseReferenceSummary}
+                childWeightSummaryLabel={childWeightSummaryLabel}
+                latestWeightMeta={latestWeightMeta}
+                summaryDosePerKgLabel={summaryDosePerKgLabel}
+                formulaSummary={formulaSummary}
+                isOpen={isDoseSettingsOpen}
+                onToggle={() => setIsDoseSettingsOpen((current) => !current)}
+                latestWeightValue={latestWeight?.valueKg ?? null}
+                weightKg={weightKg}
+                doseMgPerKg={doseMgPerKg}
+                referenceDosePerKgValue={referenceDosePerKg?.value ?? null}
+                onWeightChange={(value) => {
+                  autoFillWeightEnabledRef.current = false;
+                  autoAppliedWeightRef.current = null;
+                  setWeightKg(value);
+                }}
+                onDosePerKgChange={(value) => {
+                  autoFillDosePerKgEnabledRef.current = false;
+                  autoAppliedDosePerKgRef.current = null;
+                  setDoseMgPerKg(value);
+                }}
               />
-              {shouldShowDoseUnitHint && (
-                <p className="mt-2 text-xs text-muted">
+
+              <label className="block space-y-1.5">
+                <span className="soft-field-label">
                   {language === "ru"
-                    ? "Лучше добавить единицу дозы: мл, таб., мг, кап. и т.д."
-                    : "Better add a dose unit: ml, tab, mg, drops, etc."}
-                </p>
-              )}
-            </label>
+                    ? "Итоговая доза для напоминания"
+                    : "Final dose for the reminder"}
+                </span>
+                <input
+                  type="text"
+                  value={doseAmount}
+                  onChange={(e) => {
+                    const nextValue = e.target.value;
+                    autoFillDoseEnabledRef.current = false;
+                    setDoseAmount(nextValue);
+                    if (!suggestedDoseText) {
+                      setManualDoseOverride(false);
+                      return;
+                    }
+                    const trimmed = nextValue.trim();
+                    setManualDoseOverride(trimmed !== suggestedDoseText);
+                  }}
+                  placeholder={
+                    language === "ru" ? "Например: 10 мл или 1 таб." : "Example: 10 ml or 1 tab"
+                  }
+                  className={illnessCompactInputClass}
+                />
+                {selectedMedicine?.medicineDosage ? (
+                  <p className="mt-2 text-xs text-muted">
+                    {language === "ru" ? "Справка по дозировке" : "Dose guidance"}:{" "}
+                    {selectedMedicine.medicineDosage}
+                  </p>
+                ) : null}
+                {shouldShowDoseUnitHint && (
+                  <p className="mt-2 text-xs text-muted">
+                    {language === "ru"
+                      ? "Лучше добавить единицу дозы: мл, таб., мг, кап. и т.д."
+                      : "Better add a dose unit: ml, tab, mg, drops, etc."}
+                  </p>
+                )}
+                {manualDoseOverride && doseAmount.trim() ? (
+                  <p className="mt-2 text-xs text-muted">
+                    {language === "ru"
+                      ? `Итоговая доза изменена вручную: ${doseAmount.trim()}.`
+                      : `Final dose was edited manually: ${doseAmount.trim()}.`}
+                  </p>
+                ) : null}
+              </label>
+            </div>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label className="block space-y-1.5">
               <span className="soft-field-label">
                 {language === "ru" ? "Интервал напоминания" : "Reminder interval"},{" "}
@@ -387,6 +584,28 @@ export function MedicationPlanComposer({
               />
             </label>
           </div>
+
+          <div className="min-w-0">
+            <label className="block space-y-1.5">
+              <span className="soft-field-label">
+                {language === "ru" ? "Лимит приёмов в сутки" : "Daily dose limit"}
+              </span>
+              <input
+                type="number"
+                min="1"
+                max="24"
+                value={maxDosesPerDay}
+                onChange={(e) => setMaxDosesPerDay(e.target.value)}
+                placeholder={language === "ru" ? "Если знаете" : "If you know it"}
+                className={illnessCompactInputClass}
+              />
+              <p className="mt-2 text-xs text-muted">
+                {language === "ru"
+                  ? "Необязательно. Укажите, только если на упаковке или от врача есть чёткий максимум на сутки."
+                  : "Optional. Fill this in only when the package or clinician gives a clear per-day maximum."}
+              </p>
+            </label>
+          </div>
         </div>
 
       </div>
@@ -403,151 +622,6 @@ export function MedicationPlanComposer({
           onTimeChange={setFirstDoseTime}
         />
       ) : null}
-
-      <div className={`${illnessPanelSoftClass} rounded-[28px] p-4 sm:p-5`}>
-        <div>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="text-sm leading-6 text-muted">
-              {language === "ru"
-                ? "Проверка по весу и лимитам приёма, если она нужна."
-                : "Weight and dose-limit checks if you need them."}
-            </p>
-            <button
-              type="button"
-              onClick={() => setIsAdvancedOpen((current) => !current)}
-              className={reminderComposerSecondaryActionClass}
-            >
-              {isAdvancedOpen
-                ? language === "ru"
-                  ? "Скрыть"
-                  : "Hide"
-                : language === "ru"
-                  ? "Доп. настройки"
-                  : "Advanced"}
-            </button>
-          </div>
-
-          {isAdvancedOpen && (
-            <div className="mt-4 grid gap-3 border-t border-border/60 pt-4 xl:grid-cols-2">
-              <div>
-                <label className="block space-y-1.5">
-                  <span className="soft-field-label">
-                    {language === "ru" ? "Максимум в сутки" : "Max per day"}
-                  </span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="24"
-                    value={maxDosesPerDay}
-                    onChange={(e) => setMaxDosesPerDay(e.target.value)}
-                    placeholder={language === "ru" ? "Необязательно" : "Optional"}
-                    className={illnessCompactInputClass}
-                  />
-                </label>
-              </div>
-
-              <div>
-                <label className="block space-y-1.5">
-                  <span className="flex items-center gap-2 soft-field-label">
-                    {language === "ru"
-                      ? "Вес ребёнка для проверки, кг"
-                      : "Child weight for check, kg"}
-                    <InlineHint
-                      text={
-                        language === "ru"
-                          ? "Нужен только для проверки по мг/кг. Если доза уже известна, поле можно пропустить."
-                          : "Needed only for the mg/kg check. If the dose is already known, you can skip this field."
-                      }
-                    />
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={weightKg}
-                    onChange={(e) => setWeightKg(e.target.value)}
-                    placeholder={
-                      latestWeight
-                        ? String(latestWeight.valueKg)
-                        : language === "ru"
-                          ? "Необязательно"
-                          : "Optional"
-                    }
-                    className={illnessCompactInputClass}
-                  />
-                  {latestWeight && (
-                    <p className="mt-2 text-xs text-muted">
-                      {language === "ru" ? "Последний вес" : "Latest weight"}:{" "}
-                      {latestWeight.valueKg} {language === "ru" ? "кг" : "kg"}{" "}
-                      {language === "ru" ? "от" : "from"}{" "}
-                      {formatChildDate(latestWeight.measuredAt, language)}
-                    </p>
-                  )}
-                  {shouldOfferWeightSync && (
-                    <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">
-                      <p>
-                        {language === "ru"
-                          ? `В плане указан вес ${parsedWeightKg} кг. Обновить его и в карточке ребёнка?`
-                          : `The plan uses ${parsedWeightKg} kg. Update it in the child profile too?`}
-                      </p>
-                      <div className="mt-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (parsedWeightKg === null) {
-                              return;
-                            }
-                            syncWeightMutation.mutate(parsedWeightKg);
-                          }}
-                          disabled={syncWeightMutation.isPending}
-                          className={illnessCompactSecondaryButtonClass}
-                        >
-                          {syncWeightMutation.isPending
-                            ? language === "ru"
-                              ? "Сохраняем вес…"
-                              : "Saving weight…"
-                            : language === "ru"
-                              ? "Обновить вес ребёнка"
-                              : "Update child weight"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </label>
-              </div>
-
-              <div className="xl:col-span-2">
-                <label className="block space-y-1.5">
-                  <span className="flex items-center gap-2 soft-field-label">
-                    {language === "ru" ? "Проверка по весу, мг/кг" : "Weight check, mg/kg"}
-                    <InlineHint
-                      text={
-                        language === "ru"
-                          ? "Если врач указал дозу в мг/кг, введи значение. Это проверка, основная доза задаётся выше."
-                          : "If the doctor gave the dose in mg/kg, enter it here. This is a check, the main dose is set above."
-                      }
-                    />
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    inputMode="decimal"
-                    value={doseMgPerKg}
-                    onChange={(e) => setDoseMgPerKg(e.target.value)}
-                    placeholder={language === "ru" ? "Введите дозировку, мг" : "Optional"}
-                    className={illnessCompactInputClass}
-                  />
-                </label>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {weightHint && (
-        <div className="soft-note-info mt-3 rounded-2xl px-4 py-3 text-sm">{weightHint}</div>
-      )}
 
       <div className="grid gap-2 border-t border-border/60 pt-4">
         {isIosShell && hasKeyboardFocus ? (
@@ -589,8 +663,14 @@ export function MedicationPlanComposer({
                 doseAmount: doseAmount.trim(),
                 minIntervalMinutes: parsedIntervalMinutes,
                 maxDosesPerDay: parseNullableInteger(maxDosesPerDay),
-                weightKg: parseNullableNumber(weightKg),
-                doseMgPerKg: parseNullableNumber(doseMgPerKg),
+                weightKg: parsedWeightKg,
+                doseMgPerKg: parsedDoseMgPerKg,
+                calculatedDoseMg: doseCalculation?.calculatedDoseMg ?? null,
+                calculatedDoseValue: doseCalculation?.calculatedDoseValue ?? null,
+                calculatedDoseUnit: doseCalculation?.calculatedDoseUnit ?? null,
+                doseCalcMode: doseCalculation?.doseCalcMode ?? null,
+                doseCalcWarning: doseCalculation?.doseCalcWarning ?? null,
+                manualDoseOverride,
                 notes: null,
                 firstDoseStatus: initialValue ? undefined : firstDoseStatus,
                 firstDoseAt,
@@ -604,6 +684,7 @@ export function MedicationPlanComposer({
                 setMinIntervalInput(intervalUnit === "minutes" ? "180" : "3");
                 setMaxDosesPerDay("");
                 setDoseMgPerKg("");
+                setManualDoseOverride(false);
                 setFirstDoseStatus("not_given");
                 setFirstDoseDate(getLocalIsoDate());
                 setFirstDoseTime(getCurrentLocalTimeValue());

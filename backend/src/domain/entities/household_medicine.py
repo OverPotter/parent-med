@@ -11,12 +11,15 @@ class HouseholdMedicine:
 
     id: UUID
     family_id: UUID
-    catalog_item_id: UUID | None
     medicine_name: str
     medicine_form: str
+    medicine_category: str | None
     medicine_concentration: str | None
     medicine_description: str | None
     medicine_dosage: str | None
+    pediatric_dose_mg_per_kg_min: float | None
+    pediatric_dose_mg_per_kg_max: float | None
+    pediatric_dose_note: str | None
     expiry_date: date
     opened_at: datetime | None
     opened_shelf_days: int | None

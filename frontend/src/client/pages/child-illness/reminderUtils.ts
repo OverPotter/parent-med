@@ -8,6 +8,12 @@ export type MedicationPlanPayload = {
   maxDosesPerDay: number | null;
   weightKg: number | null;
   doseMgPerKg: number | null;
+  calculatedDoseMg: number | null;
+  calculatedDoseValue: number | null;
+  calculatedDoseUnit: string | null;
+  doseCalcMode: string | null;
+  doseCalcWarning: string | null;
+  manualDoseOverride: boolean;
   notes: string | null;
   firstDoseStatus?: "already_given" | "not_given";
   firstDoseAt?: string | null;
@@ -94,6 +100,7 @@ export function canSubmitMedicationPlanComposer(params: {
   planMode: "cabinet" | "manual";
   selectedMedicineId: string;
   customMedicineName: string;
+  doseAmount: string;
   minIntervalInput: string;
   parsedIntervalMinutes: number | null;
   hasFutureFirstDoseSelection: boolean;
@@ -103,6 +110,10 @@ export function canSubmitMedicationPlanComposer(params: {
   }
 
   if (params.planMode === "cabinet" ? !params.selectedMedicineId : !params.customMedicineName.trim()) {
+    return false;
+  }
+
+  if (!params.doseAmount.trim()) {
     return false;
   }
 

@@ -21,6 +21,17 @@ class HouseholdMedicineRepository(BaseRepository[HouseholdMedicine]):
         ...
 
     @abstractmethod
+    async def find_by_snapshot(
+        self,
+        family_id: UUID,
+        medicine_name: str,
+        medicine_shape: str,
+        medicine_concentration: str | None,
+    ) -> HouseholdMedicine | None:
+        """Найти упаковку по каноническому snapshot лекарства."""
+        ...
+
+    @abstractmethod
     async def add(self, entity: HouseholdMedicine) -> HouseholdMedicine:
         """Добавить упаковку."""
         ...

@@ -146,8 +146,8 @@ test("illness medication lines show next dose and last administration under chil
   );
 
   assert.deepEqual(lines, {
-    primaryLine: `Дать Нурофен в ${formatExpectedTime("2026-04-24T20:10:00+03:00")}`,
-    secondaryLine: `Дали Парацетамол в ${formatExpectedTime(lastAdministrationAt)}`,
+    primaryLine: `Нурофен · дать в ${formatExpectedTime("2026-04-24T20:10:00+03:00")}`,
+    secondaryLine: `Парацетамол · дали в ${formatExpectedTime(lastAdministrationAt)}`,
   });
 });
 
@@ -167,7 +167,28 @@ test("illness medication lines switch to ready state when dose time is reached",
   );
 
   assert.deepEqual(lines, {
-    primaryLine: "Можно дать Нурофен",
+    primaryLine: "Нурофен · Можно дать",
     secondaryLine: null,
+  });
+});
+
+test("illness medication lines fall back to action-only text when medicine name is missing", () => {
+  const lines = buildIllnessMedicationLines(
+    {
+      lastAdministrationAt: "2026-04-24T18:10:00+03:00",
+      medicineNames: [],
+    },
+    {
+      nextDoseAt: new Date("2026-04-24T20:10:00+03:00"),
+      medicineName: null,
+    },
+    null,
+    "ru",
+    new Date("2026-04-24T18:10:00+03:00")
+  );
+
+  assert.deepEqual(lines, {
+    primaryLine: `Дать в ${formatExpectedTime("2026-04-24T20:10:00+03:00")}`,
+    secondaryLine: `Дали в ${formatExpectedTime("2026-04-24T18:10:00+03:00")}`,
   });
 });

@@ -23,6 +23,25 @@ class EpisodeMedicationPlanCreateDto(BaseModel):
     )
     weight_kg: float | None = Field(None, ge=0.1, le=200, description="Вес ребёнка на момент плана")
     dose_mg_per_kg: float | None = Field(None, ge=0.1, le=100, description="Расчётная доза в мг/кг")
+    calculated_dose_mg: float | None = Field(
+        None, ge=0.1, le=100000, description="Расчётная разовая доза в мг"
+    )
+    calculated_dose_value: float | None = Field(
+        None, ge=0.0, le=100000, description="Расчётное значение в единице формы"
+    )
+    calculated_dose_unit: str | None = Field(
+        None, max_length=32, description="Единица расчёта: мл, таб., пшик и т.д."
+    )
+    dose_calc_mode: str | None = Field(
+        None, max_length=32, description="Режим расчёта: mg_ml, tablet, spray, fallback"
+    )
+    dose_calc_warning: str | None = Field(
+        None, max_length=500, description="Предупреждение по расчёту дозы"
+    )
+    manual_dose_override: bool = Field(
+        False,
+        description="Пользователь вручную изменил итоговую дозу относительно автоподсказки",
+    )
     notes: str | None = Field(None, description="Комментарий к схеме")
     member_account_ids: list[UUID] = Field(
         default_factory=list,
@@ -44,6 +63,25 @@ class EpisodeMedicationPlanUpdateDto(BaseModel):
     )
     weight_kg: float | None = Field(None, ge=0.1, le=200, description="Вес ребёнка на момент плана")
     dose_mg_per_kg: float | None = Field(None, ge=0.1, le=100, description="Расчётная доза в мг/кг")
+    calculated_dose_mg: float | None = Field(
+        None, ge=0.1, le=100000, description="Расчётная разовая доза в мг"
+    )
+    calculated_dose_value: float | None = Field(
+        None, ge=0.0, le=100000, description="Расчётное значение в единице формы"
+    )
+    calculated_dose_unit: str | None = Field(
+        None, max_length=32, description="Единица расчёта: мл, таб., пшик и т.д."
+    )
+    dose_calc_mode: str | None = Field(
+        None, max_length=32, description="Режим расчёта: mg_ml, tablet, spray, fallback"
+    )
+    dose_calc_warning: str | None = Field(
+        None, max_length=500, description="Предупреждение по расчёту дозы"
+    )
+    manual_dose_override: bool | None = Field(
+        None,
+        description="Пользователь вручную изменил итоговую дозу относительно автоподсказки",
+    )
     notes: str | None = Field(None, description="Комментарий к схеме")
     member_account_ids: list[UUID] | None = Field(
         None,
@@ -63,6 +101,12 @@ class EpisodeMedicationPlanResponseDto(ResponseBase):
     max_doses_per_day: int | None
     weight_kg: float | None
     dose_mg_per_kg: float | None
+    calculated_dose_mg: float | None
+    calculated_dose_value: float | None
+    calculated_dose_unit: str | None
+    dose_calc_mode: str | None
+    dose_calc_warning: str | None
+    manual_dose_override: bool
     notes: str | None
     member_account_ids: list[UUID]
     created_at: datetime

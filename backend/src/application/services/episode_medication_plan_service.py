@@ -60,10 +60,21 @@ class EpisodeMedicationPlanService:
             max_doses_per_day=entity.max_doses_per_day,
             weight_kg=entity.weight_kg,
             dose_mg_per_kg=entity.dose_mg_per_kg,
+            calculated_dose_mg=entity.calculated_dose_mg,
+            calculated_dose_value=entity.calculated_dose_value,
+            calculated_dose_unit=entity.calculated_dose_unit,
+            dose_calc_mode=entity.dose_calc_mode,
+            dose_calc_warning=entity.dose_calc_warning,
+            manual_dose_override=entity.manual_dose_override,
             notes=entity.notes,
             member_account_ids=list(entity.member_account_ids),
             created_at=entity.created_at,
         )
+
+    @staticmethod
+    def _normalize_optional_string(value: str | None) -> str | None:
+        normalized = (value or "").strip()
+        return normalized or None
 
     async def _resolve_member_account_ids(
         self,
@@ -211,6 +222,12 @@ class EpisodeMedicationPlanService:
             max_doses_per_day=dto.max_doses_per_day,
             weight_kg=dto.weight_kg,
             dose_mg_per_kg=dto.dose_mg_per_kg,
+            calculated_dose_mg=dto.calculated_dose_mg,
+            calculated_dose_value=dto.calculated_dose_value,
+            calculated_dose_unit=self._normalize_optional_string(dto.calculated_dose_unit),
+            dose_calc_mode=self._normalize_optional_string(dto.dose_calc_mode),
+            dose_calc_warning=self._normalize_optional_string(dto.dose_calc_warning),
+            manual_dose_override=dto.manual_dose_override,
             notes=dto.notes.strip() if dto.notes else None,
             member_account_ids=member_account_ids,
             reminders_enabled=True,
@@ -264,6 +281,36 @@ class EpisodeMedicationPlanService:
         dose_mg_per_kg = (
             dto.dose_mg_per_kg if "dose_mg_per_kg" in fields_set else entity.dose_mg_per_kg
         )
+        calculated_dose_mg = (
+            dto.calculated_dose_mg
+            if "calculated_dose_mg" in fields_set
+            else entity.calculated_dose_mg
+        )
+        calculated_dose_value = (
+            dto.calculated_dose_value
+            if "calculated_dose_value" in fields_set
+            else entity.calculated_dose_value
+        )
+        calculated_dose_unit = (
+            self._normalize_optional_string(dto.calculated_dose_unit)
+            if "calculated_dose_unit" in fields_set
+            else entity.calculated_dose_unit
+        )
+        dose_calc_mode = (
+            self._normalize_optional_string(dto.dose_calc_mode)
+            if "dose_calc_mode" in fields_set
+            else entity.dose_calc_mode
+        )
+        dose_calc_warning = (
+            self._normalize_optional_string(dto.dose_calc_warning)
+            if "dose_calc_warning" in fields_set
+            else entity.dose_calc_warning
+        )
+        manual_dose_override = (
+            dto.manual_dose_override
+            if "manual_dose_override" in fields_set and dto.manual_dose_override is not None
+            else entity.manual_dose_override
+        )
         notes = (
             dto.notes.strip()
             if "notes" in fields_set and dto.notes
@@ -311,6 +358,12 @@ class EpisodeMedicationPlanService:
                 max_doses_per_day=max_doses_per_day,
                 weight_kg=weight_kg,
                 dose_mg_per_kg=dose_mg_per_kg,
+                calculated_dose_mg=calculated_dose_mg,
+                calculated_dose_value=calculated_dose_value,
+                calculated_dose_unit=calculated_dose_unit,
+                dose_calc_mode=dose_calc_mode,
+                dose_calc_warning=dose_calc_warning,
+                manual_dose_override=manual_dose_override,
                 notes=notes,
                 member_account_ids=member_account_ids,
                 reminders_enabled=True,

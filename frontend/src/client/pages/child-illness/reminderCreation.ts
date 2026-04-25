@@ -14,6 +14,12 @@ export type ReminderCreationPayload = {
   maxDosesPerDay?: number | null;
   weightKg?: number | null;
   doseMgPerKg?: number | null;
+  calculatedDoseMg?: number | null;
+  calculatedDoseValue?: number | null;
+  calculatedDoseUnit?: string | null;
+  doseCalcMode?: string | null;
+  doseCalcWarning?: string | null;
+  manualDoseOverride?: boolean;
   notes?: string | null;
   firstDoseStatus?: "already_given" | "not_given";
   firstDoseAt?: string | null;
@@ -43,6 +49,12 @@ export async function createReminderWithOptionalFirstAdministration(
     max_doses_per_day: payload.maxDosesPerDay ?? null,
     weight_kg: payload.weightKg ?? null,
     dose_mg_per_kg: payload.doseMgPerKg ?? null,
+    calculated_dose_mg: payload.calculatedDoseMg ?? null,
+    calculated_dose_value: payload.calculatedDoseValue ?? null,
+    calculated_dose_unit: payload.calculatedDoseUnit ?? null,
+    dose_calc_mode: payload.doseCalcMode ?? null,
+    dose_calc_warning: payload.doseCalcWarning ?? null,
+    manual_dose_override: payload.manualDoseOverride ?? false,
     notes: payload.notes ?? null,
   });
 

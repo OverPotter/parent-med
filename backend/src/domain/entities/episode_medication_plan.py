@@ -18,6 +18,12 @@ class EpisodeMedicationPlan:
     max_doses_per_day: int | None
     weight_kg: float | None
     dose_mg_per_kg: float | None
+    calculated_dose_mg: float | None
+    calculated_dose_value: float | None
+    calculated_dose_unit: str | None
+    dose_calc_mode: str | None
+    dose_calc_warning: str | None
+    manual_dose_override: bool
     notes: str | None
     member_account_ids: list[UUID]
     reminders_enabled: bool
