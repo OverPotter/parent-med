@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateAccountProfile } from "@shared/api/auth";
 import {
   deleteFamilyMember,
   updateFamilyMember,
@@ -38,7 +37,6 @@ export function useFamilyPageMutations(args: {
   currentFamilyId: string | null;
   currentAccountId: string | null;
   setCurrentFamily: (family: Family | null) => void;
-  setAccountEmail: (email: string | null) => void;
   setAccountFamilyContext: (family: {
     familyRole?: string | null;
     accessPolicy?: FamilyAccessPolicy | null;
@@ -51,7 +49,6 @@ export function useFamilyPageMutations(args: {
     currentFamilyId,
     currentAccountId,
     setCurrentFamily,
-    setAccountEmail,
     setAccountFamilyContext,
     setError,
   } = args;
@@ -108,7 +105,10 @@ export function useFamilyPageMutations(args: {
     mutationFn: (memberAccountId: string) => deleteFamilyMember(memberAccountId),
     onSuccess: () => {
       setError(null);
-      void queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] }),
+        queryClient.invalidateQueries({ queryKey: ["families", "me", "members", currentFamilyId] }),
+      ]);
     },
     onError: (error) => {
       setError(getApiErrorMessage(error, tFamily(language, "deleteMemberFailed")));
@@ -134,19 +134,10 @@ export function useFamilyPageMutations(args: {
       }),
     onSuccess: () => {
       setError(null);
-      void queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
-    },
-    onError: (error) => {
-      setError(getApiErrorMessage(error, tFamily(language, "updateProfileFailed")));
-    },
-  });
-
-  const updateMyProfileMutation = useMutation({
-    mutationFn: ({ email }: { email: string | null }) => updateAccountProfile({ email }),
-    onSuccess: (account) => {
-      setAccountEmail(account.email);
-      setError(null);
-      void queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] }),
+        queryClient.invalidateQueries({ queryKey: ["families", "me", "members", currentFamilyId] }),
+      ]);
     },
     onError: (error) => {
       setError(getApiErrorMessage(error, tFamily(language, "updateProfileFailed")));
@@ -159,6 +150,5 @@ export function useFamilyPageMutations(args: {
     updateMemberMutation,
     deleteMemberMutation,
     updateMemberProfileMutation,
-    updateMyProfileMutation,
   };
 }

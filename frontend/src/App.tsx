@@ -35,6 +35,7 @@ import {
   RouteScrollReset,
   WarmRouteChunks,
 } from "@/app/mobile/runtime";
+import { DisplayNameOnboardingOverlay } from "@client/components/DisplayNameOnboardingOverlay";
 import { AuthPage } from "@client/pages/AuthPage";
 import { appLog } from "@shared/utils/appLog";
 import { shouldClearSessionForAuthError } from "@shared/api/authSessionErrors";
@@ -80,6 +81,11 @@ const FamilyMemberAccessPage = lazy(() =>
 );
 const JoinFamilyPage = lazy(() =>
   import("@client/pages/JoinFamilyPage").then((module) => ({ default: module.JoinFamilyPage }))
+);
+const RecoverPasswordPage = lazy(() =>
+  import("@client/pages/RecoverPasswordPage").then((module) => ({
+    default: module.RecoverPasswordPage,
+  }))
 );
 const ChildrenPage = lazy(() =>
   import("@client/pages/ChildrenPage").then((module) => ({ default: module.ChildrenPage }))
@@ -334,6 +340,7 @@ export default function App() {
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <AuthSync />
+      <DisplayNameOnboardingOverlay />
       {role !== "admin" ? <NativePushNavigationSync /> : null}
       <ClientRuntimeMount enabled={shouldMountClientRuntime} />
       <Suspense fallback={<RouteFallback />}>
@@ -353,6 +360,7 @@ export default function App() {
                 />
                 <Route path="/join-family" element={<JoinFamilyPage />} />
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/recover-password" element={<RecoverPasswordPage />} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
                 <Route path="/legal/terms" element={<TermsOfUsePage />} />
@@ -364,6 +372,7 @@ export default function App() {
                 <Route path="/" element={<AdminLayout />}>
                   <Route index element={<AdminHomePage />} />
                   <Route path="auth" element={<Navigate to="/" replace />} />
+                  <Route path="recover-password" element={<Navigate to="/" replace />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
               </>
@@ -371,6 +380,7 @@ export default function App() {
               <>
                 <Route path="/" element={<ClientLayout />}>
                   <Route path="auth" element={<Navigate to="/" replace />} />
+                  <Route path="recover-password" element={<RecoverPasswordPage />} />
                   <Route index element={<ClientStartPage />} />
                   <Route path="workspace" element={<ClientWorkspacePage />} />
                   <Route path="home" element={<ClientHomePage />} />

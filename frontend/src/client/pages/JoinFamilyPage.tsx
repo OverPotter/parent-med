@@ -7,6 +7,7 @@ import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analy
 import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
+import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 
 type Mode = "register" | "login";
@@ -18,23 +19,19 @@ function roleLabel(role: string): string {
 }
 
 export function JoinFamilyPage() {
+  const { language } = useI18n();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const token = searchParams.get("token")?.trim() ?? "";
   const [mode, setMode] = useState<Mode>("register");
-  const [loginValue, setLoginValue] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [relationshipLabel, setRelationshipLabel] = useState("");
-  const [phone, setPhone] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const accountId = useAppStore((s) => s.accountId);
-  const accountLogin = useAppStore((s) => s.accountLogin);
   const accountEmail = useAppStore((s) => s.accountEmail);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
@@ -67,7 +64,7 @@ export function JoinFamilyPage() {
   }, [inviteError, token]);
 
   const loginMutation = useMutation({
-    mutationFn: (payload: { login: string; password: string; remember_me: boolean }) =>
+    mutationFn: (payload: { email: string; password: string; remember_me: boolean }) =>
       login(payload),
     onSuccess: (data) => {
       setSession(data);
@@ -86,14 +83,11 @@ export function JoinFamilyPage() {
 
   const registerMutation = useMutation({
     mutationFn: (payload: {
-      login: string;
-      email?: string;
+      email: string;
       password: string;
-      display_name?: string;
-      relationship_label?: string;
-      phone?: string;
       remember_me: boolean;
       invite_token: string;
+      preferred_language: "ru" | "en";
     }) => register(payload),
     onSuccess: (data) => {
       setSession(data);
@@ -133,14 +127,13 @@ export function JoinFamilyPage() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    const trimmedLogin = loginValue.trim();
     const trimmedEmail = email.trim();
-    if (!token || !trimmedLogin || password.length < 6) {
+    if (!token || !trimmedEmail || password.length < 6) {
       return;
     }
     if (mode === "login") {
       setError(null);
-      loginMutation.mutate({ login: trimmedLogin, password, remember_me: rememberMe });
+      loginMutation.mutate({ email: trimmedEmail, password, remember_me: rememberMe });
       return;
     }
     if (password !== passwordConfirm) {
@@ -149,14 +142,11 @@ export function JoinFamilyPage() {
     }
     setError(null);
     registerMutation.mutate({
-      login: trimmedLogin,
-      email: trimmedEmail || undefined,
+      email: trimmedEmail,
       password,
-      display_name: displayName.trim() || undefined,
-      relationship_label: relationshipLabel.trim() || undefined,
-      phone: phone.trim() || undefined,
       remember_me: rememberMe,
       invite_token: token,
+      preferred_language: language,
     });
   };
 
@@ -197,12 +187,11 @@ export function JoinFamilyPage() {
       {invitePreview && isAuthenticated ? (
         <Surface className="p-5 sm:p-6">
           <p className="app-card-title">Текущий аккаунт</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <InfoCard
               label="Имя в семье"
-              value={accountDisplayName || accountLogin || "Без имени"}
+              value={accountDisplayName?.trim() || "Вы"}
             />
-            <InfoCard label="Логин" value={accountLogin ? `@${accountLogin}` : "Не указан"} />
             <InfoCard label="Email" value={accountEmail || "Не указан"} />
           </div>
 
@@ -261,31 +250,31 @@ export function JoinFamilyPage() {
                 <div>
                   <p className="app-card-title">Обязательные поля</p>
                   <p className="soft-field-hint mt-1">
-                    Для входа и быстрой регистрации нужен только логин для входа и пароль.
+                    Для входа и регистрации нужен только email и пароль.
                   </p>
                 </div>
               </div>
 
               <div className="mt-4 grid gap-3">
-                <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
-                  <label className="block">
-                    <span className="soft-field-label">Логин</span>
-                    <input
-                      name="username"
-                      type="text"
-                      value={loginValue}
-                      onChange={(event) => setLoginValue(event.target.value)}
-                      className="soft-input w-full px-4"
-                      placeholder="Придумайте логин для входа"
-                      autoComplete="username"
-                    />
-                    <span className="soft-field-hint">
-                      Логин нужен только для входа. Имя в семье задаётся отдельно.
-                    </span>
-                  </label>
-                </div>
+                <label className="block">
+                  <span className="soft-field-label">Email</span>
+                  <input
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="soft-input w-full px-4"
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
+                  <span className="soft-field-hint">
+                    После входа можно будет отдельно заполнить, как вас показывать в семье.
+                  </span>
+                </label>
 
-                <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
+                <div
+                  className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}
+                >
                   <AuthPasswordField
                     label="Пароль"
                     value={password}
@@ -315,74 +304,10 @@ export function JoinFamilyPage() {
             <RememberMeCard checked={rememberMe} onChange={setRememberMe} />
 
             {isRegisterMode && (
-              <details className="soft-panel-muted rounded-[24px] p-4">
-                <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
-                  Дополнительные поля
-                </summary>
-                <p className="soft-field-hint mt-2">
-                  Здесь можно указать, как вас будут видеть в семье.
-                </p>
-                <label className="mt-4 block">
-                  <span className="soft-field-label">Email</span>
-                  <input
-                    name="email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    className="soft-input w-full px-4"
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                  />
-                  <span className="soft-field-hint">
-                    Для beta необязательно. Можно добавить позже в настройках.
-                  </span>
-                </label>
-                <label className="mt-4 block">
-                  <span className="soft-field-label">Имя в семье</span>
-                  <input
-                    name="display-name"
-                    type="text"
-                    value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                    className="soft-input w-full px-4"
-                    placeholder="Например: Дима"
-                    autoComplete="name"
-                  />
-                  <span className="soft-field-hint">
-                    Так имя будет показано в семье и в истории действий. Если пусто, используем
-                    логин.
-                  </span>
-                </label>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="soft-field-label">Кто вы в семье</span>
-                    <input
-                      name="relationship-label"
-                      type="text"
-                      value={relationshipLabel}
-                      onChange={(event) => setRelationshipLabel(event.target.value)}
-                      className="soft-input w-full px-4"
-                      placeholder="Например: папа"
-                      autoComplete="organization-title"
-                    />
-                    <span className="soft-field-hint">
-                      Короткая подпись рядом с именем: мама, папа, няня.
-                    </span>
-                  </label>
-                  <label className="block">
-                    <span className="soft-field-label">Телефон</span>
-                    <input
-                      name="tel"
-                      type="tel"
-                      value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
-                      className="soft-input w-full px-4"
-                      placeholder="+375 ..."
-                      autoComplete="tel"
-                    />
-                  </label>
-                </div>
-              </details>
+              <p className="soft-field-hint">
+                Имя в семье и дополнительные данные можно будет заполнить уже после подключения к
+                семейному кабинету.
+              </p>
             )}
 
             {passwordsMismatch && <p className="soft-note-warning">Пароли должны совпадать.</p>}
@@ -393,7 +318,7 @@ export function JoinFamilyPage() {
               disabled={
                 !token ||
                 isPending ||
-                !loginValue.trim() ||
+                !email.trim() ||
                 password.length < 6 ||
                 (isRegisterMode && (!passwordConfirm || password !== passwordConfirm))
               }

@@ -19,6 +19,12 @@
     "Plus Jakarta Sans", "Nunito Sans", "Onest", "SF Pro Display", "Segoe UI", sans-serif;
 }
 
+.auth-v3-page--recovery {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 [data-theme="dark"] .auth-v3-page {
   --auth-v3-bg: #1e1b2e;
   --auth-v3-surface: rgba(31, 27, 46, 0.88);
@@ -186,6 +192,49 @@
 .auth-v3-panel-compact {
   margin-top: 1.5rem;
   padding: 0.95rem;
+}
+
+.auth-v3-panel-recovery {
+  margin-top: 1rem;
+}
+
+.auth-v3-panel-head {
+  display: block;
+  padding: 0.15rem 0.35rem 0.2rem;
+}
+
+.auth-v3-form-recovery {
+  padding: 0 0.35rem 0.2rem;
+}
+
+.auth-v3-back-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--auth-v3-muted);
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.auth-v3-back-link--centered {
+  display: flex;
+  width: max-content;
+  margin: 0.7rem auto 0;
+}
+
+.auth-v3-back-link:hover {
+  color: var(--auth-v3-text);
+  transform: translateX(-1px);
+}
+
+.auth-v3-back-link:focus-visible {
+  outline: none;
+  color: var(--auth-v3-text);
 }
 
 .auth-v3-panel--ios {
@@ -789,6 +838,14 @@ details[open] > .auth-v3-summary::after {
   .auth-v3-panel {
     padding: 0.8rem;
     border-radius: 1.7rem;
+  }
+
+  .auth-v3-panel-head {
+    padding-inline: 0.15rem;
+  }
+
+  .auth-v3-form-recovery {
+    padding-inline: 0.15rem;
   }
 
   .auth-v3-card,

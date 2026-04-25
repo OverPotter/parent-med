@@ -22,7 +22,7 @@ class Account:
     email: str | None
     password_hash: str
     family_id: UUID
-    display_name: str
+    display_name: str | None
     family_role: str
     push_before_reminder_minutes: int
     cabinet_notify_10_days: bool
@@ -30,6 +30,7 @@ class Account:
     cabinet_notify_3_days: bool
     cabinet_notify_1_day: bool
     created_at: datetime
+    recovery_code_hash: str | None = None
     children_push_enabled: bool = True
     pillbox_push_enabled: bool = True
     pillbox_push_before_reminder_minutes: int = 10

@@ -25,7 +25,6 @@ export interface MemberCardProps {
     displayName?: string;
     relationshipLabel?: string | null;
     phone?: string | null;
-    email?: string | null;
   }) => Promise<boolean>;
   onHideForcedEdit: () => void;
 }
@@ -53,8 +52,6 @@ export function MemberCard({
   const [displayName, setDisplayName] = useState(member.displayName || "");
   const [relationshipLabel, setRelationshipLabel] = useState(member.relationshipLabel || "");
   const [phone, setPhone] = useState(member.phone || "");
-  const [email, setEmail] = useState(member.email || "");
-  const [emailError, setEmailError] = useState<string | null>(null);
   const [isPromoteConfirmOpen, setIsPromoteConfirmOpen] = useState(false);
   const [isDemoteConfirmOpen, setIsDemoteConfirmOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -63,9 +60,7 @@ export function MemberCard({
     setDisplayName(member.displayName || "");
     setRelationshipLabel(member.relationshipLabel || "");
     setPhone(member.phone || "");
-    setEmail(member.email || "");
-    setEmailError(null);
-  }, [member.displayName, member.relationshipLabel, member.phone, member.email]);
+  }, [member.displayName, member.relationshipLabel, member.phone]);
 
   useEffect(() => {
     if (forceEdit) {
@@ -123,7 +118,7 @@ export function MemberCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className="app-card-title text-base">
-              {member.displayName || member.login || tFamily(language, "noName")}
+              {member.displayName || (isCurrent ? tFamily(language, "yourProfileTitle") : tFamily(language, "noName"))}
             </p>
             {member.relationshipLabel && (
               <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
@@ -144,9 +139,6 @@ export function MemberCard({
             )}
           </div>
           <div className="mt-2 grid gap-1.5">
-            <p className="text-sm text-muted">
-              <span className="font-semibold text-foreground/90">Login: </span>@{member.login}
-            </p>
             <p className="text-sm text-muted">
               <span className="font-semibold text-foreground/90">Email: </span>
               {member.email || tFamily(language, "emailMissing")}
@@ -216,12 +208,9 @@ export function MemberCard({
       <ProfileEditDialog
         language={language}
         isOpen={isEditing}
-        isCurrent={isCurrent}
         displayName={displayName}
         relationshipLabel={relationshipLabel}
         phone={phone}
-        email={email}
-        emailError={emailError}
         isPending={isPending}
         onClose={() => {
           setIsEditing(false);
@@ -230,23 +219,11 @@ export function MemberCard({
         onDisplayNameChange={setDisplayName}
         onRelationshipLabelChange={setRelationshipLabel}
         onPhoneChange={setPhone}
-        onEmailChange={(value) => {
-          setEmail(value);
-          setEmailError(null);
-        }}
         onSubmit={async () => {
-          const normalizedEmail = email.trim().toLowerCase();
-          const isValidEmail =
-            normalizedEmail.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
-          if (!isValidEmail) {
-            setEmailError(tFamily(language, "invalidEmail"));
-            return;
-          }
           const isSaved = await onSaveProfile({
-            displayName: displayName.trim() || member.login,
+            displayName: displayName.trim() || undefined,
             relationshipLabel: relationshipLabel.trim() || null,
             phone: phone.trim() || null,
-            email: isCurrent ? normalizedEmail || null : undefined,
           });
           if (isSaved) {
             setIsEditing(false);

@@ -15,7 +15,6 @@ export function FamilyMembersPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentAccountId = useAppStore((s) => s.accountId);
   const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
-  const setAccountEmail = useAppStore((s) => s.setAccountEmail);
   const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const canManageFamily = currentAccountRole === "admin";
@@ -27,14 +26,12 @@ export function FamilyMembersPage() {
     updateMemberMutation,
     deleteMemberMutation,
     updateMemberProfileMutation,
-    updateMyProfileMutation,
   } = useFamilyPageMutations({
     language,
     accountId,
     currentFamilyId,
     currentAccountId,
     setCurrentFamily,
-    setAccountEmail,
     setAccountFamilyContext,
     setError: () => {},
   });
@@ -42,7 +39,6 @@ export function FamilyMembersPage() {
   const isPending =
     updateMemberMutation.isPending ||
     updateMemberProfileMutation.isPending ||
-    updateMyProfileMutation.isPending ||
     deleteMemberMutation.isPending;
 
   return (
@@ -122,9 +118,6 @@ export function FamilyMembersPage() {
                     relationshipLabel: payload.relationshipLabel,
                     phone: payload.phone,
                   });
-                  if (payload.email !== undefined) {
-                    await updateMyProfileMutation.mutateAsync({ email: payload.email });
-                  }
                   return true;
                 } catch {
                   return false;

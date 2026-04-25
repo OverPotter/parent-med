@@ -231,6 +231,29 @@ html.ios-lock-horizontal .landing-main {
   z-index: 3;
 }
 
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--recovery .auth-v3-submit,
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--recovery .auth-v3-submit {
+  position: static;
+  bottom: auto;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--recovery .auth-v3-form-recovery,
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--recovery .auth-v3-form-recovery {
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--recovery,
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--recovery {
+  min-height: 100dvh;
+  overflow-y: auto;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--recovery .auth-v3-shell,
+[data-ios-shell="true"] .auth-v3-page.auth-v3-page--recovery .auth-v3-shell {
+  min-height: auto;
+  padding-bottom: calc(max(1rem, var(--app-safe-bottom-runtime)) + var(--app-keyboard-height, 0px));
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-panel {
   backdrop-filter: none;
   border-color: color-mix(in srgb, var(--color-border) 56%, transparent);
@@ -490,6 +513,13 @@ html.ios-lock-horizontal .landing-main {
   padding: 0 0 0.4rem;
 }
 
+[data-runtime="native"][data-platform="ios"] .auth-v3-header-actions,
+[data-ios-shell="true"] .auth-v3-header-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+}
+
 [data-runtime="native"][data-platform="ios"] .auth-v3-header-logo--ios,
 [data-ios-shell="true"] .auth-v3-header-logo--ios {
   width: 2.55rem;
@@ -720,9 +750,22 @@ html.ios-lock-horizontal .landing-main {
     );
 }
 
+.app-form-action-bar--inline {
+  position: static;
+  margin-top: 0.35rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0;
+  background: none;
+}
+
 [data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-form-action-bar,
 [data-ios-shell="true"][data-keyboard-open="true"] .app-form-action-bar {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+[data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-form-action-bar--inline,
+[data-ios-shell="true"][data-keyboard-open="true"] .app-form-action-bar--inline {
+  padding-bottom: 0;
 }
 
 [data-runtime="native"] #root {

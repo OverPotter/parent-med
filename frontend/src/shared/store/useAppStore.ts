@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { applyLanguageToDocument, type AppLanguage } from "@shared/i18n";
+import { applyLanguageToDocument, detectPreferredLanguage, type AppLanguage } from "@shared/i18n";
 import type { FamilyAccessPolicy } from "@shared/types/api";
 import {
   clearSecureAuthTokens,
@@ -51,6 +51,7 @@ function resolveTheme(theme: Theme): ResolvedTheme {
 }
 
 const initialTheme = readInitialTheme();
+const initialLanguage = detectPreferredLanguage();
 
 function applyThemeToDocument(theme: Theme): ResolvedTheme {
   const resolvedTheme = resolveTheme(theme);
@@ -93,6 +94,8 @@ interface AppState {
   accountLogin: string | null;
   accountEmail: string | null;
   accountDisplayName: string | null;
+  accountNeedsProfileCompletion: boolean;
+  accountHasRecoveryCode: boolean;
   accountPreferredLanguage: AppLanguage | null;
   accountFamilyRole: string | null;
   accountAccessPolicy: FamilyAccessPolicy | null;
@@ -107,6 +110,8 @@ interface AppState {
       login: string;
       email: string | null;
       displayName: string;
+      needsProfileCompletion: boolean;
+      hasRecoveryCode: boolean;
       preferredLanguage: AppLanguage;
       familyRole: string;
       accessPolicy: FamilyAccessPolicy;
@@ -120,6 +125,8 @@ interface AppState {
       login: string;
       email: string | null;
       displayName: string;
+      needsProfileCompletion: boolean;
+      hasRecoveryCode: boolean;
       preferredLanguage: AppLanguage;
       familyRole: string;
       accessPolicy: FamilyAccessPolicy;
@@ -132,7 +139,11 @@ interface AppState {
     familyRole?: string | null;
     accessPolicy?: FamilyAccessPolicy | null;
   }) => void;
-  setAccountProfile: (profile: { displayName?: string | null; email?: string | null }) => void;
+  setAccountProfile: (profile: {
+    displayName?: string | null;
+    email?: string | null;
+    hasRecoveryCode?: boolean;
+  }) => void;
   clearSession: () => void;
   setCurrentFamily: (family: { id: string; name: string } | null) => void;
 }
@@ -169,7 +180,7 @@ export const useAppStore = create<AppState>()(
           return { effectiveTheme };
         });
       },
-      language: "ru",
+      language: initialLanguage,
       setLanguage: (language) => {
         set({ language });
         applyLanguageToDocument(language);
@@ -184,6 +195,8 @@ export const useAppStore = create<AppState>()(
       accountLogin: null,
       accountEmail: null,
       accountDisplayName: null,
+      accountNeedsProfileCompletion: false,
+      accountHasRecoveryCode: false,
       accountPreferredLanguage: null,
       accountFamilyRole: null,
       accountAccessPolicy: null,
@@ -199,6 +212,8 @@ export const useAppStore = create<AppState>()(
             accountLogin: session.account.login,
             accountEmail: session.account.email,
             accountDisplayName: session.account.displayName,
+            accountNeedsProfileCompletion: session.account.needsProfileCompletion,
+            accountHasRecoveryCode: session.account.hasRecoveryCode,
             accountPreferredLanguage: session.account.preferredLanguage,
             language: session.account.preferredLanguage,
             accountFamilyRole: session.account.familyRole,
@@ -236,6 +251,8 @@ export const useAppStore = create<AppState>()(
             accountLogin: state.account.login,
             accountEmail: state.account.email,
             accountDisplayName: state.account.displayName,
+            accountNeedsProfileCompletion: state.account.needsProfileCompletion,
+            accountHasRecoveryCode: state.account.hasRecoveryCode,
             accountPreferredLanguage: state.account.preferredLanguage,
             language: state.account.preferredLanguage,
             accountFamilyRole: state.account.familyRole,
@@ -264,6 +281,14 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           accountDisplayName:
             profile.displayName !== undefined ? profile.displayName : state.accountDisplayName,
+          accountNeedsProfileCompletion:
+            profile.displayName !== undefined
+              ? !profile.displayName?.trim()
+              : state.accountNeedsProfileCompletion,
+          accountHasRecoveryCode:
+            profile.hasRecoveryCode !== undefined
+              ? profile.hasRecoveryCode
+              : state.accountHasRecoveryCode,
           accountEmail: profile.email !== undefined ? profile.email : state.accountEmail,
         })),
       clearSession: () => {
@@ -274,6 +299,8 @@ export const useAppStore = create<AppState>()(
           accountLogin: null,
           accountEmail: null,
           accountDisplayName: null,
+          accountNeedsProfileCompletion: false,
+          accountHasRecoveryCode: false,
           accountPreferredLanguage: null,
           accountFamilyRole: null,
           accountAccessPolicy: null,
@@ -304,6 +331,8 @@ export const useAppStore = create<AppState>()(
         accountLogin: s.accountLogin,
         accountEmail: s.accountEmail,
         accountDisplayName: s.accountDisplayName,
+        accountNeedsProfileCompletion: s.accountNeedsProfileCompletion,
+        accountHasRecoveryCode: s.accountHasRecoveryCode,
         accountPreferredLanguage: s.accountPreferredLanguage,
         accountFamilyRole: s.accountFamilyRole,
         accountAccessPolicy: s.accountAccessPolicy,

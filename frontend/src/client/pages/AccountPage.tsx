@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { updateAccountProfile } from "@shared/api/auth";
 import { fetchMyFamilyMembers, updateFamilyMemberProfile } from "@shared/api/families";
 import { FullscreenOverlay } from "@shared/components/FullscreenOverlay";
 import { PageIntro } from "@shared/components/PageIntro";
@@ -22,7 +21,6 @@ const accountCopy = {
     settingsTitle: "Параметры приложения",
     settingsHint: "Язык и тема.",
     name: "Имя",
-    login: "Логин",
     email: "Email",
     phone: "Телефон",
     relationship: "Кто вы в семье",
@@ -42,10 +40,8 @@ const accountCopy = {
     displayNamePlaceholder: "Например: Анна",
     relationshipPlaceholder: "Например: мама, папа, бабушка",
     phonePlaceholder: "+375 ...",
-    emailPlaceholder: "name@example.com",
     save: "Сохранить",
     saving: "Сохраняем…",
-    invalidEmail: "Укажите корректный email.",
     updateFailed: "Не удалось сохранить профиль.",
     openSettings: "Открыть настройки",
   },
@@ -57,7 +53,6 @@ const accountCopy = {
     settingsTitle: "App preferences",
     settingsHint: "Language and theme.",
     name: "Name",
-    login: "Login",
     email: "Email",
     phone: "Phone",
     relationship: "Relationship",
@@ -77,10 +72,8 @@ const accountCopy = {
     displayNamePlaceholder: "Example: Anna",
     relationshipPlaceholder: "Example: mom, dad, grandma",
     phonePlaceholder: "+375 ...",
-    emailPlaceholder: "name@example.com",
     save: "Save",
     saving: "Saving…",
-    invalidEmail: "Enter a valid email.",
     updateFailed: "Could not save the profile.",
     openSettings: "Open settings",
   },
@@ -90,17 +83,16 @@ export function AccountPage() {
   const { language } = useI18n();
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
-  const accountLogin = useAppStore((s) => s.accountLogin);
   const accountEmail = useAppStore((s) => s.accountEmail);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const setAccountProfile = useAppStore((s) => s.setAccountProfile);
   const theme = useAppStore((s) => s.theme);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [displayName, setDisplayName] = useState(accountDisplayName ?? "");
   const [relationshipLabel, setRelationshipLabel] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState(accountEmail ?? "");
   const [formError, setFormError] = useState<string | null>(null);
 
   const copy = accountCopy[language];
@@ -127,9 +119,8 @@ export function AccountPage() {
     setDisplayName(currentMember?.displayName || accountDisplayName || "");
     setRelationshipLabel(currentMember?.relationshipLabel || "");
     setPhone(currentMember?.phone || "");
-    setEmail(accountEmail || "");
     setFormError(null);
-  }, [accountDisplayName, accountEmail, currentMember, isProfileDialogOpen]);
+  }, [accountDisplayName, currentMember, isProfileDialogOpen]);
 
   const saveProfileMutation = useMutation({
     mutationFn: async () => {
@@ -137,24 +128,20 @@ export function AccountPage() {
         throw new Error(copy.updateFailed);
       }
 
-      const normalizedEmail = email.trim().toLowerCase();
-      const isValidEmail =
-        normalizedEmail.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
-      if (!isValidEmail) {
-        throw new Error(copy.invalidEmail);
-      }
-
       const member = await updateFamilyMemberProfile(accountId, {
-        display_name: displayName.trim() || accountLogin || copy.notSet,
+        display_name: displayName.trim() || null,
         relationship_label: relationshipLabel.trim() || null,
         phone: phone.trim() || null,
       });
-      const account = await updateAccountProfile({ email: normalizedEmail || null });
-      return { member, account };
+      return { member };
     },
-    onSuccess: ({ member, account }) => {
-      setAccountProfile({ displayName: member.displayName, email: account.email });
-      queryClient.invalidateQueries({ queryKey: ["family-members"] });
+    onSuccess: ({ member }) => {
+      setAccountProfile({ displayName: member.displayName });
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["family-members"] }),
+        queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] }),
+        queryClient.invalidateQueries({ queryKey: ["families", "me", "members", currentFamilyId] }),
+      ]);
       setFormError(null);
       setIsProfileDialogOpen(false);
     },
@@ -211,13 +198,8 @@ export function AccountPage() {
 
         <div className="mt-4">
           <div className="grid grid-cols-2 gap-x-6">
-            <ProfileGridCell label={copy.name} value={accountDisplayName || copy.notSet} />
+            <ProfileGridCell label={copy.name} value={accountDisplayName?.trim() || "Вы"} />
             <ProfileGridCell label={copy.phone} value={currentMember?.phone || copy.notSet} />
-            <ProfileGridCell
-              label={copy.login}
-              value={accountLogin ? `@${accountLogin}` : copy.notSet}
-              borderedTop
-            />
             <ProfileGridCell label={copy.role} value={roleLabel} borderedTop />
             <ProfileGridCell label={copy.email} value={accountEmail || copy.notSet} borderedTop />
             <ProfileGridCell
@@ -258,17 +240,12 @@ export function AccountPage() {
         displayName={displayName}
         relationshipLabel={relationshipLabel}
         phone={phone}
-        email={email}
         formError={formError}
         copy={copy}
         onClose={() => setIsProfileDialogOpen(false)}
         onDisplayNameChange={setDisplayName}
         onRelationshipLabelChange={setRelationshipLabel}
         onPhoneChange={setPhone}
-        onEmailChange={(value) => {
-          setEmail(value);
-          setFormError(null);
-        }}
         onSubmit={() => saveProfileMutation.mutate()}
       />
     </div>
@@ -317,14 +294,12 @@ function ProfileEditDialog({
   displayName,
   relationshipLabel,
   phone,
-  email,
   formError,
   copy,
   onClose,
   onDisplayNameChange,
   onRelationshipLabelChange,
   onPhoneChange,
-  onEmailChange,
   onSubmit,
 }: {
   language: "ru" | "en";
@@ -333,14 +308,12 @@ function ProfileEditDialog({
   displayName: string;
   relationshipLabel: string;
   phone: string;
-  email: string;
   formError: string | null;
   copy: (typeof accountCopy)["ru"] | (typeof accountCopy)["en"];
   onClose: () => void;
   onDisplayNameChange: (value: string) => void;
   onRelationshipLabelChange: (value: string) => void;
   onPhoneChange: (value: string) => void;
-  onEmailChange: (value: string) => void;
   onSubmit: () => void;
 }) {
   const isClosingFromHistoryRef = useRef(false);
@@ -434,18 +407,6 @@ function ProfileEditDialog({
                 onChange={(event) => onPhoneChange(event.target.value)}
                 className="soft-input w-full px-4"
                 placeholder={copy.phonePlaceholder}
-              />
-            </label>
-
-            <label className="block">
-              <span className="soft-field-label">{copy.email}</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => onEmailChange(event.target.value)}
-                className="soft-input w-full px-4"
-                placeholder={copy.emailPlaceholder}
-                autoComplete="email"
               />
             </label>
 

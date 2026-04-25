@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { SecureStoragePlugin } from "capacitor-secure-storage-plugin";
 import { appLog } from "@shared/utils/appLog";
+import { resolveConcurrentSecureTokenRead } from "./authTokenStorageHelpers";
 
 const ACCESS_TOKEN_KEY = "pillpath_auth_access_token";
 const REFRESH_TOKEN_KEY = "pillpath_auth_refresh_token";
@@ -11,6 +12,7 @@ let secureTokensPromise: Promise<{
   accessToken: string | null;
   refreshToken: string | null;
 }> | null = null;
+let secureTokensVersion = 0;
 
 export function isNativeIOSRuntime(): boolean {
   try {
@@ -36,6 +38,7 @@ export async function readSecureAuthTokens(): Promise<{
     return secureTokensPromise;
   }
 
+  const startedVersion = secureTokensVersion;
   secureTokensPromise = (async () => {
     const read = async (key: string) => {
       try {
@@ -51,7 +54,12 @@ export async function readSecureAuthTokens(): Promise<{
       read(REFRESH_TOKEN_KEY),
     ]);
 
-    const nextTokens = { accessToken, refreshToken };
+    const nextTokens = resolveConcurrentSecureTokenRead({
+      startedVersion,
+      currentVersion: secureTokensVersion,
+      currentCache: secureTokensCache,
+      readTokens: { accessToken, refreshToken },
+    });
     secureTokensCache = nextTokens;
     secureTokensPromise = null;
     return nextTokens;
@@ -68,6 +76,7 @@ export async function writeSecureAuthTokens(tokens: {
     return;
   }
 
+  secureTokensVersion += 1;
   secureTokensCache = { ...tokens };
   secureTokensPromise = null;
 

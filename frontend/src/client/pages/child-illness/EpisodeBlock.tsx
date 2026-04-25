@@ -373,7 +373,11 @@ export function EpisodeBlock({
     administrations,
     comments,
     householdMedicines,
-    language
+    language,
+    {
+      accountId,
+    },
+    familyMembers
   );
   const filteredTimelineItems =
     timelineFilter === "all"

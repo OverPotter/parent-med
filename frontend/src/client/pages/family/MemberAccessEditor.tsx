@@ -343,8 +343,8 @@ function ToggleRow({
       className={[
         "settings-preference-row w-full rounded-[20px] px-4 py-4 text-left",
         checked
-          ? "border border-[color:color-mix(in_srgb,var(--color-primary)_26%,transparent)] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,white_92%)]"
-          : "border border-border/55 bg-[color:color-mix(in_srgb,var(--color-background)_88%,white_12%)]",
+          ? "border border-[color:color-mix(in_srgb,var(--color-success)_30%,var(--color-border))] bg-[color:color-mix(in_srgb,var(--color-success-soft)_74%,var(--color-surface))]"
+          : "border border-border/55 bg-[color:color-mix(in_srgb,var(--color-surface-soft)_72%,var(--color-surface))]",
         disabled ? "cursor-not-allowed opacity-50" : "",
       ].join(" ")}
       aria-pressed={checked}
@@ -356,16 +356,16 @@ function ToggleRow({
           </span>
           <span
             className={[
-              "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200",
+              "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors duration-200",
               checked
-                ? "bg-[color:color-mix(in_srgb,var(--color-primary)_72%,white_28%)]"
-                : "bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]",
+                ? "border-[color:color-mix(in_srgb,var(--color-success)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--color-success)_26%,var(--color-surface))]"
+                : "border-border/55 bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]",
             ].join(" ")}
             aria-hidden="true"
           >
             <span
               className={[
-                "absolute left-1 h-5 w-5 rounded-full bg-white shadow-[0_3px_10px_rgba(15,23,42,0.22)] transition-transform duration-200",
+                "absolute left-1 h-5 w-5 rounded-full border border-[color:color-mix(in_srgb,var(--color-foreground)_8%,transparent)] bg-[color:var(--color-surface)] shadow-[0_3px_10px_rgba(15,23,42,0.22)] transition-transform duration-200",
                 checked ? "translate-x-5" : "translate-x-0",
               ].join(" ")}
             />

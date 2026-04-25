@@ -10,14 +10,17 @@ from src.application.dto.auth import (
     AuthStateResponseDto,
     ChangePasswordDto,
     LoginDto,
+    RecoverPasswordByCodeDto,
     RefreshDto,
     RegisterDto,
     UpdateAccountProfileDto,
     UpdateLanguageDto,
+    UpdateRecoveryCodeDto,
 )
 from src.application.dto.family import FamilyResponseDto
 from src.application.dto.family_access import FamilyAccessPolicyDto
 from src.domain.entities.account import Account
+from src.domain.entities.account_identity import needs_profile_completion, resolve_display_name
 from src.domain.entities.family import Family
 from src.domain.entities.family_access import serialize_family_access_policy
 from src.domain.repositories.account_repository import AccountRepository
@@ -56,7 +59,9 @@ class BaseAuthService(ABC):
             login=entity.login,
             email=entity.email,
             family_id=entity.family_id,
-            display_name=entity.display_name,
+            display_name=resolve_display_name(entity.display_name),
+            needs_profile_completion=needs_profile_completion(entity.display_name),
+            has_recovery_code=bool(entity.recovery_code_hash),
             relationship_label=entity.relationship_label,
             phone=entity.phone,
             preferred_language=entity.preferred_language,
@@ -115,6 +120,14 @@ class BaseAuthService(ABC):
     @abstractmethod
     async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
         """Сменить пароль текущего аккаунта."""
+
+    @abstractmethod
+    async def update_recovery_code(self, account_id: UUID, dto: UpdateRecoveryCodeDto) -> None:
+        """Настроить recovery code для текущего аккаунта."""
+
+    @abstractmethod
+    async def reset_password_by_recovery_code(self, dto: RecoverPasswordByCodeDto) -> None:
+        """Сбросить пароль по email и recovery code."""
 
     @abstractmethod
     async def update_language(self, account_id: UUID, dto: UpdateLanguageDto) -> AccountResponseDto:

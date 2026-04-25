@@ -10,10 +10,12 @@ from src.application.dto.auth import (
     AuthStateResponseDto,
     ChangePasswordDto,
     LoginDto,
+    RecoverPasswordByCodeDto,
     RefreshDto,
     RegisterDto,
     UpdateAccountProfileDto,
     UpdateLanguageDto,
+    UpdateRecoveryCodeDto,
 )
 from src.application.services.base_auth_service import BaseAuthService
 from src.core.config import settings
@@ -28,6 +30,11 @@ from src.core.security import (
     verify_password,
 )
 from src.domain.entities.account import Account, copy_account
+from src.domain.entities.account_identity import (
+    build_login_from_email,
+    needs_profile_completion,
+    resolve_display_name,
+)
 from src.domain.entities.account_session import AccountSession
 from src.domain.entities.family import Family
 from src.domain.entities.family_access import build_default_family_access_policy
@@ -105,13 +112,6 @@ class AuthService(BaseAuthService):
         )
 
     async def signup(self, dto: RegisterDto) -> AuthResponseDto:
-        login = dto.login.strip()
-        if await self._account_repo.get_by_login(login) is not None:
-            raise ValidationError(
-                "Аккаунт с таким логином уже существует",
-                code="ACCOUNT_ALREADY_EXISTS",
-                status_code=409,
-            )
         email = dto.email.strip().lower() if dto.email else None
         if email and await self._account_repo.get_by_email(email) is not None:
             raise ValidationError(
@@ -149,16 +149,18 @@ class AuthService(BaseAuthService):
         else:
             family = Family(id=uuid4(), name=family_name)
             created_family = await self._family_repo.add(family)
+        login = build_login_from_email(email or "member@example.com", uuid4().hex[:8])
         account = Account(
             id=uuid4(),
             login=login,
             email=email,
             password_hash=hash_password(dto.password),
+            recovery_code_hash=None,
             family_id=created_family.id,
-            display_name=(dto.display_name or "").strip() or login,
-            relationship_label=(dto.relationship_label or "").strip() or None,
-            phone=(dto.phone or "").strip() or None,
-            preferred_language="ru",
+            display_name=None,
+            relationship_label=None,
+            phone=None,
+            preferred_language=dto.preferred_language,
             family_role=family_role,
             push_before_reminder_minutes=10,
             children_push_enabled=True,
@@ -189,10 +191,12 @@ class AuthService(BaseAuthService):
         return await self.signup(dto)
 
     async def signin(self, dto: LoginDto) -> AuthResponseDto:
-        login = dto.login.strip()
-        account = await self._account_repo.get_by_login(login)
+        identifier = dto.email.strip().lower()
+        account = await self._account_repo.get_by_email(identifier)
+        if account is None and "@" not in identifier:
+            account = await self._account_repo.get_by_login(identifier)
         if not account or not verify_password(dto.password, account.password_hash):
-            raise UnauthorizedError("Неверный логин или пароль", code="INVALID_CREDENTIALS")
+            raise UnauthorizedError("Неверный email или пароль", code="INVALID_CREDENTIALS")
         family = await self._family_repo.get_by_id(account.family_id)
         if family is None:
             raise ForbiddenError("У аккаунта не найдена семья", code="FAMILY_NOT_LINKED")
@@ -213,7 +217,9 @@ class AuthService(BaseAuthService):
             login=account.login,
             email=account.email,
             family_id=family_id,
-            display_name=account.display_name,
+            display_name=resolve_display_name(account.display_name),
+            needs_profile_completion=needs_profile_completion(account.display_name),
+            has_recovery_code=bool(account.recovery_code_hash),
             relationship_label=account.relationship_label,
             phone=account.phone,
             preferred_language=account.preferred_language,
@@ -268,6 +274,7 @@ class AuthService(BaseAuthService):
                 login=deleted_login,
                 email=None,
                 password_hash=hash_password(uuid4().hex),
+                recovery_code_hash=None,
                 display_name="Deleted user",
                 relationship_label=None,
                 phone=None,
@@ -325,6 +332,41 @@ class AuthService(BaseAuthService):
         await self._account_repo.update(
             copy_account(account, password_hash=hash_password(dto.new_password))
         )
+
+    async def update_recovery_code(self, account_id: UUID, dto: UpdateRecoveryCodeDto) -> None:
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None:
+            raise UnauthorizedError()
+        if account.recovery_code_hash:
+            raise ValidationError(
+                "Кодовая фраза уже установлена",
+                code="RECOVERY_CODE_ALREADY_SET",
+            )
+        await self._account_repo.update(
+            copy_account(account, recovery_code_hash=hash_password(dto.recovery_code))
+        )
+
+    async def reset_password_by_recovery_code(self, dto: RecoverPasswordByCodeDto) -> None:
+        account = await self._account_repo.get_by_email(dto.email)
+        if (
+            account is None
+            or account.family_role == "deleted"
+            or not account.recovery_code_hash
+            or not verify_password(dto.recovery_code, account.recovery_code_hash)
+        ):
+            raise UnauthorizedError(
+                "Не удалось подтвердить код восстановления",
+                code="RECOVERY_CODE_INVALID",
+            )
+        if verify_password(dto.new_password, account.password_hash):
+            raise ValidationError(
+                "Новый пароль должен отличаться от текущего",
+                code="PASSWORD_REUSE_NOT_ALLOWED",
+            )
+        await self._account_repo.update(
+            copy_account(account, password_hash=hash_password(dto.new_password))
+        )
+        await self._session_repo.delete_by_account_id(account.id)
 
     async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:
         account = await self._account_repo.get_by_id(account_id)
@@ -389,24 +431,12 @@ class AuthService(BaseAuthService):
         return self._account_to_response(updated)
 
     async def update_profile(
-        self, account_id: UUID, dto: UpdateAccountProfileDto
+        self, account_id: UUID, _dto: UpdateAccountProfileDto
     ) -> AccountResponseDto:
         account = await self._account_repo.get_by_id(account_id)
         if account is None:
             raise UnauthorizedError()
-
-        email = (dto.email or "").strip().lower() or None
-        if email and email != account.email:
-            existing = await self._account_repo.get_by_email(email)
-            if existing is not None and existing.id != account.id:
-                raise ValidationError(
-                    "Аккаунт с таким email уже существует",
-                    code="ACCOUNT_EMAIL_ALREADY_EXISTS",
-                    status_code=409,
-                )
-
-        updated = await self._account_repo.update(copy_account(account, email=email))
-        return self._account_to_response(updated)
+        return self._account_to_response(account)
 
     async def _ensure_can_leave_current_family(self, account: Account) -> None:
         family_accounts = await self._account_repo.list_by_family_id(account.family_id)

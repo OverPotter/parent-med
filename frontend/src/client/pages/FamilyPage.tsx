@@ -8,6 +8,7 @@ import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { normalizeFamilyAccessPolicy } from "@shared/familyAccess/policy";
+import { buildShareableInviteUrl } from "@shared/config/inviteLinks";
 import { SectionTitle } from "./child-illness/shared";
 import { FamilyInviteSection } from "./family/FamilyInviteSection";
 import { FamilyNameSection } from "./family/FamilyNameSection";
@@ -33,7 +34,6 @@ export function FamilyPage() {
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
   const currentAccountId = useAppStore((s) => s.accountId);
   const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
-  const setAccountEmail = useAppStore((s) => s.setAccountEmail);
   const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const isIosShell = useIsIosShell();
@@ -79,20 +79,18 @@ export function FamilyPage() {
     updateMemberMutation,
     deleteMemberMutation,
     updateMemberProfileMutation,
-    updateMyProfileMutation,
   } = useFamilyPageMutations({
     language,
     accountId,
     currentFamilyId,
     currentAccountId,
     setCurrentFamily,
-    setAccountEmail,
     setAccountFamilyContext,
     setError,
   });
 
   const latestInviteUrl = createInviteMutation.data
-    ? `${window.location.origin}${createInviteMutation.data.invitePath}`
+    ? buildShareableInviteUrl(createInviteMutation.data.invitePath, window.location.origin)
     : "";
   const shouldOpenCurrentProfileEditor =
     searchParams.get("edit") === "profile" || searchParams.get("edit") === "me";
@@ -173,6 +171,7 @@ export function FamilyPage() {
 
   const handleCopyInvite = async () => {
     if (!latestInviteUrl) {
+      setError(tFamily(language, "inviteCopyFailed"));
       return;
     }
     try {
@@ -187,6 +186,9 @@ export function FamilyPage() {
 
   const handleShareInvite = async (inviteUrl: string) => {
     if (!inviteUrl || !canShareInvite) {
+      if (!inviteUrl) {
+        setError(tFamily(language, "inviteShareFailed"));
+      }
       return false;
     }
 
@@ -222,12 +224,15 @@ export function FamilyPage() {
 
       const invite = await createInviteMutation.mutateAsync();
       setInviteCopied(false);
-      const inviteUrl = `${window.location.origin}${invite.invitePath}`;
+      const inviteUrl = buildShareableInviteUrl(invite.invitePath, window.location.origin);
       if (shouldUseDirectNativeInvite) {
+        if (!inviteUrl) {
+          setError(tFamily(language, "inviteShareFailed"));
+        }
         return;
       }
 
-      if (canShareInvite) {
+      if (canShareInvite && inviteUrl) {
         await handleShareInvite(inviteUrl);
       }
     } catch {
@@ -322,7 +327,6 @@ export function FamilyPage() {
               isPending={
                 updateMemberMutation.isPending ||
                 updateMemberProfileMutation.isPending ||
-                updateMyProfileMutation.isPending ||
                 deleteMemberMutation.isPending
               }
               onPromote={() =>
@@ -347,9 +351,6 @@ export function FamilyPage() {
                     relationshipLabel: payload.relationshipLabel,
                     phone: payload.phone,
                   });
-                  if (payload.email !== undefined) {
-                    await updateMyProfileMutation.mutateAsync({ email: payload.email });
-                  }
                   return true;
                 } catch {
                   return false;

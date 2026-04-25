@@ -29,6 +29,16 @@ export const settingsCopy = {
     passwordTooShort: "Новый пароль должен быть не короче 6 символов.",
     changePassword: "Сменить пароль",
     changePasswordHint: "Обновите пароль для входа в аккаунт.",
+    recoveryCode: "Код восстановления",
+    recoveryCodeHint:
+      "Временный fallback для сброса пароля, пока в приложении нет восстановления по письму.",
+    recoveryCodeLockedHint:
+      "Кодовая фраза для смены пароля установлена.",
+    recoveryCodeLabel: "Новый код восстановления",
+    recoveryCodePlaceholder: "Например: quiet-river-42",
+    recoveryCodeTooShort: "Код восстановления должен быть не короче 8 символов.",
+    recoveryCodeUpdated: "Код восстановления сохранён.",
+    recoveryCodeConfigured: "Уже настроена",
     currentPassword: "Текущий пароль",
     newPassword: "Новый пароль",
     confirmNewPassword: "Повтори новый пароль",
@@ -131,6 +141,16 @@ export const settingsCopy = {
     passwordTooShort: "The new password must be at least 6 characters long.",
     changePassword: "Change password",
     changePasswordHint: "Update the password used to sign in.",
+    recoveryCode: "Recovery code",
+    recoveryCodeHint:
+      "A temporary fallback for password reset while the app has no email reset flow.",
+    recoveryCodeLockedHint:
+      "The recovery phrase for password reset is set.",
+    recoveryCodeLabel: "New recovery code",
+    recoveryCodePlaceholder: "Example: quiet-river-42",
+    recoveryCodeTooShort: "Recovery code must be at least 8 characters long.",
+    recoveryCodeUpdated: "Recovery code saved.",
+    recoveryCodeConfigured: "Already set",
     currentPassword: "Current password",
     newPassword: "New password",
     confirmNewPassword: "Repeat new password",

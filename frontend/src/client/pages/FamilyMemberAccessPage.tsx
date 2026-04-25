@@ -24,7 +24,6 @@ export function FamilyMemberAccessPage() {
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
   const currentAccountId = useAppStore((s) => s.accountId);
   const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
-  const setAccountEmail = useAppStore((s) => s.setAccountEmail);
   const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const canManageFamily = currentAccountRole === "admin";
@@ -71,7 +70,6 @@ export function FamilyMemberAccessPage() {
     currentFamilyId,
     currentAccountId,
     setCurrentFamily,
-    setAccountEmail,
     setAccountFamilyContext,
     setError: setActionError,
   });

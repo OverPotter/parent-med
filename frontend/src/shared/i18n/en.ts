@@ -349,14 +349,14 @@ export const en: Translations = {
       registerTab: "Register",
       loginCardTitle: "Log in",
       registerCardTitle: "Register",
-      loginCardCopy: "Sign in with your login and password to return to the family workspace.",
+      loginCardCopy: "Sign in with your email and password to return to the family workspace.",
       registerCardCopy:
-        "Create a family account. Put the core fields up top, then expand profile details if needed.",
+        "Create an account with your email. You can add your family display name after sign-in.",
       rememberMe: "Remember me",
       forgotPassword: "Forgot password?",
       extraProfileFields: "Additional profile fields",
       extraProfileCopy:
-        "These fields are optional at the start, but they help label family members correctly.",
+        "Use this section for family role and phone. Email and family display name are already required for registration and recovery.",
       invitationNote:
         "If you were already invited into a family, open the invite link from the message. It will lead you into the right flow automatically.",
       passwordsMismatch: "Passwords must match.",

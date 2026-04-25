@@ -17,6 +17,7 @@ interface RawAuthResponse {
     email: string | null;
     family_id: string;
     display_name: string;
+    has_recovery_code?: boolean | null;
     relationship_label: string | null;
     phone: string | null;
     preferred_language: "ru" | "en";

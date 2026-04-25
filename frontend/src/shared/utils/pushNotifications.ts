@@ -42,13 +42,16 @@ export async function subscribeToPushNotifications(vapidPublicKey: string) {
 
   const registration = await navigator.serviceWorker.ready;
   const existing = await registration.pushManager.getSubscription();
-  if (existing) {
+  if (existing && hasMatchingVapidKey(existing.options?.applicationServerKey, vapidPublicKey)) {
     return existing;
+  }
+  if (existing) {
+    await existing.unsubscribe();
   }
 
   return registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    applicationServerKey: vapidKeyToUint8Array(vapidPublicKey),
   });
 }
 
@@ -104,7 +107,22 @@ function buildDeviceLabel() {
   return `PWA · ${platform}`;
 }
 
-function urlBase64ToUint8Array(base64String: string) {
+export function hasMatchingVapidKey(
+  applicationServerKey: ArrayBuffer | null | undefined,
+  vapidPublicKey: string
+) {
+  if (!applicationServerKey) {
+    return false;
+  }
+  const currentKey = new Uint8Array(applicationServerKey);
+  const expectedKey = vapidKeyToUint8Array(vapidPublicKey);
+  if (currentKey.length !== expectedKey.length) {
+    return false;
+  }
+  return currentKey.every((value, index) => value === expectedKey[index]);
+}
+
+export function vapidKeyToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
