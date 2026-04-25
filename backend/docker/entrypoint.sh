@@ -33,5 +33,14 @@ EOF
 echo "🔄 Running database migrations..."
 uv run alembic upgrade head
 
+if [ "${RUN_CURATED_CATALOG_SEED:-0}" = "1" ] || [ "${RUN_CURATED_CATALOG_SEED:-false}" = "true" ]; then
+  if [ -f "/app/scripts/seed_curated_medicine_catalog.py" ]; then
+    echo "🧪 Seeding curated medicine catalog..."
+    uv run python scripts/seed_curated_medicine_catalog.py
+  else
+    echo "ℹ️ RUN_CURATED_CATALOG_SEED is enabled, but scripts/seed_curated_medicine_catalog.py is missing. Skipping."
+  fi
+fi
+
 echo "🚀 Starting FastAPI application..."
 exec uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 "$@"
