@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from contextlib import AbstractAsyncContextManager
 from abc import abstractmethod
+from contextlib import AbstractAsyncContextManager
 from datetime import datetime
 
 from src.domain.entities.auth_attempt import AuthAttempt
@@ -12,7 +12,7 @@ from src.domain.repositories.base import BaseRepository
 
 class AuthAttemptRepository(BaseRepository[AuthAttempt]):
     @abstractmethod
-    def locked(self, keys: list[str]) -> AbstractAsyncContextManager["AuthAttemptRepository"]:
+    def locked(self, keys: list[str]) -> AbstractAsyncContextManager[AuthAttemptRepository]:
         """Lock logical buckets so count+record can be coordinated for the same identity."""
         ...
 

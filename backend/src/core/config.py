@@ -1,8 +1,8 @@
 """Конфигурация приложения из переменных окружения (.env)."""
 
 import json
-from urllib.parse import urlparse
 from typing import Annotated, Any
+from urllib.parse import urlparse
 
 from pydantic import BeforeValidator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict

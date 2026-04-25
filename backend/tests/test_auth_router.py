@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import uuid4
 
 from fastapi import FastAPI
@@ -12,9 +12,9 @@ from src.api.deps import get_auth_attempt_repo, get_auth_service, get_current_ac
 from src.api.routers import auth, family_invites
 from src.application.dto.auth import (
     AccountResponseDto,
+    AuthenticatedAccount,
     AuthResponseDto,
     AuthStateResponseDto,
-    AuthenticatedAccount,
     LoginDto,
     RefreshDto,
     RegisterDto,
@@ -109,7 +109,7 @@ class StubAuthAttemptRepository:
         self.attempts = [item for item in self.attempts if item.id != id]
         return len(self.attempts) != before
 
-    def locked(self, keys: list[str]) -> AbstractAsyncContextManager["StubAuthAttemptRepository"]:
+    def locked(self, keys: list[str]) -> AbstractAsyncContextManager[StubAuthAttemptRepository]:
         return _RepositoryContext(self)
 
     async def count_since(self, action: str, bucket_key: str, threshold: datetime) -> int:

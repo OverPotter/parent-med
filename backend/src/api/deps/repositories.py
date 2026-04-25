@@ -8,8 +8,8 @@ from src.core.lifespan import get_async_session_factory
 from src.domain.repositories.account_feedback_repository import AccountFeedbackRepository
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
-from src.domain.repositories.auth_attempt_repository import AuthAttemptRepository
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
+from src.domain.repositories.auth_attempt_repository import AuthAttemptRepository
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.curated_medicine_catalog_repository import (
     CuratedMedicineCatalogRepository,
@@ -37,11 +37,11 @@ from src.infrastructure.database.repositories.account_repository import SqlAccou
 from src.infrastructure.database.repositories.account_session_repository import (
     SqlAccountSessionRepository,
 )
-from src.infrastructure.database.repositories.auth_attempt_repository import (
-    SqlAuthAttemptRepository,
-)
 from src.infrastructure.database.repositories.administration_event_repository import (
     SqlAdministrationEventRepository,
+)
+from src.infrastructure.database.repositories.auth_attempt_repository import (
+    SqlAuthAttemptRepository,
 )
 from src.infrastructure.database.repositories.child_repository import SqlChildRepository
 from src.infrastructure.database.repositories.curated_medicine_catalog_repository import (

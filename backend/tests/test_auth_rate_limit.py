@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from contextlib import AbstractAsyncContextManager
-from contextlib import AbstractAsyncContextManager
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
@@ -30,10 +29,10 @@ class _SessionContext(AbstractAsyncContextManager):
 
 
 class _RepositoryContext(AbstractAsyncContextManager):
-    def __init__(self, repo: "StubAuthAttemptRepository") -> None:
+    def __init__(self, repo: StubAuthAttemptRepository) -> None:
         self._repo = repo
 
-    async def __aenter__(self) -> "StubAuthAttemptRepository":
+    async def __aenter__(self) -> StubAuthAttemptRepository:
         return self._repo
 
     async def __aexit__(self, exc_type, exc, tb) -> None:
@@ -57,7 +56,7 @@ class StubAuthAttemptRepository:
         self.attempts = [item for item in self.attempts if item.id != id]
         return len(self.attempts) != before
 
-    def locked(self, keys: list[str]) -> AbstractAsyncContextManager["StubAuthAttemptRepository"]:
+    def locked(self, keys: list[str]) -> AbstractAsyncContextManager[StubAuthAttemptRepository]:
         return _RepositoryContext(self)
 
     async def count_since(self, action: str, bucket_key: str, threshold: datetime) -> int:
