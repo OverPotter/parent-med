@@ -4,6 +4,7 @@ from uuid import uuid4
 import pytest
 
 from src.application.dto.auth import (
+    ChangePasswordDto,
     LoginDto,
     RecoverPasswordByCodeDto,
     RegisterDto,
@@ -458,6 +459,36 @@ async def test_reset_password_by_recovery_code_rejects_invalid_code() -> None:
                 new_password="new-password-123",
             )
         )
+
+
+@pytest.mark.asyncio
+async def test_change_password_updates_hash_and_kills_sessions() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    account_repo = StubAccountRepository()
+    account = build_account(
+        family_id=family.id,
+        email="mama@example.com",
+        display_name="Мама Аня",
+        family_role="owner",
+    )
+    await account_repo.add(account)
+    session_repo = StubSessionRepository()
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    await service.change_password(
+        account.id,
+        ChangePasswordDto(current_password="password123", new_password="new-password-123"),
+    )
+
+    updated_account = await account_repo.get_by_id(account.id)
+    assert updated_account is not None
+    assert verify_password("new-password-123", updated_account.password_hash)
+    assert session_repo.deleted_account_ids == [account.id]
 
 
 @pytest.mark.asyncio

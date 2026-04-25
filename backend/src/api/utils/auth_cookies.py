@@ -10,6 +10,8 @@ from src.core.config import settings
 
 def set_auth_cookies(response: Response, auth: AuthResponseDto) -> None:
     """Сохраняет access/refresh токены в HttpOnly cookies."""
+    if not auth.access_token or not auth.refresh_token:
+        raise ValueError("Auth cookies require both access and refresh tokens")
     now = datetime.now(UTC)
     refresh_ttl_days = (
         settings.refresh_token_ttl_days_remember_me

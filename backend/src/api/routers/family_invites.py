@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, Response
 
 from src.api.deps import get_auth_service, get_current_account, get_family_invite_service
-from src.api.utils.auth_cookies import set_auth_cookies
+from src.api.utils.auth_response import build_auth_response
 from src.application.dto.auth import AuthenticatedAccount, AuthResponseDto
 from src.application.dto.family_invite import (
     FamilyInviteCreateDto,
@@ -49,5 +49,26 @@ async def accept_family_invite(
 ) -> AuthResponseDto:
     """Принять приглашение существующим аккаунтом и перейти в новую семью."""
     auth = await auth_service.accept_family_invite(current_account.id, token)
-    set_auth_cookies(response, auth)
-    return auth
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=False,
+        include_cookies=True,
+    )
+
+
+@router.post("/{token}/accept/native", response_model=AuthResponseDto)
+async def accept_family_invite_native(
+    token: str,
+    response: Response,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    auth_service: BaseAuthService = Depends(get_auth_service),
+) -> AuthResponseDto:
+    """Native-вариант принятия приглашения с токенами в JSON."""
+    auth = await auth_service.accept_family_invite(current_account.id, token)
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=True,
+        include_cookies=False,
+    )

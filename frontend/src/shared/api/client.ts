@@ -1,6 +1,10 @@
 /** Axios: baseURL, Bearer, 401 → refresh / logout. */
 
 import axios, { type AxiosError } from "axios";
+import {
+  isCookieSessionMarker,
+  sanitizeBearerToken,
+} from "@shared/security/authSession";
 import { useAppStore } from "@shared/store/useAppStore";
 import { appLog } from "@shared/utils/appLog";
 
@@ -41,7 +45,7 @@ apiClient.interceptors.request.use((config) => {
     return config;
   }
 
-  const token = bearerToken ?? useAppStore.getState().authToken;
+  const token = sanitizeBearerToken(bearerToken ?? useAppStore.getState().authToken);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -96,7 +100,13 @@ apiClient.interceptors.response.use(
           throw error;
         }
         originalRequest.headers = originalRequest.headers ?? {};
-        originalRequest.headers.Authorization = `Bearer ${nextToken}`;
+        if (isCookieSessionMarker(nextToken)) {
+          if ("Authorization" in originalRequest.headers) {
+            delete originalRequest.headers.Authorization;
+          }
+        } else {
+          originalRequest.headers.Authorization = `Bearer ${nextToken}`;
+        }
         return apiClient(originalRequest);
       } catch {
         appLog.warn("Сессия: refresh не удался, выход");

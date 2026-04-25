@@ -675,7 +675,7 @@ export function SettingsPage() {
       setPasswordError(tSettings(language, "passwordsMismatch"));
       return;
     }
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       setPasswordSuccess(null);
       setPasswordError(tSettings(language, "passwordTooShort"));
       return;

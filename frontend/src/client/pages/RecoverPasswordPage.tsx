@@ -253,7 +253,7 @@ export function RecoverPasswordPage() {
                   label="Новый пароль"
                   value={password}
                   onChange={setPassword}
-                  placeholder="Минимум 6 символов"
+                  placeholder="Минимум 8 символов"
                   isVisible={isPasswordVisible}
                   onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
                   name="new-password"

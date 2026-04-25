@@ -128,7 +128,7 @@ export function JoinFamilyPage() {
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     const trimmedEmail = email.trim();
-    if (!token || !trimmedEmail || password.length < 6) {
+    if (!token || !trimmedEmail || (mode === "register" ? password.length < 8 : password.length === 0)) {
       return;
     }
     if (mode === "login") {
@@ -279,7 +279,7 @@ export function JoinFamilyPage() {
                     label="Пароль"
                     value={password}
                     onChange={setPassword}
-                    placeholder="Минимум 6 символов"
+                    placeholder="Минимум 8 символов"
                     isVisible={isPasswordVisible}
                     onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
                     name="current-password"
@@ -319,7 +319,7 @@ export function JoinFamilyPage() {
                 !token ||
                 isPending ||
                 !email.trim() ||
-                password.length < 6 ||
+                (isRegisterMode ? password.length < 8 : password.length === 0) ||
                 (isRegisterMode && (!passwordConfirm || password !== passwordConfirm))
               }
               className={`${appBtnPrimaryClass} w-full disabled:opacity-50`}

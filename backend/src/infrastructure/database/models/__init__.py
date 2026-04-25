@@ -3,6 +3,7 @@
 from src.infrastructure.database.models.account import AccountModel
 from src.infrastructure.database.models.account_feedback import AccountFeedbackModel
 from src.infrastructure.database.models.account_session import AccountSessionModel
+from src.infrastructure.database.models.auth_attempt import AuthAttemptModel
 from src.infrastructure.database.models.administration_event import AdministrationEventModel
 from src.infrastructure.database.models.child import ChildModel
 from src.infrastructure.database.models.curated_medicine_catalog_item import (
@@ -35,6 +36,7 @@ __all__ = [
     "AccountModel",
     "AccountFeedbackModel",
     "AccountSessionModel",
+    "AuthAttemptModel",
     "FamilyModel",
     "FamilyInviteModel",
     "ChildModel",

@@ -309,7 +309,11 @@ export function AuthPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedEmail = email.trim();
-    if (!trimmedEmail || password.length < 6) {
+    if (
+      !trimmedEmail ||
+      (mode === "register" && password.length < 8) ||
+      (mode === "login" && password.length === 0)
+    ) {
       return;
     }
     if (mode === "register" && password !== passwordConfirm) {
@@ -708,7 +712,7 @@ export function AuthPage() {
                 disabled={
                   isPending ||
                   !email.trim() ||
-                  password.length < 6 ||
+                  (isRegisterMode ? password.length < 8 : password.length === 0) ||
                   (isRegisterMode &&
                     (!passwordConfirm ||
                       password !== passwordConfirm ||

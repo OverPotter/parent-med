@@ -370,7 +370,7 @@ export const ru: Translations = {
       loginHint:
         "Логин используется только для входа. Отображаемое имя семьи можно задать отдельно.",
       password: "Пароль",
-      passwordPlaceholder: "Минимум 6 символов",
+      passwordPlaceholder: "Минимум 8 символов",
       passwordConfirm: "Повторите пароль",
       passwordConfirmPlaceholder: "Повторите пароль",
       email: "Email",

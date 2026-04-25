@@ -323,6 +323,7 @@ class AuthService(BaseAuthService):
         await self._account_repo.update(
             copy_account(account, password_hash=hash_password(dto.new_password))
         )
+        await self._session_repo.delete_by_account_id(account.id)
 
     async def update_recovery_code(self, account_id: UUID, dto: UpdateRecoveryCodeDto) -> None:
         account = await self._account_repo.get_by_id(account_id)

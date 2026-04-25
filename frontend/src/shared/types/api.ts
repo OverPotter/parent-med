@@ -40,8 +40,8 @@ export interface Account {
 
 export interface AuthSessionResponse {
   tokenType: string;
-  accessToken: string;
-  refreshToken: string;
+  accessToken: string | null;
+  refreshToken: string | null;
   account: Account;
   family: Family;
 }
