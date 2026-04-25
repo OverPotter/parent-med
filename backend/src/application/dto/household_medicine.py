@@ -23,9 +23,7 @@ class HouseholdMedicineCreateDto(BaseModel):
     pediatric_dose_mg_per_kg_max: float | None = Field(
         None, description="Верхняя граница типовой детской дозы в мг/кг на приём"
     )
-    pediatric_dose_note: str | None = Field(
-        None, description="Короткая заметка к детской дозе"
-    )
+    pediatric_dose_note: str | None = Field(None, description="Короткая заметка к детской дозе")
     expiry_date: date = Field(..., description="Срок годности")
     opened_at: datetime | None = Field(None, description="Дата вскрытия")
     opened_shelf_days: int | None = Field(
@@ -36,9 +34,7 @@ class HouseholdMedicineCreateDto(BaseModel):
     @model_validator(mode="after")
     def validate_source(self) -> "HouseholdMedicineCreateDto":
         if not self.medicine_name or not (self.medicine_form or self.medicine_category):
-            raise ValueError(
-                "Нужно указать название и форму или категорию препарата"
-            )
+            raise ValueError("Нужно указать название и форму или категорию препарата")
         return self
 
 
@@ -57,9 +53,7 @@ class HouseholdMedicineUpdateDto(BaseModel):
     pediatric_dose_mg_per_kg_max: float | None = Field(
         None, description="Верхняя граница типовой детской дозы в мг/кг на приём"
     )
-    pediatric_dose_note: str | None = Field(
-        None, description="Короткая заметка к детской дозе"
-    )
+    pediatric_dose_note: str | None = Field(None, description="Короткая заметка к детской дозе")
     expiry_date: date | None = Field(None, description="Срок годности")
     opened_at: datetime | None = Field(None, description="Дата вскрытия")
     opened_shelf_days: int | None = Field(

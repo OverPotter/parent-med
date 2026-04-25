@@ -89,13 +89,11 @@ class SqlCuratedMedicineCatalogRepository(CuratedMedicineCatalogRepository):
             )
 
         result = await self._session.execute(
-            statement
-            .order_by(
+            statement.order_by(
                 CuratedMedicineCatalogItemModel.search_rank.desc(),
                 func.length(CuratedMedicineCatalogItemModel.display_name).asc(),
                 CuratedMedicineCatalogItemModel.display_name.asc(),
-            )
-            .limit(limit)
+            ).limit(limit)
         )
         return [self._to_entity(r) for r in result.scalars().all()]
 

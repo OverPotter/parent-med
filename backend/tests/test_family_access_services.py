@@ -192,6 +192,7 @@ class StubEpisodeMedicationPlanRepository:
     async def delete(self, id):  # noqa: ANN001
         self.plans = [plan for plan in self.plans if plan.id != id]
 
+
 class StubPillboxRepository:
     def __init__(self, plans: list[PillboxPlan]) -> None:
         self.plans = plans
