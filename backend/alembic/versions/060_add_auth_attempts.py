@@ -5,8 +5,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "060_add_auth_attempts"
-down_revision = "059_require_email_for_active_accounts"
+revision = "060"
+down_revision = "059"
 branch_labels = None
 depends_on = None
 
