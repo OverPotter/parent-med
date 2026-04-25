@@ -1,6 +1,7 @@
 import { type TouchEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { shouldRenderDateFieldBadge } from "./dateFieldBadge";
 
 type DateFieldLanguage = "ru" | "en";
 
@@ -192,7 +193,7 @@ export function DateField({
   allowClear = true,
   className = "",
   panelPortalClassName = "fixed inset-0 z-[940]",
-  hideBadge = false,
+  hideBadge = true,
   triggerClassName = "",
   valueClassName = "",
 }: DateFieldProps) {
@@ -612,7 +613,7 @@ export function DateField({
         >
           {value ? formatDisplayDate(value, language) : (placeholder ?? copy.placeholder)}
         </span>
-        {!hideBadge ? (
+        {shouldRenderDateFieldBadge(hideBadge) ? (
           <span className="soft-pill inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px]">
             <span aria-hidden="true">▦</span>
             {copy.dateBadge}
