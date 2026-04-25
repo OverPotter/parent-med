@@ -3,64 +3,39 @@
  */
 
 import { apiClient } from "./client";
+import { normalizeApiListResponse } from "./listResponse";
 import type { Child } from "@shared/types/api";
 import { toChild } from "@shared/types/transform";
 
+type RawChild = {
+  id: string;
+  family_id: string;
+  name: string;
+  birth_date: string | null;
+  age_label: string | null;
+  baby_mode_enabled: boolean;
+  institution_name: string | null;
+  institution_phone: string | null;
+  doctor_name: string | null;
+  doctor_phone: string | null;
+  allergies: string | null;
+  notes: string | null;
+};
+
 export async function fetchChildrenByFamilyId(familyId: string): Promise<Child[]> {
-  const res = await apiClient.get<
-    Array<{
-      id: string;
-      family_id: string;
-      name: string;
-      birth_date: string | null;
-      age_label: string | null;
-      baby_mode_enabled: boolean;
-      institution_name: string | null;
-      institution_phone: string | null;
-      doctor_name: string | null;
-      doctor_phone: string | null;
-      allergies: string | null;
-      notes: string | null;
-    }>
-  >("/children", { params: { family_id: familyId } });
-  return (res.data ?? []).map(toChild);
+  const res = await apiClient.get<RawChild[]>("/children", { params: { family_id: familyId } });
+  return normalizeApiListResponse<RawChild>(res.data).map(toChild);
 }
 
 export async function fetchChildrenByFamilyIdForManagement(familyId: string): Promise<Child[]> {
-  const res = await apiClient.get<
-    Array<{
-      id: string;
-      family_id: string;
-      name: string;
-      birth_date: string | null;
-      age_label: string | null;
-      baby_mode_enabled: boolean;
-      institution_name: string | null;
-      institution_phone: string | null;
-      doctor_name: string | null;
-      doctor_phone: string | null;
-      allergies: string | null;
-      notes: string | null;
-    }>
-  >("/children/management", { params: { family_id: familyId } });
-  return (res.data ?? []).map(toChild);
+  const res = await apiClient.get<RawChild[]>("/children/management", {
+    params: { family_id: familyId },
+  });
+  return normalizeApiListResponse<RawChild>(res.data).map(toChild);
 }
 
 export async function fetchChild(id: string): Promise<Child> {
-  const res = await apiClient.get<{
-    id: string;
-    family_id: string;
-    name: string;
-    birth_date: string | null;
-    age_label: string | null;
-    baby_mode_enabled: boolean;
-    institution_name: string | null;
-    institution_phone: string | null;
-    doctor_name: string | null;
-    doctor_phone: string | null;
-    allergies: string | null;
-    notes: string | null;
-  }>(`/children/${id}`);
+  const res = await apiClient.get<RawChild>(`/children/${id}`);
   return toChild(res.data);
 }
 

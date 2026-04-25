@@ -139,18 +139,24 @@ export interface MedicineCatalogItem {
   concentration: string | null;
   description?: string | null;
   dosage?: string | null;
+  pediatricDoseMgPerKgMin?: number | null;
+  pediatricDoseMgPerKgMax?: number | null;
+  pediatricDoseNote?: string | null;
   defaultOpenedShelfDays?: number | null;
 }
 
 export interface HouseholdMedicine {
   id: string;
   familyId: string;
-  catalogItemId: string | null;
   medicineName: string;
   medicineForm: string;
+  medicineCategory: string | null;
   medicineConcentration: string | null;
   medicineDescription: string | null;
   medicineDosage: string | null;
+  pediatricDoseMgPerKgMin: number | null;
+  pediatricDoseMgPerKgMax: number | null;
+  pediatricDoseNote: string | null;
   expiryDate: string;
   openedAt: string | null;
   openedShelfDays: number | null;
@@ -271,6 +277,12 @@ export interface EpisodeMedicationPlan {
   maxDosesPerDay: number | null;
   weightKg: number | null;
   doseMgPerKg: number | null;
+  calculatedDoseMg: number | null;
+  calculatedDoseValue: number | null;
+  calculatedDoseUnit: string | null;
+  doseCalcMode: string | null;
+  doseCalcWarning: string | null;
+  manualDoseOverride: boolean;
   notes: string | null;
   memberAccountIds: string[];
   createdAt: string;

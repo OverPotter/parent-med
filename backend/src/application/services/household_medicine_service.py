@@ -19,7 +19,11 @@ from src.domain.repositories.episode_medication_plan_repository import (
 )
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
-from src.domain.repositories.medicine_catalog_repository import MedicineCatalogRepository
+
+HOUSEHOLD_MEDICINE_ALREADY_EXISTS_MESSAGE = (
+    "Такой препарат уже есть в аптечке. Обновите существующую упаковку или "
+    "используйте «Новая упаковка»."
+)
 
 
 class HouseholdMedicineService:
@@ -29,13 +33,11 @@ class HouseholdMedicineService:
         self,
         household_repo: HouseholdMedicineRepository,
         family_repo: FamilyRepository,
-        catalog_repo: MedicineCatalogRepository,
         administration_repo: AdministrationEventRepository,
         plan_repo: EpisodeMedicationPlanRepository,
     ) -> None:
         self._repo = household_repo
         self._family_repo = family_repo
-        self._catalog_repo = catalog_repo
         self._administration_repo = administration_repo
         self._plan_repo = plan_repo
 
@@ -44,12 +46,15 @@ class HouseholdMedicineService:
         return HouseholdMedicineResponseDto(
             id=entity.id,
             family_id=entity.family_id,
-            catalog_item_id=entity.catalog_item_id,
             medicine_name=entity.medicine_name,
             medicine_form=entity.medicine_form,
+            medicine_category=entity.medicine_category,
             medicine_concentration=entity.medicine_concentration,
             medicine_description=entity.medicine_description,
             medicine_dosage=entity.medicine_dosage,
+            pediatric_dose_mg_per_kg_min=entity.pediatric_dose_mg_per_kg_min,
+            pediatric_dose_mg_per_kg_max=entity.pediatric_dose_mg_per_kg_max,
+            pediatric_dose_note=entity.pediatric_dose_note,
             expiry_date=entity.expiry_date,
             opened_at=entity.opened_at,
             opened_shelf_days=entity.opened_shelf_days,
@@ -124,39 +129,45 @@ class HouseholdMedicineService:
             raise ValidationError(
                 "Дата вскрытия не может быть в будущем", code="OPENED_AT_IN_FUTURE"
             )
-        if dto.catalog_item_id is not None:
-            catalog_item = await self._catalog_repo.get_by_id(dto.catalog_item_id)
-            if catalog_item is None:
-                raise NotFoundError("Препарат не найден в справочнике", resource="medicine_catalog")
-            catalog_item_id = catalog_item.id
-            medicine_name = catalog_item.name
-            medicine_form = catalog_item.form
-            medicine_concentration = catalog_item.concentration
-            medicine_description = catalog_item.description
-            medicine_dosage = catalog_item.dosage
-            opened_shelf_days = dto.opened_shelf_days or catalog_item.default_opened_shelf_days
-        else:
-            catalog_item_id = None
-            medicine_name = (dto.medicine_name or "").strip()
-            medicine_form = (dto.medicine_form or "").strip()
-            if not medicine_name or not medicine_form:
-                raise ValidationError(
-                    "Для своего препарата нужно указать название и форму",
-                    code="MEDICINE_NAME_AND_FORM_REQUIRED",
-                )
-            medicine_concentration = dto.medicine_concentration
-            medicine_description = dto.medicine_description
-            medicine_dosage = dto.medicine_dosage
-            opened_shelf_days = dto.opened_shelf_days
+        medicine_name = (dto.medicine_name or "").strip()
+        medicine_category = (dto.medicine_category or "").strip() or None
+        medicine_form = (dto.medicine_form or "").strip() or medicine_category or ""
+        if not medicine_name or not medicine_form:
+            raise ValidationError(
+                "Нужно указать название и форму или категорию препарата",
+                code="MEDICINE_NAME_AND_FORM_REQUIRED",
+            )
+        medicine_concentration = dto.medicine_concentration
+        medicine_description = dto.medicine_description
+        medicine_dosage = dto.medicine_dosage
+        pediatric_dose_mg_per_kg_min = dto.pediatric_dose_mg_per_kg_min
+        pediatric_dose_mg_per_kg_max = dto.pediatric_dose_mg_per_kg_max
+        pediatric_dose_note = dto.pediatric_dose_note
+        opened_shelf_days = dto.opened_shelf_days
+
+        existing_medicine = await self._repo.find_by_snapshot(
+            current_account.family_id,
+            medicine_name,
+            medicine_form,
+            medicine_concentration,
+        )
+        if existing_medicine is not None:
+            raise ValidationError(
+                HOUSEHOLD_MEDICINE_ALREADY_EXISTS_MESSAGE,
+                code="HOUSEHOLD_MEDICINE_ALREADY_EXISTS",
+            )
         entity = HouseholdMedicine(
             id=uuid4(),
             family_id=current_account.family_id,
-            catalog_item_id=catalog_item_id,
             medicine_name=medicine_name,
             medicine_form=medicine_form,
+            medicine_category=medicine_category,
             medicine_concentration=medicine_concentration,
             medicine_description=medicine_description,
             medicine_dosage=medicine_dosage,
+            pediatric_dose_mg_per_kg_min=pediatric_dose_mg_per_kg_min,
+            pediatric_dose_mg_per_kg_max=pediatric_dose_mg_per_kg_max,
+            pediatric_dose_note=pediatric_dose_note,
             expiry_date=dto.expiry_date,
             opened_at=dto.opened_at,
             opened_shelf_days=opened_shelf_days,
@@ -187,36 +198,67 @@ class HouseholdMedicineService:
         comment = dto.comment if "comment" in fields_set else entity.comment
         medicine_name = entity.medicine_name
         medicine_form = entity.medicine_form
+        medicine_category = entity.medicine_category
         medicine_concentration = entity.medicine_concentration
         medicine_description = entity.medicine_description
         medicine_dosage = entity.medicine_dosage
+        pediatric_dose_mg_per_kg_min = entity.pediatric_dose_mg_per_kg_min
+        pediatric_dose_mg_per_kg_max = entity.pediatric_dose_mg_per_kg_max
+        pediatric_dose_note = entity.pediatric_dose_note
 
-        if entity.catalog_item_id is None:
-            medicine_name = (
-                dto.medicine_name if "medicine_name" in fields_set else entity.medicine_name
-            )
-            medicine_form = (
-                dto.medicine_form if "medicine_form" in fields_set else entity.medicine_form
-            )
-            medicine_concentration = (
-                dto.medicine_concentration
-                if "medicine_concentration" in fields_set
-                else entity.medicine_concentration
-            )
-            medicine_description = (
-                dto.medicine_description
-                if "medicine_description" in fields_set
-                else entity.medicine_description
-            )
-            medicine_dosage = (
-                dto.medicine_dosage if "medicine_dosage" in fields_set else entity.medicine_dosage
-            )
+        pediatric_dose_mg_per_kg_min = (
+            dto.pediatric_dose_mg_per_kg_min
+            if "pediatric_dose_mg_per_kg_min" in fields_set
+            else entity.pediatric_dose_mg_per_kg_min
+        )
+        pediatric_dose_mg_per_kg_max = (
+            dto.pediatric_dose_mg_per_kg_max
+            if "pediatric_dose_mg_per_kg_max" in fields_set
+            else entity.pediatric_dose_mg_per_kg_max
+        )
+        pediatric_dose_note = (
+            dto.pediatric_dose_note
+            if "pediatric_dose_note" in fields_set
+            else entity.pediatric_dose_note
+        )
 
-            if not (medicine_name or "").strip() or not (medicine_form or "").strip():
-                raise ValidationError(
-                    "Для своего препарата нужно указать название и форму",
-                    code="MEDICINE_NAME_AND_FORM_REQUIRED",
-                )
+        medicine_name = dto.medicine_name if "medicine_name" in fields_set else entity.medicine_name
+        medicine_category = (
+            dto.medicine_category if "medicine_category" in fields_set else entity.medicine_category
+        )
+        medicine_form = dto.medicine_form if "medicine_form" in fields_set else entity.medicine_form
+        medicine_concentration = (
+            dto.medicine_concentration
+            if "medicine_concentration" in fields_set
+            else entity.medicine_concentration
+        )
+        medicine_description = (
+            dto.medicine_description
+            if "medicine_description" in fields_set
+            else entity.medicine_description
+        )
+        medicine_dosage = (
+            dto.medicine_dosage if "medicine_dosage" in fields_set else entity.medicine_dosage
+        )
+
+        resolved_category = (medicine_category or "").strip() or None
+        resolved_form = (medicine_form or "").strip() or resolved_category or ""
+        if not (medicine_name or "").strip() or not resolved_form:
+            raise ValidationError(
+                "Нужно указать название и форму или категорию препарата",
+                code="MEDICINE_NAME_AND_FORM_REQUIRED",
+            )
+        duplicate = await self._repo.find_by_snapshot(
+            current_account.family_id,
+            (medicine_name or "").strip(),
+            resolved_form,
+            medicine_concentration,
+        )
+        if duplicate is not None and duplicate.id != entity.id:
+            raise ValidationError(
+                HOUSEHOLD_MEDICINE_ALREADY_EXISTS_MESSAGE,
+                code="HOUSEHOLD_MEDICINE_ALREADY_EXISTS",
+            )
 
         if opened_at is not None and opened_at.date() > date.today():
             raise ValidationError(
@@ -225,12 +267,15 @@ class HouseholdMedicineService:
         entity = HouseholdMedicine(
             id=entity.id,
             family_id=entity.family_id,
-            catalog_item_id=entity.catalog_item_id,
             medicine_name=(medicine_name or "").strip(),
-            medicine_form=(medicine_form or "").strip(),
+            medicine_form=resolved_form,
+            medicine_category=resolved_category,
             medicine_concentration=medicine_concentration,
             medicine_description=medicine_description,
             medicine_dosage=medicine_dosage,
+            pediatric_dose_mg_per_kg_min=pediatric_dose_mg_per_kg_min,
+            pediatric_dose_mg_per_kg_max=pediatric_dose_mg_per_kg_max,
+            pediatric_dose_note=pediatric_dose_note,
             expiry_date=expiry_date,
             opened_at=opened_at,
             opened_shelf_days=opened_shelf_days,

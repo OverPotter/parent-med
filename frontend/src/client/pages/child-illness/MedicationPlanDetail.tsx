@@ -10,23 +10,31 @@ import type {
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
 import {
   buildWeightDoseHint,
+  calculateMedicationDoseRecommendation,
   formatDoseStatusLabel,
   formatIntervalForDisplay,
   type MedicationPlanPriorityItem,
 } from "../../utils/medicationPlans";
 import {
   DetailRow,
+  appBtnFilledClass,
   appBtnJournalDangerClass,
   appBtnJournalSecondaryClass,
   illnessCompactPrimaryButtonClass,
+  illnessCompactInputClass,
   illnessPanelSoftClass,
 } from "./shared";
-import type { MedicationPlanPayload } from "./reminderUtils";
+import {
+  hasDoseUnitHint,
+  intervalMinutesToInputValue,
+  parseIntervalInputToMinutes,
+  type MedicationPlanPayload,
+} from "./reminderUtils";
 import { MedicationPlanComposer } from "./MedicationPlanComposer";
 
 export function MedicationPlanDetail({
   item,
-  childId,
+  childName,
   medicines,
   latestWeight,
   canEdit = true,
@@ -39,7 +47,7 @@ export function MedicationPlanDetail({
   onEditingChange,
 }: {
   item: MedicationPlanPriorityItem<EpisodeMedicationPlan>;
-  childId: string;
+  childName: string;
   medicines: HouseholdMedicine[];
   latestWeight: WeightEntry | null;
   canEdit?: boolean;
@@ -52,16 +60,30 @@ export function MedicationPlanDetail({
   onEditingChange?: (isEditing: boolean, planName: string) => void;
 }) {
   const { language } = useI18n();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const { plan, medicine, stats, isUnavailable } = item;
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [quickEditField, setQuickEditField] = useState<"dose" | "interval" | null>(null);
+  const [quickDoseAmount, setQuickDoseAmount] = useState(plan.doseAmount);
+  const [quickIntervalInput, setQuickIntervalInput] = useState(
+    intervalMinutesToInputValue(plan.minIntervalMinutes, intervalUnit)
+  );
   const planName =
     plan.customMedicineName ??
     medicine?.medicineName ??
     (language === "ru" ? "Лекарство" : "Medicine");
+  const titleText = medicine?.medicineConcentration
+    ? `${planName} · ${medicine.medicineConcentration}`
+    : planName;
   const doseBadge = plan.doseAmount?.trim() ?? "";
-  const weightHint = buildWeightDoseHint(medicine, plan.weightKg, plan.doseMgPerKg);
+  const doseCalculation = calculateMedicationDoseRecommendation(
+    medicine,
+    plan.weightKg,
+    plan.doseMgPerKg,
+    language
+  );
+  const weightHint = buildWeightDoseHint(medicine, plan.weightKg, plan.doseMgPerKg, language);
   const nextDoseText = isUnavailable
     ? language === "ru"
       ? "Недоступно"
@@ -83,6 +105,8 @@ export function MedicationPlanDetail({
             label: language === "ru" ? "Доза" : "Dose",
             value: doseBadge,
             tone: "bg-fuchsia-500",
+            editable: canEdit,
+            editKey: "dose" as const,
           },
         ]
       : []),
@@ -90,6 +114,8 @@ export function MedicationPlanDetail({
       label: language === "ru" ? "Интервал" : "Interval",
       value: formatIntervalForDisplay(plan.minIntervalMinutes, intervalUnit),
       tone: "bg-sky-500",
+      editable: canEdit,
+      editKey: "interval" as const,
     },
     {
       label: language === "ru" ? "Следующий" : "Next",
@@ -153,14 +179,76 @@ export function MedicationPlanDetail({
   useEffect(() => {
     setIsEditing(false);
     setIsDeleteConfirmOpen(false);
+    setQuickEditField(null);
+    setQuickDoseAmount(plan.doseAmount);
+    setQuickIntervalInput(intervalMinutesToInputValue(plan.minIntervalMinutes, intervalUnit));
   }, [plan.id]);
+
+  useEffect(() => {
+    if (quickEditField !== "dose") {
+      setQuickDoseAmount(plan.doseAmount);
+    }
+  }, [plan.doseAmount, quickEditField]);
+
+  useEffect(() => {
+    if (quickEditField !== "interval") {
+      setQuickIntervalInput(intervalMinutesToInputValue(plan.minIntervalMinutes, intervalUnit));
+    }
+  }, [intervalUnit, plan.minIntervalMinutes, quickEditField]);
+
+  const buildUpdatePayload = (overrides: Partial<MedicationPlanPayload>): MedicationPlanPayload => ({
+    householdMedicineId: plan.householdMedicineId,
+    customMedicineName: plan.customMedicineName,
+    doseAmount: plan.doseAmount,
+    minIntervalMinutes: plan.minIntervalMinutes,
+    maxDosesPerDay: plan.maxDosesPerDay,
+    weightKg: plan.weightKg,
+    doseMgPerKg: plan.doseMgPerKg,
+    calculatedDoseMg: plan.calculatedDoseMg,
+    calculatedDoseValue: plan.calculatedDoseValue,
+    calculatedDoseUnit: plan.calculatedDoseUnit,
+    doseCalcMode: plan.doseCalcMode,
+    doseCalcWarning: plan.doseCalcWarning,
+    manualDoseOverride: plan.manualDoseOverride ?? false,
+    notes: plan.notes,
+    ...overrides,
+  });
+
+  const handleQuickDoseSave = () => {
+    const normalizedDose = quickDoseAmount.trim();
+    if (!normalizedDose) {
+      return;
+    }
+    onUpdate(
+      plan.id,
+      buildUpdatePayload({
+        doseAmount: normalizedDose,
+        manualDoseOverride: true,
+      })
+    );
+    setQuickEditField(null);
+  };
+
+  const handleQuickIntervalSave = () => {
+    const parsedInterval = parseIntervalInputToMinutes(quickIntervalInput, intervalUnit);
+    if (parsedInterval === null) {
+      return;
+    }
+    onUpdate(
+      plan.id,
+      buildUpdatePayload({
+        minIntervalMinutes: parsedInterval,
+      })
+    );
+    setQuickEditField(null);
+  };
 
   if (isEditing && canEdit) {
     return (
       <section className="space-y-4">
         <MedicationPlanComposer
           key={plan.id}
-          childId={childId}
+          childName={childName}
           medicines={editableMedicines}
           latestWeight={latestWeight}
           initialValue={{
@@ -171,6 +259,12 @@ export function MedicationPlanDetail({
             maxDosesPerDay: plan.maxDosesPerDay,
             weightKg: plan.weightKg,
             doseMgPerKg: plan.doseMgPerKg,
+            calculatedDoseMg: plan.calculatedDoseMg,
+            calculatedDoseValue: plan.calculatedDoseValue,
+            calculatedDoseUnit: plan.calculatedDoseUnit,
+            doseCalcMode: plan.doseCalcMode,
+            doseCalcWarning: plan.doseCalcWarning,
+            manualDoseOverride: plan.manualDoseOverride,
             notes: plan.notes,
           }}
           onSubmit={(payload) => {
@@ -230,22 +324,11 @@ export function MedicationPlanDetail({
           />
           <div className="min-w-0 flex-1">
             <h4 className="min-w-0 text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-              {planName}
+              {titleText}
             </h4>
-            {(medicine?.medicineForm || medicine?.medicineConcentration) && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {[medicine?.medicineForm ?? null, medicine?.medicineConcentration ?? null]
-                  .filter(Boolean)
-                  .map((item) => (
-                    <span
-                      key={item}
-                      className="soft-pill inline-flex min-h-[1.9rem] items-center rounded-full px-3 py-1 text-[0.74rem] font-semibold"
-                    >
-                      {item}
-                    </span>
-                  ))}
-              </div>
-            )}
+            {medicine?.medicineForm ? (
+              <p className="mt-1 text-sm leading-6 text-foreground/70">{medicine.medicineForm}</p>
+            ) : null}
             <p className="mt-1 text-sm leading-6 text-foreground/78">
               {isUnavailable
                 ? language === "ru"
@@ -271,9 +354,23 @@ export function MedicationPlanDetail({
         </div>
         <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
           {reminderSummaryItems.map((item) => (
-            <div
+            <button
               key={item.label}
-              className="inline-flex min-h-[3.15rem] min-w-0 items-start gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-2 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]"
+              type="button"
+              onClick={() => {
+                if (!item.editable || !item.editKey) {
+                  return;
+                }
+                setQuickEditField((current) => (current === item.editKey ? null : item.editKey));
+              }}
+              disabled={!item.editable}
+              className={`inline-flex min-h-[3.15rem] min-w-0 items-start gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-2 text-left shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)] ${
+                item.editable ? "cursor-pointer transition hover:bg-surface-muted" : ""
+              } ${
+                quickEditField === item.editKey
+                  ? "ring-2 ring-[color:color-mix(in_srgb,var(--color-primary)_42%,transparent)]"
+                  : ""
+              }`}
             >
               <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${item.tone}`} />
               <span className="min-w-0 flex-1">
@@ -284,12 +381,118 @@ export function MedicationPlanDetail({
                   {item.value}
                 </span>
               </span>
-            </div>
+            </button>
           ))}
         </div>
+        {quickEditField === "dose" ? (
+          <div className="rounded-[18px] border border-border/60 bg-surface/70 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">
+                  {language === "ru" ? "Новая доза" : "New dose"}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-muted">
+                  {language === "ru"
+                    ? "Например: 5 мл или 1 таблетка"
+                    : "For example: 5 ml or 1 tablet"}
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 space-y-3">
+              <input
+                type="text"
+                value={quickDoseAmount}
+                onChange={(event) => setQuickDoseAmount(event.target.value)}
+                placeholder={language === "ru" ? "Введите дозу" : "Enter dose"}
+                className={illnessCompactInputClass}
+              />
+              {hasDoseUnitHint(quickDoseAmount) ? (
+                <p className="text-xs leading-5 text-muted">
+                  {language === "ru"
+                    ? "Лучше добавить единицу: мл, таб., капли."
+                    : "It is better to include a unit: ml, tablet, drops."}
+                </p>
+              ) : null}
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuickDoseAmount(plan.doseAmount);
+                    setQuickEditField(null);
+                  }}
+                  className={appBtnJournalSecondaryClass}
+                >
+                  {language === "ru" ? "Отмена" : "Cancel"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleQuickDoseSave}
+                  disabled={!quickDoseAmount.trim() || isUpdating}
+                  className={appBtnFilledClass}
+                >
+                  {language === "ru" ? "Сохранить дозу" : "Save dose"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+        {quickEditField === "interval" ? (
+          <div className="rounded-[18px] border border-border/60 bg-surface/70 p-3">
+            <p className="text-sm font-semibold text-foreground">
+              {language === "ru" ? "Новый интервал" : "New interval"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              {language === "ru"
+                ? `Введите значение в ${intervalUnit === "hours" ? "часах" : "минутах"}.`
+                : `Enter the value in ${intervalUnit === "hours" ? "hours" : "minutes"}.`}
+            </p>
+            <div className="mt-3 space-y-3">
+              <input
+                type="number"
+                min="1"
+                step={intervalUnit === "hours" ? "0.5" : "1"}
+                inputMode="decimal"
+                value={quickIntervalInput}
+                onChange={(event) => setQuickIntervalInput(event.target.value)}
+                placeholder={language === "ru" ? "Введите интервал" : "Enter interval"}
+                className={illnessCompactInputClass}
+              />
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuickIntervalInput(
+                      intervalMinutesToInputValue(plan.minIntervalMinutes, intervalUnit)
+                    );
+                    setQuickEditField(null);
+                  }}
+                  className={appBtnJournalSecondaryClass}
+                >
+                  {language === "ru" ? "Отмена" : "Cancel"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleQuickIntervalSave}
+                  disabled={parseIntervalInputToMinutes(quickIntervalInput, intervalUnit) === null || isUpdating}
+                  className={appBtnFilledClass}
+                >
+                  {language === "ru" ? "Сохранить интервал" : "Save interval"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      {(medicine && (medicine.medicineForm || medicine.medicineConcentration)) || weightHint ? (
+      {(medicine &&
+        (medicine.medicineForm ||
+          medicine.medicineConcentration ||
+          medicine.medicineDescription ||
+          medicine.medicineDosage)) ||
+      weightHint ||
+      plan.doseCalcWarning ||
+      doseCalculation?.doseCalcWarning ||
+      plan.manualDoseOverride ? (
         <div className={`${illnessPanelSoftClass} space-y-3 rounded-[28px] p-4 sm:p-5`}>
           <h5 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
             {language === "ru" ? "Дополнительно" : "More"}
@@ -303,10 +506,44 @@ export function MedicationPlanDetail({
                   .join(" · ")}
               />
             ) : null}
+            {medicine?.medicineDescription ? (
+              <DetailRow
+                label={language === "ru" ? "Описание" : "Description"}
+                value={medicine.medicineDescription}
+              />
+            ) : null}
+            {medicine?.medicineDosage ? (
+              <DetailRow
+                label={language === "ru" ? "Как давать" : "How to give"}
+                value={medicine.medicineDosage}
+              />
+            ) : null}
             {weightHint ? (
               <DetailRow
                 label={language === "ru" ? "По весу" : "Weight based"}
                 value={weightHint}
+              />
+            ) : null}
+            {plan.doseCalcWarning || doseCalculation?.doseCalcWarning ? (
+              <DetailRow
+                label={language === "ru" ? "Проверка дозы" : "Dose safety"}
+                value={
+                  plan.doseCalcWarning ??
+                  doseCalculation?.doseCalcWarning ??
+                  (language === "ru"
+                    ? "Сверьте дозу по упаковке и назначению врача."
+                    : "Verify the dose against the package and clinician instructions.")
+                }
+              />
+            ) : null}
+            {plan.manualDoseOverride ? (
+              <DetailRow
+                label={language === "ru" ? "Итоговая доза" : "Final dose"}
+                value={
+                  language === "ru"
+                    ? `${plan.doseAmount} · изменено вручную`
+                    : `${plan.doseAmount} · edited manually`
+                }
               />
             ) : null}
           </div>
@@ -340,7 +577,7 @@ export function MedicationPlanDetail({
             onClick={() => setIsEditing(true)}
             className={appBtnJournalSecondaryClass}
           >
-            {language === "ru" ? "Изменить" : "Edit"}
+            {language === "ru" ? "Изменить всё" : "Edit all"}
           </button>
         ) : null}
         {canEdit ? (

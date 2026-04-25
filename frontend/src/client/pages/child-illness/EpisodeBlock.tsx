@@ -209,6 +209,12 @@ export function EpisodeBlock({
       max_doses_per_day?: number | null;
       weight_kg?: number | null;
       dose_mg_per_kg?: number | null;
+      calculated_dose_mg?: number | null;
+      calculated_dose_value?: number | null;
+      calculated_dose_unit?: string | null;
+      dose_calc_mode?: string | null;
+      dose_calc_warning?: string | null;
+      manual_dose_override?: boolean;
       notes?: string | null;
       first_dose_status?: "already_given" | "not_given";
       first_dose_at?: string | null;
@@ -223,6 +229,12 @@ export function EpisodeBlock({
           maxDosesPerDay: payload.max_doses_per_day,
           weightKg: payload.weight_kg,
           doseMgPerKg: payload.dose_mg_per_kg,
+          calculatedDoseMg: payload.calculated_dose_mg,
+          calculatedDoseValue: payload.calculated_dose_value,
+          calculatedDoseUnit: payload.calculated_dose_unit,
+          doseCalcMode: payload.dose_calc_mode,
+          doseCalcWarning: payload.dose_calc_warning,
+          manualDoseOverride: payload.manual_dose_override,
           notes: payload.notes,
           firstDoseStatus: payload.first_dose_status,
           firstDoseAt: payload.first_dose_at,
@@ -269,16 +281,22 @@ export function EpisodeBlock({
       payload,
     }: {
       id: string;
-      payload: {
-        household_medicine_id?: string | null;
-        custom_medicine_name?: string | null;
-        dose_amount?: string;
-        min_interval_minutes?: number;
-        max_doses_per_day?: number | null;
-        weight_kg?: number | null;
-        dose_mg_per_kg?: number | null;
-        notes?: string | null;
-      };
+        payload: {
+          household_medicine_id?: string | null;
+          custom_medicine_name?: string | null;
+          dose_amount?: string;
+          min_interval_minutes?: number;
+          max_doses_per_day?: number | null;
+          weight_kg?: number | null;
+          dose_mg_per_kg?: number | null;
+          calculated_dose_mg?: number | null;
+          calculated_dose_value?: number | null;
+          calculated_dose_unit?: string | null;
+          dose_calc_mode?: string | null;
+          dose_calc_warning?: string | null;
+          manual_dose_override?: boolean;
+          notes?: string | null;
+        };
     }) => updateEpisodeMedicationPlan(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
@@ -625,8 +643,9 @@ export function EpisodeBlock({
       <>
         {doseTimeSheet}
         <div className="mx-auto w-full max-w-2xl">
-          <ReminderDetailQuickView
+        <ReminderDetailQuickView
           language={language}
+          childName={childName}
           childId={childId}
           selectedReminderItem={selectedReminderItem}
           latestWeight={latestWeight}
@@ -661,6 +680,12 @@ export function EpisodeBlock({
                 max_doses_per_day: payload.maxDosesPerDay,
                 weight_kg: payload.weightKg,
                 dose_mg_per_kg: payload.doseMgPerKg,
+                calculated_dose_mg: payload.calculatedDoseMg,
+                calculated_dose_value: payload.calculatedDoseValue,
+                calculated_dose_unit: payload.calculatedDoseUnit,
+                dose_calc_mode: payload.doseCalcMode,
+                dose_calc_warning: payload.doseCalcWarning,
+                manual_dose_override: payload.manualDoseOverride,
                 notes: payload.notes,
               },
             })
@@ -696,7 +721,7 @@ export function EpisodeBlock({
       <div className="mx-auto w-full max-w-2xl">
         <ReminderCreateQuickView
           language={language}
-          childId={childId}
+          childName={childName}
           medicines={householdMedicines.filter(
             (medicine) =>
               medicine.status !== "expired" && medicine.status !== "expired_after_opening"
@@ -718,6 +743,12 @@ export function EpisodeBlock({
               max_doses_per_day: payload.maxDosesPerDay,
               weight_kg: payload.weightKg,
               dose_mg_per_kg: payload.doseMgPerKg,
+              calculated_dose_mg: payload.calculatedDoseMg,
+              calculated_dose_value: payload.calculatedDoseValue,
+              calculated_dose_unit: payload.calculatedDoseUnit,
+              dose_calc_mode: payload.doseCalcMode,
+              dose_calc_warning: payload.doseCalcWarning,
+              manual_dose_override: payload.manualDoseOverride,
               notes: payload.notes,
               first_dose_status: payload.firstDoseStatus,
               first_dose_at: payload.firstDoseAt,

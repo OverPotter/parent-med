@@ -109,6 +109,10 @@ struct FeedingReferenceLockScreenView: View {
                     titleMinScale: 0.78,
                     secondaryTextColor: Color(red: 0.55, green: 0.43, blue: 0.39),
                     subtitleMinScale: 0.85,
+                    subtitleFontSize: 15,
+                    subtitleFontWeight: .regular,
+                    detailFontSize: 13,
+                    detailFontWeight: .regular,
                     badge: { FeedingIconBadge() },
                     value: {
                         HeaderElapsedTimerText(startedAt: context.state.startedAt)
@@ -255,6 +259,10 @@ struct SleepReferenceLockScreenView: View {
                     titleMinScale: 0.78,
                     secondaryTextColor: Color(red: 0.49, green: 0.47, blue: 0.60),
                     subtitleMinScale: 0.85,
+                    subtitleFontSize: 15,
+                    subtitleFontWeight: .regular,
+                    detailFontSize: 13,
+                    detailFontWeight: .regular,
                     badge: { SleepIconBadge() },
                     value: {
                         HeaderElapsedTimerText(startedAt: context.state.startedAt)
@@ -283,92 +291,7 @@ struct IllnessReferenceLockScreenView: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 29, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.90, green: 0.95, blue: 0.92),
-                            Color(red: 0.87, green: 0.93, blue: 0.90),
-                            Color(red: 0.84, green: 0.91, blue: 0.88)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color.white.opacity(0.22),
-                                    Color.white.opacity(0.05),
-                                    Color.clear
-                                ],
-                                center: .topLeading,
-                                startRadius: 12,
-                                endRadius: 210
-                            )
-                        )
-                )
-                .overlay(
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color(red: 0.62, green: 0.87, blue: 0.82).opacity(0.12),
-                                    Color.clear
-                                ],
-                                center: .center,
-                                startRadius: 8,
-                                endRadius: 84
-                            )
-                        )
-                        .frame(width: 150, height: 150)
-                        .offset(x: -118, y: 84)
-                )
-                .overlay(
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color(red: 0.49, green: 0.82, blue: 0.72).opacity(0.08),
-                                    Color.clear
-                                ],
-                                center: .center,
-                                startRadius: 8,
-                                endRadius: 94
-                            )
-                        )
-                        .frame(width: 160, height: 160)
-                        .offset(x: 144, y: -76)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.14),
-                                    Color.white.opacity(0.04),
-                                    Color.clear,
-                                    Color.white.opacity(0.02)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.72), lineWidth: 1.1)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .inset(by: 1.2)
-                        .strokeBorder(Color(red: 0.22, green: 0.64, blue: 0.60).opacity(0.22), lineWidth: 0.9)
-                )
-                .shadow(color: Color.white.opacity(0.08), radius: 8, x: -2, y: -2)
-                .shadow(color: Color(red: 0.22, green: 0.64, blue: 0.60).opacity(0.12), radius: 16, x: 0, y: 8)
-                .shadow(color: Color.black.opacity(0.10), radius: 20, x: 0, y: 12)
+            illnessReferenceCardBackground
 
             HStack(alignment: .center, spacing: 16) {
                 ReferenceActivityBody(
@@ -382,12 +305,19 @@ struct IllnessReferenceLockScreenView: View {
                     titleMinScale: 0.78,
                     secondaryTextColor: Color(red: 0.44, green: 0.50, blue: 0.49),
                     subtitleMinScale: 0.85,
+                    subtitleFontSize: 14,
+                    subtitleFontWeight: .medium,
+                    detailFontSize: 14,
+                    detailFontWeight: .medium,
                     badge: { IllnessIconBadge() },
                     value: {
                         if illnessShowsTemperatureMetric(context: context) {
                             IllnessReferenceMetricBlock(context: context)
                         } else {
-                            HeaderElapsedTimerText(startedAt: context.state.startedAt)
+                            IllnessDayText(
+                                startedAt: context.state.startedAt,
+                                font: .system(size: 24, weight: .semibold, design: .rounded)
+                            )
                         }
                     },
                     trailing: {
@@ -404,6 +334,95 @@ struct IllnessReferenceLockScreenView: View {
             .padding(.vertical, 16)
         }
         .widgetURL(deepLink)
+    }
+
+    private var illnessReferenceCardBackground: some View {
+        RoundedRectangle(cornerRadius: 29, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.90, green: 0.95, blue: 0.92),
+                        Color(red: 0.87, green: 0.93, blue: 0.90),
+                        Color(red: 0.84, green: 0.91, blue: 0.88)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.white.opacity(0.22),
+                                Color.white.opacity(0.05),
+                                Color.clear
+                            ],
+                            center: .topLeading,
+                            startRadius: 12,
+                            endRadius: 210
+                        )
+                    )
+            )
+            .overlay(
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 0.62, green: 0.87, blue: 0.82).opacity(0.12),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 8,
+                            endRadius: 84
+                        )
+                    )
+                    .frame(width: 150, height: 150)
+                    .offset(x: -118, y: 84)
+            )
+            .overlay(
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 0.49, green: 0.82, blue: 0.72).opacity(0.08),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 8,
+                            endRadius: 94
+                        )
+                    )
+                    .frame(width: 160, height: 160)
+                    .offset(x: 144, y: -76)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.14),
+                                Color.white.opacity(0.04),
+                                Color.clear,
+                                Color.white.opacity(0.02)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.72), lineWidth: 1.1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .inset(by: 1.2)
+                    .strokeBorder(Color(red: 0.22, green: 0.64, blue: 0.60).opacity(0.22), lineWidth: 0.9)
+            )
+            .shadow(color: Color.white.opacity(0.08), radius: 8, x: -2, y: -2)
+            .shadow(color: Color(red: 0.22, green: 0.64, blue: 0.60).opacity(0.12), radius: 16, x: 0, y: 8)
+            .shadow(color: Color.black.opacity(0.10), radius: 20, x: 0, y: 12)
     }
 }
 
@@ -459,6 +478,10 @@ struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
     let titleMinScale: CGFloat
     let secondaryTextColor: Color
     let subtitleMinScale: CGFloat
+    let subtitleFontSize: CGFloat
+    let subtitleFontWeight: Font.Weight
+    let detailFontSize: CGFloat
+    let detailFontWeight: Font.Weight
     @ViewBuilder let badge: Badge
     @ViewBuilder let value: Value
     @ViewBuilder let trailing: Trailing
@@ -506,7 +529,7 @@ struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
                     VStack(alignment: .leading, spacing: 2) {
                         if !subtitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             Text(subtitle)
-                                .font(.system(size: 15, weight: .regular, design: .rounded))
+                                .font(.system(size: subtitleFontSize, weight: subtitleFontWeight, design: .rounded))
                                 .foregroundStyle(secondaryTextColor)
                                 .lineLimit(1)
                                 .minimumScaleFactor(subtitleMinScale)
@@ -514,7 +537,7 @@ struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
 
                         if let detailText, !detailText.isEmpty {
                             Text(detailText)
-                                .font(.system(size: 13, weight: .regular, design: .rounded))
+                                .font(.system(size: detailFontSize, weight: detailFontWeight, design: .rounded))
                                 .foregroundStyle(secondaryTextColor.opacity(0.95))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.76)
@@ -556,10 +579,10 @@ private func compactIllnessStatusLine(_ value: String) -> String {
     }
 
     guard parts.count == 2 else {
-        return value
+        return compactIllnessWholeLine(value)
     }
 
-    let medicine = parts[0]
+    let medicine = compactIllnessMedicineLabel(String(parts[0]))
     let timing = compactIllnessRelativeLabel(parts[1])
     return "\(medicine) · \(timing)"
 }
@@ -568,8 +591,25 @@ private func compactIllnessStatusLine(_ value: String) -> String {
 private func compactIllnessDetailLine(_ value: String) -> String {
     let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
+    let parts = trimmed.split(separator: "·", maxSplits: 1).map {
+        $0.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    if parts.count == 2 {
+        let medicine = compactIllnessMedicineLabel(String(parts[0]))
+        let timing = parts[1]
+            .replacingOccurrences(of: "дали в", with: "дали в")
+            .replacingOccurrences(of: "given at", with: "given at")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !medicine.isEmpty && !timing.isEmpty {
+            return "\(medicine) · \(timing)"
+        }
+    }
+
     if let range = trimmed.range(of: " дали в ") {
-        let medicine = String(trimmed[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let medicine = compactIllnessMedicineLabel(
+            String(trimmed[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        )
         let time = String(trimmed[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
         if !medicine.isEmpty && !time.isEmpty {
             return "Дали: \(medicine) · \(time)"
@@ -577,14 +617,16 @@ private func compactIllnessDetailLine(_ value: String) -> String {
     }
 
     if let range = trimmed.range(of: " given at ") {
-        let medicine = String(trimmed[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let medicine = compactIllnessMedicineLabel(
+            String(trimmed[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        )
         let time = String(trimmed[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
         if !medicine.isEmpty && !time.isEmpty {
             return "Given: \(medicine) · \(time)"
         }
     }
 
-    return trimmed
+    return compactIllnessWholeLine(trimmed)
 }
 
 @available(iOSApplicationExtension 16.1, *)
@@ -593,9 +635,9 @@ private func compactIllnessRelativeLabel(_ value: String) -> String {
 
     switch trimmed {
     case "Можно дать":
-        return "Можно дать"
+        return "Дать сейчас"
     case "можно дать":
-        return "можно дать"
+        return "дать сейчас"
     case "Ready now":
         return "Ready now"
     case "ready now":
@@ -605,6 +647,24 @@ private func compactIllnessRelativeLabel(_ value: String) -> String {
     }
 
     return trimmed
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func compactIllnessWholeLine(_ value: String) -> String {
+    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.count <= 42 {
+        return trimmed
+    }
+    return String(trimmed.prefix(39)).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func compactIllnessMedicineLabel(_ value: String) -> String {
+    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.count <= 7 {
+        return trimmed
+    }
+    return String(trimmed.prefix(6)).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
 }
 
 @available(iOSApplicationExtension 16.1, *)

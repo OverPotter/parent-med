@@ -193,11 +193,6 @@ class StubEpisodeMedicationPlanRepository:
         self.plans = [plan for plan in self.plans if plan.id != id]
 
 
-class StubCatalogRepository:
-    async def get_by_id(self, _id):  # noqa: ANN001
-        return None
-
-
 class StubPillboxRepository:
     def __init__(self, plans: list[PillboxPlan]) -> None:
         self.plans = plans
@@ -693,12 +688,15 @@ async def test_household_medicine_update_requires_cabinet_edit_access() -> None:
     medicine = HouseholdMedicine(
         id=uuid4(),
         family_id=family_id,
-        catalog_item_id=None,
         medicine_name="Ибупрофен",
         medicine_form="сироп",
+        medicine_category=None,
         medicine_concentration=None,
         medicine_description=None,
         medicine_dosage=None,
+        pediatric_dose_mg_per_kg_min=None,
+        pediatric_dose_mg_per_kg_max=None,
+        pediatric_dose_note=None,
         expiry_date=date.today(),
         opened_at=None,
         opened_shelf_days=None,
@@ -707,7 +705,6 @@ async def test_household_medicine_update_requires_cabinet_edit_access() -> None:
     service = HouseholdMedicineService(
         household_repo=StubHouseholdMedicineRepository([medicine]),
         family_repo=StubFamilyRepository(family_id),
-        catalog_repo=StubCatalogRepository(),
         administration_repo=StubAdministrationRepository(),
         plan_repo=StubEpisodeMedicationPlanRepository(),
     )
@@ -726,12 +723,15 @@ async def test_family_admin_can_lose_cabinet_access() -> None:
     medicine = HouseholdMedicine(
         id=uuid4(),
         family_id=family_id,
-        catalog_item_id=None,
         medicine_name="Ибупрофен",
         medicine_form="сироп",
+        medicine_category=None,
         medicine_concentration=None,
         medicine_description=None,
         medicine_dosage=None,
+        pediatric_dose_mg_per_kg_min=None,
+        pediatric_dose_mg_per_kg_max=None,
+        pediatric_dose_note=None,
         expiry_date=date.today(),
         opened_at=None,
         opened_shelf_days=None,
@@ -740,7 +740,6 @@ async def test_family_admin_can_lose_cabinet_access() -> None:
     service = HouseholdMedicineService(
         household_repo=StubHouseholdMedicineRepository([medicine]),
         family_repo=StubFamilyRepository(family_id),
-        catalog_repo=StubCatalogRepository(),
         administration_repo=StubAdministrationRepository(),
         plan_repo=StubEpisodeMedicationPlanRepository(),
     )

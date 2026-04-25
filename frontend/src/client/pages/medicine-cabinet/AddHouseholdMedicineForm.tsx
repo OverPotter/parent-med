@@ -19,7 +19,10 @@ import { tCabinet } from "./copy";
 import { MedicineCabinetHeader } from "./MedicineCabinetHeader";
 import { cabinetActionPrimaryClass, cabinetPanelClass } from "./styles";
 import {
-  getMedicineFormOptions,
+  getMedicineCatalogCategoryMatch,
+  getMedicineCatalogCategoryOptions,
+  type MedicineCatalogCategory,
+  getManualMedicineCategoryOptions,
   hasUnknownOpenedShelfLife,
   isExpiredDate,
   toOpenedShelfDaysOrNull,
@@ -37,20 +40,23 @@ export function AddHouseholdMedicineForm({
   onCreated: () => void;
 }) {
   const [searchName, setSearchName] = useState("");
+  const [catalogCategoryFilter, setCatalogCategoryFilter] =
+    useState<MedicineCatalogCategory>("");
   const [catalogItem, setCatalogItem] = useState<MedicineCatalogItem | null>(null);
   const [expiryDate, setExpiryDate] = useState("");
   const [openedAt, setOpenedAt] = useState("");
   const [openedShelfDays, setOpenedShelfDays] = useState("");
   const [comment, setComment] = useState("");
   const [newMedicineName, setNewMedicineName] = useState("");
-  const [newMedicineForm, setNewMedicineForm] = useState("сироп");
+  const [newMedicineCategory, setNewMedicineCategory] = useState("внутрь");
   const [newMedicineConcentration, setNewMedicineConcentration] = useState("");
   const [newMedicineDescription, setNewMedicineDescription] = useState("");
   const [newMedicineDosage, setNewMedicineDosage] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
-  const medicineFormOptions = getMedicineFormOptions(language);
+  const manualMedicineCategoryOptions = getManualMedicineCategoryOptions(language);
+  const medicineCategoryOptions = getMedicineCatalogCategoryOptions(language);
   const isExpired = isExpiredDate(expiryDate);
   const hasUnknownAfterOpening = hasUnknownOpenedShelfLife(openedAt, openedShelfDays);
   const normalizedCatalogSearch = searchName.trim();
@@ -58,15 +64,23 @@ export function AddHouseholdMedicineForm({
   const isManualMode = mode === "manual";
 
   const { data: catalogItems = [], isLoading: searchLoading } = useQuery({
-    queryKey: ["medicine-catalog-search", normalizedCatalogSearch],
-    queryFn: () => searchMedicineCatalog(normalizedCatalogSearch, 10),
-    enabled: isCatalogMode && normalizedCatalogSearch.length >= 2,
+    queryKey: ["medicine-catalog-search", language, normalizedCatalogSearch],
+    queryFn: () =>
+      searchMedicineCatalog({
+        query: normalizedCatalogSearch || undefined,
+        language,
+        limit: normalizedCatalogSearch ? 60 : 100,
+      }),
+    enabled: isCatalogMode,
   });
+  const visibleCatalogItems = catalogItems.filter((item) =>
+    getMedicineCatalogCategoryMatch(item, catalogCategoryFilter)
+  );
 
   const createHouseholdMutation = useMutation({
     mutationFn: createHouseholdMedicine,
-    onSuccess: (_data, variables) => {
-      const source = variables.catalog_item_id ? "catalog" : "manual";
+    onSuccess: () => {
+      const source = mode === "catalog" ? "catalog" : "manual";
       trackHouseholdMedicineAdded(source);
       queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] });
       setFormError(null);
@@ -76,8 +90,9 @@ export function AddHouseholdMedicineForm({
       setOpenedShelfDays("");
       setComment("");
       setSearchName("");
+      setCatalogCategoryFilter("");
       setNewMedicineName("");
-      setNewMedicineForm("сироп");
+      setNewMedicineCategory("внутрь");
       setNewMedicineConcentration("");
       setNewMedicineDescription("");
       setNewMedicineDosage("");
@@ -124,10 +139,14 @@ export function AddHouseholdMedicineForm({
     setFormError(null);
     createHouseholdMutation.mutate({
       medicine_name: newMedicineName.trim(),
-      medicine_form: newMedicineForm,
+      medicine_form: null,
+      medicine_category: newMedicineCategory,
       medicine_concentration: newMedicineConcentration.trim() || null,
       medicine_description: newMedicineDescription.trim() || null,
       medicine_dosage: newMedicineDosage.trim() || null,
+      pediatric_dose_mg_per_kg_min: null,
+      pediatric_dose_mg_per_kg_max: null,
+      pediatric_dose_note: null,
       expiry_date: normalizedExpiryDate,
       opened_at: normalizedOpenedAt,
       opened_shelf_days: parsedOpenedShelfDays,
@@ -156,7 +175,15 @@ export function AddHouseholdMedicineForm({
 
     setFormError(null);
     createHouseholdMutation.mutate({
-      catalog_item_id: catalogItem.id,
+      medicine_name: catalogItem.name,
+      medicine_form: catalogItem.form,
+      medicine_category: null,
+      medicine_concentration: catalogItem.concentration ?? null,
+      medicine_description: catalogItem.description ?? null,
+      medicine_dosage: catalogItem.dosage ?? null,
+      pediatric_dose_mg_per_kg_min: catalogItem.pediatricDoseMgPerKgMin ?? null,
+      pediatric_dose_mg_per_kg_max: catalogItem.pediatricDoseMgPerKgMax ?? null,
+      pediatric_dose_note: catalogItem.pediatricDoseNote ?? null,
       expiry_date: normalizedExpiryDate,
       opened_at: normalizedOpenedAt,
       opened_shelf_days: parsedOpenedShelfDays,
@@ -202,8 +229,15 @@ export function AddHouseholdMedicineForm({
             <CatalogSearchSection
               language={language}
               searchName={searchName}
+              selectedCategory={catalogCategoryFilter}
+              categoryOptions={medicineCategoryOptions}
               onSearchNameChange={(value) => {
                 setSearchName(value);
+                setCatalogItem(null);
+                setFormError(null);
+              }}
+              onSelectCategory={(value) => {
+                setCatalogCategoryFilter(value);
                 setCatalogItem(null);
                 setFormError(null);
               }}
@@ -215,26 +249,22 @@ export function AddHouseholdMedicineForm({
               </p>
             )}
 
-            {!catalogItem && normalizedCatalogSearch.length >= 2 && catalogItems.length > 0 && (
+            {!catalogItem && visibleCatalogItems.length > 0 && (
               <CatalogSearchResults
                 language={language}
-                catalogItems={catalogItems}
+                catalogItems={visibleCatalogItems}
                 onSelect={handleAddFromCatalog}
               />
             )}
             {!catalogItem &&
               !searchLoading &&
-              normalizedCatalogSearch.length >= 2 &&
-              catalogItems.length === 0 && (
+              visibleCatalogItems.length === 0 && (
                 <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
-                  {tCabinet(language, "catalogNoResults")}
+                  {normalizedCatalogSearch || catalogCategoryFilter
+                    ? tCabinet(language, "catalogNoResults")
+                    : tCabinet(language, "catalogBrowseHint")}
                 </p>
               )}
-            {!catalogItem && normalizedCatalogSearch.length < 2 && (
-              <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
-                {tCabinet(language, "catalogPickFirst")}
-              </p>
-            )}
 
             {catalogItem && (
               <SelectedCatalogMedicine
@@ -253,16 +283,16 @@ export function AddHouseholdMedicineForm({
         {isManualMode && (
           <ManualMedicineMainSection
             language={language}
-            medicineFormOptions={medicineFormOptions}
+            medicineCategoryOptions={manualMedicineCategoryOptions}
             newMedicineName={newMedicineName}
-            newMedicineForm={newMedicineForm}
+            newMedicineCategory={newMedicineCategory}
             newMedicineConcentration={newMedicineConcentration}
             onNameChange={(value) => {
               setNewMedicineName(value);
               setFormError(null);
             }}
-            onFormChange={(value) => {
-              setNewMedicineForm(value);
+            onCategoryChange={(value) => {
+              setNewMedicineCategory(value);
               setFormError(null);
             }}
             onConcentrationChange={(value) => {

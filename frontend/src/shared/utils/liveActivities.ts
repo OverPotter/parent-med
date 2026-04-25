@@ -132,7 +132,19 @@ function joinLiveActivityParts(parts: Array<string | null | undefined>) {
 
 
 function buildSinglePlanNextDose(
-  plan: Pick<EpisodeMedicationPlan, "minIntervalMinutes" | "customMedicineName"> | null | undefined,
+  plan:
+    | Pick<
+        EpisodeMedicationPlan,
+        "minIntervalMinutes" | "customMedicineName" | "householdMedicineId"
+      >
+    | {
+        minIntervalMinutes: number;
+        customMedicineName: string | null;
+        householdMedicineId?: string | null;
+        householdMedicineName?: string | null;
+      }
+    | null
+    | undefined,
   insights:
     | Pick<IllnessEpisodeInsights, "lastAdministrationAt" | "medicineNames">
     | null
@@ -149,7 +161,11 @@ function buildSinglePlanNextDose(
 
   return {
     nextDoseAt: new Date(lastAdministrationAt + plan.minIntervalMinutes * 60_000),
-    medicineName: plan.customMedicineName?.trim() || insights.medicineNames?.[0]?.trim() || null,
+    medicineName:
+      plan.customMedicineName?.trim() ||
+      ("householdMedicineName" in plan ? plan.householdMedicineName?.trim() : null) ||
+      insights.medicineNames?.[0]?.trim() ||
+      null,
   };
 }
 
@@ -275,7 +291,11 @@ export async function syncIllnessLiveActivity(
     IllnessEpisodeInsights,
     "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"
   > | null = null,
-  medicationPlans: Array<Pick<EpisodeMedicationPlan, "minIntervalMinutes" | "customMedicineName">> = [],
+  medicationPlans: Array<
+    Pick<EpisodeMedicationPlan, "minIntervalMinutes" | "customMedicineName" | "householdMedicineId"> & {
+      householdMedicineName?: string | null;
+    }
+  > = [],
   latestAdministrationMedicineName: string | null = null,
   language: "ru" | "en" = "ru",
   preferences?: LiveActivityPreferencesCache,

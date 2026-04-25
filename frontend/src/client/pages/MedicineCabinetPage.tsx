@@ -5,7 +5,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
-import { deleteHouseholdMedicine, fetchHouseholdMedicines } from "@shared/api/householdMedicines";
+import {
+  deleteHouseholdMedicine,
+  fetchHouseholdMedicines,
+  updateHouseholdMedicine,
+} from "@shared/api/householdMedicines";
 import {
   fetchMyFamily,
   fetchMyFamilyMembers,
@@ -151,6 +155,24 @@ export function MedicineCabinetPage() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteHouseholdMedicine,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] }),
+  });
+
+  const updateDoseCalcMutation = useMutation({
+    mutationFn: ({
+      id,
+      minValue,
+      maxValue,
+    }: {
+      id: string;
+      minValue: number | null;
+      maxValue: number | null;
+    }) =>
+      updateHouseholdMedicine(id, {
+        pediatric_dose_mg_per_kg_min: minValue,
+        pediatric_dose_mg_per_kg_max: maxValue,
+      }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["household-medicines", accountId] }),
   });
@@ -353,35 +375,18 @@ export function MedicineCabinetPage() {
             ) : null
           }
           action={
-            <div className="grid grid-cols-2 gap-2">
-              {canMutateCabinet ? (
-                <button
-                  type="button"
-                  onClick={() => openAddFlow("choice")}
-                  className={[
-                    addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
-                    cabinetTopTabClass,
-                    "w-full",
-                  ].join(" ")}
-                >
-                  {tCabinet(language, "addTab")}
-                </button>
-              ) : null}
+            canMutateCabinet ? (
               <button
                 type="button"
-                onClick={() => {
-                  closeAddFlow();
-                  setCabinetSearch("");
-                }}
+                onClick={() => openAddFlow("choice")}
                 className={[
-                  !addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
+                  addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
                   cabinetTopTabClass,
-                  "w-full",
                 ].join(" ")}
               >
-                {tCabinet(language, "cabinetTab")}
+                {tCabinet(language, "addTab")}
               </button>
-            </div>
+            ) : null
           }
           className="app-desktop-mobile-like-intro app-desktop-mobile-like-intro--cabinet [&_.app-title]:text-[1.78rem] [&_.app-title]:tracking-[-0.045em] sm:[&_.app-title]:text-[2rem] [&_.app-subtitle]:text-[0.94rem] sm:[&_.app-subtitle]:text-[0.98rem]"
         />
@@ -427,35 +432,19 @@ export function MedicineCabinetPage() {
         />
       ) : null}
       <div className={isIosShell ? "space-y-2.5" : "space-y-2.5 sm:hidden"}>
-        <div className="grid grid-cols-2 gap-2">
-          {canMutateCabinet ? (
-            <button
-              type="button"
-              onClick={() => openAddFlow("choice")}
-              className={[
-                addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
-                cabinetTopTabClass,
-                "w-full",
-              ].join(" ")}
-            >
-              {tCabinet(language, "addTab")}
-            </button>
-          ) : null}
+        {canMutateCabinet ? (
           <button
             type="button"
-            onClick={() => {
-              closeAddFlow();
-              setCabinetSearch("");
-            }}
+            onClick={() => openAddFlow("choice")}
             className={[
-              !addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
+              addFlow ? cabinetActionPrimaryClass : cabinetActionSecondaryClass,
               cabinetTopTabClass,
               "w-full",
             ].join(" ")}
           >
-            {tCabinet(language, "cabinetTab")}
+            {tCabinet(language, "addTab")}
           </button>
-        </div>
+        ) : null}
       </div>
 
       {isLoading && <p className="mt-4 text-muted">{tCabinet(language, "loading")}</p>}
@@ -544,6 +533,11 @@ export function MedicineCabinetPage() {
           isDeleting={deleteMutation.isPending}
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
+          isUpdatingDoseCalc={updateDoseCalcMutation.isPending}
+          updatingDoseCalcMedicineId={updateDoseCalcMutation.variables?.id ?? null}
+          onUpdateDoseCalc={(id, minValue, maxValue) =>
+            updateDoseCalcMutation.mutate({ id, minValue, maxValue })
+          }
           canEdit={canMutateCabinet}
           isOffline={isOffline}
           onNetworkRequired={handleNetworkRequired}
@@ -562,6 +556,11 @@ export function MedicineCabinetPage() {
           isDeleting={deleteMutation.isPending}
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
+          isUpdatingDoseCalc={updateDoseCalcMutation.isPending}
+          updatingDoseCalcMedicineId={updateDoseCalcMutation.variables?.id ?? null}
+          onUpdateDoseCalc={(id, minValue, maxValue) =>
+            updateDoseCalcMutation.mutate({ id, minValue, maxValue })
+          }
           canEdit={canMutateCabinet}
           isOffline={isOffline}
           onNetworkRequired={handleNetworkRequired}
@@ -580,6 +579,11 @@ export function MedicineCabinetPage() {
           isDeleting={deleteMutation.isPending}
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
+          isUpdatingDoseCalc={updateDoseCalcMutation.isPending}
+          updatingDoseCalcMedicineId={updateDoseCalcMutation.variables?.id ?? null}
+          onUpdateDoseCalc={(id, minValue, maxValue) =>
+            updateDoseCalcMutation.mutate({ id, minValue, maxValue })
+          }
           canEdit={canMutateCabinet}
           isOffline={isOffline}
           onNetworkRequired={handleNetworkRequired}
@@ -598,6 +602,11 @@ export function MedicineCabinetPage() {
           isDeleting={deleteMutation.isPending}
           deletingMedicineId={deleteMutation.variables ?? null}
           onDelete={(id) => deleteMutation.mutate(id)}
+          isUpdatingDoseCalc={updateDoseCalcMutation.isPending}
+          updatingDoseCalcMedicineId={updateDoseCalcMutation.variables?.id ?? null}
+          onUpdateDoseCalc={(id, minValue, maxValue) =>
+            updateDoseCalcMutation.mutate({ id, minValue, maxValue })
+          }
           canEdit={canMutateCabinet}
           isOffline={isOffline}
           onNetworkRequired={handleNetworkRequired}

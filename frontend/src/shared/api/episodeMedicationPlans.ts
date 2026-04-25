@@ -16,6 +16,12 @@ interface RawEpisodeMedicationPlan {
   max_doses_per_day: number | null;
   weight_kg: number | null;
   dose_mg_per_kg: number | null;
+  calculated_dose_mg: number | null;
+  calculated_dose_value: number | null;
+  calculated_dose_unit: string | null;
+  dose_calc_mode: string | null;
+  dose_calc_warning: string | null;
+  manual_dose_override: boolean | null;
   notes: string | null;
   member_account_ids: string[] | null;
   created_at: string;
@@ -39,6 +45,12 @@ export async function createEpisodeMedicationPlan(body: {
   max_doses_per_day?: number | null;
   weight_kg?: number | null;
   dose_mg_per_kg?: number | null;
+  calculated_dose_mg?: number | null;
+  calculated_dose_value?: number | null;
+  calculated_dose_unit?: string | null;
+  dose_calc_mode?: string | null;
+  dose_calc_warning?: string | null;
+  manual_dose_override?: boolean;
   notes?: string | null;
   member_account_ids?: string[];
 }): Promise<EpisodeMedicationPlan> {
@@ -56,6 +68,12 @@ export async function updateEpisodeMedicationPlan(
     max_doses_per_day?: number | null;
     weight_kg?: number | null;
     dose_mg_per_kg?: number | null;
+    calculated_dose_mg?: number | null;
+    calculated_dose_value?: number | null;
+    calculated_dose_unit?: string | null;
+    dose_calc_mode?: string | null;
+    dose_calc_warning?: string | null;
+    manual_dose_override?: boolean;
     notes?: string | null;
     member_account_ids?: string[];
   }

@@ -262,7 +262,7 @@ private struct CompactElapsedText: View {
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private struct IllnessDayText: View {
+struct IllnessDayText: View {
     let startedAt: Date
     let font: Font
 

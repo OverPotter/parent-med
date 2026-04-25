@@ -9,6 +9,9 @@ from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
 from src.domain.repositories.child_repository import ChildRepository
+from src.domain.repositories.curated_medicine_catalog_repository import (
+    CuratedMedicineCatalogRepository,
+)
 from src.domain.repositories.episode_medication_plan_repository import (
     EpisodeMedicationPlanRepository,
 )
@@ -19,7 +22,6 @@ from src.domain.repositories.height_entry_repository import HeightEntryRepositor
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.illness_comment_repository import IllnessCommentRepository
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
-from src.domain.repositories.medicine_catalog_repository import MedicineCatalogRepository
 from src.domain.repositories.parent_repository import ParentRepository
 from src.domain.repositories.pillbox_repository import PillboxRepository
 from src.domain.repositories.push_subscription_repository import PushSubscriptionRepository
@@ -37,6 +39,9 @@ from src.infrastructure.database.repositories.administration_event_repository im
     SqlAdministrationEventRepository,
 )
 from src.infrastructure.database.repositories.child_repository import SqlChildRepository
+from src.infrastructure.database.repositories.curated_medicine_catalog_repository import (
+    SqlCuratedMedicineCatalogRepository,
+)
 from src.infrastructure.database.repositories.episode_medication_plan_repository import (
     SqlEpisodeMedicationPlanRepository,
 )
@@ -58,9 +63,6 @@ from src.infrastructure.database.repositories.illness_comment_repository import 
 )
 from src.infrastructure.database.repositories.illness_episode_repository import (
     SqlIllnessEpisodeRepository,
-)
-from src.infrastructure.database.repositories.medicine_catalog_repository import (
-    SqlMedicineCatalogRepository,
 )
 from src.infrastructure.database.repositories.parent_repository import SqlParentRepository
 from src.infrastructure.database.repositories.pillbox_repository import SqlPillboxRepository
@@ -108,6 +110,12 @@ def get_child_repo(session: AsyncSession = Depends(get_db_session)) -> ChildRepo
     return SqlChildRepository(session)
 
 
+def get_curated_medicine_catalog_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> CuratedMedicineCatalogRepository:
+    return SqlCuratedMedicineCatalogRepository(session)
+
+
 def get_feeding_record_repo(
     session: AsyncSession = Depends(get_db_session),
 ) -> FeedingRecordRepository:
@@ -150,12 +158,6 @@ def get_sleep_session_repo(
     session: AsyncSession = Depends(get_db_session),
 ) -> SleepSessionRepository:
     return SqlSleepSessionRepository(session)
-
-
-def get_medicine_catalog_repo(
-    session: AsyncSession = Depends(get_db_session),
-) -> MedicineCatalogRepository:
-    return SqlMedicineCatalogRepository(session)
 
 
 def get_household_medicine_repo(

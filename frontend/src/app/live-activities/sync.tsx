@@ -11,6 +11,7 @@ import {
 } from "@shared/api/illnessEpisodes";
 import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
 import { fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
+import { fetchHouseholdMedicines } from "@shared/api/householdMedicines";
 import { fetchActiveSleepSessionByChildId } from "@shared/api/sleepSessions";
 import { fetchActiveFeedingRecordByChildId } from "@shared/api/feedingRecords";
 import {
@@ -72,6 +73,10 @@ export function LiveActivityRuntimeSync() {
       await stopDisabledLiveActivities(preferences);
 
       const children = await fetchChildrenByFamilyId(currentFamilyId);
+      const householdMedicines = await fetchHouseholdMedicines();
+      const householdMedicineNameById = new Map(
+        householdMedicines.map((medicine) => [medicine.id, medicine.medicineName])
+      );
       const nextChildIds = children.map((child) => child.id);
       const removedChildIds = previousChildIdsRef.current.filter(
         (childId) => !nextChildIds.includes(childId)
@@ -101,11 +106,26 @@ export function LiveActivityRuntimeSync() {
                   new Date(right.administeredAt).getTime() - new Date(left.administeredAt).getTime()
               )[0];
             const latestAdministrationMedicineName =
-              latestAdministration?.customMedicineName?.trim() || null;
+              latestAdministration?.customMedicineName?.trim() ||
+              (latestAdministration?.householdMedicineId
+                ? householdMedicineNameById.get(latestAdministration.householdMedicineId)?.trim() ||
+                  null
+                : null);
+            const enrichedPlans = plans.map((plan) => ({
+              ...plan,
+              householdMedicineName: plan.householdMedicineId
+                ? householdMedicineNameById.get(plan.householdMedicineId) ?? null
+                : null,
+            }));
 
             return [
               child.id,
-              { episode, insights, plans, latestAdministrationMedicineName },
+              {
+                episode,
+                insights,
+                plans: enrichedPlans,
+                latestAdministrationMedicineName,
+              },
             ] as const;
           })
         ),

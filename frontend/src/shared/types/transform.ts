@@ -129,18 +129,24 @@ interface RawMedicineCatalogItem {
   concentration: string | null;
   description?: string | null;
   dosage?: string | null;
+  pediatric_dose_mg_per_kg_min?: number | null;
+  pediatric_dose_mg_per_kg_max?: number | null;
+  pediatric_dose_note?: string | null;
   default_opened_shelf_days?: number | null;
 }
 
 interface RawHouseholdMedicine {
   id: string;
   family_id: string;
-  catalog_item_id: string | null;
   medicine_name: string;
   medicine_form: string;
+  medicine_category: string | null;
   medicine_concentration: string | null;
   medicine_description: string | null;
   medicine_dosage: string | null;
+  pediatric_dose_mg_per_kg_min: number | null;
+  pediatric_dose_mg_per_kg_max: number | null;
+  pediatric_dose_note: string | null;
   expiry_date: string;
   opened_at: string | null;
   opened_shelf_days: number | null;
@@ -164,6 +170,12 @@ interface RawEpisodeMedicationPlan {
   max_doses_per_day: number | null;
   weight_kg: number | null;
   dose_mg_per_kg: number | null;
+  calculated_dose_mg: number | null;
+  calculated_dose_value: number | null;
+  calculated_dose_unit: string | null;
+  dose_calc_mode: string | null;
+  dose_calc_warning: string | null;
+  manual_dose_override: boolean | null;
   notes: string | null;
   member_account_ids: string[] | null;
   created_at: string;
@@ -374,6 +386,9 @@ export function toMedicineCatalogItem(r: RawMedicineCatalogItem): MedicineCatalo
     concentration: r.concentration ?? null,
     description: r.description ?? null,
     dosage: r.dosage ?? null,
+    pediatricDoseMgPerKgMin: r.pediatric_dose_mg_per_kg_min ?? null,
+    pediatricDoseMgPerKgMax: r.pediatric_dose_mg_per_kg_max ?? null,
+    pediatricDoseNote: r.pediatric_dose_note ?? null,
     defaultOpenedShelfDays: r.default_opened_shelf_days ?? null,
   };
 }
@@ -382,12 +397,15 @@ export function toHouseholdMedicine(r: RawHouseholdMedicine): HouseholdMedicine 
   return {
     id: r.id,
     familyId: r.family_id,
-    catalogItemId: r.catalog_item_id ?? null,
     medicineName: r.medicine_name,
     medicineForm: r.medicine_form,
+    medicineCategory: r.medicine_category ?? null,
     medicineConcentration: r.medicine_concentration ?? null,
     medicineDescription: r.medicine_description ?? null,
     medicineDosage: r.medicine_dosage ?? null,
+    pediatricDoseMgPerKgMin: r.pediatric_dose_mg_per_kg_min ?? null,
+    pediatricDoseMgPerKgMax: r.pediatric_dose_mg_per_kg_max ?? null,
+    pediatricDoseNote: r.pediatric_dose_note ?? null,
     expiryDate: r.expiry_date,
     openedAt: r.opened_at ?? null,
     openedShelfDays: r.opened_shelf_days ?? null,
@@ -486,6 +504,12 @@ export function toEpisodeMedicationPlan(r: RawEpisodeMedicationPlan): EpisodeMed
     maxDosesPerDay: r.max_doses_per_day ?? null,
     weightKg: r.weight_kg ?? null,
     doseMgPerKg: r.dose_mg_per_kg ?? null,
+    calculatedDoseMg: r.calculated_dose_mg ?? null,
+    calculatedDoseValue: r.calculated_dose_value ?? null,
+    calculatedDoseUnit: r.calculated_dose_unit ?? null,
+    doseCalcMode: r.dose_calc_mode ?? null,
+    doseCalcWarning: r.dose_calc_warning ?? null,
+    manualDoseOverride: r.manual_dose_override ?? false,
     notes: r.notes ?? null,
     memberAccountIds: r.member_account_ids ?? [],
     createdAt: r.created_at,
