@@ -4,7 +4,7 @@ import pytest
 
 from src.application.dto.family_invite import FamilyInviteCreateDto
 from src.application.services.family_invite_service import FamilyInviteService
-from src.core.exceptions import ForbiddenError
+from src.core.exceptions import ForbiddenError, ValidationError
 from src.domain.entities.family import Family
 from src.domain.entities.family_invite import FamilyInvite
 
@@ -42,7 +42,7 @@ class StubFamilyInviteRepository:
 
 @pytest.mark.asyncio
 async def test_create_and_preview_family_invite() -> None:
-    family = Family(id=uuid4(), name="Семья Петровых")
+    family = Family(id=uuid4(), name="Семья Петровых", plan_code="plus", subscription_status="active")
     repo = StubFamilyInviteRepository()
     service = FamilyInviteService(
         family_repo=StubFamilyRepository(family),
@@ -76,5 +76,22 @@ async def test_create_invite_requires_owner_role() -> None:
             family_id=family.id,
             current_account_id=uuid4(),
             current_family_role="adult",
+            dto=FamilyInviteCreateDto(family_role="member"),
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_invite_requires_plus_plan() -> None:
+    family = Family(id=uuid4(), name="Семья Петровых", plan_code="free", subscription_status="inactive")
+    service = FamilyInviteService(
+        family_repo=StubFamilyRepository(family),
+        invite_repo=StubFamilyInviteRepository(),
+    )
+
+    with pytest.raises(ValidationError, match="только в Plus"):
+        await service.create_for_account(
+            family_id=family.id,
+            current_account_id=uuid4(),
+            current_family_role="owner",
             dto=FamilyInviteCreateDto(family_role="member"),
         )

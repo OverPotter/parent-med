@@ -20,10 +20,12 @@ from src.application.dto.pillbox import (
     PillboxTopMedicationDto,
 )
 from src.application.services.access_control import ensure_children_edit_scope, ensure_module_access
+from src.application.services.subscription_policy import resolve_family_plan_policy
 from src.core.config import settings
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.pillbox import PillboxDoseLog, PillboxMedication, PillboxPlan
 from src.domain.repositories.account_repository import AccountRepository
+from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.pillbox_repository import PillboxRepository
 
@@ -39,10 +41,12 @@ class PillboxService:
         pillbox_repo: PillboxRepository,
         account_repo: AccountRepository,
         household_repo: HouseholdMedicineRepository,
+        family_repo: FamilyRepository,
     ) -> None:
         self._repo = pillbox_repo
         self._account_repo = account_repo
         self._household_repo = household_repo
+        self._family_repo = family_repo
         try:
             self._timezone = ZoneInfo(settings.app_timezone)
         except Exception:  # pragma: no cover - defensive fallback for broken timezone config
@@ -696,6 +700,16 @@ class PillboxService:
     ) -> PillboxPlanResponseDto:
         ensure_module_access(current_account, "pillbox", "edit")
         ensure_children_edit_scope(current_account, "приёмов")
+        family = await self._family_repo.get_by_id(current_account.family_id)
+        if family is None:
+            raise NotFoundError("Семья не найдена", resource="family")
+        policy = resolve_family_plan_policy(family)
+        existing_plans = await self._repo.list_by_family_id(current_account.family_id)
+        if policy.max_pillbox_plans is not None and len(existing_plans) >= policy.max_pillbox_plans:
+            raise ValidationError(
+                "Во Free доступен только один план таблетницы. Перейдите на Plus, чтобы добавить ещё планы.",
+                code="PLUS_REQUIRED_FOR_ADDITIONAL_PILLBOX_PLANS",
+            )
         entity = await self._build_plan_entity(
             existing=None,
             title=dto.title,

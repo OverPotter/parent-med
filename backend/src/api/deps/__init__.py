@@ -43,6 +43,7 @@ from src.api.deps.services import (
     get_pillbox_service,
     get_push_notification_service,
     get_sleep_session_service,
+    get_subscription_access_service,
     get_temperature_entry_service,
     get_weight_entry_service,
 )
@@ -76,6 +77,7 @@ __all__ = [
     "get_auth_service",
     "get_family_service",
     "get_family_invite_service",
+    "get_subscription_access_service",
     "get_child_service",
     "get_curated_medicine_catalog_service",
     "get_feeding_record_service",

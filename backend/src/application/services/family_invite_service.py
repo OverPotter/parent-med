@@ -14,6 +14,7 @@ from src.domain.entities.family_invite import FamilyInvite
 from src.domain.entities.family_roles import is_family_admin, normalize_family_role
 from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.domain.repositories.family_repository import FamilyRepository
+from src.application.services.subscription_policy import resolve_family_plan_policy
 
 
 class FamilyInviteService:
@@ -42,6 +43,11 @@ class FamilyInviteService:
         family = await self._family_repo.get_by_id(family_id)
         if not family:
             raise NotFoundError("Семья не найдена", resource="family")
+        if not resolve_family_plan_policy(family).can_invite_members:
+            raise ValidationError(
+                "Приглашения доступны только в Plus",
+                code="PLUS_REQUIRED_FOR_FAMILY_INVITES",
+            )
         invite_role = normalize_family_role(dto.family_role)
         if invite_role not in self.ALLOWED_ROLES:
             raise ValidationError("Можно приглашать только участников с ролью member")

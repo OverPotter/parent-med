@@ -32,6 +32,7 @@ from src.core.exceptions import ForbiddenError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.entities.episode_medication_plan import EpisodeMedicationPlan
 from src.domain.entities.feeding_record import FeedingRecord
+from src.domain.entities.family import Family
 from src.domain.entities.household_medicine import HouseholdMedicine
 from src.domain.entities.illness_episode import IllnessEpisode
 from src.domain.entities.pillbox import PillboxMedication, PillboxPlan
@@ -55,11 +56,22 @@ def build_account(
 
 
 class StubFamilyRepository:
-    def __init__(self, family_id) -> None:  # noqa: ANN001
-        self.family_id = family_id
+    def __init__(
+        self,
+        family_id,  # noqa: ANN001
+        *,
+        plan_code: str = "free",
+        subscription_status: str = "inactive",
+    ) -> None:
+        self.family = Family(
+            id=family_id,
+            name="Family",
+            plan_code=plan_code,
+            subscription_status=subscription_status,
+        )
 
     async def get_by_id(self, id):  # noqa: ANN001
-        return object() if id == self.family_id else None
+        return self.family if id == self.family.id else None
 
 
 class StubChildRepository:
@@ -759,6 +771,7 @@ async def test_pillbox_list_requires_pillbox_view_access() -> None:
         pillbox_repo=StubPillboxRepository([]),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -776,6 +789,7 @@ async def test_family_admin_can_lose_pillbox_access() -> None:
         pillbox_repo=StubPillboxRepository([]),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -794,6 +808,7 @@ async def test_pillbox_create_requires_edit_access() -> None:
         pillbox_repo=StubPillboxRepository([]),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -832,6 +847,7 @@ async def test_pillbox_create_rejects_act_access() -> None:
         pillbox_repo=StubPillboxRepository([]),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -870,6 +886,7 @@ async def test_pillbox_create_rejects_children_view_even_with_edit_access() -> N
         pillbox_repo=StubPillboxRepository([]),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -921,6 +938,7 @@ async def test_pillbox_create_rejects_recipients_without_pillbox_access() -> Non
             ],
         ),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -984,6 +1002,7 @@ async def test_pillbox_create_recipient_matrix(
             ],
         ),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -1040,6 +1059,7 @@ async def test_pillbox_create_defaults_empty_recipients_to_current_account() -> 
             ],
         ),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
 
     result = await service.create(
@@ -1122,6 +1142,7 @@ async def test_pillbox_update_defaults_empty_recipients_to_current_account() -> 
             ],
         ),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
 
     result = await service.update(
@@ -1151,6 +1172,70 @@ async def test_pillbox_update_defaults_empty_recipients_to_current_account() -> 
     )
 
     assert result.member_account_ids == [account.id]
+
+
+@pytest.mark.asyncio
+async def test_pillbox_create_rejects_second_plan_for_free_family() -> None:
+    family_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(children_access="edit", pillbox_access="edit"),
+    )
+    now = datetime.now(UTC)
+    existing_plan = PillboxPlan(
+        id=uuid4(),
+        family_id=family_id,
+        title="Текущий курс",
+        status="active",
+        member_account_ids=[account.id],
+        created_by_account_id=account.id,
+        created_at=now,
+        updated_at=now,
+        medications=[],
+        dose_logs=[],
+    )
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository([existing_plan]),
+        account_repo=StubAccountRepository(
+            family_id,
+            members=[
+                type(
+                    "Member",
+                    (),
+                    {
+                        "id": account.id,
+                        "access_policy": FamilyAccessPolicyDto(pillbox_access="edit"),
+                    },
+                )(),
+            ],
+        ),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
+    )
+
+    with pytest.raises(ValidationError, match="один план таблетницы"):
+        await service.create(
+            PillboxPlanCreateDto(
+                title="Новый курс",
+                member_account_ids=[],
+                medications=[
+                    PillboxMedicationWriteDto(
+                        household_medicine_id=None,
+                        custom_medicine_name="Ибупрофен",
+                        dose_amount="5 мл",
+                        meal_rule="after_meal",
+                        repeat_days=[1, 2, 3],
+                        times=[time(9, 0)],
+                        course_mode="continuous",
+                        course_start_date=None,
+                        course_end_date=None,
+                        position=0,
+                    )
+                ],
+            ),
+            account.id,
+            account,
+        )
 
 
 @pytest.mark.asyncio
@@ -1196,6 +1281,7 @@ async def test_pillbox_log_dose_allows_act_access() -> None:
         ),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -1257,6 +1343,7 @@ async def test_pillbox_log_dose_rejects_view_only_access() -> None:
         ),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,

@@ -46,6 +46,7 @@ from src.application.services.parent_service import ParentService
 from src.application.services.pillbox_service import PillboxService
 from src.application.services.push_notification_service import PushNotificationService
 from src.application.services.sleep_session_service import SleepSessionService
+from src.application.services.subscription_access_service import SubscriptionAccessService
 from src.application.services.temperature_entry_service import TemperatureEntryService
 from src.application.services.weight_entry_service import WeightEntryService
 
@@ -93,6 +94,20 @@ def get_family_invite_service(
     invite_repo=Depends(get_family_invite_repo),
 ) -> FamilyInviteService:
     return FamilyInviteService(family_repo=family_repo, invite_repo=invite_repo)
+
+
+def get_subscription_access_service(
+    family_repo=Depends(get_family_repo),
+    account_repo=Depends(get_account_repo),
+    child_repo=Depends(get_child_repo),
+    pillbox_repo=Depends(get_pillbox_repo),
+) -> SubscriptionAccessService:
+    return SubscriptionAccessService(
+        family_repo=family_repo,
+        account_repo=account_repo,
+        child_repo=child_repo,
+        pillbox_repo=pillbox_repo,
+    )
 
 
 def get_child_service(
@@ -149,11 +164,13 @@ def get_pillbox_service(
     pillbox_repo=Depends(get_pillbox_repo),
     account_repo=Depends(get_account_repo),
     household_repo=Depends(get_household_medicine_repo),
+    family_repo=Depends(get_family_repo),
 ) -> PillboxService:
     return PillboxService(
         pillbox_repo=pillbox_repo,
         account_repo=account_repo,
         household_repo=household_repo,
+        family_repo=family_repo,
     )
 
 

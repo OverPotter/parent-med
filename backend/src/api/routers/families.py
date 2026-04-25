@@ -4,7 +4,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from src.api.deps import get_current_account, get_family_service
+from src.api.deps import (
+    get_current_account,
+    get_family_service,
+    get_subscription_access_service,
+)
 from src.application.dto.auth import AccountResponseDto, AuthenticatedAccount
 from src.application.dto.family import (
     FamilyCreateDto,
@@ -14,6 +18,8 @@ from src.application.dto.family import (
     FamilyUpdateDto,
 )
 from src.application.services.family_service import FamilyService
+from src.application.services.subscription_access_service import SubscriptionAccessService
+from src.application.dto.subscription_access import SubscriptionAccessResponseDto
 from src.core.exceptions import ValidationError
 
 router = APIRouter(prefix="/families", tags=["families"])
@@ -35,6 +41,15 @@ async def get_my_family(
 ) -> FamilyResponseDto:
     """Получить семью текущего аккаунта."""
     return await service.get_by_id(account.family_id)
+
+
+@router.get("/me/access", response_model=SubscriptionAccessResponseDto)
+async def get_my_family_access(
+    account: AuthenticatedAccount = Depends(get_current_account),
+    service: SubscriptionAccessService = Depends(get_subscription_access_service),
+) -> SubscriptionAccessResponseDto:
+    """Получить effective access для текущего аккаунта внутри семьи."""
+    return await service.get_for_account(account)
 
 
 @router.get("/me/members", response_model=list[AccountResponseDto])
