@@ -35,7 +35,7 @@ export function ClientLayout() {
   const isIosShell = useIsIosShell();
   const now = useNow(15_000);
   const navStaleTime = isIosShell ? 30_000 : 15_000;
-  const navRefetchInterval = isIosShell ? 60_000 : 30_000;
+  const navRefetchInterval: number | false = isIosShell ? 60_000 : false;
   const canSeeChildren = canViewAnyChildren(accountFamilyRole, accountAccessPolicy);
   const canSeePillbox = canViewPillbox(accountFamilyRole, accountAccessPolicy);
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
@@ -65,7 +65,7 @@ export function ClientLayout() {
   const {
     data: navChildren = [],
   } = useQuery({
-    queryKey: ["children", currentFamilyId, "nav-observations"],
+    queryKey: ["children", currentFamilyId],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
     enabled: Boolean(currentFamilyId && isDeferredBootReady && canSeeChildren),
     staleTime: navStaleTime,
@@ -74,7 +74,7 @@ export function ClientLayout() {
 
   const activeEpisodeQueries = useQueries({
     queries: navChildren.map((child) => ({
-      queryKey: ["illness-episode-active", child.id, "nav-observations"],
+      queryKey: ["illness-episode-active", child.id],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
       enabled: Boolean(currentFamilyId && child.id && isDeferredBootReady && canSeeChildren),
       staleTime: navStaleTime,

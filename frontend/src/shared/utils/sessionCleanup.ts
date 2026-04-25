@@ -1,4 +1,5 @@
 import { deletePushSubscription } from "@shared/api/pushNotifications";
+import { useAppStore } from "@shared/store/useAppStore";
 import { clearNativeNavigationSessionState } from "@/app/push/sync";
 import { stopAllLiveActivities } from "./liveActivities";
 import {
@@ -12,6 +13,9 @@ import {
 } from "./pushNotifications";
 
 export async function cleanupDeviceSessionArtifacts() {
+  const { authToken, accountId } = useAppStore.getState();
+  const hasSession = Boolean(authToken || accountId);
+
   try {
     await stopAllLiveActivities();
   } catch {
@@ -21,9 +25,11 @@ export async function cleanupDeviceSessionArtifacts() {
   clearNativeNavigationSessionState();
 
   try {
-    const nativeSubscription = getCachedNativePushSubscriptionPayload();
-    if (nativeSubscription?.endpoint) {
-      await deletePushSubscription({ endpoint: nativeSubscription.endpoint });
+    if (hasSession) {
+      const nativeSubscription = getCachedNativePushSubscriptionPayload();
+      if (nativeSubscription?.endpoint) {
+        await deletePushSubscription({ endpoint: nativeSubscription.endpoint });
+      }
     }
   } catch {
     // Best effort only: backend logout/reset must still complete.
@@ -34,9 +40,11 @@ export async function cleanupDeviceSessionArtifacts() {
   try {
     const existingWebSubscription = await getExistingPushSubscription();
     if (existingWebSubscription) {
-      await deletePushSubscription({
-        endpoint: toPushSubscriptionPayload(existingWebSubscription).endpoint,
-      });
+      if (hasSession) {
+        await deletePushSubscription({
+          endpoint: toPushSubscriptionPayload(existingWebSubscription).endpoint,
+        });
+      }
       await unsubscribeFromPushNotifications();
     }
   } catch {

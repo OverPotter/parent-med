@@ -37,13 +37,13 @@ export function useClientStartRoute(): ClientStartRouteResult {
   const canSeePillbox = canViewPillbox(accountFamilyRole, accountAccessPolicy);
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
   const { data: familyChildren = [], isLoading: isChildrenLoading } = useQuery({
-    queryKey: ["children", familyId, "start-route"],
+    queryKey: ["children", familyId],
     queryFn: () => fetchChildrenByFamilyId(familyId!),
     enabled: Boolean(familyId && canSeeChildren),
   });
   const activeEpisodeQueries = useQueries({
     queries: familyChildren.map((child) => ({
-      queryKey: ["illness-episode-active", child.id, "start-route"],
+      queryKey: ["illness-episode-active", child.id],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
       enabled: Boolean(familyId && canSeeChildren),
       staleTime: 30 * 1000,
