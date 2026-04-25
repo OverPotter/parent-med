@@ -2,18 +2,20 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from src.application.dto.auth import (
     ChangePasswordDto,
     LoginDto,
     RecoverPasswordByCodeDto,
+    RefreshDto,
     RegisterDto,
     UpdateAccountProfileDto,
     UpdateRecoveryCodeDto,
 )
 from src.application.services.auth_service import AuthService
 from src.core.exceptions import UnauthorizedError, ValidationError
-from src.core.security import hash_password, hash_session_token, verify_password
+from src.core.security import decode_access_token, hash_password, hash_session_token, verify_password
 from src.domain.entities.account import Account
 from src.domain.entities.account_identity import DEFAULT_ACCOUNT_DISPLAY_NAME
 from src.domain.entities.family import Family
@@ -52,6 +54,8 @@ class StubSessionRepository:
     def __init__(self) -> None:
         self.items = {}
         self.deleted_account_ids: list = []
+        self.deleted_session_ids: list = []
+        self.delete_other_calls: list[tuple] = []
 
     async def get_by_id(self, id):  # noqa: ANN001
         return self.items.get(id)
@@ -62,10 +66,20 @@ class StubSessionRepository:
 
     async def delete(self, id):  # noqa: ANN001
         self.items.pop(id, None)
+        self.deleted_session_ids.append(id)
         return True
 
     async def delete_by_account_id(self, account_id):  # noqa: ANN001
         self.deleted_account_ids.append(account_id)
+        return True
+
+    async def delete_other_sessions(self, account_id, keep_session_id):  # noqa: ANN001
+        self.delete_other_calls.append((account_id, keep_session_id))
+        self.items = {
+            key: value
+            for key, value in self.items.items()
+            if not (value.account_id == account_id and key != keep_session_id)
+        }
         return True
 
 
@@ -113,6 +127,17 @@ class StubFamilyInviteRepository:
     async def update(self, entity: FamilyInvite) -> FamilyInvite:
         self.invite = entity
         return entity
+
+
+class DuplicateEmailOnAddRepository(StubAccountRepository):
+    async def add(self, entity: Account) -> Account:
+        raise IntegrityError(
+            statement="INSERT INTO accounts ...",
+            params={},
+            orig=Exception(
+                'duplicate key value violates unique constraint "accounts_email_key"'
+            ),
+        )
 
 
 def build_account(
@@ -201,6 +226,23 @@ async def test_signup_requires_unique_email() -> None:
 
     with pytest.raises(ValidationError, match="Аккаунт с таким email уже существует"):
         await service.signup(RegisterDto(email="test@example.com", password="password123"))
+
+
+@pytest.mark.asyncio
+async def test_signup_maps_duplicate_email_db_race_to_validation_error() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    service = AuthService(
+        account_repo=DuplicateEmailOnAddRepository(),
+        session_repo=StubSessionRepository(),
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    with pytest.raises(ValidationError) as exc_info:
+        await service.signup(RegisterDto(email="test@example.com", password="password123"))
+
+    assert exc_info.value.code == "ACCOUNT_EMAIL_ALREADY_EXISTS"
+    assert exc_info.value.status_code == 409
 
 
 @pytest.mark.asyncio
@@ -380,6 +422,7 @@ async def test_reset_password_by_recovery_code_updates_password_and_kills_sessio
     updated_account = await account_repo.get_by_id(account.id)
     assert updated_account is not None
     assert verify_password("new-password-123", updated_account.password_hash)
+    assert updated_account.session_version == account.session_version + 1
     assert session_repo.deleted_account_ids == [account.id]
 
 
@@ -488,7 +531,111 @@ async def test_change_password_updates_hash_and_kills_sessions() -> None:
     updated_account = await account_repo.get_by_id(account.id)
     assert updated_account is not None
     assert verify_password("new-password-123", updated_account.password_hash)
+    assert updated_account.session_version == account.session_version + 1
     assert session_repo.deleted_account_ids == [account.id]
+
+
+@pytest.mark.asyncio
+async def test_change_password_keeps_current_session_when_refresh_token_is_provided() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    account_repo = StubAccountRepository()
+    account = build_account(
+        family_id=family.id,
+        email="mama@example.com",
+        display_name="Мама Аня",
+        family_role="owner",
+    )
+    await account_repo.add(account)
+    session_repo = StubSessionRepository()
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    first = await service.signin(LoginDto(email="mama@example.com", password="password123"))
+    second = await service.signin(LoginDto(email="mama@example.com", password="password123"))
+
+    await service.change_password(
+        account.id,
+        ChangePasswordDto(current_password="password123", new_password="new-password-123"),
+        first.refresh_token,
+    )
+
+    updated_account = await account_repo.get_by_id(account.id)
+    assert updated_account is not None
+    assert verify_password("new-password-123", updated_account.password_hash)
+    assert session_repo.deleted_account_ids == []
+    assert first.refresh_token is not None
+    assert second.refresh_token is not None
+    assert len(session_repo.delete_other_calls) == 1
+    kept_session_id = session_repo.delete_other_calls[0][1]
+    assert kept_session_id in session_repo.items
+    with pytest.raises(UnauthorizedError):
+        await service.refresh(RefreshDto(refresh_token=second.refresh_token))
+    refreshed = await service.refresh(RefreshDto(refresh_token=first.refresh_token))
+    assert refreshed.refresh_token == first.refresh_token
+
+
+@pytest.mark.asyncio
+async def test_refresh_keeps_existing_refresh_session_valid() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    account_repo = StubAccountRepository()
+    account = build_account(
+        family_id=family.id,
+        email="mama@example.com",
+        display_name="Мама Аня",
+        family_role="owner",
+    )
+    await account_repo.add(account)
+    session_repo = StubSessionRepository()
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    signed_in = await service.signin(LoginDto(email="mama@example.com", password="password123"))
+    refreshed = await service.refresh(RefreshDto(refresh_token=signed_in.refresh_token))
+
+    assert refreshed.refresh_token == signed_in.refresh_token
+    assert len(session_repo.items) == 1
+    assert session_repo.deleted_session_ids == []
+
+
+@pytest.mark.asyncio
+async def test_logout_deletes_only_current_session() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    account_repo = StubAccountRepository()
+    account = build_account(
+        family_id=family.id,
+        email="mama@example.com",
+        display_name="Мама Аня",
+        family_role="owner",
+    )
+    await account_repo.add(account)
+    session_repo = StubSessionRepository()
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    first = await service.signin(LoginDto(email="mama@example.com", password="password123"))
+    second = await service.signin(LoginDto(email="mama@example.com", password="password123"))
+
+    assert len(session_repo.items) == 2
+
+    await service.logout(account.id, first.refresh_token)
+
+    assert len(session_repo.items) == 1
+    assert first.refresh_token is not None
+    assert second.refresh_token is not None
+    remaining = await service.refresh(RefreshDto(refresh_token=second.refresh_token))
+    assert remaining.refresh_token == second.refresh_token
 
 
 @pytest.mark.asyncio
@@ -513,3 +660,69 @@ async def test_update_profile_ignores_email_payload() -> None:
     result = await service.update_profile(account.id, dto)
 
     assert result.email == "mama@example.com"
+
+
+@pytest.mark.asyncio
+async def test_get_current_account_uses_db_family_and_rejects_stale_session_version() -> None:
+    old_family_id = uuid4()
+    new_family_id = uuid4()
+    family = Family(id=old_family_id, name="Старая семья")
+    account_repo = StubAccountRepository()
+    account = build_account(
+        family_id=old_family_id,
+        email="mama@example.com",
+        display_name="Мама Аня",
+        family_role="owner",
+    )
+    await account_repo.add(account)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    auth = await service.signin(LoginDto(email="mama@example.com", password="password123"))
+    access_payload = decode_access_token(auth.access_token)
+    assert access_payload["family_id"] == str(old_family_id)
+
+    updated = await account_repo.update(
+        Account(**{**account.__dict__, "family_id": new_family_id, "session_version": 2})
+    )
+    assert updated.family_id == new_family_id
+
+    with pytest.raises(UnauthorizedError) as exc_info:
+        await service.get_current_account(auth.access_token)
+
+    assert exc_info.value.code == "INVALID_SESSION_VERSION"
+
+
+@pytest.mark.asyncio
+async def test_refresh_returns_access_token_with_current_session_version_and_family() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    account_repo = StubAccountRepository()
+    account = build_account(
+        family_id=family.id,
+        email="mama@example.com",
+        display_name="Мама Аня",
+        family_role="owner",
+    )
+    await account_repo.add(account)
+    session_repo = StubSessionRepository()
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    signed_in = await service.signin(LoginDto(email="mama@example.com", password="password123"))
+    await account_repo.update(
+        Account(**{**account.__dict__, "family_id": family.id, "session_version": 3})
+    )
+
+    refreshed = await service.refresh(RefreshDto(refresh_token=signed_in.refresh_token))
+    payload = decode_access_token(refreshed.access_token)
+
+    assert payload["sv"] == 3
+    assert payload["family_id"] == str(family.id)

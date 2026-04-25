@@ -6,6 +6,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { login, register } from "@shared/api/auth";
+import { applySessionToClient } from "@shared/api/client";
 import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { LanguageSwitch } from "@shared/components/LanguageSwitch";
@@ -256,7 +257,6 @@ export function AuthPage() {
   const submitButtonRef = useRef<HTMLButtonElement | null>(null);
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
-  const setSession = useAppStore((s) => s.setSession);
 
   useEffect(() => {
     setMode(requestedMode === "login" ? "login" : "register");
@@ -266,7 +266,7 @@ export function AuthPage() {
     mutationFn: (payload: { email: string; password: string; remember_me: boolean }) =>
       login(payload),
     onSuccess: (data, variables) => {
-      setSession(data);
+      applySessionToClient(data);
       void tryStoreCredentials(variables.email, variables.password);
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "auth_page" });
@@ -290,7 +290,7 @@ export function AuthPage() {
       preferred_language: "ru" | "en";
     }) => register(payload),
     onSuccess: (data, variables) => {
-      setSession(data);
+      applySessionToClient(data);
       void tryStoreCredentials(variables.email, variables.password);
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "auth_page" });
@@ -580,8 +580,8 @@ export function AuthPage() {
                     onChange={setEmail}
                     placeholder={copy.auth.fields.emailPlaceholder}
                     type="email"
-                    name="email"
-                    autoComplete="email"
+                    name="username"
+                    autoComplete="username"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
@@ -597,7 +597,7 @@ export function AuthPage() {
                       onChange={setPassword}
                       placeholder={copy.auth.fields.passwordPlaceholder}
                       type={isPasswordVisible ? "text" : "password"}
-                      name={isRegisterMode ? "new-password" : "password"}
+                      name={isRegisterMode ? "new-password" : "current-password"}
                       autoComplete={isRegisterMode ? "new-password" : "current-password"}
                       action={
                         <button

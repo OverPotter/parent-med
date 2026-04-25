@@ -137,8 +137,16 @@ export async function fetchMe(): Promise<AuthStateResponse> {
   return toAuthState(res.data);
 }
 
-export async function logout(): Promise<void> {
-  await apiClient.post("/auth/logout");
+export async function logout(refreshToken?: string | null): Promise<void> {
+  const tokenForBody = sanitizeRefreshToken(refreshToken);
+  await apiClient.post(
+    "/auth/logout",
+    tokenForBody
+      ? {
+          refresh_token: tokenForBody,
+        }
+      : undefined
+  );
 }
 
 export async function deleteMyAccount(): Promise<void> {
@@ -152,8 +160,14 @@ export async function deleteMyFamily(): Promise<void> {
 export async function changePassword(payload: {
   current_password: string;
   new_password: string;
+  refresh_token?: string | null;
 }): Promise<void> {
-  await apiClient.patch("/auth/password", payload);
+  const tokenForBody = sanitizeRefreshToken(payload.refresh_token);
+  await apiClient.patch("/auth/password", {
+    current_password: payload.current_password,
+    new_password: payload.new_password,
+    ...(tokenForBody ? { refresh_token: tokenForBody } : {}),
+  });
 }
 
 export async function updateRecoveryCode(payload: {

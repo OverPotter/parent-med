@@ -44,6 +44,7 @@ def _make_auth_response() -> AuthResponseDto:
 class StubAuthService:
     def __init__(self, *, fail_signin: bool = False) -> None:
         self.fail_signin = fail_signin
+        self.logout_calls: list[tuple[object, object]] = []
 
     async def signup(self, dto: RegisterDto) -> AuthResponseDto:
         return _make_auth_response()
@@ -62,8 +63,8 @@ class StubAuthService:
     async def get_me(self, account_id, family_id) -> AuthStateResponseDto:  # noqa: ANN001
         raise NotImplementedError
 
-    async def logout(self, account_id) -> None:  # noqa: ANN001
-        raise NotImplementedError
+    async def logout(self, account_id, refresh_token=None) -> None:  # noqa: ANN001
+        self.logout_calls.append((account_id, refresh_token))
 
     async def delete_me(self, account_id) -> None:  # noqa: ANN001
         raise NotImplementedError
@@ -239,3 +240,20 @@ def test_native_family_invite_accept_returns_tokens() -> None:
     assert payload["access_token"] == "access-token"
     assert payload["refresh_token"] == "refresh-token"
     assert "set-cookie" not in response.headers
+
+
+def test_native_logout_passes_refresh_token_from_body() -> None:
+    service = StubAuthService()
+    client = _build_test_app(
+        auth_service=service, attempts_repo=StubAuthAttemptRepository()
+    )
+
+    response = client.post(
+        "/api/v1/auth/logout",
+        json={"refresh_token": "native-refresh-token"},
+        headers={"Authorization": "Bearer access-token"},
+    )
+
+    assert response.status_code == 204
+    assert len(service.logout_calls) == 1
+    assert service.logout_calls[0][1] == "native-refresh-token"

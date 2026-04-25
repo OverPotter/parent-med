@@ -98,12 +98,13 @@ def _decode_jwt(token: str, expected_type: str) -> dict[str, str | int]:
     return payload
 
 
-def create_access_token(account_id: UUID, family_id: UUID) -> str:
+def create_access_token(account_id: UUID, family_id: UUID, session_version: int) -> str:
     now = datetime.now(UTC)
     expires_at = now + timedelta(minutes=settings.access_token_ttl_minutes)
     payload = {
         "sub": str(account_id),
         "family_id": str(family_id),
+        "sv": session_version,
         "typ": "access",
         "iss": settings.jwt_issuer,
         "iat": int(now.timestamp()),

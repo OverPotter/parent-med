@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { Link, useNavigate } from "react-router-dom";
 import { login, resetPasswordByRecoveryCode } from "@shared/api/auth";
+import { applySessionToClient } from "@shared/api/client";
 import { AuthPasswordField } from "@shared/components/AuthFormControls";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
@@ -72,16 +73,44 @@ export function RecoverPasswordPage() {
   const isIosShell = useIsIosShell();
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
-  const { copy } = useI18n();
+  const { copy, language } = useI18n();
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
-  const setSession = useAppStore((s) => s.setSession);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const successRedirectTimeoutRef = useRef<number | null>(null);
+  const [pendingSession, setPendingSession] = useState<Awaited<ReturnType<typeof login>> | null>(null);
   const [email, setEmail] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const ui = language === "ru"
+    ? {
+        title: "Восстановить пароль",
+        hint: "Введите email, секретную фразу и новый пароль.",
+        recoveryCode: "Секретная фраза",
+        recoveryPlaceholder: "Например: quiet-river-42",
+        newPassword: "Новый пароль",
+        success: "Пароль обновлён. Теперь можно войти с новым паролем.",
+        failed: "Не удалось обновить пароль.",
+        saving: "Сохраняем…",
+        done: "Готово",
+        submit: "Сохранить новый пароль",
+        back: "Назад",
+      }
+    : {
+        title: "Reset password",
+        hint: "Enter your email, recovery phrase, and a new password.",
+        recoveryCode: "Recovery phrase",
+        recoveryPlaceholder: "Example: quiet-river-42",
+        newPassword: "New password",
+        success: "Password updated. You can now sign in with the new password.",
+        failed: "Could not update the password.",
+        saving: "Saving…",
+        done: "Done",
+        submit: "Save new password",
+        back: "Back",
+      };
 
   const resetMutation = useMutation({
     mutationFn: async (payload: { email: string; recovery_code: string; new_password: string }) => {
@@ -89,22 +118,39 @@ export function RecoverPasswordPage() {
       return login({
         email: payload.email,
         password: payload.new_password,
-        remember_me: true,
+        remember_me: false,
       });
     },
     onSuccess: (session) => {
-      setSession(session);
-      navigate("/", { replace: true });
+      setPendingSession(session);
+      successRedirectTimeoutRef.current = window.setTimeout(() => {
+        applySessionToClient(session);
+        navigate("/", { replace: true });
+      }, 1200);
+    },
+    onError: () => {
+      setPendingSession(null);
     },
   });
   const passwordsMismatch = passwordConfirm.length > 0 && password !== passwordConfirm;
   const handleBack = useCallback(() => {
+    if (pendingSession) {
+      return;
+    }
     if (typeof window !== "undefined" && window.history.length > 1) {
       navigate(-1);
       return;
     }
     navigate("/auth?mode=login", { replace: true });
-  }, [navigate]);
+  }, [navigate, pendingSession]);
+
+  useEffect(() => {
+    return () => {
+      if (successRedirectTimeoutRef.current !== null) {
+        window.clearTimeout(successRedirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div
@@ -196,10 +242,10 @@ export function RecoverPasswordPage() {
             <div className="auth-v3-panel-head">
               <div className="min-w-0">
                 <h1 className="text-[1.5rem] font-extrabold tracking-[-0.04em] text-foreground sm:text-[1.8rem]">
-                  Восстановить пароль
+                  {ui.title}
                 </h1>
                 <p className="mt-2 max-w-[28rem] text-sm leading-6 text-muted">
-                  Введите email, секретную фразу и новый пароль.
+                  {ui.hint}
                 </p>
               </div>
             </div>
@@ -222,24 +268,28 @@ export function RecoverPasswordPage() {
                 <label className="block">
                   <span className="soft-field-label">Email</span>
                   <input
-                    name="email"
+                    name="username"
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     className="soft-input mt-2 w-full px-4"
                     placeholder="you@example.com"
-                    autoComplete="email"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    inputMode="email"
                   />
                 </label>
                 <label className="block">
-                  <span className="soft-field-label">Секретная фраза</span>
+                  <span className="soft-field-label">{ui.recoveryCode}</span>
                   <input
                     name="recovery-code"
                     type="text"
                     value={recoveryCode}
                     onChange={(event) => setRecoveryCode(event.target.value)}
                     className="soft-input mt-2 w-full px-4"
-                    placeholder="Например: quiet-river-42"
+                    placeholder={ui.recoveryPlaceholder}
                     autoComplete="off"
                     autoCapitalize="none"
                     autoCorrect="off"
@@ -250,20 +300,20 @@ export function RecoverPasswordPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <AuthPasswordField
-                  label="Новый пароль"
+                  label={ui.newPassword}
                   value={password}
                   onChange={setPassword}
-                  placeholder="Минимум 8 символов"
+                  placeholder={copy.auth.fields.passwordPlaceholder}
                   isVisible={isPasswordVisible}
                   onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
                   name="new-password"
                   autoComplete="new-password"
                 />
                 <AuthPasswordField
-                  label="Повторите пароль"
+                  label={copy.auth.fields.passwordConfirm}
                   value={passwordConfirm}
                   onChange={setPasswordConfirm}
-                  placeholder="Повторите пароль"
+                  placeholder={copy.auth.fields.passwordConfirmPlaceholder}
                   isVisible={isPasswordVisible}
                   onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
                   name="new-password-confirm"
@@ -274,15 +324,15 @@ export function RecoverPasswordPage() {
               {passwordsMismatch ? (
                 <p className="soft-note-warning">Пароли должны совпадать.</p>
               ) : null}
-              {resetMutation.isSuccess ? (
+              {pendingSession ? (
                 <p className="soft-note-success">
-                  Пароль обновлён. Теперь можно войти с новым паролем.
+                  {ui.success}
                 </p>
               ) : null}
               {resetMutation.isError ? (
                 <p className="soft-note-danger">
                   {(resetMutation.error as { response?: { data?: { detail?: string } } })?.response
-                    ?.data?.detail ?? "Не удалось обновить пароль."}
+                    ?.data?.detail ?? ui.failed}
                 </p>
               ) : null}
 
@@ -290,21 +340,27 @@ export function RecoverPasswordPage() {
                 <button
                   type="submit"
                   disabled={
+                    Boolean(pendingSession) ||
                     resetMutation.isPending ||
                     !canSubmitRecoveryCode(email, recoveryCode) ||
                     !canSubmitRecoveryPassword(password, passwordConfirm)
                   }
                   className="auth-v3-submit"
                 >
-                  {resetMutation.isPending ? "Сохраняем…" : "Сохранить новый пароль"}
+                  {resetMutation.isPending
+                    ? ui.saving
+                    : pendingSession
+                      ? ui.done
+                      : ui.submit}
                 </button>
                 <button
                   type="button"
                   onClick={handleBack}
+                  disabled={Boolean(pendingSession)}
                   className="auth-v3-back-link auth-v3-back-link--centered"
                 >
                   <BackArrowThinIcon />
-                  <span>Назад</span>
+                  <span>{ui.back}</span>
                 </button>
               </div>
             </form>

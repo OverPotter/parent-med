@@ -4,5 +4,12 @@
 <dict>
 	<key>aps-environment</key>
 	<string>production</string>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:parent-med-production-frontend.up.railway.app</string>
+		<string>webcredentials:parent-med-production-frontend.up.railway.app</string>
+		<string>applinks:pillpath-production-frontend.up.railway.app</string>
+		<string>webcredentials:pillpath-production-frontend.up.railway.app</string>
+	</array>
 </dict>
 </plist>

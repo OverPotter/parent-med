@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppLanguage } from "@shared/i18n";
 import { FullscreenOverlay } from "@shared/components/FullscreenOverlay";
 import { illnessCompactInputClass } from "../child-illness/shared";
@@ -10,6 +10,40 @@ const compactPrimaryActionClass =
   "soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.08rem] px-2.75 text-[0.69rem] tracking-[-0.022em] sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]";
 const destructiveActionClass =
   "soft-pill-danger app-profile-action app-profile-action--active min-h-[2.08rem] px-2.75 text-[0.69rem] tracking-[-0.022em] sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]";
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-none stroke-current">
+      <path
+        d="M2.75 12s3.5-6 9.25-6 9.25 6 9.25 6-3.5 6-9.25 6S2.75 12 2.75 12Z"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.85" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-none stroke-current">
+      <path d="M3.5 4.5 20.5 19.5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M10.6 5.2A10.4 10.4 0 0 1 12 5.1c5.75 0 9.25 6 9.25 6a17.7 17.7 0 0 1-3.48 4.08M6.96 8.08A17.16 17.16 0 0 0 2.75 12s3.5 6 9.25 6c1.5 0 2.85-.41 4.06-1.03"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.88 9.88A3 3 0 0 0 14.12 14.12"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export function SettingsSecuritySection({
   language,
@@ -87,7 +121,11 @@ export function SettingsSecuritySection({
           </button>
         }
       >
-        {null}
+        {passwordSuccess ? (
+          <div className="soft-note-success mx-4 mt-1 rounded-2xl px-4 py-3 text-sm">
+            {passwordSuccess}
+          </div>
+        ) : null}
       </SettingsSection>
 
       <SettingsSection
@@ -226,10 +264,18 @@ function PasswordChangeDialog({
 }) {
   const isClosingFromHistoryRef = useRef(false);
   const onCloseRef = useRef(onClose);
+  const saveButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsPasswordVisible(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") {
@@ -277,6 +323,41 @@ function PasswordChangeDialog({
     onClose();
   };
 
+  const ensureSaveButtonVisible = () => {
+    const saveButton = saveButtonRef.current;
+    if (!saveButton || typeof window === "undefined") {
+      return;
+    }
+
+    const scrollToSaveButton = () => {
+      saveButton.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+
+      const scrollContainer = saveButton.closest<HTMLElement>(
+        '[data-fullscreen-overlay-scroll="true"]'
+      );
+      if (!scrollContainer) {
+        return;
+      }
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const buttonRect = saveButton.getBoundingClientRect();
+      const bottomGap = buttonRect.bottom - containerRect.bottom;
+      if (bottomGap > 0) {
+        scrollContainer.scrollBy({
+          top: bottomGap + 20,
+          behavior: "smooth",
+        });
+      }
+    };
+
+    window.setTimeout(scrollToSaveButton, 120);
+    window.setTimeout(scrollToSaveButton, 320);
+  };
+
   return (
     <FullscreenOverlay
       isOpen={isOpen}
@@ -288,22 +369,34 @@ function PasswordChangeDialog({
       closeDisabled={isPending}
     >
       <div className="soft-panel overflow-hidden rounded-[28px] border border-border shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
-        <div className="p-4 sm:p-5">
+        <div className="p-4 sm:p-5" onFocusCapture={ensureSaveButtonVisible}>
           <div className="grid gap-4">
             <PasswordField
               label={tSettings(language, "currentPassword")}
               value={currentPassword}
               onChange={onCurrentPasswordChange}
+              name="current-password"
+              autoComplete="current-password"
+              isVisible={isPasswordVisible}
+              onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
             />
             <PasswordField
               label={tSettings(language, "newPassword")}
               value={newPassword}
               onChange={onNewPasswordChange}
+              name="new-password"
+              autoComplete="new-password"
+              isVisible={isPasswordVisible}
+              onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
             />
             <PasswordField
               label={tSettings(language, "confirmNewPassword")}
               value={confirmPassword}
               onChange={onConfirmPasswordChange}
+              name="new-password-confirm"
+              autoComplete="new-password"
+              isVisible={isPasswordVisible}
+              onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
             />
           </div>
           {passwordSuccess ? (
@@ -317,6 +410,7 @@ function PasswordChangeDialog({
         </div>
         <div className="border-t border-border/60 p-4 sm:px-5 sm:pb-5 sm:pt-4">
           <button
+            ref={saveButtonRef}
             type="button"
             onClick={onSubmit}
             disabled={isPending}
@@ -334,20 +428,45 @@ function PasswordField({
   label,
   value,
   onChange,
+  name,
+  autoComplete,
+  isVisible,
+  onToggleVisibility,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  name?: string;
+  autoComplete?: string;
+  isVisible: boolean;
+  onToggleVisibility: () => void;
 }) {
   return (
     <label className="block space-y-1.5">
       <span className="soft-field-label">{label}</span>
-      <input
-        type="password"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={illnessCompactInputClass}
-      />
+      <span className="relative block">
+        <input
+          name={name}
+          type={isVisible ? "text" : "password"}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={`${illnessCompactInputClass} pr-12`}
+          autoComplete={autoComplete}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          inputMode="text"
+        />
+        <button
+          type="button"
+          onClick={onToggleVisibility}
+          className="absolute right-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground"
+          aria-label={isVisible ? "Скрыть пароль" : "Показать пароль"}
+          title={isVisible ? "Скрыть пароль" : "Показать пароль"}
+        >
+          {isVisible ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </span>
     </label>
   );
 }

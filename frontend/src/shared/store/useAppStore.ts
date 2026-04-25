@@ -57,6 +57,23 @@ function resolveTheme(theme: Theme): ResolvedTheme {
 const initialTheme = readInitialTheme();
 const initialLanguage = detectPreferredLanguage();
 
+function emptyAuthState() {
+  return {
+    authToken: null,
+    refreshToken: null,
+    accountId: null,
+    accountEmail: null,
+    accountDisplayName: null,
+    accountNeedsProfileCompletion: false,
+    accountHasRecoveryCode: false,
+    accountPreferredLanguage: null,
+    accountFamilyRole: null,
+    accountAccessPolicy: null,
+    currentFamilyId: null,
+    currentFamilyName: null,
+  };
+}
+
 function applyThemeToDocument(theme: Theme): ResolvedTheme {
   const resolvedTheme = resolveTheme(theme);
   const background = resolvedTheme === "dark" ? "#1e1b2e" : "#ebe4ff";
@@ -294,20 +311,7 @@ export const useAppStore = create<AppState>()(
           accountEmail: profile.email !== undefined ? profile.email : state.accountEmail,
         })),
       clearSession: () => {
-        set({
-          authToken: null,
-          refreshToken: null,
-          accountId: null,
-          accountEmail: null,
-          accountDisplayName: null,
-          accountNeedsProfileCompletion: false,
-          accountHasRecoveryCode: false,
-          accountPreferredLanguage: null,
-          accountFamilyRole: null,
-          accountAccessPolicy: null,
-          currentFamilyId: null,
-          currentFamilyName: null,
-        });
+        set(emptyAuthState());
         if (isNativeIOSRuntime()) {
           void clearSecureAuthTokens();
         }
@@ -362,20 +366,7 @@ export const useAppStore = create<AppState>()(
               refreshToken: buildClientSessionTokens({}).refreshToken,
             });
           } else {
-            useAppStore.setState({
-              authToken: null,
-              refreshToken: null,
-              accountId: null,
-              accountEmail: null,
-              accountDisplayName: null,
-              accountNeedsProfileCompletion: false,
-              accountHasRecoveryCode: false,
-              accountPreferredLanguage: null,
-              accountFamilyRole: null,
-              accountAccessPolicy: null,
-              currentFamilyId: null,
-              currentFamilyName: null,
-            });
+            useAppStore.setState(emptyAuthState());
           }
           state.setHydrated(true);
           return;
@@ -385,12 +376,17 @@ export const useAppStore = create<AppState>()(
           try {
             await migrateLegacyAuthTokensToSecureStorage();
             const tokens = await readSecureAuthTokens();
-            useAppStore.setState({
-              authToken: tokens.accessToken,
-              refreshToken: tokens.refreshToken,
-            });
+            if (!tokens.accessToken && !tokens.refreshToken) {
+              useAppStore.setState(emptyAuthState());
+            } else {
+              useAppStore.setState({
+                authToken: tokens.accessToken,
+                refreshToken: tokens.refreshToken,
+              });
+            }
           } catch (error) {
             appLog.error("iOS auth bootstrap failed", error);
+            useAppStore.setState(emptyAuthState());
           } finally {
             state.setHydrated(true);
           }

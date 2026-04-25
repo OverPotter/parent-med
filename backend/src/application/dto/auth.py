@@ -61,6 +61,7 @@ class ChangePasswordDto(BaseModel):
 
     current_password: str = Field(..., min_length=1, description="Текущий пароль")
     new_password: str = Field(..., min_length=8, description="Новый пароль")
+    refresh_token: str | None = Field(None, description="Текущий refresh token для сохранения сессии")
 
 
 class UpdateLanguageDto(BaseModel):

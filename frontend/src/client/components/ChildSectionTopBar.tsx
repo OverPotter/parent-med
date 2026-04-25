@@ -41,9 +41,10 @@ export function ChildSectionTopBar({
   const accountLabel = accountDisplayName || accountEmail || copy.common.userFallback;
 
   const handleLogout = async () => {
+    const refreshToken = useAppStore.getState().refreshToken;
     try {
       await cleanupDeviceSessionArtifacts();
-      await logout();
+      await logout(refreshToken);
     } catch {
       // Local logout must still work if the backend session is already gone.
     } finally {

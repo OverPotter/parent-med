@@ -1,0 +1,21 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "86FV2N957D.com.overpotter.pillpath"
+        ],
+        "components": [
+          {
+            "/": "*"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "86FV2N957D.com.overpotter.pillpath"
+    ]
+  }
+}

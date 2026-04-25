@@ -212,6 +212,40 @@ async def test_upsert_native_subscription_adopts_legacy_token_record_for_device_
 
 
 @pytest.mark.asyncio
+async def test_upsert_native_subscription_reuses_existing_endpoint_from_another_account() -> None:
+    old_account_id = uuid4()
+    new_account_id = uuid4()
+    repo = StubPushSubscriptionRepository()
+    existing = build_native_subscription(
+        account_id=old_account_id,
+        token="old-token",
+        device_id="device-shared",
+    )
+    await repo.add(existing)
+    service = PushNotificationService(repo, StubAccountRepository())
+
+    result = await service.upsert_subscription(
+        new_account_id,
+        PushSubscriptionUpsertDto(
+            channel="native",
+            endpoint="new-token",
+            native_token="new-token",
+            platform="ios",
+            device_id="device-shared",
+            user_agent="native-ios",
+            device_label="App · iOS",
+        ),
+    )
+
+    assert result.id == existing.id
+    saved = await repo.get_by_id(existing.id)
+    assert saved is not None
+    assert saved.account_id == new_account_id
+    assert saved.native_token == "new-token"
+    assert saved.endpoint == "native:ios:device-shared"
+
+
+@pytest.mark.asyncio
 async def test_get_preferences_returns_category_switches() -> None:
     account = build_account()
     account.children_push_enabled = False

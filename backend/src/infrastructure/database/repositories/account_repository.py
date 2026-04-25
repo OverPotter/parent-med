@@ -44,6 +44,7 @@ class SqlAccountRepository(AccountRepository):
             live_activity_sleep_enabled=model.live_activity_sleep_enabled,
             live_activity_feeding_enabled=model.live_activity_feeding_enabled,
             live_activity_illness_enabled=model.live_activity_illness_enabled,
+            session_version=model.session_version,
             created_at=model.created_at,
             access_policy=deserialize_family_access_policy(model.access_policy),
         )
@@ -72,6 +73,7 @@ class SqlAccountRepository(AccountRepository):
             live_activity_sleep_enabled=entity.live_activity_sleep_enabled,
             live_activity_feeding_enabled=entity.live_activity_feeding_enabled,
             live_activity_illness_enabled=entity.live_activity_illness_enabled,
+            session_version=entity.session_version,
             created_at=entity.created_at,
         )
 
@@ -140,6 +142,7 @@ class SqlAccountRepository(AccountRepository):
         row.live_activity_sleep_enabled = entity.live_activity_sleep_enabled
         row.live_activity_feeding_enabled = entity.live_activity_feeding_enabled
         row.live_activity_illness_enabled = entity.live_activity_illness_enabled
+        row.session_version = entity.session_version
         await self._session.flush()
         await self._session.refresh(row)
         return self._to_entity(row)

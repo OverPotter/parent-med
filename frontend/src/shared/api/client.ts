@@ -6,6 +6,7 @@ import {
   sanitizeBearerToken,
 } from "@shared/security/authSession";
 import { useAppStore } from "@shared/store/useAppStore";
+import type { AuthSessionResponse } from "@shared/types/api";
 import { appLog } from "@shared/utils/appLog";
 
 /** Origin API; без схемы — https:// префикс. */
@@ -33,8 +34,27 @@ export function setBearerToken(token: string | null): void {
   bearerToken = token;
 }
 
+export function applySessionToClient(session: AuthSessionResponse): void {
+  useAppStore.getState().setSession(session);
+  setBearerToken(session.accessToken);
+}
+
+export function broadcastAuthLogout(): void {
+  setBearerToken(null);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("auth:logout"));
+  }
+}
+
 export function setRefreshHandler(handler: (() => Promise<string | null>) | null): void {
   refreshHandler = handler;
+}
+
+export function resolveRequestBearerToken(args: {
+  storeToken: string | null;
+  inMemoryToken: string | null;
+}): string | null {
+  return sanitizeBearerToken(args.storeToken) ?? sanitizeBearerToken(args.inMemoryToken);
 }
 
 apiClient.interceptors.request.use((config) => {
@@ -45,7 +65,10 @@ apiClient.interceptors.request.use((config) => {
     return config;
   }
 
-  const token = sanitizeBearerToken(bearerToken ?? useAppStore.getState().authToken);
+  const token = resolveRequestBearerToken({
+    storeToken: useAppStore.getState().authToken,
+    inMemoryToken: bearerToken,
+  });
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -57,13 +80,20 @@ function shouldSkipRefresh(url?: string): boolean {
     !url ||
     url.includes("/auth/login") ||
     url.includes("/auth/signin") ||
+    url.includes("/auth/native/signin") ||
     url.includes("/auth/register") ||
     url.includes("/auth/signup") ||
+    url.includes("/auth/native/signup") ||
     url.includes("/auth/recover-password/verify") ||
     url.includes("/auth/recover-password/reset") ||
     url.includes("/auth/recover-password/code/reset") ||
-    url.includes("/auth/refresh")
+    url.includes("/auth/refresh") ||
+    url.includes("/auth/native/refresh")
   );
+}
+
+function shouldBroadcastLogoutFor401(url?: string): boolean {
+  return !shouldSkipRefresh(url);
 }
 
 apiClient.interceptors.response.use(
@@ -110,15 +140,13 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch {
         appLog.warn("Сессия: refresh не удался, выход");
-        setBearerToken(null);
-        window.dispatchEvent(new CustomEvent("auth:logout"));
+        broadcastAuthLogout();
         return Promise.reject(error);
       }
     }
 
-    if (error.response?.status === 401) {
-      setBearerToken(null);
-      window.dispatchEvent(new CustomEvent("auth:logout"));
+    if (error.response?.status === 401 && shouldBroadcastLogoutFor401(originalRequest?.url)) {
+      broadcastAuthLogout();
     }
     return Promise.reject(error);
   }

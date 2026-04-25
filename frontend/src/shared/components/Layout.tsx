@@ -389,9 +389,10 @@ export function Layout({
   }, []);
 
   const handleLogout = async () => {
+    const refreshToken = useAppStore.getState().refreshToken;
     try {
       await cleanupDeviceSessionArtifacts();
-      await logout();
+      await logout(refreshToken);
     } catch {
       // Локальный выход всё равно должен отработать, даже если сессия уже истекла.
     } finally {

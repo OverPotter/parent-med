@@ -3,6 +3,8 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
+from sqlalchemy.exc import IntegrityError
+
 from src.application.dto.auth import (
     AccountResponseDto,
     AuthenticatedAccount,
@@ -102,6 +104,7 @@ class AuthService(BaseAuthService):
             access_token=create_access_token(
                 account_id=account.id,
                 family_id=account.family_id,
+                session_version=account.session_version,
             ),
             refresh_token=refresh_token,
             account=self._account_to_response(account),
@@ -109,14 +112,23 @@ class AuthService(BaseAuthService):
             remember_me=remember_me,
         )
 
+    @staticmethod
+    def _raise_duplicate_email() -> None:
+        raise ValidationError(
+            "Аккаунт с таким email уже существует",
+            code="ACCOUNT_EMAIL_ALREADY_EXISTS",
+            status_code=409,
+        )
+
+    @classmethod
+    def _is_duplicate_email_integrity_error(cls, exc: IntegrityError) -> bool:
+        message = str(getattr(exc, "orig", exc)).lower()
+        return "accounts" in message and "email" in message and "unique" in message
+
     async def signup(self, dto: RegisterDto) -> AuthResponseDto:
         email = dto.email.strip().lower() if dto.email else None
         if email and await self._account_repo.get_by_email(email) is not None:
-            raise ValidationError(
-                "Аккаунт с таким email уже существует",
-                code="ACCOUNT_EMAIL_ALREADY_EXISTS",
-                status_code=409,
-            )
+            self._raise_duplicate_email()
         family_role = "admin"
         invite: FamilyInvite | None = None
         family_name = _DEFAULT_FAMILY_NAME
@@ -172,7 +184,12 @@ class AuthService(BaseAuthService):
             created_at=datetime.now(UTC),
             access_policy=build_default_family_access_policy(),
         )
-        created_account = await self._account_repo.add(account)
+        try:
+            created_account = await self._account_repo.add(account)
+        except IntegrityError as exc:
+            if self._is_duplicate_email_integrity_error(exc):
+                self._raise_duplicate_email()
+            raise
         if invite is not None:
             invite.accepted_at = datetime.now(UTC)
             invite.accepted_by_account_id = created_account.id
@@ -202,14 +219,16 @@ class AuthService(BaseAuthService):
     async def get_current_account(self, token: str) -> AuthenticatedAccount:
         payload = decode_access_token(token)
         account_id = UUID(str(payload["sub"]))
-        family_id = UUID(str(payload["family_id"]))
+        token_session_version = int(payload.get("sv", 1))
         account = await self._account_repo.get_by_id(account_id)
         if account is None or account.family_role == "deleted":
             raise UnauthorizedError()
+        if account.session_version != token_session_version:
+            raise UnauthorizedError(code="INVALID_SESSION_VERSION")
         return AuthenticatedAccount(
             id=account.id,
             email=account.email,
-            family_id=family_id,
+            family_id=account.family_id,
             display_name=resolve_display_name(account.display_name),
             needs_profile_completion=needs_profile_completion(account.display_name),
             has_recovery_code=bool(account.recovery_code_hash),
@@ -252,12 +271,30 @@ class AuthService(BaseAuthService):
         if family is None:
             raise ForbiddenError("У аккаунта не найдена семья", code="FAMILY_NOT_LINKED")
 
-        await self._session_repo.delete(session.id)
         remember_me = bool(int(payload.get("rm", 0)))
-        return await self._create_auth_response(account, family, remember_me=remember_me)
+        return AuthResponseDto(
+            access_token=create_access_token(
+                account_id=account.id,
+                family_id=account.family_id,
+                session_version=account.session_version,
+            ),
+            refresh_token=dto.refresh_token,
+            account=self._account_to_response(account),
+            family=self._family_to_response(family),
+            remember_me=remember_me,
+        )
 
-    async def logout(self, account_id: UUID) -> None:
-        await self._session_repo.delete_by_account_id(account_id)
+    async def logout(self, account_id: UUID, refresh_token: str | None = None) -> None:
+        if not refresh_token:
+            return
+        payload = decode_refresh_token(refresh_token)
+        session_id = UUID(str(payload["sid"]))
+        session = await self._session_repo.get_by_id(session_id)
+        if session is None or session.account_id != account_id:
+            return
+        if session.token_hash != hash_session_token(refresh_token):
+            return
+        await self._session_repo.delete(session.id)
 
     async def _soft_delete_account(self, account: Account) -> None:
         await self._account_repo.update(
@@ -312,7 +349,9 @@ class AuthService(BaseAuthService):
             await self._session_repo.delete_by_account_id(item.id)
             await self._soft_delete_account(item)
 
-    async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
+    async def change_password(
+        self, account_id: UUID, dto: ChangePasswordDto, refresh_token: str | None = None
+    ) -> None:
         account = await self._account_repo.get_by_id(account_id)
         if account is None:
             raise UnauthorizedError()
@@ -321,9 +360,29 @@ class AuthService(BaseAuthService):
         if dto.current_password == dto.new_password:
             raise ValidationError("Новый пароль должен отличаться от текущего")
         await self._account_repo.update(
-            copy_account(account, password_hash=hash_password(dto.new_password))
+            copy_account(
+                account,
+                password_hash=hash_password(dto.new_password),
+                session_version=account.session_version + 1,
+            )
         )
-        await self._session_repo.delete_by_account_id(account.id)
+        if not refresh_token:
+            await self._session_repo.delete_by_account_id(account.id)
+            return
+        try:
+            payload = decode_refresh_token(refresh_token)
+            session_id = UUID(str(payload["sid"]))
+            session = await self._session_repo.get_by_id(session_id)
+            if (
+                session is None
+                or session.account_id != account.id
+                or session.token_hash != hash_session_token(refresh_token)
+            ):
+                await self._session_repo.delete_by_account_id(account.id)
+                return
+            await self._session_repo.delete_other_sessions(account.id, session.id)
+        except UnauthorizedError:
+            await self._session_repo.delete_by_account_id(account.id)
 
     async def update_recovery_code(self, account_id: UUID, dto: UpdateRecoveryCodeDto) -> None:
         account = await self._account_repo.get_by_id(account_id)
@@ -356,7 +415,11 @@ class AuthService(BaseAuthService):
                 code="PASSWORD_REUSE_NOT_ALLOWED",
             )
         await self._account_repo.update(
-            copy_account(account, password_hash=hash_password(dto.new_password))
+            copy_account(
+                account,
+                password_hash=hash_password(dto.new_password),
+                session_version=account.session_version + 1,
+            )
         )
         await self._session_repo.delete_by_account_id(account.id)
 
@@ -393,6 +456,7 @@ class AuthService(BaseAuthService):
                 account,
                 family_id=invite.family_id,
                 family_role=normalize_family_role(invite.family_role),
+                session_version=account.session_version + 1,
             )
         )
         await self._family_invite_repo.update(

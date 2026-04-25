@@ -105,8 +105,8 @@ class BaseAuthService(ABC):
         """Вернуть текущий аккаунт и его семью."""
 
     @abstractmethod
-    async def logout(self, account_id: UUID) -> None:
-        """Закрыть активные сессии аккаунта."""
+    async def logout(self, account_id: UUID, refresh_token: str | None = None) -> None:
+        """Закрыть текущую refresh-сессию аккаунта."""
 
     @abstractmethod
     async def delete_me(self, account_id: UUID) -> None:
@@ -117,7 +117,9 @@ class BaseAuthService(ABC):
         """Удалить семью текущего admin (мягко деактивировать все аккаунты)."""
 
     @abstractmethod
-    async def change_password(self, account_id: UUID, dto: ChangePasswordDto) -> None:
+    async def change_password(
+        self, account_id: UUID, dto: ChangePasswordDto, refresh_token: str | None = None
+    ) -> None:
         """Сменить пароль текущего аккаунта."""
 
     @abstractmethod

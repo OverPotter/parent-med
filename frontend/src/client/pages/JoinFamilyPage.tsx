@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { login, register } from "@shared/api/auth";
+import { applySessionToClient } from "@shared/api/client";
 import { acceptFamilyInvite, fetchFamilyInvitePreview } from "@shared/api/familyInvites";
 import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
 import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
@@ -35,7 +36,6 @@ export function JoinFamilyPage() {
   const accountEmail = useAppStore((s) => s.accountEmail);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
-  const setSession = useAppStore((s) => s.setSession);
 
   const {
     data: invitePreview,
@@ -67,7 +67,7 @@ export function JoinFamilyPage() {
     mutationFn: (payload: { email: string; password: string; remember_me: boolean }) =>
       login(payload),
     onSuccess: (data) => {
-      setSession(data);
+      applySessionToClient(data);
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "join_family" });
     },
@@ -90,7 +90,7 @@ export function JoinFamilyPage() {
       preferred_language: "ru" | "en";
     }) => register(payload),
     onSuccess: (data) => {
-      setSession(data);
+      applySessionToClient(data);
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "join_family" });
       queryClient.invalidateQueries({ queryKey: ["families"] });
@@ -109,7 +109,7 @@ export function JoinFamilyPage() {
   const acceptInviteMutation = useMutation({
     mutationFn: () => acceptFamilyInvite(token),
     onSuccess: (data) => {
-      setSession(data);
+      applySessionToClient(data);
       setError(null);
       trackEvent(AnalyticsEvents.FAMILY_INVITE_ACCEPTED);
       queryClient.invalidateQueries({ queryKey: ["families"] });
@@ -259,13 +259,17 @@ export function JoinFamilyPage() {
                 <label className="block">
                   <span className="soft-field-label">Email</span>
                   <input
-                    name="email"
+                    name="username"
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     className="soft-input w-full px-4"
                     placeholder="you@example.com"
-                    autoComplete="email"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    inputMode="email"
                   />
                   <span className="soft-field-hint">
                     После входа можно будет отдельно заполнить, как вас показывать в семье.
@@ -282,7 +286,7 @@ export function JoinFamilyPage() {
                     placeholder="Минимум 8 символов"
                     isVisible={isPasswordVisible}
                     onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
-                    name="current-password"
+                    name={isRegisterMode ? "new-password" : "current-password"}
                     autoComplete={isRegisterMode ? "new-password" : "current-password"}
                   />
                   {isRegisterMode && (

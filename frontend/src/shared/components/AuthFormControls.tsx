@@ -65,6 +65,10 @@ export function AuthPasswordField({
           className={`soft-input w-full px-4 ${onToggleVisibility ? "pr-12" : ""}`.trim()}
           placeholder={placeholder}
           autoComplete={autoComplete}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          inputMode="text"
         />
         {onToggleVisibility && (
           <button
