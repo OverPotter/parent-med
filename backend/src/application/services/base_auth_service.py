@@ -122,9 +122,7 @@ class BaseAuthService(ABC):
         """Сменить пароль текущего аккаунта."""
 
     @abstractmethod
-    async def update_recovery_code(
-        self, account_id: UUID, dto: UpdateRecoveryCodeDto
-    ) -> None:
+    async def update_recovery_code(self, account_id: UUID, dto: UpdateRecoveryCodeDto) -> None:
         """Настроить recovery code для текущего аккаунта."""
 
     @abstractmethod
