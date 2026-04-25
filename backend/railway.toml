@@ -6,4 +6,4 @@ builder = "NIXPACKS"
 buildCommand = "pip install --no-cache-dir uv && uv sync --no-dev"
 
 [deploy]
-startCommand = "sh -c 'uv run alembic upgrade head && uv run uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}'"
+startCommand = "sh -c 'uv run alembic upgrade head && if [ \"${RUN_CURATED_CATALOG_SEED:-0}\" = \"1\" ] || [ \"${RUN_CURATED_CATALOG_SEED:-false}\" = \"true\" ]; then if [ -f scripts/seed_curated_medicine_catalog.py ]; then uv run python scripts/seed_curated_medicine_catalog.py; else echo \"RUN_CURATED_CATALOG_SEED is enabled, but scripts/seed_curated_medicine_catalog.py is missing. Skipping.\"; fi; fi && uv run uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}'"

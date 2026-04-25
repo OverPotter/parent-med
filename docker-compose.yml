@@ -36,6 +36,7 @@ services:
       - ./backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://pillpath_user:pillpath_secure_password@postgres:5432/pillpath
+      RUN_CURATED_CATALOG_SEED: ${RUN_CURATED_CATALOG_SEED:-0}
     ports:
       - "8000:8000"
     depends_on:
