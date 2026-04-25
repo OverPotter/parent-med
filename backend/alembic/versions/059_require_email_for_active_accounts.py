@@ -3,7 +3,7 @@
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "059_require_email_for_active_accounts"
+revision = "059"
 down_revision = "058_remove_account_login"
 branch_labels = None
 depends_on = None
