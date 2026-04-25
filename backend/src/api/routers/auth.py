@@ -56,6 +56,12 @@ async def _run_signin(
 ) -> AuthResponseDto:
     identifier = dto.email.strip().lower()
     client_ip = _client_ip(request)
+    logger.info(
+        "Auth signin attempt | native={} identifier={} ip={}",
+        include_tokens,
+        identifier,
+        client_ip,
+    )
     bucket_keys = build_auth_attempt_bucket_keys(client_ip, identifier)
     async with auth_attempt_repo.locked(bucket_keys) as locked_repo:
         throttle = _build_throttle(locked_repo)
@@ -86,6 +92,13 @@ async def _run_refresh(
 ) -> AuthResponseDto:
     refresh_token = (dto.refresh_token if dto is not None else None) or request.cookies.get(
         settings.refresh_cookie_name
+    )
+    logger.info(
+        "Auth refresh attempt | native={} has_body={} has_cookie={} ip={}",
+        include_tokens,
+        bool(dto and dto.refresh_token),
+        bool(request.cookies.get(settings.refresh_cookie_name)),
+        _client_ip(request),
     )
     if not refresh_token:
         raise UnauthorizedError(code="INVALID_REFRESH_TOKEN")
@@ -219,12 +232,24 @@ async def me(
 
 @router.post("/logout", status_code=204)
 async def logout(
+    request: Request,
     response: Response,
+    dto: RefreshDto | None = None,
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: BaseAuthService = Depends(get_auth_service),
 ) -> None:
     logger.info("Выход | account_id={}", current_account.id)
-    await service.logout(current_account.id)
+    refresh_token = (dto.refresh_token if dto is not None else None) or request.cookies.get(
+        settings.refresh_cookie_name
+    )
+    logger.info(
+        "Auth logout attempt | account_id={} has_body={} has_cookie={} ip={}",
+        current_account.id,
+        bool(dto and dto.refresh_token),
+        bool(request.cookies.get(settings.refresh_cookie_name)),
+        _client_ip(request),
+    )
+    await service.logout(current_account.id, refresh_token)
     clear_auth_cookies(response)
 
 
@@ -252,12 +277,14 @@ async def delete_family(
 
 @router.patch("/password", status_code=204)
 async def change_password(
+    request: Request,
     dto: ChangePasswordDto,
     current_account: AuthenticatedAccount = Depends(get_current_account),
     service: BaseAuthService = Depends(get_auth_service),
 ) -> None:
     logger.info(f"Смена пароля | account_id={current_account.id}")
-    await service.change_password(current_account.id, dto)
+    refresh_token = dto.refresh_token or request.cookies.get(settings.refresh_cookie_name)
+    await service.change_password(current_account.id, dto, refresh_token)
 
 
 @router.patch("/recovery-code", status_code=204)

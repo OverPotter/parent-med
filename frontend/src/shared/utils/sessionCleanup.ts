@@ -12,9 +12,10 @@ import {
   unsubscribeFromPushNotifications,
 } from "./pushNotifications";
 
-export async function cleanupDeviceSessionArtifacts() {
+export async function cleanupDeviceSessionArtifacts(options?: { includeServerCleanup?: boolean }) {
   const { authToken, accountId } = useAppStore.getState();
   const hasSession = Boolean(authToken || accountId);
+  const includeServerCleanup = options?.includeServerCleanup ?? true;
 
   try {
     await stopAllLiveActivities();
@@ -25,7 +26,7 @@ export async function cleanupDeviceSessionArtifacts() {
   clearNativeNavigationSessionState();
 
   try {
-    if (hasSession) {
+    if (includeServerCleanup && hasSession) {
       const nativeSubscription = getCachedNativePushSubscriptionPayload();
       if (nativeSubscription?.endpoint) {
         await deletePushSubscription({ endpoint: nativeSubscription.endpoint });
@@ -40,7 +41,7 @@ export async function cleanupDeviceSessionArtifacts() {
   try {
     const existingWebSubscription = await getExistingPushSubscription();
     if (existingWebSubscription) {
-      if (hasSession) {
+      if (includeServerCleanup && hasSession) {
         await deletePushSubscription({
           endpoint: toPushSubscriptionPayload(existingWebSubscription).endpoint,
         });

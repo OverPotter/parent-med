@@ -39,6 +39,7 @@ class Account:
     live_activity_sleep_enabled: bool = True
     live_activity_feeding_enabled: bool = True
     live_activity_illness_enabled: bool = True
+    session_version: int = 1
     access_policy: FamilyAccessPolicy = field(default_factory=build_default_family_access_policy)
 
 

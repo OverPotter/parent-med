@@ -6,8 +6,10 @@ import {
   changePassword,
   deleteMyAccount,
   deleteMyFamily,
+  refreshSession,
   updateRecoveryCode,
 } from "@shared/api/auth";
+import { applySessionToClient, broadcastAuthLogout } from "@shared/api/client";
 import {
   deletePushSubscription,
   fetchPushNotificationConfig,
@@ -380,16 +382,44 @@ export function SettingsPage() {
     };
   }, [location.hash]);
 
+  useEffect(() => {
+    if (!passwordSuccess || typeof window === "undefined") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setPasswordSuccess(null);
+    }, 2200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [passwordSuccess]);
+
   const changePasswordMutation = useMutation({
     mutationFn: (payload: { current_password: string; new_password: string }) =>
-      changePassword(payload),
+      changePassword({
+        ...payload,
+        refresh_token: useAppStore.getState().refreshToken,
+      }),
     onSuccess: () => {
+      const currentRefreshToken = useAppStore.getState().refreshToken;
       setIsPasswordDialogOpen(false);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setPasswordError(null);
       setPasswordSuccess(tSettings(language, "passwordUpdated"));
+      if (!currentRefreshToken) {
+        return;
+      }
+      void refreshSession(currentRefreshToken)
+        .then((nextSession) => {
+          applySessionToClient(nextSession);
+        })
+        .catch(() => {
+          // Keep the success flow intact; auth sync will recover on the next protected request.
+        });
     },
     onError: (error) => {
       setPasswordSuccess(null);
@@ -404,7 +434,7 @@ export function SettingsPage() {
     mutationFn: deleteMyAccount,
     onSuccess: () => {
       queryClient.clear();
-      window.dispatchEvent(new CustomEvent("auth:logout"));
+      broadcastAuthLogout();
     },
     onError: (error) => {
       setDeleteAccountError(
@@ -418,7 +448,7 @@ export function SettingsPage() {
     mutationFn: deleteMyFamily,
     onSuccess: () => {
       queryClient.clear();
-      window.dispatchEvent(new CustomEvent("auth:logout"));
+      broadcastAuthLogout();
     },
     onError: (error) => {
       setDeleteFamilyError(

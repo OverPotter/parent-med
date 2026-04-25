@@ -72,3 +72,13 @@ class SqlAccountSessionRepository(AccountSessionRepository):
         )
         await self._session.flush()
         return result.rowcount or 0
+
+    async def delete_other_sessions(self, account_id: UUID, keep_session_id: UUID) -> int:
+        result = await self._session.execute(
+            delete(AccountSessionModel).where(
+                AccountSessionModel.account_id == account_id,
+                AccountSessionModel.id != keep_session_id,
+            )
+        )
+        await self._session.flush()
+        return result.rowcount or 0

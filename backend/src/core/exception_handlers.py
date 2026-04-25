@@ -10,7 +10,13 @@ logger = get_logger(__name__)
 
 
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
-    logger.warning(f"Ошибка API | message={exc.message} code={exc.code}")
+    logger.warning(
+        "Ошибка API | method={} path={} message={} code={}",
+        request.method,
+        request.url.path,
+        exc.message,
+        exc.code,
+    )
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.message, "code": exc.code},

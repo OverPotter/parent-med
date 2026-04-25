@@ -39,7 +39,8 @@ export function FullscreenOverlay({
       className="fixed inset-0 z-[9999] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
       style={{
         paddingTop: "max(0.75rem, var(--app-safe-top-runtime, env(safe-area-inset-top)))",
-        paddingBottom: "max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
+        paddingBottom:
+          "calc(max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom))) + var(--app-keyboard-height, 0px))",
       }}
     >
       <IosEdgeBackGesture isEnabled={isOpen && !closeDisabled} onBack={onClose} targetRef={rootRef} />
@@ -67,7 +68,14 @@ export function FullscreenOverlay({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-6">
+        <div
+          data-fullscreen-overlay-scroll="true"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-6"
+          style={{
+            paddingBottom:
+              "calc(0.75rem + var(--app-keyboard-height, 0px) * 0.18)",
+          }}
+        >
           <div className={`mx-auto w-full ${maxWidthClassName}`}>{children}</div>
         </div>
       </div>

@@ -187,13 +187,16 @@ class PushNotificationService:
             token_owner = await self._repo.get_by_native_token(native_token)
             if device_id:
                 endpoint = f"native:{dto.platform}:{device_id}"
+                existing = await self._repo.get_by_endpoint(endpoint)
+            else:
+                endpoint = f"native:{dto.platform}:{native_token}"
+                existing = await self._repo.get_by_endpoint(endpoint)
+            if existing is None and device_id:
                 existing = await self._repo.get_by_account_platform_device(
                     account_id,
                     dto.platform,
                     device_id,
                 )
-            else:
-                endpoint = f"native:{dto.platform}:{native_token}"
             if existing is None and token_owner is not None:
                 existing = token_owner
             p256dh_key = None

@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
-import { setBearerToken, setRefreshHandler } from "@shared/api/client";
+import { applySessionToClient, setBearerToken, setRefreshHandler } from "@shared/api/client";
 import { useAppStore } from "@shared/store/useAppStore";
 import { CookieConsentBanner } from "@shared/components/CookieConsentBanner";
 import { NetworkStatusBanner } from "@shared/components/NetworkStatusBanner";
@@ -178,7 +178,6 @@ function AuthSync() {
   const authToken = useAppStore((s) => s.authToken);
   const accountId = useAppStore((s) => s.accountId);
   const refreshToken = useAppStore((s) => s.refreshToken);
-  const setSession = useAppStore((s) => s.setSession);
   const setAuthState = useAppStore((s) => s.setAuthState);
   const clearSession = useAppStore((s) => s.clearSession);
 
@@ -189,17 +188,16 @@ function AuthSync() {
   useEffect(() => {
     setRefreshHandler(async () => {
       const nextSession = await refreshSession(refreshToken);
-      setSession(nextSession);
-      setBearerToken(nextSession.accessToken);
+      applySessionToClient(nextSession);
       return nextSession.accessToken;
     });
     return () => setRefreshHandler(null);
-  }, [refreshToken, setSession]);
+  }, [accountId, authToken, refreshToken]);
 
   const { data, error } = useQuery({
     queryKey: ["auth", "me", authToken, accountId],
     queryFn: fetchMe,
-    enabled: Boolean(authToken || refreshToken || accountId),
+    enabled: Boolean(authToken || refreshToken),
     retry: false,
     staleTime: 0,
   });
@@ -218,17 +216,23 @@ function AuthSync() {
       appLog.warn("Сессия: backend недоступен, сохраняю локальный auth state");
       return;
     }
-    appLog.warn("Сессия недействительна, сбрасываю локальный auth state");
-    void cleanupDeviceSessionArtifacts();
+    appLog.warn("Сессия недействительна, сбрасываю локальный auth state", {
+      hasAuthToken: Boolean(authToken),
+      hasRefreshToken: Boolean(refreshToken),
+      hasAccountId: Boolean(accountId),
+    });
+    void cleanupDeviceSessionArtifacts({ includeServerCleanup: false });
     queryClient.clear();
+    setBearerToken(null);
     clearSession();
   }, [accountId, authToken, clearSession, error, queryClient, refreshToken]);
 
   useEffect(() => {
     const handleLogout = () => {
       appLog.warn("Сессия сброшена (401 / выход)");
-      void cleanupDeviceSessionArtifacts();
+      void cleanupDeviceSessionArtifacts({ includeServerCleanup: false });
       queryClient.clear();
+      setBearerToken(null);
       clearSession();
     };
     window.addEventListener("auth:logout", handleLogout);

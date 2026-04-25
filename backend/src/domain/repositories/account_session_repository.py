@@ -34,3 +34,8 @@ class AccountSessionRepository(BaseRepository[AccountSession]):
     async def delete_by_account_id(self, account_id: UUID) -> int:
         """Удалить все сессии аккаунта."""
         ...
+
+    @abstractmethod
+    async def delete_other_sessions(self, account_id: UUID, keep_session_id: UUID) -> int:
+        """Удалить все сессии аккаунта, кроме указанной."""
+        ...
