@@ -517,10 +517,10 @@ export function EpisodeBlock({
   useEffect(() => {
     if (!quickComposeSuccessMessage) return;
     const timeoutId = window.setTimeout(() => {
-      navigate("/illnesses/active");
-    }, 700);
+      setQuickComposeSuccessMessage(null);
+    }, 1800);
     return () => window.clearTimeout(timeoutId);
-  }, [navigate, quickComposeSuccessMessage]);
+  }, [quickComposeSuccessMessage]);
 
   if (quickComposeMode) {
     if (composerMode === "temperature") {

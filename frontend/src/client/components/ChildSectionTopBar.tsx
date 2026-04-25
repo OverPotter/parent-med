@@ -35,10 +35,10 @@ export function ChildSectionTopBar({
     onNotificationBellClick,
   } =
     usePushPromptControls();
-  const accountLogin = useAppStore((s) => s.accountLogin);
+  const accountEmail = useAppStore((s) => s.accountEmail);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const clearSession = useAppStore((s) => s.clearSession);
-  const accountLabel = accountDisplayName || accountLogin || copy.common.userFallback;
+  const accountLabel = accountDisplayName || accountEmail || copy.common.userFallback;
 
   const handleLogout = async () => {
     try {

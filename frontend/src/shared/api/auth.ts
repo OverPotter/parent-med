@@ -12,7 +12,6 @@ interface RawAuthResponse {
   refresh_token: string;
   account: {
     id: string;
-    login: string;
     email: string | null;
     family_id: string;
     display_name: string;
@@ -58,7 +57,6 @@ function toAuthResponse(raw: RawAuthResponse): AuthSessionResponse {
 function toAuthState(raw: {
   account: {
     id: string;
-    login: string;
     email: string | null;
     family_id: string;
     display_name: string;
@@ -113,7 +111,6 @@ export async function fetchMe(): Promise<AuthStateResponse> {
   const res = await apiClient.get<{
     account: {
       id: string;
-      login: string;
       email: string | null;
       family_id: string;
       display_name: string;
@@ -165,7 +162,6 @@ export async function resetPasswordByRecoveryCode(payload: {
 export async function updateAccountLanguage(preferredLanguage: "ru" | "en") {
   const res = await apiClient.patch<{
     id: string;
-    login: string;
     email: string | null;
     family_id: string;
     display_name: string;

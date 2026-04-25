@@ -46,7 +46,6 @@ def build_account(
 ) -> AuthenticatedAccount:
     return AuthenticatedAccount(
         id=uuid4(),
-        login="user",
         email="user@example.com",
         family_id=family_id,
         display_name="User",

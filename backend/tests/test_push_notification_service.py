@@ -100,7 +100,6 @@ class StubScheduler:
 def build_account() -> Account:
     return Account(
         id=uuid4(),
-        login="tester",
         email="tester@example.com",
         password_hash="hash",
         family_id=uuid4(),
@@ -278,3 +277,25 @@ async def test_send_pillbox_test_notification_uses_pillbox_style_payload() -> No
     assert payload["data"]["kind"] == "before"
     assert payload["data"]["source"] == "pillbox_test"
     assert payload["actions"][0]["action"] == "open-pillbox"
+
+
+@pytest.mark.asyncio
+async def test_send_pillbox_test_notification_uses_neutral_recipient_without_display_name() -> None:
+    account = build_account()
+    account.display_name = None
+    account.preferred_language = "en"
+    repo = StubPushSubscriptionRepository()
+    subscription = build_native_subscription(
+        account_id=account.id,
+        token="token-1",
+        device_id="device-1",
+    )
+    await repo.add(subscription)
+    scheduler = StubScheduler()
+    service = PushNotificationService(repo, StubAccountRepository(account))
+
+    result = await service.send_pillbox_test_notification(account.id, scheduler)
+
+    assert result.sent is True
+    payload = scheduler.calls[0]["payload"]
+    assert payload["body"].startswith("1 pill · after meal · For: you · at ")

@@ -26,7 +26,6 @@ export interface FamilyAccessPolicy {
 
 export interface Account {
   id: string;
-  login: string;
   email: string | null;
   familyId: string;
   displayName: string;

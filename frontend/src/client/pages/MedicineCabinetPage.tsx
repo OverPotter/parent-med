@@ -22,6 +22,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { canEditCabinet, canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
 import { AddHouseholdMedicineForm } from "./medicine-cabinet/AddHouseholdMedicineForm";
 import { AddMedicineChoiceDialog } from "./medicine-cabinet/AddMedicineChoiceDialog";
@@ -132,7 +133,7 @@ export function MedicineCabinetPage() {
     const selectedMembers = eligibleCabinetMembers.filter((member) =>
       family.cabinetMemberAccountIds.includes(member.id)
     );
-    const labels = selectedMembers.map((member) => member.displayName || member.login || member.id);
+    const labels = selectedMembers.map(getAccountDisplayLabel);
 
     if (labels.length === 0) {
       return language === "ru"

@@ -19,7 +19,6 @@ class AccountModel(Base):
     __tablename__ = "accounts"
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    login: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     recovery_code_hash: Mapped[str | None] = mapped_column(String(512), nullable=True)

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { getAccountDisplayLabel, getAccountSecondaryLabel } from "@shared/utils/accountLabels";
 import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
 import { appPillActionClass } from "../child-illness/shared";
 import { tPillbox } from "./shared";
@@ -8,7 +9,7 @@ import { tPillbox } from "./shared";
 type FamilyMemberLike = {
   id: string;
   displayName?: string | null;
-  login?: string | null;
+  email?: string | null;
   relationshipLabel?: string | null;
 };
 
@@ -96,8 +97,8 @@ export function PlanPushRecipientsField({
           <div className="soft-choice-list mt-4">
             {familyMembers.map((member) => {
               const selected = selectedIds.includes(member.id);
-              const memberLabel = member.displayName || member.login || member.id;
-              const memberMeta = member.relationshipLabel || member.login || member.id;
+              const memberLabel = getAccountDisplayLabel(member);
+              const memberMeta = getAccountSecondaryLabel(member);
               return (
                 <button
                   key={member.id}

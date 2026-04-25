@@ -49,7 +49,7 @@ class RegisterDto(BaseModel):
 
 
 class LoginDto(BaseModel):
-    """Вход по email и паролю с legacy-fallback на login."""
+    """Вход по email и паролю."""
 
     email: str = Field(..., min_length=3, description="Email аккаунта")
     password: str = Field(..., min_length=6, description="Пароль")
@@ -102,7 +102,6 @@ class AccountResponseDto(ResponseBase):
     """Ответ: аккаунт."""
 
     id: UUID
-    login: str
     email: str | None
     family_id: UUID
     display_name: str
@@ -120,7 +119,6 @@ class AuthenticatedAccount:
     """Текущий авторизованный аккаунт."""
 
     id: UUID
-    login: str
     email: str | None
     family_id: UUID
     display_name: str

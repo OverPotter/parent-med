@@ -29,9 +29,6 @@ class StubAccountRepository:
     async def get_by_email(self, email):  # noqa: ANN001
         return next((item for item in self.items.values() if item.email == email), None)
 
-    async def get_by_login(self, login):  # noqa: ANN001
-        return next((item for item in self.items.values() if item.login == login), None)
-
     async def get_by_family_id(self, family_id):  # noqa: ANN001
         return next((item for item in self.items.values() if item.family_id == family_id), None)
 
@@ -120,14 +117,12 @@ class StubFamilyInviteRepository:
 def build_account(
     *,
     family_id,
-    login: str,
     email: str | None,
     display_name: str | None,
     family_role: str,
 ) -> Account:  # noqa: ANN001
     return Account(
         id=uuid4(),
-        login=login,
         email=email,
         password_hash=hash_password("password123"),
         family_id=family_id,
@@ -181,7 +176,7 @@ async def test_signup_with_invite_joins_existing_family() -> None:
     assert result.account.display_name == DEFAULT_ACCOUNT_DISPLAY_NAME
     assert result.account.needs_profile_completion is True
     assert result.account.has_recovery_code is False
-    assert result.account.login.startswith("dad-")
+    assert result.account.email == "dad@example.com"
 
 
 @pytest.mark.asyncio
@@ -191,7 +186,6 @@ async def test_signup_requires_unique_email() -> None:
     await account_repo.add(
         build_account(
             family_id=family.id,
-            login="existing-login",
             email="test@example.com",
             display_name="Parent",
             family_role="owner",
@@ -214,7 +208,6 @@ async def test_signin_uses_email_for_new_flow() -> None:
     account_repo = StubAccountRepository()
     account = build_account(
         family_id=family.id,
-        login="mama-12345678",
         email="mama@example.com",
         display_name=None,
         family_role="owner",
@@ -235,12 +228,11 @@ async def test_signin_uses_email_for_new_flow() -> None:
 
 
 @pytest.mark.asyncio
-async def test_signin_keeps_legacy_login_fallback() -> None:
+async def test_signin_rejects_legacy_login_identifier() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     account_repo = StubAccountRepository()
     account = build_account(
         family_id=family.id,
-        login="legacy_login",
         email="mama@example.com",
         display_name="Мама Аня",
         family_role="owner",
@@ -253,12 +245,8 @@ async def test_signin_keeps_legacy_login_fallback() -> None:
         family_invite_repo=StubFamilyInviteRepository(None),
     )
 
-    result = await service.signin(LoginDto(email="legacy_login", password="password123"))
-
-    assert result.account.id == account.id
-    assert result.account.display_name == "Мама Аня"
-    assert result.account.needs_profile_completion is False
-    assert result.account.has_recovery_code is False
+    with pytest.raises(UnauthorizedError, match="Неверный email или пароль"):
+        await service.signin(LoginDto(email="legacy_login", password="password123"))
 
 
 @pytest.mark.asyncio
@@ -267,7 +255,6 @@ async def test_update_recovery_code_hashes_value() -> None:
     account_repo = StubAccountRepository()
     account = build_account(
         family_id=family.id,
-        login="mama-12345678",
         email="mama@example.com",
         display_name="Мама Аня",
         family_role="owner",
@@ -300,7 +287,6 @@ async def test_update_recovery_code_normalizes_spaces() -> None:
     account_repo = StubAccountRepository()
     account = build_account(
         family_id=family.id,
-        login="mama-12345678",
         email="mama@example.com",
         display_name="Мама Аня",
         family_role="owner",
@@ -330,7 +316,6 @@ async def test_update_recovery_code_rejects_second_setup() -> None:
     account_repo = StubAccountRepository()
     account = build_account(
         family_id=family.id,
-        login="mama-12345678",
         email="mama@example.com",
         display_name="Мама Аня",
         family_role="owner",
@@ -363,7 +348,6 @@ async def test_reset_password_by_recovery_code_updates_password_and_kills_sessio
     account_repo = StubAccountRepository()
     account = build_account(
         family_id=family.id,
-        login="mama-12345678",
         email="mama@example.com",
         display_name="Мама Аня",
         family_role="owner",
@@ -404,7 +388,6 @@ async def test_reset_password_by_recovery_code_normalizes_spaces() -> None:
     account_repo = StubAccountRepository()
     account = build_account(
         family_id=family.id,
-        login="mama-12345678",
         email="mama@example.com",
         display_name="Мама Аня",
         family_role="owner",
@@ -446,7 +429,6 @@ async def test_reset_password_by_recovery_code_rejects_invalid_code() -> None:
     await account_repo.add(
         Account(
             id=uuid4(),
-            login="mama-12345678",
             email="mama@example.com",
             password_hash=hash_password("password123"),
             family_id=family.id,
@@ -484,7 +466,6 @@ async def test_update_profile_ignores_email_payload() -> None:
     account_repo = StubAccountRepository()
     account = build_account(
         family_id=family.id,
-        login="mama-12345678",
         email="mama@example.com",
         display_name="Мама Аня",
         family_role="owner",

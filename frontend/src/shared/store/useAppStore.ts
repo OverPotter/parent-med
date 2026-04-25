@@ -91,7 +91,6 @@ interface AppState {
   authToken: string | null;
   refreshToken: string | null;
   accountId: string | null;
-  accountLogin: string | null;
   accountEmail: string | null;
   accountDisplayName: string | null;
   accountNeedsProfileCompletion: boolean;
@@ -107,7 +106,6 @@ interface AppState {
     refreshToken: string;
     account: {
       id: string;
-      login: string;
       email: string | null;
       displayName: string;
       needsProfileCompletion: boolean;
@@ -122,7 +120,6 @@ interface AppState {
   setAuthState: (state: {
     account: {
       id: string;
-      login: string;
       email: string | null;
       displayName: string;
       needsProfileCompletion: boolean;
@@ -192,7 +189,6 @@ export const useAppStore = create<AppState>()(
       authToken: null,
       refreshToken: null,
       accountId: null,
-      accountLogin: null,
       accountEmail: null,
       accountDisplayName: null,
       accountNeedsProfileCompletion: false,
@@ -209,7 +205,6 @@ export const useAppStore = create<AppState>()(
             authToken: session.accessToken,
             refreshToken: session.refreshToken,
             accountId: session.account.id,
-            accountLogin: session.account.login,
             accountEmail: session.account.email,
             accountDisplayName: session.account.displayName,
             accountNeedsProfileCompletion: session.account.needsProfileCompletion,
@@ -248,7 +243,6 @@ export const useAppStore = create<AppState>()(
           applyLanguageToDocument(state.account.preferredLanguage);
           return {
             accountId: state.account.id,
-            accountLogin: state.account.login,
             accountEmail: state.account.email,
             accountDisplayName: state.account.displayName,
             accountNeedsProfileCompletion: state.account.needsProfileCompletion,
@@ -296,7 +290,6 @@ export const useAppStore = create<AppState>()(
           authToken: null,
           refreshToken: null,
           accountId: null,
-          accountLogin: null,
           accountEmail: null,
           accountDisplayName: null,
           accountNeedsProfileCompletion: false,
@@ -328,7 +321,6 @@ export const useAppStore = create<AppState>()(
         hasSeenWorkspaceIntro: s.hasSeenWorkspaceIntro,
         ...(isNativeIOSRuntime() ? {} : { authToken: s.authToken, refreshToken: s.refreshToken }),
         accountId: s.accountId,
-        accountLogin: s.accountLogin,
         accountEmail: s.accountEmail,
         accountDisplayName: s.accountDisplayName,
         accountNeedsProfileCompletion: s.accountNeedsProfileCompletion,

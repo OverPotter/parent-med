@@ -13,7 +13,6 @@ interface RawAuthResponse {
   refresh_token: string;
   account: {
     id: string;
-    login: string;
     email: string | null;
     family_id: string;
     display_name: string;

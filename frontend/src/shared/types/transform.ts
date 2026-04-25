@@ -40,7 +40,7 @@ interface RawFamily {
 
 interface RawAccount {
   id: string;
-  login: string;
+  login?: string | null;
   email: string | null;
   family_id: string;
   display_name: string;
@@ -286,7 +286,6 @@ function toFamilyAccessPolicy(raw: RawAccount["access_policy"]): FamilyAccessPol
 export function toAccount(r: RawAccount): Account {
   return {
     id: r.id,
-    login: r.login,
     email: r.email,
     familyId: r.family_id,
     displayName: r.display_name,

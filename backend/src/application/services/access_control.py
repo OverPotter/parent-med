@@ -19,7 +19,6 @@ def coerce_account_context(account: AuthenticatedAccount | UUID) -> Authenticate
     # Backward-compatible shim for legacy unit tests that still pass only family_id.
     return AuthenticatedAccount(
         id=UUID(int=0),
-        login="",
         email=None,
         family_id=account,
         display_name="",

@@ -8,6 +8,7 @@ import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { canActPillbox, canEditPillbox, canViewPillbox } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
 import { PillboxAnalyticsScreen } from "./pillbox/analytics";
 import { PillboxMedicationScreen } from "./pillbox/medicationScreen";
@@ -113,7 +114,7 @@ export function PillboxPage() {
     }
     const labels = eligiblePillboxMembers
       .filter((member) => draft.members.includes(member.id))
-      .map((member) => member.displayName || member.login || member.id);
+      .map(getAccountDisplayLabel);
 
     if (labels.length === 0) {
       return language === "ru"
@@ -148,7 +149,7 @@ export function PillboxPage() {
     }
     const labels = eligiblePillboxMembers
       .filter((member) => selectedPlan.memberAccountIds.includes(member.id))
-      .map((member) => member.displayName || member.login || member.id);
+      .map(getAccountDisplayLabel);
 
     if (labels.length === 0) {
       return language === "ru"

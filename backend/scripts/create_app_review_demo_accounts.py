@@ -18,7 +18,7 @@ from src.infrastructure.database.models.family import FamilyModel
 
 @dataclass(frozen=True)
 class DemoAccountSpec:
-    login: str
+    email: str
     language: str
     display_name: str
     family_name: str
@@ -27,13 +27,13 @@ class DemoAccountSpec:
 DEMO_PASSWORD = "PillPathReview2026!"
 DEMO_SPECS: tuple[DemoAccountSpec, ...] = (
     DemoAccountSpec(
-        login="appreview-demo-ru",
+        email="appreview-demo-ru@test.com",
         language="ru",
         display_name="App Review RU",
         family_name="App Review Family RU",
     ),
     DemoAccountSpec(
-        login="appreview-demo-en",
+        email="appreview-demo-en@test.com",
         language="en",
         display_name="App Review EN",
         family_name="App Review Family EN",
@@ -42,7 +42,7 @@ DEMO_SPECS: tuple[DemoAccountSpec, ...] = (
 
 
 async def upsert_demo_account(session: AsyncSession, spec: DemoAccountSpec) -> None:
-    existing = await session.execute(select(AccountModel).where(AccountModel.login == spec.login))
+    existing = await session.execute(select(AccountModel).where(AccountModel.email == spec.email))
     account = existing.scalars().one_or_none()
 
     if account is None:
@@ -51,8 +51,7 @@ async def upsert_demo_account(session: AsyncSession, spec: DemoAccountSpec) -> N
         await session.flush()
         account = AccountModel(
             id=uuid4(),
-            login=spec.login,
-            email=None,
+            email=spec.email,
             password_hash=hash_password(DEMO_PASSWORD),
             family_id=family.id,
             display_name=spec.display_name,
@@ -70,7 +69,7 @@ async def upsert_demo_account(session: AsyncSession, spec: DemoAccountSpec) -> N
         )
         session.add(account)
         await session.flush()
-        print(f"created account: {spec.login}")
+        print(f"created account: {spec.email}")
         return
 
     account.password_hash = hash_password(DEMO_PASSWORD)
@@ -78,7 +77,7 @@ async def upsert_demo_account(session: AsyncSession, spec: DemoAccountSpec) -> N
     account.display_name = spec.display_name
     account.family_role = "owner"
     await session.flush()
-    print(f"updated account: {spec.login}")
+    print(f"updated account: {spec.email}")
 
 
 async def main() -> None:
@@ -99,9 +98,8 @@ async def main() -> None:
 
     print("\nApp Review demo accounts are ready:")
     for spec in DEMO_SPECS:
-        print(f"- {spec.login} / {DEMO_PASSWORD} ({spec.language})")
+        print(f"- {spec.email} / {DEMO_PASSWORD} ({spec.language})")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-

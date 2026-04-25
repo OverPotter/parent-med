@@ -365,12 +365,12 @@ export function Layout({
   onNotificationBellClick = null,
 }: LayoutProps) {
   const { copy } = useI18n();
-  const { effectiveTheme, toggleTheme, accountLogin, accountDisplayName, clearSession } =
+  const { effectiveTheme, toggleTheme, accountId, accountEmail, accountDisplayName, clearSession } =
     useAppStore();
-  const accountLabel = accountDisplayName || accountLogin || copy.common.userFallback;
+  const accountLabel = accountDisplayName || accountEmail || copy.common.userFallback;
   const hasMobileNav = mobileNavLinks.length > 0;
   const hasVisibleMobileNav = hasMobileNav && !mobileNavHidden;
-  const isAuthenticated = Boolean(accountLogin);
+  const isAuthenticated = Boolean(accountId);
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isIosShell = useIsIosShell();
   const shouldRenderDecorBackground = !isNativeRuntime && !isIosShell;
