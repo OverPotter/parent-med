@@ -20,6 +20,11 @@ from src.domain.repositories.episode_medication_plan_repository import (
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 
+HOUSEHOLD_MEDICINE_ALREADY_EXISTS_MESSAGE = (
+    "Такой препарат уже есть в аптечке. Обновите существующую упаковку или "
+    "используйте «Новая упаковка»."
+)
+
 
 class HouseholdMedicineService:
     """Сервис упаковок в аптечке: добавление, вскрытие, список."""
@@ -148,7 +153,7 @@ class HouseholdMedicineService:
         )
         if existing_medicine is not None:
             raise ValidationError(
-                "Такой препарат уже есть в аптечке. Обновите существующую упаковку или используйте «Новая упаковка».",
+                HOUSEHOLD_MEDICINE_ALREADY_EXISTS_MESSAGE,
                 code="HOUSEHOLD_MEDICINE_ALREADY_EXISTS",
             )
         entity = HouseholdMedicine(
@@ -251,7 +256,7 @@ class HouseholdMedicineService:
         )
         if duplicate is not None and duplicate.id != entity.id:
             raise ValidationError(
-                "Такой препарат уже есть в аптечке. Обновите существующую упаковку или используйте «Новая упаковка».",
+                HOUSEHOLD_MEDICINE_ALREADY_EXISTS_MESSAGE,
                 code="HOUSEHOLD_MEDICINE_ALREADY_EXISTS",
             )
 
