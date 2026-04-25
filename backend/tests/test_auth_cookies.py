@@ -1,6 +1,10 @@
 from fastapi import Response
 
-from src.api.utils.auth_cookies import clear_auth_cookies, set_auth_cookies
+from src.api.utils.auth_cookies import (
+    clear_auth_cookies,
+    resolve_auth_cookie_samesite,
+    set_auth_cookies,
+)
 from src.application.dto.auth import AccountResponseDto, AuthResponseDto
 from src.application.dto.family import FamilyResponseDto
 from src.core.config import settings
@@ -33,6 +37,7 @@ def test_set_auth_cookies_writes_both_tokens() -> None:
     headers = response.headers.getlist("set-cookie")
     assert any(settings.access_cookie_name in header for header in headers)
     assert any(settings.refresh_cookie_name in header for header in headers)
+    assert all("SameSite=lax" in header for header in headers)
 
 
 def test_set_auth_cookies_uses_long_refresh_for_remember_me() -> None:
@@ -57,3 +62,17 @@ def test_clear_auth_cookies_deletes_both_tokens() -> None:
     headers = response.headers.getlist("set-cookie")
     assert any(f"{settings.access_cookie_name}=" in header for header in headers)
     assert any(f"{settings.refresh_cookie_name}=" in header for header in headers)
+
+
+def test_auth_cookie_samesite_auto_uses_none_outside_local(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "database_url", "postgresql+asyncpg://u:p@db.example.com:5432/app")
+    monkeypatch.setattr(settings, "auth_cookie_samesite", "auto")
+
+    assert resolve_auth_cookie_samesite() == "none"
+
+
+def test_auth_cookie_samesite_explicit_value_wins(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "database_url", "postgresql+asyncpg://u:p@db.example.com:5432/app")
+    monkeypatch.setattr(settings, "auth_cookie_samesite", "strict")
+
+    assert resolve_auth_cookie_samesite() == "strict"
