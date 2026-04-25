@@ -102,7 +102,6 @@ class FamilyService:
     def _to_member_response(self, entity: Account) -> AccountResponseDto:
         return AccountResponseDto(
             id=entity.id,
-            login=entity.login,
             email=entity.email,
             family_id=entity.family_id,
             display_name=resolve_display_name(entity.display_name),

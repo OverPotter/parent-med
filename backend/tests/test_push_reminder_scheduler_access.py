@@ -10,6 +10,7 @@ from src.application.services.push_reminder_scheduler import (
     _get_cabinet_offsets,
     _get_pillbox_target_account_ids,
     _is_push_allowed_for_account,
+    _resolve_account_recipient_label,
 )
 from src.domain.entities.account import Account
 from src.domain.entities.family_access import FamilyAccessPolicy
@@ -21,7 +22,6 @@ from src.infrastructure.database.models.household_medicine_notification_delivery
 def build_account(policy: FamilyAccessPolicy) -> Account:
     return Account(
         id=uuid4(),
-        login="tester",
         email="tester@example.com",
         password_hash="hash",
         family_id=uuid4(),
@@ -159,3 +159,11 @@ def test_illness_push_bodies_keep_child_name_in_body_for_shorter_titles() -> Non
         _format_overdue_body("Маша", "Ибупрофен", "5 мл", "14:30", "ru")
         == "5 мл · Маша · не отмечено с 14:30"
     )
+
+
+def test_recipient_label_falls_back_to_neutral_copy_without_login() -> None:
+    account = build_account(FamilyAccessPolicy())
+    account.display_name = None
+
+    assert _resolve_account_recipient_label(account, "en") == "you"
+    assert _resolve_account_recipient_label(account, "ru") == "вас"

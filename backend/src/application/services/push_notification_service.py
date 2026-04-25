@@ -286,10 +286,8 @@ class PushNotificationService:
         recipient_label = "you" if language == "en" else "вас"
         if account:
             recipient_label = (
-                (getattr(account, "display_name", None) or "").strip()
-                or f"@{account.login}".strip()
-                or recipient_label
-            )
+                getattr(account, "display_name", None) or ""
+            ).strip() or recipient_label
         scheduled_for = datetime.now(UTC) + timedelta(minutes=10)
         scheduled_time_label = scheduled_for.strftime("%H:%M")
         plan_id = "test-pillbox-plan"

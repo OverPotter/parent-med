@@ -2,9 +2,10 @@
 
 from fastapi import APIRouter, Depends, Request, Response
 
-from src.api.deps import get_auth_service
+from src.api.deps import get_auth_attempt_repo, get_auth_service
 from src.api.deps.auth import get_current_account
-from src.api.utils.auth_cookies import clear_auth_cookies, set_auth_cookies
+from src.api.utils.auth_cookies import clear_auth_cookies
+from src.api.utils.auth_response import build_auth_response
 from src.application.dto.auth import (
     AccountResponseDto,
     AuthenticatedAccount,
@@ -19,14 +20,83 @@ from src.application.dto.auth import (
     UpdateLanguageDto,
     UpdateRecoveryCodeDto,
 )
+from src.application.security.auth_rate_limit import (
+    build_auth_attempt_bucket_keys,
+    build_auth_attempt_throttle,
+)
 from src.application.services.base_auth_service import BaseAuthService
 from src.core.config import settings
 from src.core.exceptions import UnauthorizedError
 from src.core.logging import get_logger
+from src.domain.repositories.auth_attempt_repository import AuthAttemptRepository
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _build_throttle(auth_attempt_repo: AuthAttemptRepository):
+    return build_auth_attempt_throttle(auth_attempt_repo)
+
+
+def _client_ip(request: Request) -> str | None:
+    return request.client.host if request.client else None
+
+
+async def _run_signin(
+    *,
+    request: Request,
+    response: Response,
+    dto: LoginDto,
+    service: BaseAuthService,
+    auth_attempt_repo: AuthAttemptRepository,
+    include_tokens: bool,
+    include_cookies: bool,
+    log_message: str,
+) -> AuthResponseDto:
+    identifier = dto.email.strip().lower()
+    client_ip = _client_ip(request)
+    bucket_keys = build_auth_attempt_bucket_keys(client_ip, identifier)
+    async with auth_attempt_repo.locked(bucket_keys) as locked_repo:
+        throttle = _build_throttle(locked_repo)
+        await throttle.assert_allowed("signin", client_ip, identifier)
+        try:
+            auth = await service.signin(dto)
+        except UnauthorizedError:
+            await throttle.record_failure("signin", client_ip, identifier)
+            raise
+    logger.info("{} | identifier={}", log_message, dto.email)
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=include_tokens,
+        include_cookies=include_cookies,
+    )
+
+
+async def _run_refresh(
+    *,
+    request: Request,
+    response: Response,
+    dto: RefreshDto | None,
+    service: BaseAuthService,
+    include_tokens: bool,
+    include_cookies: bool,
+    log_message: str,
+) -> AuthResponseDto:
+    refresh_token = (dto.refresh_token if dto is not None else None) or request.cookies.get(
+        settings.refresh_cookie_name
+    )
+    if not refresh_token:
+        raise UnauthorizedError(code="INVALID_REFRESH_TOKEN")
+    logger.debug(log_message)
+    auth = await service.refresh(RefreshDto(refresh_token=refresh_token))
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=include_tokens,
+        include_cookies=include_cookies,
+    )
 
 
 @router.post("/register", response_model=AuthResponseDto, status_code=201, include_in_schema=False)
@@ -38,21 +108,69 @@ async def signup(
 ) -> AuthResponseDto:
     auth = await service.signup(dto)
     logger.info("Регистрация | email={}", dto.email)
-    set_auth_cookies(response, auth)
-    return auth
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=False,
+        include_cookies=True,
+    )
+
+
+@router.post("/native/signup", response_model=AuthResponseDto, status_code=201)
+async def native_signup(
+    response: Response,
+    dto: RegisterDto,
+    service: BaseAuthService = Depends(get_auth_service),
+) -> AuthResponseDto:
+    auth = await service.signup(dto)
+    logger.info("Native регистрация | email={}", dto.email)
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=True,
+        include_cookies=False,
+    )
 
 
 @router.post("/login", response_model=AuthResponseDto, include_in_schema=False)
 @router.post("/signin", response_model=AuthResponseDto)
 async def signin(
+    request: Request,
     response: Response,
     dto: LoginDto,
     service: BaseAuthService = Depends(get_auth_service),
+    auth_attempt_repo: AuthAttemptRepository = Depends(get_auth_attempt_repo),
 ) -> AuthResponseDto:
-    auth = await service.signin(dto)
-    logger.info("Вход | identifier={}", dto.email)
-    set_auth_cookies(response, auth)
-    return auth
+    return await _run_signin(
+        request=request,
+        response=response,
+        dto=dto,
+        service=service,
+        auth_attempt_repo=auth_attempt_repo,
+        include_tokens=False,
+        include_cookies=True,
+        log_message="Вход",
+    )
+
+
+@router.post("/native/signin", response_model=AuthResponseDto)
+async def native_signin(
+    request: Request,
+    response: Response,
+    dto: LoginDto,
+    service: BaseAuthService = Depends(get_auth_service),
+    auth_attempt_repo: AuthAttemptRepository = Depends(get_auth_attempt_repo),
+) -> AuthResponseDto:
+    return await _run_signin(
+        request=request,
+        response=response,
+        dto=dto,
+        service=service,
+        auth_attempt_repo=auth_attempt_repo,
+        include_tokens=True,
+        include_cookies=False,
+        log_message="Native вход",
+    )
 
 
 @router.post("/refresh", response_model=AuthResponseDto)
@@ -62,15 +180,33 @@ async def refresh(
     dto: RefreshDto | None = None,
     service: BaseAuthService = Depends(get_auth_service),
 ) -> AuthResponseDto:
-    refresh_token = (dto.refresh_token if dto is not None else None) or request.cookies.get(
-        settings.refresh_cookie_name
+    return await _run_refresh(
+        request=request,
+        response=response,
+        dto=dto,
+        service=service,
+        include_tokens=False,
+        include_cookies=True,
+        log_message="refresh_token",
     )
-    if not refresh_token:
-        raise UnauthorizedError(code="INVALID_REFRESH_TOKEN")
-    logger.debug("refresh_token")
-    auth = await service.refresh(RefreshDto(refresh_token=refresh_token))
-    set_auth_cookies(response, auth)
-    return auth
+
+
+@router.post("/native/refresh", response_model=AuthResponseDto)
+async def native_refresh(
+    request: Request,
+    response: Response,
+    dto: RefreshDto | None = None,
+    service: BaseAuthService = Depends(get_auth_service),
+) -> AuthResponseDto:
+    return await _run_refresh(
+        request=request,
+        response=response,
+        dto=dto,
+        service=service,
+        include_tokens=True,
+        include_cookies=False,
+        log_message="native refresh_token",
+    )
 
 
 @router.get("/me", response_model=AuthStateResponseDto)
@@ -136,11 +272,23 @@ async def update_recovery_code(
 
 @router.post("/recover-password/code/reset", status_code=204)
 async def reset_password_by_recovery_code(
+    request: Request,
     response: Response,
     dto: RecoverPasswordByCodeDto,
     service: BaseAuthService = Depends(get_auth_service),
+    auth_attempt_repo: AuthAttemptRepository = Depends(get_auth_attempt_repo),
 ) -> None:
-    await service.reset_password_by_recovery_code(dto)
+    identifier = dto.email.strip().lower()
+    client_ip = _client_ip(request)
+    bucket_keys = build_auth_attempt_bucket_keys(client_ip, identifier)
+    async with auth_attempt_repo.locked(bucket_keys) as locked_repo:
+        throttle = _build_throttle(locked_repo)
+        await throttle.assert_allowed("recovery_reset", client_ip, identifier)
+        try:
+            await service.reset_password_by_recovery_code(dto)
+        except UnauthorizedError:
+            await throttle.record_failure("recovery_reset", client_ip, identifier)
+            raise
     clear_auth_cookies(response)
 
 

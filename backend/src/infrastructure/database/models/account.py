@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy import text as sa_text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -17,9 +17,14 @@ class AccountModel(Base):
     """Таблица аккаунтов с привязкой к семье."""
 
     __tablename__ = "accounts"
+    __table_args__ = (
+        CheckConstraint(
+            "family_role = 'deleted' OR email IS NOT NULL",
+            name="ck_accounts_active_email_required",
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    login: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     recovery_code_hash: Mapped[str | None] = mapped_column(String(512), nullable=True)

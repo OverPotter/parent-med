@@ -10,6 +10,7 @@ import type {
   IllnessEpisode,
   WeightEntry,
 } from "@shared/types/api";
+import { getAccountDisplayLabel, getAccountSecondaryLabel } from "@shared/utils/accountLabels";
 import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
 import type { MedicationPlanPriorityItem } from "../../utils/medicationPlans";
@@ -105,7 +106,7 @@ function EpisodeReminderRecipientsCard({
             <div className="space-y-2">
               {familyMembers.map((member) => {
                 const selected = selectedIds.includes(member.id);
-                const label = member.displayName || member.login || member.id;
+                const label = getAccountDisplayLabel(member);
                 return (
                   <button
                     key={member.id}
@@ -133,7 +134,7 @@ function EpisodeReminderRecipientsCard({
                         {label}
                       </span>
                       <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
-                        {member.relationshipLabel || member.login || member.email || member.id}
+                        {getAccountSecondaryLabel(member)}
                       </span>
                     </span>
                     <span className="soft-choice-check">{selected ? "✓" : null}</span>
@@ -162,7 +163,7 @@ function formatIllnessRecipientsSummary(params: {
   );
   const labels = params.familyMembers
     .filter((member) => resolvedIds.includes(member.id))
-    .map((member) => member.displayName || member.login || member.id);
+    .map(getAccountDisplayLabel);
 
   if (labels.length === 0) {
     return params.language === "ru"

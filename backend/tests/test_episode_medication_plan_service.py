@@ -91,7 +91,6 @@ class StubAccountRepository:
 def build_account(family_id, child_id) -> AuthenticatedAccount:  # noqa: ANN001
     return AuthenticatedAccount(
         id=uuid4(),
-        login="parent",
         email="parent@example.com",
         family_id=family_id,
         display_name="Parent",

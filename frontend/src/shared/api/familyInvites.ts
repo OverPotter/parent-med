@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { buildClientSessionTokens, isNativeClientRuntime } from "@shared/security/authSession";
 import type { AuthSessionResponse, FamilyInvite, FamilyInvitePreview } from "@shared/types/api";
 import {
   toAccount,
@@ -9,11 +10,10 @@ import {
 
 interface RawAuthResponse {
   token_type: string;
-  access_token: string;
-  refresh_token: string;
+  access_token: string | null;
+  refresh_token: string | null;
   account: {
     id: string;
-    login: string;
     email: string | null;
     family_id: string;
     display_name: string;
@@ -48,8 +48,10 @@ interface RawAuthResponse {
 function toAuthResponse(raw: RawAuthResponse): AuthSessionResponse {
   return {
     tokenType: raw.token_type,
-    accessToken: raw.access_token,
-    refreshToken: raw.refresh_token,
+    ...buildClientSessionTokens({
+      accessToken: raw.access_token,
+      refreshToken: raw.refresh_token,
+    }),
     account: toAccount(raw.account),
     family: toFamily(raw.family),
   };
@@ -80,6 +82,9 @@ export async function fetchFamilyInvitePreview(token: string): Promise<FamilyInv
 }
 
 export async function acceptFamilyInvite(token: string): Promise<AuthSessionResponse> {
-  const res = await apiClient.post<RawAuthResponse>(`/family-invites/${token}/accept`);
+  const endpoint = isNativeClientRuntime()
+    ? `/family-invites/${token}/accept/native`
+    : `/family-invites/${token}/accept`;
+  const res = await apiClient.post<RawAuthResponse>(endpoint);
   return toAuthResponse(res.data);
 }

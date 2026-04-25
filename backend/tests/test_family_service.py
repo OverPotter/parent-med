@@ -72,7 +72,6 @@ async def test_list_members_for_account_returns_admin_first() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
-        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -87,7 +86,6 @@ async def test_list_members_for_account_returns_admin_first() -> None:
     )
     adult = Account(
         id=uuid4(),
-        login="papa",
         email="dad@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -117,7 +115,6 @@ async def test_delete_member_rejects_last_admin() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
-        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -151,7 +148,6 @@ async def test_delete_member_revokes_sessions() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
-        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -166,7 +162,6 @@ async def test_delete_member_revokes_sessions() -> None:
     )
     adult = Account(
         id=uuid4(),
-        login="papa",
         email="dad@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -203,7 +198,6 @@ async def test_member_can_update_own_profile() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     adult = Account(
         id=uuid4(),
-        login="papa",
         email="dad@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -244,7 +238,6 @@ async def test_update_family_saves_cabinet_recipients() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
-        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -259,7 +252,6 @@ async def test_update_family_saves_cabinet_recipients() -> None:
     )
     adult = Account(
         id=uuid4(),
-        login="papa",
         email="dad@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -291,7 +283,6 @@ async def test_update_family_rejects_foreign_cabinet_recipient() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
-        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -323,7 +314,6 @@ async def test_update_family_rejects_cabinet_recipient_without_cabinet_access() 
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
-        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -338,7 +328,6 @@ async def test_update_family_rejects_cabinet_recipient_without_cabinet_access() 
     )
     hidden_member = Account(
         id=uuid4(),
-        login="grandma",
         email="grandma@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -381,7 +370,6 @@ async def test_update_family_cabinet_recipient_matrix(
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
-        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -396,7 +384,6 @@ async def test_update_family_cabinet_recipient_matrix(
     )
     member = Account(
         id=uuid4(),
-        login="relative",
         email="relative@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -436,7 +423,6 @@ async def test_update_family_for_account_requires_admin() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     member = Account(
         id=uuid4(),
-        login="papa",
         email="dad@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -513,7 +499,6 @@ async def test_update_member_rejects_pillbox_push_without_action_access() -> Non
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
-        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -528,7 +513,6 @@ async def test_update_member_rejects_pillbox_push_without_action_access() -> Non
     )
     member = Account(
         id=uuid4(),
-        login="grandma",
         email="grandma@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -569,7 +553,6 @@ async def test_update_member_rejects_pillbox_edit_without_children_edit_access()
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
-        login="mama",
         email="mom@example.com",
         password_hash="hash",
         family_id=family.id,
@@ -584,7 +567,6 @@ async def test_update_member_rejects_pillbox_edit_without_children_edit_access()
     )
     member = Account(
         id=uuid4(),
-        login="grandma",
         email="grandma@example.com",
         password_hash="hash",
         family_id=family.id,

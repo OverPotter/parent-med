@@ -235,11 +235,8 @@ def _normalize_medicine_name(value: str | None) -> str:
 
 def _resolve_account_recipient_label(account: Any, language: str) -> str:
     display_name = (getattr(account, "display_name", None) or "").strip()
-    login = (getattr(account, "login", None) or "").strip()
     if display_name:
         return display_name
-    if login:
-        return f"@{login}"
     return "you" if language == "en" else "вас"
 
 

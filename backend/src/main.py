@@ -42,6 +42,9 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    if not settings.is_local_environment and not settings.auth_cookie_secure:
+        raise RuntimeError("AUTH_COOKIE_SECURE must be true outside local development")
+
     app = FastAPI(
         title="PillPath API",
         description="Умная аптечка и ведение болезни ребёнка (MVP)",

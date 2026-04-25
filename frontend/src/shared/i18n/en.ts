@@ -373,7 +373,7 @@ export const en: Translations = {
       loginHint:
         "The login is only used for sign-in. You can set a separate display name for the family.",
       password: "Password",
-      passwordPlaceholder: "At least 6 characters",
+      passwordPlaceholder: "At least 8 characters",
       passwordConfirm: "Repeat password",
       passwordConfirmPlaceholder: "Repeat password",
       email: "Email",

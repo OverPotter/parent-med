@@ -3,16 +3,20 @@
  */
 
 import { apiClient } from "./client";
+import {
+  buildClientSessionTokens,
+  isNativeClientRuntime,
+  sanitizeRefreshToken,
+} from "@shared/security/authSession";
 import type { AuthSessionResponse, AuthStateResponse } from "@shared/types/api";
 import { toAccount, toFamily } from "@shared/types/transform";
 
 interface RawAuthResponse {
   token_type: string;
-  access_token: string;
-  refresh_token: string;
+  access_token: string | null;
+  refresh_token: string | null;
   account: {
     id: string;
-    login: string;
     email: string | null;
     family_id: string;
     display_name: string;
@@ -48,8 +52,10 @@ interface RawAuthResponse {
 function toAuthResponse(raw: RawAuthResponse): AuthSessionResponse {
   return {
     tokenType: raw.token_type,
-    accessToken: raw.access_token,
-    refreshToken: raw.refresh_token,
+    ...buildClientSessionTokens({
+      accessToken: raw.access_token,
+      refreshToken: raw.refresh_token,
+    }),
     account: toAccount(raw.account),
     family: toFamily(raw.family),
   };
@@ -58,7 +64,6 @@ function toAuthResponse(raw: RawAuthResponse): AuthSessionResponse {
 function toAuthState(raw: {
   account: {
     id: string;
-    login: string;
     email: string | null;
     family_id: string;
     display_name: string;
@@ -84,7 +89,8 @@ export async function register(payload: {
   invite_token?: string;
   preferred_language?: "ru" | "en";
 }): Promise<AuthSessionResponse> {
-  const res = await apiClient.post<RawAuthResponse>("/auth/signup", payload);
+  const endpoint = isNativeClientRuntime() ? "/auth/native/signup" : "/auth/signup";
+  const res = await apiClient.post<RawAuthResponse>(endpoint, payload);
   return toAuthResponse(res.data);
 }
 
@@ -93,16 +99,19 @@ export async function login(payload: {
   password: string;
   remember_me?: boolean;
 }): Promise<AuthSessionResponse> {
-  const res = await apiClient.post<RawAuthResponse>("/auth/signin", payload);
+  const endpoint = isNativeClientRuntime() ? "/auth/native/signin" : "/auth/signin";
+  const res = await apiClient.post<RawAuthResponse>(endpoint, payload);
   return toAuthResponse(res.data);
 }
 
 export async function refreshSession(refreshToken?: string | null): Promise<AuthSessionResponse> {
+  const tokenForBody = sanitizeRefreshToken(refreshToken);
+  const endpoint = isNativeClientRuntime() ? "/auth/native/refresh" : "/auth/refresh";
   const res = await apiClient.post<RawAuthResponse>(
-    "/auth/refresh",
-    refreshToken
+    endpoint,
+    tokenForBody
       ? {
-          refresh_token: refreshToken,
+          refresh_token: tokenForBody,
         }
       : undefined
   );
@@ -113,7 +122,6 @@ export async function fetchMe(): Promise<AuthStateResponse> {
   const res = await apiClient.get<{
     account: {
       id: string;
-      login: string;
       email: string | null;
       family_id: string;
       display_name: string;
@@ -165,7 +173,6 @@ export async function resetPasswordByRecoveryCode(payload: {
 export async function updateAccountLanguage(preferredLanguage: "ru" | "en") {
   const res = await apiClient.patch<{
     id: string;
-    login: string;
     email: string | null;
     family_id: string;
     display_name: string;

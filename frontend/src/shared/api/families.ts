@@ -21,7 +21,6 @@ type RawFamily = {
 
 type RawFamilyMember = {
   id: string;
-  login: string;
   email: string | null;
   family_id: string;
   display_name: string;

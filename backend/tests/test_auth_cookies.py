@@ -12,7 +12,6 @@ def make_auth_response() -> AuthResponseDto:
         refresh_token="refresh-token",
         account=AccountResponseDto(
             id="00000000-0000-0000-0000-000000000001",
-            login="mama_anya",
             email=None,
             family_id="00000000-0000-0000-0000-000000000002",
             display_name="Мама",

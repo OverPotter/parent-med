@@ -11,6 +11,10 @@ import {
   readSecureAuthTokens,
   writeSecureAuthTokens,
 } from "@shared/security/authTokenStorage";
+import {
+  buildClientSessionTokens,
+  isCookieSessionMarker,
+} from "@shared/security/authSession";
 import { appLog } from "@shared/utils/appLog";
 
 type Theme = "light" | "dark" | "system";
@@ -91,7 +95,6 @@ interface AppState {
   authToken: string | null;
   refreshToken: string | null;
   accountId: string | null;
-  accountLogin: string | null;
   accountEmail: string | null;
   accountDisplayName: string | null;
   accountNeedsProfileCompletion: boolean;
@@ -103,11 +106,10 @@ interface AppState {
   currentFamilyId: string | null;
   currentFamilyName: string | null;
   setSession: (session: {
-    accessToken: string;
-    refreshToken: string;
+    accessToken: string | null;
+    refreshToken: string | null;
     account: {
       id: string;
-      login: string;
       email: string | null;
       displayName: string;
       needsProfileCompletion: boolean;
@@ -122,7 +124,6 @@ interface AppState {
   setAuthState: (state: {
     account: {
       id: string;
-      login: string;
       email: string | null;
       displayName: string;
       needsProfileCompletion: boolean;
@@ -192,7 +193,6 @@ export const useAppStore = create<AppState>()(
       authToken: null,
       refreshToken: null,
       accountId: null,
-      accountLogin: null,
       accountEmail: null,
       accountDisplayName: null,
       accountNeedsProfileCompletion: false,
@@ -203,13 +203,16 @@ export const useAppStore = create<AppState>()(
       currentFamilyId: null,
       currentFamilyName: null,
       setSession: (session) => {
+        const clientTokens = buildClientSessionTokens({
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+        });
         set(() => {
           applyLanguageToDocument(session.account.preferredLanguage);
           return {
-            authToken: session.accessToken,
-            refreshToken: session.refreshToken,
+            authToken: clientTokens.accessToken,
+            refreshToken: clientTokens.refreshToken,
             accountId: session.account.id,
-            accountLogin: session.account.login,
             accountEmail: session.account.email,
             accountDisplayName: session.account.displayName,
             accountNeedsProfileCompletion: session.account.needsProfileCompletion,
@@ -224,8 +227,8 @@ export const useAppStore = create<AppState>()(
         });
         if (isNativeIOSRuntime()) {
           void writeSecureAuthTokens({
-            accessToken: session.accessToken,
-            refreshToken: session.refreshToken,
+            accessToken: clientTokens.accessToken,
+            refreshToken: clientTokens.refreshToken,
           });
         }
       },
@@ -248,7 +251,6 @@ export const useAppStore = create<AppState>()(
           applyLanguageToDocument(state.account.preferredLanguage);
           return {
             accountId: state.account.id,
-            accountLogin: state.account.login,
             accountEmail: state.account.email,
             accountDisplayName: state.account.displayName,
             accountNeedsProfileCompletion: state.account.needsProfileCompletion,
@@ -296,7 +298,6 @@ export const useAppStore = create<AppState>()(
           authToken: null,
           refreshToken: null,
           accountId: null,
-          accountLogin: null,
           accountEmail: null,
           accountDisplayName: null,
           accountNeedsProfileCompletion: false,
@@ -328,7 +329,6 @@ export const useAppStore = create<AppState>()(
         hasSeenWorkspaceIntro: s.hasSeenWorkspaceIntro,
         ...(isNativeIOSRuntime() ? {} : { authToken: s.authToken, refreshToken: s.refreshToken }),
         accountId: s.accountId,
-        accountLogin: s.accountLogin,
         accountEmail: s.accountEmail,
         accountDisplayName: s.accountDisplayName,
         accountNeedsProfileCompletion: s.accountNeedsProfileCompletion,
@@ -354,6 +354,29 @@ export const useAppStore = create<AppState>()(
         }
 
         if (!isNativeIOSRuntime()) {
+          const hasPersistedCookieSession =
+            isCookieSessionMarker(state.authToken) || isCookieSessionMarker(state.refreshToken);
+          if (hasPersistedCookieSession) {
+            useAppStore.setState({
+              authToken: buildClientSessionTokens({}).accessToken,
+              refreshToken: buildClientSessionTokens({}).refreshToken,
+            });
+          } else {
+            useAppStore.setState({
+              authToken: null,
+              refreshToken: null,
+              accountId: null,
+              accountEmail: null,
+              accountDisplayName: null,
+              accountNeedsProfileCompletion: false,
+              accountHasRecoveryCode: false,
+              accountPreferredLanguage: null,
+              accountFamilyRole: null,
+              accountAccessPolicy: null,
+              currentFamilyId: null,
+              currentFamilyName: null,
+            });
+          }
           state.setHydrated(true);
           return;
         }

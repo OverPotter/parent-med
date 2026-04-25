@@ -26,7 +26,6 @@ export interface FamilyAccessPolicy {
 
 export interface Account {
   id: string;
-  login: string;
   email: string | null;
   familyId: string;
   displayName: string;
@@ -41,8 +40,8 @@ export interface Account {
 
 export interface AuthSessionResponse {
   tokenType: string;
-  accessToken: string;
-  refreshToken: string;
+  accessToken: string | null;
+  refreshToken: string | null;
   account: Account;
   family: Family;
 }

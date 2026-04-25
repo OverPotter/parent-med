@@ -31,7 +31,6 @@ from src.core.security import (
 )
 from src.domain.entities.account import Account, copy_account
 from src.domain.entities.account_identity import (
-    build_login_from_email,
     needs_profile_completion,
     resolve_display_name,
 )
@@ -102,7 +101,6 @@ class AuthService(BaseAuthService):
         return AuthResponseDto(
             access_token=create_access_token(
                 account_id=account.id,
-                login=account.login,
                 family_id=account.family_id,
             ),
             refresh_token=refresh_token,
@@ -149,10 +147,8 @@ class AuthService(BaseAuthService):
         else:
             family = Family(id=uuid4(), name=family_name)
             created_family = await self._family_repo.add(family)
-        login = build_login_from_email(email or "member@example.com", uuid4().hex[:8])
         account = Account(
             id=uuid4(),
-            login=login,
             email=email,
             password_hash=hash_password(dto.password),
             recovery_code_hash=None,
@@ -193,8 +189,6 @@ class AuthService(BaseAuthService):
     async def signin(self, dto: LoginDto) -> AuthResponseDto:
         identifier = dto.email.strip().lower()
         account = await self._account_repo.get_by_email(identifier)
-        if account is None and "@" not in identifier:
-            account = await self._account_repo.get_by_login(identifier)
         if not account or not verify_password(dto.password, account.password_hash):
             raise UnauthorizedError("Неверный email или пароль", code="INVALID_CREDENTIALS")
         family = await self._family_repo.get_by_id(account.family_id)
@@ -214,7 +208,6 @@ class AuthService(BaseAuthService):
             raise UnauthorizedError()
         return AuthenticatedAccount(
             id=account.id,
-            login=account.login,
             email=account.email,
             family_id=family_id,
             display_name=resolve_display_name(account.display_name),
@@ -267,11 +260,9 @@ class AuthService(BaseAuthService):
         await self._session_repo.delete_by_account_id(account_id)
 
     async def _soft_delete_account(self, account: Account) -> None:
-        deleted_login = f"deleted-{account.id.hex[:12]}"
         await self._account_repo.update(
             copy_account(
                 account,
-                login=deleted_login,
                 email=None,
                 password_hash=hash_password(uuid4().hex),
                 recovery_code_hash=None,
@@ -332,6 +323,7 @@ class AuthService(BaseAuthService):
         await self._account_repo.update(
             copy_account(account, password_hash=hash_password(dto.new_password))
         )
+        await self._session_repo.delete_by_account_id(account.id)
 
     async def update_recovery_code(self, account_id: UUID, dto: UpdateRecoveryCodeDto) -> None:
         account = await self._account_repo.get_by_id(account_id)

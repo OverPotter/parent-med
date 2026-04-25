@@ -24,7 +24,6 @@ class SqlAccountRepository(AccountRepository):
     def _to_entity(self, model: AccountModel) -> Account:
         return Account(
             id=model.id,
-            login=model.login,
             email=model.email,
             password_hash=model.password_hash,
             recovery_code_hash=model.recovery_code_hash,
@@ -52,7 +51,6 @@ class SqlAccountRepository(AccountRepository):
     def _to_model(self, entity: Account) -> AccountModel:
         return AccountModel(
             id=entity.id,
-            login=entity.login,
             email=entity.email,
             password_hash=entity.password_hash,
             recovery_code_hash=entity.recovery_code_hash,
@@ -79,13 +77,6 @@ class SqlAccountRepository(AccountRepository):
 
     async def get_by_id(self, id: UUID) -> Account | None:
         result = await self._session.execute(select(AccountModel).where(AccountModel.id == id))
-        row = result.scalars().one_or_none()
-        return self._to_entity(row) if row else None
-
-    async def get_by_login(self, login: str) -> Account | None:
-        result = await self._session.execute(
-            select(AccountModel).where(AccountModel.login == login)
-        )
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
 
@@ -128,7 +119,6 @@ class SqlAccountRepository(AccountRepository):
         row = result.scalars().one_or_none()
         if not row:
             raise ValueError(f"Account {entity.id} not found")
-        row.login = entity.login
         row.email = entity.email
         row.password_hash = entity.password_hash
         row.recovery_code_hash = entity.recovery_code_hash

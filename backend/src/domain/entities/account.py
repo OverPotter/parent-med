@@ -15,10 +15,9 @@ AccountLanguage = Literal["ru", "en"]
 
 @dataclass
 class Account:
-    """Аккаунт с логином, хешем пароля и привязкой к семье."""
+    """Аккаунт с email, хешем пароля и привязкой к семье."""
 
     id: UUID
-    login: str
     email: str | None
     password_hash: str
     family_id: UUID

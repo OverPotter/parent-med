@@ -2,6 +2,7 @@
 
 import json
 from typing import Annotated, Any
+from urllib.parse import urlparse
 
 from pydantic import BeforeValidator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -115,6 +116,12 @@ class Settings(BaseSettings):
         if not self.apns_auth_key:
             return None
         return self.apns_auth_key.replace("\\n", "\n")
+
+    @property
+    def is_local_environment(self) -> bool:
+        normalized = self.database_url.replace("+asyncpg", "")
+        hostname = urlparse(normalized).hostname
+        return hostname in {"localhost", "127.0.0.1", None}
 
 
 settings = Settings()

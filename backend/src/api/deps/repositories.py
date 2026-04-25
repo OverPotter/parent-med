@@ -4,10 +4,12 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps.database import get_db_session
+from src.core.lifespan import get_async_session_factory
 from src.domain.repositories.account_feedback_repository import AccountFeedbackRepository
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
+from src.domain.repositories.auth_attempt_repository import AuthAttemptRepository
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.curated_medicine_catalog_repository import (
     CuratedMedicineCatalogRepository,
@@ -37,6 +39,9 @@ from src.infrastructure.database.repositories.account_session_repository import 
 )
 from src.infrastructure.database.repositories.administration_event_repository import (
     SqlAdministrationEventRepository,
+)
+from src.infrastructure.database.repositories.auth_attempt_repository import (
+    SqlAuthAttemptRepository,
 )
 from src.infrastructure.database.repositories.child_repository import SqlChildRepository
 from src.infrastructure.database.repositories.curated_medicine_catalog_repository import (
@@ -94,6 +99,10 @@ def get_account_session_repo(
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountSessionRepository:
     return SqlAccountSessionRepository(session)
+
+
+def get_auth_attempt_repo() -> AuthAttemptRepository:
+    return SqlAuthAttemptRepository(get_async_session_factory())
 
 
 def get_family_repo(session: AsyncSession = Depends(get_db_session)) -> FamilyRepository:

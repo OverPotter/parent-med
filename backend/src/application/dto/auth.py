@@ -37,7 +37,7 @@ class RegisterDto(BaseModel):
     """Регистрация аккаунта с созданием семьи."""
 
     email: str = Field(..., min_length=5, description="Email аккаунта для связи и восстановления")
-    password: str = Field(..., min_length=6, description="Пароль")
+    password: str = Field(..., min_length=8, description="Пароль")
     remember_me: bool = Field(False, description="Оставаться в системе на этом устройстве")
     invite_token: str | None = Field(None, description="Токен приглашения в существующую семью")
     preferred_language: AccountLanguage = Field(
@@ -49,18 +49,18 @@ class RegisterDto(BaseModel):
 
 
 class LoginDto(BaseModel):
-    """Вход по email и паролю с legacy-fallback на login."""
+    """Вход по email и паролю."""
 
     email: str = Field(..., min_length=3, description="Email аккаунта")
-    password: str = Field(..., min_length=6, description="Пароль")
+    password: str = Field(..., min_length=1, description="Пароль")
     remember_me: bool = Field(False, description="Оставаться в системе на этом устройстве")
 
 
 class ChangePasswordDto(BaseModel):
     """Смена пароля авторизованного аккаунта."""
 
-    current_password: str = Field(..., min_length=6, description="Текущий пароль")
-    new_password: str = Field(..., min_length=6, description="Новый пароль")
+    current_password: str = Field(..., min_length=1, description="Текущий пароль")
+    new_password: str = Field(..., min_length=8, description="Новый пароль")
 
 
 class UpdateLanguageDto(BaseModel):
@@ -86,7 +86,7 @@ class RecoverPasswordByCodeDto(BaseModel):
 
     email: str = Field(..., min_length=5, description="Email аккаунта")
     recovery_code: str = Field(..., min_length=8, description="Recovery code")
-    new_password: str = Field(..., min_length=6, description="Новый пароль")
+    new_password: str = Field(..., min_length=8, description="Новый пароль")
 
     _normalized_email = field_validator("email")(_validate_email)
     _normalized_recovery_code = field_validator("recovery_code")(_normalize_recovery_code)
@@ -102,7 +102,6 @@ class AccountResponseDto(ResponseBase):
     """Ответ: аккаунт."""
 
     id: UUID
-    login: str
     email: str | None
     family_id: UUID
     display_name: str
@@ -120,7 +119,6 @@ class AuthenticatedAccount:
     """Текущий авторизованный аккаунт."""
 
     id: UUID
-    login: str
     email: str | None
     family_id: UUID
     display_name: str
@@ -144,6 +142,6 @@ class AuthResponseDto(AuthStateResponseDto):
     """Ответ авторизации."""
 
     token_type: str = "bearer"
-    access_token: str
-    refresh_token: str
+    access_token: str | None
+    refresh_token: str | None
     remember_me: bool = False
