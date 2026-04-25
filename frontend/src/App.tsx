@@ -248,6 +248,7 @@ export default function App() {
   const authToken = useAppStore((s) => s.authToken);
   const accountId = useAppStore((s) => s.accountId);
   const hydrated = useAppStore((s) => s.hydrated);
+  const setHydrated = useAppStore((s) => s.setHydrated);
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isStandalonePwa = useMemo(() => {
     if (typeof window === "undefined") {
@@ -318,13 +319,29 @@ export default function App() {
     };
   }, [hydrated]);
 
+  useEffect(() => {
+    if (hydrated || isNativeRuntime || typeof window === "undefined") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (useAppStore.getState().hydrated) {
+        return;
+      }
+      appLog.warn("Hydration watchdog: forcing web app render");
+      setHydrated(true);
+    }, 1200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [hydrated, isNativeRuntime, setHydrated]);
+
   if (!hydrated) {
     return null;
   }
 
   return (
     <BrowserRouter>
-      {!isNativeRuntime ? (
+      {!isNativeRuntime && !isStandalonePwa ? (
         <a href="#app-route-root" className="a11y-skip-link">
           {language === "ru" ? "Перейти к содержимому" : "Skip to content"}
         </a>

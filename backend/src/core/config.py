@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     access_cookie_name: str = "pillpath_access_token"
     refresh_cookie_name: str = "pillpath_refresh_token"
     auth_cookie_secure: bool = False
-    auth_cookie_samesite: str = "lax"
+    auth_cookie_samesite: str = "auto"
     app_timezone: str = "Europe/Minsk"
     push_poll_interval_seconds: int = 5
     web_push_public_key: str | None = None

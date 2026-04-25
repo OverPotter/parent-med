@@ -42,15 +42,14 @@ export function ChildSectionTopBar({
 
   const handleLogout = async () => {
     const refreshToken = useAppStore.getState().refreshToken;
+    setBearerToken(null);
+    clearSession();
     try {
-      await cleanupDeviceSessionArtifacts();
       await logout(refreshToken);
     } catch {
       // Local logout must still work if the backend session is already gone.
-    } finally {
-      setBearerToken(null);
-      clearSession();
     }
+    await cleanupDeviceSessionArtifacts({ includeServerCleanup: false });
   };
 
   return (
