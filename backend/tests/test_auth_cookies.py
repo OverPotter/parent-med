@@ -65,14 +65,18 @@ def test_clear_auth_cookies_deletes_both_tokens() -> None:
 
 
 def test_auth_cookie_samesite_auto_uses_none_outside_local(monkeypatch) -> None:
-    monkeypatch.setattr(settings, "database_url", "postgresql+asyncpg://u:p@db.example.com:5432/app")
+    monkeypatch.setattr(
+        settings, "database_url", "postgresql+asyncpg://u:p@db.example.com:5432/app"
+    )
     monkeypatch.setattr(settings, "auth_cookie_samesite", "auto")
 
     assert resolve_auth_cookie_samesite() == "none"
 
 
 def test_auth_cookie_samesite_explicit_value_wins(monkeypatch) -> None:
-    monkeypatch.setattr(settings, "database_url", "postgresql+asyncpg://u:p@db.example.com:5432/app")
+    monkeypatch.setattr(
+        settings, "database_url", "postgresql+asyncpg://u:p@db.example.com:5432/app"
+    )
     monkeypatch.setattr(settings, "auth_cookie_samesite", "strict")
 
     assert resolve_auth_cookie_samesite() == "strict"

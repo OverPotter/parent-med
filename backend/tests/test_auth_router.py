@@ -244,9 +244,7 @@ def test_native_family_invite_accept_returns_tokens() -> None:
 
 def test_native_logout_passes_refresh_token_from_body() -> None:
     service = StubAuthService()
-    client = _build_test_app(
-        auth_service=service, attempts_repo=StubAuthAttemptRepository()
-    )
+    client = _build_test_app(auth_service=service, attempts_repo=StubAuthAttemptRepository())
 
     response = client.post(
         "/api/v1/auth/logout",

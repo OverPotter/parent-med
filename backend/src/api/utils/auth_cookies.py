@@ -8,7 +8,6 @@ from fastapi import Response
 from src.application.dto.auth import AuthResponseDto
 from src.core.config import settings
 
-
 CookieSameSite = Literal["lax", "strict", "none"]
 
 
