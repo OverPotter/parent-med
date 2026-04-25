@@ -43,3 +43,9 @@ docker compose up -d --build
 - Скрипт: `VITE_HITKEEP_SCRIPT_URL` (например `http://localhost:8080/hk.js`) — см. `frontend/.env.example`.
 - Дашборд: http://localhost:8080 · домен сайта в UI — hostname вида `что-то.зона`, не `localhost` без точки; удобно `pillpath.localhost`.
 - Прод (Railway и т.д.): отдельный сервис HitKeep, том на `/var/lib/hitkeep/data`, переменные `HITKEEP_PUBLIC_URL`, `HITKEEP_JWT_SECRET`, `HITKEEP_HTTP_ADDR=:$PORT`; фронт собирать с тем же `VITE_HITKEEP_SCRIPT_URL`.
+
+## Project Maps
+
+Если нужно быстро понять текущую архитектуру проекта, начинать отсюда:
+
+- [docs/README.md](./docs/README.md)
