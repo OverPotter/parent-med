@@ -9,6 +9,10 @@ export interface Translations {
     goHome: string;
     aboutApp: string;
     logout: string;
+    cancel: string;
+    logoutConfirmTitle: string;
+    logoutConfirmDescription: string;
+    logoutConfirmAction: string;
     profile: string;
     settings: string;
     logoutFromAccount: string;

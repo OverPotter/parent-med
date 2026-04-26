@@ -28,6 +28,12 @@
 - [x] Invite flow simplified to owner-only:
   - only `owner` may create/share invites
   - `admin` no longer participates in invite management
+- [x] Family leave flow added:
+  - `member` and `admin` may leave the current family
+  - leaving keeps the same account and credentials
+  - the leaving account is moved into a new empty family
+  - the leaving account becomes the `owner` of that new family
+  - `owner` may not use `leave family`
 - [x] Billing foundation added:
   - migration `062_add_billing_foundation.py`
   - entities for `Plan`, `Subscription`, `BillingEvent`
@@ -244,6 +250,12 @@ Deletion and exit rules:
 - only the `owner` may delete the family
 - the family itself may not be deleted while the subscription is still active or still in an access-grace state; deletion is allowed only after the family returns to `Free`
 - if ownership transfer is needed in the future, it must be an explicit product flow; until then, prevent owner deletion instead of auto-moving subscription ownership
+- `member` and `admin` may leave the family at any time unless the current account is also the billing owner
+- leaving a family does not create a new account; it creates a new empty family for the same account
+- after leaving, the account becomes the `owner` of that new empty family with default full access
+- owner-danger UX should stay split:
+  - active/grace subscription period -> `Cancel subscription`
+  - returned to `Free` -> `Delete family`
 
 ## Family Roles
 
@@ -252,9 +264,18 @@ Deletion and exit rules:
   - controls billing
   - may delete the family
   - may create/share family invites
-  - may also manage members and access
+  - may also manage every member and every access rule
+  - may promote a `member` to `admin`
+  - may demote an `admin` back to `member`
+  - may delete both `member` and `admin`
 - `admin`
-  - may manage member roles and access
+  - may manage only `member` accounts
+  - may change access rules for `member`
+  - may update visible children/modules for `member`
+  - may delete `member`
+  - may not promote anyone to `admin`
+  - may not demote another `admin`
+  - may not manage `owner`
   - may not manage billing
   - may not create family invite links
   - may not delete the family
@@ -262,6 +283,45 @@ Deletion and exit rules:
   - may use features according to granted access
   - may not manage billing
   - may not manage the family
+  - may not change their own family-level visibility or access rules
+
+### Role Matrix
+
+#### Owner
+
+- manages subscription
+- creates invites
+- deletes family
+- promotes `member -> admin`
+- demotes `admin -> member`
+- changes access policy for any participant
+- removes `member`
+- removes `admin`
+
+#### Admin
+
+- does not manage subscription
+- does not create invites
+- does not delete family
+- does not manage `owner`
+- does not manage other `admin`
+- may manage only `member`
+- may change access policy only for `member`
+- may remove only `member`
+
+#### Member
+
+- does not manage anyone
+- uses granted access only
+- does not change family-level access for self
+- may not elevate own rights
+
+### Family Access Authority
+
+- family-level visibility and rights are defined only by higher roles
+- `owner` may define access for everyone
+- `admin` may define access only for `member`
+- `member` receives the configured access and does not reconfigure it for self
 
 ## Domain Model
 
@@ -754,3 +814,21 @@ Track subscription funnel events:
 - idempotent billing event processing
 - backend validation instead of only UI hiding
 - development stubs before real App Store testing
+
+## Family Switching Follow-up
+
+- today one account can belong to only one family at a time
+- joining another family with an existing account is allowed only if the current family is effectively empty:
+  - no other active accounts
+  - no children
+  - no household medicines
+  - no parent profiles
+- this is acceptable for now for the flow:
+  - one parent registered first
+  - did not set up data yet
+  - then got invited into the real family
+- later we need an explicit product decision for non-empty families:
+  - hard block with clear UX copy
+  - guided leave-and-join flow
+  - or real merge/transfer tooling
+- this must remain an explicit product/data-safety decision, not a silent reassignment flow

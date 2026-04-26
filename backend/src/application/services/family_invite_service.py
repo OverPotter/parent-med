@@ -9,6 +9,7 @@ from src.application.dto.family_invite import (
     FamilyInviteResponseDto,
 )
 from src.application.services.subscription_policy import resolve_family_plan_policy
+from src.core.config import settings
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.core.security import generate_session_token, hash_session_token
 from src.domain.entities.family_invite import FamilyInvite
@@ -76,6 +77,22 @@ class FamilyInviteService:
 
     async def get_preview(self, token: str) -> FamilyInvitePreviewResponseDto:
         invite, family = await self._require_active_invite(token)
+        return FamilyInvitePreviewResponseDto(
+            family_id=family.id,
+            family_name=family.name,
+            family_role=invite.family_role,
+            expires_at=invite.expires_at,
+        )
+
+    async def get_latest_preview_for_dev(self) -> FamilyInvitePreviewResponseDto:
+        if not settings.is_local_environment:
+            raise NotFoundError("Приглашение не найдено", resource="family_invite")
+        invite = await self._invite_repo.get_latest_active()
+        if not invite:
+            raise NotFoundError("Приглашение не найдено", resource="family_invite")
+        family = await self._family_repo.get_by_id(invite.family_id)
+        if not family:
+            raise NotFoundError("Семья не найдена", resource="family")
         return FamilyInvitePreviewResponseDto(
             family_id=family.id,
             family_name=family.name,

@@ -115,7 +115,7 @@ export function AccountPage() {
   const roleLabel =
     family?.ownerAccountId === accountId
       ? copy.familyOwner
-      : accountFamilyRole === "owner" || accountFamilyRole === "admin"
+      : accountFamilyRole === "admin"
         ? copy.admin
         : accountFamilyRole === "member"
           ? copy.member

@@ -18,6 +18,7 @@ from src.core.exceptions import ForbiddenError, UnauthorizedError, ValidationErr
 from src.core.security import decode_access_token, hash_password, hash_session_token, verify_password
 from src.domain.entities.account import Account
 from src.domain.entities.account_identity import DEFAULT_ACCOUNT_DISPLAY_NAME
+from src.domain.entities.family_access import FamilyAccessPolicy
 from src.domain.entities.family import Family
 from src.domain.entities.family_invite import FamilyInvite
 
@@ -86,23 +87,27 @@ class StubSessionRepository:
 class StubFamilyRepository:
     def __init__(self, family: Family) -> None:
         self.family = family
+        self.items: dict = {family.id: family}
         self.deleted_ids: list = []
         self.added_entities: list[Family] = []
 
     async def get_by_id(self, id):  # noqa: ANN001
-        return self.family if id == self.family.id else None
+        return self.items.get(id)
 
     async def add(self, entity):  # noqa: ANN001
         self.added_entities.append(entity)
         self.family = entity
+        self.items[entity.id] = entity
         return entity
 
     async def update(self, entity):  # noqa: ANN001
         self.family = entity
+        self.items[entity.id] = entity
         return entity
 
     async def delete(self, id):  # noqa: ANN001
         self.deleted_ids.append(id)
+        self.items.pop(id, None)
         return True
 
 
@@ -129,6 +134,9 @@ class StubFamilyInviteRepository:
         if self.invite and self.invite.token_hash == token_hash:
             return self.invite
         return None
+
+    async def get_latest_active(self) -> FamilyInvite | None:
+        return self.invite
 
     async def update(self, entity: FamilyInvite) -> FamilyInvite:
         self.invite = entity
@@ -209,6 +217,144 @@ async def test_signup_with_invite_joins_existing_family() -> None:
     assert result.account.needs_profile_completion is True
     assert result.account.has_recovery_code is False
     assert result.account.email == "dad@example.com"
+
+
+@pytest.mark.asyncio
+async def test_accept_latest_family_invite_for_dev_joins_existing_family() -> None:
+    old_family = Family(id=uuid4(), name="Папина семья", owner_account_id=uuid4())
+    target_family = Family(id=uuid4(), name="Семья Петровых", owner_account_id=uuid4())
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=target_family.id,
+        created_by_account_id=target_family.owner_account_id,
+        token_hash="hashed-token",
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    account_repo = StubAccountRepository()
+    account = build_account(
+        family_id=old_family.id,
+        email="dad@example.com",
+        display_name="Папа",
+        family_role="admin",
+    )
+    await account_repo.add(account)
+    family_repo = StubFamilyRepository(old_family)
+    family_repo.items[target_family.id] = target_family
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=family_repo,
+        family_invite_repo=StubFamilyInviteRepository(invite),
+    )
+
+    result = await service.accept_latest_family_invite_for_dev(account.id)
+
+    assert result.family.id == target_family.id
+    assert result.account.family_id == target_family.id
+    assert result.account.family_role == "member"
+
+
+@pytest.mark.asyncio
+async def test_leave_family_creates_new_family_for_member() -> None:
+    family = Family(id=uuid4(), name="Семья Петровых", owner_account_id=uuid4())
+    account_repo = StubAccountRepository()
+    member = build_account(
+        family_id=family.id,
+        email="dad@example.com",
+        display_name="Папа",
+        family_role="member",
+    )
+    member.access_policy = FamilyAccessPolicy(
+        all_children=False,
+        child_ids=[],
+        children_access="view",
+        cabinet_access="none",
+        pillbox_access="view",
+        cabinet_push_enabled=False,
+    )
+    await account_repo.add(member)
+    family_repo = StubFamilyRepository(family)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=family_repo,
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    result = await service.leave_family(member.id)
+
+    assert result.account.family_id != family.id
+    assert result.account.family_role == "admin"
+    assert result.family.id == result.account.family_id
+    assert result.family.owner_account_id == member.id
+    updated_member = await account_repo.get_by_id(member.id)
+    assert updated_member is not None
+    assert updated_member.family_id == result.family.id
+    assert updated_member.family_role == "admin"
+    assert updated_member.access_policy.all_children is True
+    assert updated_member.access_policy.children_access == "edit"
+    assert updated_member.access_policy.cabinet_access == "edit"
+    assert updated_member.access_policy.pillbox_access == "edit"
+    assert updated_member.access_policy.cabinet_push_enabled is True
+    assert family_repo.added_entities[-1].owner_account_id == member.id
+
+
+@pytest.mark.asyncio
+async def test_family_owner_cannot_leave_family() -> None:
+    owner = build_account(
+        family_id=uuid4(),
+        email="mom@example.com",
+        display_name="Мама",
+        family_role="admin",
+    )
+    family = Family(id=owner.family_id, name="Моя семья", owner_account_id=owner.id)
+    account_repo = StubAccountRepository()
+    await account_repo.add(owner)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    with pytest.raises(ValidationError) as exc_info:
+        await service.leave_family(owner.id)
+
+    assert exc_info.value.code == "FAMILY_OWNER_CANNOT_LEAVE"
+
+
+@pytest.mark.asyncio
+async def test_billing_owner_cannot_leave_family() -> None:
+    family_id = uuid4()
+    billing_owner = build_account(
+        family_id=family_id,
+        email="dad@example.com",
+        display_name="Папа",
+        family_role="admin",
+    )
+    family = Family(
+        id=family_id,
+        name="Семья Петровых",
+        owner_account_id=uuid4(),
+        billing_account_id=billing_owner.id,
+    )
+    account_repo = StubAccountRepository()
+    await account_repo.add(billing_owner)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    with pytest.raises(ValidationError) as exc_info:
+        await service.leave_family(billing_owner.id)
+
+    assert exc_info.value.code == "BILLING_OWNER_TRANSFER_REQUIRED"
 
 
 @pytest.mark.asyncio

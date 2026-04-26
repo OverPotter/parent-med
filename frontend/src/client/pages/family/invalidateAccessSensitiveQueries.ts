@@ -2,7 +2,8 @@ import type { QueryClient } from "@tanstack/react-query";
 
 export async function invalidateAccessSensitiveQueries(
   queryClient: QueryClient,
-  currentFamilyId: string | null
+  currentFamilyId: string | null,
+  accountId?: string | null
 ) {
   const invalidateJobs = [
     queryClient.invalidateQueries({ queryKey: ["children"] }),
@@ -17,8 +18,15 @@ export async function invalidateAccessSensitiveQueries(
     queryClient.invalidateQueries({ queryKey: ["families"] }),
   ];
 
+  if (accountId) {
+    invalidateJobs.push(
+      queryClient.invalidateQueries({ queryKey: ["families", "me", "access", accountId] })
+    );
+  }
+
   if (currentFamilyId) {
     invalidateJobs.push(
+      queryClient.invalidateQueries({ queryKey: ["families", "me", "access", currentFamilyId] }),
       queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] }),
       queryClient.invalidateQueries({ queryKey: ["families", "me", currentFamilyId] }),
       queryClient.invalidateQueries({ queryKey: ["families", "me", "members", currentFamilyId] })

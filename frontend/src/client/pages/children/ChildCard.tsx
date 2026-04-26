@@ -37,6 +37,7 @@ export function ChildCard({
   canActChild,
   canEditChild,
   planLocksChildActions,
+  isPrimaryFreeChild,
   onLockedActionAttempt,
   currentAccountId,
   copy,
@@ -55,6 +56,7 @@ export function ChildCard({
   canActChild: boolean;
   canEditChild: boolean;
   planLocksChildActions: boolean;
+  isPrimaryFreeChild: boolean;
   onLockedActionAttempt: () => void;
   currentAccountId: string | null;
   copy: ReturnType<typeof getChildrenCopy>["childrenPage"];
@@ -162,6 +164,15 @@ export function ChildCard({
                       {activeEpisodeStartedAt
                         ? formatIllnessActiveLabel(activeEpisodeStartedAt, now, language)
                         : copy.childCard.activeObservation}
+                    </span>
+                  ) : null}
+                  {planLocksChildActions ? (
+                    <span className="inline-flex shrink-0 items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-warning)_18%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-warning)_78%,var(--color-foreground))]">
+                      {copy.lockedChildBadge}
+                    </span>
+                  ) : isPrimaryFreeChild ? (
+                    <span className="inline-flex shrink-0 items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-success)_80%,var(--color-foreground))]">
+                      {copy.primaryChildBadge}
                     </span>
                   ) : null}
                 </div>

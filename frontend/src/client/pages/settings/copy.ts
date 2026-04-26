@@ -105,12 +105,24 @@ export const settingsCopy = {
       "Аккаунт будет деактивирован. Вход в него станет недоступен, восстановление не предусмотрено.",
     deleteAccountConfirmAction: "Да, удалить аккаунт",
     deleteAccountFailed: "Не удалось удалить аккаунт.",
+    cancelSubscription: "Отменить подписку",
+    cancelSubscriptionDescription:
+      "Если позже захотите удалить семью, сначала отключите автопродление. Доступ Plus сохранится до конца оплаченного периода.",
     deleteFamily: "Удалить семью",
     deleteFamilyDescription:
       "Удалит семью и отключит доступ для всех участников.",
+    deleteFamilyBlockedDescription:
+      "Семью нельзя удалить, пока у неё ещё действует Plus. Даже если продление уже отменено, доступ сохраняется до конца оплаченного периода.",
+    subscriptionAutoRenewOn: "Автопродление: включено",
+    subscriptionAutoRenewOff: "Автопродление: выключено",
+    subscriptionActiveUntil: "Доступ до",
     deleteFamilyConfirmTitle: "Точно удалить семью?",
     deleteFamilyConfirmDescription: "Все аккаунты семьи будут деактивированы. Действие необратимо.",
     deleteFamilyConfirmAction: "Да, удалить семью",
+    deleteFamilyBlockedTitle: "Семью пока нельзя удалить",
+    deleteFamilyBlockedConfirmDescription:
+      "У семьи ещё действует период доступа Plus. Простая отмена продления не выключает доступ сразу: сначала дождитесь окончания периода, и только потом удаляйте семью.",
+    deleteFamilyBlockedConfirmAction: "Управлять подпиской",
     deleteFamilyFailed: "Не удалось удалить семью.",
   },
   en: {
@@ -216,13 +228,25 @@ export const settingsCopy = {
       "The account will be deactivated. Login will no longer be possible.",
     deleteAccountConfirmAction: "Yes, delete account",
     deleteAccountFailed: "Could not delete the account.",
+    cancelSubscription: "Cancel subscription",
+    cancelSubscriptionDescription:
+      "If you plan to delete the family later, disable auto-renew first. Plus access will remain until the end of the paid period.",
     deleteFamily: "Delete family",
     deleteFamilyDescription:
       "Deletes the family and removes access for all members.",
+    deleteFamilyBlockedDescription:
+      "The family cannot be deleted while Plus access is still active. Even if renewal is already canceled, access remains until the end of the paid period.",
+    subscriptionAutoRenewOn: "Auto-renew: on",
+    subscriptionAutoRenewOff: "Auto-renew: off",
+    subscriptionActiveUntil: "Access until",
     deleteFamilyConfirmTitle: "Delete family completely?",
     deleteFamilyConfirmDescription:
       "All family accounts will be deactivated. This action cannot be undone.",
     deleteFamilyConfirmAction: "Yes, delete family",
+    deleteFamilyBlockedTitle: "This family cannot be deleted yet",
+    deleteFamilyBlockedConfirmDescription:
+      "The family still has an active Plus access period. Canceling renewal does not remove access immediately: wait until the period ends, then delete the family.",
+    deleteFamilyBlockedConfirmAction: "Manage subscription",
     deleteFamilyFailed: "Could not delete the family.",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;

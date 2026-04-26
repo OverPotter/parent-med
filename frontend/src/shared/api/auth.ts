@@ -158,6 +158,25 @@ export async function deleteMyFamily(): Promise<void> {
   await apiClient.delete("/auth/family");
 }
 
+export async function leaveMyFamily(): Promise<AuthStateResponse> {
+  const res = await apiClient.post<{
+    account: {
+      id: string;
+      email: string | null;
+      family_id: string;
+      display_name: string;
+      has_recovery_code?: boolean | null;
+      relationship_label: string | null;
+      phone: string | null;
+      preferred_language: "ru" | "en";
+      family_role: string;
+      access_policy?: RawAuthResponse["account"]["access_policy"];
+    };
+    family: RawAuthResponse["family"];
+  }>("/auth/family/leave");
+  return toAuthState(res.data);
+}
+
 export async function changePassword(payload: {
   current_password: string;
   new_password: string;

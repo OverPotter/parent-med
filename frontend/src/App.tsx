@@ -3,6 +3,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
+import { FAMILY_ACCESS_REFRESH_MS } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { applySessionToClient, setBearerToken, setRefreshHandler } from "@shared/api/client";
@@ -201,6 +202,8 @@ function AuthSync() {
     enabled: Boolean(authToken || refreshToken),
     retry: false,
     staleTime: 0,
+    refetchInterval: authToken || refreshToken ? FAMILY_ACCESS_REFRESH_MS : false,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {

@@ -40,11 +40,12 @@ class SubscriptionAccessService:
 
         policy = resolve_family_plan_policy(family)
         is_billing_owner = family.owner_account_id == account.id
+        is_family_owner = family.owner_account_id == account.id
         can_manage_subscription = family.owner_account_id == account.id
-        can_manage_member_roles = policy.can_manage_member_roles and is_family_admin(
-            account.family_role
+        can_manage_member_roles = policy.can_manage_member_roles and (
+            is_family_owner or is_family_admin(account.family_role)
         )
-        can_invite_members = policy.can_invite_members and is_family_admin(account.family_role)
+        can_invite_members = policy.can_invite_members and is_family_owner
 
         return SubscriptionAccessResponseDto(
             plan_code=family.plan_code,  # type: ignore[arg-type]

@@ -23,6 +23,11 @@ export const childrenCopy = {
       noAccessTitle: "Нет доступа к детям",
       noAccessDescription:
         "Сейчас вы не видите детей и их журнал. Если доступ нужен, обратитесь к администратору семьи.",
+      downgradedNoticeTitle: "Подписка семьи закончилась",
+      downgradedNoticeDescription:
+        "Во Free полностью активен только один ребёнок. Остальные дети остаются видимыми, но часть действий у них ограничена.",
+      primaryChildBadge: "Активен во Free",
+      lockedChildBadge: "Ограничен во Free",
       addFirstChild: "Добавить первого ребёнка",
       addAnotherPromptTitle: "Нужно добавить ещё ребёнка?",
       addAnotherPromptText: "",
@@ -280,6 +285,11 @@ export const childrenCopy = {
       noAccessTitle: "No access to children",
       noAccessDescription:
         "You cannot see children or their journal right now. Ask a family admin if access is needed.",
+      downgradedNoticeTitle: "The family subscription has ended",
+      downgradedNoticeDescription:
+        "Only one child stays fully active on Free. Other children remain visible, but some actions are limited.",
+      primaryChildBadge: "Active on Free",
+      lockedChildBadge: "Limited on Free",
       addFirstChild: "Add first child",
       addAnotherPromptTitle: "Need to add another child?",
       addAnotherPromptText: "",

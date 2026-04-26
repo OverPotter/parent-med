@@ -119,6 +119,10 @@ class BaseAuthService(ABC):
         """Удалить семью текущего admin (мягко деактивировать все аккаунты)."""
 
     @abstractmethod
+    async def leave_family(self, account_id: UUID) -> AuthStateResponseDto:
+        """Покинуть текущую семью и создать для аккаунта новую пустую семью."""
+
+    @abstractmethod
     async def change_password(
         self, account_id: UUID, dto: ChangePasswordDto, refresh_token: str | None = None
     ) -> None:
@@ -145,3 +149,7 @@ class BaseAuthService(ABC):
     @abstractmethod
     async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:
         """Принять приглашение в другую семью для существующего аккаунта."""
+
+    @abstractmethod
+    async def accept_latest_family_invite_for_dev(self, account_id: UUID) -> AuthResponseDto:
+        """Dev-only: принять последнее активное приглашение без копирования ссылки."""

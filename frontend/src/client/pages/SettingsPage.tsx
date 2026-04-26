@@ -10,7 +10,7 @@ import {
   updateRecoveryCode,
 } from "@shared/api/auth";
 import { applySessionToClient, broadcastAuthLogout } from "@shared/api/client";
-import { fetchMyFamilyAccess } from "@shared/api/families";
+import { fetchFamilies, fetchMyFamilyAccess } from "@shared/api/families";
 import {
   deletePushSubscription,
   fetchPushNotificationConfig,
@@ -21,8 +21,10 @@ import {
 } from "@shared/api/pushNotifications";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PageIntro } from "@shared/components/PageIntro";
+import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
+import { formatDate } from "@shared/utils/date";
 import {
   getPushSupportIssue,
   getExistingPushSubscription,
@@ -73,7 +75,6 @@ export function SettingsPage() {
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
-  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountHasRecoveryCode = useAppStore((s) => s.accountHasRecoveryCode);
   const setAccountProfile = useAppStore((s) => s.setAccountProfile);
   const medicationIntervalUnit = useAppStore((s) => s.medicationIntervalUnit);
@@ -137,11 +138,16 @@ export function SettingsPage() {
     queryFn: fetchPushNotificationPreferences,
     staleTime: 5 * 60 * 1000,
   });
-  const { data: familyAccess } = useQuery({
-    queryKey: ["families", "me", "access", accountId],
-    queryFn: fetchMyFamilyAccess,
+  const { data: families = [] } = useQuery({
+    queryKey: ["families", accountId],
+    queryFn: fetchFamilies,
     enabled: Boolean(accountId),
-    staleTime: 60 * 1000,
+  });
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    ...familyAccessQueryOptions,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
@@ -163,6 +169,34 @@ export function SettingsPage() {
         ? 3
         : null;
   const canUseLiveActivities = familyAccess?.canUseLiveActivities ?? false;
+  const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
+  const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === accountId);
+  const familyDeleteBlockedBySubscription =
+    isFamilyOwner &&
+    ["trialing", "active", "grace", "canceled"].includes(
+      familyAccess?.subscriptionStatus ?? family?.subscriptionStatus ?? "inactive"
+    );
+  const subscriptionAutoRenewEnabled =
+    (familyAccess?.subscriptionStatus ?? family?.subscriptionStatus ?? "inactive") !== "canceled";
+  const subscriptionExpiresAt = family?.subscriptionExpiresAt ?? null;
+  const familyDangerActionLabel = familyDeleteBlockedBySubscription
+    ? tSettings(language, "cancelSubscription")
+    : tSettings(language, "deleteFamily");
+  const familyDangerActionDescription = familyDeleteBlockedBySubscription
+    ? [
+        tSettings(language, "cancelSubscriptionDescription"),
+        subscriptionExpiresAt
+          ? `${tSettings(language, "subscriptionActiveUntil")}: ${formatDate(
+              subscriptionExpiresAt
+            )}`
+          : null,
+        subscriptionAutoRenewEnabled
+          ? tSettings(language, "subscriptionAutoRenewOn")
+          : tSettings(language, "subscriptionAutoRenewOff"),
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : tSettings(language, "deleteFamilyDescription");
   const liveActivitiesLockedReason = !canUseLiveActivities
     ? language === "ru"
       ? "Live Activities доступны в Plus."
@@ -480,12 +514,24 @@ export function SettingsPage() {
       broadcastAuthLogout();
     },
     onError: (error) => {
+      setIsDeleteFamilyConfirmOpen(false);
       setDeleteFamilyError(
         (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
           (error instanceof Error ? error.message : tSettings(language, "deleteFamilyFailed"))
       );
     },
   });
+
+  const handleManageSubscription = () => {
+    if (isRevenueCatTestVisible) {
+      const target = document.getElementById("settings-revenuecat");
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
+    window.open("https://apps.apple.com/account/subscriptions", "_blank", "noopener,noreferrer");
+  };
 
   const resetPasswordDialogState = () => {
     setCurrentPassword("");
@@ -813,11 +859,13 @@ export function SettingsPage() {
         onIllnessToggle={handleLiveActivityIllnessToggle}
       />
       {isRevenueCatTestVisible ? (
-        <SettingsRevenueCatSection
-          language={language}
-          accountId={accountId}
-          currentFamilyId={currentFamilyId}
-        />
+        <div id="settings-revenuecat">
+          <SettingsRevenueCatSection
+            language={language}
+            accountId={accountId}
+            currentFamilyId={currentFamilyId}
+          />
+        </div>
       ) : null}
       <div id="settings-notifications">
         <SettingsNotificationsSection
@@ -910,7 +958,10 @@ export function SettingsPage() {
         passwordError={passwordError}
         recoveryCodeSuccess={recoveryCodeSuccess}
         recoveryCodeError={recoveryCodeError}
-        accountFamilyRole={accountFamilyRole}
+        canDeleteAccount={!isFamilyOwner}
+        canDeleteFamily={isFamilyOwner}
+        familyDangerActionLabel={familyDangerActionLabel}
+        familyDangerActionDescription={familyDangerActionDescription}
         deleteAccountError={deleteAccountError}
         deleteFamilyError={deleteFamilyError}
         onDeleteAccount={() => {
@@ -919,6 +970,10 @@ export function SettingsPage() {
         }}
         onDeleteFamily={() => {
           setDeleteFamilyError(null);
+          if (familyDeleteBlockedBySubscription) {
+            handleManageSubscription();
+            return;
+          }
           setIsDeleteFamilyConfirmOpen(true);
         }}
       />

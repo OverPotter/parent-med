@@ -8,6 +8,7 @@ import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
 import { Capacitor } from "@capacitor/core";
 import { logout } from "@shared/api/auth";
 import { setBearerToken } from "@shared/api/client";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -148,9 +149,11 @@ export function ProfileMenu({
   iconOnly?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { copy } = useI18n();
 
   useEffect(() => {
     if (!isOpen) {
@@ -229,6 +232,19 @@ export function ProfileMenu({
 
   return (
     <div ref={rootRef} className="app-profile-menu">
+      <ConfirmDialog
+        isOpen={isLogoutConfirmOpen}
+        title={copy.common.logoutConfirmTitle}
+        description={copy.common.logoutConfirmDescription}
+        confirmLabel={copy.common.logoutConfirmAction}
+        cancelLabel={copy.common.cancel}
+        confirmTone="danger"
+        onCancel={() => setIsLogoutConfirmOpen(false)}
+        onConfirm={() => {
+          setIsLogoutConfirmOpen(false);
+          void onLogout();
+        }}
+      />
       <button
         type="button"
         className={[
@@ -268,7 +284,7 @@ export function ProfileMenu({
             className="app-profile-menu__item app-profile-menu__item--danger"
             onClick={() => {
               setIsOpen(false);
-              void onLogout();
+              setIsLogoutConfirmOpen(true);
             }}
           >
             {logoutLabel}

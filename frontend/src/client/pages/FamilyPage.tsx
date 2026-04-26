@@ -1,21 +1,27 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { fetchFamilies, fetchMyFamilyAccess } from "@shared/api/families";
+import {
+  acceptLatestDevFamilyInvite,
+  fetchLatestDevFamilyInvitePreview,
+} from "@shared/api/familyInvites";
+import { applySessionToClient } from "@shared/api/client";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface } from "@shared/components/Surface";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
+import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import { normalizeFamilyAccessPolicy } from "@shared/familyAccess/policy";
 import { buildShareableInviteUrl } from "@shared/config/inviteLinks";
 import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
 import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
-import { SectionTitle } from "./child-illness/shared";
 import { FamilyInviteSection } from "./family/FamilyInviteSection";
+import { FamilyLeaveSection } from "./family/FamilyLeaveSection";
 import { FamilyNameSection } from "./family/FamilyNameSection";
 import { MemberCard } from "./family/MemberCard";
-import { OtherMembersSheet } from "./family/OtherMembersSheet";
 import { tFamily } from "./family/copy";
 import { useFamilyMembersData } from "./family/useFamilyMembersData";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
@@ -24,13 +30,13 @@ export function FamilyPage() {
   const { language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [familyName, setFamilyName] = useState("");
   const [isEditingFamilyName, setIsEditingFamilyName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [isInviteSharePending, setIsInviteSharePending] = useState(false);
   const [inviteToast, setInviteToast] = useState<string | null>(null);
-  const [isMembersSheetOpen, setIsMembersSheetOpen] = useState(false);
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
@@ -39,8 +45,10 @@ export function FamilyPage() {
   const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
   const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
+  const setAuthState = useAppStore((s) => s.setAuthState);
   const isIosShell = useIsIosShell();
-  const canManageFamily = currentAccountRole === "admin";
+  const showDevInviteShortcut =
+    import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
   const {
     data: families = [],
     isLoading: isFamilyLoading,
@@ -51,10 +59,10 @@ export function FamilyPage() {
     enabled: Boolean(accountId),
   });
   const { data: familyAccess } = useQuery({
-    queryKey: ["families", "me", "access", accountId],
+    queryKey: ["families", "me", "access", currentFamilyId],
     queryFn: fetchMyFamilyAccess,
-    enabled: Boolean(accountId),
-    staleTime: 60 * 1000,
+    enabled: Boolean(currentFamilyId),
+    ...familyAccessQueryOptions,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
@@ -62,12 +70,15 @@ export function FamilyPage() {
     currentFamilyId,
     canManageSubscription
   );
+  const [isLeaveFamilyConfirmOpen, setIsLeaveFamilyConfirmOpen] = useState(false);
 
   const { isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
     useFamilyMembersData(currentFamilyId, currentAccountId);
 
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
   const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === currentAccountId);
+  const isFamilyAdmin = !isFamilyOwner && currentAccountRole === "admin";
+  const canManageFamily = isFamilyOwner || isFamilyAdmin;
   const currentMemberPolicy = normalizeFamilyAccessPolicy(currentMember?.accessPolicy);
   const currentMemberHasAnyFamilyAccess =
     currentMemberPolicy.allChildren ||
@@ -94,15 +105,18 @@ export function FamilyPage() {
     updateMemberMutation,
     deleteMemberMutation,
     updateMemberProfileMutation,
+    leaveFamilyMutation,
   } = useFamilyPageMutations({
     language,
     accountId,
     currentFamilyId,
     currentAccountId,
     setCurrentFamily,
+    setAuthState,
     setAccountFamilyContext,
     setError,
   });
+  const canLeaveFamily = !isFamilyOwner && Boolean(currentMember);
 
   const latestInviteUrl = createInviteMutation.data
     ? buildShareableInviteUrl(createInviteMutation.data.invitePath, window.location.origin)
@@ -123,6 +137,25 @@ export function FamilyPage() {
     language === "ru"
       ? `Присоединяйся к нашей семье в приложении ${familyTitle}. Открой приглашение:`
       : `Join our family in the ${familyTitle} app. Open this invite:`;
+  const { data: latestDevInvitePreview } = useQuery({
+    queryKey: ["family-invites", "dev", "latest"],
+    queryFn: fetchLatestDevFamilyInvitePreview,
+    enabled: Boolean(accountId && showDevInviteShortcut),
+    retry: false,
+  });
+  const acceptLatestDevInviteMutation = useMutation({
+    mutationFn: () => acceptLatestDevFamilyInvite(),
+    onSuccess: (data) => {
+      applySessionToClient(data);
+      queryClient.invalidateQueries({ queryKey: ["families"] });
+      queryClient.invalidateQueries({ queryKey: ["family-members"] });
+      setError(null);
+      navigate("/family", { replace: true });
+    },
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
+      setError(err.response?.data?.detail ?? "Не удалось подключиться к dev-приглашению.");
+    },
+  });
 
   useEffect(() => {
     if (!inviteToast) {
@@ -268,6 +301,20 @@ export function FamilyPage() {
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
+      <ConfirmDialog
+        isOpen={isLeaveFamilyConfirmOpen}
+        title={tFamily(language, "confirmLeaveFamilyTitle")}
+        description={tFamily(language, "confirmLeaveFamilyDescription")}
+        confirmLabel={tFamily(language, "confirmLeaveFamilyAction")}
+        cancelLabel={tFamily(language, "cancel")}
+        confirmTone="danger"
+        isPending={leaveFamilyMutation.isPending}
+        onCancel={() => setIsLeaveFamilyConfirmOpen(false)}
+        onConfirm={() => {
+          leaveFamilyMutation.mutate();
+          setIsLeaveFamilyConfirmOpen(false);
+        }}
+      />
       <PageIntro
         title={familyTitle}
         subtitle={tFamily(language, "subtitle")}
@@ -313,8 +360,8 @@ export function FamilyPage() {
         <p className="soft-note-danger">
           <span className="font-semibold">{tFamily(language, "noFamilyAccessTitle")}. </span>
           {language === "ru"
-            ? "Сейчас у вас нет доступа к данным семьи. Обратитесь к администратору семьи."
-            : "You currently do not have access to family data. Contact a family admin."}
+            ? "Сейчас у вас нет доступа к данным семьи. Обратитесь к владельцу семьи или администратору."
+            : "You currently do not have access to family data. Contact the family owner or an admin."}
         </p>
       ) : null}
       {!isFamilyLoading && !family ? (
@@ -331,10 +378,27 @@ export function FamilyPage() {
       {family ? (
         <>
       <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-        <SectionTitle
-          title={tFamily(language, "yourProfileTitle")}
-          subtitle={tFamily(language, "yourProfileDescription")}
-        />
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="app-card-title">{tFamily(language, "yourProfileTitle")}</h2>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {currentMember ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams);
+                  next.set("edit", "me");
+                  setSearchParams(next, { replace: true });
+                }}
+                className="soft-pill-primary inline-flex min-h-[2.2rem] shrink-0 items-center px-3 text-[0.78rem] font-semibold"
+              >
+                {tFamily(language, "editProfile")}
+              </button>
+            ) : null}
+          </div>
+        </div>
+        <p className="mt-1 text-sm leading-6 text-muted">
+          {tFamily(language, "yourProfileDescription")}
+        </p>
 
         {isMembersLoading ? (
           <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
@@ -348,26 +412,18 @@ export function FamilyPage() {
               familyOwnerAccountId={family?.ownerAccountId}
               isCurrent
               forceEdit={Boolean(shouldOpenCurrentProfileEditor)}
-              canManageAccess={canManageFamily}
-              canEditProfile
+              canManageAccess={false}
+              canManageRoles={false}
+              canDeleteMember={false}
+              canEditProfile={false}
               adminsCount={adminsCount}
               isPending={
                 updateMemberMutation.isPending ||
                 updateMemberProfileMutation.isPending ||
                 deleteMemberMutation.isPending
               }
-              onPromote={() =>
-                updateMemberMutation.mutate({
-                  memberAccountId: currentMember.id,
-                  payload: { family_role: "admin" },
-                })
-              }
-              onDemote={() =>
-                updateMemberMutation.mutate({
-                  memberAccountId: currentMember.id,
-                  payload: { family_role: "member" },
-                })
-              }
+              onPromote={() => {}}
+              onDemote={() => {}}
               accessHref={`/family/members/${currentMember.id}/access`}
               onDelete={() => deleteMemberMutation.mutate(currentMember.id)}
               onSaveProfile={async (payload) => {
@@ -398,21 +454,18 @@ export function FamilyPage() {
       </RowSurface>
 
       <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-        <SectionTitle
-          title={tFamily(language, "otherMembersTitle")}
-          subtitle={tFamily(language, "otherMembersDescription")}
-          action={
-            otherMembers.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => setIsMembersSheetOpen(true)}
-                className="soft-pill-primary inline-flex min-h-[2.2rem] items-center px-3 text-[0.78rem] font-semibold"
-              >
-                {tFamily(language, "openAllMembers")}
-              </button>
-            ) : null
-          }
-        />
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="app-card-title">{tFamily(language, "otherMembersTitle")}</h2>
+          <Link
+            to="/family/members"
+            className="soft-pill-primary inline-flex min-h-[2.2rem] shrink-0 items-center px-3 text-[0.78rem] font-semibold"
+          >
+            {tFamily(language, "openAllMembers")}
+          </Link>
+        </div>
+        <p className="mt-1 text-sm leading-6 text-muted">
+          {tFamily(language, "otherMembersDescription")}
+        </p>
 
         {isMembersLoading ? (
           <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
@@ -449,6 +502,39 @@ export function FamilyPage() {
         />
       ) : null}
 
+      {showDevInviteShortcut ? (
+        <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+          <h2 className="app-card-title">
+            {language === "ru" ? "Dev: последнее приглашение" : "Dev: latest invite"}
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            {latestDevInvitePreview
+              ? language === "ru"
+                ? `Быстрое подключение к семье «${latestDevInvitePreview.familyName}» без копирования ссылки.`
+                : `Quickly join "${latestDevInvitePreview.familyName}" without copying a link.`
+              : language === "ru"
+                ? "Если owner уже создал приглашение на другом симуляторе, можно подключиться без ссылки."
+                : "If the owner already created an invite on another simulator, you can join without a link."}
+          </p>
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => acceptLatestDevInviteMutation.mutate()}
+              disabled={acceptLatestDevInviteMutation.isPending}
+              className="soft-button-secondary disabled:opacity-50"
+            >
+              {acceptLatestDevInviteMutation.isPending
+                ? language === "ru"
+                  ? "Подключаем…"
+                  : "Joining…"
+                : language === "ru"
+                  ? "Подключиться к последнему invite"
+                  : "Join latest invite"}
+            </button>
+          </div>
+        </RowSurface>
+      ) : null}
+
       <FamilyNameSection
         language={language}
         familyName={familyName}
@@ -470,18 +556,12 @@ export function FamilyPage() {
         }}
         onSubmit={handleFamilySubmit}
       />
-
-      <OtherMembersSheet
-        language={language}
-        isOpen={isMembersSheetOpen}
-        members={otherMembers}
-        familyOwnerAccountId={family?.ownerAccountId}
-        onClose={() => setIsMembersSheetOpen(false)}
-        onSelectMember={(memberId) => {
-          setIsMembersSheetOpen(false);
-          navigate(canManageFamily ? `/family/members/${memberId}/access` : "/family/members");
-        }}
-      />
+      {canLeaveFamily ? (
+        <FamilyLeaveSection
+          language={language}
+          onLeave={() => setIsLeaveFamilyConfirmOpen(true)}
+        />
+      ) : null}
       <UpgradeDialog
         isOpen={isUpgradeDialogOpen}
         language={language}

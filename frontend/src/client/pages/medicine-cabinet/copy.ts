@@ -22,6 +22,9 @@ export const cabinetCopy = {
     networkProblemDescription:
       "Для этого действия нужен интернет. Подключитесь к сети и попробуйте снова.",
     networkProblemInline: "Для этого действия нужен интернет. Подключитесь к сети и попробуйте снова.",
+    noAccessTitle: "Нет доступа к аптечке",
+    noAccessDescription:
+      "Владелец семьи или администратор ещё не открыл для этого аккаунта аптечку.",
     empty: "В аптечке пока нет препаратов. Нажмите «Добавить препарат».",
     searchLabel: "Найти в аптечке",
     searchPlaceholder: "Название, форма, категория или комментарий",
@@ -159,6 +162,9 @@ export const cabinetCopy = {
       "This action requires an internet connection. Reconnect and try again.",
     networkProblemInline:
       "This action requires an internet connection. Reconnect and try again.",
+    noAccessTitle: "No access to the first aid kit",
+    noAccessDescription:
+      "The family owner or an admin has not granted first aid kit access to this account yet.",
     empty: "There are no medicines in your first aid kit yet. Tap “Add medicine”.",
     searchLabel: "Search first aid kit",
     searchPlaceholder: "Name, form, category, or comment",

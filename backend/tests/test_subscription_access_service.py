@@ -208,3 +208,31 @@ async def test_non_admin_member_gets_shared_plus_without_management_rights() -> 
     assert result.can_manage_member_roles is False
     assert result.can_use_live_activities is True
     assert result.can_export_csv is True
+
+
+@pytest.mark.asyncio
+async def test_admin_gets_member_management_but_not_invite_rights() -> None:
+    family_id = uuid4()
+    owner = _build_account(family_id=family_id, family_role="owner", email="mom@example.com")
+    admin = _build_account(family_id=family_id, family_role="admin", email="dad@example.com")
+    family = Family(
+        id=family_id,
+        name="Family",
+        owner_account_id=owner.id,
+        billing_account_id=owner.id,
+        plan_code="plus",
+        subscription_status="active",
+    )
+    service = SubscriptionAccessService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, admin]),
+        child_repo=StubChildRepository([]),
+        pillbox_repo=StubPillboxRepository([]),
+    )
+
+    result = await service.get_for_account(_build_authenticated_account(admin))
+
+    assert result.premium_active is True
+    assert result.can_manage_subscription is False
+    assert result.can_manage_member_roles is True
+    assert result.can_invite_members is False

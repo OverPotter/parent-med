@@ -26,13 +26,15 @@ export function FamilyMemberAccessPage() {
   const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
   const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
-  const canManageFamily = currentAccountRole === "admin";
   const { data: families = [] } = useQuery({
     queryKey: ["families", accountId],
     queryFn: fetchFamilies,
     enabled: Boolean(accountId),
   });
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
+  const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === currentAccountId);
+  const isFamilyAdmin = !isFamilyOwner && currentAccountRole === "admin";
+  const canManageFamily = isFamilyOwner || isFamilyAdmin;
   const [actionError, setActionError] = useState<string | null>(null);
   const [isPromoteConfirmOpen, setIsPromoteConfirmOpen] = useState(false);
   const [isDemoteConfirmOpen, setIsDemoteConfirmOpen] = useState(false);
@@ -118,13 +120,30 @@ export function FamilyMemberAccessPage() {
   }
 
   const adminsCount = members.filter((item) => item.familyRole === "admin").length;
-  const canPromote = member?.familyRole !== "admin" && member?.id !== currentAccountId;
-  const canDemote =
-    member?.familyRole === "admin" && member?.id !== currentAccountId && adminsCount > 1;
-  const canDelete = member?.id !== currentAccountId;
+  const isTargetOwner = Boolean(member && family?.ownerAccountId === member.id);
+  const canManageTarget = Boolean(
+    member &&
+      (isFamilyOwner || (isFamilyAdmin && member.familyRole === "member" && member.id !== currentAccountId))
+  );
+  const canPromote = Boolean(
+    member && isFamilyOwner && member.familyRole !== "admin" && !isTargetOwner && member.id !== currentAccountId
+  );
+  const canDemote = Boolean(
+    member && isFamilyOwner && member.familyRole === "admin" && !isTargetOwner && member.id !== currentAccountId && adminsCount > 1
+  );
+  const canDelete = Boolean(
+    member &&
+      !isTargetOwner &&
+      member.id !== currentAccountId &&
+      (isFamilyOwner || (isFamilyAdmin && member.familyRole === "member"))
+  );
   const hasHeaderActions = Boolean(canPromote || canDemote || canDelete);
   const isActionPending = updateMemberMutation.isPending || deleteMemberMutation.isPending;
   const accessSummaryItems = member ? buildMemberAccessSummaryItems(member.accessPolicy, language) : [];
+
+  if (member && !canManageTarget && !canPromote && !canDemote && !canDelete) {
+    return <Navigate to="/family" replace />;
+  }
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">

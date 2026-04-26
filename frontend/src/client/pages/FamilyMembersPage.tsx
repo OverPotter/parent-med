@@ -5,7 +5,6 @@ import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
-import { SectionTitle } from "./child-illness/shared";
 import { MemberCard } from "./family/MemberCard";
 import { tFamily } from "./family/copy";
 import { useFamilyMembersData } from "./family/useFamilyMembersData";
@@ -19,13 +18,14 @@ export function FamilyMembersPage() {
   const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
   const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
-  const canManageFamily = currentAccountRole === "admin";
   const { data: families = [] } = useQuery({
     queryKey: ["families", accountId],
     queryFn: fetchFamilies,
     enabled: Boolean(accountId),
   });
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
+  const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === currentAccountId);
+  const isFamilyAdmin = !isFamilyOwner && currentAccountRole === "admin";
 
   const { members, isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
     useFamilyMembersData(currentFamilyId, currentAccountId);
@@ -86,123 +86,71 @@ export function FamilyMembersPage() {
         </p>
       ) : null}
 
-      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-        <SectionTitle
-          title={tFamily(language, "yourProfileTitle")}
-          subtitle={tFamily(language, "yourProfileDescription")}
-        />
-
-        {isMembersLoading ? (
-          <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
-        ) : currentMember ? (
-          <div className="mt-4">
-            <MemberCard
-              member={currentMember}
-              familyOwnerAccountId={family?.ownerAccountId}
-              isCurrent
-              forceEdit={false}
-              canManageAccess={canManageFamily}
-              canEditProfile
-              adminsCount={adminsCount}
-              isPending={isPending}
-              onPromote={() =>
-                updateMemberMutation.mutate({
-                  memberAccountId: currentMember.id,
-                  payload: { family_role: "admin" },
-                })
-              }
-              onDemote={() =>
-                updateMemberMutation.mutate({
-                  memberAccountId: currentMember.id,
-                  payload: { family_role: "member" },
-                })
-              }
-              accessHref={`/family/members/${currentMember.id}/access`}
-              onDelete={() => deleteMemberMutation.mutate(currentMember.id)}
-              onSaveProfile={async (payload) => {
-                try {
-                  await updateMemberProfileMutation.mutateAsync({
-                    memberAccountId: currentMember.id,
-                    displayName: payload.displayName,
-                    relationshipLabel: payload.relationshipLabel,
-                    phone: payload.phone,
-                  });
-                  return true;
-                } catch {
-                  return false;
-                }
-              }}
-              onHideForcedEdit={() => {}}
-              language={language}
-            />
-          </div>
-        ) : (
-          <p className="mt-4 text-sm text-muted">{tFamily(language, "noMembers")}</p>
-        )}
-      </RowSurface>
-
-      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-        <SectionTitle
-          title={tFamily(language, "otherMembersTitle")}
-          subtitle={tFamily(language, "allMembersDescription")}
-          action={
-            <span className="text-sm font-semibold text-muted">
-              {members.length} {tFamily(language, "peopleShort")}
-            </span>
-          }
-        />
-
-        {isMembersLoading ? (
-          <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
-        ) : otherMembers.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">{tFamily(language, "noOtherMembers")}</p>
-        ) : (
-          <div className="mt-4 divide-y divide-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)]">
-            {otherMembers.map((member) => (
-              <MemberCard
+      {isMembersLoading ? (
+        <p className="px-1 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
+      ) : members.length === 0 ? (
+        <p className="px-1 text-sm text-muted">{tFamily(language, "noMembers")}</p>
+      ) : (
+        <div className="space-y-4">
+          {[...(currentMember ? [currentMember] : []), ...otherMembers].map((member) => {
+            const isCurrent = member.id === currentAccountId;
+            const canManageTarget =
+              !isCurrent && (isFamilyOwner || (isFamilyAdmin && member.familyRole === "member"));
+            const canManageRoles = isFamilyOwner;
+            const canDeleteMember =
+              !isCurrent && (isFamilyOwner || (isFamilyAdmin && member.familyRole === "member"));
+            const accessHref = canManageTarget ? `/family/members/${member.id}/access` : undefined;
+            return (
+              <RowSurface
                 key={member.id}
-                member={member}
-                familyOwnerAccountId={family?.ownerAccountId}
-                isCurrent={false}
-                forceEdit={false}
-                canManageAccess={canManageFamily}
-                canEditProfile={false}
-                adminsCount={adminsCount}
-                isPending={isPending}
-                onPromote={() =>
-                  updateMemberMutation.mutate({
-                    memberAccountId: member.id,
-                    payload: { family_role: "admin" },
-                  })
-                }
-                onDemote={() =>
-                  updateMemberMutation.mutate({
-                    memberAccountId: member.id,
-                    payload: { family_role: "member" },
-                  })
-                }
-                accessHref={`/family/members/${member.id}/access`}
-                onDelete={() => deleteMemberMutation.mutate(member.id)}
-                onSaveProfile={async (payload) => {
-                  try {
-                    await updateMemberProfileMutation.mutateAsync({
+                className="rounded-[26px] border border-white/5 px-4 py-4 sm:px-5 sm:py-5"
+              >
+                <MemberCard
+                  member={member}
+                  familyOwnerAccountId={family?.ownerAccountId}
+                  isCurrent={isCurrent}
+                  forceEdit={false}
+                  canManageAccess={canManageTarget}
+                  canManageRoles={canManageRoles}
+                  canDeleteMember={canDeleteMember}
+                  canEditProfile={isCurrent}
+                  adminsCount={adminsCount}
+                  isPending={isPending}
+                  onPromote={() =>
+                    updateMemberMutation.mutate({
                       memberAccountId: member.id,
-                      displayName: payload.displayName,
-                      relationshipLabel: payload.relationshipLabel,
-                      phone: payload.phone,
-                    });
-                    return true;
-                  } catch {
-                    return false;
+                      payload: { family_role: "admin" },
+                    })
                   }
-                }}
-                onHideForcedEdit={() => {}}
-                language={language}
-              />
-            ))}
-          </div>
-        )}
-      </RowSurface>
+                  onDemote={() =>
+                    updateMemberMutation.mutate({
+                      memberAccountId: member.id,
+                      payload: { family_role: "member" },
+                    })
+                  }
+                  accessHref={accessHref}
+                  onDelete={() => deleteMemberMutation.mutate(member.id)}
+                  onSaveProfile={async (payload) => {
+                    try {
+                      await updateMemberProfileMutation.mutateAsync({
+                        memberAccountId: member.id,
+                        displayName: payload.displayName,
+                        relationshipLabel: payload.relationshipLabel,
+                        phone: payload.phone,
+                      });
+                      return true;
+                    } catch {
+                      return false;
+                    }
+                  }}
+                  onHideForcedEdit={() => {}}
+                  language={language}
+                />
+              </RowSurface>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -4,6 +4,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { fetchMyFamilyAccess, fetchMyFamilyMembers } from "@shared/api/families";
 import { fetchPillboxPlan, fetchPillboxPlans } from "@shared/api/pillboxPlans";
 import { getEligiblePillboxRecipients } from "@shared/familyAccess/recipients";
+import { PageIntro } from "@shared/components/PageIntro";
+import { EmptyState } from "@shared/components/Surface";
+import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { canActPillbox, canEditPillbox, canViewPillbox } from "@shared/permissions/familyAccess";
@@ -110,7 +113,7 @@ export function PillboxPage() {
     queryKey: ["families", "me", "access", currentFamilyId],
     queryFn: fetchMyFamilyAccess,
     enabled: Boolean(currentFamilyId && canSeePillbox),
-    staleTime: 60 * 1000,
+    ...familyAccessQueryOptions,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
@@ -766,13 +769,29 @@ export function PillboxPage() {
 
   if (!canSeePillbox) {
     return (
-      <div>
-        <h1 className="app-title">{tPillbox(language, "hubTitle")}</h1>
-        <p className="mt-2 text-muted">
-          {language === "ru"
-            ? "Администратор семьи ещё не выдал вам доступ к приёмам."
-            : "A family admin has not granted access to medication plans yet."}
-        </p>
+      <div className="min-w-0 space-y-6 sm:space-y-8">
+        <PageIntro
+          title={tPillbox(language, "hubTitle")}
+          subtitle={tPillbox(language, "hubSubtitle")}
+          compactOnMobile
+          hideOnMobile
+        />
+        <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+          <div className="app-mobile-section-intro">
+            <h1 className="app-mobile-section-intro__title">{tPillbox(language, "hubTitle")}</h1>
+            <p className="app-mobile-section-intro__hint">
+              {tPillbox(language, "hubMobileHint")}
+            </p>
+          </div>
+        </div>
+        <EmptyState className="text-foreground">
+          <div className="space-y-3">
+            <p className="app-card-title">{tPillbox(language, "noAccessTitle")}</p>
+            <p className="text-sm leading-6 text-muted">
+              {tPillbox(language, "noAccessDescription")}
+            </p>
+          </div>
+        </EmptyState>
       </div>
     );
   }

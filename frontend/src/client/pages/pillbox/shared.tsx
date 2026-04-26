@@ -72,6 +72,9 @@ export const pillboxCopy = {
     hubTitle: "Приёмы",
     hubSubtitle: "Семейные планы приёма: что принимать, когда напомнить и как идёт курс.",
     hubMobileHint: "Планы приёма, напоминания и быстрые действия для семьи.",
+    noAccessTitle: "Нет доступа к приёмам",
+    noAccessDescription:
+      "Владелец семьи или администратор ещё не открыл для этого аккаунта приёмы.",
     hubEmpty:
       "Планов пока нет. Создайте первый план, чтобы видеть приёмы, напоминания и аналитику.",
     createPlan: "Создать план",
@@ -166,6 +169,9 @@ export const pillboxCopy = {
     hubSubtitle:
       "Family medication plans: what to take, when to remind and how the course is going.",
     hubMobileHint: "Medication plans and reminders for the family.",
+    noAccessTitle: "No access to medication plans",
+    noAccessDescription:
+      "The family owner or an admin has not granted pillbox access to this account yet.",
     hubEmpty:
       "There are no plans yet. Create the first plan to see doses, reminders and analytics.",
     createPlan: "Create plan",

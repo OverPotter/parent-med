@@ -145,7 +145,7 @@ async def update_my_family(
         account.family_id,
         dto,
         account.family_id,
-        account.family_role,
+        account.id,
     )
 
 
@@ -161,7 +161,7 @@ async def update_family(
         family_id,
         dto,
         account.family_id,
-        account.family_role,
+        account.id,
     )
 
 

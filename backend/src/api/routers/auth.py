@@ -275,6 +275,15 @@ async def delete_family(
     clear_auth_cookies(response)
 
 
+@router.post("/family/leave", response_model=AuthStateResponseDto)
+async def leave_family(
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: BaseAuthService = Depends(get_auth_service),
+) -> AuthStateResponseDto:
+    logger.info("Выход из семьи | account_id={}", current_account.id)
+    return await service.leave_family(current_account.id)
+
+
 @router.patch("/password", status_code=204)
 async def change_password(
     request: Request,

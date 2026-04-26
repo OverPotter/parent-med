@@ -14,6 +14,7 @@ import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { useIsDesktop } from "@shared/hooks/useIsDesktop";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
@@ -24,7 +25,11 @@ import {
   canViewAnyChildren,
 } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
-import { hasReachedChildLimit, isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
+import {
+  hasReachedChildLimit,
+  isChildLockedByPlan,
+  isDowngradedChildrenState,
+} from "@shared/subscription/childPlanAccess";
 import type { Child } from "@shared/types/api";
 import { getChildrenCopy } from "@client/i18n/children";
 import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
@@ -103,7 +108,7 @@ export function ChildrenPage() {
     queryKey: ["families", "me", "access", currentFamilyId],
     queryFn: fetchMyFamilyAccess,
     enabled: Boolean(currentFamilyId),
-    staleTime: 60 * 1000,
+    ...familyAccessQueryOptions,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
@@ -313,11 +318,25 @@ export function ChildrenPage() {
 
       {children.length > 0 && (
         <>
+          {isDowngradedChildrenState(familyAccess) ? (
+            <Surface className="soft-panel-muted p-4">
+              <div className="space-y-2">
+                <p className="app-card-title">{copy.downgradedNoticeTitle}</p>
+                <p className="text-sm leading-6 text-muted">
+                  {copy.downgradedNoticeDescription}
+                </p>
+              </div>
+            </Surface>
+          ) : null}
           <ul className="grid gap-4">
             {children.map((child, index) => {
               const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
               const canAct = canActChildAccess(child.id, accountFamilyRole, accountAccessPolicy);
               const canEdit = canEditChildAccess(child.id, accountFamilyRole, accountAccessPolicy);
+              const planLocksChildActions = isChildLockedByPlan(child.id, familyAccess);
+              const isPrimaryFreeChild =
+                isDowngradedChildrenState(familyAccess) &&
+                familyAccess?.freePrimaryChildId === child.id;
 
               return (
                 <ChildCard
@@ -351,7 +370,8 @@ export function ChildrenPage() {
                   hasActiveEpisode={!!activeEpisode}
                   canActChild={canAct}
                   canEditChild={canEdit}
-                  planLocksChildActions={isChildLockedByPlan(child.id, familyAccess)}
+                  planLocksChildActions={planLocksChildActions}
+                  isPrimaryFreeChild={Boolean(isPrimaryFreeChild)}
                   onLockedActionAttempt={() => setIsUpgradeDialogOpen(true)}
                   currentAccountId={accountId}
                   copy={copy}

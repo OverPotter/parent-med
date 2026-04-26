@@ -21,6 +21,11 @@ class FamilyInviteRepository(BaseRepository[FamilyInvite]):
         ...
 
     @abstractmethod
+    async def get_latest_active(self) -> FamilyInvite | None:
+        """Получить последнее активное приглашение для dev/test сценариев."""
+        ...
+
+    @abstractmethod
     async def add(self, entity: FamilyInvite) -> FamilyInvite:
         """Создать приглашение."""
         ...

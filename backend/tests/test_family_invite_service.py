@@ -27,6 +27,12 @@ class StubFamilyInviteRepository:
     async def get_by_token_hash(self, token_hash):  # noqa: ANN001
         return next((item for item in self.items if item.token_hash == token_hash), None)
 
+    async def get_latest_active(self) -> FamilyInvite | None:
+        if not self.items:
+            return None
+        active = [item for item in self.items if item.accepted_at is None]
+        return sorted(active, key=lambda item: item.created_at, reverse=True)[0] if active else None
+
     async def add(self, entity: FamilyInvite) -> FamilyInvite:
         self.items.append(entity)
         return entity

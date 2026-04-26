@@ -17,6 +17,7 @@ import {
 } from "@shared/api/families";
 import { getEligibleCabinetRecipients } from "@shared/familyAccess/recipients";
 import { PageIntro } from "@shared/components/PageIntro";
+import { EmptyState } from "@shared/components/Surface";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
@@ -65,7 +66,6 @@ export function MedicineCabinetPage() {
   const liveQueryOptions = useLiveQueryOptions(isIosShell ? 30_000 : 15_000);
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
   const canMutateCabinet = canEditCabinet(accountFamilyRole, accountAccessPolicy);
-  const canManageCabinetRecipients = accountFamilyRole === "admin";
   const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
 
   const addFlow: AddMedicineFlow =
@@ -117,6 +117,8 @@ export function MedicineCabinetPage() {
     enabled: !!currentFamilyId && canSeeCabinet,
     staleTime: 5 * 60 * 1000,
   });
+  const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === accountId);
+  const canManageCabinetRecipients = isFamilyOwner;
 
   const { data: familyMembers = [] } = useQuery({
     queryKey: ["families", "me", "members", currentFamilyId],
@@ -213,13 +215,27 @@ export function MedicineCabinetPage() {
 
   if (!canSeeCabinet) {
     return (
-      <div>
-        <h1 className="app-title">{tCabinet(language, "title")}</h1>
-        <p className="mt-2 text-muted">
-          {language === "ru"
-            ? "Администратор семьи ещё не выдал вам доступ к аптечке."
-            : "A family admin has not granted access to the cabinet yet."}
-        </p>
+      <div className="min-w-0 space-y-6 sm:space-y-8">
+        <PageIntro
+          title={tCabinet(language, "title")}
+          subtitle={tCabinet(language, "subtitle")}
+          compactOnMobile
+          hideOnMobile
+        />
+        <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+          <div className="app-mobile-section-intro">
+            <h1 className="app-mobile-section-intro__title">{tCabinet(language, "title")}</h1>
+            <p className="app-mobile-section-intro__hint">{tCabinet(language, "mobileHint")}</p>
+          </div>
+        </div>
+        <EmptyState className="text-foreground">
+          <div className="space-y-3">
+            <p className="app-card-title">{tCabinet(language, "noAccessTitle")}</p>
+            <p className="text-sm leading-6 text-muted">
+              {tCabinet(language, "noAccessDescription")}
+            </p>
+          </div>
+        </EmptyState>
       </div>
     );
   }
