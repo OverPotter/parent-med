@@ -20,10 +20,10 @@ from src.domain.entities.household_medicine import HouseholdMedicine
 from src.domain.entities.illness_episode import IllnessEpisode
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.child_repository import ChildRepository
-from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.episode_medication_plan_repository import (
     EpisodeMedicationPlanRepository,
 )
+from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 

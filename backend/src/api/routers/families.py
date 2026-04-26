@@ -17,9 +17,9 @@ from src.application.dto.family import (
     FamilyResponseDto,
     FamilyUpdateDto,
 )
+from src.application.dto.subscription_access import SubscriptionAccessResponseDto
 from src.application.services.family_service import FamilyService
 from src.application.services.subscription_access_service import SubscriptionAccessService
-from src.application.dto.subscription_access import SubscriptionAccessResponseDto
 from src.core.exceptions import ValidationError
 
 router = APIRouter(prefix="/families", tags=["families"])

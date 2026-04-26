@@ -22,8 +22,8 @@ from src.domain.repositories.billing_event_repository import BillingEventReposit
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.feeding_record_repository import FeedingRecordRepository
-from src.domain.repositories.plan_repository import PlanRepository
 from src.domain.repositories.pillbox_repository import PillboxRepository
+from src.domain.repositories.plan_repository import PlanRepository
 from src.domain.repositories.sleep_session_repository import SleepSessionRepository
 from src.domain.repositories.subscription_repository import SubscriptionRepository
 

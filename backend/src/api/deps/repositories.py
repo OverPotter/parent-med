@@ -9,8 +9,8 @@ from src.domain.repositories.account_feedback_repository import AccountFeedbackR
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
-from src.domain.repositories.billing_event_repository import BillingEventRepository
 from src.domain.repositories.auth_attempt_repository import AuthAttemptRepository
+from src.domain.repositories.billing_event_repository import BillingEventRepository
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.curated_medicine_catalog_repository import (
     CuratedMedicineCatalogRepository,
@@ -43,11 +43,11 @@ from src.infrastructure.database.repositories.account_session_repository import 
 from src.infrastructure.database.repositories.administration_event_repository import (
     SqlAdministrationEventRepository,
 )
-from src.infrastructure.database.repositories.billing_event_repository import (
-    SqlBillingEventRepository,
-)
 from src.infrastructure.database.repositories.auth_attempt_repository import (
     SqlAuthAttemptRepository,
+)
+from src.infrastructure.database.repositories.billing_event_repository import (
+    SqlBillingEventRepository,
 )
 from src.infrastructure.database.repositories.child_repository import SqlChildRepository
 from src.infrastructure.database.repositories.curated_medicine_catalog_repository import (

@@ -507,7 +507,8 @@ class PillboxService:
         if primary_plan_id is None or primary_plan_id == plan.id:
             return
         raise ForbiddenError(
-            "Во Free этот план доступен только для просмотра. Оформите Plus, чтобы снова отмечать и редактировать дополнительные планы."
+            "Во Free этот план доступен только для просмотра. "
+            "Оформите Plus, чтобы снова отмечать и редактировать дополнительные планы."
         )
 
     async def list_by_family_id(
@@ -785,7 +786,8 @@ class PillboxService:
         existing_plans = await self._repo.list_by_family_id(current_account.family_id)
         if policy.max_pillbox_plans is not None and len(existing_plans) >= policy.max_pillbox_plans:
             raise ValidationError(
-                "Во Free доступен только один план таблетницы. Перейдите на Plus, чтобы добавить ещё планы.",
+                "Во Free доступен только один план таблетницы. "
+                "Перейдите на Plus, чтобы добавить ещё планы.",
                 code="PLUS_REQUIRED_FOR_ADDITIONAL_PILLBOX_PLANS",
             )
         entity = await self._build_plan_entity(

@@ -141,7 +141,8 @@ class ChildService:
             and len(existing_children) >= plan_policy.max_children
         ):
             raise ValidationError(
-                "Во Free доступен только один ребёнок. Перейдите на Plus, чтобы добавить ещё детей.",
+                "Во Free доступен только один ребёнок. "
+                "Перейдите на Plus, чтобы добавить ещё детей.",
                 code="PLUS_REQUIRED_FOR_ADDITIONAL_CHILDREN",
             )
         self._validate_birth_date(dto.birth_date)

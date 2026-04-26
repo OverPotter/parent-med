@@ -36,7 +36,8 @@ async def ensure_child_plan_mutation_allowed(
     if not await is_non_primary_child_in_free_family(family_repo, current_account, child_id):
         return
     raise ForbiddenError(
-        "Во Free для этого ребёнка можно только просматривать данные. Оформите Plus, чтобы продолжить изменения."
+        "Во Free для этого ребёнка можно только просматривать данные. "
+        "Оформите Plus, чтобы продолжить изменения."
     )
 
 
@@ -52,5 +53,6 @@ async def ensure_active_illness_continuation_allowed(
     if episode_is_active:
         return
     raise ForbiddenError(
-        "Во Free для этого ребёнка можно завершить только уже начатое наблюдение. Новый этап доступен в Plus."
+        "Во Free для этого ребёнка можно завершить только уже начатое наблюдение. "
+        "Новый этап доступен в Plus."
     )
