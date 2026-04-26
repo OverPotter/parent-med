@@ -401,7 +401,6 @@ class AuthService(BaseAuthService):
             account=self._account_to_response(updated_account),
             family=self._family_to_response(new_family),
         )
-
     async def change_password(
         self, account_id: UUID, dto: ChangePasswordDto, refresh_token: str | None = None
     ) -> None:
