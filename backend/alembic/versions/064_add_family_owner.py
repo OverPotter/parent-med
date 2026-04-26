@@ -41,9 +41,9 @@ def upgrade() -> None:
                 a.family_id,
                 a.id
             FROM accounts AS a
-            WHERE a.family_role != 'deleted'
             ORDER BY
                 a.family_id,
+                CASE WHEN lower(coalesce(a.family_role, '')) = 'deleted' THEN 1 ELSE 0 END,
                 CASE WHEN lower(coalesce(a.family_role, '')) IN ('owner', 'admin') THEN 0 ELSE 1 END,
                 a.created_at ASC,
                 a.id ASC
