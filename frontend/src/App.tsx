@@ -3,6 +3,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
+import { FAMILY_ACCESS_REFRESH_MS } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { applySessionToClient, setBearerToken, setRefreshHandler } from "@shared/api/client";
@@ -24,6 +25,7 @@ import {
 } from "@/app/runtime/sync";
 import { NativePushNavigationSync } from "@/app/push/sync";
 import { ClientRuntimeMount } from "@/app/runtime/ClientRuntimeMount";
+import { RevenueCatSync } from "@/app/billing/revenueCatSync";
 import { IOSBackSwipeZone } from "@/app/mobile/ios/IOSBackSwipeZone";
 import {
   IOSKeyboardViewportSync,
@@ -200,6 +202,8 @@ function AuthSync() {
     enabled: Boolean(authToken || refreshToken),
     retry: false,
     staleTime: 0,
+    refetchInterval: authToken || refreshToken ? FAMILY_ACCESS_REFRESH_MS : false,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
@@ -361,6 +365,7 @@ export default function App() {
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <AuthSync />
+      <RevenueCatSync />
       <DisplayNameOnboardingOverlay />
       {role !== "admin" ? <NativePushNavigationSync /> : null}
       <ClientRuntimeMount enabled={shouldMountClientRuntime} />

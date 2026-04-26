@@ -359,7 +359,7 @@ function MedicineDetails({
           : tCabinet(language, "doseCalcMissingField")}
       </p>
       {!doseCalcValue && canEdit ? (
-        <div className="space-y-2 rounded-2xl border border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_74%,transparent)] px-3 py-3">
+        <div className="space-y-2 rounded-2xl border border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_48%,transparent)] px-3 py-3 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_42%,transparent)]">
           {!isDoseCalcEditorOpen ? (
             <button
               type="button"

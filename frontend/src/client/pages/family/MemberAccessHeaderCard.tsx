@@ -6,6 +6,7 @@ import { roleLabel, tFamily } from "./copy";
 export function MemberAccessHeaderCard({
   language,
   member,
+  familyOwnerAccountId,
   accessSummaryItems,
   hasHeaderActions,
   canPromote,
@@ -18,6 +19,7 @@ export function MemberAccessHeaderCard({
 }: {
   language: AppLanguage;
   member: FamilyMember;
+  familyOwnerAccountId?: string | null;
   accessSummaryItems: Array<{ key: string; label: string; toneClass: string }>;
   hasHeaderActions: boolean;
   canPromote: boolean;
@@ -28,6 +30,7 @@ export function MemberAccessHeaderCard({
   onDemote: () => void;
   onDelete: () => void;
 }) {
+  const isOwner = familyOwnerAccountId === member.id;
   return (
     <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
       <div className="space-y-4">
@@ -44,10 +47,10 @@ export function MemberAccessHeaderCard({
               ) : null}
               <span
                 className={`rounded-full px-2.5 py-1 text-[11px] ${
-                  member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill"
+                  isOwner || member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill"
                 }`}
               >
-                {roleLabel(member.familyRole, language)}
+                {roleLabel(member.familyRole, language, { isOwner })}
               </span>
             </div>
             <p className="text-sm text-muted">

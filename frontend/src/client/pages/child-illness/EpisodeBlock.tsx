@@ -63,6 +63,8 @@ export function EpisodeBlock({
   quickReminderCreateMode,
   quickReminderDetailMode,
   reminderPlanId,
+  planLocksChildActions,
+  onLockedActionAttempt,
 }: {
   childName: string;
   childId: string;
@@ -78,6 +80,8 @@ export function EpisodeBlock({
   quickReminderCreateMode: boolean;
   quickReminderDetailMode: boolean;
   reminderPlanId: string | null;
+  planLocksChildActions: boolean;
+  onLockedActionAttempt: () => void;
 }) {
   const { language } = useI18n();
   const navigate = useNavigate();
@@ -88,6 +92,7 @@ export function EpisodeBlock({
   const liveQueryOptions = useLiveQueryOptions(5_000);
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
   const canEditEpisode = canEditChild(childId, accountFamilyRole, accountAccessPolicy);
+  const canMutateEpisode = canEditEpisode && !planLocksChildActions;
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
   const [searchParams] = useSearchParams();
   const isReminderCabinetPickerOpen = searchParams.get("picker") === "cabinet";
@@ -428,6 +433,10 @@ export function EpisodeBlock({
   };
 
   const handleTakeDose = (plan: EpisodeMedicationPlan) => {
+    if (!canMutateEpisode) {
+      onLockedActionAttempt();
+      return;
+    }
     const selectedReminder = reminderItems.find((item) => item.plan.id === plan.id) ?? null;
     doseLogging.open({
       item: plan,
@@ -623,12 +632,12 @@ export function EpisodeBlock({
             medicines={householdMedicines}
             familyMembers={familyMembers}
             currentAccountId={accountId}
-            canEditEpisode={canEditEpisode}
+            canEditEpisode={canMutateEpisode}
             administrations={administrations}
             onOpen={(planId) =>
               navigate(`/children/${childId}/illness?focus=reminder-detail&plan=${planId}`)
             }
-            onTakeDose={handleTakeDose}
+            onTakeDose={canMutateEpisode ? handleTakeDose : undefined}
             isSubmittingAdministration={addAdminMutation.isPending}
             isUpdatingRecipients={isUpdatingRecipients}
             onChangeRecipients={updateEpisodeRecipients}
@@ -653,7 +662,7 @@ export function EpisodeBlock({
           isReminderEditing={isReminderEditing}
           editingReminderName={editingReminderName}
           medicines={householdMedicines}
-          canEditEpisode={canEditEpisode}
+          canEditEpisode={canMutateEpisode}
           isSubmittingAdministration={addAdminMutation.isPending}
           isUpdating={updatePlanMutation.isPending}
           isDeleting={deletePlanMutation.isPending}
@@ -668,7 +677,7 @@ export function EpisodeBlock({
             setIsReminderEditing(nextIsEditing);
             setEditingReminderName(nextIsEditing ? planName : null);
           }}
-          onTakeDose={handleTakeDose}
+          onTakeDose={canMutateEpisode ? handleTakeDose : undefined}
           onUpdate={(planId, payload) =>
             updatePlanMutation.mutate({
               id: planId,
@@ -777,7 +786,16 @@ export function EpisodeBlock({
         isCloseConfirmOpen={isCloseConfirmOpen}
         setIsCloseConfirmOpen={setIsCloseConfirmOpen}
         onClose={onClose}
-        manualComposerSection={<ManualComposerOverview language={language} childId={childId} />}
+        canEditEpisode={canMutateEpisode}
+        onLockedActionAttempt={onLockedActionAttempt}
+        manualComposerSection={
+          <ManualComposerOverview
+            language={language}
+            childId={childId}
+            canEditEpisode={canMutateEpisode}
+            onLockedActionAttempt={onLockedActionAttempt}
+          />
+        }
         reminderOverviewSection={
           <ReminderOverviewPanel
             language={language}
@@ -785,6 +803,8 @@ export function EpisodeBlock({
             episode={episode}
             medicationPlans={medicationPlans}
             reminderLead={reminderLead}
+            canEditEpisode={canMutateEpisode}
+            onLockedActionAttempt={onLockedActionAttempt}
           />
         }
         timelineSection={

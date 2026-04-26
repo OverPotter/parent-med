@@ -1,15 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { fetchMyFamilyAccess, fetchMyFamilyMembers } from "@shared/api/families";
+import { hasNetworkUnavailableError } from "@shared/api/network";
 import { fetchPillboxPlan, fetchPillboxPlans } from "@shared/api/pillboxPlans";
-import { fetchMyFamilyMembers } from "@shared/api/families";
 import { getEligiblePillboxRecipients } from "@shared/familyAccess/recipients";
+import { ModuleOfflineState } from "@shared/components/ModuleOfflineState";
+import { PageIntro } from "@shared/components/PageIntro";
+import { EmptyState } from "@shared/components/Surface";
+import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
+import { useIsOffline } from "@shared/hooks/useIsOffline";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { canActPillbox, canEditPillbox, canViewPillbox } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import {
+  shouldLockPillboxPlanCreation,
+  shouldShowPillboxFreeDowngradeNotice,
+} from "@shared/subscription/pillboxPlanAccess";
 import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { PillboxAnalyticsScreen } from "./pillbox/analytics";
 import { PillboxMedicationScreen } from "./pillbox/medicationScreen";
 import {
@@ -44,6 +57,7 @@ import { usePillboxMutations } from "./pillbox/usePillboxMutations";
 export function PillboxPage() {
   const { language } = useI18n();
   const isIosShell = useIsIosShell();
+  const isOffline = useIsOffline();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -51,6 +65,7 @@ export function PillboxPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
+  const pillboxLiveQueryOptions = useLiveQueryOptions(isIosShell ? 10000 : 5000);
   const canSeePillbox = canViewPillbox(accountFamilyRole, accountAccessPolicy);
   const canActInPillbox = canActPillbox(accountFamilyRole, accountAccessPolicy);
   const canMutatePillbox = canEditPillbox(accountFamilyRole, accountAccessPolicy);
@@ -69,6 +84,7 @@ export function PillboxPage() {
   );
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [savePlanError, setSavePlanError] = useState<string | null>(null);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const screen =
     searchParams.get("mode") === "setup" ||
     searchParams.get("mode") === "medication" ||
@@ -97,13 +113,32 @@ export function PillboxPage() {
   const activeMedication =
     draft?.medications.find((medication) => medication.id === activeMedicationId) ?? null;
   const canSaveMedication = Boolean(editorTitle.trim());
-
-  const { data: familyMembers = [] } = useQuery({
+  const { data: familyMembers = [], error: familyMembersError } = useQuery({
     queryKey: ["families", "me", "members", currentFamilyId],
     queryFn: fetchMyFamilyMembers,
     enabled: Boolean(currentFamilyId && canSeePillbox),
     staleTime: 5 * 60 * 1000,
   });
+  const { data: familyAccess, error: familyAccessError } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId && canSeePillbox),
+    ...familyAccessQueryOptions,
+  });
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const premiumActive = familyAccess?.premiumActive ?? true;
+  const freePrimaryPlanId = familyAccess?.freePrimaryPillboxPlanId ?? null;
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
+  const pillboxPlanLimitReached = shouldLockPillboxPlanCreation({
+    access: familyAccess,
+    screen,
+    selectedPlanId,
+  });
+  const showFreePillboxDowngradeNotice = shouldShowPillboxFreeDowngradeNotice(familyAccess);
   const eligiblePillboxMembers = useMemo(
     () => getEligiblePillboxRecipients(familyMembers),
     [familyMembers]
@@ -132,16 +167,26 @@ export function PillboxPage() {
       ? `Получатели уведомлений: ${visible} и ещё ${remaining}`
       : `Reminder recipients: ${visible} and ${remaining} more`;
   }, [draft, eligiblePillboxMembers, language]);
-  const { data: planSummaries = [], isLoading: plansLoading } = useQuery({
+  const {
+    data: planSummaries = [],
+    isLoading: plansLoading,
+    error: planSummariesError,
+  } = useQuery({
     queryKey: ["pillbox-plans", currentFamilyId, language],
     queryFn: fetchPillboxPlans,
     enabled: Boolean(currentFamilyId && canSeePillbox),
+    ...pillboxLiveQueryOptions,
   });
 
-  const { data: selectedPlan, isLoading: selectedPlanLoading } = useQuery({
+  const {
+    data: selectedPlan,
+    isLoading: selectedPlanLoading,
+    error: selectedPlanError,
+  } = useQuery({
     queryKey: ["pillbox-plan", selectedPlanId],
     queryFn: () => fetchPillboxPlan(selectedPlanId!),
     enabled: Boolean(selectedPlanId && selectedPlanId !== "new" && canSeePillbox),
+    ...pillboxLiveQueryOptions,
   });
   const selectedPlanRecipientsSummary = useMemo(() => {
     if (!selectedPlan) {
@@ -167,6 +212,21 @@ export function PillboxPage() {
       ? `Получатели уведомлений: ${visible} и ещё ${remaining}`
       : `Reminder recipients: ${visible} and ${remaining} more`;
   }, [eligiblePillboxMembers, language, selectedPlan]);
+  const selectedPlanSubscriptionLocked = selectedPlan
+    ? premiumActive === false &&
+      (selectedPlan.status === "active" || selectedPlan.status === "paused") &&
+      freePrimaryPlanId !== null &&
+      selectedPlan.id !== freePrimaryPlanId
+    : false;
+  const showOfflineState =
+    canSeePillbox &&
+    (isOffline ||
+      hasNetworkUnavailableError([
+        familyMembersError,
+        familyAccessError,
+        planSummariesError,
+        selectedPlanError,
+      ]));
 
   useEffect(() => {
     if (!canSeePillbox) {
@@ -176,6 +236,18 @@ export function PillboxPage() {
       navigate("/pillbox", { replace: true });
     }
   }, [canMutatePillbox, canSeePillbox, navigate, screen]);
+
+  useEffect(() => {
+    if (
+      !selectedPlanSubscriptionLocked ||
+      !selectedPlanId ||
+      (screen !== "setup" && screen !== "medication")
+    ) {
+      return;
+    }
+    setIsUpgradeDialogOpen(true);
+    navigate(`/pillbox?mode=details&plan=${selectedPlanId}`, { replace: true });
+  }, [navigate, screen, selectedPlanId, selectedPlanSubscriptionLocked]);
 
   const allGroups = useMemo(() => {
     const mapped = planSummaries.map((summary) => toGroupSummary(summary, language));
@@ -347,6 +419,10 @@ export function PillboxPage() {
   }, [editorMedicationBaseline, pendingNewMedicationId, screen]);
 
   const openCreate = () => {
+    if (pillboxPlanLimitReached) {
+      setIsUpgradeDialogOpen(true);
+      return;
+    }
     setDraft(buildDraft(accountId, undefined));
     navigate("/pillbox?mode=setup&plan=new", { replace: screen !== "hub" });
   };
@@ -395,6 +471,7 @@ export function PillboxPage() {
     setDraft(null);
     setSaveAttempted(false);
     setSavePlanError(null);
+    setIsUpgradeDialogOpen(false);
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
     navigate(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox", { replace: true });
   };
@@ -404,6 +481,7 @@ export function PillboxPage() {
     setDraft(null);
     setSaveAttempted(false);
     setSavePlanError(null);
+    setIsUpgradeDialogOpen(false);
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
     navigateBackOr(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
   };
@@ -417,6 +495,8 @@ export function PillboxPage() {
   } = usePillboxMutations({
     language,
     currentFamilyId,
+    currentPillboxPlanLimitReached: Boolean(pillboxPlanLimitReached),
+    onPlanLimitReached: () => setIsUpgradeDialogOpen(true),
     queryClient,
     setSavePlanError,
     setPlanActionError,
@@ -567,6 +647,10 @@ export function PillboxPage() {
     ) {
       return Promise.resolve();
     }
+    if (selectedPlanSubscriptionLocked) {
+      setIsUpgradeDialogOpen(true);
+      return Promise.resolve();
+    }
 
     return updatePlanMutation
       .mutateAsync({
@@ -617,6 +701,14 @@ export function PillboxPage() {
   };
 
   const requestDeletePlan = () => {
+    if (
+      selectedPlanSubscriptionLocked &&
+      selectedPlan &&
+      (selectedPlan.status === "active" || selectedPlan.status === "paused")
+    ) {
+      setIsUpgradeDialogOpen(true);
+      return;
+    }
     setPlanActionError(null);
     setPlanActionTarget(null);
     setDeleteTarget({ kind: "plan" });
@@ -626,6 +718,7 @@ export function PillboxPage() {
     if (!deleteTarget) return;
 
     if (deleteTarget.kind === "plan") {
+      setDeleteTarget(null);
       deleteGroup();
       return;
     }
@@ -636,6 +729,15 @@ export function PillboxPage() {
 
   const markNextDoseTaken = (group: PillboxGroup) => {
     if (!group.nextMedicationId || takeDoseMutation.isPending) {
+      return;
+    }
+    if (
+      premiumActive === false &&
+      freePrimaryPlanId !== null &&
+      group.id !== freePrimaryPlanId &&
+      (group.status === "active" || group.status === "paused")
+    ) {
+      setIsUpgradeDialogOpen(true);
       return;
     }
     takeDoseMutation.mutate({
@@ -652,6 +754,10 @@ export function PillboxPage() {
       selectedPlan.status === "archived" ||
       selectedPlan.status === "completed"
     ) {
+      return;
+    }
+    if (selectedPlanSubscriptionLocked) {
+      setIsUpgradeDialogOpen(true);
       return;
     }
     setPlanActionError(null);
@@ -743,13 +849,51 @@ export function PillboxPage() {
 
   if (!canSeePillbox) {
     return (
-      <div>
-        <h1 className="app-title">{tPillbox(language, "hubTitle")}</h1>
-        <p className="mt-2 text-muted">
-          {language === "ru"
-            ? "Администратор семьи ещё не выдал вам доступ к приёмам."
-            : "Your family admin has not granted access to medication plans yet."}
-        </p>
+      <div className="min-w-0 space-y-6 sm:space-y-8">
+        <PageIntro
+          title={tPillbox(language, "hubTitle")}
+          subtitle={tPillbox(language, "hubSubtitle")}
+          compactOnMobile
+          hideOnMobile
+        />
+        <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+          <div className="app-mobile-section-intro">
+            <h1 className="app-mobile-section-intro__title">{tPillbox(language, "hubTitle")}</h1>
+            <p className="app-mobile-section-intro__hint">
+              {tPillbox(language, "hubMobileHint")}
+            </p>
+          </div>
+        </div>
+        <EmptyState className="text-foreground">
+          <div className="space-y-3">
+            <p className="app-card-title">{tPillbox(language, "noAccessTitle")}</p>
+            <p className="text-sm leading-6 text-muted">
+              {tPillbox(language, "noAccessDescription")}
+            </p>
+          </div>
+        </EmptyState>
+      </div>
+    );
+  }
+
+  if (showOfflineState) {
+    return (
+      <div className="min-w-0 space-y-6 sm:space-y-8">
+        <PageIntro
+          title={tPillbox(language, "hubTitle")}
+          subtitle={tPillbox(language, "hubSubtitle")}
+          compactOnMobile
+          hideOnMobile
+        />
+        <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+          <div className="app-mobile-section-intro">
+            <h1 className="app-mobile-section-intro__title">{tPillbox(language, "hubTitle")}</h1>
+            <p className="app-mobile-section-intro__hint">
+              {tPillbox(language, "hubMobileHint")}
+            </p>
+          </div>
+        </div>
+        <ModuleOfflineState language={language} />
       </div>
     );
   }
@@ -757,7 +901,7 @@ export function PillboxPage() {
   if (screen === "hub" && plansLoading) {
     return (
       <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
-        {language === "ru" ? "Загружаем планы приёма..." : "Loading medication plans..."}
+        {language === "ru" ? "Загружаем планы лекарств..." : "Loading medication plans..."}
       </div>
     );
   }
@@ -797,8 +941,9 @@ export function PillboxPage() {
         selectedPlan={selectedPlan}
         selectedPlanId={selectedPlanId}
         allGroups={allGroups}
-        canEdit={canActInPillbox}
-        disableEditingActions={disablePillboxEditingActions}
+        canAct={canActInPillbox}
+        canEdit={canMutatePillbox}
+        disableEditingActions={disablePillboxEditingActions || selectedPlanSubscriptionLocked}
         planActionTarget={planActionTarget}
         planActionError={planActionError}
         togglePlanStatusPending={togglePlanStatusMutation.isPending}
@@ -830,64 +975,84 @@ export function PillboxPage() {
 
   if (screen === "setup" && draft) {
     return (
-      <PillboxSetupScreen
-        language={language}
-        draft={draft}
-        familyMembers={eligiblePillboxMembers}
-        currentAccountId={accountId}
-        canSavePlan={canSavePlan}
-        saveBlockedReason={saveBlockedReason}
-        saveAttempted={saveAttempted}
-        savePlanError={savePlanError}
-        isEditing={isEditing}
-        onBack={goBackToHub}
-        onAddMedication={addMedication}
-        onOpenMedication={goToMedication}
-        onRequestDeleteMedication={requestDeleteMedication}
-        onTitleChange={(value) =>
-          setDraft((current) => (current ? { ...current, title: value } : current))
-        }
-        onToggleMember={(memberIds) =>
-          setDraft((current) => {
-            if (!current) return current;
-            return {
-              ...current,
-              members: memberIds,
-            };
-          })
-        }
-        onSavePlan={saveGroup}
-        recipientsSummary={pillboxRecipientsSummary}
-        deleteTarget={deleteTarget}
-        onConfirmDelete={confirmDelete}
-        onCloseDeleteDialog={() => setDeleteTarget(null)}
-      />
+      <>
+        <PillboxSetupScreen
+          language={language}
+          draft={draft}
+          familyMembers={eligiblePillboxMembers}
+          currentAccountId={accountId}
+          canSavePlan={canSavePlan}
+          saveBlockedReason={saveBlockedReason}
+          saveAttempted={saveAttempted}
+          savePlanError={savePlanError}
+          isEditing={isEditing}
+          onBack={goBackToHub}
+          onAddMedication={addMedication}
+          onOpenMedication={goToMedication}
+          onRequestDeleteMedication={requestDeleteMedication}
+          onTitleChange={(value) =>
+            setDraft((current) => (current ? { ...current, title: value } : current))
+          }
+          onToggleMember={(memberIds) =>
+            setDraft((current) => {
+              if (!current) return current;
+              return {
+                ...current,
+                members: memberIds,
+              };
+            })
+          }
+          onSavePlan={saveGroup}
+          recipientsSummary={pillboxRecipientsSummary}
+          deleteTarget={deleteTarget}
+          onConfirmDelete={confirmDelete}
+          onCloseDeleteDialog={() => setDeleteTarget(null)}
+        />
+      </>
     );
   }
 
   return (
-    <PillboxHubScreen
-      language={language}
-      isIosShell={isIosShell}
-      listFilter={listFilter}
-      visibleGroups={visibleGroups}
-      canAct={canActInPillbox}
-      canEdit={canMutatePillbox}
-      highlightedPlanId={highlightedPlanId}
-      openAnalytics={openAnalytics}
-      openCreate={openCreate}
-      openDetails={openDetails}
-      setListFilter={setListFilter}
-      markNextDoseTaken={markNextDoseTaken}
-      takeDosePending={takeDoseMutation.isPending}
-      deleteTarget={deleteTarget}
-      planActionError={planActionError}
-      deletePlanPending={deletePlanMutation.isPending}
-      confirmDelete={confirmDelete}
-      closeDeleteDialog={() => {
-        setDeleteTarget(null);
-        setPlanActionError(null);
-      }}
-    />
+    <>
+      <PillboxHubScreen
+        language={language}
+        isIosShell={isIosShell}
+        listFilter={listFilter}
+        visibleGroups={visibleGroups}
+        canAct={canActInPillbox}
+        canEdit={canMutatePillbox}
+        createPlanLocked={Boolean(pillboxPlanLimitReached)}
+        showFreeDowngradeNotice={showFreePillboxDowngradeNotice}
+        freePrimaryPlanId={freePrimaryPlanId}
+        highlightedPlanId={highlightedPlanId}
+        openAnalytics={openAnalytics}
+        openCreate={openCreate}
+        openDetails={openDetails}
+        setListFilter={setListFilter}
+        markNextDoseTaken={markNextDoseTaken}
+        takeDosePending={takeDoseMutation.isPending}
+        deleteTarget={deleteTarget}
+        planActionError={planActionError}
+        deletePlanPending={deletePlanMutation.isPending}
+        confirmDelete={confirmDelete}
+        closeDeleteDialog={() => {
+          setDeleteTarget(null);
+          setPlanActionError(null);
+        }}
+      />
+      <UpgradeDialog
+        isOpen={isUpgradeDialogOpen}
+        language={language}
+        entryPoint="second_pillbox_plan"
+        isPending={isUpgradePending}
+        canUpgrade={canManageSubscription}
+        onClose={() => setIsUpgradeDialogOpen(false)}
+        onUpgrade={() => {
+          void upgradeToPlus().then(() => {
+            setIsUpgradeDialogOpen(false);
+          });
+        }}
+      />
+    </>
   );
 }

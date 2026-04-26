@@ -36,6 +36,9 @@ export function ChildCard({
   hasActiveEpisode,
   canActChild,
   canEditChild,
+  planLocksChildActions,
+  isPrimaryFreeChild,
+  onLockedActionAttempt,
   currentAccountId,
   copy,
   language,
@@ -52,6 +55,9 @@ export function ChildCard({
   hasActiveEpisode: boolean;
   canActChild: boolean;
   canEditChild: boolean;
+  planLocksChildActions: boolean;
+  isPrimaryFreeChild: boolean;
+  onLockedActionAttempt: () => void;
   currentAccountId: string | null;
   copy: ReturnType<typeof getChildrenCopy>["childrenPage"];
   language: "ru" | "en";
@@ -160,6 +166,15 @@ export function ChildCard({
                         : copy.childCard.activeObservation}
                     </span>
                   ) : null}
+                  {planLocksChildActions ? (
+                    <span className="inline-flex shrink-0 items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-warning)_18%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-warning)_78%,var(--color-foreground))]">
+                      {copy.lockedChildBadge}
+                    </span>
+                  ) : isPrimaryFreeChild ? (
+                    <span className="inline-flex shrink-0 items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-success)_80%,var(--color-foreground))]">
+                      {copy.primaryChildBadge}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5 text-muted">
                   {secondaryMeta.map((item, index) => (
@@ -192,6 +207,11 @@ export function ChildCard({
                     !canActChild || (activeFeeding ? !isActiveFeedingOwnedByCurrentAccount : false)
                   }
                   onClick={(event) => {
+                    if (planLocksChildActions) {
+                      event.preventDefault();
+                      onLockedActionAttempt();
+                      return;
+                    }
                     if (!canActChild && !activeFeeding) {
                       event.preventDefault();
                       return;
@@ -217,6 +237,10 @@ export function ChildCard({
                   type="button"
                   data-live-action-target={`sleep:${child.id}`}
                   onClick={() => {
+                    if (planLocksChildActions) {
+                      onLockedActionAttempt();
+                      return;
+                    }
                     if (!canActChild && !activeSleep) {
                       return;
                     }
@@ -251,8 +275,17 @@ export function ChildCard({
             <div>
               <button
                 type="button"
-                onClick={onStartEpisode}
-                disabled={isStartingEpisode || !canEditChild}
+                onClick={() => {
+                  if (planLocksChildActions && !hasActiveEpisode) {
+                    onLockedActionAttempt();
+                    return;
+                  }
+                  onStartEpisode();
+                }}
+                disabled={
+                  isStartingEpisode ||
+                  (!hasActiveEpisode && !canEditChild && !planLocksChildActions)
+                }
                 className={`${hasActiveEpisode ? activeQuickActionClass : quickActionClass} w-full disabled:opacity-50`}
               >
                 {hasActiveEpisode

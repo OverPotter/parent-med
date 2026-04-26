@@ -16,7 +16,7 @@ export const illnessListClass =
 export const illnessListRowClass =
   "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:px-4";
 export const appBtnJournalPrimaryClass =
-  "soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]";
+  "soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] shadow-[0_14px_28px_rgba(15,23,42,0.12)] transition hover:-translate-y-[1px] hover:shadow-[0_18px_34px_rgba(15,23,42,0.16)] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-45 disabled:shadow-none sm:min-h-[2.6rem] sm:text-[0.82rem]";
 export const appBtnJournalSecondaryClass =
   "soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]";
 export const appBtnJournalDangerClass =

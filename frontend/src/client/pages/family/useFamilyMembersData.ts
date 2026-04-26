@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMyFamilyMembers } from "@shared/api/families";
+import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
 import type { FamilyMember } from "@shared/types/api";
 
 export function useFamilyMembersData(
@@ -15,6 +16,7 @@ export function useFamilyMembersData(
     queryKey: ["family-members", currentFamilyId],
     queryFn: fetchMyFamilyMembers,
     enabled: Boolean(currentFamilyId),
+    ...familyAccessQueryOptions,
   });
 
   const currentMember = useMemo(

@@ -10,6 +10,7 @@ from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
 from src.domain.repositories.auth_attempt_repository import AuthAttemptRepository
+from src.domain.repositories.billing_event_repository import BillingEventRepository
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.curated_medicine_catalog_repository import (
     CuratedMedicineCatalogRepository,
@@ -26,8 +27,10 @@ from src.domain.repositories.illness_comment_repository import IllnessCommentRep
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 from src.domain.repositories.parent_repository import ParentRepository
 from src.domain.repositories.pillbox_repository import PillboxRepository
+from src.domain.repositories.plan_repository import PlanRepository
 from src.domain.repositories.push_subscription_repository import PushSubscriptionRepository
 from src.domain.repositories.sleep_session_repository import SleepSessionRepository
+from src.domain.repositories.subscription_repository import SubscriptionRepository
 from src.domain.repositories.temperature_entry_repository import TemperatureEntryRepository
 from src.domain.repositories.weight_entry_repository import WeightEntryRepository
 from src.infrastructure.database.repositories.account_feedback_repository import (
@@ -42,6 +45,9 @@ from src.infrastructure.database.repositories.administration_event_repository im
 )
 from src.infrastructure.database.repositories.auth_attempt_repository import (
     SqlAuthAttemptRepository,
+)
+from src.infrastructure.database.repositories.billing_event_repository import (
+    SqlBillingEventRepository,
 )
 from src.infrastructure.database.repositories.child_repository import SqlChildRepository
 from src.infrastructure.database.repositories.curated_medicine_catalog_repository import (
@@ -71,11 +77,15 @@ from src.infrastructure.database.repositories.illness_episode_repository import 
 )
 from src.infrastructure.database.repositories.parent_repository import SqlParentRepository
 from src.infrastructure.database.repositories.pillbox_repository import SqlPillboxRepository
+from src.infrastructure.database.repositories.plan_repository import SqlPlanRepository
 from src.infrastructure.database.repositories.push_subscription_repository import (
     SqlPushSubscriptionRepository,
 )
 from src.infrastructure.database.repositories.sleep_session_repository import (
     SqlSleepSessionRepository,
+)
+from src.infrastructure.database.repositories.subscription_repository import (
+    SqlSubscriptionRepository,
 )
 from src.infrastructure.database.repositories.temperature_entry_repository import (
     SqlTemperatureEntryRepository,
@@ -103,6 +113,12 @@ def get_account_session_repo(
 
 def get_auth_attempt_repo() -> AuthAttemptRepository:
     return SqlAuthAttemptRepository(get_async_session_factory())
+
+
+def get_billing_event_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> BillingEventRepository:
+    return SqlBillingEventRepository(session)
 
 
 def get_family_repo(session: AsyncSession = Depends(get_db_session)) -> FamilyRepository:
@@ -147,6 +163,10 @@ def get_parent_repo(session: AsyncSession = Depends(get_db_session)) -> ParentRe
     return SqlParentRepository(session)
 
 
+def get_plan_repo(session: AsyncSession = Depends(get_db_session)) -> PlanRepository:
+    return SqlPlanRepository(session)
+
+
 def get_pillbox_repo(session: AsyncSession = Depends(get_db_session)) -> PillboxRepository:
     return SqlPillboxRepository(session)
 
@@ -167,6 +187,12 @@ def get_sleep_session_repo(
     session: AsyncSession = Depends(get_db_session),
 ) -> SleepSessionRepository:
     return SqlSleepSessionRepository(session)
+
+
+def get_subscription_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionRepository:
+    return SqlSubscriptionRepository(session)
 
 
 def get_household_medicine_repo(

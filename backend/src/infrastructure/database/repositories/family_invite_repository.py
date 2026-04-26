@@ -1,8 +1,9 @@
 """Реализация репозитория приглашений в семью."""
 
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.family_invite import FamilyInvite
@@ -53,6 +54,20 @@ class SqlFamilyInviteRepository(FamilyInviteRepository):
     async def get_by_token_hash(self, token_hash: str) -> FamilyInvite | None:
         result = await self._session.execute(
             select(FamilyInviteModel).where(FamilyInviteModel.token_hash == token_hash)
+        )
+        row = result.scalars().one_or_none()
+        return self._to_entity(row) if row else None
+
+    async def get_latest_active(self) -> FamilyInvite | None:
+        now = datetime.now(UTC)
+        result = await self._session.execute(
+            select(FamilyInviteModel)
+            .where(
+                FamilyInviteModel.accepted_at.is_(None),
+                FamilyInviteModel.expires_at > now,
+            )
+            .order_by(desc(FamilyInviteModel.created_at))
+            .limit(1)
         )
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None

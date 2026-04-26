@@ -467,6 +467,14 @@ export function clearOfflineOverride(kind: keyof ActiveOverrides, childId: strin
   });
 }
 
+export function clearAllOfflineCareOverrides(): void {
+  updateState((state) => {
+    state.active.sleep = {};
+    state.active.feeding = {};
+    state.active.illness = {};
+  });
+}
+
 export function replaceOfflineOverrideWithServerEntity(
   kind: keyof ActiveOverrides,
   childId: string,

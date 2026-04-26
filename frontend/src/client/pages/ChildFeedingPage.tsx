@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import {
   deleteFeedingRecord,
   fetchActiveFeedingRecordByChildId,
@@ -14,6 +15,7 @@ import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useNow } from "@shared/hooks/useNow";
 import { canEditChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import type { FeedingRecord } from "@shared/types/api";
 import {
@@ -40,6 +42,7 @@ export function ChildFeedingPage() {
   const isIosShell = useIsIosShell();
   const navigate = useNavigate();
   const currentAccountId = useAppStore((s) => s.accountId);
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
@@ -49,6 +52,12 @@ export function ChildFeedingPage() {
   const [customStartDate, setCustomStartDate] = useState(() => getShiftedLocalIsoDate(-6));
   const [customEndDate, setCustomEndDate] = useState(() => getShiftedLocalIsoDate(0));
   const canViewFeeding = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    staleTime: 60 * 1000,
+  });
 
   const { data: child, isLoading: isChildLoading } = useQuery({
     queryKey: ["child", childId],
@@ -94,7 +103,9 @@ export function ChildFeedingPage() {
   const filteredRecords = feedingRecords.filter((record) =>
     matchesChildRecordsPeriod(record.recordedAt, period, customStartDate, customEndDate)
   );
-  const canEditFeedingRecords = canEditChild(child.id, accountFamilyRole, accountAccessPolicy);
+  const canEditFeedingRecords =
+    canEditChild(child.id, accountFamilyRole, accountAccessPolicy) &&
+    !isChildLockedByPlan(child.id, familyAccess);
   const averagePerDay = getAveragePerDay(
     filteredRecords.map((record) => record.recordedAt),
     period,

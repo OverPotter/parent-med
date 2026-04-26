@@ -10,9 +10,12 @@ import { ProfileEditDialog } from "./ProfileEditDialog";
 
 export interface MemberCardProps {
   member: FamilyMember;
+  familyOwnerAccountId?: string | null;
   isCurrent: boolean;
   forceEdit: boolean;
   canManageAccess: boolean;
+  canManageRoles: boolean;
+  canDeleteMember: boolean;
   canEditProfile: boolean;
   adminsCount: number;
   isPending: boolean;
@@ -31,9 +34,12 @@ export interface MemberCardProps {
 
 export function MemberCard({
   member,
+  familyOwnerAccountId = null,
   isCurrent,
   forceEdit,
   canManageAccess,
+  canManageRoles,
+  canDeleteMember,
   canEditProfile,
   adminsCount,
   isPending,
@@ -45,9 +51,10 @@ export function MemberCard({
   onSaveProfile,
   onHideForcedEdit,
 }: MemberCardProps) {
-  const canDemote = member.familyRole === "admin" && adminsCount > 1 && !isCurrent;
-  const canPromote = member.familyRole !== "admin" && !isCurrent;
-  const canDelete = !isCurrent;
+  const isOwner = familyOwnerAccountId === member.id;
+  const canDemote = canManageRoles && member.familyRole === "admin" && adminsCount > 1 && !isCurrent && !isOwner;
+  const canPromote = canManageRoles && member.familyRole !== "admin" && !isCurrent && !isOwner;
+  const canDelete = canDeleteMember && !isCurrent && !isOwner;
   const [isEditing, setIsEditing] = useState(forceEdit);
   const [displayName, setDisplayName] = useState(member.displayName || "");
   const [relationshipLabel, setRelationshipLabel] = useState(member.relationshipLabel || "");
@@ -55,6 +62,10 @@ export function MemberCard({
   const [isPromoteConfirmOpen, setIsPromoteConfirmOpen] = useState(false);
   const [isDemoteConfirmOpen, setIsDemoteConfirmOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const memberLabel =
+    member.displayName || (isCurrent ? tFamily(language, "yourProfileTitle") : tFamily(language, "noName"));
+  const roleToneClass = isOwner || member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill";
+  const avatarInitial = memberLabel.trim().charAt(0).toUpperCase();
 
   useEffect(() => {
     setDisplayName(member.displayName || "");
@@ -71,7 +82,7 @@ export function MemberCard({
   const accessSummaryItems = buildMemberAccessSummaryItems(member.accessPolicy, language);
 
   return (
-    <div className="py-4 first:pt-0 last:pb-0">
+    <div className="space-y-4">
       <ConfirmDialog
         isOpen={isPromoteConfirmOpen}
         title={tFamily(language, "confirmPromoteTitle")}
@@ -114,41 +125,38 @@ export function MemberCard({
           setIsDeleteConfirmOpen(false);
         }}
       />
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="app-card-title text-base">
-              {member.displayName || (isCurrent ? tFamily(language, "yourProfileTitle") : tFamily(language, "noName"))}
-            </p>
-            {member.relationshipLabel && (
-              <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
-                {member.relationshipLabel}
-              </span>
-            )}
-            <span
-              className={`rounded-full px-2.5 py-1 text-[11px] ${
-                member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill"
-              }`}
-            >
-              {roleLabel(member.familyRole, language)}
-            </span>
-            {isCurrent && (
-              <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
-                {tFamily(language, "thisIsYou")}
-              </span>
-            )}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-[color:color-mix(in_srgb,var(--color-primary)_14%,transparent)] text-sm font-extrabold text-[color:color-mix(in_srgb,var(--color-primary)_82%,var(--color-foreground))]">
+            {avatarInitial || "•"}
           </div>
-          <div className="mt-2 grid gap-1.5">
-            <p className="text-sm text-muted">
-              <span className="font-semibold text-foreground/90">Email: </span>
-              {member.email || tFamily(language, "emailMissing")}
-            </p>
-            <p className="text-sm text-muted">
-              <span className="font-semibold text-foreground/90">
-                {tFamily(language, "phone")}:{" "}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="app-card-title text-base">{memberLabel}</p>
+              <span className={`rounded-full px-2.5 py-1 text-[11px] ${roleToneClass}`}>
+                {roleLabel(member.familyRole, language, { isOwner })}
               </span>
-              {member.phone || tFamily(language, "phoneMissing")}
-            </p>
+              {member.relationshipLabel ? (
+                <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
+                  {member.relationshipLabel}
+                </span>
+              ) : null}
+              {isCurrent ? (
+                <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
+                  {tFamily(language, "thisIsYou")}
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-2 grid gap-1.5">
+              <p className="text-sm text-muted">
+                <span className="font-semibold text-foreground/90">Email: </span>
+                <span className="break-all">{member.email || tFamily(language, "emailMissing")}</span>
+              </p>
+              <p className="text-sm text-muted">
+                <span className="font-semibold text-foreground/90">{tFamily(language, "phone")}: </span>
+                {member.phone || tFamily(language, "phoneMissing")}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -165,7 +173,7 @@ export function MemberCard({
       </div>
 
       {(canManageAccess || canEditProfile || canPromote || canDemote) && (
-        <div className="mt-4 space-y-2.5">
+        <div className="space-y-2.5 rounded-[20px] bg-surface-muted/55 px-3 py-3">
           <p className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted/85">
             {tFamily(language, "actionsTitle")}
           </p>
@@ -232,7 +240,7 @@ export function MemberCard({
       />
 
       {canManageAccess ? (
-        <div className="mt-4 space-y-2.5">
+        <div className="space-y-2.5 rounded-[20px] bg-surface-muted/55 px-3 py-3">
           <p className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted/85">
             {tFamily(language, "currentAccessTitle")}
           </p>

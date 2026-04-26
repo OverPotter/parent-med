@@ -35,9 +35,10 @@ interface RawAuthResponse {
     id: string;
     name: string;
     cabinet_member_account_ids?: string[] | null;
+    owner_account_id?: string | null;
     billing_account_id?: string | null;
     plan_code?: "free" | "plus" | "pro" | null;
-    subscription_status?: "inactive" | "active" | "grace" | "canceled" | "expired" | null;
+    subscription_status?: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired" | null;
     subscription_provider?: string | null;
     subscription_product_id?: string | null;
     subscription_expires_at?: string | null;
@@ -81,10 +82,28 @@ export async function fetchFamilyInvitePreview(token: string): Promise<FamilyInv
   return toFamilyInvitePreview(res.data);
 }
 
+export async function fetchLatestDevFamilyInvitePreview(): Promise<FamilyInvitePreview> {
+  const res = await apiClient.get<{
+    family_id: string;
+    family_name: string;
+    family_role: string;
+    expires_at: string;
+  }>("/family-invites/dev/latest");
+  return toFamilyInvitePreview(res.data);
+}
+
 export async function acceptFamilyInvite(token: string): Promise<AuthSessionResponse> {
   const endpoint = isNativeClientRuntime()
     ? `/family-invites/${token}/accept/native`
     : `/family-invites/${token}/accept`;
+  const res = await apiClient.post<RawAuthResponse>(endpoint);
+  return toAuthResponse(res.data);
+}
+
+export async function acceptLatestDevFamilyInvite(): Promise<AuthSessionResponse> {
+  const endpoint = isNativeClientRuntime()
+    ? "/family-invites/dev/latest/accept/native"
+    : "/family-invites/dev/latest/accept";
   const res = await apiClient.post<RawAuthResponse>(endpoint);
   return toAuthResponse(res.data);
 }

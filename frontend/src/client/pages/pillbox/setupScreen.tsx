@@ -86,10 +86,10 @@ export function PillboxSetupScreen({
         title={
           isEditing
             ? language === "ru"
-              ? "Приёмы · Редактировать план"
+              ? "Таблетница · Редактировать план"
               : "Pillbox · Edit plan"
             : language === "ru"
-              ? "Приёмы · Создать план"
+              ? "Таблетница · Создать план"
               : "Pillbox · Create plan"
         }
         subtitle={
@@ -236,7 +236,12 @@ export function PillboxSetupScreen({
               </p>
             ) : null}
             <div className="border-t border-border/60 pt-4">
-              <button type="button" onClick={onSavePlan} className={actionPrimaryClass}>
+              <button
+                type="button"
+                onClick={onSavePlan}
+                disabled={!canSavePlan}
+                className={`${actionPrimaryClass} disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none`}
+              >
                 {isEditing ? tPillbox(language, "savePlan") : tPillbox(language, "createNewPlan")}
               </button>
             </div>

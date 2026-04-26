@@ -21,6 +21,8 @@ type MeasurementCardProps = {
   history: MeasurementHistoryItem[];
   historyTitle: string;
   emptyText: string;
+  isLocked?: boolean;
+  onLockedSubmit?: () => void;
   onInputChange: (value: string) => void;
   onSubmit: () => void;
 };
@@ -40,6 +42,8 @@ export function MeasurementCard({
   history,
   historyTitle,
   emptyText,
+  isLocked = false,
+  onLockedSubmit,
   onInputChange,
   onSubmit,
 }: MeasurementCardProps) {
@@ -62,14 +66,21 @@ export function MeasurementCard({
               inputMode="decimal"
               value={inputValue}
               onChange={(event) => onInputChange(event.target.value)}
+              disabled={isLocked}
               className="soft-input w-full px-4"
               placeholder={inputPlaceholder}
             />
             <div className="border-t border-border/60 pt-4">
               <button
                 type="button"
-                onClick={onSubmit}
-                disabled={isPending || isSubmitDisabled}
+                onClick={() => {
+                  if (isLocked) {
+                    onLockedSubmit?.();
+                    return;
+                  }
+                  onSubmit();
+                }}
+                disabled={isPending || (!isLocked && isSubmitDisabled)}
                 className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.75rem] w-full px-4 disabled:opacity-50 sm:w-auto"
               >
                 {actionLabel}

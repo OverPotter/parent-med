@@ -31,7 +31,7 @@ export function PillboxLoadingScreen({
         }
       />
       <div className="soft-panel-muted rounded-[22px] px-4 py-4 text-sm text-muted">
-        {language === "ru" ? "Загружаем план приёма..." : "Loading plan..."}
+        {language === "ru" ? "Загружаем план лекарств..." : "Loading plan..."}
       </div>
     </EditorShell>
   );

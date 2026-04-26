@@ -31,6 +31,7 @@ from src.application.services.sleep_session_service import SleepSessionService
 from src.core.exceptions import ForbiddenError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.entities.episode_medication_plan import EpisodeMedicationPlan
+from src.domain.entities.family import Family
 from src.domain.entities.feeding_record import FeedingRecord
 from src.domain.entities.household_medicine import HouseholdMedicine
 from src.domain.entities.illness_episode import IllnessEpisode
@@ -55,11 +56,26 @@ def build_account(
 
 
 class StubFamilyRepository:
-    def __init__(self, family_id) -> None:  # noqa: ANN001
-        self.family_id = family_id
+    def __init__(
+        self,
+        family_id,  # noqa: ANN001
+        *,
+        plan_code: str = "free",
+        subscription_status: str = "inactive",
+        free_primary_child_id=None,  # noqa: ANN001
+        free_primary_pillbox_plan_id=None,  # noqa: ANN001
+    ) -> None:
+        self.family = Family(
+            id=family_id,
+            name="Family",
+            plan_code=plan_code,
+            subscription_status=subscription_status,
+            free_primary_child_id=free_primary_child_id,
+            free_primary_pillbox_plan_id=free_primary_pillbox_plan_id,
+        )
 
     async def get_by_id(self, id):  # noqa: ANN001
-        return object() if id == self.family_id else None
+        return self.family if id == self.family.id else None
 
 
 class StubChildRepository:
@@ -759,6 +775,7 @@ async def test_pillbox_list_requires_pillbox_view_access() -> None:
         pillbox_repo=StubPillboxRepository([]),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -776,6 +793,7 @@ async def test_family_admin_can_lose_pillbox_access() -> None:
         pillbox_repo=StubPillboxRepository([]),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -794,6 +812,7 @@ async def test_pillbox_create_requires_edit_access() -> None:
         pillbox_repo=StubPillboxRepository([]),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -832,6 +851,7 @@ async def test_pillbox_create_rejects_act_access() -> None:
         pillbox_repo=StubPillboxRepository([]),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -870,6 +890,7 @@ async def test_pillbox_create_rejects_children_view_even_with_edit_access() -> N
         pillbox_repo=StubPillboxRepository([]),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -921,6 +942,7 @@ async def test_pillbox_create_rejects_recipients_without_pillbox_access() -> Non
             ],
         ),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -984,6 +1006,7 @@ async def test_pillbox_create_recipient_matrix(
             ],
         ),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -1040,6 +1063,7 @@ async def test_pillbox_create_defaults_empty_recipients_to_current_account() -> 
             ],
         ),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
 
     result = await service.create(
@@ -1122,6 +1146,7 @@ async def test_pillbox_update_defaults_empty_recipients_to_current_account() -> 
             ],
         ),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
 
     result = await service.update(
@@ -1151,6 +1176,70 @@ async def test_pillbox_update_defaults_empty_recipients_to_current_account() -> 
     )
 
     assert result.member_account_ids == [account.id]
+
+
+@pytest.mark.asyncio
+async def test_pillbox_create_rejects_second_plan_for_free_family() -> None:
+    family_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(children_access="edit", pillbox_access="edit"),
+    )
+    now = datetime.now(UTC)
+    existing_plan = PillboxPlan(
+        id=uuid4(),
+        family_id=family_id,
+        title="Текущий курс",
+        status="active",
+        member_account_ids=[account.id],
+        created_by_account_id=account.id,
+        created_at=now,
+        updated_at=now,
+        medications=[],
+        dose_logs=[],
+    )
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository([existing_plan]),
+        account_repo=StubAccountRepository(
+            family_id,
+            members=[
+                type(
+                    "Member",
+                    (),
+                    {
+                        "id": account.id,
+                        "access_policy": FamilyAccessPolicyDto(pillbox_access="edit"),
+                    },
+                )(),
+            ],
+        ),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
+    )
+
+    with pytest.raises(ValidationError, match="один план таблетницы"):
+        await service.create(
+            PillboxPlanCreateDto(
+                title="Новый курс",
+                member_account_ids=[],
+                medications=[
+                    PillboxMedicationWriteDto(
+                        household_medicine_id=None,
+                        custom_medicine_name="Ибупрофен",
+                        dose_amount="5 мл",
+                        meal_rule="after_meal",
+                        repeat_days=[1, 2, 3],
+                        times=[time(9, 0)],
+                        course_mode="continuous",
+                        course_start_date=None,
+                        course_end_date=None,
+                        position=0,
+                    )
+                ],
+            ),
+            account.id,
+            account,
+        )
 
 
 @pytest.mark.asyncio
@@ -1196,6 +1285,7 @@ async def test_pillbox_log_dose_allows_act_access() -> None:
         ),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -1257,6 +1347,7 @@ async def test_pillbox_log_dose_rejects_view_only_access() -> None:
         ),
         account_repo=StubAccountRepository(family_id),
         household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
     )
     account = build_account(
         family_id=family_id,
@@ -1266,6 +1357,267 @@ async def test_pillbox_log_dose_rejects_view_only_access() -> None:
     with pytest.raises(ForbiddenError, match="приёмам"):
         await service.log_dose(
             plan_id=plan_id,
+            medication_id=medication_id,
+            dto=PillboxDoseLogCreateDto(scheduled_for=scheduled_for, source="manual"),
+            current_account_id=account.id,
+            current_account_display_name=account.display_name,
+            current_account=account,
+        )
+
+
+@pytest.mark.asyncio
+async def test_pillbox_update_rejects_non_primary_plan_after_free_downgrade() -> None:
+    family_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(children_access="edit", pillbox_access="edit"),
+    )
+    primary_plan_id = uuid4()
+    locked_plan_id = uuid4()
+    now = datetime.now(UTC)
+    primary_plan = PillboxPlan(
+        id=primary_plan_id,
+        family_id=family_id,
+        title="Основной курс",
+        status="active",
+        member_account_ids=[account.id],
+        created_by_account_id=account.id,
+        created_at=now,
+        updated_at=now,
+        medications=[],
+        dose_logs=[],
+    )
+    locked_plan = PillboxPlan(
+        id=locked_plan_id,
+        family_id=family_id,
+        title="Дополнительный курс",
+        status="archived",
+        member_account_ids=[account.id],
+        created_by_account_id=account.id,
+        created_at=now,
+        updated_at=now,
+        medications=[],
+        dose_logs=[],
+    )
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository([primary_plan, locked_plan]),
+        account_repo=StubAccountRepository(family_id),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(
+            family_id,
+            free_primary_pillbox_plan_id=primary_plan_id,
+        ),
+    )
+
+    with pytest.raises(ForbiddenError, match="только для просмотра"):
+        await service.update(
+            locked_plan_id,
+            PillboxPlanUpdateDto(
+                title="Переименованный курс",
+                status="archived",
+                member_account_ids=[account.id],
+                medications=[],
+            ),
+            account.id,
+            account,
+        )
+
+
+@pytest.mark.asyncio
+async def test_pillbox_update_allows_primary_paused_plan_after_free_downgrade() -> None:
+    family_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(children_access="view", pillbox_access="act"),
+    )
+    primary_plan_id = uuid4()
+    now = datetime.now(UTC)
+    primary_plan = PillboxPlan(
+        id=primary_plan_id,
+        family_id=family_id,
+        title="Основной курс",
+        status="paused",
+        member_account_ids=[account.id],
+        created_by_account_id=account.id,
+        created_at=now,
+        updated_at=now,
+        medications=[
+            PillboxMedication(
+                id=uuid4(),
+                plan_id=primary_plan_id,
+                household_medicine_id=None,
+                custom_medicine_name="Ибупрофен",
+                dose_amount="5 мл",
+                meal_rule="after_meal",
+                repeat_days=[1, 2, 3],
+                times=[time(9, 0)],
+                course_mode="continuous",
+                course_start_date=None,
+                course_end_date=None,
+                position=0,
+                created_at=now,
+                updated_at=now,
+            )
+        ],
+        dose_logs=[],
+    )
+    repo = StubPillboxRepository([primary_plan])
+    service = PillboxService(
+        pillbox_repo=repo,
+        account_repo=StubAccountRepository(family_id, [account]),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(
+            family_id,
+            free_primary_pillbox_plan_id=primary_plan_id,
+        ),
+    )
+
+    result = await service.update(
+        primary_plan_id,
+        PillboxPlanUpdateDto(
+            title="Основной курс",
+            status="active",
+            member_account_ids=[account.id],
+            medications=[
+                PillboxMedicationWriteDto(
+                    id=primary_plan.medications[0].id,
+                    household_medicine_id=None,
+                    custom_medicine_name="Ибупрофен",
+                    dose_amount="5 мл",
+                    meal_rule="after_meal",
+                    repeat_days=[1, 2, 3],
+                    times=[time(9, 0)],
+                    course_mode="continuous",
+                    course_start_date=None,
+                    course_end_date=None,
+                    position=0,
+                )
+            ],
+        ),
+        account.id,
+        account,
+    )
+
+    assert result.status == "active"
+    assert repo.plans[0].status == "active"
+
+
+@pytest.mark.asyncio
+async def test_pillbox_delete_allows_completed_history_after_free_downgrade() -> None:
+    family_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(children_access="view", pillbox_access="act"),
+    )
+    primary_plan_id = uuid4()
+    completed_plan_id = uuid4()
+    now = datetime.now(UTC)
+    primary_plan = PillboxPlan(
+        id=primary_plan_id,
+        family_id=family_id,
+        title="Основной курс",
+        status="active",
+        member_account_ids=[account.id],
+        created_by_account_id=account.id,
+        created_at=now,
+        updated_at=now,
+        medications=[],
+        dose_logs=[],
+    )
+    completed_plan = PillboxPlan(
+        id=completed_plan_id,
+        family_id=family_id,
+        title="Завершённый курс",
+        status="completed",
+        member_account_ids=[account.id],
+        created_by_account_id=account.id,
+        created_at=now,
+        updated_at=now,
+        medications=[],
+        dose_logs=[],
+    )
+    repo = StubPillboxRepository([primary_plan, completed_plan])
+    service = PillboxService(
+        pillbox_repo=repo,
+        account_repo=StubAccountRepository(family_id, [account]),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(
+            family_id,
+            free_primary_pillbox_plan_id=primary_plan_id,
+        ),
+    )
+
+    await service.delete(completed_plan_id, account)
+
+    assert [plan.id for plan in repo.plans] == [primary_plan_id]
+
+
+@pytest.mark.asyncio
+async def test_pillbox_log_dose_rejects_non_primary_plan_after_free_downgrade() -> None:
+    family_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(pillbox_access="act"),
+    )
+    primary_plan_id = uuid4()
+    locked_plan_id = uuid4()
+    medication_id = uuid4()
+    scheduled_for = datetime(2026, 4, 20, 5, 0, tzinfo=UTC)
+    now = datetime(2026, 4, 19, 8, 0, tzinfo=UTC)
+    primary_plan = PillboxPlan(
+        id=primary_plan_id,
+        family_id=family_id,
+        title="Основной курс",
+        status="active",
+        member_account_ids=[account.id],
+        created_by_account_id=account.id,
+        created_at=now,
+        updated_at=now,
+        medications=[],
+        dose_logs=[],
+    )
+    locked_plan = PillboxPlan(
+        id=locked_plan_id,
+        family_id=family_id,
+        title="Дополнительный курс",
+        status="archived",
+        member_account_ids=[account.id],
+        created_by_account_id=account.id,
+        created_at=now,
+        updated_at=now,
+        medications=[
+            PillboxMedication(
+                id=medication_id,
+                plan_id=locked_plan_id,
+                household_medicine_id=None,
+                custom_medicine_name="Ибупрофен",
+                dose_amount="5 мл",
+                meal_rule="after_meal",
+                repeat_days=[1],
+                times=[time(8, 0)],
+                course_mode="continuous",
+                course_start_date=None,
+                course_end_date=None,
+                position=0,
+                created_at=now,
+                updated_at=now,
+            )
+        ],
+        dose_logs=[],
+    )
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository([primary_plan, locked_plan]),
+        account_repo=StubAccountRepository(family_id),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(
+            family_id,
+            free_primary_pillbox_plan_id=primary_plan_id,
+        ),
+    )
+
+    with pytest.raises(ForbiddenError, match="только для просмотра"):
+        await service.log_dose(
+            plan_id=locked_plan_id,
             medication_id=medication_id,
             dto=PillboxDoseLogCreateDto(scheduled_for=scheduled_for, source="manual"),
             current_account_id=account.id,
@@ -1372,6 +1724,34 @@ async def test_sleep_delete_requires_session_initiator_for_active_session() -> N
 
     with pytest.raises(ForbiddenError, match="только тот, кто его запустил"):
         await service.delete(session.id, other_account)
+
+
+@pytest.mark.asyncio
+async def test_sleep_start_is_blocked_for_non_primary_child_after_downgrade() -> None:
+    family_id = uuid4()
+    primary_child_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(all_children=True, children_access="edit"),
+    )
+    child = Child(
+        id=uuid4(),
+        family_id=family_id,
+        name="Маша",
+        birth_date=None,
+        baby_mode_enabled=True,
+    )
+    service = SleepSessionService(
+        sleep_repo=StubSleepSessionRepository([]),
+        child_repo=StubChildRepository([child]),
+        family_repo=StubFamilyRepository(
+            family_id,
+            free_primary_child_id=primary_child_id,
+        ),
+    )
+
+    with pytest.raises(ForbiddenError, match="Во Free для этого ребёнка"):
+        await service.start(SleepSessionCreateDto(child_id=child.id), account)
 
 
 @pytest.mark.asyncio
@@ -1579,3 +1959,43 @@ async def test_feeding_delete_requires_record_initiator_for_active_record() -> N
 
     with pytest.raises(ForbiddenError, match="только тот, кто его запустил"):
         await service.delete(record.id, other_account)
+
+
+@pytest.mark.asyncio
+async def test_feeding_create_is_blocked_for_non_primary_child_after_downgrade() -> None:
+    family_id = uuid4()
+    primary_child_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(all_children=True, children_access="edit"),
+    )
+    child = Child(
+        id=uuid4(),
+        family_id=family_id,
+        name="Маша",
+        birth_date=None,
+        baby_mode_enabled=True,
+    )
+    service = FeedingRecordService(
+        feeding_repo=StubFeedingRecordRepository([]),
+        child_repo=StubChildRepository([child]),
+        family_repo=StubFamilyRepository(
+            family_id,
+            free_primary_child_id=primary_child_id,
+        ),
+    )
+
+    with pytest.raises(ForbiddenError, match="Во Free для этого ребёнка"):
+        await service.create(
+            FeedingRecordCreateDto(
+                child_id=child.id,
+                feeding_type="breast",
+                breast_side="left",
+                is_expressed=False,
+                formula_volume_ml=None,
+                duration_minutes=None,
+                recorded_at=None,
+                note=None,
+            ),
+            account,
+        )

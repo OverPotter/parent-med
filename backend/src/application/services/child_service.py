@@ -1,5 +1,6 @@
 """Сервис детей."""
 
+from dataclasses import replace
 from datetime import date
 from uuid import UUID, uuid4
 
@@ -11,6 +12,7 @@ from src.application.services.access_control import (
     filter_child_ids,
     get_child_for_account,
 )
+from src.application.services.subscription_policy import resolve_family_plan_policy
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.repositories.child_repository import ChildRepository
@@ -129,8 +131,20 @@ class ChildService:
         return await self.get_by_family_id(family_id)
 
     async def create(self, dto: ChildCreateDto) -> ChildResponseDto:
-        if await self._family_repo.get_by_id(dto.family_id) is None:
+        family = await self._family_repo.get_by_id(dto.family_id)
+        if family is None:
             raise NotFoundError("Семья не найдена", resource="family")
+        plan_policy = resolve_family_plan_policy(family)
+        existing_children = await self._repo.get_by_family_id(dto.family_id)
+        if (
+            plan_policy.max_children is not None
+            and len(existing_children) >= plan_policy.max_children
+        ):
+            raise ValidationError(
+                "Во Free доступен только один ребёнок. "
+                "Перейдите на Plus, чтобы добавить ещё детей.",
+                code="PLUS_REQUIRED_FOR_ADDITIONAL_CHILDREN",
+            )
         self._validate_birth_date(dto.birth_date)
         entity = Child(
             id=uuid4(),
@@ -146,6 +160,8 @@ class ChildService:
             notes=(dto.notes or "").strip() or None,
         )
         created = await self._repo.add(entity)
+        if family.free_primary_child_id is None:
+            await self._family_repo.update(replace(family, free_primary_child_id=created.id))
         return self._to_response(created)
 
     async def create_for_account(

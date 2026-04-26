@@ -12,11 +12,13 @@ from src.application.services.access_control import (
     coerce_account_context,
     get_child_for_account,
 )
+from src.application.services.child_plan_access import ensure_active_illness_continuation_allowed
 from src.core.exceptions import NotFoundError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.entities.illness_comment import IllnessComment
 from src.domain.entities.illness_episode import IllnessEpisode
 from src.domain.repositories.child_repository import ChildRepository
+from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.illness_comment_repository import IllnessCommentRepository
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 
@@ -29,10 +31,12 @@ class IllnessCommentService:
         comment_repo: IllnessCommentRepository,
         episode_repo: IllnessEpisodeRepository,
         child_repo: ChildRepository,
+        family_repo: FamilyRepository | None = None,
     ) -> None:
         self._repo = comment_repo
         self._episode_repo = episode_repo
         self._child_repo = child_repo
+        self._family_repo = family_repo
 
     def _to_response(self, entity: IllnessComment) -> IllnessCommentResponseDto:
         return IllnessCommentResponseDto(
@@ -104,6 +108,12 @@ class IllnessCommentService:
     ) -> IllnessCommentResponseDto:
         current_account = coerce_account_context(current_account)
         episode = await self._get_episode_for_account(dto.episode_id, current_account, "act")
+        await ensure_active_illness_continuation_allowed(
+            self._family_repo,
+            current_account,
+            episode.child_id,
+            episode_is_active=episode.status == "active",
+        )
         if episode.status != "active":
             raise ValidationError("Эпизод закрыт, комментарии добавлять нельзя")
         text = dto.text.strip()
@@ -121,5 +131,12 @@ class IllnessCommentService:
         return self._to_response(created)
 
     async def delete(self, id: UUID, current_account: AuthenticatedAccount) -> None:
-        await self._get_comment_for_account(id, current_account, "edit")
+        entity = await self._get_comment_for_account(id, current_account, "edit")
+        episode = await self._get_episode_for_account(entity.episode_id, current_account, "edit")
+        await ensure_active_illness_continuation_allowed(
+            self._family_repo,
+            current_account,
+            episode.child_id,
+            episode_is_active=episode.status == "active",
+        )
         await self._repo.delete(id)

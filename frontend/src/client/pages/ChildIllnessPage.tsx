@@ -14,7 +14,7 @@ import {
   fetchIllnessEpisodesByChildId,
 } from "@shared/api/illnessEpisodes";
 import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
-import { fetchMyFamilyMembers } from "@shared/api/families";
+import { fetchMyFamilyAccess, fetchMyFamilyMembers } from "@shared/api/families";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { trackIllnessEpisodeStarted } from "@shared/analytics";
 import { getEligibleIllnessRecipients } from "@shared/familyAccess/recipients";
@@ -27,6 +27,7 @@ import {
   canViewChild,
 } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { isChildIllnessMutationLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
 import { stopLiveActivitiesForChildIds, syncIllnessLiveActivity } from "@shared/utils/liveActivities";
 import {
@@ -42,6 +43,8 @@ import {
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { formatChildAgeLabel } from "@client/i18n/children";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { formatChildDatePlain } from "@client/utils/childDateFormat";
 import type { FamilyMember, IllnessEpisode, WeightEntry } from "@shared/types/api";
 import { EpisodeActivationCard } from "./child-illness/forms";
@@ -102,6 +105,7 @@ export function ChildIllnessPage() {
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const liveQueryOptions = useLiveQueryOptions(isIosShell ? 15_000 : 10_000);
   const [createEpisodeValidationError, setCreateEpisodeValidationError] = useState<string | null>(null);
   const createModeCardRef = useRef<HTMLDivElement>(null);
@@ -111,6 +115,18 @@ export function ChildIllnessPage() {
   const canActIllness = !!childId && canActChild(childId, accountFamilyRole, accountAccessPolicy);
   const canEditIllness =
     !!childId && canEditChild(childId, accountFamilyRole, accountAccessPolicy);
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    staleTime: 60 * 1000,
+  });
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
 
   const { data: child, isLoading: childLoading } = useQuery({
     queryKey: ["child", childId],
@@ -163,6 +179,9 @@ export function ChildIllnessPage() {
   const historyEpisodeInsightsId = route.screen === "history" ? route.episodeId : null;
   const historyEpisodeInsightsMode = route.screen === "history" && Boolean(route.episodeId);
   const createMode = route.screen === "create";
+  const illnessMutationLocksByPlan = childId
+    ? isChildIllnessMutationLockedByPlan(childId, familyAccess, Boolean(activeEpisode))
+    : false;
   const quickComposeMode =
     route.screen === "active" &&
     (route.focus === "temperature" || route.focus === "administration" || route.focus === "comment")
@@ -369,6 +388,17 @@ export function ChildIllnessPage() {
   if (!childId || !canViewIllness) {
     return <Navigate to="/children" replace />;
   }
+  if (
+    illnessMutationLocksByPlan &&
+    !activeEpisode &&
+    (createMode ||
+      quickComposeMode !== null ||
+      quickReminderMode ||
+      quickReminderCreateMode ||
+      quickReminderDetailMode)
+  ) {
+    return <Navigate to={`/children/${childId}`} replace />;
+  }
 
   if (
     normalizedUrl &&
@@ -428,6 +458,19 @@ export function ChildIllnessPage() {
         hint={topBarHint}
         containerClassName="max-w-5xl"
       />
+      <UpgradeDialog
+        isOpen={isUpgradeDialogOpen}
+        language={language}
+        entryPoint="child_actions_locked"
+        isPending={isUpgradePending}
+        canUpgrade={canManageSubscription}
+        onClose={() => setIsUpgradeDialogOpen(false)}
+        onUpgrade={() => {
+          void upgradeToPlus().then(() => {
+            setIsUpgradeDialogOpen(false);
+          });
+        }}
+      />
       <div className="mx-auto w-full max-w-5xl space-y-7">
         <ChildIllnessShellSummary
           language={language}
@@ -465,6 +508,8 @@ export function ChildIllnessPage() {
             quickReminderMode={quickReminderMode}
             quickTimelineMode={quickTimelineMode}
             reminderPlanId={reminderPlanId}
+            planLocksChildActions={illnessMutationLocksByPlan}
+            onLockedActionAttempt={() => setIsUpgradeDialogOpen(true)}
           />
         ) : createMode ? (
           <div ref={createModeCardRef}>
@@ -566,6 +611,8 @@ function ChildIllnessActiveScreen({
   quickReminderMode,
   quickTimelineMode,
   reminderPlanId,
+  planLocksChildActions,
+  onLockedActionAttempt,
 }: {
   activeEpisode: IllnessEpisode;
   child: { id: string; name: string };
@@ -580,6 +627,8 @@ function ChildIllnessActiveScreen({
   quickReminderMode: boolean;
   quickTimelineMode: boolean;
   reminderPlanId: string | null;
+  planLocksChildActions: boolean;
+  onLockedActionAttempt: () => void;
 }) {
   return (
     <section>
@@ -598,6 +647,8 @@ function ChildIllnessActiveScreen({
         quickReminderCreateMode={quickReminderCreateMode}
         quickReminderDetailMode={quickReminderDetailMode}
         reminderPlanId={reminderPlanId}
+        planLocksChildActions={planLocksChildActions}
+        onLockedActionAttempt={onLockedActionAttempt}
       />
     </section>
   );

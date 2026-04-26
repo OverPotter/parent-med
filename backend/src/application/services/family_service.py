@@ -34,7 +34,7 @@ class FamilyService:
     """Сервис CRUD для семей."""
 
     PREMIUM_PLAN_CODES = {"plus", "pro"}
-    ACTIVE_SUBSCRIPTION_STATUSES = {"active", "grace"}
+    ACTIVE_SUBSCRIPTION_STATUSES = {"trialing", "active", "grace"}
 
     def __init__(
         self,
@@ -57,7 +57,10 @@ class FamilyService:
             id=entity.id,
             name=entity.name,
             cabinet_member_account_ids=list(entity.cabinet_member_account_ids),
+            owner_account_id=entity.owner_account_id,
             billing_account_id=entity.billing_account_id,
+            free_primary_child_id=entity.free_primary_child_id,
+            free_primary_pillbox_plan_id=entity.free_primary_pillbox_plan_id,
             plan_code=entity.plan_code,  # type: ignore[arg-type]
             subscription_status=entity.subscription_status,  # type: ignore[arg-type]
             subscription_provider=entity.subscription_provider,
@@ -119,6 +122,31 @@ class FamilyService:
 
     def _count_admins(self, family_accounts: list[Account]) -> int:
         return sum(1 for account in family_accounts if is_family_admin(account.family_role))
+
+    def _is_family_owner(self, family: Family | None, account_id: UUID) -> bool:
+        return bool(family and family.owner_account_id == account_id)
+
+    def _ensure_family_owner(self, family: Family | None, account_id: UUID) -> None:
+        if not self._is_family_owner(family, account_id):
+            raise ForbiddenError("Только владелец семьи может выполнять это действие")
+
+    def _ensure_can_manage_target_member(
+        self,
+        family: Family | None,
+        current_account_id: UUID,
+        current_family_role: str,
+        target: Account,
+    ) -> None:
+        if self._is_family_owner(family, current_account_id):
+            return
+        self._ensure_family_admin(current_family_role)
+        if target.id == current_account_id:
+            raise ValidationError(
+                "Администратор не может менять свои семейные права",
+                code="ADMIN_SELF_MEMBER_MANAGEMENT_FORBIDDEN",
+            )
+        if is_family_admin(target.family_role):
+            raise ForbiddenError("Администратор может управлять только участниками member")
 
     def _merge_access_policy(
         self,
@@ -188,16 +216,17 @@ class FamilyService:
         current_family_id: UUID,
         current_family_role: str,
     ) -> AccountResponseDto:
-        self._ensure_family_admin(current_family_role)
-
         target = await self._account_repo.get_by_id(member_account_id)
         if not target or target.family_id != current_family_id or target.family_role == "deleted":
             raise NotFoundError("Участник семьи не найден", resource="account")
 
-        family_accounts = await self._account_repo.list_by_family_id(current_family_id)
-        family_accounts = [
-            account for account in family_accounts if account.family_role != "deleted"
-        ]
+        family = await self._repo.get_by_id(current_family_id)
+        self._ensure_can_manage_target_member(
+            family,
+            current_account_id=current_account_id,
+            current_family_role=current_family_role,
+            target=target,
+        )
         next_role = (
             normalize_family_role(dto.family_role)
             if dto.family_role is not None
@@ -205,15 +234,16 @@ class FamilyService:
         )
         if next_role not in {"admin", "member"}:
             raise ValidationError("Можно установить только роли admin или member")
-        if (
-            is_family_admin(target.family_role)
-            and not is_family_admin(next_role)
-            and self._count_admins(family_accounts) <= 1
-        ):
+        if family and family.owner_account_id == target.id and next_role != "admin":
             raise ValidationError(
-                "В семье должен остаться хотя бы один администратор",
-                code="LAST_ADMIN_REQUIRED",
+                "Владелец семьи должен сохранять права администратора",
+                code="FAMILY_OWNER_MUST_REMAIN_ADMIN",
             )
+        current_is_owner = self._is_family_owner(family, current_account_id)
+        if dto.family_role is not None and not current_is_owner:
+            raise ForbiddenError("Только владелец семьи может менять семейные роли")
+        if dto.family_role is None:
+            next_role = normalize_family_role(target.family_role)
 
         updated = await self._account_repo.update(
             copy_account(
@@ -231,27 +261,27 @@ class FamilyService:
         current_family_id: UUID,
         current_family_role: str,
     ) -> None:
-        self._ensure_family_admin(current_family_role)
+        target = await self._account_repo.get_by_id(member_account_id)
+        if not target or target.family_id != current_family_id or target.family_role == "deleted":
+            raise NotFoundError("Участник семьи не найден", resource="account")
+
         if member_account_id == current_account_id:
             raise ValidationError(
                 "Нельзя удалить свой аккаунт через управление участниками",
                 code="SELF_MEMBER_DELETE_FORBIDDEN",
             )
-
-        target = await self._account_repo.get_by_id(member_account_id)
-        if not target or target.family_id != current_family_id or target.family_role == "deleted":
-            raise NotFoundError("Участник семьи не найден", resource="account")
-
-        family_accounts = await self._account_repo.list_by_family_id(current_family_id)
-        family_accounts = [
-            account for account in family_accounts if account.family_role != "deleted"
-        ]
-        if is_family_admin(target.family_role) and self._count_admins(family_accounts) <= 1:
-            raise ValidationError(
-                "Нельзя удалить последнего администратора семьи",
-                code="LAST_ADMIN_REQUIRED",
-            )
         family = await self._repo.get_by_id(current_family_id)
+        self._ensure_can_manage_target_member(
+            family,
+            current_account_id=current_account_id,
+            current_family_role=current_family_role,
+            target=target,
+        )
+        if family and family.owner_account_id == target.id:
+            raise ValidationError(
+                "Нельзя удалить владельца семьи без явной передачи владения",
+                code="FAMILY_OWNER_TRANSFER_REQUIRED",
+            )
         if family and family.billing_account_id == target.id:
             raise ValidationError(
                 "Нельзя удалить участника, пока на нём привязана семейная подписка",
@@ -315,6 +345,7 @@ class FamilyService:
                     id=entity.id,
                     name=dto.name if dto.name is not None else entity.name,
                     cabinet_member_account_ids=cabinet_member_account_ids,
+                    owner_account_id=entity.owner_account_id,
                     billing_account_id=entity.billing_account_id,
                     plan_code=entity.plan_code,
                     subscription_status=entity.subscription_status,
@@ -330,11 +361,12 @@ class FamilyService:
         id: UUID,
         dto: FamilyUpdateDto,
         current_family_id: UUID,
-        current_family_role: str,
+        current_account_id: UUID,
     ) -> FamilyResponseDto:
         if id != current_family_id:
             raise ForbiddenError("Нет доступа к чужой семье")
-        self._ensure_family_admin(current_family_role)
+        family = await self._repo.get_by_id(id)
+        self._ensure_family_owner(family, current_account_id)
         return await self.update(id, dto)
 
     async def delete(self, id: UUID) -> None:
@@ -343,7 +375,11 @@ class FamilyService:
             raise NotFoundError("Семья не найдена", resource="family")
         await self._repo.delete(id)
 
-    async def delete_for_account(self, id: UUID, current_family_id: UUID) -> None:
+    async def delete_for_account(
+        self, id: UUID, current_family_id: UUID, current_account_id: UUID
+    ) -> None:
         if id != current_family_id:
             raise ForbiddenError("Нет доступа к чужой семье")
+        family = await self._repo.get_by_id(id)
+        self._ensure_family_owner(family, current_account_id)
         await self.delete(id)

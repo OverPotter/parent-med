@@ -58,20 +58,28 @@ export type PillboxPlanListFilter = "active" | "completed";
 
 export const pillboxCopy = {
   ru: {
-    setupBack: "← К приёмам",
-    detailsBack: "← К приёмам",
+    setupBack: "← К таблетнице",
+    detailsBack: "← К таблетнице",
     medicationBack: "← К плану",
     setupTitle: "Настройки плана",
-    detailsTitle: "План приёма",
+    detailsTitle: "План лекарств",
     setupSubtitle:
-      "Сначала соберите лекарства, потом назовите план и выберите участников с доступом к приёмам.",
+      "Сначала соберите лекарства, потом назовите план и выберите участников с доступом к таблетнице.",
     medicationTitle: "Настройка лекарства",
     medicationSubtitle:
       "Добавьте одно лекарство в план: когда принимать, как долго и как связать с едой.",
-    eyebrow: "Приёмы",
-    hubTitle: "Приёмы",
-    hubSubtitle: "Семейные планы приёма: что принимать, когда напомнить и как идёт курс.",
-    hubMobileHint: "Планы приёма, напоминания и быстрые действия для семьи.",
+    eyebrow: "Таблетница",
+    hubTitle: "Таблетница",
+    hubSubtitle: "Семейные планы лекарств: что принимать, когда напомнить и как идёт курс.",
+    hubMobileHint: "Планы лекарств, напоминания и быстрые действия для семьи.",
+    noAccessTitle: "Нет доступа к таблетнице",
+    noAccessDescription:
+      "Владелец семьи или администратор ещё не открыл для этого аккаунта таблетницу.",
+    freeDowngradeNoticeTitle: "Во Free активен только один план",
+    freeDowngradeNoticeDescription:
+      "Один план остаётся рабочим во Free. Остальные планы сохраняются в истории, но становятся недоступны для новых отметок и редактирования.",
+    freePrimaryPlanBadge: "Активен во Free",
+    freeLockedPlanBadge: "Ограничен во Free",
     hubEmpty:
       "Планов пока нет. Создайте первый план, чтобы видеть приёмы, напоминания и аналитику.",
     createPlan: "Создать план",
@@ -140,9 +148,9 @@ export const pillboxCopy = {
     savePlanFailed: "Не удалось сохранить план. Попробуйте ещё раз.",
     confirmDeletePlanTitle: "Точно удалить план?",
     confirmDeletePlanDescription:
-      "План приёма исчезнет целиком. Восстановить его потом не получится.",
+      "План лекарств исчезнет целиком. Восстановить его потом не получится.",
     confirmDeleteMedicineTitle: "Точно удалить лекарство?",
-    confirmDeleteMedicineDescription: "Лекарство исчезнет из этого плана приёма.",
+    confirmDeleteMedicineDescription: "Лекарство исчезнет из этого плана лекарств.",
     confirmPausePlanTitle: "Поставить план на паузу?",
     confirmPausePlanDescription:
       "Напоминания по этому плану временно перестанут приходить всем участникам.",
@@ -166,6 +174,14 @@ export const pillboxCopy = {
     hubSubtitle:
       "Family medication plans: what to take, when to remind and how the course is going.",
     hubMobileHint: "Medication plans and reminders for the family.",
+    noAccessTitle: "No access to medication plans",
+    noAccessDescription:
+      "The family owner or an admin has not granted pillbox access to this account yet.",
+    freeDowngradeNoticeTitle: "Only one plan stays active in Free",
+    freeDowngradeNoticeDescription:
+      "One plan remains operational in Free. The rest stay visible in history, but become read-only for dose logging and editing.",
+    freePrimaryPlanBadge: "Active in Free",
+    freeLockedPlanBadge: "Limited in Free",
     hubEmpty:
       "There are no plans yet. Create the first plan to see doses, reminders and analytics.",
     createPlan: "Create plan",

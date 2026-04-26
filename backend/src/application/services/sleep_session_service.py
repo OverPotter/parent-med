@@ -12,10 +12,12 @@ from src.application.dto.sleep_session import (
 from src.application.services.access_control import (
     get_child_for_account,
 )
+from src.application.services.child_plan_access import ensure_child_plan_mutation_allowed
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.entities.sleep_session import SleepSession
 from src.domain.repositories.child_repository import ChildRepository
+from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.sleep_session_repository import SleepSessionRepository
 
 
@@ -26,9 +28,11 @@ class SleepSessionService:
         self,
         sleep_repo: SleepSessionRepository,
         child_repo: ChildRepository,
+        family_repo: FamilyRepository | None = None,
     ) -> None:
         self._repo = sleep_repo
         self._child_repo = child_repo
+        self._family_repo = family_repo
 
     def _to_response(self, entity: SleepSession) -> SleepSessionResponseDto:
         duration_minutes: int | None = None
@@ -96,6 +100,11 @@ class SleepSessionService:
         current_account: AuthenticatedAccount,
     ) -> SleepSessionResponseDto:
         child = await self._require_child_access(dto.child_id, current_account, "act")
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_account,
+            child.id,
+        )
         if not child.baby_mode_enabled:
             raise ValidationError("Режим малыша выключен", code="BABY_MODE_DISABLED")
 
@@ -122,6 +131,11 @@ class SleepSessionService:
         current_account: AuthenticatedAccount,
     ) -> SleepSessionResponseDto:
         entity = await self._get_session_for_account(session_id, current_account, "act")
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_account,
+            entity.child_id,
+        )
         if entity.status != "active":
             return self._to_response(entity)
         if entity.created_by_account_id and entity.created_by_account_id != current_account.id:
@@ -152,6 +166,11 @@ class SleepSessionService:
         current_account: AuthenticatedAccount,
     ) -> None:
         entity = await self._get_session_for_account(session_id, current_account, "edit")
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_account,
+            entity.child_id,
+        )
         if entity.status == "active" and entity.created_by_account_id != current_account.id:
             raise ForbiddenError("Удалить активный сон может только тот, кто его запустил")
         deleted = await self._repo.delete(entity.id)

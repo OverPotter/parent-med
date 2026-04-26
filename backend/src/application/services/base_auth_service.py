@@ -33,7 +33,7 @@ class BaseAuthService(ABC):
     """Базовый auth-сервис с общими мапперами и контрактом."""
 
     PREMIUM_PLAN_CODES = {"plus", "pro"}
-    ACTIVE_SUBSCRIPTION_STATUSES = {"active", "grace"}
+    ACTIVE_SUBSCRIPTION_STATUSES = {"trialing", "active", "grace"}
 
     def __init__(
         self,
@@ -75,7 +75,9 @@ class BaseAuthService(ABC):
             id=entity.id,
             name=entity.name,
             cabinet_member_account_ids=list(entity.cabinet_member_account_ids),
+            owner_account_id=entity.owner_account_id,
             billing_account_id=entity.billing_account_id,
+            free_primary_child_id=entity.free_primary_child_id,
             plan_code=entity.plan_code,  # type: ignore[arg-type]
             subscription_status=entity.subscription_status,  # type: ignore[arg-type]
             subscription_provider=entity.subscription_provider,
@@ -117,6 +119,10 @@ class BaseAuthService(ABC):
         """Удалить семью текущего admin (мягко деактивировать все аккаунты)."""
 
     @abstractmethod
+    async def leave_family(self, account_id: UUID) -> AuthStateResponseDto:
+        """Покинуть текущую семью и создать для аккаунта новую пустую семью."""
+
+    @abstractmethod
     async def change_password(
         self, account_id: UUID, dto: ChangePasswordDto, refresh_token: str | None = None
     ) -> None:
@@ -143,3 +149,7 @@ class BaseAuthService(ABC):
     @abstractmethod
     async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:
         """Принять приглашение в другую семью для существующего аккаунта."""
+
+    @abstractmethod
+    async def accept_latest_family_invite_for_dev(self, account_id: UUID) -> AuthResponseDto:
+        """Dev-only: принять последнее активное приглашение без копирования ссылки."""

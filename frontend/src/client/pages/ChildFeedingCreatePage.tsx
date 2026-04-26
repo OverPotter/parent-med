@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import { createFeedingRecord } from "@shared/api/feedingRecords";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -19,6 +20,7 @@ import { startFeedingRecordResilient } from "@shared/utils/offlineCareSync";
 import { syncFeedingLiveActivity } from "@shared/utils/liveActivities";
 import { canActChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { scrollFieldIntoView } from "@shared/utils/focus";
 
 export function ChildFeedingCreatePage() {
@@ -27,6 +29,7 @@ export function ChildFeedingCreatePage() {
   const common = getChildrenCopy(language).common;
   const { childId } = useParams<{ childId: string }>();
   const accountId = useAppStore((s) => s.accountId);
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const navigate = useNavigate();
@@ -44,6 +47,12 @@ export function ChildFeedingCreatePage() {
   const pageRef = useRef<HTMLDivElement | null>(null);
   const canViewFeedingChild =
     !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    staleTime: 60 * 1000,
+  });
 
   useEffect(() => {
     const page = pageRef.current;
@@ -160,7 +169,10 @@ export function ChildFeedingCreatePage() {
     return <Navigate to={`/children/${child.id}`} replace />;
   }
 
-  if (!canActChild(child.id, accountFamilyRole, accountAccessPolicy)) {
+  if (
+    !canActChild(child.id, accountFamilyRole, accountAccessPolicy) ||
+    isChildLockedByPlan(child.id, familyAccess)
+  ) {
     return <Navigate to={`/children/${child.id}/feeding`} replace />;
   }
 

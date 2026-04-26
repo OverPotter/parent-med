@@ -27,6 +27,7 @@
 ```text
 accounts ── belongs to ──> families
 children ── belongs to ──> families
+family_invites ── belongs to ──> families
 
 curated_medicine_catalog_items
     └─ используется только как источник выбора
@@ -35,6 +36,14 @@ household_medicines ── belongs to ──> families
     ├─ episode_medication_plans -> household_medicine_id
     ├─ administration_events -> household_medicine_id
     └─ pillbox_medications / pillbox_plans используют snapshot-данные аптечки
+
+families
+    ├─ owner_account_id
+    ├─ billing_account_id
+    ├─ free_primary_child_id
+    ├─ free_primary_pillbox_plan_id
+    ├─ plan_code / subscription_status
+    └─ cabinet_member_account_ids
 ```
 
 Главный принцип: runtime работает от `household_medicines`, а не от живого каталога.
@@ -58,7 +67,22 @@ household_medicines ── belongs to ──> families
 Ключевые поля:
 - `id`
 - `name`
+- `owner_account_id`
+- `billing_account_id`
+- `plan_code`
+- `subscription_status`
+- `subscription_provider`
+- `subscription_product_id`
+- `subscription_expires_at`
+- `free_primary_child_id`
+- `free_primary_pillbox_plan_id`
 - `cabinet_member_account_ids`
+
+Важно:
+- семья — главный контейнер данных продукта
+- подписка считается на уровне семьи
+- `owner_account_id` определяет владельца семьи
+- downgrade-сценарии держатся на `free_primary_*` якорях
 
 ### `curated_medicine_catalog_items`
 Нормализованный каталог лекарств.
@@ -166,6 +190,17 @@ household_medicines ── belongs to ──> families
 ### `pillbox_plans`
 Планы приёма в pillbox.
 
+Ключевые поля:
+- `id`
+- `family_id`
+- `title`
+- `status`
+- `member_account_ids`
+
+Важно:
+- при downgrade один план может остаться `free_primary_pillbox_plan_id`
+- остальные активные/paused планы архивируются
+
 ### `pillbox_medications`
 Лекарства внутри плана pillbox.
 
@@ -173,6 +208,17 @@ household_medicines ── belongs to ──> families
 Логи доз в pillbox.
 
 ## Базовые продуктовые правила
+
+### 0. Семья — основная граница данных
+
+Все основные сущности продукта scoped to `family`:
+
+- дети
+- illness
+- household medicines
+- pillbox
+- family members
+- subscription state
 
 ### 1. Справочник и аптечка — разные сущности
 
@@ -252,3 +298,4 @@ Flow:
 3. Не смешивать `medicine_form` и `medicine_category`.
 4. Не переводить catalog data обратно в alembic data-migrations.
 5. Массовые обновления каталога делать через seed-источник, а не руками в продовой БД.
+6. Не разрывать family-scoped модель подписки и downgrade-якорей (`free_primary_child_id`, `free_primary_pillbox_plan_id`).

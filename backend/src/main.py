@@ -11,6 +11,7 @@ from src.api.routers import (
     administration_events,
     analytics,
     auth,
+    billing,
     children,
     curated_medicine_catalog,
     episode_medication_plans,
@@ -63,6 +64,7 @@ def create_app() -> FastAPI:
     protected_dependencies = [Depends(get_current_account)]
 
     app.include_router(auth.router, prefix="/api/v1")
+    app.include_router(billing.router, prefix="/api/v1")
     app.include_router(families.router, prefix="/api/v1", dependencies=protected_dependencies)
     app.include_router(family_invites.router, prefix="/api/v1")
     app.include_router(parents.router, prefix="/api/v1", dependencies=protected_dependencies)

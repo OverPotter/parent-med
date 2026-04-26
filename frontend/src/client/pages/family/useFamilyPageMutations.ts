@@ -5,8 +5,9 @@ import {
   updateFamilyMemberProfile,
   updateMyFamily,
 } from "@shared/api/families";
+import { leaveMyFamily } from "@shared/api/auth";
 import { createFamilyInvite } from "@shared/api/familyInvites";
-import type { Family, FamilyAccessPolicy } from "@shared/types/api";
+import type { AuthStateResponse, Family, FamilyAccessPolicy, FamilyMember } from "@shared/types/api";
 import { invalidateAccessSensitiveQueries } from "./invalidateAccessSensitiveQueries";
 import { tFamily } from "./copy";
 
@@ -31,12 +32,23 @@ function getApiErrorMessage(
   return fallback;
 }
 
+function replaceMemberInList(
+  current: FamilyMember[] | undefined,
+  updatedMember: FamilyMember
+): FamilyMember[] | undefined {
+  if (!current) {
+    return current;
+  }
+  return current.map((member) => (member.id === updatedMember.id ? updatedMember : member));
+}
+
 export function useFamilyPageMutations(args: {
   language: "ru" | "en";
   accountId: string | null;
   currentFamilyId: string | null;
   currentAccountId: string | null;
   setCurrentFamily: (family: Family | null) => void;
+  setAuthState?: ((state: AuthStateResponse) => void) | null;
   setAccountFamilyContext: (family: {
     familyRole?: string | null;
     accessPolicy?: FamilyAccessPolicy | null;
@@ -49,6 +61,7 @@ export function useFamilyPageMutations(args: {
     currentFamilyId,
     currentAccountId,
     setCurrentFamily,
+    setAuthState,
     setAccountFamilyContext,
     setError,
   } = args;
@@ -86,14 +99,25 @@ export function useFamilyPageMutations(args: {
     }) => updateFamilyMember(memberAccountId, payload),
     onSuccess: async (updatedMember) => {
       setError(null);
+      queryClient.setQueryData<FamilyMember[] | undefined>(
+        ["family-members", currentFamilyId],
+        (current) => replaceMemberInList(current, updatedMember)
+      );
+      queryClient.setQueryData<FamilyMember[] | undefined>(
+        ["families", "me", "members", currentFamilyId],
+        (current) => replaceMemberInList(current, updatedMember)
+      );
       if (updatedMember.id === currentAccountId) {
         setAccountFamilyContext({
           familyRole: updatedMember.familyRole,
           accessPolicy: updatedMember.accessPolicy,
         });
-        await invalidateAccessSensitiveQueries(queryClient, currentFamilyId);
+        await invalidateAccessSensitiveQueries(queryClient, currentFamilyId, accountId);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
+        void queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
+        void queryClient.invalidateQueries({
+          queryKey: ["families", "me", "members", currentFamilyId],
+        });
       }
     },
     onError: (error) => {
@@ -132,15 +156,44 @@ export function useFamilyPageMutations(args: {
         relationship_label: relationshipLabel,
         phone,
       }),
-    onSuccess: () => {
+    onSuccess: (updatedMember) => {
       setError(null);
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] }),
-        queryClient.invalidateQueries({ queryKey: ["families", "me", "members", currentFamilyId] }),
-      ]);
+      queryClient.setQueryData<FamilyMember[] | undefined>(
+        ["family-members", currentFamilyId],
+        (current) => replaceMemberInList(current, updatedMember)
+      );
+      queryClient.setQueryData<FamilyMember[] | undefined>(
+        ["families", "me", "members", currentFamilyId],
+        (current) => replaceMemberInList(current, updatedMember)
+      );
+      void queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["families", "me", "members", currentFamilyId],
+      });
     },
     onError: (error) => {
       setError(getApiErrorMessage(error, tFamily(language, "updateProfileFailed")));
+    },
+  });
+
+  const leaveFamilyMutation = useMutation({
+    mutationFn: () => leaveMyFamily(),
+    onSuccess: async (nextState) => {
+      const previousFamilyId = currentFamilyId;
+      setAuthState?.(nextState);
+      setCurrentFamily(nextState.family);
+      setError(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["families", accountId] }),
+        invalidateAccessSensitiveQueries(queryClient, previousFamilyId, accountId),
+        invalidateAccessSensitiveQueries(queryClient, nextState.family.id, accountId),
+        queryClient.invalidateQueries({ queryKey: ["children"] }),
+        queryClient.invalidateQueries({ queryKey: ["pillbox-plans"] }),
+        queryClient.invalidateQueries({ queryKey: ["household-medicines"] }),
+      ]);
+    },
+    onError: (error) => {
+      setError(getApiErrorMessage(error, tFamily(language, "leaveFamilyFailed")));
     },
   });
 
@@ -150,5 +203,6 @@ export function useFamilyPageMutations(args: {
     updateMemberMutation,
     deleteMemberMutation,
     updateMemberProfileMutation,
+    leaveFamilyMutation,
   };
 }

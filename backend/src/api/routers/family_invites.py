@@ -26,9 +26,16 @@ async def create_family_invite(
     return await service.create_for_account(
         current_account.family_id,
         current_account.id,
-        current_account.family_role,
         dto,
     )
+
+
+@router.get("/dev/latest", response_model=FamilyInvitePreviewResponseDto)
+async def get_latest_family_invite_preview_for_dev(
+    service: FamilyInviteService = Depends(get_family_invite_service),
+) -> FamilyInvitePreviewResponseDto:
+    """Dev-only preview последнего активного инвайта без копирования ссылки."""
+    return await service.get_latest_preview_for_dev()
 
 
 @router.get("/{token}", response_model=FamilyInvitePreviewResponseDto)
@@ -66,6 +73,38 @@ async def accept_family_invite_native(
 ) -> AuthResponseDto:
     """Native-вариант принятия приглашения с токенами в JSON."""
     auth = await auth_service.accept_family_invite(current_account.id, token)
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=True,
+        include_cookies=False,
+    )
+
+
+@router.post("/dev/latest/accept", response_model=AuthResponseDto)
+async def accept_latest_family_invite_for_dev(
+    response: Response,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    auth_service: BaseAuthService = Depends(get_auth_service),
+) -> AuthResponseDto:
+    """Dev-only: принять последнее активное приглашение без токена."""
+    auth = await auth_service.accept_latest_family_invite_for_dev(current_account.id)
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=False,
+        include_cookies=True,
+    )
+
+
+@router.post("/dev/latest/accept/native", response_model=AuthResponseDto)
+async def accept_latest_family_invite_for_dev_native(
+    response: Response,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    auth_service: BaseAuthService = Depends(get_auth_service),
+) -> AuthResponseDto:
+    """Dev-only native: принять последнее активное приглашение без токена."""
+    auth = await auth_service.accept_latest_family_invite_for_dev(current_account.id)
     return build_auth_response(
         response,
         auth,

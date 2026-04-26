@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createChild } from "@shared/api/children";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createChild, fetchChildrenByFamilyId } from "@shared/api/children";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import { createHeightEntry } from "@shared/api/heightEntries";
 import { createWeightEntry } from "@shared/api/weightEntries";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import { trackChildCreated } from "@shared/analytics";
 import { DateField } from "@shared/components/DateField";
@@ -28,10 +31,33 @@ export function ChildCreatePage() {
   const { language } = useI18n();
   const copy = getChildrenCopy(language).childrenPage;
   const common = getChildrenCopy(language).common;
+  const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const navigate = useNavigate();
   const isIosShell = useIsIosShell();
   const queryClient = useQueryClient();
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    staleTime: 60 * 1000,
+  });
+  const {
+    data: existingChildren = [],
+    isLoading: isChildrenLoading,
+    isFetching: isChildrenFetching,
+  } = useQuery({
+    queryKey: ["children", currentFamilyId],
+    queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
+    enabled: Boolean(currentFamilyId),
+    staleTime: 30 * 1000,
+  });
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
 
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -42,9 +68,18 @@ export function ChildCreatePage() {
   const [babyModeEnabled, setBabyModeEnabled] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const parsedWeight = parseMeasurement(weightValue);
   const parsedHeight = parseMeasurement(heightValue);
   const pageRef = useRef<HTMLDivElement | null>(null);
+  const childLimitContextReady =
+    familyAccess?.maxChildren === null ||
+    familyAccess?.maxChildren === undefined ||
+    (!isChildrenLoading && !isChildrenFetching);
+  const childLimitReached =
+    familyAccess?.maxChildren !== null &&
+    familyAccess?.maxChildren !== undefined &&
+    existingChildren.length >= familyAccess.maxChildren;
 
   useEffect(() => {
     const page = pageRef.current;
@@ -101,8 +136,20 @@ export function ChildCreatePage() {
       }),
     onSuccess: (child) => {
       queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
+      queryClient.invalidateQueries({ queryKey: ["families", "me", "access", currentFamilyId] });
       void trackChildCreated(child.id);
       navigate("/children", { replace: true });
+    },
+    onError: (error) => {
+      const code = (
+        error as {
+          response?: { data?: { code?: string; detail?: string } };
+        }
+      )?.response?.data?.code;
+      if (code === "PLUS_REQUIRED_FOR_ADDITIONAL_CHILDREN") {
+        setValidationError(null);
+        setIsUpgradeDialogOpen(true);
+      }
     },
   });
 
@@ -118,6 +165,14 @@ export function ChildCreatePage() {
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim()) {
+      return;
+    }
+    if (!childLimitContextReady) {
+      return;
+    }
+    if (childLimitReached) {
+      setValidationError(null);
+      setIsUpgradeDialogOpen(true);
       return;
     }
 
@@ -339,7 +394,7 @@ export function ChildCreatePage() {
               </button>
               <button
                 type="submit"
-                disabled={createMutation.isPending || !name.trim()}
+                disabled={createMutation.isPending || !name.trim() || !childLimitContextReady}
                 className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.7rem] w-full disabled:opacity-50 sm:min-h-[2.5rem] sm:w-auto"
               >
                 {createMutation.isPending ? copy.saving : copy.addButtonShort}
@@ -352,6 +407,19 @@ export function ChildCreatePage() {
           )}
         </form>
       </Surface>
+      <UpgradeDialog
+        isOpen={isUpgradeDialogOpen}
+        language={language}
+        entryPoint="second_child"
+        isPending={isUpgradePending}
+        canUpgrade={canManageSubscription}
+        onClose={() => setIsUpgradeDialogOpen(false)}
+        onUpgrade={() => {
+          void upgradeToPlus().then(() => {
+            setIsUpgradeDialogOpen(false);
+          });
+        }}
+      />
     </div>
   );
 }

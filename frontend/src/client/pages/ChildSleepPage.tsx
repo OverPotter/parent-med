@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import {
   deleteSleepSession,
   fetchActiveSleepSessionByChildId,
@@ -14,6 +15,7 @@ import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useNow } from "@shared/hooks/useNow";
 import { canEditChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import type { SleepSession } from "@shared/types/api";
 import {
@@ -44,6 +46,7 @@ export function ChildSleepPage() {
   const isIosShell = useIsIosShell();
   const navigate = useNavigate();
   const currentAccountId = useAppStore((s) => s.accountId);
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
@@ -53,6 +56,12 @@ export function ChildSleepPage() {
   const [customStartDate, setCustomStartDate] = useState(() => getShiftedLocalIsoDate(-6));
   const [customEndDate, setCustomEndDate] = useState(() => getShiftedLocalIsoDate(0));
   const canViewSleep = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    staleTime: 60 * 1000,
+  });
 
   const { data: child, isLoading: isChildLoading } = useQuery({
     queryKey: ["child", childId],
@@ -94,7 +103,9 @@ export function ChildSleepPage() {
     return <Navigate to={`/children/${child.id}`} replace />;
   }
 
-  const canEditSleepRecords = canEditChild(child.id, accountFamilyRole, accountAccessPolicy);
+  const canEditSleepRecords =
+    canEditChild(child.id, accountFamilyRole, accountAccessPolicy) &&
+    !isChildLockedByPlan(child.id, familyAccess);
   const filteredSessions = sleepSessions.filter((session) =>
     matchesChildRecordsPeriod(session.startedAt, period, customStartDate, customEndDate)
   );

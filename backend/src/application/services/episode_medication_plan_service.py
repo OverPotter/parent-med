@@ -12,6 +12,7 @@ from src.application.dto.episode_medication_plan import (
 from src.application.services.access_control import (
     get_child_for_account,
 )
+from src.application.services.child_plan_access import ensure_active_illness_continuation_allowed
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.entities.episode_medication_plan import EpisodeMedicationPlan
@@ -22,6 +23,7 @@ from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.episode_medication_plan_repository import (
     EpisodeMedicationPlanRepository,
 )
+from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 
@@ -38,12 +40,14 @@ class EpisodeMedicationPlanService:
         household_repo: HouseholdMedicineRepository,
         child_repo: ChildRepository,
         account_repo: AccountRepository,
+        family_repo: FamilyRepository | None = None,
     ) -> None:
         self._repo = plan_repo
         self._episode_repo = episode_repo
         self._household_repo = household_repo
         self._child_repo = child_repo
         self._account_repo = account_repo
+        self._family_repo = family_repo
 
     @staticmethod
     def _normalize_manual_name(value: str | None) -> str:
@@ -182,6 +186,12 @@ class EpisodeMedicationPlanService:
         current_account: AuthenticatedAccount,
     ) -> EpisodeMedicationPlanResponseDto:
         episode = await self._get_episode_for_account(dto.episode_id, current_account, "edit")
+        await ensure_active_illness_continuation_allowed(
+            self._family_repo,
+            current_account,
+            episode.child_id,
+            episode_is_active=episode.status == "active",
+        )
         if episode.status != "active":
             raise ValidationError("Для закрытого эпизода план лекарства создавать нельзя")
         member_account_ids = await self._resolve_member_account_ids(
@@ -250,6 +260,12 @@ class EpisodeMedicationPlanService:
         entity = await self._get_plan_for_account(id, current_account.family_id)
 
         episode = await self._get_episode_for_account(entity.episode_id, current_account, "edit")
+        await ensure_active_illness_continuation_allowed(
+            self._family_repo,
+            current_account,
+            episode.child_id,
+            episode_is_active=episode.status == "active",
+        )
         if episode.status != "active":
             raise ValidationError("Для закрытого эпизода план лекарства обновлять нельзя")
 
@@ -379,5 +395,11 @@ class EpisodeMedicationPlanService:
 
     async def delete(self, id: UUID, current_account: AuthenticatedAccount) -> None:
         entity = await self._get_plan_for_account(id, current_account.family_id)
-        await self._get_episode_for_account(entity.episode_id, current_account, "edit")
+        episode = await self._get_episode_for_account(entity.episode_id, current_account, "edit")
+        await ensure_active_illness_continuation_allowed(
+            self._family_repo,
+            current_account,
+            episode.child_id,
+            episode_is_active=episode.status == "active",
+        )
         await self._repo.delete(id)

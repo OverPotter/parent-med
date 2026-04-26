@@ -6,15 +6,21 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
 import { fetchActiveFeedingRecordByChildId } from "@shared/api/feedingRecords";
 import { fetchActiveSleepSessionByChildId } from "@shared/api/sleepSessions";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
+import { hasNetworkUnavailableError } from "@shared/api/network";
+import { ModuleOfflineState } from "@shared/components/ModuleOfflineState";
 import { PageIntro } from "@shared/components/PageIntro";
+import { PlusBadge } from "@shared/components/PlusBadge";
 import { EmptyState, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { useIsDesktop } from "@shared/hooks/useIsDesktop";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { useIsOffline } from "@shared/hooks/useIsOffline";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import {
   canActChild as canActChildAccess,
@@ -23,8 +29,15 @@ import {
   canViewAnyChildren,
 } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import {
+  hasReachedChildLimit,
+  isChildLockedByPlan,
+  isDowngradedChildrenState,
+} from "@shared/subscription/childPlanAccess";
 import type { Child } from "@shared/types/api";
 import { getChildrenCopy } from "@client/i18n/children";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { ChildCard } from "./children/ChildCard";
 import { FeedingRecordDialog } from "./children/FeedingDialogs";
 import { childActionPrimaryClass, childActionSecondaryClass } from "./children/shared";
@@ -45,9 +58,12 @@ export function ChildrenPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const isDesktop = useIsDesktop();
   const isIosShell = useIsIosShell();
+  const isOffline = useIsOffline();
   const [feedingDialog, setFeedingDialog] = useState<FeedingDialogState | null>(null);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const [isChildrenAuxReady, setIsChildrenAuxReady] = useState(!isIosShell);
   const liveStatusQueryOptions = useLiveQueryOptions(isIosShell ? 60000 : 30000);
+  const illnessStatusQueryOptions = useLiveQueryOptions(isIosShell ? 10000 : 5000);
   const canSeeChildren = canViewAnyChildren(accountFamilyRole, accountAccessPolicy);
   const canCreateChild = canManageChildrenList(accountFamilyRole, accountAccessPolicy);
   const liveTargetChildId = searchParams.get("liveChild")?.trim() ?? "";
@@ -94,13 +110,32 @@ export function ChildrenPage() {
     enabled: !!currentFamilyId && canSeeChildren,
     ...liveStatusQueryOptions,
   });
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    ...familyAccessQueryOptions,
+  });
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const showOfflineState = isOffline || hasNetworkUnavailableError([error]);
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
+  const childLimitReached =
+    hasReachedChildLimit(familyAccess) ||
+    (familyAccess?.maxChildren !== null &&
+    familyAccess?.maxChildren !== undefined
+      ? children.length >= familyAccess.maxChildren
+      : false);
 
   const activeEpisodeQueries = useQueries({
     queries: children.map((child) => ({
       queryKey: ["illness-episode-active", child.id],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
       enabled: !!child.id && isChildrenAuxReady,
-      ...liveStatusQueryOptions,
+      ...illnessStatusQueryOptions,
     })),
   });
 
@@ -200,6 +235,27 @@ export function ChildrenPage() {
     );
   }
 
+  if (showOfflineState) {
+    return (
+      <div className="min-w-0 space-y-6 sm:space-y-8">
+        <PageIntro
+          title={copy.title}
+          subtitle={copy.subtitle}
+          compactOnMobile
+          hideOnMobile
+          className="children-intro-hero"
+        />
+        <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+          <div className="app-mobile-section-intro">
+            <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
+            <p className="app-mobile-section-intro__hint">{copy.mobileHint}</p>
+          </div>
+        </div>
+        <ModuleOfflineState language={language} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <PageIntro
@@ -211,7 +267,13 @@ export function ChildrenPage() {
         action={
           <button
             type="button"
-            onClick={() => navigate("/children/new")}
+            onClick={() => {
+              if (childLimitReached) {
+                setIsUpgradeDialogOpen(true);
+                return;
+              }
+              navigate("/children/new");
+            }}
             className={[
               childActionPrimaryClass,
               "w-full sm:w-auto",
@@ -219,7 +281,10 @@ export function ChildrenPage() {
               !canCreateChild ? "hidden" : "",
             ].join(" ")}
           >
-            {copy.addChild}
+            <span className="inline-flex items-center gap-2">
+              <span>{copy.addChild}</span>
+              {childLimitReached ? <PlusBadge /> : null}
+            </span>
           </button>
         }
       />
@@ -239,9 +304,22 @@ export function ChildrenPage() {
           onClose={() => setFeedingDialog(null)}
         />
       ) : null}
+      <UpgradeDialog
+        isOpen={isUpgradeDialogOpen}
+        language={language}
+        entryPoint="second_child"
+        isPending={isUpgradePending}
+        canUpgrade={canManageSubscription}
+        onClose={() => setIsUpgradeDialogOpen(false)}
+        onUpgrade={() => {
+          void upgradeToPlus().then(() => {
+            setIsUpgradeDialogOpen(false);
+          });
+        }}
+      />
 
       {isLoading && <p className="text-muted">{common.loading}</p>}
-      {error && (
+      {error && !showOfflineState && (
         <p className="soft-note-danger">
           {(error as { message?: string }).message ?? copy.loadError}
         </p>
@@ -253,10 +331,19 @@ export function ChildrenPage() {
             {canCreateChild ? (
               <button
                 type="button"
-                onClick={() => navigate("/children/new")}
+                onClick={() => {
+                  if (childLimitReached) {
+                    setIsUpgradeDialogOpen(true);
+                    return;
+                  }
+                  navigate("/children/new");
+                }}
                 className={`${childActionPrimaryClass} w-full sm:w-auto`}
               >
-                {copy.addFirstChild}
+                <span className="inline-flex items-center gap-2">
+                  <span>{copy.addFirstChild}</span>
+                  {childLimitReached ? <PlusBadge /> : null}
+                </span>
               </button>
             ) : null}
           </div>
@@ -265,11 +352,25 @@ export function ChildrenPage() {
 
       {children.length > 0 && (
         <>
+          {isDowngradedChildrenState(familyAccess) ? (
+            <Surface className="soft-panel-muted p-4">
+              <div className="space-y-2">
+                <p className="app-card-title">{copy.downgradedNoticeTitle}</p>
+                <p className="text-sm leading-6 text-muted">
+                  {copy.downgradedNoticeDescription}
+                </p>
+              </div>
+            </Surface>
+          ) : null}
           <ul className="grid gap-4">
             {children.map((child, index) => {
               const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
               const canAct = canActChildAccess(child.id, accountFamilyRole, accountAccessPolicy);
               const canEdit = canEditChildAccess(child.id, accountFamilyRole, accountAccessPolicy);
+              const planLocksChildActions = isChildLockedByPlan(child.id, familyAccess);
+              const isPrimaryFreeChild =
+                isDowngradedChildrenState(familyAccess) &&
+                familyAccess?.freePrimaryChildId === child.id;
 
               return (
                 <ChildCard
@@ -303,6 +404,9 @@ export function ChildrenPage() {
                   hasActiveEpisode={!!activeEpisode}
                   canActChild={canAct}
                   canEditChild={canEdit}
+                  planLocksChildActions={planLocksChildActions}
+                  isPrimaryFreeChild={Boolean(isPrimaryFreeChild)}
+                  onLockedActionAttempt={() => setIsUpgradeDialogOpen(true)}
                   currentAccountId={accountId}
                   copy={copy}
                   language={language}
@@ -322,11 +426,20 @@ export function ChildrenPage() {
               </div>
               <button
                 type="button"
-                onClick={() => navigate("/children/new")}
+                onClick={() => {
+                  if (childLimitReached) {
+                    setIsUpgradeDialogOpen(true);
+                    return;
+                  }
+                  navigate("/children/new");
+                }}
                 className={childActionSecondaryClass}
                 hidden={!canCreateChild}
               >
-                {copy.addButtonShort}
+                <span className="inline-flex items-center gap-2">
+                  <span>{copy.addButtonShort}</span>
+                  {childLimitReached ? <PlusBadge /> : null}
+                </span>
               </button>
             </div>
           </Surface>

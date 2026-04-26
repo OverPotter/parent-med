@@ -1,4 +1,6 @@
-2# TODO: Переход к App Store версии (после фикса критических багов)
+# App Migration TODO
+
+Переход к App Store версии после фикса критических багов.
 
 ## 1. Базовая iOS-обертка (Capacitor)
 - [x] Добавить Capacitor в `frontend` (`init`, `add ios`).
@@ -17,7 +19,7 @@
 - [x] Добавить согласие с юридическими документами при регистрации.
 - [x] Добавить cookie-consent (analytics only after consent).
 - [x] Подготовить reviewer-доступ (демо-аккаунт или демо-режим).
-  - Шаблон: `APP_STORE_REVIEW_NOTES.md` (заполнить `TBD_*` перед отправкой в review).
+  - Шаблон: [APP_STORE_REVIEW_NOTES.md](./APP_STORE_REVIEW_NOTES.md) (заполнить `TBD_*` перед отправкой в review).
 - [ ] Подготовить multi-region legal baseline для RU/US/EU:
   - [x] Актуализировать Privacy Policy/Terms под US + EU (включая GDPR-блоки).
     - Примечание: обновлены in-app документы `/legal/privacy` и `/legal/terms` (редакция от 08.04.2026) под модель публикации от физлица и бесплатного сервиса.

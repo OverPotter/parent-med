@@ -39,8 +39,8 @@ export function ClientWorkspacePage() {
           </p>
           <p className="text-sm leading-6 text-muted">
             {language === "ru"
-              ? "Дети, журнал, приёмы и аптечка сейчас скрыты для этого аккаунта. Обратитесь к администратору семьи, если доступ нужно вернуть."
-              : "Children, journal, meds, and cabinet are hidden for this account right now. Contact your family admin if access should be restored."}
+              ? "Дети, журнал, приёмы и аптечка сейчас скрыты для этого аккаунта. Обратитесь к владельцу семьи или администратору, если доступ нужно вернуть."
+              : "Children, journal, meds, and cabinet are hidden for this account right now. Contact the family owner or an admin if access should be restored."}
           </p>
         </div>
       </RowSurface>

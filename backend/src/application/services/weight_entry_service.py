@@ -4,10 +4,12 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from src.application.dto.weight_entry import WeightEntryCreateDto, WeightEntryResponseDto
+from src.application.services.child_plan_access import ensure_child_plan_mutation_allowed
 from src.core.exceptions import ForbiddenError, NotFoundError
 from src.domain.entities.child import Child
 from src.domain.entities.weight_entry import WeightEntry
 from src.domain.repositories.child_repository import ChildRepository
+from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.weight_entry_repository import WeightEntryRepository
 
 
@@ -18,9 +20,11 @@ class WeightEntryService:
         self,
         weight_repo: WeightEntryRepository,
         child_repo: ChildRepository,
+        family_repo: FamilyRepository | None = None,
     ) -> None:
         self._repo = weight_repo
         self._child_repo = child_repo
+        self._family_repo = family_repo
 
     def _to_response(self, entity: WeightEntry) -> WeightEntryResponseDto:
         return WeightEntryResponseDto(
@@ -72,6 +76,11 @@ class WeightEntryService:
         current_family_id: UUID,
     ) -> WeightEntryResponseDto:
         await self._require_child_access(dto.child_id, current_family_id)
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_family_id,
+            dto.child_id,
+        )
         measured_at = dto.measured_at or datetime.now(UTC)
         entity = WeightEntry(
             id=uuid4(),
@@ -83,5 +92,10 @@ class WeightEntryService:
         return self._to_response(created)
 
     async def delete(self, id: UUID, current_family_id: UUID) -> None:
-        await self._get_entry_for_account(id, current_family_id)
+        entity = await self._get_entry_for_account(id, current_family_id)
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_family_id,
+            entity.child_id,
+        )
         await self._repo.delete(id)

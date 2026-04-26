@@ -3,16 +3,23 @@
  */
 
 import { apiClient } from "./client";
-import type { Family, FamilyMember } from "@shared/types/api";
+import type { Family, FamilyMember, FamilySubscriptionAccess } from "@shared/types/api";
 import { toFamily, toFamilyMember } from "@shared/types/transform";
+import {
+  toFamilySubscriptionAccess,
+  type RawFamilySubscriptionAccess,
+} from "@shared/types/familySubscriptionAccess";
 
 type RawFamily = {
   id: string;
   name: string;
   cabinet_member_account_ids?: string[] | null;
+  owner_account_id?: string | null;
   billing_account_id?: string | null;
+  free_primary_child_id?: string | null;
+  free_primary_pillbox_plan_id?: string | null;
   plan_code?: "free" | "plus" | "pro" | null;
-  subscription_status?: "inactive" | "active" | "grace" | "canceled" | "expired" | null;
+  subscription_status?: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired" | null;
   subscription_provider?: string | null;
   subscription_product_id?: string | null;
   subscription_expires_at?: string | null;
@@ -66,6 +73,11 @@ export async function updateMyFamily(name: string): Promise<Family> {
 export async function fetchMyFamily(): Promise<Family> {
   const res = await apiClient.get<RawFamily>("/families/me");
   return toFamily(res.data);
+}
+
+export async function fetchMyFamilyAccess(): Promise<FamilySubscriptionAccess> {
+  const res = await apiClient.get<RawFamilySubscriptionAccess>("/families/me/access");
+  return toFamilySubscriptionAccess(res.data);
 }
 
 export async function updateMyFamilyCabinetRecipients(

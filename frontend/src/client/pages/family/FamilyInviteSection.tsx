@@ -10,10 +10,13 @@ interface FamilyInviteSectionProps {
   isPending: boolean;
   isInviteSharePending: boolean;
   canShareInvite: boolean;
+  inviteLocked?: boolean;
+  inviteLockedReason?: string | null;
   inviteCopied: boolean;
   latestInviteUrl: string;
   inviteExpiresAt?: string;
   onCreateInvite: () => void;
+  onLockedInviteAttempt?: () => void;
   onShareInvite: () => void;
   onCopyInvite: () => void;
 }
@@ -23,10 +26,13 @@ export function FamilyInviteSection({
   isPending,
   isInviteSharePending,
   canShareInvite,
+  inviteLocked = false,
+  inviteLockedReason = null,
   inviteCopied,
   latestInviteUrl,
   inviteExpiresAt,
   onCreateInvite,
+  onLockedInviteAttempt,
   onShareInvite,
   onCopyInvite,
 }: FamilyInviteSectionProps) {
@@ -38,7 +44,7 @@ export function FamilyInviteSection({
           <div className="flex shrink-0 items-center justify-end">
             <button
               type="button"
-              onClick={onCreateInvite}
+              onClick={inviteLocked ? onLockedInviteAttempt : onCreateInvite}
               disabled={isPending || isInviteSharePending}
               className={`${appBtnJournalSecondaryClass} min-h-[2.35rem] whitespace-nowrap px-3 text-[0.78rem] disabled:opacity-50`}
             >
@@ -52,6 +58,9 @@ export function FamilyInviteSection({
       </div>
 
       <p className="mt-2 text-sm font-semibold text-muted">{tFamily(language, "ownerOnly")}</p>
+      {inviteLockedReason ? (
+        <p className="mt-2 text-sm font-semibold text-primary">{inviteLockedReason}</p>
+      ) : null}
 
       {inviteExpiresAt ? (
         <div className="mt-4 border-t border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] pt-4">

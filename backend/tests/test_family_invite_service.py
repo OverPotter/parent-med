@@ -4,7 +4,7 @@ import pytest
 
 from src.application.dto.family_invite import FamilyInviteCreateDto
 from src.application.services.family_invite_service import FamilyInviteService
-from src.core.exceptions import ForbiddenError
+from src.core.exceptions import ForbiddenError, ValidationError
 from src.domain.entities.family import Family
 from src.domain.entities.family_invite import FamilyInvite
 
@@ -27,6 +27,12 @@ class StubFamilyInviteRepository:
     async def get_by_token_hash(self, token_hash):  # noqa: ANN001
         return next((item for item in self.items if item.token_hash == token_hash), None)
 
+    async def get_latest_active(self) -> FamilyInvite | None:
+        if not self.items:
+            return None
+        active = [item for item in self.items if item.accepted_at is None]
+        return sorted(active, key=lambda item: item.created_at, reverse=True)[0] if active else None
+
     async def add(self, entity: FamilyInvite) -> FamilyInvite:
         self.items.append(entity)
         return entity
@@ -42,7 +48,14 @@ class StubFamilyInviteRepository:
 
 @pytest.mark.asyncio
 async def test_create_and_preview_family_invite() -> None:
-    family = Family(id=uuid4(), name="Семья Петровых")
+    owner_id = uuid4()
+    family = Family(
+        id=uuid4(),
+        name="Семья Петровых",
+        owner_account_id=owner_id,
+        plan_code="plus",
+        subscription_status="active",
+    )
     repo = StubFamilyInviteRepository()
     service = FamilyInviteService(
         family_repo=StubFamilyRepository(family),
@@ -51,8 +64,7 @@ async def test_create_and_preview_family_invite() -> None:
 
     created = await service.create_for_account(
         family_id=family.id,
-        current_account_id=uuid4(),
-        current_family_role="owner",
+        current_account_id=owner_id,
         dto=FamilyInviteCreateDto(family_role="member"),
     )
     preview = await service.get_preview(created.token)
@@ -65,16 +77,39 @@ async def test_create_and_preview_family_invite() -> None:
 
 @pytest.mark.asyncio
 async def test_create_invite_requires_owner_role() -> None:
-    family = Family(id=uuid4(), name="Семья Петровых")
+    owner_id = uuid4()
+    family = Family(id=uuid4(), name="Семья Петровых", owner_account_id=owner_id)
     service = FamilyInviteService(
         family_repo=StubFamilyRepository(family),
         invite_repo=StubFamilyInviteRepository(),
     )
 
-    with pytest.raises(ForbiddenError, match="Только администратор семьи может приглашать"):
+    with pytest.raises(ForbiddenError, match="Только владелец семьи может приглашать"):
         await service.create_for_account(
             family_id=family.id,
             current_account_id=uuid4(),
-            current_family_role="adult",
+            dto=FamilyInviteCreateDto(family_role="member"),
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_invite_requires_plus_plan() -> None:
+    owner_id = uuid4()
+    family = Family(
+        id=uuid4(),
+        name="Семья Петровых",
+        owner_account_id=owner_id,
+        plan_code="free",
+        subscription_status="inactive",
+    )
+    service = FamilyInviteService(
+        family_repo=StubFamilyRepository(family),
+        invite_repo=StubFamilyInviteRepository(),
+    )
+
+    with pytest.raises(ValidationError, match="только в Plus"):
+        await service.create_for_account(
+            family_id=family.id,
+            current_account_id=owner_id,
             dto=FamilyInviteCreateDto(family_role="member"),
         )

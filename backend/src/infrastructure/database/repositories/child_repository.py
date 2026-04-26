@@ -29,6 +29,7 @@ class SqlChildRepository(ChildRepository):
             doctor_phone=m.doctor_phone,
             allergies=m.allergies,
             notes=m.notes,
+            created_at=m.created_at,
         )
 
     def _to_model(self, e: Child) -> ChildModel:
@@ -44,6 +45,7 @@ class SqlChildRepository(ChildRepository):
             doctor_phone=e.doctor_phone,
             allergies=e.allergies,
             notes=e.notes,
+            created_at=e.created_at,
         )
 
     async def get_by_id(self, id: UUID) -> Child | None:

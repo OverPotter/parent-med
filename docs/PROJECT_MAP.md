@@ -311,4 +311,4 @@ uv run python scripts/seed_curated_medicine_catalog.py
 ## Что читать дальше
 
 Если задача касается самой модели данных и сущностей:
-- [database-architecture.md](/Users/artem/project/parent-med/docs/database-architecture.md:1)
+- [DATABASE_ARCHITECTURE.md](/Users/artem/project/parent-med/docs/DATABASE_ARCHITECTURE.md:1)

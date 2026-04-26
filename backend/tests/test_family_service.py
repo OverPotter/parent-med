@@ -84,6 +84,7 @@ async def test_list_members_for_account_returns_admin_first() -> None:
         cabinet_notify_1_day=True,
         created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
     )
+    family.owner_account_id = owner.id
     adult = Account(
         id=uuid4(),
         email="dad@example.com",
@@ -111,7 +112,7 @@ async def test_list_members_for_account_returns_admin_first() -> None:
 
 
 @pytest.mark.asyncio
-async def test_delete_member_rejects_last_admin() -> None:
+async def test_family_owner_role_cannot_be_demoted() -> None:
     family = Family(id=uuid4(), name="Моя семья")
     owner = Account(
         id=uuid4(),
@@ -127,13 +128,16 @@ async def test_delete_member_rejects_last_admin() -> None:
         cabinet_notify_1_day=True,
         created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
     )
+    family.owner_account_id = owner.id
     service = FamilyService(
         family_repo=StubFamilyRepository(family),
         account_repo=StubAccountRepository([owner]),
         session_repo=StubAccountSessionRepository(),
     )
 
-    with pytest.raises(ValidationError, match="хотя бы один администратор"):
+    with pytest.raises(
+        ValidationError, match="Владелец семьи должен сохранять права администратора"
+    ):
         await service.update_member_for_account(
             member_account_id=owner.id,
             dto=FamilyMemberUpdateDto(family_role="member"),
@@ -191,6 +195,354 @@ async def test_delete_member_revokes_sessions() -> None:
 
     assert session_repo.deleted_account_ids == [adult.id]
     assert all(account.id != adult.id for account in account_repo.accounts)
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_delete_family_owner() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    family.owner_account_id = owner.id
+    second_admin = Account(
+        id=uuid4(),
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, second_admin]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    with pytest.raises(ForbiddenError, match="только участниками member"):
+        await service.delete_member_for_account(
+            member_account_id=owner.id,
+            current_account_id=second_admin.id,
+            current_family_id=family.id,
+            current_family_role="admin",
+        )
+
+
+@pytest.mark.asyncio
+async def test_admin_can_update_member_access_policy_only() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    family.owner_account_id = owner.id
+    admin = Account(
+        id=uuid4(),
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    member = Account(
+        id=uuid4(),
+        email="grandma@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Бабушка",
+        family_role="member",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 10, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, admin, member]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    updated = await service.update_member_for_account(
+        member_account_id=member.id,
+        dto=FamilyMemberUpdateDto(access_policy=FamilyAccessPolicyUpdateDto(cabinet_access="view")),
+        current_account_id=admin.id,
+        current_family_id=family.id,
+        current_family_role="admin",
+    )
+
+    assert updated.access_policy.cabinet_access == "view"
+    assert updated.family_role == "member"
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_change_member_role() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    family.owner_account_id = owner.id
+    admin = Account(
+        id=uuid4(),
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    member = Account(
+        id=uuid4(),
+        email="grandma@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Бабушка",
+        family_role="member",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 10, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, admin, member]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    with pytest.raises(ForbiddenError, match="владелец семьи"):
+        await service.update_member_for_account(
+            member_account_id=member.id,
+            dto=FamilyMemberUpdateDto(family_role="admin"),
+            current_account_id=admin.id,
+            current_family_id=family.id,
+            current_family_role="admin",
+        )
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_manage_other_admin() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    family.owner_account_id = owner.id
+    admin = Account(
+        id=uuid4(),
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    second_admin = Account(
+        id=uuid4(),
+        email="aunt@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Тётя",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 10, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, admin, second_admin]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    with pytest.raises(ForbiddenError, match="только участниками member"):
+        await service.update_member_for_account(
+            member_account_id=second_admin.id,
+            dto=FamilyMemberUpdateDto(
+                access_policy=FamilyAccessPolicyUpdateDto(cabinet_access="view")
+            ),
+            current_account_id=admin.id,
+            current_family_id=family.id,
+            current_family_role="admin",
+        )
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_manage_self() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    family.owner_account_id = owner.id
+    admin = Account(
+        id=uuid4(),
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, admin]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    with pytest.raises(ValidationError, match="свои семейные права"):
+        await service.update_member_for_account(
+            member_account_id=admin.id,
+            dto=FamilyMemberUpdateDto(
+                access_policy=FamilyAccessPolicyUpdateDto(cabinet_access="none")
+            ),
+            current_account_id=admin.id,
+            current_family_id=family.id,
+            current_family_role="admin",
+        )
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_delete_other_admin() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    family.owner_account_id = owner.id
+    admin = Account(
+        id=uuid4(),
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    second_admin = Account(
+        id=uuid4(),
+        email="aunt@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Тётя",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 10, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, admin, second_admin]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    with pytest.raises(ForbiddenError, match="только участниками member"):
+        await service.delete_member_for_account(
+            member_account_id=second_admin.id,
+            current_account_id=admin.id,
+            current_family_id=family.id,
+            current_family_role="admin",
+        )
 
 
 @pytest.mark.asyncio
@@ -419,15 +771,30 @@ async def test_update_family_cabinet_recipient_matrix(
 
 
 @pytest.mark.asyncio
-async def test_update_family_for_account_requires_admin() -> None:
+async def test_update_family_for_account_requires_owner() -> None:
     family = Family(id=uuid4(), name="Моя семья")
-    member = Account(
+    owner = Account(
+        id=uuid4(),
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    family.owner_account_id = owner.id
+    admin = Account(
         id=uuid4(),
         email="dad@example.com",
         password_hash="hash",
         family_id=family.id,
         display_name="Папа",
-        family_role="member",
+        family_role="admin",
         push_before_reminder_minutes=10,
         cabinet_notify_10_days=True,
         cabinet_notify_7_days=True,
@@ -437,17 +804,51 @@ async def test_update_family_for_account_requires_admin() -> None:
     )
     service = FamilyService(
         family_repo=StubFamilyRepository(family),
-        account_repo=StubAccountRepository([member]),
+        account_repo=StubAccountRepository([owner, admin]),
         session_repo=StubAccountSessionRepository(),
     )
 
-    with pytest.raises(ForbiddenError, match="администратор семьи"):
+    with pytest.raises(ForbiddenError, match="владелец семьи"):
         await service.update_for_account(
             family.id,
             FamilyUpdateDto(name="Новая семья"),
             current_family_id=family.id,
-            current_family_role="member",
+            current_account_id=admin.id,
         )
+
+
+@pytest.mark.asyncio
+async def test_owner_can_update_family_for_account() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    family.owner_account_id = owner.id
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    updated = await service.update_for_account(
+        family.id,
+        FamilyUpdateDto(name="Новая семья"),
+        current_family_id=family.id,
+        current_account_id=owner.id,
+    )
+
+    assert updated.name == "Новая семья"
 
 
 @pytest.mark.asyncio

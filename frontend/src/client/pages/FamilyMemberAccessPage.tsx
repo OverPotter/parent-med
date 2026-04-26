@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { fetchChildrenByFamilyIdForManagement } from "@shared/api/children";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { fetchMyFamilyMembers } from "@shared/api/families";
+import { fetchFamilies, fetchMyFamilyMembers } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -13,6 +13,13 @@ import { buildMemberAccessSummaryItems } from "./family/accessPolicy";
 import { MemberAccessHeaderCard } from "./family/MemberAccessHeaderCard";
 import { MemberAccessEditor } from "./family/MemberAccessEditor";
 import { tFamily } from "./family/copy";
+import {
+  canDeleteFamilyMember,
+  canDemoteFamilyMember,
+  canManageFamilyMemberAccess,
+  canManageFamilyMembers,
+  canPromoteFamilyMember,
+} from "./family/memberManagement";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
 
 export function FamilyMemberAccessPage() {
@@ -26,7 +33,17 @@ export function FamilyMemberAccessPage() {
   const currentAccountRole = useAppStore((s) => s.accountFamilyRole);
   const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
-  const canManageFamily = currentAccountRole === "admin";
+  const { data: families = [] } = useQuery({
+    queryKey: ["families", accountId],
+    queryFn: fetchFamilies,
+    enabled: Boolean(accountId),
+  });
+  const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
+  const canManageFamily = canManageFamilyMembers({
+    familyOwnerAccountId: family?.ownerAccountId,
+    currentAccountId,
+    currentAccountRole,
+  });
   const [actionError, setActionError] = useState<string | null>(null);
   const [isPromoteConfirmOpen, setIsPromoteConfirmOpen] = useState(false);
   const [isDemoteConfirmOpen, setIsDemoteConfirmOpen] = useState(false);
@@ -112,13 +129,52 @@ export function FamilyMemberAccessPage() {
   }
 
   const adminsCount = members.filter((item) => item.familyRole === "admin").length;
-  const canPromote = member?.familyRole !== "admin" && member?.id !== currentAccountId;
-  const canDemote =
-    member?.familyRole === "admin" && member?.id !== currentAccountId && adminsCount > 1;
-  const canDelete = member?.id !== currentAccountId;
+  const canManageTarget = Boolean(
+    member &&
+      canManageFamilyMemberAccess({
+        familyOwnerAccountId: family?.ownerAccountId,
+        currentAccountId,
+        currentAccountRole,
+        targetAccountId: member.id,
+        targetFamilyRole: member.familyRole,
+      })
+  );
+  const canPromote = Boolean(
+    member &&
+      canPromoteFamilyMember({
+        familyOwnerAccountId: family?.ownerAccountId,
+        currentAccountId,
+        targetAccountId: member.id,
+        targetFamilyRole: member.familyRole,
+      })
+  );
+  const canDemote = Boolean(
+    member &&
+      canDemoteFamilyMember({
+        familyOwnerAccountId: family?.ownerAccountId,
+        currentAccountId,
+        targetAccountId: member.id,
+        targetFamilyRole: member.familyRole,
+        adminsCount,
+      })
+  );
+  const canDelete = Boolean(
+    member &&
+      canDeleteFamilyMember({
+        familyOwnerAccountId: family?.ownerAccountId,
+        currentAccountId,
+        currentAccountRole,
+        targetAccountId: member.id,
+        targetFamilyRole: member.familyRole,
+      })
+  );
   const hasHeaderActions = Boolean(canPromote || canDemote || canDelete);
   const isActionPending = updateMemberMutation.isPending || deleteMemberMutation.isPending;
   const accessSummaryItems = member ? buildMemberAccessSummaryItems(member.accessPolicy, language) : [];
+
+  if (member && !canManageTarget && !canPromote && !canDemote && !canDelete) {
+    return <Navigate to="/family" replace />;
+  }
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
@@ -213,6 +269,7 @@ export function FamilyMemberAccessPage() {
           <MemberAccessHeaderCard
             language={language}
             member={member}
+            familyOwnerAccountId={family?.ownerAccountId}
             accessSummaryItems={accessSummaryItems}
             hasHeaderActions={hasHeaderActions}
             canPromote={canPromote}

@@ -13,10 +13,12 @@ from src.application.dto.feeding_record import (
 from src.application.services.access_control import (
     get_child_for_account,
 )
+from src.application.services.child_plan_access import ensure_child_plan_mutation_allowed
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.entities.feeding_record import FeedingRecord
 from src.domain.repositories.child_repository import ChildRepository
+from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.feeding_record_repository import FeedingRecordRepository
 
 
@@ -27,9 +29,11 @@ class FeedingRecordService:
         self,
         feeding_repo: FeedingRecordRepository,
         child_repo: ChildRepository,
+        family_repo: FamilyRepository | None = None,
     ) -> None:
         self._repo = feeding_repo
         self._child_repo = child_repo
+        self._family_repo = family_repo
 
     def _to_response(self, entity: FeedingRecord) -> FeedingRecordResponseDto:
         duration_minutes = entity.duration_minutes
@@ -156,6 +160,11 @@ class FeedingRecordService:
         current_account: AuthenticatedAccount,
     ) -> FeedingRecordResponseDto:
         child = await self._require_child_access(dto.child_id, current_account, "act")
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_account,
+            child.id,
+        )
         if not child.baby_mode_enabled:
             raise ValidationError("Режим малыша выключен", code="BABY_MODE_DISABLED")
 
@@ -193,6 +202,11 @@ class FeedingRecordService:
         current_account: AuthenticatedAccount,
     ) -> FeedingRecordResponseDto:
         child = await self._require_child_access(dto.child_id, current_account, "act")
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_account,
+            child.id,
+        )
         if not child.baby_mode_enabled:
             raise ValidationError("Режим малыша выключен", code="BABY_MODE_DISABLED")
 
@@ -233,6 +247,11 @@ class FeedingRecordService:
         current_account: AuthenticatedAccount,
     ) -> FeedingRecordResponseDto:
         entity = await self._get_record_for_family(record_id, current_account, "act")
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_account,
+            entity.child_id,
+        )
         if entity.status != "active":
             return self._to_response(entity)
         if entity.created_by_account_id and entity.created_by_account_id != current_account.id:
@@ -287,6 +306,11 @@ class FeedingRecordService:
         current_account: AuthenticatedAccount,
     ) -> None:
         entity = await self._get_record_for_family(record_id, current_account, "edit")
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_account,
+            entity.child_id,
+        )
         if entity.status == "active" and entity.created_by_account_id != current_account.id:
             raise ForbiddenError("Удалить активное кормление может только тот, кто его запустил")
         deleted = await self._repo.delete(entity.id)

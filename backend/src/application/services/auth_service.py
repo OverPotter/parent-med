@@ -129,6 +129,7 @@ class AuthService(BaseAuthService):
         email = dto.email.strip().lower() if dto.email else None
         if email and await self._account_repo.get_by_email(email) is not None:
             self._raise_duplicate_email()
+        account_id = uuid4()
         family_role = "admin"
         invite: FamilyInvite | None = None
         family_name = _DEFAULT_FAMILY_NAME
@@ -157,10 +158,10 @@ class AuthService(BaseAuthService):
             family_role = normalize_family_role(invite.family_role)
             family_name = created_family.name
         else:
-            family = Family(id=uuid4(), name=family_name)
+            family = Family(id=uuid4(), name=family_name, owner_account_id=account_id)
             created_family = await self._family_repo.add(family)
         account = Account(
-            id=uuid4(),
+            id=account_id,
             email=email,
             password_hash=hash_password(dto.password),
             recovery_code_hash=None,
@@ -324,6 +325,11 @@ class AuthService(BaseAuthService):
                 "Нельзя удалить последнего администратора семьи",
                 code="LAST_ADMIN_REQUIRED",
             )
+        if family is not None and family.owner_account_id == account.id:
+            raise ValidationError(
+                "Нельзя удалить владельца семьи без явной передачи владения",
+                code="FAMILY_OWNER_TRANSFER_REQUIRED",
+            )
         if family is not None and family.billing_account_id == account.id:
             raise ValidationError(
                 "Нельзя удалить аккаунт, пока на нём привязана семейная подписка",
@@ -337,8 +343,16 @@ class AuthService(BaseAuthService):
         account = await self._account_repo.get_by_id(account_id)
         if account is None or account.family_role == "deleted":
             raise UnauthorizedError()
-        if not is_family_admin(account.family_role):
-            raise ForbiddenError("Только администратор семьи может удалить семью")
+        family = await self._family_repo.get_by_id(account.family_id)
+        if family is None:
+            raise ForbiddenError("Семья не найдена", code="FAMILY_NOT_LINKED")
+        if family.owner_account_id != account.id:
+            raise ForbiddenError("Только владелец семьи может удалить семью")
+        if family.subscription_status in {"active", "trialing", "grace", "canceled"}:
+            raise ValidationError(
+                "Сначала отмените семейную подписку или дождитесь окончания периода доступа",
+                code="FAMILY_SUBSCRIPTION_ACTIVE",
+            )
 
         family_accounts = await self._account_repo.list_by_family_id(account.family_id)
         active_accounts = [item for item in family_accounts if item.family_role != "deleted"]
@@ -348,6 +362,45 @@ class AuthService(BaseAuthService):
         for item in active_accounts:
             await self._session_repo.delete_by_account_id(item.id)
             await self._soft_delete_account(item)
+
+    async def leave_family(self, account_id: UUID) -> AuthStateResponseDto:
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None or account.family_role == "deleted":
+            raise UnauthorizedError()
+
+        family = await self._family_repo.get_by_id(account.family_id)
+        if family is None:
+            raise ForbiddenError("Семья не найдена", code="FAMILY_NOT_LINKED")
+        if family.owner_account_id == account.id:
+            raise ValidationError(
+                "Владелец семьи не может просто выйти из семьи",
+                code="FAMILY_OWNER_CANNOT_LEAVE",
+            )
+        if family.billing_account_id == account.id:
+            raise ValidationError(
+                "Нельзя выйти из семьи, пока на аккаунте привязана семейная подписка",
+                code="BILLING_OWNER_TRANSFER_REQUIRED",
+            )
+
+        new_family = await self._family_repo.add(
+            Family(
+                id=uuid4(),
+                name=_DEFAULT_FAMILY_NAME,
+                owner_account_id=account.id,
+            )
+        )
+        updated_account = await self._account_repo.update(
+            copy_account(
+                account,
+                family_id=new_family.id,
+                family_role="admin",
+                access_policy=build_default_family_access_policy(),
+            )
+        )
+        return AuthStateResponseDto(
+            account=self._account_to_response(updated_account),
+            family=self._family_to_response(new_family),
+        )
 
     async def change_password(
         self, account_id: UUID, dto: ChangePasswordDto, refresh_token: str | None = None
@@ -423,14 +476,11 @@ class AuthService(BaseAuthService):
         )
         await self._session_repo.delete_by_account_id(account.id)
 
-    async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:
-        account = await self._account_repo.get_by_id(account_id)
-        if account is None:
-            raise UnauthorizedError()
-
-        invite = await self._family_invite_repo.get_by_token_hash(hash_session_token(token))
-        if not invite:
-            raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+    async def _accept_family_invite_entity(
+        self,
+        account: Account,
+        invite: FamilyInvite,
+    ) -> AuthResponseDto:
         if invite.accepted_at is not None:
             raise ValidationError(
                 "Приглашение уже использовано",
@@ -475,6 +525,27 @@ class AuthService(BaseAuthService):
         await self._session_repo.delete_by_account_id(updated_account.id)
         await self._family_repo.delete(old_family_id)
         return await self._create_auth_response(updated_account, family, remember_me=False)
+
+    async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None:
+            raise UnauthorizedError()
+
+        invite = await self._family_invite_repo.get_by_token_hash(hash_session_token(token))
+        if not invite:
+            raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+        return await self._accept_family_invite_entity(account, invite)
+
+    async def accept_latest_family_invite_for_dev(self, account_id: UUID) -> AuthResponseDto:
+        if not settings.is_local_environment:
+            raise ValidationError("Dev invite shortcut is unavailable", code="DEV_INVITE_DISABLED")
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None:
+            raise UnauthorizedError()
+        invite = await self._family_invite_repo.get_latest_active()
+        if not invite:
+            raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+        return await self._accept_family_invite_entity(account, invite)
 
     async def update_language(self, account_id: UUID, dto: UpdateLanguageDto) -> AccountResponseDto:
         account = await self._account_repo.get_by_id(account_id)

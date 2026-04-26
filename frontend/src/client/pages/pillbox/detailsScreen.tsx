@@ -24,6 +24,7 @@ export function PillboxDetailsScreen({
   selectedPlan,
   selectedPlanId,
   allGroups,
+  canAct,
   canEdit,
   disableEditingActions,
   planActionTarget,
@@ -50,6 +51,7 @@ export function PillboxDetailsScreen({
   selectedPlan: PillboxPlan;
   selectedPlanId: string;
   allGroups: PillboxGroup[];
+  canAct: boolean;
   canEdit: boolean;
   disableEditingActions: boolean;
   planActionTarget: PillboxPlanActionTarget;
@@ -101,6 +103,7 @@ export function PillboxDetailsScreen({
     selectedPlan.status === "archived" || selectedPlan.status === "completed"
   );
   const isCompletedPlan = selectedPlan.status === "completed" || selectedPlan.status === "archived";
+  const canDeletePlan = canEdit || (canAct && isCompletedPlan);
 
   return (
     <EditorShell onBack={onBack}>
@@ -138,8 +141,7 @@ export function PillboxDetailsScreen({
                     {displayPillboxText(selectedPlan.title)}
                   </p>
                 </div>
-                {canEdit &&
-                !disableEditingActions &&
+                {canAct &&
                 (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
                   <button
                     type="button"
@@ -214,7 +216,9 @@ export function PillboxDetailsScreen({
           </div>
         </div>
 
-        {canEdit && !disableEditingActions ? (
+        {canEdit &&
+        !disableEditingActions &&
+        (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
           <div className="soft-panel rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
@@ -330,9 +334,9 @@ export function PillboxDetailsScreen({
           </div>
         </div>
 
-        {canEdit ? (
+        {canEdit || canDeletePlan ? (
           <div className="grid grid-cols-2 gap-2">
-            {selectedPlan.status === "active" || selectedPlan.status === "paused" ? (
+            {canEdit && (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
               <button
                 type="button"
                 onClick={onGoToSetup}
@@ -345,7 +349,7 @@ export function PillboxDetailsScreen({
             <button
               type="button"
               onClick={onRequestDelete}
-              disabled={deletePlanPending || disableEditingActions}
+              disabled={deletePlanPending || !canDeletePlan}
               className={`${actionCompactDangerClass} w-full disabled:cursor-not-allowed disabled:opacity-60 ${
                 selectedPlan.status === "active" || selectedPlan.status === "paused"
                   ? ""

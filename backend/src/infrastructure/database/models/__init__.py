@@ -5,6 +5,7 @@ from src.infrastructure.database.models.account_feedback import AccountFeedbackM
 from src.infrastructure.database.models.account_session import AccountSessionModel
 from src.infrastructure.database.models.administration_event import AdministrationEventModel
 from src.infrastructure.database.models.auth_attempt import AuthAttemptModel
+from src.infrastructure.database.models.billing_event import BillingEventModel
 from src.infrastructure.database.models.child import ChildModel
 from src.infrastructure.database.models.curated_medicine_catalog_item import (
     CuratedMedicineCatalogItemModel,
@@ -27,8 +28,10 @@ from src.infrastructure.database.models.pillbox import (
     PillboxNotificationDeliveryModel,
     PillboxPlanModel,
 )
+from src.infrastructure.database.models.plan import PlanModel
 from src.infrastructure.database.models.push_subscription import PushSubscriptionModel
 from src.infrastructure.database.models.sleep_session import SleepSessionModel
+from src.infrastructure.database.models.subscription import SubscriptionModel
 from src.infrastructure.database.models.temperature_entry import TemperatureEntryModel
 from src.infrastructure.database.models.weight_entry import WeightEntryModel
 
@@ -36,6 +39,7 @@ __all__ = [
     "AccountModel",
     "AccountFeedbackModel",
     "AccountSessionModel",
+    "BillingEventModel",
     "AuthAttemptModel",
     "FamilyModel",
     "FamilyInviteModel",
@@ -46,12 +50,14 @@ __all__ = [
     "EpisodeMedicationPlanModel",
     "WeightEntryModel",
     "ParentModel",
+    "PlanModel",
     "PillboxPlanModel",
     "PillboxMedicationModel",
     "PillboxDoseLogModel",
     "PillboxNotificationDeliveryModel",
     "PushSubscriptionModel",
     "SleepSessionModel",
+    "SubscriptionModel",
     "HouseholdMedicineModel",
     "HouseholdMedicineNotificationDeliveryModel",
     "IllnessEpisodeModel",

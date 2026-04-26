@@ -70,7 +70,10 @@ export function SettingsSecuritySection({
   passwordError,
   recoveryCodeSuccess,
   recoveryCodeError,
-  accountFamilyRole,
+  canDeleteAccount,
+  canDeleteFamily,
+  familyDangerActionLabel,
+  familyDangerActionDescription,
   deleteAccountError,
   deleteFamilyError,
   onDeleteAccount,
@@ -100,7 +103,10 @@ export function SettingsSecuritySection({
   passwordError: string | null;
   recoveryCodeSuccess: string | null;
   recoveryCodeError: string | null;
-  accountFamilyRole: string | null;
+  canDeleteAccount: boolean;
+  canDeleteFamily: boolean;
+  familyDangerActionLabel: string;
+  familyDangerActionDescription: string;
   deleteAccountError: string | null;
   deleteFamilyError: string | null;
   onDeleteAccount: () => void;
@@ -162,33 +168,37 @@ export function SettingsSecuritySection({
         hint={tSettings(language, "dangerZoneHint")}
         tone="danger"
       >
-        <SettingsRow
-          title={tSettings(language, "deleteAccount")}
-          hint={tSettings(language, "deleteAccountDescription")}
-          align="start"
-          forceInlineActions
-          actions={
-            <button type="button" onClick={onDeleteAccount} className={destructiveActionClass}>
-              {tSettings(language, "deleteAccount")}
-            </button>
-          }
-        />
-        {deleteAccountError ? (
-          <div className="soft-note-danger mx-4 mt-1 rounded-2xl px-4 py-3 text-sm">
-            {deleteAccountError}
-          </div>
-        ) : null}
-        {accountFamilyRole === "admin" ? (
+        {canDeleteAccount ? (
           <>
             <SettingsRow
-              title={tSettings(language, "deleteFamily")}
-              hint={tSettings(language, "deleteFamilyDescription")}
+              title={tSettings(language, "deleteAccount")}
+              hint={tSettings(language, "deleteAccountDescription")}
+              align="start"
+              forceInlineActions
+              actions={
+                <button type="button" onClick={onDeleteAccount} className={destructiveActionClass}>
+                  {tSettings(language, "deleteAccount")}
+                </button>
+              }
+            />
+            {deleteAccountError ? (
+              <div className="soft-note-danger mx-4 mt-1 rounded-2xl px-4 py-3 text-sm">
+                {deleteAccountError}
+              </div>
+            ) : null}
+          </>
+        ) : null}
+        {canDeleteFamily ? (
+          <>
+            <SettingsRow
+              title={familyDangerActionLabel}
+              hint={familyDangerActionDescription}
               separated
               align="start"
               forceInlineActions
               actions={
                 <button type="button" onClick={onDeleteFamily} className={destructiveActionClass}>
-                  {tSettings(language, "deleteFamily")}
+                  {familyDangerActionLabel}
                 </button>
               }
             />
