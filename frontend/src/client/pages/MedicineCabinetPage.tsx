@@ -218,7 +218,7 @@ export function MedicineCabinetPage() {
         <p className="mt-2 text-muted">
           {language === "ru"
             ? "Администратор семьи ещё не выдал вам доступ к аптечке."
-            : "Your family admin has not granted access to the cabinet yet."}
+            : "A family admin has not granted access to the cabinet yet."}
         </p>
       </div>
     );

@@ -19,3 +19,8 @@ class FeedingRecordRepository(BaseRepository[FeedingRecord]):
     async def get_active_by_child_id(self, child_id: UUID) -> FeedingRecord | None:
         """Активное кормление по ребёнку."""
         ...
+
+    @abstractmethod
+    async def update(self, entity: FeedingRecord) -> FeedingRecord:
+        """Обновить запись кормления."""
+        ...

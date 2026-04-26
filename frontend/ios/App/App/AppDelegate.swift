@@ -8,6 +8,7 @@ final class AppViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(LiveActivitiesPlugin())
+        bridge?.registerPluginInstance(RevenueCatPlugin())
     }
 }
 

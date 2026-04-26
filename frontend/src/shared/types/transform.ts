@@ -24,14 +24,17 @@ import type {
   TemperatureEntry,
   AdministrationEvent,
 } from "./api";
+export { toFamilySubscriptionAccess } from "./familySubscriptionAccess";
 
 interface RawFamily {
   id: string;
   name: string;
   cabinet_member_account_ids?: string[] | null;
+  owner_account_id?: string | null;
   billing_account_id?: string | null;
+  free_primary_child_id?: string | null;
   plan_code?: "free" | "plus" | "pro" | null;
-  subscription_status?: "inactive" | "active" | "grace" | "canceled" | "expired" | null;
+  subscription_status?: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired" | null;
   subscription_provider?: string | null;
   subscription_product_id?: string | null;
   subscription_expires_at?: string | null;
@@ -247,7 +250,9 @@ export function toFamily(r: RawFamily): Family {
     id: r.id,
     name: r.name,
     cabinetMemberAccountIds: r.cabinet_member_account_ids ?? [],
+    ownerAccountId: r.owner_account_id ?? null,
     billingAccountId: r.billing_account_id ?? null,
+    freePrimaryChildId: r.free_primary_child_id ?? null,
     planCode: r.plan_code ?? "free",
     subscriptionStatus: r.subscription_status ?? "inactive",
     subscriptionProvider: r.subscription_provider ?? null,

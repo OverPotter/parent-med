@@ -34,7 +34,7 @@ class FamilyService:
     """Сервис CRUD для семей."""
 
     PREMIUM_PLAN_CODES = {"plus", "pro"}
-    ACTIVE_SUBSCRIPTION_STATUSES = {"active", "grace"}
+    ACTIVE_SUBSCRIPTION_STATUSES = {"trialing", "active", "grace"}
 
     def __init__(
         self,
@@ -57,7 +57,9 @@ class FamilyService:
             id=entity.id,
             name=entity.name,
             cabinet_member_account_ids=list(entity.cabinet_member_account_ids),
+            owner_account_id=entity.owner_account_id,
             billing_account_id=entity.billing_account_id,
+            free_primary_child_id=entity.free_primary_child_id,
             plan_code=entity.plan_code,  # type: ignore[arg-type]
             subscription_status=entity.subscription_status,  # type: ignore[arg-type]
             subscription_provider=entity.subscription_provider,
@@ -198,6 +200,7 @@ class FamilyService:
         family_accounts = [
             account for account in family_accounts if account.family_role != "deleted"
         ]
+        family = await self._repo.get_by_id(current_family_id)
         next_role = (
             normalize_family_role(dto.family_role)
             if dto.family_role is not None
@@ -205,6 +208,11 @@ class FamilyService:
         )
         if next_role not in {"admin", "member"}:
             raise ValidationError("Можно установить только роли admin или member")
+        if family and family.owner_account_id == target.id and next_role != "admin":
+            raise ValidationError(
+                "Владелец семьи должен сохранять права администратора",
+                code="FAMILY_OWNER_MUST_REMAIN_ADMIN",
+            )
         if (
             is_family_admin(target.family_role)
             and not is_family_admin(next_role)
@@ -252,6 +260,11 @@ class FamilyService:
                 code="LAST_ADMIN_REQUIRED",
             )
         family = await self._repo.get_by_id(current_family_id)
+        if family and family.owner_account_id == target.id:
+            raise ValidationError(
+                "Нельзя удалить владельца семьи без явной передачи владения",
+                code="FAMILY_OWNER_TRANSFER_REQUIRED",
+            )
         if family and family.billing_account_id == target.id:
             raise ValidationError(
                 "Нельзя удалить участника, пока на нём привязана семейная подписка",
@@ -315,6 +328,7 @@ class FamilyService:
                     id=entity.id,
                     name=dto.name if dto.name is not None else entity.name,
                     cabinet_member_account_ids=cabinet_member_account_ids,
+                    owner_account_id=entity.owner_account_id,
                     billing_account_id=entity.billing_account_id,
                     plan_code=entity.plan_code,
                     subscription_status=entity.subscription_status,

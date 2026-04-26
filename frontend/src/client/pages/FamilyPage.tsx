@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { fetchFamilies } from "@shared/api/families";
+import { fetchFamilies, fetchMyFamilyAccess } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface } from "@shared/components/Surface";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
@@ -9,6 +9,8 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { normalizeFamilyAccessPolicy } from "@shared/familyAccess/policy";
 import { buildShareableInviteUrl } from "@shared/config/inviteLinks";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { SectionTitle } from "./child-illness/shared";
 import { FamilyInviteSection } from "./family/FamilyInviteSection";
 import { FamilyNameSection } from "./family/FamilyNameSection";
@@ -29,6 +31,7 @@ export function FamilyPage() {
   const [isInviteSharePending, setIsInviteSharePending] = useState(false);
   const [inviteToast, setInviteToast] = useState<string | null>(null);
   const [isMembersSheetOpen, setIsMembersSheetOpen] = useState(false);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
@@ -38,7 +41,6 @@ export function FamilyPage() {
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const isIosShell = useIsIosShell();
   const canManageFamily = currentAccountRole === "admin";
-
   const {
     data: families = [],
     isLoading: isFamilyLoading,
@@ -48,11 +50,24 @@ export function FamilyPage() {
     queryFn: fetchFamilies,
     enabled: Boolean(accountId),
   });
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", accountId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(accountId),
+    staleTime: 60 * 1000,
+  });
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
 
   const { isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
     useFamilyMembersData(currentFamilyId, currentAccountId);
 
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
+  const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === currentAccountId);
   const currentMemberPolicy = normalizeFamilyAccessPolicy(currentMember?.accessPolicy);
   const currentMemberHasAnyFamilyAccess =
     currentMemberPolicy.allChildren ||
@@ -96,6 +111,13 @@ export function FamilyPage() {
     searchParams.get("edit") === "profile" || searchParams.get("edit") === "me";
   const canShareInvite = typeof navigator !== "undefined" && typeof navigator.share === "function";
   const shouldUseDirectNativeInvite = isIosShell && canShareInvite;
+  const canInviteMembers = familyAccess?.canInviteMembers ?? false;
+  const inviteLockedReason =
+    isFamilyOwner && !canInviteMembers
+      ? language === "ru"
+        ? "Приглашения доступны в Plus."
+        : "Invites are available in Plus."
+      : null;
 
   const inviteShareText =
     language === "ru"
@@ -216,6 +238,10 @@ export function FamilyPage() {
   };
 
   const handleCreateInvite = async () => {
+    if (!canInviteMembers) {
+      setIsUpgradeDialogOpen(true);
+      return;
+    }
     try {
       if (shouldUseDirectNativeInvite && latestInviteUrl) {
         await handleShareInvite(latestInviteUrl);
@@ -288,7 +314,7 @@ export function FamilyPage() {
           <span className="font-semibold">{tFamily(language, "noFamilyAccessTitle")}. </span>
           {language === "ru"
             ? "Сейчас у вас нет доступа к данным семьи. Обратитесь к администратору семьи."
-            : "You currently do not have access to family data. Contact your family admin."}
+            : "You currently do not have access to family data. Contact a family admin."}
         </p>
       ) : null}
       {!isFamilyLoading && !family ? (
@@ -319,6 +345,7 @@ export function FamilyPage() {
             <MemberCard
               key={currentMember.id}
               member={currentMember}
+              familyOwnerAccountId={family?.ownerAccountId}
               isCurrent
               forceEdit={Boolean(shouldOpenCurrentProfileEditor)}
               canManageAccess={canManageFamily}
@@ -400,18 +427,21 @@ export function FamilyPage() {
         )}
       </RowSurface>
 
-      {canManageFamily ? (
+      {isFamilyOwner ? (
         <FamilyInviteSection
           language={language}
           isPending={createInviteMutation.isPending}
           isInviteSharePending={isInviteSharePending}
           canShareInvite={canShareInvite}
+          inviteLocked={!canInviteMembers}
+          inviteLockedReason={inviteLockedReason}
           inviteCopied={inviteCopied}
           latestInviteUrl={latestInviteUrl}
           inviteExpiresAt={createInviteMutation.data?.expiresAt}
           onCreateInvite={() => {
             void handleCreateInvite();
           }}
+          onLockedInviteAttempt={() => setIsUpgradeDialogOpen(true)}
           onShareInvite={() => {
             void handleShareInvite(latestInviteUrl);
           }}
@@ -445,10 +475,24 @@ export function FamilyPage() {
         language={language}
         isOpen={isMembersSheetOpen}
         members={otherMembers}
+        familyOwnerAccountId={family?.ownerAccountId}
         onClose={() => setIsMembersSheetOpen(false)}
         onSelectMember={(memberId) => {
           setIsMembersSheetOpen(false);
           navigate(canManageFamily ? `/family/members/${memberId}/access` : "/family/members");
+        }}
+      />
+      <UpgradeDialog
+        isOpen={isUpgradeDialogOpen}
+        language={language}
+        entryPoint="invite_family"
+        isPending={isUpgradePending}
+        canUpgrade={canManageSubscription}
+        onClose={() => setIsUpgradeDialogOpen(false)}
+        onUpgrade={() => {
+          void upgradeToPlus().then(() => {
+            setIsUpgradeDialogOpen(false);
+          });
         }}
       />
         </>

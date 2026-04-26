@@ -6,13 +6,35 @@ export interface Family {
   id: string;
   name: string;
   cabinetMemberAccountIds: string[];
+  ownerAccountId: string | null;
   billingAccountId: string | null;
+  freePrimaryChildId: string | null;
   planCode: "free" | "plus" | "pro";
-  subscriptionStatus: "inactive" | "active" | "grace" | "canceled" | "expired";
+  subscriptionStatus: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired";
   subscriptionProvider: string | null;
   subscriptionProductId: string | null;
   subscriptionExpiresAt: string | null;
   premiumActive: boolean;
+}
+
+export interface FamilySubscriptionAccess {
+  planCode: "free" | "plus" | "pro";
+  subscriptionStatus: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired";
+  premiumActive: boolean;
+  hasPlusAccess: boolean;
+  isBillingOwner: boolean;
+  canManageSubscription: boolean;
+  canInviteMembers: boolean;
+  canManageMemberRoles: boolean;
+  canUseLiveActivities: boolean;
+  canExportCsv: boolean;
+  maxChildren: number | null;
+  maxAdults: number | null;
+  maxPillboxPlans: number | null;
+  freePrimaryChildId: string | null;
+  currentChildrenCount: number;
+  currentAdultsCount: number;
+  currentPillboxPlanCount: number;
 }
 
 export interface FamilyAccessPolicy {

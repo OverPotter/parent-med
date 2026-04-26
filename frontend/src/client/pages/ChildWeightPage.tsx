@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import {
   createWeightEntry,
   fetchLatestWeightEntryByChildId,
@@ -13,9 +14,12 @@ import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import { canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { MeasurementCard } from "@client/components/MeasurementCard";
 import { getChildrenCopy } from "@client/i18n/children";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { formatChildDate } from "@client/utils/childDateFormat";
 import { buildMeasurementTrend, formatDecimal, parseMeasurement } from "./measurementUtils";
 
@@ -26,13 +30,28 @@ export function ChildWeightPage() {
   const { childId } = useParams<{ childId: string }>();
   const isIosShell = useIsIosShell();
   const navigate = useNavigate();
+  const accountId = useAppStore((s) => s.accountId);
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [weightValue, setWeightValue] = useState("");
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const parsedWeight = parseMeasurement(weightValue);
   const canViewWeight = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    staleTime: 60 * 1000,
+  });
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
@@ -74,6 +93,7 @@ export function ChildWeightPage() {
   if (isLoading || !child) {
     return <p className="text-sm text-muted">{common.loading}</p>;
   }
+  const planLocksChildActions = isChildLockedByPlan(child.id, familyAccess);
 
   return (
     <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-6">
@@ -87,6 +107,19 @@ export function ChildWeightPage() {
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
         title={`${copy.weightCardTitle} · ${child.name}`}
         hint={copy.measurementsSectionSubtitle}
+      />
+      <UpgradeDialog
+        isOpen={isUpgradeDialogOpen}
+        language={language}
+        entryPoint="child_actions_locked"
+        isPending={isUpgradePending}
+        canUpgrade={canManageSubscription}
+        onClose={() => setIsUpgradeDialogOpen(false)}
+        onUpgrade={() => {
+          void upgradeToPlus().then(() => {
+            setIsUpgradeDialogOpen(false);
+          });
+        }}
       />
 
       <div
@@ -118,6 +151,8 @@ export function ChildWeightPage() {
           actionLabel={copy.weightAdd}
           isPending={addWeightMutation.isPending}
           isSubmitDisabled={parsedWeight === null}
+          isLocked={planLocksChildActions}
+          onLockedSubmit={() => setIsUpgradeDialogOpen(true)}
           onInputChange={setWeightValue}
           onSubmit={() => addWeightMutation.mutate()}
           history={weightHistory.map((entry) => ({

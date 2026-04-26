@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { fetchMyFamilyAccess, fetchMyFamilyMembers } from "@shared/api/families";
 import { fetchPillboxPlan, fetchPillboxPlans } from "@shared/api/pillboxPlans";
-import { fetchMyFamilyMembers } from "@shared/api/families";
 import { getEligiblePillboxRecipients } from "@shared/familyAccess/recipients";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -10,6 +10,8 @@ import { canActPillbox, canEditPillbox, canViewPillbox } from "@shared/permissio
 import { useAppStore } from "@shared/store/useAppStore";
 import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { PillboxAnalyticsScreen } from "./pillbox/analytics";
 import { PillboxMedicationScreen } from "./pillbox/medicationScreen";
 import {
@@ -69,6 +71,7 @@ export function PillboxPage() {
   );
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [savePlanError, setSavePlanError] = useState<string | null>(null);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const screen =
     searchParams.get("mode") === "setup" ||
     searchParams.get("mode") === "medication" ||
@@ -97,13 +100,31 @@ export function PillboxPage() {
   const activeMedication =
     draft?.medications.find((medication) => medication.id === activeMedicationId) ?? null;
   const canSaveMedication = Boolean(editorTitle.trim());
-
   const { data: familyMembers = [] } = useQuery({
     queryKey: ["families", "me", "members", currentFamilyId],
     queryFn: fetchMyFamilyMembers,
     enabled: Boolean(currentFamilyId && canSeePillbox),
     staleTime: 5 * 60 * 1000,
   });
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId && canSeePillbox),
+    staleTime: 60 * 1000,
+  });
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
+  const pillboxPlanLimitReached =
+    screen !== "details" &&
+    screen !== "analytics" &&
+    (!selectedPlanId || selectedPlanId === "new") &&
+    familyAccess?.maxPillboxPlans !== null &&
+    familyAccess?.maxPillboxPlans !== undefined &&
+    familyAccess.currentPillboxPlanCount >= familyAccess.maxPillboxPlans;
   const eligiblePillboxMembers = useMemo(
     () => getEligiblePillboxRecipients(familyMembers),
     [familyMembers]
@@ -417,6 +438,8 @@ export function PillboxPage() {
   } = usePillboxMutations({
     language,
     currentFamilyId,
+    currentPillboxPlanLimitReached: Boolean(pillboxPlanLimitReached),
+    onPlanLimitReached: () => setIsUpgradeDialogOpen(true),
     queryClient,
     setSavePlanError,
     setPlanActionError,
@@ -748,7 +771,7 @@ export function PillboxPage() {
         <p className="mt-2 text-muted">
           {language === "ru"
             ? "Администратор семьи ещё не выдал вам доступ к приёмам."
-            : "Your family admin has not granted access to medication plans yet."}
+            : "A family admin has not granted access to medication plans yet."}
         </p>
       </div>
     );
@@ -830,38 +853,53 @@ export function PillboxPage() {
 
   if (screen === "setup" && draft) {
     return (
-      <PillboxSetupScreen
-        language={language}
-        draft={draft}
-        familyMembers={eligiblePillboxMembers}
-        currentAccountId={accountId}
-        canSavePlan={canSavePlan}
-        saveBlockedReason={saveBlockedReason}
-        saveAttempted={saveAttempted}
-        savePlanError={savePlanError}
-        isEditing={isEditing}
-        onBack={goBackToHub}
-        onAddMedication={addMedication}
-        onOpenMedication={goToMedication}
-        onRequestDeleteMedication={requestDeleteMedication}
-        onTitleChange={(value) =>
-          setDraft((current) => (current ? { ...current, title: value } : current))
-        }
-        onToggleMember={(memberIds) =>
-          setDraft((current) => {
-            if (!current) return current;
-            return {
-              ...current,
-              members: memberIds,
-            };
-          })
-        }
-        onSavePlan={saveGroup}
-        recipientsSummary={pillboxRecipientsSummary}
-        deleteTarget={deleteTarget}
-        onConfirmDelete={confirmDelete}
-        onCloseDeleteDialog={() => setDeleteTarget(null)}
-      />
+      <>
+        <PillboxSetupScreen
+          language={language}
+          draft={draft}
+          familyMembers={eligiblePillboxMembers}
+          currentAccountId={accountId}
+          canSavePlan={canSavePlan}
+          saveBlockedReason={saveBlockedReason}
+          saveAttempted={saveAttempted}
+          savePlanError={savePlanError}
+          isEditing={isEditing}
+          onBack={goBackToHub}
+          onAddMedication={addMedication}
+          onOpenMedication={goToMedication}
+          onRequestDeleteMedication={requestDeleteMedication}
+          onTitleChange={(value) =>
+            setDraft((current) => (current ? { ...current, title: value } : current))
+          }
+          onToggleMember={(memberIds) =>
+            setDraft((current) => {
+              if (!current) return current;
+              return {
+                ...current,
+                members: memberIds,
+              };
+            })
+          }
+          onSavePlan={saveGroup}
+          recipientsSummary={pillboxRecipientsSummary}
+          deleteTarget={deleteTarget}
+          onConfirmDelete={confirmDelete}
+          onCloseDeleteDialog={() => setDeleteTarget(null)}
+        />
+        <UpgradeDialog
+          isOpen={isUpgradeDialogOpen}
+          language={language}
+          entryPoint="second_pillbox_plan"
+          isPending={isUpgradePending}
+          canUpgrade={canManageSubscription}
+          onClose={() => setIsUpgradeDialogOpen(false)}
+          onUpgrade={() => {
+            void upgradeToPlus().then(() => {
+              setIsUpgradeDialogOpen(false);
+            });
+          }}
+        />
+      </>
     );
   }
 

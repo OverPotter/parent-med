@@ -8,9 +8,12 @@
 - [x] Enforce backend free-plan limits on invites
 - [x] Enforce backend free-plan limits on child count
 - [x] Enforce backend free-plan limits on pillbox plans
-- [ ] Add billing tables: `plans`, `subscriptions`, `billing_events`
-- [ ] Add stub billing flow for local development
-- [ ] Add frontend paylocked states and shared paywall
+- [x] Add billing tables: `plans`, `subscriptions`, `billing_events`
+- [x] Add stub billing flow for local development
+- [x] Add initial frontend access wiring and paylocked states
+- [x] Add shared paywall UX
+- [x] Add downgrade-safe child access model for `Free`
+- [x] Preserve active illness flows after downgrade
 - [ ] Add Apple IAP and RevenueCat integration
 - [ ] Add landing pricing page
 
@@ -20,12 +23,59 @@
 - [x] Backend subscription access layer added via `SubscriptionAccessService`
 - [x] Access payload exposed via `GET /families/me/access`
 - [x] Free-plan backend limits added for invites, children, and pillbox plans
+- [x] Billing foundation added:
+  - migration `062_add_billing_foundation.py`
+  - entities for `Plan`, `Subscription`, `BillingEvent`
+  - SQLAlchemy models and repositories for billing tables
+- [x] Local stub billing flow added:
+  - `BillingService`
+  - `POST /api/v1/billing/debug/apply`
+  - `POST /api/v1/billing/debug/reset-free`
+- [x] Initial frontend access wiring and paylocked states added:
+  - frontend fetches `GET /families/me/access`
+  - family invite action is locked in `Free`
+  - `Live Activities` settings are locked in `Free`
+  - second child creation is blocked in `Free`
+  - second pillbox plan creation is blocked in `Free`
+- [x] Shared upgrade flow added:
+  - reusable `UpgradeDialog`
+  - reusable dev upgrade hook wired to local stub billing
+  - upgrade entry points connected in family, child create, pillbox, and settings
+- [x] Downgrade-safe child access model added:
+  - migration `063_add_free_primary_child.py`
+  - `children.created_at` persisted for stable ordering
+  - `families.free_primary_child_id` stores the one child that stays fully active in `Free`
+  - after downgrade from `Plus`, all children remain visible
+  - child-level mutations are locked only for non-primary children
+- [x] Active illness continuation after downgrade added:
+  - non-primary child can finish an already active illness episode after downgrade
+  - new illness episode creation for non-primary child stays blocked in `Free`
+  - temperature, administrations, comments, and episode medication plans stay available only while that episode is active
+  - after the episode is closed, non-primary child returns to normal `Free` locked state
+- [x] Provider-agnostic billing sync foundation added:
+  - normalized provider sync DTO in billing service
+  - shared subscription lifecycle reused for debug and future RevenueCat/App Store sync
+  - `trialing` status supported end-to-end in family snapshots and premium policy
+- [ ] RevenueCat production wiring finish:
+  - backend `provider-sync` route is added
+  - frontend native RevenueCat runtime/init/sync scaffold is added
+  - native iOS bridge/plugin scaffold is added
+  - local test keys are wired in env for sandbox smoke tests
+  - dev-only `RevenueCat sandbox` section is added in Settings for `configure / offerings / purchase / restore / snapshot`
+  - backend sync is explicitly gateable via `VITE_REVENUECAT_SYNC_BACKEND` and is currently disabled for isolated SDK testing
+  - pending: real product mapping confirmation, iOS package resolution, sandbox purchase verification
 - [x] Covered by targeted backend tests:
   - `backend/tests/test_subscription_access_service.py`
   - `backend/tests/test_family_service.py`
   - `backend/tests/test_child_service.py`
   - `backend/tests/test_family_invite_service.py`
   - `backend/tests/test_family_access_services.py`
+  - `backend/tests/test_billing_service.py`
+- [x] Covered by targeted frontend tests:
+  - `frontend/test/familySubscriptionAccess.test.ts`
+  - `frontend/test/upgradeDialogCopy.test.ts`
+  - `npm test -- --runInBand` passed with `80` tests
+  - `npm run build` passed
 
 ## Goal
 
@@ -65,6 +115,141 @@ Core principles:
 - `CSV export`
 - `Live Activities`
 
+## Downgrade Logic Matrix
+
+This section is the source of truth for mobile downgrade behavior after `Plus` expires.
+
+### Core Rule
+
+- `Free` fully supports exactly one child
+- after downgrade, one child remains the `free_primary_child`
+- every other child stays visible, but child-level actions are restricted by the rules below
+
+### Children Module
+
+#### Free, normal case
+
+- one child is fully usable
+- create child, edit child, feeding, sleep, illness, measurements all work for the `free_primary_child`
+
+#### Downgrade from Plus with more than one child
+
+- all children remain visible
+- one `free_primary_child` remains fully active
+- all other children become locked for normal child-level actions
+- history and read-only screens stay visible for all children
+
+#### Locked child behavior
+
+For non-primary children after downgrade:
+
+- profile overview remains visible
+- illness history remains visible
+- weight history remains visible
+- height history remains visible
+- calendar / overview remains visible
+- editing the profile is locked
+- starting a new illness observation is locked
+- starting new feeding is locked
+- starting new sleep tracking is locked
+- adding new weight entry is locked
+- adding new height entry is locked
+
+Implementation status:
+
+- enforced on backend for child-scoped mutations
+- enforced on frontend with paylocked UI and route guards
+- visibility remains read-only for overview and history screens
+
+### Illness Journal
+
+#### Free, normal case
+
+- the `free_primary_child` can start, continue, and close illness observations
+
+#### Downgrade with active illness on a non-primary child
+
+- an already active illness observation must not be interrupted
+- the family may continue the active illness until completion
+- the family may close the active illness
+- inside that active illness, the following stay available:
+  - temperature logging
+  - administration logging
+  - illness notes/comments
+  - illness reminder plans inside the active episode
+
+#### After active illness is closed on a non-primary child
+
+- starting a new illness observation becomes locked again
+- the child returns to normal non-primary `Free` locked behavior
+
+### Feeding And Sleep
+
+#### Downgrade with active feeding or active sleep on a non-primary child
+
+- active feeding must be stopped
+- active sleep must be stopped
+- after stop, feeding and sleep actions become locked again
+- this stop does not keep the child generally active
+- only active illness gets continuation treatment after downgrade
+
+Implementation status:
+
+- enforced on backend during family subscription downgrade/snapshot sync
+- active non-primary feeding is auto-finished
+- active non-primary sleep is auto-finished
+- frontend remains responsible for locked UI after the backend state changes
+
+#### Why this differs from illness
+
+- illness is a higher-priority care flow and should be allowed to finish
+- feeding and sleep timers are operational trackers, not long-lived treatment flows
+- therefore they are force-finished and then locked
+
+### Summary Rules
+
+- `free_primary_child` keeps full access
+- non-primary children remain visible
+- non-primary children cannot start new premium child flows
+- active illness may be finished for non-primary children
+- active feeding and active sleep do not get continuation rights after downgrade
+
+## Subscription Ownership Rules
+
+- the subscription is family-scoped
+- the family has one stable `owner`
+- the `owner` is the account that created the family
+- only the `owner` may purchase, restore, renew, cancel, or otherwise manage the family subscription
+- only the `owner` may create and share family invite links
+- `admin` may manage family operations and member access, but may not manage billing
+- `member` may use the unlocked features, but may not manage billing
+- the first successful `Plus` purchase belongs to the `owner`, not to an arbitrary admin
+- every later billing action must come from the same `owner`
+
+Deletion and exit rules:
+
+- the active `owner` account must not be deletable while the family subscription is attached
+- only the `owner` may delete the family
+- the family itself may not be deleted while the subscription is still active or still in an access-grace state; deletion is allowed only after the family returns to `Free`
+- if ownership transfer is needed in the future, it must be an explicit product flow; until then, prevent owner deletion instead of auto-moving subscription ownership
+
+## Family Roles
+
+- `owner`
+  - created the family
+  - controls billing
+  - may delete the family
+  - may also manage members and access
+- `admin`
+  - may invite members
+  - may manage member roles and access
+  - may not manage billing
+  - may not delete the family
+- `member`
+  - may use features according to granted access
+  - may not manage billing
+  - may not manage the family
+
 ## Domain Model
 
 - `user` = one person with one account
@@ -79,6 +264,7 @@ Important rule:
 
 Keep these fields on `families` as a denormalized snapshot:
 
+- `owner_account_id`
 - `billing_account_id`
 - `plan_code`
 - `subscription_status`
@@ -413,12 +599,17 @@ When `Plus` expires:
 - keep history visible
 - block creation of new premium-only entities
 - keep over-limit data readable
-- optionally restrict some edits over free limits
+- keep one explicit `free_primary_child_id` fully active for child-level actions
+- lock child-level mutations for all other children
+- keep already active illness episodes finishable even for non-primary children
 - show a clear upgrade state
 
 Example:
 - family has 3 children and subscription expires
 - all 3 remain visible
+- one primary child keeps full child-level access in `Free`
+- the other 2 children keep history, overview, analytics, growth, and illness visibility
+- editing profile, starting observations, feeding, and sleep actions are paylocked for the non-primary children
 - adding a 4th child is blocked
 - paywall explains that `Plus` is required to continue expanding
 

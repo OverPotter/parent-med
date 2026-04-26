@@ -36,6 +36,8 @@ export function ChildCard({
   hasActiveEpisode,
   canActChild,
   canEditChild,
+  planLocksChildActions,
+  onLockedActionAttempt,
   currentAccountId,
   copy,
   language,
@@ -52,6 +54,8 @@ export function ChildCard({
   hasActiveEpisode: boolean;
   canActChild: boolean;
   canEditChild: boolean;
+  planLocksChildActions: boolean;
+  onLockedActionAttempt: () => void;
   currentAccountId: string | null;
   copy: ReturnType<typeof getChildrenCopy>["childrenPage"];
   language: "ru" | "en";
@@ -192,6 +196,11 @@ export function ChildCard({
                     !canActChild || (activeFeeding ? !isActiveFeedingOwnedByCurrentAccount : false)
                   }
                   onClick={(event) => {
+                    if (planLocksChildActions) {
+                      event.preventDefault();
+                      onLockedActionAttempt();
+                      return;
+                    }
                     if (!canActChild && !activeFeeding) {
                       event.preventDefault();
                       return;
@@ -217,6 +226,10 @@ export function ChildCard({
                   type="button"
                   data-live-action-target={`sleep:${child.id}`}
                   onClick={() => {
+                    if (planLocksChildActions) {
+                      onLockedActionAttempt();
+                      return;
+                    }
                     if (!canActChild && !activeSleep) {
                       return;
                     }
@@ -231,6 +244,7 @@ export function ChildCard({
                   }}
                   disabled={
                     sleepMutation.isPending ||
+                    planLocksChildActions ||
                     (!canActChild && !activeSleep) ||
                     (!!activeSleep && !isActiveSleepOwnedByCurrentAccount)
                   }
@@ -251,8 +265,17 @@ export function ChildCard({
             <div>
               <button
                 type="button"
-                onClick={onStartEpisode}
-                disabled={isStartingEpisode || !canEditChild}
+                onClick={() => {
+                  if (planLocksChildActions && !hasActiveEpisode) {
+                    onLockedActionAttempt();
+                    return;
+                  }
+                  onStartEpisode();
+                }}
+                disabled={
+                  isStartingEpisode ||
+                  (!hasActiveEpisode && !canEditChild && !planLocksChildActions)
+                }
                 className={`${hasActiveEpisode ? activeQuickActionClass : quickActionClass} w-full disabled:opacity-50`}
               >
                 {hasActiveEpisode

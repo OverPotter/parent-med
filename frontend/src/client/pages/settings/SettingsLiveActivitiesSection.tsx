@@ -9,6 +9,8 @@ export function SettingsLiveActivitiesSection({
   feedingEnabled,
   illnessEnabled,
   disabled = false,
+  lockedReason = null,
+  onLockedPress,
   onSleepToggle,
   onFeedingToggle,
   onIllnessToggle,
@@ -19,6 +21,8 @@ export function SettingsLiveActivitiesSection({
   feedingEnabled: boolean;
   illnessEnabled: boolean;
   disabled?: boolean;
+  lockedReason?: string | null;
+  onLockedPress?: () => void;
   onSleepToggle: (enabled: boolean) => void;
   onFeedingToggle: (enabled: boolean) => void;
   onIllnessToggle: (enabled: boolean) => void;
@@ -92,6 +96,20 @@ export function SettingsLiveActivitiesSection({
       title={tSettings(language, "liveActivities")}
       hint={tSettings(language, "liveActivitiesHint")}
     >
+      {lockedReason ? (
+        <div className="mx-4 mb-2 rounded-[18px] border border-primary/20 bg-primary/8 px-4 py-3">
+          <p className="text-sm font-medium text-primary">{lockedReason}</p>
+          {onLockedPress ? (
+            <button
+              type="button"
+              onClick={onLockedPress}
+              className="mt-3 inline-flex min-h-[2.35rem] items-center rounded-full border border-primary/18 bg-white/80 px-3 text-[0.78rem] font-semibold text-primary shadow-[0_10px_22px_rgba(15,23,42,0.08)]"
+            >
+              {language === "ru" ? "Открыть Plus" : "Unlock Plus"}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {preferenceRows.map((row, index) => (
         <LiveActivityPreferenceRow
           key={row.key}

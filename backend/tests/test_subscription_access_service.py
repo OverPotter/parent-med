@@ -98,6 +98,7 @@ async def test_returns_free_limits_for_inactive_family_subscription() -> None:
     family = Family(
         id=family_id,
         name="Family",
+        owner_account_id=owner.id,
         billing_account_id=owner.id,
         plan_code="free",
         subscription_status="inactive",
@@ -135,6 +136,7 @@ async def test_returns_plus_access_for_active_premium_family() -> None:
     family = Family(
         id=family_id,
         name="Family",
+        owner_account_id=owner.id,
         billing_account_id=owner.id,
         plan_code="plus",
         subscription_status="active",
@@ -184,6 +186,7 @@ async def test_non_admin_member_gets_shared_plus_without_management_rights() -> 
     family = Family(
         id=family_id,
         name="Family",
+        owner_account_id=owner.id,
         billing_account_id=owner.id,
         plan_code="plus",
         subscription_status="grace",

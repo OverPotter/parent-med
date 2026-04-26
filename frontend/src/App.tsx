@@ -24,6 +24,7 @@ import {
 } from "@/app/runtime/sync";
 import { NativePushNavigationSync } from "@/app/push/sync";
 import { ClientRuntimeMount } from "@/app/runtime/ClientRuntimeMount";
+import { RevenueCatSync } from "@/app/billing/revenueCatSync";
 import { IOSBackSwipeZone } from "@/app/mobile/ios/IOSBackSwipeZone";
 import {
   IOSKeyboardViewportSync,
@@ -344,6 +345,7 @@ export default function App() {
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <AuthSync />
+      <RevenueCatSync />
       <DisplayNameOnboardingOverlay />
       {role !== "admin" ? <NativePushNavigationSync /> : null}
       <ClientRuntimeMount enabled={shouldMountClientRuntime} />

@@ -62,12 +62,14 @@ class StubFamilyRepository:
         *,
         plan_code: str = "free",
         subscription_status: str = "inactive",
+        free_primary_child_id=None,  # noqa: ANN001
     ) -> None:
         self.family = Family(
             id=family_id,
             name="Family",
             plan_code=plan_code,
             subscription_status=subscription_status,
+            free_primary_child_id=free_primary_child_id,
         )
 
     async def get_by_id(self, id):  # noqa: ANN001
@@ -1462,6 +1464,34 @@ async def test_sleep_delete_requires_session_initiator_for_active_session() -> N
 
 
 @pytest.mark.asyncio
+async def test_sleep_start_is_blocked_for_non_primary_child_after_downgrade() -> None:
+    family_id = uuid4()
+    primary_child_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(all_children=True, children_access="edit"),
+    )
+    child = Child(
+        id=uuid4(),
+        family_id=family_id,
+        name="Маша",
+        birth_date=None,
+        baby_mode_enabled=True,
+    )
+    service = SleepSessionService(
+        sleep_repo=StubSleepSessionRepository([]),
+        child_repo=StubChildRepository([child]),
+        family_repo=StubFamilyRepository(
+            family_id,
+            free_primary_child_id=primary_child_id,
+        ),
+    )
+
+    with pytest.raises(ForbiddenError, match="Во Free для этого ребёнка"):
+        await service.start(SleepSessionCreateDto(child_id=child.id), account)
+
+
+@pytest.mark.asyncio
 async def test_feeding_stop_requires_record_initiator() -> None:
     family_id = uuid4()
     owner_account = build_account(
@@ -1666,3 +1696,43 @@ async def test_feeding_delete_requires_record_initiator_for_active_record() -> N
 
     with pytest.raises(ForbiddenError, match="только тот, кто его запустил"):
         await service.delete(record.id, other_account)
+
+
+@pytest.mark.asyncio
+async def test_feeding_create_is_blocked_for_non_primary_child_after_downgrade() -> None:
+    family_id = uuid4()
+    primary_child_id = uuid4()
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(all_children=True, children_access="edit"),
+    )
+    child = Child(
+        id=uuid4(),
+        family_id=family_id,
+        name="Маша",
+        birth_date=None,
+        baby_mode_enabled=True,
+    )
+    service = FeedingRecordService(
+        feeding_repo=StubFeedingRecordRepository([]),
+        child_repo=StubChildRepository([child]),
+        family_repo=StubFamilyRepository(
+            family_id,
+            free_primary_child_id=primary_child_id,
+        ),
+    )
+
+    with pytest.raises(ForbiddenError, match="Во Free для этого ребёнка"):
+        await service.create(
+            FeedingRecordCreateDto(
+                child_id=child.id,
+                feeding_type="breast",
+                breast_side="left",
+                is_expressed=False,
+                formula_volume_ml=None,
+                duration_minutes=None,
+                recorded_at=None,
+                note=None,
+            ),
+            account,
+        )

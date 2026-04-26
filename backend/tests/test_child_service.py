@@ -40,6 +40,10 @@ class StubFamilyRepository:
     async def get_by_id(self, id):  # noqa: ANN001
         return self.family if self.family.id == id else None
 
+    async def update(self, entity: Family) -> Family:
+        self.family = entity
+        return entity
+
 
 def make_service(
     *,

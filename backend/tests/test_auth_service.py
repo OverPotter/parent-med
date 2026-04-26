@@ -14,7 +14,7 @@ from src.application.dto.auth import (
     UpdateRecoveryCodeDto,
 )
 from src.application.services.auth_service import AuthService
-from src.core.exceptions import UnauthorizedError, ValidationError
+from src.core.exceptions import ForbiddenError, UnauthorizedError, ValidationError
 from src.core.security import decode_access_token, hash_password, hash_session_token, verify_password
 from src.domain.entities.account import Account
 from src.domain.entities.account_identity import DEFAULT_ACCOUNT_DISPLAY_NAME
@@ -92,6 +92,10 @@ class StubFamilyRepository:
         return self.family if id == self.family.id else None
 
     async def add(self, entity):  # noqa: ANN001
+        self.family = entity
+        return entity
+
+    async def update(self, entity):  # noqa: ANN001
         self.family = entity
         return entity
 
@@ -203,6 +207,24 @@ async def test_signup_with_invite_joins_existing_family() -> None:
     assert result.account.needs_profile_completion is True
     assert result.account.has_recovery_code is False
     assert result.account.email == "dad@example.com"
+
+
+@pytest.mark.asyncio
+async def test_signup_creates_family_owner_for_new_family() -> None:
+    initial_family = Family(id=uuid4(), name="Моя семья")
+    family_repo = StubFamilyRepository(initial_family)
+    service = AuthService(
+        account_repo=StubAccountRepository(),
+        session_repo=StubSessionRepository(),
+        family_repo=family_repo,
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    result = await service.signup(RegisterDto(email="mom@example.com", password="password123"))
+
+    assert result.account.family_role == "admin"
+    assert result.family.owner_account_id == result.account.id
+    assert family_repo.family.owner_account_id == result.account.id
 
 
 @pytest.mark.asyncio
@@ -726,3 +748,61 @@ async def test_refresh_returns_access_token_with_current_session_version_and_fam
 
     assert payload["sv"] == 3
     assert payload["family_id"] == str(family.id)
+
+
+@pytest.mark.asyncio
+async def test_delete_family_requires_owner() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    account_repo = StubAccountRepository()
+    owner = build_account(
+        family_id=family.id,
+        email="owner@example.com",
+        display_name="Владелец",
+        family_role="owner",
+    )
+    member = build_account(
+        family_id=family.id,
+        email="member@example.com",
+        display_name="Участник",
+        family_role="member",
+    )
+    family.owner_account_id = owner.id
+    await account_repo.add(owner)
+    await account_repo.add(member)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    with pytest.raises(ForbiddenError, match="Только владелец семьи может удалить семью"):
+        await service.delete_family(member.id)
+
+
+@pytest.mark.asyncio
+async def test_delete_family_is_blocked_while_subscription_is_active() -> None:
+    family = Family(
+        id=uuid4(),
+        name="Моя семья",
+        plan_code="plus",
+        subscription_status="active",
+    )
+    account_repo = StubAccountRepository()
+    owner = build_account(
+        family_id=family.id,
+        email="owner@example.com",
+        display_name="Владелец",
+        family_role="owner",
+    )
+    family.owner_account_id = owner.id
+    await account_repo.add(owner)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=StubFamilyInviteRepository(None),
+    )
+
+    with pytest.raises(ValidationError, match="Сначала отмените семейную подписку"):
+        await service.delete_family(owner.id)

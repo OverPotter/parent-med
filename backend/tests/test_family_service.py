@@ -84,6 +84,7 @@ async def test_list_members_for_account_returns_admin_first() -> None:
         cabinet_notify_1_day=True,
         created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
     )
+    family.owner_account_id = owner.id
     adult = Account(
         id=uuid4(),
         email="dad@example.com",
@@ -191,6 +192,53 @@ async def test_delete_member_revokes_sessions() -> None:
 
     assert session_repo.deleted_account_ids == [adult.id]
     assert all(account.id != adult.id for account in account_repo.accounts)
+
+
+@pytest.mark.asyncio
+async def test_delete_member_rejects_family_owner() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    family.owner_account_id = owner.id
+    second_admin = Account(
+        id=uuid4(),
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="admin",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, second_admin]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    with pytest.raises(ValidationError, match="владельца семьи"):
+        await service.delete_member_for_account(
+            member_account_id=owner.id,
+            current_account_id=second_admin.id,
+            current_family_id=family.id,
+            current_family_role="admin",
+        )
 
 
 @pytest.mark.asyncio

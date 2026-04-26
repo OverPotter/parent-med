@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Date, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -30,8 +30,17 @@ class ChildModel(Base):
     doctor_phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     allergies: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
 
-    family: Mapped["FamilyModel"] = relationship("FamilyModel", back_populates="children")
+    family: Mapped["FamilyModel"] = relationship(
+        "FamilyModel",
+        back_populates="children",
+        foreign_keys=[family_id],
+    )
     weight_entries: Mapped[list] = relationship(
         "WeightEntryModel",
         back_populates="child",

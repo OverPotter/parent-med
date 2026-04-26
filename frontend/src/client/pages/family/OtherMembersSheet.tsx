@@ -7,12 +7,14 @@ export function OtherMembersSheet({
   language,
   isOpen,
   members,
+  familyOwnerAccountId,
   onClose,
   onSelectMember,
 }: {
   language: AppLanguage;
   isOpen: boolean;
   members: FamilyMember[];
+  familyOwnerAccountId?: string | null;
   onClose: () => void;
   onSelectMember: (memberId: string) => void;
 }) {
@@ -58,7 +60,10 @@ export function OtherMembersSheet({
                     {member.displayName || tFamily(language, "noName")}
                   </span>
                   <span className="mt-1 block text-[0.82rem] leading-5 text-muted">
-                    {member.relationshipLabel || roleLabel(member.familyRole, language)}
+                    {member.relationshipLabel ||
+                      roleLabel(member.familyRole, language, {
+                        isOwner: familyOwnerAccountId === member.id,
+                      })}
                   </span>
                 </span>
                 <span className="soft-choice-check text-muted">→</span>

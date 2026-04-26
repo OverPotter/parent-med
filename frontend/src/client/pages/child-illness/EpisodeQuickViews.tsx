@@ -661,7 +661,7 @@ export function ReminderListQuickView(props: {
   canEditEpisode: boolean;
   administrations: AdministrationEvent[];
   onOpen: (planId: string) => void;
-  onTakeDose: (plan: EpisodeMedicationPlan) => void;
+  onTakeDose?: (plan: EpisodeMedicationPlan) => void;
   isSubmittingAdministration: boolean;
   isUpdatingRecipients: boolean;
   onChangeRecipients: (memberIds: string[]) => void;
@@ -757,7 +757,7 @@ export function ReminderDetailQuickView(props: {
   isDeleting: boolean;
   errorDetail: string | null;
   onEditingChange: (nextIsEditing: boolean, planName: string | null) => void;
-  onTakeDose: (plan: EpisodeMedicationPlan) => void;
+  onTakeDose?: (plan: EpisodeMedicationPlan) => void;
   onUpdate: (
     planId: string,
     payload: MedicationPlanPayload

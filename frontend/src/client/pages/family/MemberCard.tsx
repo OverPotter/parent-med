@@ -10,6 +10,7 @@ import { ProfileEditDialog } from "./ProfileEditDialog";
 
 export interface MemberCardProps {
   member: FamilyMember;
+  familyOwnerAccountId?: string | null;
   isCurrent: boolean;
   forceEdit: boolean;
   canManageAccess: boolean;
@@ -31,6 +32,7 @@ export interface MemberCardProps {
 
 export function MemberCard({
   member,
+  familyOwnerAccountId = null,
   isCurrent,
   forceEdit,
   canManageAccess,
@@ -45,6 +47,7 @@ export function MemberCard({
   onSaveProfile,
   onHideForcedEdit,
 }: MemberCardProps) {
+  const isOwner = familyOwnerAccountId === member.id;
   const canDemote = member.familyRole === "admin" && adminsCount > 1 && !isCurrent;
   const canPromote = member.familyRole !== "admin" && !isCurrent;
   const canDelete = !isCurrent;
@@ -127,10 +130,10 @@ export function MemberCard({
             )}
             <span
               className={`rounded-full px-2.5 py-1 text-[11px] ${
-                member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill"
+                isOwner || member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill"
               }`}
             >
-              {roleLabel(member.familyRole, language)}
+              {roleLabel(member.familyRole, language, { isOwner })}
             </span>
             {isCurrent && (
               <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">

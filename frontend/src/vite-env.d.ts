@@ -14,4 +14,12 @@ interface ImportMetaEnv {
   readonly VITE_MARKETING_SITE_URL?: string;
   /** Полный URL скрипта HitKeep, например http://localhost:8080/hk.js. Без переменной аналитика отключена. */
   readonly VITE_HITKEEP_SCRIPT_URL?: string;
+  /** Public iOS SDK key from RevenueCat project settings. */
+  readonly VITE_REVENUECAT_IOS_API_KEY?: string;
+  /** Enables backend entitlement sync from the native RevenueCat runtime. */
+  readonly VITE_REVENUECAT_SYNC_BACKEND?: string;
+  /** RevenueCat entitlement to sync into family access, defaults to "plus". */
+  readonly VITE_REVENUECAT_ENTITLEMENT_CODE?: string;
+  /** Optional preferred RevenueCat package id to purchase from the current offering. */
+  readonly VITE_REVENUECAT_DEFAULT_PACKAGE_ID?: string;
 }

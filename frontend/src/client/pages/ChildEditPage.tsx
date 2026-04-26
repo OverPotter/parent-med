@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteChild, fetchChild, updateChild } from "@shared/api/children";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import { DateField } from "@shared/components/DateField";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
@@ -9,6 +10,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { canEditChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { getLocalIsoDate } from "@shared/utils/date";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
@@ -35,6 +37,7 @@ export function ChildEditPage() {
   const { childId } = useParams<{ childId: string }>();
   const navigate = useNavigate();
   const isIosShell = useIsIosShell();
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
@@ -42,6 +45,13 @@ export function ChildEditPage() {
   const pageRef = useRef<HTMLDivElement | null>(null);
   const canEditProfile =
     !!childId && canEditChild(childId, accountFamilyRole, accountAccessPolicy);
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    staleTime: 60 * 1000,
+  });
+  const planLocksChildActions = childId ? isChildLockedByPlan(childId, familyAccess) : false;
 
   useEffect(() => {
     const page = pageRef.current;
@@ -90,7 +100,7 @@ export function ChildEditPage() {
     },
   });
 
-  if (!childId || !canEditProfile) {
+  if (!childId || !canEditProfile || planLocksChildActions) {
     return <Navigate to="/children" replace />;
   }
 

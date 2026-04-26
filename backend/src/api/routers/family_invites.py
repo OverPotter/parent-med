@@ -26,7 +26,6 @@ async def create_family_invite(
     return await service.create_for_account(
         current_account.family_id,
         current_account.id,
-        current_account.family_role,
         dto,
     )
 

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import { fetchActiveIllnessEpisodeByChildId } from "@shared/api/illnessEpisodes";
 import { fetchActiveFeedingRecordByChildId } from "@shared/api/feedingRecords";
 import { fetchActiveSleepSessionByChildId } from "@shared/api/sleepSessions";
@@ -23,8 +24,11 @@ import {
   canViewAnyChildren,
 } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { hasReachedChildLimit, isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import type { Child } from "@shared/types/api";
 import { getChildrenCopy } from "@client/i18n/children";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { ChildCard } from "./children/ChildCard";
 import { FeedingRecordDialog } from "./children/FeedingDialogs";
 import { childActionPrimaryClass, childActionSecondaryClass } from "./children/shared";
@@ -46,6 +50,7 @@ export function ChildrenPage() {
   const isDesktop = useIsDesktop();
   const isIosShell = useIsIosShell();
   const [feedingDialog, setFeedingDialog] = useState<FeedingDialogState | null>(null);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const [isChildrenAuxReady, setIsChildrenAuxReady] = useState(!isIosShell);
   const liveStatusQueryOptions = useLiveQueryOptions(isIosShell ? 60000 : 30000);
   const canSeeChildren = canViewAnyChildren(accountFamilyRole, accountAccessPolicy);
@@ -94,6 +99,19 @@ export function ChildrenPage() {
     enabled: !!currentFamilyId && canSeeChildren,
     ...liveStatusQueryOptions,
   });
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    staleTime: 60 * 1000,
+  });
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
+  const childLimitReached = hasReachedChildLimit(familyAccess);
 
   const activeEpisodeQueries = useQueries({
     queries: children.map((child) => ({
@@ -211,7 +229,13 @@ export function ChildrenPage() {
         action={
           <button
             type="button"
-            onClick={() => navigate("/children/new")}
+            onClick={() => {
+              if (childLimitReached) {
+                setIsUpgradeDialogOpen(true);
+                return;
+              }
+              navigate("/children/new");
+            }}
             className={[
               childActionPrimaryClass,
               "w-full sm:w-auto",
@@ -239,6 +263,19 @@ export function ChildrenPage() {
           onClose={() => setFeedingDialog(null)}
         />
       ) : null}
+      <UpgradeDialog
+        isOpen={isUpgradeDialogOpen}
+        language={language}
+        entryPoint="second_child"
+        isPending={isUpgradePending}
+        canUpgrade={canManageSubscription}
+        onClose={() => setIsUpgradeDialogOpen(false)}
+        onUpgrade={() => {
+          void upgradeToPlus().then(() => {
+            setIsUpgradeDialogOpen(false);
+          });
+        }}
+      />
 
       {isLoading && <p className="text-muted">{common.loading}</p>}
       {error && (
@@ -253,7 +290,13 @@ export function ChildrenPage() {
             {canCreateChild ? (
               <button
                 type="button"
-                onClick={() => navigate("/children/new")}
+                onClick={() => {
+                  if (childLimitReached) {
+                    setIsUpgradeDialogOpen(true);
+                    return;
+                  }
+                  navigate("/children/new");
+                }}
                 className={`${childActionPrimaryClass} w-full sm:w-auto`}
               >
                 {copy.addFirstChild}
@@ -303,6 +346,8 @@ export function ChildrenPage() {
                   hasActiveEpisode={!!activeEpisode}
                   canActChild={canAct}
                   canEditChild={canEdit}
+                  planLocksChildActions={isChildLockedByPlan(child.id, familyAccess)}
+                  onLockedActionAttempt={() => setIsUpgradeDialogOpen(true)}
                   currentAccountId={accountId}
                   copy={copy}
                   language={language}
@@ -322,7 +367,13 @@ export function ChildrenPage() {
               </div>
               <button
                 type="button"
-                onClick={() => navigate("/children/new")}
+                onClick={() => {
+                  if (childLimitReached) {
+                    setIsUpgradeDialogOpen(true);
+                    return;
+                  }
+                  navigate("/children/new");
+                }}
                 className={childActionSecondaryClass}
                 hidden={!canCreateChild}
               >

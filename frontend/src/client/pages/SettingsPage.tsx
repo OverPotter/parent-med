@@ -10,6 +10,7 @@ import {
   updateRecoveryCode,
 } from "@shared/api/auth";
 import { applySessionToClient, broadcastAuthLogout } from "@shared/api/client";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import {
   deletePushSubscription,
   fetchPushNotificationConfig,
@@ -45,10 +46,14 @@ import {
   syncLiveActivityPreferencesMirror,
 } from "@shared/utils/liveActivityPreferences";
 import { isRecoveryCodeValid, normalizeRecoveryCode } from "@shared/utils/recoveryCode";
+import { getRevenueCatIosApiKey } from "@shared/config/revenueCat";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { SettingsAppPreferencesSection } from "./settings/SettingsAppPreferencesSection";
 import { tSettings } from "./settings/copy";
 import { SettingsLiveActivitiesSection } from "./settings/SettingsLiveActivitiesSection";
 import { SettingsNotificationsSection } from "./settings/SettingsNotificationsSection";
+import { SettingsRevenueCatSection } from "./settings/SettingsRevenueCatSection";
 import { SettingsSecuritySection } from "./settings/SettingsSecuritySection";
 import { stopDisabledLiveActivities } from "@shared/utils/liveActivities";
 
@@ -67,6 +72,7 @@ export function SettingsPage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountHasRecoveryCode = useAppStore((s) => s.accountHasRecoveryCode);
   const setAccountProfile = useAppStore((s) => s.setAccountProfile);
@@ -85,6 +91,7 @@ export function SettingsPage() {
   const [isNativePushSettingsDialogOpen, setIsNativePushSettingsDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isRecoveryCodeDialogOpen, setIsRecoveryCodeDialogOpen] = useState(false);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const [isDeleteAccountConfirmOpen, setIsDeleteAccountConfirmOpen] = useState(false);
   const [isDeleteFamilyConfirmOpen, setIsDeleteFamilyConfirmOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -105,6 +112,10 @@ export function SettingsPage() {
   const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
   const isDevTestPushVisible =
     import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
+  const isRevenueCatTestVisible =
+    isNativeIos &&
+    isDevTestPushVisible &&
+    Boolean(getRevenueCatIosApiKey());
   const pushSupportIssue = getPushSupportIssue();
   const isPushEnabled = pushStatus === "enabled";
 
@@ -126,6 +137,18 @@ export function SettingsPage() {
     queryFn: fetchPushNotificationPreferences,
     staleTime: 5 * 60 * 1000,
   });
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", accountId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(accountId),
+    staleTime: 60 * 1000,
+  });
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
   const childrenPushEnabled = pushPreferences?.childrenEnabled ?? true;
   const pillboxPushEnabled = pushPreferences?.pillboxEnabled ?? true;
   const cabinetEarlyReminderEnabled =
@@ -139,6 +162,12 @@ export function SettingsPage() {
       : pushPreferences?.cabinetNotify3Days
         ? 3
         : null;
+  const canUseLiveActivities = familyAccess?.canUseLiveActivities ?? false;
+  const liveActivitiesLockedReason = !canUseLiveActivities
+    ? language === "ru"
+      ? "Live Activities доступны в Plus."
+      : "Live Activities are available in Plus."
+    : null;
 
   const updatePushPreferencesMutation = useMutation({
     mutationFn: (payload: {
@@ -774,11 +803,22 @@ export function SettingsPage() {
         sleepEnabled={liveActivitySettings.sleepEnabled}
         feedingEnabled={liveActivitySettings.feedingEnabled}
         illnessEnabled={liveActivitySettings.illnessEnabled}
-        disabled={!isNativeIos}
+        disabled={!isNativeIos || !canUseLiveActivities}
+        lockedReason={isNativeIos ? liveActivitiesLockedReason : null}
+        onLockedPress={
+          isNativeIos && liveActivitiesLockedReason ? () => setIsUpgradeDialogOpen(true) : undefined
+        }
         onSleepToggle={handleLiveActivitySleepToggle}
         onFeedingToggle={handleLiveActivityFeedingToggle}
         onIllnessToggle={handleLiveActivityIllnessToggle}
       />
+      {isRevenueCatTestVisible ? (
+        <SettingsRevenueCatSection
+          language={language}
+          accountId={accountId}
+          currentFamilyId={currentFamilyId}
+        />
+      ) : null}
       <div id="settings-notifications">
         <SettingsNotificationsSection
           language={language}
@@ -944,6 +984,19 @@ export function SettingsPage() {
         isPending={deleteFamilyMutation.isPending}
         onCancel={() => setIsDeleteFamilyConfirmOpen(false)}
         onConfirm={() => deleteFamilyMutation.mutate()}
+      />
+      <UpgradeDialog
+        isOpen={isUpgradeDialogOpen}
+        language={language}
+        entryPoint="live_activities"
+        isPending={isUpgradePending}
+        canUpgrade={canManageSubscription}
+        onClose={() => setIsUpgradeDialogOpen(false)}
+        onUpgrade={() => {
+          void upgradeToPlus().then(() => {
+            setIsUpgradeDialogOpen(false);
+          });
+        }}
       />
     </div>
   );

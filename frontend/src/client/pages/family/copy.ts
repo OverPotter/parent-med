@@ -22,7 +22,8 @@ export const familyCopy = {
     save: "Сохранить",
     cancel: "Отмена",
     membersTitle: "Участники семьи",
-    membersDescription: "Администраторы приглашают участников, меняют роли и настраивают доступ.",
+    membersDescription:
+      "Владелец семьи приглашает участников. Администраторы помогают управлять ролями и доступом.",
     yourProfileTitle: "Вы",
     yourProfileDescription: "Ваш профиль и ваши настройки внутри семьи.",
     otherMembersTitle: "Остальные участники",
@@ -32,7 +33,7 @@ export const familyCopy = {
     openAllMembers: "Открыть всех",
     noFamilyTitle: "Семья ещё не подключена",
     noFamilyDescription:
-      "Сейчас у вас нет семейного пространства. Попросите приглашение от администратора семьи или откройте ссылку-приглашение.",
+      "Сейчас у вас нет семейного пространства. Попросите приглашение у владельца семьи или откройте ссылку-приглашение.",
     noOtherMembers: "Кроме вас, в семье пока никого нет.",
     peopleShort: "чел.",
     membersLoading: "Загружаем участников…",
@@ -40,7 +41,7 @@ export const familyCopy = {
     inviteTitle: "Пригласить в приложение",
     inviteDescription:
       "Отправьте приглашение близкому. Он установит приложение или откроет ссылку и подключится к вашей семье под своим аккаунтом.",
-    ownerOnly: "Только для администратора",
+    ownerOnly: "Только для владельца семьи",
     creatingInvite: "Готовим приглашение…",
     createInvite: "Пригласить",
     newLink: "Новая ссылка",
@@ -51,7 +52,8 @@ export const familyCopy = {
     inviteShareFailed: "Не удалось открыть меню «Поделиться».",
     shareInvite: "Поделиться",
     copyInvite: "Скопировать ссылку",
-    owner: "Администратор",
+    familyOwner: "Владелец семьи",
+    admin: "Администратор",
     member: "Участник",
     noName: "Без имени",
     thisIsYou: "Это вы",
@@ -64,7 +66,7 @@ export const familyCopy = {
     removeFromFamily: "Удалить",
     confirmPromoteTitle: "Сделать участника администратором?",
     confirmPromoteDescription:
-      "Участник сможет приглашать людей, удалять участников и менять права доступа.",
+      "Участник сможет управлять ролями, участниками и правами доступа.",
     confirmPromoteAction: "Да, сделать админом",
     confirmDemoteTitle: "Снять права администратора?",
     confirmDemoteDescription: "Участник останется в семье, но потеряет права управления семьёй.",
@@ -143,7 +145,8 @@ export const familyCopy = {
     save: "Save",
     cancel: "Cancel",
     membersTitle: "Family members",
-    membersDescription: "Admins invite members, change roles, and manage access.",
+    membersDescription:
+      "The family owner invites members. Admins help manage roles and access.",
     yourProfileTitle: "You",
     yourProfileDescription: "Your profile and your settings inside the family.",
     otherMembersTitle: "Other members",
@@ -153,7 +156,7 @@ export const familyCopy = {
     openAllMembers: "Open all",
     noFamilyTitle: "No family connected yet",
     noFamilyDescription:
-      "You do not have a family workspace yet. Ask a family admin for an invite or open an invite link.",
+      "You do not have a family workspace yet. Ask the family owner for an invite or open an invite link.",
     noOtherMembers: "There is no one else in the family yet.",
     peopleShort: "people",
     membersLoading: "Loading members…",
@@ -161,7 +164,7 @@ export const familyCopy = {
     inviteTitle: "Invite to the app",
     inviteDescription:
       "Send an invite to a family member. They can install the app or open the link and join your family with their own account.",
-    ownerOnly: "Admins only",
+    ownerOnly: "Family owner only",
     creatingInvite: "Preparing invite…",
     createInvite: "Invite",
     newLink: "New link",
@@ -172,7 +175,8 @@ export const familyCopy = {
     inviteShareFailed: "Could not open the share sheet.",
     shareInvite: "Share",
     copyInvite: "Copy link",
-    owner: "Admin",
+    familyOwner: "Family owner",
+    admin: "Admin",
     member: "Member",
     noName: "No name",
     thisIsYou: "You",
@@ -185,7 +189,7 @@ export const familyCopy = {
     removeFromFamily: "Remove",
     confirmPromoteTitle: "Promote this member to admin?",
     confirmPromoteDescription:
-      "The member will be able to invite people, remove members, and manage access.",
+      "The member will be able to manage roles, members, and access permissions.",
     confirmPromoteAction: "Yes, make admin",
     confirmDemoteTitle: "Remove admin access?",
     confirmDemoteDescription:
@@ -242,7 +246,7 @@ export const familyCopy = {
     deleteMemberShort: "Remove",
     noFamilyAccessTitle: "No access",
     noFamilyAccessDescription:
-      "This member will not see children, pillbox, or the cabinet. A family admin can open access later.",
+      "This member will not see children, pillbox, or the cabinet. A family admin can reopen access later.",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
 
@@ -250,8 +254,15 @@ export function tFamily(language: AppLanguage, key: keyof (typeof familyCopy)["r
   return familyCopy[language][key];
 }
 
-export function roleLabel(role: string, language: AppLanguage): string {
-  return role === "admin" ? tFamily(language, "owner") : tFamily(language, "member");
+export function roleLabel(
+  role: string,
+  language: AppLanguage,
+  options?: { isOwner?: boolean }
+): string {
+  if (options?.isOwner) {
+    return tFamily(language, "familyOwner");
+  }
+  return role === "admin" ? tFamily(language, "admin") : tFamily(language, "member");
 }
 
 export function childrenAccessRoleLabel(

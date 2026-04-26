@@ -279,7 +279,7 @@ export const childrenCopy = {
         "Nothing is shown here yet. The family may not have children yet, or access has not been granted to you.",
       noAccessTitle: "No access to children",
       noAccessDescription:
-        "You cannot see children or their journal right now. Ask your family admin if access is needed.",
+        "You cannot see children or their journal right now. Ask a family admin if access is needed.",
       addFirstChild: "Add first child",
       addAnotherPromptTitle: "Need to add another child?",
       addAnotherPromptText: "",

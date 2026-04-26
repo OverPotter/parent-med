@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchMyFamilyMembers, updateFamilyMemberProfile } from "@shared/api/families";
+import { fetchFamilies, fetchMyFamilyMembers, updateFamilyMemberProfile } from "@shared/api/families";
 import { FullscreenOverlay } from "@shared/components/FullscreenOverlay";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
@@ -28,7 +28,8 @@ const accountCopy = {
     language: "Язык",
     theme: "Тема",
     notSet: "Не указано",
-    owner: "Администратор",
+    familyOwner: "Владелец семьи",
+    admin: "Администратор",
     member: "Участник",
     light: "День",
     dark: "Ночь",
@@ -60,7 +61,8 @@ const accountCopy = {
     language: "Language",
     theme: "Theme",
     notSet: "Not set",
-    owner: "Admin",
+    familyOwner: "Family owner",
+    admin: "Admin",
     member: "Member",
     light: "Day",
     dark: "Night",
@@ -101,15 +103,23 @@ export function AccountPage() {
     queryFn: fetchMyFamilyMembers,
     enabled: Boolean(accountId),
   });
+  const { data: families = [] } = useQuery({
+    queryKey: ["families", accountId],
+    queryFn: fetchFamilies,
+    enabled: Boolean(accountId),
+  });
 
   const currentMember = familyMembers.find((member) => member.id === accountId) ?? null;
+  const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
   const themeLabel = theme === "light" ? copy.light : theme === "dark" ? copy.dark : copy.auto;
   const roleLabel =
-    accountFamilyRole === "admin"
-      ? copy.owner
-      : accountFamilyRole === "member"
-        ? copy.member
-        : copy.notSet;
+    family?.ownerAccountId === accountId
+      ? copy.familyOwner
+      : accountFamilyRole === "owner" || accountFamilyRole === "admin"
+        ? copy.admin
+        : accountFamilyRole === "member"
+          ? copy.member
+          : copy.notSet;
 
   useEffect(() => {
     if (!isProfileDialogOpen) {

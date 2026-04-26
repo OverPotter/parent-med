@@ -16,7 +16,7 @@ const appBtnPrimaryClass =
   "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
 
 function roleLabel(role: string): string {
-  return role === "admin" ? "Администратор" : "Участник семьи";
+  return role === "admin" ? "Администратор семьи" : "Участник семьи";
 }
 
 export function JoinFamilyPage() {

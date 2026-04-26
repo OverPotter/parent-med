@@ -20,7 +20,7 @@ class FamilyPlanPolicy:
 
 
 PREMIUM_PLAN_CODES = {"plus", "pro"}
-ACTIVE_SUBSCRIPTION_STATUSES = {"active", "grace"}
+ACTIVE_SUBSCRIPTION_STATUSES = {"trialing", "active", "grace"}
 
 
 def is_premium_active(family: Family) -> bool:

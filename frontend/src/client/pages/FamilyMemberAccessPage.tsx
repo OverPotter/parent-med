@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { fetchChildrenByFamilyIdForManagement } from "@shared/api/children";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { fetchMyFamilyMembers } from "@shared/api/families";
+import { fetchFamilies, fetchMyFamilyMembers } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -27,6 +27,12 @@ export function FamilyMemberAccessPage() {
   const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const canManageFamily = currentAccountRole === "admin";
+  const { data: families = [] } = useQuery({
+    queryKey: ["families", accountId],
+    queryFn: fetchFamilies,
+    enabled: Boolean(accountId),
+  });
+  const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
   const [actionError, setActionError] = useState<string | null>(null);
   const [isPromoteConfirmOpen, setIsPromoteConfirmOpen] = useState(false);
   const [isDemoteConfirmOpen, setIsDemoteConfirmOpen] = useState(false);
@@ -213,6 +219,7 @@ export function FamilyMemberAccessPage() {
           <MemberAccessHeaderCard
             language={language}
             member={member}
+            familyOwnerAccountId={family?.ownerAccountId}
             accessSummaryItems={accessSummaryItems}
             hasHeaderActions={hasHeaderActions}
             canPromote={canPromote}

@@ -16,9 +16,19 @@ class FamilyModel(Base):
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    owner_account_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
     billing_account_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("accounts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    free_primary_child_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("children.id", ondelete="SET NULL"),
         nullable=True,
     )
     plan_code: Mapped[str] = mapped_column(String(32), nullable=False, default="free")
@@ -49,8 +59,20 @@ class FamilyModel(Base):
         "AccountModel",
         foreign_keys=[billing_account_id],
     )
+    owner_account: Mapped["AccountModel | None"] = relationship(
+        "AccountModel",
+        foreign_keys=[owner_account_id],
+    )
+    free_primary_child: Mapped["ChildModel | None"] = relationship(
+        "ChildModel",
+        foreign_keys=[free_primary_child_id],
+    )
     parents: Mapped[list] = relationship("ParentModel", back_populates="family")
-    children: Mapped[list] = relationship("ChildModel", back_populates="family")
+    children: Mapped[list] = relationship(
+        "ChildModel",
+        back_populates="family",
+        foreign_keys="ChildModel.family_id",
+    )
     household_medicines: Mapped[list] = relationship(
         "HouseholdMedicineModel", back_populates="family"
     )

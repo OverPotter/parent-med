@@ -8,13 +8,13 @@ from src.application.dto.family_invite import (
     FamilyInvitePreviewResponseDto,
     FamilyInviteResponseDto,
 )
+from src.application.services.subscription_policy import resolve_family_plan_policy
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.core.security import generate_session_token, hash_session_token
 from src.domain.entities.family_invite import FamilyInvite
-from src.domain.entities.family_roles import is_family_admin, normalize_family_role
+from src.domain.entities.family_roles import normalize_family_role
 from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.domain.repositories.family_repository import FamilyRepository
-from src.application.services.subscription_policy import resolve_family_plan_policy
 
 
 class FamilyInviteService:
@@ -35,14 +35,13 @@ class FamilyInviteService:
         self,
         family_id: UUID,
         current_account_id: UUID,
-        current_family_role: str,
         dto: FamilyInviteCreateDto,
     ) -> FamilyInviteResponseDto:
-        if not is_family_admin(current_family_role):
-            raise ForbiddenError("Только администратор семьи может приглашать новых участников")
         family = await self._family_repo.get_by_id(family_id)
         if not family:
             raise NotFoundError("Семья не найдена", resource="family")
+        if family.owner_account_id != current_account_id:
+            raise ForbiddenError("Только владелец семьи может приглашать новых участников")
         if not resolve_family_plan_policy(family).can_invite_members:
             raise ValidationError(
                 "Приглашения доступны только в Plus",

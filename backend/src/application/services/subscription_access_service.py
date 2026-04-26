@@ -39,8 +39,8 @@ class SubscriptionAccessService:
         pillbox_plans = await self._pillbox_repo.list_by_family_id(account.family_id)
 
         policy = resolve_family_plan_policy(family)
-        is_billing_owner = family.billing_account_id == account.id
-        can_manage_subscription = is_billing_owner
+        is_billing_owner = family.owner_account_id == account.id
+        can_manage_subscription = family.owner_account_id == account.id
         can_manage_member_roles = policy.can_manage_member_roles and is_family_admin(
             account.family_role
         )
@@ -60,6 +60,7 @@ class SubscriptionAccessService:
             max_children=policy.max_children,
             max_adults=policy.max_adults,
             max_pillbox_plans=policy.max_pillbox_plans,
+            free_primary_child_id=family.free_primary_child_id,
             current_children_count=len(children),
             current_adults_count=self._active_member_count(family_accounts),
             current_pillbox_plan_count=len(pillbox_plans),

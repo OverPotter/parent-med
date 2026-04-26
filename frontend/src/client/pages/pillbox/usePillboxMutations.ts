@@ -13,6 +13,8 @@ import { tPillbox, type PillboxDeleteTarget, type PillboxPlanActionTarget } from
 interface UsePillboxMutationsOptions {
   language: AppLanguage;
   currentFamilyId: string | null;
+  currentPillboxPlanLimitReached?: boolean;
+  onPlanLimitReached?: () => void;
   queryClient: QueryClient;
   setSavePlanError: (value: string | null) => void;
   setPlanActionError: (value: string | null) => void;
@@ -20,6 +22,8 @@ interface UsePillboxMutationsOptions {
   setPlanActionTarget: (value: PillboxPlanActionTarget) => void;
   goToHub: () => void;
 }
+
+class PlanLimitReachedError extends Error {}
 
 function getPlanErrorMessage(language: AppLanguage) {
   return language === "ru"
@@ -45,6 +49,8 @@ async function refreshPillboxQueries(
 export function usePillboxMutations({
   language,
   currentFamilyId,
+  currentPillboxPlanLimitReached = false,
+  onPlanLimitReached,
   queryClient,
   setSavePlanError,
   setPlanActionError,
@@ -53,13 +59,27 @@ export function usePillboxMutations({
   goToHub,
 }: UsePillboxMutationsOptions) {
   const createPlanMutation = useMutation({
-    mutationFn: createPillboxPlan,
+    mutationFn: async (payload: PillboxPlanWrite) => {
+      if (currentPillboxPlanLimitReached) {
+        onPlanLimitReached?.();
+        throw new PlanLimitReachedError("PILLBOX_PLAN_LIMIT_REACHED");
+      }
+      return createPillboxPlan(payload);
+    },
     onSuccess: async () => {
       setSavePlanError(null);
       await queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
       goToHub();
     },
     onError: (error) => {
+      if (error instanceof PlanLimitReachedError) {
+        setSavePlanError(null);
+        return;
+      }
+      if (error instanceof Error && error.message) {
+        setSavePlanError(error.message);
+        return;
+      }
       if (isAxiosError(error)) {
         const detail =
           typeof error.response?.data === "object" && error.response?.data

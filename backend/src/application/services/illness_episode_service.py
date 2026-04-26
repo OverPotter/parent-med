@@ -20,6 +20,10 @@ from src.application.services.access_control import (
     coerce_account_context,
     get_child_for_account,
 )
+from src.application.services.child_plan_access import (
+    ensure_active_illness_continuation_allowed,
+    ensure_child_plan_mutation_allowed,
+)
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.administration_event import AdministrationEvent
 from src.domain.entities.child import Child
@@ -28,6 +32,7 @@ from src.domain.entities.temperature_entry import TemperatureEntry
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.administration_event_repository import AdministrationEventRepository
 from src.domain.repositories.child_repository import ChildRepository
+from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.illness_comment_repository import IllnessCommentRepository
 from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
 from src.domain.repositories.temperature_entry_repository import TemperatureEntryRepository
@@ -40,6 +45,7 @@ class IllnessEpisodeService:
         self,
         episode_repo: IllnessEpisodeRepository,
         child_repo: ChildRepository,
+        family_repo: FamilyRepository | None = None,
         account_repo: AccountRepository | None = None,
         temperature_repo: TemperatureEntryRepository | None = None,
         administration_repo: AdministrationEventRepository | None = None,
@@ -47,6 +53,7 @@ class IllnessEpisodeService:
     ) -> None:
         self._repo = episode_repo
         self._child_repo = child_repo
+        self._family_repo = family_repo
         self._account_repo = account_repo
         self._temperature_repo = temperature_repo
         self._administration_repo = administration_repo
@@ -303,6 +310,11 @@ class IllnessEpisodeService:
     ) -> IllnessEpisodeResponseDto:
         current_account = coerce_account_context(current_account)
         await self._require_child_access(dto.child_id, current_account, "edit")
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_account,
+            dto.child_id,
+        )
         if dto.medication_mode not in {"manual", "guided"}:
             raise ValidationError("Неизвестный режим лекарств")
         active = await self._repo.get_active_by_child_id(dto.child_id)
@@ -338,6 +350,12 @@ class IllnessEpisodeService:
     ) -> IllnessEpisodeResponseDto:
         current_account = coerce_account_context(current_account)
         entity = await self._get_episode_for_account(id, current_account, "edit")
+        await ensure_active_illness_continuation_allowed(
+            self._family_repo,
+            current_account,
+            entity.child_id,
+            episode_is_active=entity.status == "active",
+        )
         fields_set = dto.model_fields_set
 
         started_at = dto.started_at if "started_at" in fields_set else entity.started_at
@@ -392,7 +410,12 @@ class IllnessEpisodeService:
         return self._to_response(updated)
 
     async def delete(self, id: UUID, current_account: AuthenticatedAccount) -> None:
-        await self._get_episode_for_account(id, current_account, "edit")
+        entity = await self._get_episode_for_account(id, current_account, "edit")
+        await ensure_child_plan_mutation_allowed(
+            self._family_repo,
+            current_account,
+            entity.child_id,
+        )
         await self._repo.delete(id)
 
     def _normalize_period(self, period: str) -> str:

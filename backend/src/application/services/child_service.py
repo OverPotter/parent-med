@@ -1,5 +1,6 @@
 """Сервис детей."""
 
+from dataclasses import replace
 from datetime import date
 from uuid import UUID, uuid4
 
@@ -158,6 +159,8 @@ class ChildService:
             notes=(dto.notes or "").strip() or None,
         )
         created = await self._repo.add(entity)
+        if family.free_primary_child_id is None:
+            await self._family_repo.update(replace(family, free_primary_child_id=created.id))
         return self._to_response(created)
 
     async def create_for_account(

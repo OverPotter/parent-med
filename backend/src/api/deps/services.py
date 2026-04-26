@@ -7,6 +7,7 @@ from src.api.deps.repositories import (
     get_account_repo,
     get_account_session_repo,
     get_administration_repo,
+    get_billing_event_repo,
     get_child_repo,
     get_curated_medicine_catalog_repo,
     get_episode_medication_plan_repo,
@@ -19,8 +20,10 @@ from src.api.deps.repositories import (
     get_illness_episode_repo,
     get_parent_repo,
     get_pillbox_repo,
+    get_plan_repo,
     get_push_subscription_repo,
     get_sleep_session_repo,
+    get_subscription_repo,
     get_temperature_entry_repo,
     get_weight_entry_repo,
 )
@@ -28,6 +31,7 @@ from src.application.services.account_feedback_service import AccountFeedbackSer
 from src.application.services.administration_service import AdministrationService
 from src.application.services.auth_service import AuthService
 from src.application.services.base_auth_service import BaseAuthService
+from src.application.services.billing_service import BillingService
 from src.application.services.child_service import ChildService
 from src.application.services.curated_medicine_catalog_service import (
     CuratedMedicineCatalogService,
@@ -110,6 +114,28 @@ def get_subscription_access_service(
     )
 
 
+def get_billing_service(
+    family_repo=Depends(get_family_repo),
+    plan_repo=Depends(get_plan_repo),
+    subscription_repo=Depends(get_subscription_repo),
+    billing_event_repo=Depends(get_billing_event_repo),
+    child_repo=Depends(get_child_repo),
+    feeding_repo=Depends(get_feeding_record_repo),
+    sleep_repo=Depends(get_sleep_session_repo),
+    subscription_access_service=Depends(get_subscription_access_service),
+) -> BillingService:
+    return BillingService(
+        family_repo=family_repo,
+        plan_repo=plan_repo,
+        subscription_repo=subscription_repo,
+        billing_event_repo=billing_event_repo,
+        child_repo=child_repo,
+        feeding_repo=feeding_repo,
+        sleep_repo=sleep_repo,
+        subscription_access_service=subscription_access_service,
+    )
+
+
 def get_child_service(
     child_repo=Depends(get_child_repo),
     family_repo=Depends(get_family_repo),
@@ -126,15 +152,25 @@ def get_curated_medicine_catalog_service(
 def get_feeding_record_service(
     feeding_repo=Depends(get_feeding_record_repo),
     child_repo=Depends(get_child_repo),
+    family_repo=Depends(get_family_repo),
 ) -> FeedingRecordService:
-    return FeedingRecordService(feeding_repo=feeding_repo, child_repo=child_repo)
+    return FeedingRecordService(
+        feeding_repo=feeding_repo,
+        child_repo=child_repo,
+        family_repo=family_repo,
+    )
 
 
 def get_height_entry_service(
     height_repo=Depends(get_height_entry_repo),
     child_repo=Depends(get_child_repo),
+    family_repo=Depends(get_family_repo),
 ) -> HeightEntryService:
-    return HeightEntryService(height_repo=height_repo, child_repo=child_repo)
+    return HeightEntryService(
+        height_repo=height_repo,
+        child_repo=child_repo,
+        family_repo=family_repo,
+    )
 
 
 def get_episode_medication_plan_service(
@@ -143,6 +179,7 @@ def get_episode_medication_plan_service(
     household_repo=Depends(get_household_medicine_repo),
     child_repo=Depends(get_child_repo),
     account_repo=Depends(get_account_repo),
+    family_repo=Depends(get_family_repo),
 ) -> EpisodeMedicationPlanService:
     return EpisodeMedicationPlanService(
         plan_repo=plan_repo,
@@ -150,6 +187,7 @@ def get_episode_medication_plan_service(
         household_repo=household_repo,
         child_repo=child_repo,
         account_repo=account_repo,
+        family_repo=family_repo,
     )
 
 
@@ -184,15 +222,25 @@ def get_push_notification_service(
 def get_weight_entry_service(
     weight_repo=Depends(get_weight_entry_repo),
     child_repo=Depends(get_child_repo),
+    family_repo=Depends(get_family_repo),
 ) -> WeightEntryService:
-    return WeightEntryService(weight_repo=weight_repo, child_repo=child_repo)
+    return WeightEntryService(
+        weight_repo=weight_repo,
+        child_repo=child_repo,
+        family_repo=family_repo,
+    )
 
 
 def get_sleep_session_service(
     sleep_repo=Depends(get_sleep_session_repo),
     child_repo=Depends(get_child_repo),
+    family_repo=Depends(get_family_repo),
 ) -> SleepSessionService:
-    return SleepSessionService(sleep_repo=sleep_repo, child_repo=child_repo)
+    return SleepSessionService(
+        sleep_repo=sleep_repo,
+        child_repo=child_repo,
+        family_repo=family_repo,
+    )
 
 
 def get_household_medicine_service(
@@ -212,6 +260,7 @@ def get_household_medicine_service(
 def get_illness_episode_service(
     episode_repo=Depends(get_illness_episode_repo),
     child_repo=Depends(get_child_repo),
+    family_repo=Depends(get_family_repo),
     account_repo=Depends(get_account_repo),
     temperature_repo=Depends(get_temperature_entry_repo),
     administration_repo=Depends(get_administration_repo),
@@ -220,6 +269,7 @@ def get_illness_episode_service(
     return IllnessEpisodeService(
         episode_repo=episode_repo,
         child_repo=child_repo,
+        family_repo=family_repo,
         account_repo=account_repo,
         temperature_repo=temperature_repo,
         administration_repo=administration_repo,
@@ -231,11 +281,13 @@ def get_illness_comment_service(
     comment_repo=Depends(get_illness_comment_repo),
     episode_repo=Depends(get_illness_episode_repo),
     child_repo=Depends(get_child_repo),
+    family_repo=Depends(get_family_repo),
 ) -> IllnessCommentService:
     return IllnessCommentService(
         comment_repo=comment_repo,
         episode_repo=episode_repo,
         child_repo=child_repo,
+        family_repo=family_repo,
     )
 
 
@@ -243,11 +295,13 @@ def get_temperature_entry_service(
     temperature_repo=Depends(get_temperature_entry_repo),
     episode_repo=Depends(get_illness_episode_repo),
     child_repo=Depends(get_child_repo),
+    family_repo=Depends(get_family_repo),
 ) -> TemperatureEntryService:
     return TemperatureEntryService(
         temperature_repo=temperature_repo,
         episode_repo=episode_repo,
         child_repo=child_repo,
+        family_repo=family_repo,
     )
 
 
@@ -256,10 +310,12 @@ def get_administration_service(
     household_repo=Depends(get_household_medicine_repo),
     episode_repo=Depends(get_illness_episode_repo),
     child_repo=Depends(get_child_repo),
+    family_repo=Depends(get_family_repo),
 ) -> AdministrationService:
     return AdministrationService(
         administration_repo=administration_repo,
         household_repo=household_repo,
         episode_repo=episode_repo,
         child_repo=child_repo,
+        family_repo=family_repo,
     )

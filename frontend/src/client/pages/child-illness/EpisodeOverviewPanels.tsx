@@ -9,8 +9,27 @@ import {
   illnessPanelSoftClass,
 } from "./shared";
 
-export function ManualComposerOverview(props: { language: "ru" | "en"; childId: string }) {
-  const { language, childId } = props;
+export function ManualComposerOverview(props: {
+  language: "ru" | "en";
+  childId: string;
+  canEditEpisode: boolean;
+  onLockedActionAttempt: () => void;
+}) {
+  const { language, childId, canEditEpisode, onLockedActionAttempt } = props;
+  const renderComposerAction = (to: string, label: string) =>
+    canEditEpisode ? (
+      <Link to={to} className={`${appPillActionClass} w-full`}>
+        {label}
+      </Link>
+    ) : (
+      <button
+        type="button"
+        onClick={onLockedActionAttempt}
+        className={`${appPillActionClass} w-full`}
+      >
+        {label}
+      </button>
+    );
   return (
     <section className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
       <div className="min-w-0">
@@ -23,24 +42,18 @@ export function ManualComposerOverview(props: { language: "ru" | "en"; childId: 
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <Link
-          to={`/children/${childId}/illness?focus=temperature`}
-          className={`${appPillActionClass} w-full`}
-        >
-          {language === "ru" ? "+ Температура" : "+ Temperature"}
-        </Link>
-        <Link
-          to={`/children/${childId}/illness?focus=administration`}
-          className={`${appPillActionClass} w-full`}
-        >
-          {language === "ru" ? "+ Приём" : "+ Dose"}
-        </Link>
-        <Link
-          to={`/children/${childId}/illness?focus=comment`}
-          className={`${appPillActionClass} w-full`}
-        >
-          {language === "ru" ? "+ Заметка" : "+ Note"}
-        </Link>
+        {renderComposerAction(
+          `/children/${childId}/illness?focus=temperature`,
+          language === "ru" ? "+ Температура" : "+ Temperature"
+        )}
+        {renderComposerAction(
+          `/children/${childId}/illness?focus=administration`,
+          language === "ru" ? "+ Приём" : "+ Dose"
+        )}
+        {renderComposerAction(
+          `/children/${childId}/illness?focus=comment`,
+          language === "ru" ? "+ Заметка" : "+ Note"
+        )}
       </div>
     </section>
   );
@@ -95,8 +108,18 @@ export function ReminderOverviewPanel(props: {
     plan: EpisodeMedicationPlan;
     medicine: HouseholdMedicine | null;
   } | null;
+  canEditEpisode: boolean;
+  onLockedActionAttempt: () => void;
 }) {
-  const { language, childId, episode, medicationPlans, reminderLead } = props;
+  const {
+    language,
+    childId,
+    episode,
+    medicationPlans,
+    reminderLead,
+    canEditEpisode,
+    onLockedActionAttempt,
+  } = props;
   if (episode.medicationMode !== "guided") return null;
 
   return (
@@ -112,22 +135,38 @@ export function ReminderOverviewPanel(props: {
               : "Dose intervals and their current status."}
           </p>
         </div>
-        <Link
-          to={
-            medicationPlans.length > 0
-              ? `/children/${childId}/illness?focus=reminders`
-              : `/children/${childId}/illness?focus=reminder-create`
-          }
-          className={`${illnessCompactSecondaryButtonClass} w-full self-start sm:w-auto`}
-        >
-          {medicationPlans.length > 0
-            ? language === "ru"
-              ? "Напоминания"
-              : "Reminders"
-            : language === "ru"
-              ? "Добавить напоминание"
-              : "Add reminder"}
-        </Link>
+        {canEditEpisode ? (
+          <Link
+            to={
+              medicationPlans.length > 0
+                ? `/children/${childId}/illness?focus=reminders`
+                : `/children/${childId}/illness?focus=reminder-create`
+            }
+            className={`${illnessCompactSecondaryButtonClass} w-full self-start sm:w-auto`}
+          >
+            {medicationPlans.length > 0
+              ? language === "ru"
+                ? "Напоминания"
+                : "Reminders"
+              : language === "ru"
+                ? "Добавить напоминание"
+                : "Add reminder"}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={onLockedActionAttempt}
+            className={`${illnessCompactSecondaryButtonClass} w-full self-start sm:w-auto`}
+          >
+            {medicationPlans.length > 0
+              ? language === "ru"
+                ? "Напоминания"
+                : "Reminders"
+              : language === "ru"
+                ? "Добавить напоминание"
+                : "Add reminder"}
+          </button>
+        )}
       </div>
 
       {reminderLead ? (
@@ -156,6 +195,8 @@ export function EpisodeMainPanel(props: {
   isCloseConfirmOpen: boolean;
   setIsCloseConfirmOpen: (open: boolean) => void;
   onClose: () => void;
+  canEditEpisode: boolean;
+  onLockedActionAttempt: () => void;
   manualComposerSection: ReactNode;
   reminderOverviewSection: ReactNode;
   timelineSection: ReactNode;
@@ -167,6 +208,8 @@ export function EpisodeMainPanel(props: {
     isCloseConfirmOpen,
     setIsCloseConfirmOpen,
     onClose,
+    canEditEpisode,
+    onLockedActionAttempt,
     manualComposerSection,
     reminderOverviewSection,
     timelineSection,
@@ -214,7 +257,13 @@ export function EpisodeMainPanel(props: {
             </div>
             <button
               type="button"
-              onClick={() => setIsCloseConfirmOpen(true)}
+              onClick={() => {
+                if (!canEditEpisode) {
+                  onLockedActionAttempt();
+                  return;
+                }
+                setIsCloseConfirmOpen(true);
+              }}
               className={`${appBtnDangerClass} hidden sm:inline-flex`}
             >
               {language === "ru" ? "Закрыть наблюдение" : "Close tracking"}
@@ -247,7 +296,13 @@ export function EpisodeMainPanel(props: {
           <div className="sm:hidden">
             <button
               type="button"
-              onClick={() => setIsCloseConfirmOpen(true)}
+              onClick={() => {
+                if (!canEditEpisode) {
+                  onLockedActionAttempt();
+                  return;
+                }
+                setIsCloseConfirmOpen(true);
+              }}
               className={`${appBtnDangerClass} w-full`}
             >
               {language === "ru" ? "Закрыть наблюдение" : "Close tracking"}

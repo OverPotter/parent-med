@@ -1,6 +1,7 @@
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import { fetchLatestHeightEntryByChildId } from "@shared/api/heightEntries";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { Surface } from "@shared/components/Surface";
@@ -8,11 +9,14 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { canEditChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { formatChildDatePlain } from "@client/utils/childDateFormat";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 export function ChildProfilePage() {
   const { language } = useI18n();
@@ -20,10 +24,25 @@ export function ChildProfilePage() {
   const { childId } = useParams<{ childId: string }>();
   const navigate = useNavigate();
   const isIosShell = useIsIosShell();
+  const accountId = useAppStore((s) => s.accountId);
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const canViewProfile = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: Boolean(currentFamilyId),
+    staleTime: 60 * 1000,
+  });
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
@@ -54,27 +73,31 @@ export function ChildProfilePage() {
   const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
   const babyModeLabel = child.babyModeEnabled ? copy.babyModeEnabled : copy.babyModeDisabled;
   const canEditProfile = canEditChild(child.id, accountFamilyRole, accountAccessPolicy);
+  const planLocksChildActions = isChildLockedByPlan(child.id, familyAccess);
   const profileNavActionClass = "soft-pill app-profile-action";
   const quickLinks = [
     {
       to: `/children/${child.id}/illness?view=history`,
       label: copy.history,
+      locked: false,
     },
     ...(child.babyModeEnabled
       ? [
           {
             to: `/children/${child.id}/feeding`,
             label: copy.feedingSection,
+            locked: planLocksChildActions,
           },
           {
             to: `/children/${child.id}/sleep`,
             label: copy.sleepSection,
+            locked: planLocksChildActions,
           },
         ]
       : []),
-    { to: `/children/${child.id}/weight`, label: copy.weightCardTitle },
-    { to: `/children/${child.id}/height`, label: copy.heightCardTitle },
-    { to: `/children/${child.id}/calendar`, label: copy.calendar },
+    { to: `/children/${child.id}/weight`, label: copy.weightCardTitle, locked: false },
+    { to: `/children/${child.id}/height`, label: copy.heightCardTitle, locked: false },
+    { to: `/children/${child.id}/calendar`, label: copy.calendar, locked: false },
   ];
 
   return (
@@ -91,27 +114,61 @@ export function ChildProfilePage() {
         hint={copy.subtitle}
         action={
           canEditProfile ? (
+            planLocksChildActions ? (
+              <button
+                type="button"
+                onClick={() => setIsUpgradeDialogOpen(true)}
+                className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
+              >
+                {copy.editProfile}
+              </button>
+            ) : (
             <Link
               to={`/children/${child.id}/edit`}
               className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
             >
               {copy.editProfile}
             </Link>
+            )
           ) : null
         }
+      />
+      <UpgradeDialog
+        isOpen={isUpgradeDialogOpen}
+        language={language}
+        entryPoint="child_actions_locked"
+        isPending={isUpgradePending}
+        canUpgrade={canManageSubscription}
+        onClose={() => setIsUpgradeDialogOpen(false)}
+        onUpgrade={() => {
+          void upgradeToPlus().then(() => {
+            setIsUpgradeDialogOpen(false);
+          });
+        }}
       />
 
       <div className="mx-auto w-full max-w-2xl space-y-3 pt-2">
         <Surface className="p-3 sm:p-4">
           <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
             {quickLinks.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`${profileNavActionClass} min-h-[2.6rem]`}
-              >
-                {item.label}
-              </Link>
+              item.locked ? (
+                <button
+                  key={item.to}
+                  type="button"
+                  onClick={() => setIsUpgradeDialogOpen(true)}
+                  className={`${profileNavActionClass} min-h-[2.6rem]`}
+                >
+                  {item.label}
+                </button>
+              ) : (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`${profileNavActionClass} min-h-[2.6rem]`}
+                >
+                  {item.label}
+                </Link>
+              )
             ))}
           </div>
         </Surface>

@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { fetchFamilies } from "@shared/api/families";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -18,6 +20,12 @@ export function FamilyMembersPage() {
   const setAccountFamilyContext = useAppStore((s) => s.setAccountFamilyContext);
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const canManageFamily = currentAccountRole === "admin";
+  const { data: families = [] } = useQuery({
+    queryKey: ["families", accountId],
+    queryFn: fetchFamilies,
+    enabled: Boolean(accountId),
+  });
+  const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
 
   const { members, isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
     useFamilyMembersData(currentFamilyId, currentAccountId);
@@ -90,6 +98,7 @@ export function FamilyMembersPage() {
           <div className="mt-4">
             <MemberCard
               member={currentMember}
+              familyOwnerAccountId={family?.ownerAccountId}
               isCurrent
               forceEdit={false}
               canManageAccess={canManageFamily}
@@ -153,6 +162,7 @@ export function FamilyMembersPage() {
               <MemberCard
                 key={member.id}
                 member={member}
+                familyOwnerAccountId={family?.ownerAccountId}
                 isCurrent={false}
                 forceEdit={false}
                 canManageAccess={canManageFamily}

@@ -33,7 +33,7 @@ class BaseAuthService(ABC):
     """Базовый auth-сервис с общими мапперами и контрактом."""
 
     PREMIUM_PLAN_CODES = {"plus", "pro"}
-    ACTIVE_SUBSCRIPTION_STATUSES = {"active", "grace"}
+    ACTIVE_SUBSCRIPTION_STATUSES = {"trialing", "active", "grace"}
 
     def __init__(
         self,
@@ -75,7 +75,9 @@ class BaseAuthService(ABC):
             id=entity.id,
             name=entity.name,
             cabinet_member_account_ids=list(entity.cabinet_member_account_ids),
+            owner_account_id=entity.owner_account_id,
             billing_account_id=entity.billing_account_id,
+            free_primary_child_id=entity.free_primary_child_id,
             plan_code=entity.plan_code,  # type: ignore[arg-type]
             subscription_status=entity.subscription_status,  # type: ignore[arg-type]
             subscription_provider=entity.subscription_provider,

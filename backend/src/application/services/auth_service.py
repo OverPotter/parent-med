@@ -190,6 +190,22 @@ class AuthService(BaseAuthService):
             if self._is_duplicate_email_integrity_error(exc):
                 self._raise_duplicate_email()
             raise
+        if invite is None and created_family.owner_account_id != created_account.id:
+            created_family = await self._family_repo.update(
+                Family(
+                    id=created_family.id,
+                    name=created_family.name,
+                    cabinet_member_account_ids=list(created_family.cabinet_member_account_ids),
+                    owner_account_id=created_account.id,
+                    billing_account_id=created_family.billing_account_id,
+                    free_primary_child_id=created_family.free_primary_child_id,
+                    plan_code=created_family.plan_code,
+                    subscription_status=created_family.subscription_status,
+                    subscription_provider=created_family.subscription_provider,
+                    subscription_product_id=created_family.subscription_product_id,
+                    subscription_expires_at=created_family.subscription_expires_at,
+                )
+            )
         if invite is not None:
             invite.accepted_at = datetime.now(UTC)
             invite.accepted_by_account_id = created_account.id
@@ -324,6 +340,11 @@ class AuthService(BaseAuthService):
                 "Нельзя удалить последнего администратора семьи",
                 code="LAST_ADMIN_REQUIRED",
             )
+        if family is not None and family.owner_account_id == account.id:
+            raise ValidationError(
+                "Нельзя удалить владельца семьи без явной передачи владения",
+                code="FAMILY_OWNER_TRANSFER_REQUIRED",
+            )
         if family is not None and family.billing_account_id == account.id:
             raise ValidationError(
                 "Нельзя удалить аккаунт, пока на нём привязана семейная подписка",
@@ -337,8 +358,16 @@ class AuthService(BaseAuthService):
         account = await self._account_repo.get_by_id(account_id)
         if account is None or account.family_role == "deleted":
             raise UnauthorizedError()
-        if not is_family_admin(account.family_role):
-            raise ForbiddenError("Только администратор семьи может удалить семью")
+        family = await self._family_repo.get_by_id(account.family_id)
+        if family is None:
+            raise ForbiddenError("Семья не найдена", code="FAMILY_NOT_LINKED")
+        if family.owner_account_id != account.id:
+            raise ForbiddenError("Только владелец семьи может удалить семью")
+        if family.subscription_status in {"active", "trialing", "grace", "canceled"}:
+            raise ValidationError(
+                "Сначала отмените семейную подписку или дождитесь окончания периода доступа",
+                code="FAMILY_SUBSCRIPTION_ACTIVE",
+            )
 
         family_accounts = await self._account_repo.list_by_family_id(account.family_id)
         active_accounts = [item for item in family_accounts if item.family_role != "deleted"]

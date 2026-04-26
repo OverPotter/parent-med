@@ -42,7 +42,14 @@ class StubFamilyInviteRepository:
 
 @pytest.mark.asyncio
 async def test_create_and_preview_family_invite() -> None:
-    family = Family(id=uuid4(), name="Семья Петровых", plan_code="plus", subscription_status="active")
+    owner_id = uuid4()
+    family = Family(
+        id=uuid4(),
+        name="Семья Петровых",
+        owner_account_id=owner_id,
+        plan_code="plus",
+        subscription_status="active",
+    )
     repo = StubFamilyInviteRepository()
     service = FamilyInviteService(
         family_repo=StubFamilyRepository(family),
@@ -51,8 +58,7 @@ async def test_create_and_preview_family_invite() -> None:
 
     created = await service.create_for_account(
         family_id=family.id,
-        current_account_id=uuid4(),
-        current_family_role="owner",
+        current_account_id=owner_id,
         dto=FamilyInviteCreateDto(family_role="member"),
     )
     preview = await service.get_preview(created.token)
@@ -65,24 +71,31 @@ async def test_create_and_preview_family_invite() -> None:
 
 @pytest.mark.asyncio
 async def test_create_invite_requires_owner_role() -> None:
-    family = Family(id=uuid4(), name="Семья Петровых")
+    owner_id = uuid4()
+    family = Family(id=uuid4(), name="Семья Петровых", owner_account_id=owner_id)
     service = FamilyInviteService(
         family_repo=StubFamilyRepository(family),
         invite_repo=StubFamilyInviteRepository(),
     )
 
-    with pytest.raises(ForbiddenError, match="Только администратор семьи может приглашать"):
+    with pytest.raises(ForbiddenError, match="Только владелец семьи может приглашать"):
         await service.create_for_account(
             family_id=family.id,
             current_account_id=uuid4(),
-            current_family_role="adult",
             dto=FamilyInviteCreateDto(family_role="member"),
         )
 
 
 @pytest.mark.asyncio
 async def test_create_invite_requires_plus_plan() -> None:
-    family = Family(id=uuid4(), name="Семья Петровых", plan_code="free", subscription_status="inactive")
+    owner_id = uuid4()
+    family = Family(
+        id=uuid4(),
+        name="Семья Петровых",
+        owner_account_id=owner_id,
+        plan_code="free",
+        subscription_status="inactive",
+    )
     service = FamilyInviteService(
         family_repo=StubFamilyRepository(family),
         invite_repo=StubFamilyInviteRepository(),
@@ -91,7 +104,6 @@ async def test_create_invite_requires_plus_plan() -> None:
     with pytest.raises(ValidationError, match="только в Plus"):
         await service.create_for_account(
             family_id=family.id,
-            current_account_id=uuid4(),
-            current_family_role="owner",
+            current_account_id=owner_id,
             dto=FamilyInviteCreateDto(family_role="member"),
         )
