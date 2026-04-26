@@ -125,6 +125,43 @@ class PillboxService:
             and local_scheduled_for.timetz().replace(tzinfo=None) in medication.times
         )
 
+    def _medication_write_matches_existing(
+        self,
+        dto: PillboxMedicationWriteDto,
+        existing: PillboxMedication,
+    ) -> bool:
+        return (
+            dto.id == existing.id
+            and dto.household_medicine_id == existing.household_medicine_id
+            and dto.custom_medicine_name == existing.custom_medicine_name
+            and dto.dose_amount == existing.dose_amount
+            and dto.meal_rule == existing.meal_rule
+            and list(dto.repeat_days) == list(existing.repeat_days)
+            and list(dto.times) == list(existing.times)
+            and dto.course_mode == existing.course_mode
+            and dto.course_start_date == existing.course_start_date
+            and dto.course_end_date == existing.course_end_date
+            and dto.position == existing.position
+        )
+
+    def _is_status_only_update(
+        self,
+        dto: PillboxPlanUpdateDto,
+        existing: PillboxPlan,
+    ) -> bool:
+        if dto.title != existing.title:
+            return False
+        if list(dto.member_account_ids) != list(existing.member_account_ids):
+            return False
+        existing_medications = sorted(existing.medications, key=lambda item: item.position)
+        dto_medications = sorted(dto.medications, key=lambda item: item.position)
+        if len(dto_medications) != len(existing_medications):
+            return False
+        return all(
+            self._medication_write_matches_existing(dto_item, existing_item)
+            for dto_item, existing_item in zip(dto_medications, existing_medications, strict=False)
+        )
+
     def _build_medication_slots(
         self,
         medication: PillboxMedication,
@@ -432,6 +469,47 @@ class PillboxService:
             raise ForbiddenError("Нет доступа к плану другой семьи")
         return plan
 
+    async def _ensure_plan_mutation_allowed(
+        self,
+        plan: PillboxPlan,
+        current_account: AuthenticatedAccount,
+        *,
+        allow_completed_history: bool = False,
+    ) -> None:
+        family = await self._family_repo.get_by_id(current_account.family_id)
+        if family is None:
+            raise NotFoundError("Семья не найдена", resource="family")
+        policy = resolve_family_plan_policy(family)
+        if policy.premium_active:
+            return
+        if allow_completed_history and plan.status in {"completed", "archived"}:
+            return
+        primary_plan_id = family.free_primary_pillbox_plan_id
+        if primary_plan_id is None:
+            plans = await self._repo.list_by_family_id(current_account.family_id)
+            operational_plans = [
+                item for item in plans if item.status not in {"completed", "archived"}
+            ]
+            active_operational_plans = [
+                item for item in operational_plans if item.status == "active"
+            ]
+            paused_operational_plans = [
+                item for item in operational_plans if item.status == "paused"
+            ]
+            candidate_plans = (
+                active_operational_plans or paused_operational_plans or operational_plans or plans
+            )
+            if candidate_plans:
+                primary_plan_id = min(
+                    candidate_plans,
+                    key=lambda item: (item.created_at, str(item.id)),
+                ).id
+        if primary_plan_id is None or primary_plan_id == plan.id:
+            return
+        raise ForbiddenError(
+            "Во Free этот план доступен только для просмотра. Оформите Plus, чтобы снова отмечать и редактировать дополнительные планы."
+        )
+
     async def list_by_family_id(
         self,
         current_account: AuthenticatedAccount,
@@ -729,9 +807,14 @@ class PillboxService:
         current_account_id: UUID,
         current_account: AuthenticatedAccount,
     ) -> PillboxPlanResponseDto:
-        ensure_module_access(current_account, "pillbox", "edit")
-        ensure_children_edit_scope(current_account, "приёмов")
         existing = await self._get_plan_for_family(plan_id, current_account.family_id)
+        status_only_update = self._is_status_only_update(dto, existing)
+        if status_only_update:
+            ensure_module_access(current_account, "pillbox", "act")
+        else:
+            ensure_module_access(current_account, "pillbox", "edit")
+            ensure_children_edit_scope(current_account, "приёмов")
+        await self._ensure_plan_mutation_allowed(existing, current_account)
         next_status = dto.status or existing.status
         if next_status not in {"active", "paused", "archived"}:
             raise ValidationError("Некорректный статус плана")
@@ -748,9 +831,18 @@ class PillboxService:
         return self._to_plan_response(updated)
 
     async def delete(self, plan_id: UUID, current_account: AuthenticatedAccount) -> None:
-        ensure_module_access(current_account, "pillbox", "edit")
-        ensure_children_edit_scope(current_account, "приёмов")
-        await self._get_plan_for_family(plan_id, current_account.family_id)
+        plan = await self._get_plan_for_family(plan_id, current_account.family_id)
+        allow_completed_history = plan.status in {"completed", "archived"}
+        if allow_completed_history:
+            ensure_module_access(current_account, "pillbox", "act")
+        else:
+            ensure_module_access(current_account, "pillbox", "edit")
+            ensure_children_edit_scope(current_account, "приёмов")
+        await self._ensure_plan_mutation_allowed(
+            plan,
+            current_account,
+            allow_completed_history=allow_completed_history,
+        )
         await self._repo.delete(plan_id)
 
     async def log_dose(
@@ -765,6 +857,7 @@ class PillboxService:
     ) -> PillboxPlanSummaryDto:
         ensure_module_access(current_account, "pillbox", "act")
         plan = await self._get_plan_for_family(plan_id, current_account.family_id)
+        await self._ensure_plan_mutation_allowed(plan, current_account)
         medication = next((item for item in plan.medications if item.id == medication_id), None)
         if not medication:
             raise NotFoundError("Лекарство внутри плана не найдено", resource="pillbox_medication")

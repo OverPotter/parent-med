@@ -1,5 +1,6 @@
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
-import { RowSurface } from "@shared/components/Surface";
+import { PlusBadge } from "@shared/components/PlusBadge";
+import { EmptyState, RowSurface } from "@shared/components/Surface";
 import type { AppLanguage } from "@shared/i18n";
 import {
   actionPrimaryClass,
@@ -23,6 +24,9 @@ export function PillboxHubScreen({
   visibleGroups,
   canAct,
   canEdit,
+  createPlanLocked,
+  showFreeDowngradeNotice,
+  freePrimaryPlanId,
   highlightedPlanId,
   openAnalytics,
   openCreate,
@@ -42,6 +46,9 @@ export function PillboxHubScreen({
   visibleGroups: PillboxGroup[];
   canAct: boolean;
   canEdit: boolean;
+  createPlanLocked: boolean;
+  showFreeDowngradeNotice: boolean;
+  freePrimaryPlanId: string | null;
   highlightedPlanId: string | null;
   openAnalytics: (targetPlanId?: string | null, targetFilter?: PillboxPlanListFilter) => void;
   openCreate: () => void;
@@ -71,9 +78,12 @@ export function PillboxHubScreen({
             <button
               type="button"
               onClick={openCreate}
-              className={`${actionPrimaryClass} min-w-0 px-3.5`}
+              className={`${createPlanLocked ? actionSecondaryClass : actionPrimaryClass} min-w-0 px-3.5`}
             >
-              {tPillbox(language, "createPlan")}
+              <span className="inline-flex items-center gap-2">
+                <span>{tPillbox(language, "createPlan")}</span>
+                {createPlanLocked ? <PlusBadge /> : null}
+              </span>
             </button>
           ) : null}
           <button
@@ -124,6 +134,17 @@ export function PillboxHubScreen({
         </div>
       </div>
 
+      {showFreeDowngradeNotice ? (
+        <EmptyState className="text-foreground">
+          <div className="space-y-3">
+            <p className="app-card-title">{tPillbox(language, "freeDowngradeNoticeTitle")}</p>
+            <p className="text-sm leading-6 text-muted">
+              {tPillbox(language, "freeDowngradeNoticeDescription")}
+            </p>
+          </div>
+        </EmptyState>
+      ) : null}
+
       <ul className="grid gap-3">
         {visibleGroups.length === 0 ? (
           <li>
@@ -141,6 +162,11 @@ export function PillboxHubScreen({
           const isOverdue = isOverdueDose(group.nextDoseAt, group.status);
           const isLate = isLateDose(group.nextDoseAt, group.status);
           const isHighlighted = group.id === highlightedPlanId;
+          const isOperationalPlan = group.status !== "archived" && group.status !== "completed";
+          const isFreePrimaryPlan =
+            showFreeDowngradeNotice && isOperationalPlan && group.id === freePrimaryPlanId;
+          const isFreeLockedPlan =
+            showFreeDowngradeNotice && isOperationalPlan && group.id !== freePrimaryPlanId;
           const planStateCompact = getPlanStateCompact(
             group.status,
             isOverdue,
@@ -178,6 +204,16 @@ export function PillboxHubScreen({
                         <h2 className="app-card-title min-w-0">
                           {displayPillboxText(group.title)}
                         </h2>
+                        {isFreePrimaryPlan ? (
+                          <span className="inline-flex shrink-0 items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-success)_16%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-success)_78%,var(--color-foreground))]">
+                            {tPillbox(language, "freePrimaryPlanBadge")}
+                          </span>
+                        ) : null}
+                        {isFreeLockedPlan ? (
+                          <span className="inline-flex shrink-0 items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-warning)_14%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-warning)_82%,var(--color-foreground))]">
+                            {tPillbox(language, "freeLockedPlanBadge")}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5 text-muted">
                         <span

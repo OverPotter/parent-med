@@ -15,6 +15,7 @@ class Family:
     owner_account_id: UUID | None = None
     billing_account_id: UUID | None = None
     free_primary_child_id: UUID | None = None
+    free_primary_pillbox_plan_id: UUID | None = None
     plan_code: str = "free"
     subscription_status: str = "inactive"
     subscription_provider: str | None = None

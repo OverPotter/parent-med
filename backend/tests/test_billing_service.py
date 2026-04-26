@@ -14,7 +14,7 @@ from src.domain.entities.family import Family
 from src.domain.entities.feeding_record import FeedingRecord
 from src.domain.entities.plan import Plan
 from src.domain.entities.subscription import Subscription
-from src.domain.entities.pillbox import PillboxPlan
+from src.domain.entities.pillbox import PillboxMedication, PillboxPlan
 from src.domain.entities.sleep_session import SleepSession
 from src.core.exceptions import ForbiddenError
 
@@ -88,6 +88,10 @@ class StubPillboxRepository:
 
     async def list_by_family_id(self, family_id):  # noqa: ANN001
         return [plan for plan in self.plans if plan.family_id == family_id]
+
+    async def update(self, entity: PillboxPlan) -> PillboxPlan:
+        self.plans = [plan for plan in self.plans if plan.id != entity.id] + [entity]
+        return entity
 
 
 class StubFeedingRecordRepository:
@@ -166,6 +170,7 @@ def _make_service(
     accounts: list[Account],
     *,
     children: list[Child] | None = None,
+    pillbox_plans: list[PillboxPlan] | None = None,
     feeding_records: list[FeedingRecord] | None = None,
     sleep_sessions: list[SleepSession] | None = None,
 ) -> tuple[
@@ -178,7 +183,7 @@ def _make_service(
     family_repo = StubFamilyRepository(family)
     account_repo = StubAccountRepository(accounts)
     child_repo = StubChildRepository(children or [])
-    pillbox_repo = StubPillboxRepository([])
+    pillbox_repo = StubPillboxRepository(pillbox_plans or [])
     feeding_repo = StubFeedingRecordRepository(feeding_records)
     sleep_repo = StubSleepSessionRepository(sleep_sessions)
     access_service = SubscriptionAccessService(
@@ -201,11 +206,46 @@ def _make_service(
         subscription_repo=subscription_repo,
         billing_event_repo=billing_event_repo,
         child_repo=child_repo,
+        pillbox_repo=pillbox_repo,
         feeding_repo=feeding_repo,
         sleep_repo=sleep_repo,
         subscription_access_service=access_service,
     )
     return service, subscription_repo, billing_event_repo, feeding_repo, sleep_repo
+
+
+def _pillbox_plan(*, family_id, owner_id, title: str, status: str = "active", created_at: datetime | None = None) -> PillboxPlan:
+    now = created_at or datetime.now(UTC)
+    plan_id = uuid4()
+    return PillboxPlan(
+        id=plan_id,
+        family_id=family_id,
+        title=title,
+        status=status,
+        member_account_ids=[owner_id],
+        created_by_account_id=owner_id,
+        created_at=now,
+        updated_at=now,
+        medications=[
+            PillboxMedication(
+                id=uuid4(),
+                plan_id=plan_id,
+                household_medicine_id=None,
+                custom_medicine_name="Demo",
+                dose_amount="1",
+                meal_rule="after_meal",
+                repeat_days=[0],
+                times=[],
+                course_mode="continuous",
+                course_start_date=None,
+                course_end_date=None,
+                position=0,
+                created_at=now,
+                updated_at=now,
+            )
+        ],
+        dose_logs=[],
+    )
 
 
 @pytest.mark.asyncio
@@ -507,3 +547,100 @@ async def test_downgrade_stops_active_trackers_for_non_primary_children_only() -
     assert updated_primary_sleep.ended_at is None
     assert updated_secondary_sleep.status == "completed"
     assert updated_secondary_sleep.ended_at is not None
+
+
+@pytest.mark.asyncio
+async def test_downgrade_keeps_one_pillbox_plan_active_and_archives_others() -> None:
+    family_id = uuid4()
+    owner = _build_account(family_id=family_id, family_role="owner", email="mom@example.com")
+    family = Family(
+        id=family_id,
+        name="Family",
+        owner_account_id=owner.id,
+        billing_account_id=owner.id,
+        plan_code="plus",
+        subscription_status="active",
+        subscription_provider="revenuecat",
+    )
+    oldest_plan = _pillbox_plan(
+        family_id=family_id,
+        owner_id=owner.id,
+        title="Morning meds",
+        status="active",
+        created_at=datetime(2026, 4, 1, 8, 0, tzinfo=UTC),
+    )
+    newer_plan = _pillbox_plan(
+        family_id=family_id,
+        owner_id=owner.id,
+        title="Evening meds",
+        status="paused",
+        created_at=datetime(2026, 4, 10, 8, 0, tzinfo=UTC),
+    )
+    archived_plan = _pillbox_plan(
+        family_id=family_id,
+        owner_id=owner.id,
+        title="Old plan",
+        status="archived",
+        created_at=datetime(2026, 3, 1, 8, 0, tzinfo=UTC),
+    )
+    service, _, _, _, _ = _make_service(
+        family,
+        [owner],
+        pillbox_plans=[newer_plan, archived_plan, oldest_plan],
+    )
+
+    result = await service.reset_debug_subscription_to_free(_auth(owner))
+
+    assert result.family.plan_code == "free"
+    assert result.family.free_primary_pillbox_plan_id == oldest_plan.id
+    assert result.access.free_primary_pillbox_plan_id == oldest_plan.id
+    assert result.access.current_pillbox_plan_count == 3
+
+    pillbox_repo = service._pillbox_repo  # noqa: SLF001
+    plans_by_id = {plan.id: plan for plan in pillbox_repo.plans}
+    assert plans_by_id[oldest_plan.id].status == "active"
+    assert plans_by_id[newer_plan.id].status == "paused"
+    assert plans_by_id[archived_plan.id].status == "archived"
+
+
+@pytest.mark.asyncio
+async def test_downgrade_prefers_active_primary_pillbox_plan_over_older_paused_plan() -> None:
+    family_id = uuid4()
+    owner = _build_account(family_id=family_id, family_role="owner", email="mom@example.com")
+    family = Family(
+        id=family_id,
+        name="Family",
+        owner_account_id=owner.id,
+        billing_account_id=owner.id,
+        plan_code="plus",
+        subscription_status="active",
+        subscription_provider="revenuecat",
+    )
+    older_paused = _pillbox_plan(
+        family_id=family_id,
+        owner_id=owner.id,
+        title="Paused vitamins",
+        status="paused",
+        created_at=datetime(2026, 3, 1, 8, 0, tzinfo=UTC),
+    )
+    newer_active = _pillbox_plan(
+        family_id=family_id,
+        owner_id=owner.id,
+        title="Active antibiotics",
+        status="active",
+        created_at=datetime(2026, 4, 1, 8, 0, tzinfo=UTC),
+    )
+    service, _, _, _, _ = _make_service(
+        family,
+        [owner],
+        pillbox_plans=[older_paused, newer_active],
+    )
+
+    result = await service.reset_debug_subscription_to_free(_auth(owner))
+
+    assert result.family.free_primary_pillbox_plan_id == newer_active.id
+
+    pillbox_repo = service._pillbox_repo  # noqa: SLF001
+    plans_by_id = {plan.id: plan for plan in pillbox_repo.plans}
+    assert plans_by_id[newer_active.id].status == "active"
+    assert plans_by_id[older_paused.id].status == "paused"

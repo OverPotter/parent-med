@@ -28,6 +28,7 @@ class SubscriptionAccessResponseDto(ResponseBase):
     max_adults: int | None = Field(default=1)
     max_pillbox_plans: int | None = Field(default=1)
     free_primary_child_id: UUID | None = None
+    free_primary_pillbox_plan_id: UUID | None = None
     current_children_count: int = 0
     current_adults_count: int = 0
     current_pillbox_plan_count: int = 0

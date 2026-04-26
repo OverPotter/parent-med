@@ -12,6 +12,8 @@ import {
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { Child, IllnessEpisode } from "@shared/types/api";
 import { formatDate, formatDateTime } from "@shared/utils/date";
@@ -25,11 +27,14 @@ export function IllnessHistoryPage() {
   const copy = getChildrenCopy(language).illnessHistory;
   const common = getChildrenCopy(language).common;
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const isIosShell = useIsIosShell();
+  const illnessStatusQueryOptions = useLiveQueryOptions(isIosShell ? 10000 : 5000);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["children", currentFamilyId],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
     enabled: !!currentFamilyId,
+    ...illnessStatusQueryOptions,
   });
 
   const historyQueries = useQueries({
@@ -37,6 +42,7 @@ export function IllnessHistoryPage() {
       queryKey: ["illness-episodes", child.id],
       queryFn: () => fetchIllnessEpisodesByChildId(child.id),
       enabled: !!child.id,
+      ...illnessStatusQueryOptions,
     })),
   });
 
@@ -45,6 +51,7 @@ export function IllnessHistoryPage() {
       queryKey: ["illness-episode-active", child.id],
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
       enabled: !!child.id,
+      ...illnessStatusQueryOptions,
     })),
   });
 

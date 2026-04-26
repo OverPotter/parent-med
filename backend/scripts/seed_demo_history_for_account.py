@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy import delete, select
@@ -16,8 +16,14 @@ from src.infrastructure.database.models import (
     AccountModel,
     ChildModel,
     EpisodeMedicationPlanModel,
+    FamilyModel,
+    HouseholdMedicineModel,
     IllnessEpisodeEventModel,
     IllnessEpisodeModel,
+    PillboxDoseLogModel,
+    PillboxMedicationModel,
+    PillboxNotificationDeliveryModel,
+    PillboxPlanModel,
     WeightEntryModel,
 )
 
@@ -60,6 +66,367 @@ def _dt_days_ago(days_ago: int, hour: int = 9, minute: int = 0) -> datetime:
 
 def pick_author(authors: list[EventAuthorSeed], seed_index: int) -> EventAuthorSeed:
     return authors[seed_index % len(authors)]
+
+
+async def _create_household_medicines(
+    session,
+    family_id: UUID,
+) -> list[HouseholdMedicineModel]:
+    now = datetime.now(UTC)
+    medicines = [
+        HouseholdMedicineModel(
+            id=uuid4(),
+            family_id=family_id,
+            medicine_name="Нурофен для детей",
+            medicine_form="suspension",
+            medicine_category="Жаропонижающее",
+            medicine_concentration="100 мг / 5 мл",
+            medicine_description="Используют при температуре и боли.",
+            medicine_dosage="Обычно 7.5 мл для старших детей по фактическому весу.",
+            expiry_date=(now + timedelta(days=280)).date(),
+            opened_at=now - timedelta(days=35),
+            opened_shelf_days=180,
+            storage_place="Аптечка на кухне",
+            comment="Основной жаропонижающий дома",
+        ),
+        HouseholdMedicineModel(
+            id=uuid4(),
+            family_id=family_id,
+            medicine_name="Парацетамол сироп",
+            medicine_form="syrup",
+            medicine_category="Жаропонижающее",
+            medicine_concentration="120 мг / 5 мл",
+            medicine_description="Запасной вариант на ночь.",
+            medicine_dosage="7.5-10 мл в зависимости от веса и возраста.",
+            expiry_date=(now + timedelta(days=120)).date(),
+            opened_at=now - timedelta(days=18),
+            opened_shelf_days=120,
+            storage_place="Аптечка на кухне",
+            comment="Используют реже, когда нужен второй вариант",
+        ),
+        HouseholdMedicineModel(
+            id=uuid4(),
+            family_id=family_id,
+            medicine_name="Аквалор беби",
+            medicine_form="spray",
+            medicine_category="Нос",
+            medicine_concentration=None,
+            medicine_description="Для промывания носа малышу.",
+            medicine_dosage="По потребности, особенно перед сном.",
+            expiry_date=(now + timedelta(days=400)).date(),
+            opened_at=now - timedelta(days=62),
+            opened_shelf_days=365,
+            storage_place="Комод в спальне",
+            comment="Часто используется зимой",
+        ),
+        HouseholdMedicineModel(
+            id=uuid4(),
+            family_id=family_id,
+            medicine_name="Витамин D3",
+            medicine_form="drops",
+            medicine_category="Витамины",
+            medicine_concentration="500 IU / капля",
+            medicine_description="Ежедневный приём младшему.",
+            medicine_dosage="1 капля утром после еды.",
+            expiry_date=(now + timedelta(days=220)).date(),
+            opened_at=now - timedelta(days=12),
+            opened_shelf_days=180,
+            storage_place="Кухня, верхний шкаф",
+            comment="Ежедневная рутина",
+        ),
+        HouseholdMedicineModel(
+            id=uuid4(),
+            family_id=family_id,
+            medicine_name="Пробиотик в каплях",
+            medicine_form="drops",
+            medicine_category="ЖКТ",
+            medicine_concentration=None,
+            medicine_description="Курс после антибиотика.",
+            medicine_dosage="5 капель утром 14 дней.",
+            expiry_date=(now + timedelta(days=35)).date(),
+            opened_at=now - timedelta(days=4),
+            opened_shelf_days=30,
+            storage_place="Холодильник",
+            comment="Почти заканчивается, удобно для cabinet reminders",
+        ),
+    ]
+    session.add_all(medicines)
+    await session.flush()
+    return medicines
+
+
+async def _create_pillbox(
+    session,
+    family_id: UUID,
+    accounts: list[AccountModel],
+    medicines: list[HouseholdMedicineModel],
+) -> list[PillboxPlanModel]:
+    if not accounts:
+        return []
+    created_by = accounts[0]
+    now = datetime.now(UTC)
+
+    primary_plan = PillboxPlanModel(
+        id=uuid4(),
+        family_id=family_id,
+        title="Утренние и вечерние домашние лекарства",
+        status="active",
+        member_account_ids=[account.id for account in accounts],
+        created_by_account_id=created_by.id,
+        created_at=now - timedelta(days=14),
+        updated_at=now,
+    )
+    recovery_plan = PillboxPlanModel(
+        id=uuid4(),
+        family_id=family_id,
+        title="Восстановление после инфекции",
+        status="active",
+        member_account_ids=[account.id for account in accounts],
+        created_by_account_id=created_by.id,
+        created_at=now - timedelta(days=32),
+        updated_at=now - timedelta(days=8),
+    )
+    seasonal_plan = PillboxPlanModel(
+        id=uuid4(),
+        family_id=family_id,
+        title="Осенний курс витаминов",
+        status="paused",
+        member_account_ids=[account.id for account in accounts],
+        created_by_account_id=created_by.id,
+        created_at=now - timedelta(days=76),
+        updated_at=now - timedelta(days=41),
+    )
+    travel_plan = PillboxPlanModel(
+        id=uuid4(),
+        family_id=family_id,
+        title="Дорожный набор на выходные",
+        status="active",
+        member_account_ids=[account.id for account in accounts],
+        created_by_account_id=created_by.id,
+        created_at=now - timedelta(days=54),
+        updated_at=now - timedelta(days=50),
+    )
+    allergy_plan = PillboxPlanModel(
+        id=uuid4(),
+        family_id=family_id,
+        title="Сезонная аллергия",
+        status="paused",
+        member_account_ids=[account.id for account in accounts],
+        created_by_account_id=created_by.id,
+        created_at=now - timedelta(days=23),
+        updated_at=now - timedelta(days=16),
+    )
+    session.add_all([primary_plan, recovery_plan, seasonal_plan, travel_plan, allergy_plan])
+    await session.flush()
+
+    vitamin_d = PillboxMedicationModel(
+        id=uuid4(),
+        plan_id=primary_plan.id,
+        household_medicine_id=medicines[3].id,
+        custom_medicine_name=None,
+        dose_amount="1 капля",
+        meal_rule="after_meal",
+        repeat_days=[0, 1, 2, 3, 4, 5, 6],
+        times=[time(8, 30)],
+        course_mode="ongoing",
+        course_start_date=(now - timedelta(days=45)).date(),
+        course_end_date=None,
+        position=0,
+    )
+    probiotic = PillboxMedicationModel(
+        id=uuid4(),
+        plan_id=primary_plan.id,
+        household_medicine_id=medicines[4].id,
+        custom_medicine_name=None,
+        dose_amount="5 капель",
+        meal_rule="after_meal",
+        repeat_days=[0, 1, 2, 3, 4, 5, 6],
+        times=[time(9, 15), time(20, 15)],
+        course_mode="date_range",
+        course_start_date=(now - timedelta(days=6)).date(),
+        course_end_date=(now + timedelta(days=7)).date(),
+        position=1,
+    )
+    recovery_saline = PillboxMedicationModel(
+        id=uuid4(),
+        plan_id=recovery_plan.id,
+        household_medicine_id=medicines[2].id,
+        custom_medicine_name=None,
+        dose_amount="2 впрыска",
+        meal_rule="after_meal",
+        repeat_days=[0, 1, 2, 3, 4, 5, 6],
+        times=[time(9, 0), time(21, 0)],
+        course_mode="date_range",
+        course_start_date=(now - timedelta(days=18)).date(),
+        course_end_date=(now - timedelta(days=11)).date(),
+        position=0,
+    )
+    seasonal_vitamin = PillboxMedicationModel(
+        id=uuid4(),
+        plan_id=seasonal_plan.id,
+        household_medicine_id=medicines[3].id,
+        custom_medicine_name=None,
+        dose_amount="1 капля",
+        meal_rule="after_meal",
+        repeat_days=[0, 1, 2, 3, 4, 5, 6],
+        times=[time(8, 45)],
+        course_mode="date_range",
+        course_start_date=(now - timedelta(days=65)).date(),
+        course_end_date=(now - timedelta(days=44)).date(),
+        position=0,
+    )
+    travel_paracetamol = PillboxMedicationModel(
+        id=uuid4(),
+        plan_id=travel_plan.id,
+        household_medicine_id=medicines[1].id,
+        custom_medicine_name=None,
+        dose_amount="7.5 мл",
+        meal_rule="after_meal",
+        repeat_days=[5, 6],
+        times=[time(10, 0), time(18, 0)],
+        course_mode="date_range",
+        course_start_date=(now - timedelta(days=53)).date(),
+        course_end_date=(now - timedelta(days=51)).date(),
+        position=0,
+    )
+    allergy_support = PillboxMedicationModel(
+        id=uuid4(),
+        plan_id=allergy_plan.id,
+        household_medicine_id=medicines[2].id,
+        custom_medicine_name="Спрей перед прогулкой",
+        dose_amount="1 впрыск",
+        meal_rule="after_meal",
+        repeat_days=[0, 1, 2, 3, 4, 5, 6],
+        times=[time(8, 10)],
+        course_mode="date_range",
+        course_start_date=(now - timedelta(days=21)).date(),
+        course_end_date=(now - timedelta(days=17)).date(),
+        position=0,
+    )
+    session.add_all(
+        [
+            vitamin_d,
+            probiotic,
+            recovery_saline,
+            seasonal_vitamin,
+            travel_paracetamol,
+            allergy_support,
+        ]
+    )
+    await session.flush()
+
+    logs: list[PillboxDoseLogModel] = []
+    for days_ago in range(10, -1, -1):
+        morning_author = accounts[days_ago % len(accounts)]
+        morning_time = _dt_days_ago(days_ago, 8, 35)
+        logs.append(
+            PillboxDoseLogModel(
+                id=uuid4(),
+                family_id=family_id,
+                plan_id=primary_plan.id,
+                medication_id=vitamin_d.id,
+                scheduled_for=morning_time,
+                taken_at=morning_time + timedelta(minutes=4),
+                taken_by_account_id=morning_author.id,
+                taken_by_name_snapshot=morning_author.display_name,
+                amount_snapshot="1 капля",
+                source="manual",
+                notes="Утренний ритуал после завтрака",
+            )
+        )
+        if days_ago <= 6:
+            evening_author = accounts[(days_ago + 1) % len(accounts)]
+            probiotic_time = _dt_days_ago(days_ago, 20, 15)
+            logs.append(
+                PillboxDoseLogModel(
+                    id=uuid4(),
+                    family_id=family_id,
+                    plan_id=primary_plan.id,
+                    medication_id=probiotic.id,
+                    scheduled_for=probiotic_time,
+                    taken_at=probiotic_time + timedelta(minutes=12),
+                    taken_by_account_id=evening_author.id,
+                    taken_by_name_snapshot=evening_author.display_name,
+                    amount_snapshot="5 капель",
+                    source="manual",
+                    notes="Курс после кишечного вируса",
+                )
+            )
+    for days_ago in range(18, 10, -1):
+        author = accounts[days_ago % len(accounts)]
+        saline_time = _dt_days_ago(days_ago, 21, 0)
+        logs.append(
+            PillboxDoseLogModel(
+                id=uuid4(),
+                family_id=family_id,
+                plan_id=recovery_plan.id,
+                medication_id=recovery_saline.id,
+                scheduled_for=saline_time,
+                taken_at=saline_time + timedelta(minutes=7),
+                taken_by_account_id=author.id,
+                taken_by_name_snapshot=author.display_name,
+                amount_snapshot="2 впрыска",
+                source="manual",
+                notes="Курс восстановления после ОРВИ",
+            )
+        )
+    for days_ago in range(65, 44, -7):
+        author = accounts[days_ago % len(accounts)]
+        vitamin_time = _dt_days_ago(days_ago, 8, 45)
+        logs.append(
+            PillboxDoseLogModel(
+                id=uuid4(),
+                family_id=family_id,
+                plan_id=seasonal_plan.id,
+                medication_id=seasonal_vitamin.id,
+                scheduled_for=vitamin_time,
+                taken_at=vitamin_time + timedelta(minutes=3),
+                taken_by_account_id=author.id,
+                taken_by_name_snapshot=author.display_name,
+                amount_snapshot="1 капля",
+                source="manual",
+                notes="Осенний курс витаминов",
+            )
+        )
+    for days_ago in range(53, 50, -1):
+        author = accounts[(days_ago + 1) % len(accounts)]
+        travel_time = _dt_days_ago(days_ago, 18, 0)
+        logs.append(
+            PillboxDoseLogModel(
+                id=uuid4(),
+                family_id=family_id,
+                plan_id=travel_plan.id,
+                medication_id=travel_paracetamol.id,
+                scheduled_for=travel_time,
+                taken_at=travel_time + timedelta(minutes=9),
+                taken_by_account_id=author.id,
+                taken_by_name_snapshot=author.display_name,
+                amount_snapshot="7.5 мл",
+                source="manual",
+                notes="Дорожный сценарий в поездке",
+            )
+        )
+    for days_ago in range(21, 16, -1):
+        author = accounts[days_ago % len(accounts)]
+        allergy_time = _dt_days_ago(days_ago, 8, 10)
+        logs.append(
+            PillboxDoseLogModel(
+                id=uuid4(),
+                family_id=family_id,
+                plan_id=allergy_plan.id,
+                medication_id=allergy_support.id,
+                scheduled_for=allergy_time,
+                taken_at=allergy_time + timedelta(minutes=2),
+                taken_by_account_id=author.id,
+                taken_by_name_snapshot=author.display_name,
+                amount_snapshot="1 впрыск",
+                source="manual",
+                notes="Короткий курс на сезонную аллергию",
+            )
+        )
+    session.add_all(logs)
+    await session.flush()
+    return [primary_plan, recovery_plan, seasonal_plan, travel_plan, allergy_plan]
 
 
 def build_children() -> list[ChildSeed]:
@@ -263,11 +630,11 @@ async def main() -> None:
         family_id = account.family_id
         family_accounts = (
             await session.execute(
-                select(AccountModel.id, AccountModel.display_name)
+                select(AccountModel)
                 .where(AccountModel.family_id == family_id)
                 .order_by(AccountModel.created_at.asc())
             )
-        ).all()
+        ).scalars().all()
         authors = [
             EventAuthorSeed(account_id=row.id, display_name=row.display_name)
             for row in family_accounts
@@ -308,6 +675,36 @@ async def main() -> None:
             )
             await session.execute(delete(ChildModel).where(ChildModel.id.in_(existing_child_ids)))
 
+        existing_plan_ids = (
+            (
+                await session.execute(
+                    select(PillboxPlanModel.id).where(PillboxPlanModel.family_id == family_id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if existing_plan_ids:
+            await session.execute(
+                delete(PillboxNotificationDeliveryModel).where(
+                    PillboxNotificationDeliveryModel.plan_id.in_(existing_plan_ids)
+                )
+            )
+            await session.execute(
+                delete(PillboxDoseLogModel).where(PillboxDoseLogModel.plan_id.in_(existing_plan_ids))
+            )
+            await session.execute(
+                delete(PillboxMedicationModel).where(
+                    PillboxMedicationModel.plan_id.in_(existing_plan_ids)
+                )
+            )
+            await session.execute(
+                delete(PillboxPlanModel).where(PillboxPlanModel.id.in_(existing_plan_ids))
+            )
+        await session.execute(
+            delete(HouseholdMedicineModel).where(HouseholdMedicineModel.family_id == family_id)
+        )
+
         children = build_children()
 
         for child_index, child_seed in enumerate(children):
@@ -317,6 +714,7 @@ async def main() -> None:
                 name=child_seed.name,
                 birth_date=child_seed.birth_date,
                 notes=child_seed.notes,
+                created_at=datetime.now(UTC),
             )
             session.add(child)
             await session.flush()
@@ -432,6 +830,27 @@ async def main() -> None:
                             notify_at_due=True,
                         )
                     )
+
+        family = await session.get(FamilyModel, family_id)
+        if family is not None and family.plan_code == "free" and family.subscription_status == "inactive":
+            oldest_child = (
+                (
+                    await session.execute(
+                        select(ChildModel.id)
+                        .where(ChildModel.family_id == family_id)
+                        .order_by(ChildModel.created_at.asc(), ChildModel.id.asc())
+                        .limit(1)
+                    )
+                )
+                .scalars()
+                .first()
+            )
+            family.free_primary_child_id = oldest_child
+
+        medicines = await _create_household_medicines(session, family_id)
+        pillbox_plans = await _create_pillbox(session, family_id, family_accounts or [account], medicines)
+        if family is not None and family.plan_code == "free" and family.subscription_status == "inactive":
+            family.free_primary_pillbox_plan_id = pillbox_plans[0].id if pillbox_plans else None
 
         await session.commit()
 

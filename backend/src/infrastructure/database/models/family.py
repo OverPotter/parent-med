@@ -36,6 +36,11 @@ class FamilyModel(Base):
         ForeignKey("children.id", ondelete="SET NULL"),
         nullable=True,
     )
+    free_primary_pillbox_plan_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("pillbox_plans.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     plan_code: Mapped[str] = mapped_column(String(32), nullable=False, default="free")
     subscription_status: Mapped[str] = mapped_column(
         String(32),
@@ -71,6 +76,10 @@ class FamilyModel(Base):
     free_primary_child: Mapped["ChildModel | None"] = relationship(
         "ChildModel",
         foreign_keys=[free_primary_child_id],
+    )
+    free_primary_pillbox_plan: Mapped["PillboxPlanModel | None"] = relationship(
+        "PillboxPlanModel",
+        foreign_keys=[free_primary_pillbox_plan_id],
     )
     parents: Mapped[list] = relationship("ParentModel", back_populates="family")
     children: Mapped[list] = relationship(

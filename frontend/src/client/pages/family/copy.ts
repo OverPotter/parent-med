@@ -67,10 +67,10 @@ export const familyCopy = {
     removeFromFamily: "Удалить",
     leaveFamily: "Выйти из семьи",
     leaveFamilyDescription:
-      "Вы потеряете доступ к детям, аптечке и приёмам этой семьи. Для вашего аккаунта будет создана новая пустая семья.",
+      "Вы потеряете доступ к детям, аптечке и таблетнице этой семьи. Для вашего аккаунта будет создана новая пустая семья.",
     confirmLeaveFamilyTitle: "Выйти из семьи?",
     confirmLeaveFamilyDescription:
-      "Вы потеряете доступ к детям, аптечке и приёмам этой семьи. Для вас будет создана новая пустая семья.",
+      "Вы потеряете доступ к детям, аптечке и таблетнице этой семьи. Для вас будет создана новая пустая семья.",
     confirmLeaveFamilyAction: "Да, выйти",
     confirmPromoteTitle: "Сделать участника администратором?",
     confirmPromoteDescription:
@@ -86,7 +86,8 @@ export const familyCopy = {
     displayName: "Имя в семье",
     displayNamePlaceholder: "Например: Оля",
     relationship: "Кто это в семье",
-    relationshipPlaceholder: "Например: няня",
+    relationshipPlaceholder: "Например: мама",
+    relationshipHint: "Можно написать так, как вас будут понимать в семье: мама, папа, бабушка, дедушка, няня.",
     phone: "Телефон",
     email: "Email",
     emailPlaceholder: "you@example.com",
@@ -105,7 +106,7 @@ export const familyCopy = {
     selectedChildrenAction: "Выбрать детей",
     childrenAccess: "Доступ к детям / журналу",
     cabinetAccess: "Аптечка",
-    pillboxAccess: "Приёмы",
+    pillboxAccess: "Таблетница",
     view: "Только просмотр",
     actAccess: "Можно отмечать",
     editAccess: "Можно менять",
@@ -218,7 +219,9 @@ export const familyCopy = {
     displayName: "Family name",
     displayNamePlaceholder: "Example: Olivia",
     relationship: "Relationship",
-    relationshipPlaceholder: "Example: nanny",
+    relationshipPlaceholder: "Example: mom",
+    relationshipHint:
+      "Use the role your family will understand right away: mom, dad, grandma, grandpa, nanny.",
     phone: "Phone",
     email: "Email",
     emailPlaceholder: "you@example.com",

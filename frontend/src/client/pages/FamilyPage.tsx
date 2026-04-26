@@ -7,9 +7,12 @@ import {
   fetchLatestDevFamilyInvitePreview,
 } from "@shared/api/familyInvites";
 import { applySessionToClient } from "@shared/api/client";
+import { hasNetworkUnavailableError } from "@shared/api/network";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
+import { ModuleOfflineState } from "@shared/components/ModuleOfflineState";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState, RowSurface } from "@shared/components/Surface";
+import { useIsOffline } from "@shared/hooks/useIsOffline";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
@@ -48,6 +51,7 @@ export function FamilyPage() {
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const setAuthState = useAppStore((s) => s.setAuthState);
   const isIosShell = useIsIosShell();
+  const isOffline = useIsOffline();
   const showDevInviteShortcut =
     import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
   const {
@@ -77,6 +81,8 @@ export function FamilyPage() {
     useFamilyMembersData(currentFamilyId, currentAccountId);
 
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
+  const showOfflineState =
+    isOffline || hasNetworkUnavailableError([familyError, membersError]);
   const isFamilyOwner = isFamilyOwnerAccount({
     familyOwnerAccountId: family?.ownerAccountId,
     currentAccountId,
@@ -179,6 +185,41 @@ export function FamilyPage() {
       window.clearTimeout(timeoutId);
     };
   }, [inviteToast]);
+
+  if (showOfflineState) {
+    return (
+      <div className="min-w-0 space-y-6 sm:space-y-8">
+        <PageIntro
+          title={familyTitle}
+          subtitle={tFamily(language, "subtitle")}
+          action={
+            <Link
+              to="/more"
+              className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+            >
+              {language === "ru" ? "← Ещё" : "← More"}
+            </Link>
+          }
+          compactOnMobile
+          hideOnMobile
+          className="app-safe-top-standalone"
+        />
+        <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+          <div className="app-mobile-section-intro">
+            <Link
+              to="/more"
+              className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+            >
+              {language === "ru" ? "← Ещё" : "← More"}
+            </Link>
+            <h1 className="app-mobile-section-intro__title">{familyTitle}</h1>
+            <p className="app-mobile-section-intro__hint">{tFamily(language, "subtitle")}</p>
+          </div>
+        </div>
+        <ModuleOfflineState language={language} />
+      </div>
+    );
+  }
 
   if (!isFamilyLoading && !family) {
     return (
@@ -357,12 +398,12 @@ export function FamilyPage() {
 
       {error && <p className="soft-note-danger">{error}</p>}
       {inviteToast ? <p className="soft-note-success">{inviteToast}</p> : null}
-      {familyError && (
+      {familyError && !showOfflineState && (
         <p className="soft-note-danger">
           {(familyError as { message?: string }).message ?? tFamily(language, "loadFamilyFailed")}
         </p>
       )}
-      {membersError && (
+      {membersError && !showOfflineState && (
         <p className="soft-note-danger">
           {(membersError as { message?: string }).message ?? tFamily(language, "loadMembersFailed")}
         </p>

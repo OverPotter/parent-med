@@ -24,6 +24,7 @@ class SqlFamilyRepository(FamilyRepository):
             owner_account_id=m.owner_account_id,
             billing_account_id=m.billing_account_id,
             free_primary_child_id=m.free_primary_child_id,
+            free_primary_pillbox_plan_id=m.free_primary_pillbox_plan_id,
             plan_code=m.plan_code,
             subscription_status=m.subscription_status,
             subscription_provider=m.subscription_provider,
@@ -39,6 +40,7 @@ class SqlFamilyRepository(FamilyRepository):
             owner_account_id=e.owner_account_id,
             billing_account_id=e.billing_account_id,
             free_primary_child_id=e.free_primary_child_id,
+            free_primary_pillbox_plan_id=e.free_primary_pillbox_plan_id,
             plan_code=e.plan_code,
             subscription_status=e.subscription_status,
             subscription_provider=e.subscription_provider,
@@ -72,6 +74,7 @@ class SqlFamilyRepository(FamilyRepository):
         row.owner_account_id = entity.owner_account_id
         row.billing_account_id = entity.billing_account_id
         row.free_primary_child_id = entity.free_primary_child_id
+        row.free_primary_pillbox_plan_id = entity.free_primary_pillbox_plan_id
         row.plan_code = entity.plan_code
         row.subscription_status = entity.subscription_status
         row.subscription_provider = entity.subscription_provider

@@ -2,7 +2,9 @@ import { useEffect, useRef } from "react";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { useQuery } from "@tanstack/react-query";
+import { fetchMyFamilyAccess } from "@shared/api/families";
 import { fetchPushNotificationPreferences } from "@shared/api/pushNotifications";
+import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
 import {
@@ -51,6 +53,12 @@ export function LiveActivityRuntimeSync() {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: isBootReady && !!authToken && !!currentFamilyId && isNativeIos,
+    ...familyAccessQueryOptions,
+  });
 
   useEffect(() => {
     if (
@@ -66,11 +74,27 @@ export function LiveActivityRuntimeSync() {
 
     const sync = async () => {
       const preferences = resolveLiveActivityPreferences(pushPreferences);
+      const effectivePreferences =
+        familyAccess?.canUseLiveActivities === false
+          ? {
+              sleepEnabled: false,
+              feedingEnabled: false,
+              illnessEnabled: false,
+            }
+          : preferences;
       updateLiveActivityDiagnostics({
         lastSync: `start family=${currentFamilyId}`,
         lastError: null,
       });
-      await stopDisabledLiveActivities(preferences);
+      await stopDisabledLiveActivities(effectivePreferences);
+      if (familyAccess?.canUseLiveActivities === false) {
+        previousChildIdsRef.current = [];
+        updateLiveActivityDiagnostics({
+          lastSync: `stopped family=${currentFamilyId} no_live_access`,
+          lastError: null,
+        });
+        return;
+      }
 
       const children = await fetchChildrenByFamilyId(currentFamilyId);
       const householdMedicines = await fetchHouseholdMedicines();
@@ -165,7 +189,7 @@ export function LiveActivityRuntimeSync() {
         activeSleepByChildId: Object.fromEntries(sleepEntries),
         activeFeedingByChildId: Object.fromEntries(feedingEntries),
         language: language === "en" ? "en" : "ru",
-        preferences,
+        preferences: effectivePreferences,
         currentAccountId: accountId,
       });
       previousChildIdsRef.current = nextChildIds;
@@ -246,7 +270,16 @@ export function LiveActivityRuntimeSync() {
       window.removeEventListener(LIVE_ACTIVITY_REFRESH_EVENT, handleRefreshRequested);
       removeAppStateListener?.();
     };
-  }, [accountId, authToken, currentFamilyId, isBootReady, isNativeIos, language, pushPreferences]);
+  }, [
+    accountId,
+    authToken,
+    currentFamilyId,
+    familyAccess?.canUseLiveActivities,
+    isBootReady,
+    isNativeIos,
+    language,
+    pushPreferences,
+  ]);
 
   return null;
 }

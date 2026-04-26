@@ -60,6 +60,7 @@ class FamilyService:
             owner_account_id=entity.owner_account_id,
             billing_account_id=entity.billing_account_id,
             free_primary_child_id=entity.free_primary_child_id,
+            free_primary_pillbox_plan_id=entity.free_primary_pillbox_plan_id,
             plan_code=entity.plan_code,  # type: ignore[arg-type]
             subscription_status=entity.subscription_status,  # type: ignore[arg-type]
             subscription_provider=entity.subscription_provider,

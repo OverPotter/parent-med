@@ -105,7 +105,7 @@ export function SettingsLiveActivitiesSection({
               onClick={onLockedPress}
               className="mt-3 inline-flex min-h-[2.35rem] items-center rounded-full border border-primary/18 bg-white/80 px-3 text-[0.78rem] font-semibold text-primary shadow-[0_10px_22px_rgba(15,23,42,0.08)]"
             >
-              {language === "ru" ? "Открыть Plus" : "Unlock Plus"}
+              {language === "ru" ? "Подключить Plus" : "Get Plus"}
             </button>
           ) : null}
         </div>

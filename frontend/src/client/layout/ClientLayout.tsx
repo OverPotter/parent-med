@@ -146,7 +146,7 @@ export function ClientLayout() {
       ? {
           observations: "Журнал",
           children: "Дети",
-          pillbox: "Приёмы",
+          pillbox: "Таблетница",
           cabinet: "Аптечка",
         }
       : {

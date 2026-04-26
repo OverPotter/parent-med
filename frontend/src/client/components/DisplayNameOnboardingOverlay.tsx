@@ -250,6 +250,9 @@ export function DisplayNameOnboardingOverlay() {
                   placeholder={tFamily(language, "relationshipPlaceholder")}
                   autoComplete="off"
                 />
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {tFamily(language, "relationshipHint")}
+                </p>
               </label>
             </div>
 

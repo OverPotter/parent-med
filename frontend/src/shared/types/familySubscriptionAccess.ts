@@ -15,6 +15,7 @@ export interface RawFamilySubscriptionAccess {
   max_adults?: number | null;
   max_pillbox_plans?: number | null;
   free_primary_child_id?: string | null;
+  free_primary_pillbox_plan_id?: string | null;
   current_children_count?: number | null;
   current_adults_count?: number | null;
   current_pillbox_plan_count?: number | null;
@@ -38,6 +39,7 @@ export function toFamilySubscriptionAccess(
     maxAdults: raw.max_adults ?? null,
     maxPillboxPlans: raw.max_pillbox_plans ?? null,
     freePrimaryChildId: raw.free_primary_child_id ?? null,
+    freePrimaryPillboxPlanId: raw.free_primary_pillbox_plan_id ?? null,
     currentChildrenCount: raw.current_children_count ?? 0,
     currentAdultsCount: raw.current_adults_count ?? 0,
     currentPillboxPlanCount: raw.current_pillbox_plan_count ?? 0,

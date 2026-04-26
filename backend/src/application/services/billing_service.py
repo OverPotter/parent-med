@@ -23,6 +23,7 @@ from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.feeding_record_repository import FeedingRecordRepository
 from src.domain.repositories.plan_repository import PlanRepository
+from src.domain.repositories.pillbox_repository import PillboxRepository
 from src.domain.repositories.sleep_session_repository import SleepSessionRepository
 from src.domain.repositories.subscription_repository import SubscriptionRepository
 
@@ -37,6 +38,7 @@ class BillingService:
         subscription_repo: SubscriptionRepository,
         billing_event_repo: BillingEventRepository,
         child_repo: ChildRepository,
+        pillbox_repo: PillboxRepository,
         feeding_repo: FeedingRecordRepository,
         sleep_repo: SleepSessionRepository,
         subscription_access_service: SubscriptionAccessService,
@@ -46,6 +48,7 @@ class BillingService:
         self._subscription_repo = subscription_repo
         self._billing_event_repo = billing_event_repo
         self._child_repo = child_repo
+        self._pillbox_repo = pillbox_repo
         self._feeding_repo = feeding_repo
         self._sleep_repo = sleep_repo
         self._subscription_access_service = subscription_access_service
@@ -64,6 +67,7 @@ class BillingService:
             owner_account_id=entity.owner_account_id,
             billing_account_id=entity.billing_account_id,
             free_primary_child_id=entity.free_primary_child_id,
+            free_primary_pillbox_plan_id=entity.free_primary_pillbox_plan_id,
             plan_code=entity.plan_code,  # type: ignore[arg-type]
             subscription_status=entity.subscription_status,  # type: ignore[arg-type]
             subscription_provider=entity.subscription_provider,
@@ -194,10 +198,16 @@ class BillingService:
             next_plan_code=plan.code,
             next_status=status,
         )
+        free_primary_pillbox_plan_id = await self._resolve_free_primary_pillbox_plan_id(
+            family,
+            next_plan_code=plan.code,
+            next_status=status,
+        )
         updated = replace(
             family,
             billing_account_id=billing_account_id,
             free_primary_child_id=free_primary_child_id,
+            free_primary_pillbox_plan_id=free_primary_pillbox_plan_id,
             plan_code=plan.code,
             subscription_status=status,
             subscription_provider=provider,
@@ -206,6 +216,11 @@ class BillingService:
         )
         persisted = await self._family_repo.update(updated)
         await self._stop_non_primary_active_trackers_if_needed(
+            persisted,
+            next_plan_code=plan.code,
+            next_status=status,
+        )
+        await self._pause_non_primary_pillbox_plans_if_needed(
             persisted,
             next_plan_code=plan.code,
             next_status=status,
@@ -261,6 +276,69 @@ class BillingService:
                 continue
             await self._stop_active_feeding_for_child(child.id, now)
             await self._stop_active_sleep_for_child(child.id, now)
+
+    async def _resolve_free_primary_pillbox_plan_id(
+        self,
+        family: Family,
+        *,
+        next_plan_code: str,
+        next_status: str,
+    ):
+        premium_active = next_plan_code in {"plus", "pro"} and next_status in {
+            "trialing",
+            "active",
+            "grace",
+        }
+        if premium_active:
+            return family.free_primary_pillbox_plan_id
+
+        plans = await self._pillbox_repo.list_by_family_id(family.id)
+        if not plans:
+            return None
+
+        operational_plans = [
+            plan for plan in plans if plan.status not in {"completed", "archived"}
+        ]
+        active_operational_plans = [plan for plan in operational_plans if plan.status == "active"]
+        paused_operational_plans = [plan for plan in operational_plans if plan.status == "paused"]
+        candidate_plans = active_operational_plans or paused_operational_plans or operational_plans or plans
+        if family.free_primary_pillbox_plan_id is not None:
+            current_primary = next(
+                (plan for plan in candidate_plans if plan.id == family.free_primary_pillbox_plan_id),
+                None,
+            )
+            if current_primary is not None and (
+                not active_operational_plans or current_primary.status == "active"
+            ):
+                return current_primary.id
+
+        primary_plan = min(candidate_plans, key=lambda plan: (plan.created_at, str(plan.id)))
+        return primary_plan.id
+
+    async def _pause_non_primary_pillbox_plans_if_needed(
+        self,
+        family: Family,
+        *,
+        next_plan_code: str,
+        next_status: str,
+    ) -> None:
+        premium_active = next_plan_code in {"plus", "pro"} and next_status in {
+            "trialing",
+            "active",
+            "grace",
+        }
+        if premium_active:
+            return
+
+        primary_plan_id = family.free_primary_pillbox_plan_id
+        plans = await self._pillbox_repo.list_by_family_id(family.id)
+        for plan in plans:
+            if plan.id == primary_plan_id:
+                continue
+            if plan.status in {"completed", "archived"}:
+                continue
+            if plan.status != "paused":
+                await self._pillbox_repo.update(replace(plan, status="paused"))
 
     async def _stop_active_feeding_for_child(self, child_id: UUID, stopped_at: datetime) -> None:
         active = await self._feeding_repo.get_active_by_child_id(child_id)

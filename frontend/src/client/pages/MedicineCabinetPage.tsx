@@ -11,13 +11,17 @@ import {
   updateHouseholdMedicine,
 } from "@shared/api/householdMedicines";
 import {
+  fetchMyFamilyAccess,
   fetchMyFamily,
   fetchMyFamilyMembers,
   updateMyFamilyCabinetRecipients,
 } from "@shared/api/families";
+import { hasNetworkUnavailableError } from "@shared/api/network";
 import { getEligibleCabinetRecipients } from "@shared/familyAccess/recipients";
+import { ModuleOfflineState } from "@shared/components/ModuleOfflineState";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState } from "@shared/components/Surface";
+import { useIsOffline } from "@shared/hooks/useIsOffline";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
@@ -25,6 +29,8 @@ import { canEditCabinet, canViewCabinet } from "@shared/permissions/familyAccess
 import { useAppStore } from "@shared/store/useAppStore";
 import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
+import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
+import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { AddHouseholdMedicineForm } from "./medicine-cabinet/AddHouseholdMedicineForm";
 import { AddMedicineChoiceDialog } from "./medicine-cabinet/AddMedicineChoiceDialog";
 import { CabinetPushRecipientsCard } from "./medicine-cabinet/CabinetPushRecipientsCard";
@@ -59,6 +65,7 @@ export function MedicineCabinetPage() {
   const [selectedFilter, setSelectedFilter] = useState<CabinetFilterKey | null>(null);
   const [expandedMedicineId, setExpandedMedicineId] = useState<string | null>(null);
   const [networkRequiredNotice, setNetworkRequiredNotice] = useState(false);
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
@@ -66,7 +73,7 @@ export function MedicineCabinetPage() {
   const liveQueryOptions = useLiveQueryOptions(isIosShell ? 30_000 : 15_000);
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);
   const canMutateCabinet = canEditCabinet(accountFamilyRole, accountAccessPolicy);
-  const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
+  const isOffline = useIsOffline();
 
   const addFlow: AddMedicineFlow =
     location.pathname === "/medicine-cabinet/add"
@@ -88,6 +95,13 @@ export function MedicineCabinetPage() {
 
   const closeAddFlow = (options?: { replace?: boolean }) => {
     navigate("/medicine-cabinet", { replace: options?.replace ?? false });
+  };
+
+  const openCatalogUpgradeDialog = () => {
+    closeAddFlow({ replace: true });
+    window.setTimeout(() => {
+      setIsUpgradeDialogOpen(true);
+    }, 0);
   };
 
   useEffect(() => {
@@ -117,8 +131,29 @@ export function MedicineCabinetPage() {
     enabled: !!currentFamilyId && canSeeCabinet,
     staleTime: 5 * 60 * 1000,
   });
+  const { data: familyAccess } = useQuery({
+    queryKey: ["families", "me", "access", currentFamilyId],
+    queryFn: fetchMyFamilyAccess,
+    enabled: !!currentFamilyId && canSeeCabinet,
+    staleTime: 5 * 60 * 1000,
+  });
   const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === accountId);
   const canManageCabinetRecipients = isFamilyOwner;
+  const isFamilyAccessResolved = familyAccess !== undefined;
+  const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const isCatalogLocked = isFamilyAccessResolved && familyAccess.premiumActive === false;
+  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+    accountId,
+    currentFamilyId,
+    canManageSubscription
+  );
+
+  useEffect(() => {
+    if (addFlow !== "catalog" || !isFamilyAccessResolved || !isCatalogLocked) {
+      return;
+    }
+    openCatalogUpgradeDialog();
+  }, [addFlow, isCatalogLocked, isFamilyAccessResolved]);
 
   const { data: familyMembers = [] } = useQuery({
     queryKey: ["families", "me", "members", currentFamilyId],
@@ -127,6 +162,10 @@ export function MedicineCabinetPage() {
     staleTime: 5 * 60 * 1000,
   });
   const eligibleCabinetMembers = getEligibleCabinetRecipients(familyMembers);
+  const showOfflineState =
+    canSeeCabinet && isOffline
+      ? true
+      : hasNetworkUnavailableError([error]);
   const cabinetRecipientsSummary = useMemo(() => {
     if (!family || !canManageCabinetRecipients) {
       return null;
@@ -242,6 +281,26 @@ export function MedicineCabinetPage() {
 
   if (!canMutateCabinet && (addFlow || isNewPackFlow)) {
     return <Navigate to="/medicine-cabinet" replace />;
+  }
+
+  if (showOfflineState) {
+    return (
+      <div className="min-w-0 space-y-6 sm:space-y-8">
+        <PageIntro
+          title={tCabinet(language, "title")}
+          subtitle={tCabinet(language, "subtitle")}
+          compactOnMobile
+          hideOnMobile
+        />
+        <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
+          <div className="app-mobile-section-intro">
+            <h1 className="app-mobile-section-intro__title">{tCabinet(language, "title")}</h1>
+            <p className="app-mobile-section-intro__hint">{tCabinet(language, "mobileHint")}</p>
+          </div>
+        </div>
+        <ModuleOfflineState language={language} />
+      </div>
+    );
   }
 
   const normalizedCabinetSearch = cabinetSearch.trim().toLowerCase();
@@ -443,8 +502,10 @@ export function MedicineCabinetPage() {
       {addFlow === "choice" ? (
         <AddMedicineChoiceDialog
           language={language}
+          catalogLocked={isCatalogLocked}
           onClose={() => closeAddFlow()}
           onCatalog={() => openAddFlow("catalog")}
+          onLockedCatalogAttempt={openCatalogUpgradeDialog}
           onManual={() => openAddFlow("manual")}
         />
       ) : null}
@@ -465,7 +526,7 @@ export function MedicineCabinetPage() {
       </div>
 
       {isLoading && <p className="mt-4 text-muted">{tCabinet(language, "loading")}</p>}
-      {error && (
+      {error && !showOfflineState && (
         <p className="soft-note-danger">
           {(error as { message?: string }).message ?? tCabinet(language, "loadError")}
         </p>
@@ -630,6 +691,19 @@ export function MedicineCabinetPage() {
           onExpandChange={setExpandedMedicineId}
         />
       )}
+      <UpgradeDialog
+        isOpen={isUpgradeDialogOpen}
+        language={language}
+        entryPoint="medicine_catalog"
+        isPending={isUpgradePending}
+        canUpgrade={canManageSubscription}
+        onClose={() => setIsUpgradeDialogOpen(false)}
+        onUpgrade={() =>
+          void upgradeToPlus().then(() => {
+            setIsUpgradeDialogOpen(false);
+          })
+        }
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ export interface Family {
   ownerAccountId: string | null;
   billingAccountId: string | null;
   freePrimaryChildId: string | null;
+  freePrimaryPillboxPlanId: string | null;
   planCode: "free" | "plus" | "pro";
   subscriptionStatus: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired";
   subscriptionProvider: string | null;
@@ -32,6 +33,7 @@ export interface FamilySubscriptionAccess {
   maxAdults: number | null;
   maxPillboxPlans: number | null;
   freePrimaryChildId: string | null;
+  freePrimaryPillboxPlanId: string | null;
   currentChildrenCount: number;
   currentAdultsCount: number;
   currentPillboxPlanCount: number;

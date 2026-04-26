@@ -4,12 +4,13 @@ import { getUpgradeDialogCopy } from "../src/client/subscription/upgradeDialogCo
 
 test("getUpgradeDialogCopy returns family invite upgrade copy", () => {
   const copy = getUpgradeDialogCopy("ru", "invite_family");
-  assert.match(copy.title, /Plus/);
-  assert.equal(copy.highlights.length, 3);
+  assert.match(copy.title, /семью/i);
+  assert.match(copy.description, /аптечку/i);
+  assert.equal(copy.highlights.length, 4);
 });
 
 test("getUpgradeDialogCopy returns second child upgrade copy", () => {
   const copy = getUpgradeDialogCopy("en", "second_child");
-  assert.match(copy.description, /multiple children/i);
-  assert.equal(copy.highlights.length, 3);
+  assert.match(copy.description, /multiple child profiles/i);
+  assert.equal(copy.highlights.length, 4);
 });

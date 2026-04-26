@@ -86,10 +86,10 @@ export function PillboxSetupScreen({
         title={
           isEditing
             ? language === "ru"
-              ? "Приёмы · Редактировать план"
+              ? "Таблетница · Редактировать план"
               : "Pillbox · Edit plan"
             : language === "ru"
-              ? "Приёмы · Создать план"
+              ? "Таблетница · Создать план"
               : "Pillbox · Create plan"
         }
         subtitle={

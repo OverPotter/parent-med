@@ -62,6 +62,7 @@ class SubscriptionAccessService:
             max_adults=policy.max_adults,
             max_pillbox_plans=policy.max_pillbox_plans,
             free_primary_child_id=family.free_primary_child_id,
+            free_primary_pillbox_plan_id=family.free_primary_pillbox_plan_id,
             current_children_count=len(children),
             current_adults_count=self._active_member_count(family_accounts),
             current_pillbox_plan_count=len(pillbox_plans),

@@ -17,6 +17,7 @@ type RawFamily = {
   owner_account_id?: string | null;
   billing_account_id?: string | null;
   free_primary_child_id?: string | null;
+  free_primary_pillbox_plan_id?: string | null;
   plan_code?: "free" | "plus" | "pro" | null;
   subscription_status?: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired" | null;
   subscription_provider?: string | null;

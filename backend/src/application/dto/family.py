@@ -37,6 +37,7 @@ class FamilyResponseDto(ResponseBase):
     owner_account_id: UUID | None = None
     billing_account_id: UUID | None = None
     free_primary_child_id: UUID | None = None
+    free_primary_pillbox_plan_id: UUID | None = None
     plan_code: Literal["free", "plus", "pro"] = "free"
     subscription_status: Literal[
         "inactive", "trialing", "active", "grace", "canceled", "expired"

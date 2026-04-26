@@ -1,5 +1,13 @@
 # Subscription Rollout Plan
 
+This is the detailed rollout/status document for subscription, downgrade, billing ownership, and related family-access rules.
+
+For high-level project docs, use:
+
+- [docs/APP_ARCHITECTURE.md](./docs/APP_ARCHITECTURE.md)
+- [docs/DATABASE_ARCHITECTURE.md](./docs/DATABASE_ARCHITECTURE.md)
+- [docs/PROJECT_STATUS.md](./docs/PROJECT_STATUS.md)
+
 ## Implementation Checklist
 
 - [x] Create a dedicated rollout plan in the repo
@@ -18,6 +26,10 @@
 - [x] Add local force-free testing mode for subscription logic
 - [ ] Remove dev-only RevenueCat sandbox/testing controls before release
 - [ ] Add landing pricing page
+- [ ] Verify device-language auto selection on first launch
+- [ ] Verify device-theme auto selection on first launch
+- [ ] Evaluate adding Polish and German localizations
+- [ ] Evaluate internal admin/support console for manual subscription overrides and account support
 
 ## Completed Work
 
@@ -88,12 +100,23 @@
   - `backend/tests/test_family_invite_service.py`
   - `backend/tests/test_family_access_services.py`
   - `backend/tests/test_billing_service.py`
+- [x] Pillbox downgrade model added:
+  - migration `066_add_free_primary_pillbox_plan.py`
+  - `families.free_primary_pillbox_plan_id` stores the one plan that stays operational in `Free`
+  - after downgrade from `Plus`, one pillbox plan stays operational in `Free`
+  - every additional active or paused plan is frozen in `paused`
+  - frozen non-primary plans stay visible, but no longer allow dose logging, resume, edit, or delete in `Free`
 - [x] Covered by targeted frontend tests:
   - `frontend/test/familySubscriptionAccess.test.ts`
   - `frontend/test/familyMemberManagement.test.ts`
   - `frontend/test/upgradeDialogCopy.test.ts`
-  - `npm test -- --runInBand` passed with `84` tests
+  - `frontend/test/pillboxPlanAccess.test.ts`
+  - `npm test -- --runInBand` passed with `85` tests
   - `npm run build` passed
+- [x] UI cleanup after final role/subscription flows:
+  - duplicated `Plus` badge markup removed into shared `PlusBadge`
+  - pillbox free-limit visibility logic extracted into shared frontend helper
+  - paywall copy tests updated to match the new product text
 
 ## Goal
 
@@ -232,6 +255,70 @@ Implementation status:
 - non-primary children cannot start new premium child flows
 - active illness may be finished for non-primary children
 - active feeding and active sleep do not get continuation rights after downgrade
+
+### Live Activities
+
+#### Free, normal case
+
+- the `Live Activities` section remains visible in Settings
+- if the family does not have `Plus`, all live-activity toggles render in the off state
+- tapping a live-activity toggle in `Free` does not enable it and instead opens the upgrade/paywall flow
+
+#### Downgrade from Plus
+
+- if `Plus` expires or the family returns to `Free`, active live activities must be stopped
+- sleep, feeding, and illness live activities stop across the runtime, not only inside Settings
+- after downgrade, the toggles immediately render as off
+- if the family later returns to `Plus`, live activities may be enabled again
+
+Implementation status:
+
+- backend access still exposes `can_use_live_activities`
+- settings render effective toggle state from subscription access, not only from saved account preferences
+- runtime sync stops live activities whenever the current family loses live-activity entitlement
+
+### Pillbox / Doses
+
+#### Free, normal case
+
+- one pillbox reminder plan is fully usable
+- the family may create, edit, and log doses only for that one plan
+
+#### Downgrade from Plus with more than one plan
+
+- one plan remains the `free_primary_pillbox_plan`
+- primary selection prefers an `active` operational plan before any `paused` one
+- if there are no active operational plans left, the oldest paused operational plan may remain primary
+- every other active or paused plan is frozen in `paused` during downgrade sync
+- frozen non-primary plans remain visible in the active list
+- dose logs and plan history are preserved
+
+#### Locked plan behavior after downgrade
+
+For non-primary pillbox plans after downgrade:
+
+- viewing the plan remains available
+- viewing past dose history remains available
+- editing the plan is locked
+- deleting the frozen operational plan is locked
+- logging a dose is locked
+- switching the frozen plan from `paused` back to `active` is locked
+- future reminders for that plan no longer continue because frozen non-primary plans stay paused
+
+#### Why frozen plans stay paused instead of archived
+
+- these are still operational plans, not historical records
+- archiving them would move them into history and make their working state disappear
+- freezing them as `paused` keeps them understandable in the UI
+- after the family returns to `Plus`, those plans are still present and may be resumed again
+
+Implementation status:
+
+- enforced on backend during family subscription downgrade/snapshot sync
+- one stable `free_primary_pillbox_plan_id` is persisted on the family
+- non-primary operational plans are paused during downgrade
+- pillbox mutations and dose logging are blocked on backend for non-primary plans in `Free`
+- frontend routes `resume/edit/delete` attempts on frozen operational plans into the upgrade flow
 
 ## Subscription Ownership Rules
 

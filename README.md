@@ -1,11 +1,26 @@
 # PillPath
 
-Монорепозиторий: аптечка и ведение болезни ребёнка (MVP). Детали — [AGENT.md](./AGENT.md).
+Монорепозиторий семейного приложения про детей, болезнь, домашнюю аптечку и планы приёма лекарств.
 
 | Часть | Путь | Стек |
 |-------|------|------|
 | Backend | [backend/](./backend) | FastAPI, uv, SQLAlchemy async, Alembic |
 | Frontend | [frontend/](./frontend) | Vite, React, TS, PWA, Tailwind, Zustand, TanStack Query |
+
+## Docs Structure
+
+Главная точка входа по документации:
+
+- [docs/README.md](./docs/README.md)
+
+Если нужно быстро понять проект, читать в таком порядке:
+
+1. [docs/APP_ARCHITECTURE.md](./docs/APP_ARCHITECTURE.md)
+2. [docs/DATABASE_ARCHITECTURE.md](./docs/DATABASE_ARCHITECTURE.md)
+3. [docs/PROJECT_STATUS.md](./docs/PROJECT_STATUS.md)
+4. [docs/DEVELOPMENT_GUARDRAILS.md](./docs/DEVELOPMENT_GUARDRAILS.md)
+5. [SUBSCRIPTION_ROLLOUT_PLAN.md](./SUBSCRIPTION_ROLLOUT_PLAN.md) — только для детальной матрицы подписки и downgrade
+6. [docs/APP_MIGRATION_TODO.md](./docs/APP_MIGRATION_TODO.md) и [docs/APP_STORE_REVIEW_NOTES.md](./docs/APP_STORE_REVIEW_NOTES.md) — только для release / App Store work
 
 ## Команды
 
@@ -44,8 +59,13 @@ docker compose up -d --build
 - Дашборд: http://localhost:8080 · домен сайта в UI — hostname вида `что-то.зона`, не `localhost` без точки; удобно `pillpath.localhost`.
 - Прод (Railway и т.д.): отдельный сервис HitKeep, том на `/var/lib/hitkeep/data`, переменные `HITKEEP_PUBLIC_URL`, `HITKEEP_JWT_SECRET`, `HITKEEP_HTTP_ADDR=:$PORT`; фронт собирать с тем же `VITE_HITKEEP_SCRIPT_URL`.
 
-## Project Maps
+## Module Readmes
 
-Если нужно быстро понять текущую архитектуру проекта, начинать отсюда:
+- [backend/README.md](./backend/README.md)
+- [frontend/README.md](./frontend/README.md)
 
-- [docs/README.md](./docs/README.md)
+Module-local implementation notes also exist where needed:
+
+- [backend/docs/PILLBOX_API_DESIGN.md](./backend/docs/PILLBOX_API_DESIGN.md)
+- [frontend/ios/LIVE_ACTIVITIES_ARCHITECTURE.md](./frontend/ios/LIVE_ACTIVITIES_ARCHITECTURE.md)
+- [frontend/design/README.md](./frontend/design/README.md)

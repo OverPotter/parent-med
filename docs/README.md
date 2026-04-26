@@ -1,27 +1,47 @@
 # Docs Index
 
-Если новый агент или разработчик заходит в проект, ему достаточно двух основных файлов.
+Единый индекс документации проекта.
 
-## Читать в таком порядке
+## 1. Core Docs
 
-1. [Project Map](./project-map.md)
-- как сейчас называются сервисы и домены
-- где backend, frontend и Postgres
-- какие env важны
-- как запускать `dev` и `prod`
-- как каталог лекарств попадает на сервер
+Читать в таком порядке:
 
-2. [Database Architecture](./database-architecture.md)
-- как сейчас устроена БД
-- какие главные сущности есть
-- как связаны каталог, аптечка, напоминания и логи приёма
-- что удалено из legacy
+1. [APP_ARCHITECTURE.md](./APP_ARCHITECTURE.md)
+2. [DATABASE_ARCHITECTURE.md](./DATABASE_ARCHITECTURE.md)
+3. [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+4. [DEVELOPMENT_GUARDRAILS.md](./DEVELOPMENT_GUARDRAILS.md)
 
-## Коротко
+## 2. Detailed Product Logic
 
-Нужно помнить 4 вещи:
+- [../SUBSCRIPTION_ROLLOUT_PLAN.md](../SUBSCRIPTION_ROLLOUT_PLAN.md)
+  - detailed matrix for subscription, downgrade, children, pillbox, live activities, family roles
 
-1. Runtime работает от `household_medicines`, а не от живого каталога.
-2. Старый raw catalog удалён.
-3. Catalog data идёт через seed, а не через Alembic data-migrations.
-4. Production backend сейчас: `https://parent-med-production.up.railway.app`
+## 3. Operational Docs
+
+- [PROJECT_MAP.md](./PROJECT_MAP.md)
+  - domains, environments, Railway, local/mobile build notes
+- [APP_MIGRATION_TODO.md](./APP_MIGRATION_TODO.md)
+  - App Store / mobile migration backlog
+- [APP_STORE_REVIEW_NOTES.md](./APP_STORE_REVIEW_NOTES.md)
+  - review notes template for App Store Connect
+
+## 4. Module Readmes
+
+- [../backend/README.md](../backend/README.md)
+- [../frontend/README.md](../frontend/README.md)
+
+## 5. Module-Local Notes
+
+These files stay next to their modules on purpose:
+
+- [../backend/docs/PILLBOX_API_DESIGN.md](../backend/docs/PILLBOX_API_DESIGN.md)
+- [../frontend/ios/LIVE_ACTIVITIES_ARCHITECTURE.md](../frontend/ios/LIVE_ACTIVITIES_ARCHITECTURE.md)
+- [../frontend/design/README.md](../frontend/design/README.md)
+
+## 6. Documentation Rules
+
+- root `README.md` is the repo entry point
+- shared project docs live in `docs/`
+- module-specific notes stay in `backend/README.md` and `frontend/README.md`
+- module-local design/iOS/backend implementation notes may stay inside their modules
+- `SUBSCRIPTION_ROLLOUT_PLAN.md` stays in root because it is the detailed rollout source of truth

@@ -169,6 +169,13 @@ export function SettingsPage() {
         ? 3
         : null;
   const canUseLiveActivities = familyAccess?.canUseLiveActivities ?? false;
+  const effectiveLiveActivitySettings = canUseLiveActivities
+    ? liveActivitySettings
+    : {
+        sleepEnabled: false,
+        feedingEnabled: false,
+        illnessEnabled: false,
+      };
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
   const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === accountId);
   const familyDeleteBlockedBySubscription =
@@ -199,8 +206,8 @@ export function SettingsPage() {
     : tSettings(language, "deleteFamilyDescription");
   const liveActivitiesLockedReason = !canUseLiveActivities
     ? language === "ru"
-      ? "Live Activities доступны в Plus."
-      : "Live Activities are available in Plus."
+      ? "Откройте Live Activities в Plus."
+      : "Unlock Live Activities in Plus."
     : null;
 
   const updatePushPreferencesMutation = useMutation({
@@ -737,6 +744,10 @@ export function SettingsPage() {
   };
 
   const handleLiveActivitySleepToggle = (enabled: boolean) => {
+    if (!canUseLiveActivities) {
+      setIsUpgradeDialogOpen(true);
+      return;
+    }
     setPushError(null);
     setLiveActivitySettings((current) => {
       const next = { ...current, sleepEnabled: enabled };
@@ -748,6 +759,10 @@ export function SettingsPage() {
   };
 
   const handleLiveActivityFeedingToggle = (enabled: boolean) => {
+    if (!canUseLiveActivities) {
+      setIsUpgradeDialogOpen(true);
+      return;
+    }
     setPushError(null);
     setLiveActivitySettings((current) => {
       const next = { ...current, feedingEnabled: enabled };
@@ -759,6 +774,10 @@ export function SettingsPage() {
   };
 
   const handleLiveActivityIllnessToggle = (enabled: boolean) => {
+    if (!canUseLiveActivities) {
+      setIsUpgradeDialogOpen(true);
+      return;
+    }
     setPushError(null);
     setLiveActivitySettings((current) => {
       const next = { ...current, illnessEnabled: enabled };
@@ -846,10 +865,10 @@ export function SettingsPage() {
       <SettingsLiveActivitiesSection
         language={language}
         isIos={isNativeIos}
-        sleepEnabled={liveActivitySettings.sleepEnabled}
-        feedingEnabled={liveActivitySettings.feedingEnabled}
-        illnessEnabled={liveActivitySettings.illnessEnabled}
-        disabled={!isNativeIos || !canUseLiveActivities}
+        sleepEnabled={effectiveLiveActivitySettings.sleepEnabled}
+        feedingEnabled={effectiveLiveActivitySettings.feedingEnabled}
+        illnessEnabled={effectiveLiveActivitySettings.illnessEnabled}
+        disabled={!isNativeIos}
         lockedReason={isNativeIos ? liveActivitiesLockedReason : null}
         onLockedPress={
           isNativeIos && liveActivitiesLockedReason ? () => setIsUpgradeDialogOpen(true) : undefined

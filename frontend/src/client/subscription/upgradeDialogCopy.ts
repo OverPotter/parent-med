@@ -5,6 +5,7 @@ export type UpgradeEntryPoint =
   | "second_child"
   | "child_actions_locked"
   | "second_pillbox_plan"
+  | "medicine_catalog"
   | "live_activities";
 
 export function getUpgradeDialogCopy(language: AppLanguage, entryPoint: UpgradeEntryPoint) {
@@ -12,69 +13,83 @@ export function getUpgradeDialogCopy(language: AppLanguage, entryPoint: UpgradeE
     language === "ru"
       ? [
           "Семейный доступ для папы, бабушки или няни",
-          "Несколько детей и больше одного плана",
-          "CSV export и Live Activities",
+          "Несколько детей, наблюдений и планов лекарств",
+          "Таблетница с напоминаниями и отдельными планами для семьи",
+          "Live Activities, CSV export и общий рабочий сценарий для семьи",
         ]
       : [
           "Family access for a parent, grandparent, or nanny",
-          "Multiple children and more than one plan",
-          "CSV export and Live Activities",
+          "Multiple children, observations, and medication plans",
+          "A shared pillbox with reminders and separate family plans",
+          "Live Activities, CSV export, and a shared family workflow",
         ];
 
   switch (entryPoint) {
     case "invite_family":
       return {
-        title: language === "ru" ? "Приглашения доступны в Plus" : "Invites are available in Plus",
+        title: language === "ru" ? "Подключите семью" : "Invite your family",
         description:
           language === "ru"
-            ? "Откройте семейный доступ, чтобы приглашать близких и настраивать роли для каждого участника."
-            : "Unlock family access to invite relatives and configure member roles.",
+            ? "Приглашайте близких в общий семейный кабинет и настраивайте доступ для каждого: кто видит детей, аптечку и таблетницу."
+            : "Invite relatives into one shared family workspace and decide who can see children, the medicine cabinet, and the pillbox.",
         highlights: commonHighlights,
       };
     case "second_child":
       return {
         title:
-          language === "ru" ? "Во Free доступен один ребёнок" : "Free includes one child",
+          language === "ru" ? "Добавьте ещё детей" : "Add more children",
         description:
           language === "ru"
-            ? "Перейдите на Plus, чтобы вести несколько детей в одной семье."
-            : "Upgrade to Plus to manage multiple children in one family.",
+            ? "С Plus у семьи может быть несколько детских профилей, отдельных наблюдений и своих рабочих сценариев без путаницы."
+            : "With Plus, your family can keep multiple child profiles, separate observations, and clear care workflows without confusion.",
         highlights: commonHighlights,
       };
     case "second_pillbox_plan":
       return {
         title:
           language === "ru"
-            ? "Во Free доступен один план таблетницы"
-            : "Free includes one pillbox plan",
+            ? "Создайте ещё планы лекарств"
+            : "Create more medication plans",
         description:
           language === "ru"
-            ? "Plus открывает несколько планов и общий доступ для семьи."
-            : "Plus unlocks multiple plans and shared family access.",
+            ? "Создавайте отдельные планы лекарств для детей и близких, ставьте их на паузу и возвращайте в работу без потери истории."
+            : "Create separate medication plans for kids and relatives, pause them, and bring them back without losing history.",
+        highlights: commonHighlights,
+      };
+    case "medicine_catalog":
+      return {
+        title:
+          language === "ru"
+            ? "Откройте справочник лекарств"
+            : "Unlock the medicine catalog",
+        description:
+          language === "ru"
+            ? "Добавляйте препараты из справочника быстрее: с готовыми подсказками по форме, применению и сроку после вскрытия."
+            : "Add medicines faster from the catalog with ready-made form, usage, and after-opening guidance.",
         highlights: commonHighlights,
       };
     case "child_actions_locked":
       return {
         title:
           language === "ru"
-            ? "Редактирование доступно в Plus"
-            : "Editing is available in Plus",
+            ? "Верните полный доступ к ребёнку"
+            : "Restore full child access",
         description:
           language === "ru"
-            ? "После возврата на Free данные детей остаются видимыми, но действия по уходу и редактирование профиля доступны только в Plus."
-            : "After downgrading to Free, child data stays visible, but care actions and profile editing are available only in Plus.",
+            ? "Во Free данные ребёнка остаются видимыми, а в Plus снова открываются действия по уходу, наблюдения и редактирование профиля."
+            : "Child data stays visible in Free, while Plus unlocks care actions, observations, and profile editing again.",
         highlights: commonHighlights,
       };
     case "live_activities":
       return {
         title:
           language === "ru"
-            ? "Live Activities доступны в Plus"
-            : "Live Activities are available in Plus",
+            ? "Включите Live Activities"
+            : "Enable Live Activities",
         description:
           language === "ru"
-            ? "Откройте быстрый контроль приёмов и состояния ребёнка прямо с экрана блокировки."
-            : "Unlock quick dose and illness tracking directly from the lock screen.",
+            ? "Следите за таблетницей и состоянием ребёнка прямо с экрана блокировки, не открывая приложение каждый раз."
+            : "Track the pillbox and a child’s current state right from the lock screen without opening the app every time.",
         highlights: commonHighlights,
       };
   }

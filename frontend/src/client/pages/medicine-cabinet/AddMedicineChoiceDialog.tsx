@@ -1,18 +1,23 @@
 import type { AppLanguage } from "@shared/i18n";
 import { ChoiceSheetList } from "@shared/components/ChoiceSheetField";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
+import { PlusBadge } from "@shared/components/PlusBadge";
 import { tCabinet } from "./copy";
 import { cabinetPanelClass } from "./styles";
 
 export function AddMedicineChoiceDialog({
   language,
+  catalogLocked = false,
   onClose,
   onCatalog,
+  onLockedCatalogAttempt,
   onManual,
 }: {
   language: AppLanguage;
+  catalogLocked?: boolean;
   onClose: () => void;
   onCatalog: () => void;
+  onLockedCatalogAttempt?: () => void;
   onManual: () => void;
 }) {
   return (
@@ -44,7 +49,11 @@ export function AddMedicineChoiceDialog({
               {
                 value: "catalog",
                 label: tCabinet(language, "addFromCatalog"),
-                hint: tCabinet(language, "addFromCatalogHint"),
+                hint: catalogLocked
+                  ? language === "ru"
+                    ? "Доступно в Plus. Справочник подтягивает форму, подсказку по применению и срок после вскрытия."
+                    : "Available in Plus. The catalog fills in form, usage guidance, and after-opening shelf life."
+                  : tCabinet(language, "addFromCatalogHint"),
               },
               {
                 value: "manual",
@@ -54,12 +63,21 @@ export function AddMedicineChoiceDialog({
             ]}
             onSelect={(nextValue) => {
               if (nextValue === "catalog") {
+                if (catalogLocked) {
+                  onLockedCatalogAttempt?.();
+                  return;
+                }
                 onCatalog();
                 return;
               }
               onManual();
             }}
-            renderTrailing={(_, __) => (language === "ru" ? "Открыть" : "Open")}
+            renderTrailing={(option) => {
+              if (option.value === "catalog" && catalogLocked) {
+                return <PlusBadge />;
+              }
+              return language === "ru" ? "Открыть" : "Open";
+            }}
           />
         </div>
       </div>

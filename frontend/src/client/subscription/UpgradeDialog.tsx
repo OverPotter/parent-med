@@ -53,8 +53,8 @@ export function UpgradeDialog({
           {!canUpgrade ? (
             <p className="text-sm leading-6 text-primary">
               {language === "ru"
-                ? "Подпиской управляет владелец семейного аккаунта. Попросите его оформить или восстановить Plus."
-                : "The family subscription is managed by the billing owner. Ask them to purchase or restore Plus."}
+                ? "Plus для семьи оформляет владелец семейного аккаунта. Попросите его подключить или восстановить подписку."
+                : "The family owner manages Plus for everyone. Ask them to purchase or restore the subscription."}
             </p>
           ) : null}
         </div>
@@ -96,11 +96,11 @@ export function UpgradeDialog({
             >
               {isPending
                 ? language === "ru"
-                  ? "Открываем Plus..."
+                  ? "Открываем оформление..."
                   : "Unlocking Plus..."
                 : language === "ru"
-                  ? "Открыть Plus"
-                  : "Unlock Plus"}
+                  ? "Перейти на Plus"
+                  : "Go to Plus"}
             </button>
           ) : null}
         </div>

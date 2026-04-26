@@ -137,8 +137,8 @@ export function usePillboxMutations({
     mutationFn: deletePillboxPlan,
     onSuccess: async () => {
       setPlanActionError(null);
-      setDeleteTarget(null);
       setPlanActionTarget(null);
+      setDeleteTarget(null);
       await queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
       goToHub();
     },

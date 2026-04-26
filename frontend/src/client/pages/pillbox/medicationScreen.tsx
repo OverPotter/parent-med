@@ -454,7 +454,7 @@ function CoursePeriodDialog({
           <div className="mb-4 h-1.5 w-14 rounded-full bg-primary/55" aria-hidden="true" />
           <div className="space-y-1.5">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
-              {language === "ru" ? "Приёмы" : "Meds"}
+              {language === "ru" ? "Таблетница" : "Meds"}
             </p>
             <h2 className="app-card-title text-[1.15rem]">
               {language === "ru" ? "Период курса" : "Course period"}
@@ -615,7 +615,7 @@ function CustomCourseDatesDialog({
         <div className="mb-4 h-1.5 w-14 rounded-full bg-primary/55" aria-hidden="true" />
         <div className="space-y-1.5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
-            {language === "ru" ? "Приёмы" : "Meds"}
+            {language === "ru" ? "Таблетница" : "Meds"}
           </p>
           <h2 className="app-card-title text-[1.15rem]">
             {language === "ru" ? "Свои даты" : "Custom dates"}
