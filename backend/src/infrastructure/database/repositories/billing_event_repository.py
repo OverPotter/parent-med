@@ -51,7 +51,9 @@ class SqlBillingEventRepository(BillingEventRepository):
 
     async def get_by_external_event_id(self, external_event_id: str) -> BillingEvent | None:
         result = await self._session.execute(
-            select(BillingEventModel).where(BillingEventModel.external_event_id == external_event_id)
+            select(BillingEventModel).where(
+                BillingEventModel.external_event_id == external_event_id
+            )
         )
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None

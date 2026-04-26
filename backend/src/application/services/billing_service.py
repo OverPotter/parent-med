@@ -296,15 +296,19 @@ class BillingService:
         if not plans:
             return None
 
-        operational_plans = [
-            plan for plan in plans if plan.status not in {"completed", "archived"}
-        ]
+        operational_plans = [plan for plan in plans if plan.status not in {"completed", "archived"}]
         active_operational_plans = [plan for plan in operational_plans if plan.status == "active"]
         paused_operational_plans = [plan for plan in operational_plans if plan.status == "paused"]
-        candidate_plans = active_operational_plans or paused_operational_plans or operational_plans or plans
+        candidate_plans = (
+            active_operational_plans or paused_operational_plans or operational_plans or plans
+        )
         if family.free_primary_pillbox_plan_id is not None:
             current_primary = next(
-                (plan for plan in candidate_plans if plan.id == family.free_primary_pillbox_plan_id),
+                (
+                    plan
+                    for plan in candidate_plans
+                    if plan.id == family.free_primary_pillbox_plan_id
+                ),
                 None,
             )
             if current_primary is not None and (

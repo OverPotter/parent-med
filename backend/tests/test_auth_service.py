@@ -15,7 +15,12 @@ from src.application.dto.auth import (
 )
 from src.application.services.auth_service import AuthService
 from src.core.exceptions import ForbiddenError, UnauthorizedError, ValidationError
-from src.core.security import decode_access_token, hash_password, hash_session_token, verify_password
+from src.core.security import (
+    decode_access_token,
+    hash_password,
+    hash_session_token,
+    verify_password,
+)
 from src.domain.entities.account import Account
 from src.domain.entities.account_identity import DEFAULT_ACCOUNT_DISPLAY_NAME
 from src.domain.entities.family_access import FamilyAccessPolicy

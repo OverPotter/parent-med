@@ -375,7 +375,9 @@ class FamilyService:
             raise NotFoundError("Семья не найдена", resource="family")
         await self._repo.delete(id)
 
-    async def delete_for_account(self, id: UUID, current_family_id: UUID, current_account_id: UUID) -> None:
+    async def delete_for_account(
+        self, id: UUID, current_family_id: UUID, current_account_id: UUID
+    ) -> None:
         if id != current_family_id:
             raise ForbiddenError("Нет доступа к чужой семье")
         family = await self._repo.get_by_id(id)

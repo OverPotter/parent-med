@@ -214,7 +214,9 @@ def _make_service(
     return service, subscription_repo, billing_event_repo, feeding_repo, sleep_repo
 
 
-def _pillbox_plan(*, family_id, owner_id, title: str, status: str = "active", created_at: datetime | None = None) -> PillboxPlan:
+def _pillbox_plan(
+    *, family_id, owner_id, title: str, status: str = "active", created_at: datetime | None = None
+) -> PillboxPlan:
     now = created_at or datetime.now(UTC)
     plan_id = uuid4()
     return PillboxPlan(

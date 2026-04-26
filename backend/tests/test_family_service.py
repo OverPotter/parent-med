@@ -135,7 +135,9 @@ async def test_family_owner_role_cannot_be_demoted() -> None:
         session_repo=StubAccountSessionRepository(),
     )
 
-    with pytest.raises(ValidationError, match="Владелец семьи должен сохранять права администратора"):
+    with pytest.raises(
+        ValidationError, match="Владелец семьи должен сохранять права администратора"
+    ):
         await service.update_member_for_account(
             member_account_id=owner.id,
             dto=FamilyMemberUpdateDto(family_role="member"),
@@ -296,9 +298,7 @@ async def test_admin_can_update_member_access_policy_only() -> None:
 
     updated = await service.update_member_for_account(
         member_account_id=member.id,
-        dto=FamilyMemberUpdateDto(
-            access_policy=FamilyAccessPolicyUpdateDto(cabinet_access="view")
-        ),
+        dto=FamilyMemberUpdateDto(access_policy=FamilyAccessPolicyUpdateDto(cabinet_access="view")),
         current_account_id=admin.id,
         current_family_id=family.id,
         current_family_role="admin",
