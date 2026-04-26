@@ -7,6 +7,11 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { MemberCard } from "./family/MemberCard";
 import { tFamily } from "./family/copy";
+import {
+  canDeleteFamilyMember,
+  canManageFamilyMemberAccess,
+  isFamilyOwnerAccount,
+} from "./family/memberManagement";
 import { useFamilyMembersData } from "./family/useFamilyMembersData";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
 
@@ -24,8 +29,10 @@ export function FamilyMembersPage() {
     enabled: Boolean(accountId),
   });
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
-  const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === currentAccountId);
-  const isFamilyAdmin = !isFamilyOwner && currentAccountRole === "admin";
+  const isFamilyOwner = isFamilyOwnerAccount({
+    familyOwnerAccountId: family?.ownerAccountId,
+    currentAccountId,
+  });
 
   const { members, isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
     useFamilyMembersData(currentFamilyId, currentAccountId);
@@ -94,11 +101,21 @@ export function FamilyMembersPage() {
         <div className="space-y-4">
           {[...(currentMember ? [currentMember] : []), ...otherMembers].map((member) => {
             const isCurrent = member.id === currentAccountId;
-            const canManageTarget =
-              !isCurrent && (isFamilyOwner || (isFamilyAdmin && member.familyRole === "member"));
+            const canManageTarget = canManageFamilyMemberAccess({
+              familyOwnerAccountId: family?.ownerAccountId,
+              currentAccountId,
+              currentAccountRole,
+              targetAccountId: member.id,
+              targetFamilyRole: member.familyRole,
+            });
             const canManageRoles = isFamilyOwner;
-            const canDeleteMember =
-              !isCurrent && (isFamilyOwner || (isFamilyAdmin && member.familyRole === "member"));
+            const canDeleteMember = canDeleteFamilyMember({
+              familyOwnerAccountId: family?.ownerAccountId,
+              currentAccountId,
+              currentAccountRole,
+              targetAccountId: member.id,
+              targetFamilyRole: member.familyRole,
+            });
             const accessHref = canManageTarget ? `/family/members/${member.id}/access` : undefined;
             return (
               <RowSurface

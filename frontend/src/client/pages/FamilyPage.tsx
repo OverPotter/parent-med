@@ -22,6 +22,7 @@ import { FamilyInviteSection } from "./family/FamilyInviteSection";
 import { FamilyLeaveSection } from "./family/FamilyLeaveSection";
 import { FamilyNameSection } from "./family/FamilyNameSection";
 import { MemberCard } from "./family/MemberCard";
+import { canLeaveCurrentFamily, canManageFamilyMembers, isFamilyOwnerAccount } from "./family/memberManagement";
 import { tFamily } from "./family/copy";
 import { useFamilyMembersData } from "./family/useFamilyMembersData";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
@@ -76,9 +77,15 @@ export function FamilyPage() {
     useFamilyMembersData(currentFamilyId, currentAccountId);
 
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
-  const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === currentAccountId);
-  const isFamilyAdmin = !isFamilyOwner && currentAccountRole === "admin";
-  const canManageFamily = isFamilyOwner || isFamilyAdmin;
+  const isFamilyOwner = isFamilyOwnerAccount({
+    familyOwnerAccountId: family?.ownerAccountId,
+    currentAccountId,
+  });
+  const canManageFamily = canManageFamilyMembers({
+    familyOwnerAccountId: family?.ownerAccountId,
+    currentAccountId,
+    currentAccountRole,
+  });
   const currentMemberPolicy = normalizeFamilyAccessPolicy(currentMember?.accessPolicy);
   const currentMemberHasAnyFamilyAccess =
     currentMemberPolicy.allChildren ||
@@ -116,7 +123,11 @@ export function FamilyPage() {
     setAccountFamilyContext,
     setError,
   });
-  const canLeaveFamily = !isFamilyOwner && Boolean(currentMember);
+  const canLeaveFamily = canLeaveCurrentFamily({
+    familyOwnerAccountId: family?.ownerAccountId,
+    currentAccountId,
+    hasCurrentMember: Boolean(currentMember),
+  });
 
   const latestInviteUrl = createInviteMutation.data
     ? buildShareableInviteUrl(createInviteMutation.data.invitePath, window.location.origin)

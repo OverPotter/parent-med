@@ -90,6 +90,7 @@
   - `backend/tests/test_billing_service.py`
 - [x] Covered by targeted frontend tests:
   - `frontend/test/familySubscriptionAccess.test.ts`
+  - `frontend/test/familyMemberManagement.test.ts`
   - `frontend/test/upgradeDialogCopy.test.ts`
   - `npm test -- --runInBand` passed with `84` tests
   - `npm run build` passed

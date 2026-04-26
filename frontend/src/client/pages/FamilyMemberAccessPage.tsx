@@ -13,6 +13,13 @@ import { buildMemberAccessSummaryItems } from "./family/accessPolicy";
 import { MemberAccessHeaderCard } from "./family/MemberAccessHeaderCard";
 import { MemberAccessEditor } from "./family/MemberAccessEditor";
 import { tFamily } from "./family/copy";
+import {
+  canDeleteFamilyMember,
+  canDemoteFamilyMember,
+  canManageFamilyMemberAccess,
+  canManageFamilyMembers,
+  canPromoteFamilyMember,
+} from "./family/memberManagement";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
 
 export function FamilyMemberAccessPage() {
@@ -32,9 +39,11 @@ export function FamilyMemberAccessPage() {
     enabled: Boolean(accountId),
   });
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
-  const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === currentAccountId);
-  const isFamilyAdmin = !isFamilyOwner && currentAccountRole === "admin";
-  const canManageFamily = isFamilyOwner || isFamilyAdmin;
+  const canManageFamily = canManageFamilyMembers({
+    familyOwnerAccountId: family?.ownerAccountId,
+    currentAccountId,
+    currentAccountRole,
+  });
   const [actionError, setActionError] = useState<string | null>(null);
   const [isPromoteConfirmOpen, setIsPromoteConfirmOpen] = useState(false);
   const [isDemoteConfirmOpen, setIsDemoteConfirmOpen] = useState(false);
@@ -120,22 +129,44 @@ export function FamilyMemberAccessPage() {
   }
 
   const adminsCount = members.filter((item) => item.familyRole === "admin").length;
-  const isTargetOwner = Boolean(member && family?.ownerAccountId === member.id);
   const canManageTarget = Boolean(
     member &&
-      (isFamilyOwner || (isFamilyAdmin && member.familyRole === "member" && member.id !== currentAccountId))
+      canManageFamilyMemberAccess({
+        familyOwnerAccountId: family?.ownerAccountId,
+        currentAccountId,
+        currentAccountRole,
+        targetAccountId: member.id,
+        targetFamilyRole: member.familyRole,
+      })
   );
   const canPromote = Boolean(
-    member && isFamilyOwner && member.familyRole !== "admin" && !isTargetOwner && member.id !== currentAccountId
+    member &&
+      canPromoteFamilyMember({
+        familyOwnerAccountId: family?.ownerAccountId,
+        currentAccountId,
+        targetAccountId: member.id,
+        targetFamilyRole: member.familyRole,
+      })
   );
   const canDemote = Boolean(
-    member && isFamilyOwner && member.familyRole === "admin" && !isTargetOwner && member.id !== currentAccountId && adminsCount > 1
+    member &&
+      canDemoteFamilyMember({
+        familyOwnerAccountId: family?.ownerAccountId,
+        currentAccountId,
+        targetAccountId: member.id,
+        targetFamilyRole: member.familyRole,
+        adminsCount,
+      })
   );
   const canDelete = Boolean(
     member &&
-      !isTargetOwner &&
-      member.id !== currentAccountId &&
-      (isFamilyOwner || (isFamilyAdmin && member.familyRole === "member"))
+      canDeleteFamilyMember({
+        familyOwnerAccountId: family?.ownerAccountId,
+        currentAccountId,
+        currentAccountRole,
+        targetAccountId: member.id,
+        targetFamilyRole: member.familyRole,
+      })
   );
   const hasHeaderActions = Boolean(canPromote || canDemote || canDelete);
   const isActionPending = updateMemberMutation.isPending || deleteMemberMutation.isPending;
