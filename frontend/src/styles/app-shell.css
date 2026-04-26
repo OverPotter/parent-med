@@ -99,6 +99,11 @@ html.ios-lock-horizontal .landing-main {
   padding-top: var(--app-ios-top-chrome-offset);
 }
 
+[data-runtime="web"][data-ios-shell="true"] .app-safe-top-header {
+  --app-ios-top-chrome-offset: max(0.18rem, calc(var(--app-safe-top-runtime) * 0.28));
+  padding-top: var(--app-ios-top-chrome-offset);
+}
+
 .child-profile-shell {
   margin-left: -0.75rem;
   margin-right: -0.75rem;
@@ -165,6 +170,14 @@ html.ios-lock-horizontal .landing-main {
 
 [data-ios-shell="true"] .app-main-shell--hidden-chrome {
   padding-top: var(--app-ios-top-chrome-offset, max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem)));
+}
+
+[data-runtime="web"][data-ios-shell="true"] .app-safe-top-standalone {
+  padding-top: max(0.2rem, calc(var(--app-safe-top-runtime) * 0.32));
+}
+
+[data-runtime="web"][data-ios-shell="true"] .app-main-shell--hidden-chrome {
+  padding-top: var(--app-ios-top-chrome-offset, max(0.18rem, calc(var(--app-safe-top-runtime) * 0.28)));
 }
 
 .legal-doc-page {

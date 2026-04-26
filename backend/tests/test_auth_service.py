@@ -148,9 +148,7 @@ class DuplicateEmailOnAddRepository(StubAccountRepository):
         raise IntegrityError(
             statement="INSERT INTO accounts ...",
             params={},
-            orig=Exception(
-                'duplicate key value violates unique constraint "accounts_email_key"'
-            ),
+            orig=Exception('duplicate key value violates unique constraint "accounts_email_key"'),
         )
 
 

@@ -406,15 +406,14 @@ export function Layout({
 
   const handleLogout = async () => {
     const refreshToken = useAppStore.getState().refreshToken;
+    setBearerToken(null);
+    clearSession();
     try {
-      await cleanupDeviceSessionArtifacts();
       await logout(refreshToken);
     } catch {
       // Локальный выход всё равно должен отработать, даже если сессия уже истекла.
-    } finally {
-      setBearerToken(null);
-      clearSession();
     }
+    await cleanupDeviceSessionArtifacts({ includeServerCleanup: false });
   };
 
   const iconStyle: ThemeIconStyle = {
