@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  clearAllOfflineCareOverrides,
   getOfflineCareActions,
   getOfflineFeedingOverride,
   getOfflineIllnessOverride,
@@ -132,4 +133,37 @@ test("offline illness start/stop stores active episode locally", () => {
     getOfflineCareActions()[1]?.createdAt,
     getCurrentDeviceTimestampIso(new Date(getOfflineCareActions()[1]!.createdAt))
   );
+});
+
+test("clearAllOfflineCareOverrides resets active sleep, feeding, and illness projections", () => {
+  queueOfflineSleepStart({
+    childId: "child-sleep",
+    currentAccountId: "acc-1",
+  });
+  queueOfflineFeedingStart({
+    childId: "child-feeding",
+    currentAccountId: "acc-2",
+    payload: {
+      feeding_type: "formula",
+      formula_volume_ml: 90,
+    },
+  });
+  queueOfflineIllnessStart({
+    childId: "child-illness",
+    currentAccountId: "acc-3",
+    payload: {
+      started_at: "2026-04-23T10:00:00.000Z",
+      medication_mode: "guided",
+      temperatures: [],
+      administrations: [],
+      comments: [],
+      medication_plans: [],
+    },
+  });
+
+  clearAllOfflineCareOverrides();
+
+  assert.equal(getOfflineSleepOverride("child-sleep").hasOverride, false);
+  assert.equal(getOfflineFeedingOverride("child-feeding").hasOverride, false);
+  assert.equal(getOfflineIllnessOverride("child-illness").hasOverride, false);
 });

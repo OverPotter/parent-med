@@ -13,13 +13,15 @@ import {
   restoreNativeRevenueCatPurchases,
 } from "@shared/utils/nativeRevenueCat";
 import {
-  dispatchRevenueCatRefresh,
   syncRevenueCatCustomerSnapshot,
 } from "@shared/utils/revenueCatSync";
+import { clearRevenueCatSyncSuppressionForAccount } from "@shared/utils/revenueCatSyncSuppression";
+import { invalidateSubscriptionQueries } from "./invalidateSubscriptionQueries";
 
-async function purchaseRevenueCatPlus() {
+async function purchaseRevenueCatPlus(accountId: string | null) {
   const entitlementCode = getRevenueCatEntitlementCode();
   const shouldSyncBackend = isRevenueCatBackendSyncEnabled();
+  clearRevenueCatSyncSuppressionForAccount(accountId);
   const offerings = await getNativeRevenueCatOfferings();
   if (!offerings || offerings.availablePackages.length === 0) {
     throw new Error("RevenueCat offerings are unavailable.");
@@ -44,7 +46,6 @@ async function purchaseRevenueCatPlus() {
   }
   if (shouldSyncBackend) {
     await syncRevenueCatCustomerSnapshot(snapshot);
-    dispatchRevenueCatRefresh();
   }
   return snapshot;
 }
@@ -60,12 +61,10 @@ export function useSubscriptionUpgrade(
   const canUseNativeRevenueCat = isNativeRevenueCatSupported() && hasNativeRevenueCatConfig;
 
   const invalidateAfterUpgrade = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["families", accountId] }),
-      queryClient.invalidateQueries({ queryKey: ["families", "me", "access", accountId] }),
-      queryClient.invalidateQueries({ queryKey: ["families", "me", "access", currentFamilyId] }),
-      queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-    ]);
+    await invalidateSubscriptionQueries(queryClient, {
+      accountId,
+      currentFamilyId,
+    });
   };
 
   const upgradeMutation = useMutation({
@@ -74,7 +73,7 @@ export function useSubscriptionUpgrade(
         throw new Error("Only the billing owner can manage the family subscription.");
       }
       if (canUseNativeRevenueCat) {
-        return purchaseRevenueCatPlus();
+        return purchaseRevenueCatPlus(accountId);
       }
       if (!isDebugUpgradeEnabled) {
         throw new Error("Subscription upgrade is not configured.");
@@ -92,13 +91,13 @@ export function useSubscriptionUpgrade(
       if (!canUseNativeRevenueCat) {
         return null;
       }
+      clearRevenueCatSyncSuppressionForAccount(accountId);
       const snapshot = await restoreNativeRevenueCatPurchases(getRevenueCatEntitlementCode());
       if (!snapshot) {
         throw new Error("RevenueCat restore is unavailable on this device.");
       }
       if (isRevenueCatBackendSyncEnabled()) {
         await syncRevenueCatCustomerSnapshot(snapshot);
-        dispatchRevenueCatRefresh();
       }
       return snapshot;
     },

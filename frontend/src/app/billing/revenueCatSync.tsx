@@ -14,7 +14,10 @@ import {
   logOutNativeRevenueCat,
   setNativeRevenueCatLogLevel,
 } from "@shared/utils/nativeRevenueCat";
-import { syncRevenueCatCustomerSnapshot } from "@shared/utils/revenueCatSync";
+import {
+  syncRevenueCatCustomerSnapshot,
+} from "@shared/utils/revenueCatSync";
+import { isRevenueCatSyncSuppressedForAccount } from "@shared/utils/revenueCatSyncSuppression";
 
 export function RevenueCatSync() {
   const accountId = useAppStore((s) => s.accountId);
@@ -37,6 +40,9 @@ export function RevenueCatSync() {
 
     const syncCurrentSnapshot = async () => {
       if (!accountId) {
+        return;
+      }
+      if (isRevenueCatSyncSuppressedForAccount(accountId)) {
         return;
       }
       const snapshot = await getNativeRevenueCatCustomerSnapshot(entitlementCode);
@@ -68,6 +74,10 @@ export function RevenueCatSync() {
         }
 
         if (accountId && lastLoggedInAccountRef.current !== accountId) {
+          if (isRevenueCatSyncSuppressedForAccount(accountId)) {
+            lastLoggedInAccountRef.current = accountId;
+            return;
+          }
           const snapshot = await logInNativeRevenueCat(accountId);
           lastLoggedInAccountRef.current = accountId;
           if (snapshot && !cancelled && shouldSyncBackend) {

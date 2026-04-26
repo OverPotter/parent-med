@@ -17,10 +17,14 @@ import {
   type RevenueCatCustomerSnapshot,
   type RevenueCatOfferingPackage,
 } from "@shared/utils/nativeRevenueCat";
+import { clearAllOfflineCareOverrides } from "@shared/utils/offlineCareState";
+import { syncRevenueCatCustomerSnapshot } from "@shared/utils/revenueCatSync";
 import {
-  dispatchRevenueCatRefresh,
-  syncRevenueCatCustomerSnapshot,
-} from "@shared/utils/revenueCatSync";
+  clearRevenueCatSyncSuppressionForAccount,
+  isRevenueCatSyncSuppressedForAccount,
+  suppressRevenueCatSyncForAccount,
+} from "@shared/utils/revenueCatSyncSuppression";
+import { invalidateSubscriptionQueries } from "@client/subscription/invalidateSubscriptionQueries";
 import { childActionPrimaryClass, childActionSecondaryClass } from "../children/shared";
 import { SettingsRow, SettingsSection } from "./ui";
 
@@ -68,6 +72,8 @@ function getCopy(language: AppLanguage) {
       restore: "Restore",
       snapshot: "Snapshot",
       resetToFree: "Reset to free",
+      forceFreeMode: "Force free mode",
+      resumeSync: "Resume RevenueCat sync",
       working: "Выполняем…",
       ready: "Готово",
       packageMissing: "В текущем offering нет пакетов для покупки.",
@@ -75,6 +81,7 @@ function getCopy(language: AppLanguage) {
       apiKeyPresent: "iOS key: есть",
       apiKeyMissing: "iOS key: нет",
       entitlement: "Entitlement",
+      syncSuppressed: "RevenueCat sync для этого аккаунта временно выключен",
       sandboxOnly:
         "Этот блок нужен только для ручной проверки RevenueCat в iOS sandbox до включения backend unlock.",
     };
@@ -92,6 +99,8 @@ function getCopy(language: AppLanguage) {
     restore: "Restore",
     snapshot: "Snapshot",
     resetToFree: "Reset to free",
+    forceFreeMode: "Force free mode",
+    resumeSync: "Resume RevenueCat sync",
     working: "Working…",
     ready: "Ready",
     packageMissing: "The current offering has no packages to purchase.",
@@ -99,6 +108,7 @@ function getCopy(language: AppLanguage) {
     apiKeyPresent: "iOS key: present",
     apiKeyMissing: "iOS key: missing",
     entitlement: "Entitlement",
+    syncSuppressed: "RevenueCat sync is temporarily disabled for this account",
     sandboxOnly:
       "This section is only for manual RevenueCat validation in the iOS sandbox before backend unlock is enabled.",
   };
@@ -121,17 +131,7 @@ export function SettingsRevenueCatSection({
   const apiKey = getRevenueCatIosApiKey();
   const entitlementCode = getRevenueCatEntitlementCode();
   const backendSyncEnabled = isRevenueCatBackendSyncEnabled();
-
-  const invalidateSubscriptionQueries = async () => {
-    dispatchRevenueCatRefresh();
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["families", accountId] }),
-      queryClient.invalidateQueries({ queryKey: ["families", "me", "access", accountId] }),
-      queryClient.invalidateQueries({ queryKey: ["families", "me", "access", currentFamilyId] }),
-      queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] }),
-      queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-    ]);
-  };
+  const syncSuppressed = isRevenueCatSyncSuppressedForAccount(accountId);
 
   const refreshSubscriptionState = async (snapshot: RevenueCatCustomerSnapshot | null) => {
     if (!snapshot || !backendSyncEnabled) {
@@ -139,7 +139,11 @@ export function SettingsRevenueCatSection({
     }
 
     await syncRevenueCatCustomerSnapshot(snapshot);
-    await invalidateSubscriptionQueries();
+    await invalidateSubscriptionQueries(queryClient, {
+      accountId,
+      currentFamilyId,
+      includeCareQueries: true,
+    });
   };
 
   const runAction = async (
@@ -187,6 +191,7 @@ export function SettingsRevenueCatSection({
           <span className="font-semibold text-foreground">{entitlementCode}</span> ·{" "}
           {backendSyncEnabled ? copy.syncEnabled : copy.syncDisabled}
         </p>
+        {syncSuppressed ? <p className="mt-1 text-amber-700">{copy.syncSuppressed}</p> : null}
       </div>
       <SettingsRow
         separated
@@ -225,6 +230,7 @@ export function SettingsRevenueCatSection({
               onClick={() =>
                 void runAction(copy.buy, async () => {
                   await ensureConfigured();
+                  clearRevenueCatSyncSuppressionForAccount(accountId);
                   const offerings = await getNativeRevenueCatOfferings();
                   const selectedPackage = offerings?.availablePackages?.[0] ?? null;
                   if (!selectedPackage) {
@@ -249,6 +255,7 @@ export function SettingsRevenueCatSection({
               onClick={() =>
                 void runAction(copy.restore, async () => {
                   await ensureConfigured();
+                  clearRevenueCatSyncSuppressionForAccount(accountId);
                   const snapshot = await restoreNativeRevenueCatPurchases(entitlementCode);
                   await refreshSubscriptionState(snapshot);
                   return snapshot;
@@ -277,7 +284,11 @@ export function SettingsRevenueCatSection({
               onClick={() =>
                 void runAction(copy.resetToFree, async () => {
                   const response = await resetBillingDebugToFree();
-                  await invalidateSubscriptionQueries();
+                  await invalidateSubscriptionQueries(queryClient, {
+                    accountId,
+                    currentFamilyId,
+                    includeCareQueries: true,
+                  });
                   return response;
                 })
               }
@@ -285,6 +296,44 @@ export function SettingsRevenueCatSection({
               className={`${childActionSecondaryClass} min-h-[2.6rem] px-4 text-[0.84rem] disabled:cursor-not-allowed disabled:opacity-60`}
             >
               {copy.resetToFree}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                void runAction(copy.forceFreeMode, async () => {
+                  suppressRevenueCatSyncForAccount(accountId);
+                  clearAllOfflineCareOverrides();
+                  const response = await resetBillingDebugToFree();
+                  await invalidateSubscriptionQueries(queryClient, {
+                    accountId,
+                    currentFamilyId,
+                    includeCareQueries: true,
+                  });
+                  return { ...response, syncSuppressed: true };
+                })
+              }
+              disabled={isPending || !accountId}
+              className={`${childActionSecondaryClass} min-h-[2.6rem] px-4 text-[0.84rem] disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {copy.forceFreeMode}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                void runAction(copy.resumeSync, async () => {
+                  clearRevenueCatSyncSuppressionForAccount(accountId);
+                  await invalidateSubscriptionQueries(queryClient, {
+                    accountId,
+                    currentFamilyId,
+                    includeCareQueries: true,
+                  });
+                  return { syncSuppressed: false };
+                })
+              }
+              disabled={isPending || !accountId}
+              className={`${childActionSecondaryClass} min-h-[2.6rem] px-4 text-[0.84rem] disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {copy.resumeSync}
             </button>
           </div>
         }

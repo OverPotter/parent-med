@@ -5,7 +5,7 @@
 - [x] Create a dedicated rollout plan in the repo
 - [x] Add subscription access layer on backend
 - [x] Expose access payload for frontend
-- [x] Enforce backend free-plan limits on invites
+- [x] Enforce backend free-plan limits on owner-only invites
 - [x] Enforce backend free-plan limits on child count
 - [x] Enforce backend free-plan limits on pillbox plans
 - [x] Add billing tables: `plans`, `subscriptions`, `billing_events`
@@ -14,7 +14,9 @@
 - [x] Add shared paywall UX
 - [x] Add downgrade-safe child access model for `Free`
 - [x] Preserve active illness flows after downgrade
-- [ ] Add Apple IAP and RevenueCat integration
+- [x] Add RevenueCat test integration and backend sync scaffold
+- [x] Add local force-free testing mode for subscription logic
+- [ ] Remove dev-only RevenueCat sandbox/testing controls before release
 - [ ] Add landing pricing page
 
 ## Completed Work
@@ -23,6 +25,9 @@
 - [x] Backend subscription access layer added via `SubscriptionAccessService`
 - [x] Access payload exposed via `GET /families/me/access`
 - [x] Free-plan backend limits added for invites, children, and pillbox plans
+- [x] Invite flow simplified to owner-only:
+  - only `owner` may create/share invites
+  - `admin` no longer participates in invite management
 - [x] Billing foundation added:
   - migration `062_add_billing_foundation.py`
   - entities for `Plan`, `Subscription`, `BillingEvent`
@@ -56,14 +61,20 @@
   - normalized provider sync DTO in billing service
   - shared subscription lifecycle reused for debug and future RevenueCat/App Store sync
   - `trialing` status supported end-to-end in family snapshots and premium policy
-- [ ] RevenueCat production wiring finish:
+- [x] RevenueCat test/store wiring finished for development:
   - backend `provider-sync` route is added
   - frontend native RevenueCat runtime/init/sync scaffold is added
-  - native iOS bridge/plugin scaffold is added
+  - native iOS bridge/plugin is added and validated with Test Store purchase flow
   - local test keys are wired in env for sandbox smoke tests
   - dev-only `RevenueCat sandbox` section is added in Settings for `configure / offerings / purchase / restore / snapshot`
-  - backend sync is explicitly gateable via `VITE_REVENUECAT_SYNC_BACKEND` and is currently disabled for isolated SDK testing
-  - pending: real product mapping confirmation, iOS package resolution, sandbox purchase verification
+  - backend sync is gateable via `VITE_REVENUECAT_SYNC_BACKEND`
+  - local `Force free mode` / `Resume RevenueCat sync` controls are added for repeatable downgrade testing without waiting for expiration
+- [ ] Dev-only test tooling still present in the current development build and must be removed or hidden before release:
+  - `Settings -> RevenueCat sandbox`
+  - `Reset to free`
+  - `Force free mode`
+  - `Resume RevenueCat sync`
+  - local RevenueCat sync suppression helpers used only for manual downgrade testing
 - [x] Covered by targeted backend tests:
   - `backend/tests/test_subscription_access_service.py`
   - `backend/tests/test_family_service.py`
@@ -74,7 +85,7 @@
 - [x] Covered by targeted frontend tests:
   - `frontend/test/familySubscriptionAccess.test.ts`
   - `frontend/test/upgradeDialogCopy.test.ts`
-  - `npm test -- --runInBand` passed with `80` tests
+  - `npm test -- --runInBand` passed with `84` tests
   - `npm run build` passed
 
 ## Goal
@@ -82,7 +93,8 @@
 Introduce `Free` and `Plus` plans without breaking the current family model.
 
 Core principles:
-- subscription is bought by one account
+- subscription is family-scoped
+- only the `owner` may manage billing and invites
 - subscription benefits are applied to the whole `family`
 - backend is the source of truth for access
 - `RevenueCat` and Apple only provide billing state
@@ -106,7 +118,7 @@ Core principles:
 - everything from `Free`
 - unlimited adult family members
 - unlimited children
-- family invites
+- family invites by the `owner`
 - per-member access settings
 - roles such as mother, father, grandmother, nanny
 - plans for different family members
@@ -223,7 +235,7 @@ Implementation status:
 - only the `owner` may create and share family invite links
 - `admin` may manage family operations and member access, but may not manage billing
 - `member` may use the unlocked features, but may not manage billing
-- the first successful `Plus` purchase belongs to the `owner`, not to an arbitrary admin
+- the first successful `Plus` purchase belongs to the `owner`
 - every later billing action must come from the same `owner`
 
 Deletion and exit rules:
@@ -239,11 +251,12 @@ Deletion and exit rules:
   - created the family
   - controls billing
   - may delete the family
+  - may create/share family invites
   - may also manage members and access
 - `admin`
-  - may invite members
   - may manage member roles and access
   - may not manage billing
+  - may not create family invite links
   - may not delete the family
 - `member`
   - may use features according to granted access
@@ -425,7 +438,7 @@ All real restrictions must be enforced on backend actions, not only in UI.
 ### Family Invites
 
 - `free` cannot create invites
-- only allowed admin/owner roles can invite
+- only the `owner` can create/share invites
 
 ### Family Join / Accept Invite
 
@@ -574,21 +587,12 @@ Flow:
 
 ## Ownership Model
 
-Distinguish two concepts:
+The current product model intentionally avoids a separate dynamic `billing owner`.
 
-### Billing Owner
-
-- purchases the subscription
-- manages subscription
-- sees billing controls
-
-### Family Admin
-
-- invites members
-- manages roles
-- configures access policies
-
-They may be the same account, but they should remain separate concepts in code.
+- `owner` is the single stable billing authority
+- `owner` also owns invite creation and family deletion
+- `admin` manages operational family access only
+- no ownership transfer flow exists yet
 
 ## Downgrade Behavior
 
@@ -615,7 +619,7 @@ Example:
 
 ## PWA And Website
 
-Initial recommendation:
+Current recommendation:
 - reuse the same backend access payload in PWA
 - keep the same paylocked logic in web UI
 - defer web checkout if needed
@@ -638,6 +642,18 @@ Recommended additions:
 Suggested copy themes:
 - one adult and one child are free
 - family collaboration is included in `Plus`
+
+## Current Testing Notes
+
+- `Reset to free` only resets backend state and will be overwritten again by an active RevenueCat/Test Store subscription
+- `Force free mode` is the intended local testing tool for downgrade logic
+- `Resume RevenueCat sync` returns the current account to normal RevenueCat-driven behavior
+- use `Force free mode` when you need to test:
+  - `free_primary_child`
+  - non-primary child locks
+  - active illness continuation after downgrade
+  - family access changes after subscription loss
+- this tooling is intentionally dev-only and must not ship as user-facing release functionality
 - `CSV export` and `Live Activities` are included in `Plus`
 
 ## Analytics
