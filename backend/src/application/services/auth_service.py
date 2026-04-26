@@ -129,6 +129,7 @@ class AuthService(BaseAuthService):
         email = dto.email.strip().lower() if dto.email else None
         if email and await self._account_repo.get_by_email(email) is not None:
             self._raise_duplicate_email()
+        account_id = uuid4()
         family_role = "admin"
         invite: FamilyInvite | None = None
         family_name = _DEFAULT_FAMILY_NAME
@@ -157,10 +158,10 @@ class AuthService(BaseAuthService):
             family_role = normalize_family_role(invite.family_role)
             family_name = created_family.name
         else:
-            family = Family(id=uuid4(), name=family_name)
+            family = Family(id=uuid4(), name=family_name, owner_account_id=account_id)
             created_family = await self._family_repo.add(family)
         account = Account(
-            id=uuid4(),
+            id=account_id,
             email=email,
             password_hash=hash_password(dto.password),
             recovery_code_hash=None,
@@ -190,22 +191,6 @@ class AuthService(BaseAuthService):
             if self._is_duplicate_email_integrity_error(exc):
                 self._raise_duplicate_email()
             raise
-        if invite is None and created_family.owner_account_id != created_account.id:
-            created_family = await self._family_repo.update(
-                Family(
-                    id=created_family.id,
-                    name=created_family.name,
-                    cabinet_member_account_ids=list(created_family.cabinet_member_account_ids),
-                    owner_account_id=created_account.id,
-                    billing_account_id=created_family.billing_account_id,
-                    free_primary_child_id=created_family.free_primary_child_id,
-                    plan_code=created_family.plan_code,
-                    subscription_status=created_family.subscription_status,
-                    subscription_provider=created_family.subscription_provider,
-                    subscription_product_id=created_family.subscription_product_id,
-                    subscription_expires_at=created_family.subscription_expires_at,
-                )
-            )
         if invite is not None:
             invite.accepted_at = datetime.now(UTC)
             invite.accepted_by_account_id = created_account.id

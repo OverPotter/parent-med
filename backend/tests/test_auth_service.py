@@ -87,11 +87,13 @@ class StubFamilyRepository:
     def __init__(self, family: Family) -> None:
         self.family = family
         self.deleted_ids: list = []
+        self.added_entities: list[Family] = []
 
     async def get_by_id(self, id):  # noqa: ANN001
         return self.family if id == self.family.id else None
 
     async def add(self, entity):  # noqa: ANN001
+        self.added_entities.append(entity)
         self.family = entity
         return entity
 
@@ -225,6 +227,7 @@ async def test_signup_creates_family_owner_for_new_family() -> None:
     assert result.account.family_role == "admin"
     assert result.family.owner_account_id == result.account.id
     assert family_repo.family.owner_account_id == result.account.id
+    assert family_repo.added_entities[0].owner_account_id == result.account.id
 
 
 @pytest.mark.asyncio

@@ -244,7 +244,6 @@ export function ChildCard({
                   }}
                   disabled={
                     sleepMutation.isPending ||
-                    planLocksChildActions ||
                     (!canActChild && !activeSleep) ||
                     (!!activeSleep && !isActiveSleepOwnedByCurrentAccount)
                   }

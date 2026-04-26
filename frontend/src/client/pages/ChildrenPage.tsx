@@ -111,7 +111,12 @@ export function ChildrenPage() {
     currentFamilyId,
     canManageSubscription
   );
-  const childLimitReached = hasReachedChildLimit(familyAccess);
+  const childLimitReached =
+    hasReachedChildLimit(familyAccess) ||
+    (familyAccess?.maxChildren !== null &&
+    familyAccess?.maxChildren !== undefined
+      ? children.length >= familyAccess.maxChildren
+      : false);
 
   const activeEpisodeQueries = useQueries({
     queries: children.map((child) => ({

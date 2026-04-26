@@ -16,10 +16,15 @@ class FamilyModel(Base):
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    owner_account_id: Mapped[UUID | None] = mapped_column(
+    owner_account_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("accounts.id", ondelete="RESTRICT"),
-        nullable=True,
+        ForeignKey(
+            "accounts.id",
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        nullable=False,
     )
     billing_account_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),

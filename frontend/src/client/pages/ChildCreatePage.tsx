@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createChild } from "@shared/api/children";
+import { createChild, fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchMyFamilyAccess } from "@shared/api/families";
 import { createHeightEntry } from "@shared/api/heightEntries";
 import { createWeightEntry } from "@shared/api/weightEntries";
@@ -42,6 +42,16 @@ export function ChildCreatePage() {
     enabled: Boolean(currentFamilyId),
     staleTime: 60 * 1000,
   });
+  const {
+    data: existingChildren = [],
+    isLoading: isChildrenLoading,
+    isFetching: isChildrenFetching,
+  } = useQuery({
+    queryKey: ["children", currentFamilyId],
+    queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
+    enabled: Boolean(currentFamilyId),
+    staleTime: 30 * 1000,
+  });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
     accountId,
@@ -62,10 +72,14 @@ export function ChildCreatePage() {
   const parsedWeight = parseMeasurement(weightValue);
   const parsedHeight = parseMeasurement(heightValue);
   const pageRef = useRef<HTMLDivElement | null>(null);
+  const childLimitContextReady =
+    familyAccess?.maxChildren === null ||
+    familyAccess?.maxChildren === undefined ||
+    (!isChildrenLoading && !isChildrenFetching);
   const childLimitReached =
     familyAccess?.maxChildren !== null &&
     familyAccess?.maxChildren !== undefined &&
-    familyAccess.currentChildrenCount >= familyAccess.maxChildren;
+    existingChildren.length >= familyAccess.maxChildren;
 
   useEffect(() => {
     const page = pageRef.current;
@@ -122,8 +136,20 @@ export function ChildCreatePage() {
       }),
     onSuccess: (child) => {
       queryClient.invalidateQueries({ queryKey: ["children", currentFamilyId] });
+      queryClient.invalidateQueries({ queryKey: ["families", "me", "access", currentFamilyId] });
       void trackChildCreated(child.id);
       navigate("/children", { replace: true });
+    },
+    onError: (error) => {
+      const code = (
+        error as {
+          response?: { data?: { code?: string; detail?: string } };
+        }
+      )?.response?.data?.code;
+      if (code === "PLUS_REQUIRED_FOR_ADDITIONAL_CHILDREN") {
+        setValidationError(null);
+        setIsUpgradeDialogOpen(true);
+      }
     },
   });
 
@@ -139,6 +165,9 @@ export function ChildCreatePage() {
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim()) {
+      return;
+    }
+    if (!childLimitContextReady) {
       return;
     }
     if (childLimitReached) {
@@ -365,7 +394,7 @@ export function ChildCreatePage() {
               </button>
               <button
                 type="submit"
-                disabled={createMutation.isPending || !name.trim()}
+                disabled={createMutation.isPending || !name.trim() || !childLimitContextReady}
                 className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.7rem] w-full disabled:opacity-50 sm:min-h-[2.5rem] sm:w-auto"
               >
                 {createMutation.isPending ? copy.saving : copy.addButtonShort}
