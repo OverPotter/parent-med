@@ -9,6 +9,7 @@ type UpgradeDialogProps = {
   entryPoint: UpgradeEntryPoint;
   isPending?: boolean;
   canUpgrade?: boolean;
+  errorMessage?: string | null;
   onClose: () => void;
   onUpgrade: () => void;
 };
@@ -19,6 +20,7 @@ export function UpgradeDialog({
   entryPoint,
   isPending = false,
   canUpgrade = true,
+  errorMessage = null,
   onClose,
   onUpgrade,
 }: UpgradeDialogProps) {
@@ -55,6 +57,11 @@ export function UpgradeDialog({
               {language === "ru"
                 ? "Plus для семьи оформляет владелец семейного аккаунта. Попросите его подключить или восстановить подписку."
                 : "The family owner manages Plus for everyone. Ask them to purchase or restore the subscription."}
+            </p>
+          ) : null}
+          {errorMessage ? (
+            <p className="soft-note-danger text-sm leading-6">
+              {errorMessage}
             </p>
           ) : null}
         </div>

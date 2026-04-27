@@ -21,6 +21,16 @@ class SubscriptionRepository(BaseRepository[Subscription]):
         ...
 
     @abstractmethod
+    async def get_current_by_provider_identity(
+        self,
+        provider: str,
+        provider_customer_id: str | None,
+        provider_subscription_id: str | None,
+    ) -> Subscription | None:
+        """Find the newest subscription by provider identity."""
+        ...
+
+    @abstractmethod
     async def update(self, entity: Subscription) -> Subscription:
         """Update subscription."""
         ...

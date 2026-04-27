@@ -142,11 +142,12 @@ export function MedicineCabinetPage() {
   const isFamilyAccessResolved = familyAccess !== undefined;
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const isCatalogLocked = isFamilyAccessResolved && familyAccess.premiumActive === false;
-  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+    useSubscriptionUpgrade(
     accountId,
     currentFamilyId,
     canManageSubscription
-  );
+    );
 
   useEffect(() => {
     if (addFlow !== "catalog" || !isFamilyAccessResolved || !isCatalogLocked) {
@@ -697,7 +698,11 @@ export function MedicineCabinetPage() {
         entryPoint="medicine_catalog"
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
-        onClose={() => setIsUpgradeDialogOpen(false)}
+        errorMessage={upgradeErrorMessage}
+        onClose={() => {
+          clearUpgradeError();
+          setIsUpgradeDialogOpen(false);
+        }}
         onUpgrade={() =>
           void upgradeToPlus().then(() => {
             setIsUpgradeDialogOpen(false);

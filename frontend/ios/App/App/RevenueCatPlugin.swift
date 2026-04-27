@@ -168,8 +168,23 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
                     return
                 }
                 let result = try await Purchases.shared.purchase(package: package)
-                call.resolve(["customerSnapshot": snapshotDictionary(from: result.customerInfo)])
+                do {
+                    let customerInfo = try await Purchases.shared.customerInfo()
+                    call.resolve(["customerSnapshot": snapshotDictionary(from: customerInfo)])
+                } catch {
+                    call.resolve(["customerSnapshot": snapshotDictionary(from: result.customerInfo)])
+                }
             } catch {
+                do {
+                    let customerInfo = try await Purchases.shared.customerInfo()
+                    let snapshot = snapshotDictionary(from: customerInfo)
+                    if (snapshot["entitlementActive"] as? Bool) == true {
+                        call.resolve(["customerSnapshot": snapshot])
+                        return
+                    }
+                } catch {
+                    // Ignore customer info fallback failure and surface the original purchase error.
+                }
                 call.reject("RevenueCat purchase failed", nil, error)
             }
         }
@@ -193,6 +208,8 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
     private func snapshotDictionary(from customerInfo: CustomerInfo) -> [String: Any] {
         let selectedEntitlement = resolveEntitlement(from: customerInfo)
         let status = resolveStatus(for: selectedEntitlement)
+        let providerCustomerId = customerInfo.originalAppUserId
+        let providerSubscriptionId = buildProviderSubscriptionId(from: selectedEntitlement)
 
         return [
             "configured": Purchases.isConfigured,
@@ -208,8 +225,8 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
             "willRenew": selectedEntitlement?.willRenew ?? false,
             "isSandbox": selectedEntitlement?.isSandbox ?? false,
             "ownershipType": jsonValue(selectedEntitlement.map { String(describing: $0.ownershipType).lowercased() }),
-            "providerCustomerId": NSNull(),
-            "providerSubscriptionId": NSNull(),
+            "providerCustomerId": jsonValue(providerCustomerId),
+            "providerSubscriptionId": jsonValue(providerSubscriptionId),
             "rawPayload": [
                 "activeEntitlements": Array(customerInfo.entitlements.active.keys),
                 "allPurchasedProductIdentifiers": Array(customerInfo.allPurchasedProductIdentifiers),
@@ -234,6 +251,20 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
 
         return customerInfo.entitlements.active.first?.value
             ?? customerInfo.entitlements.all.first?.value
+    }
+
+    private func buildProviderSubscriptionId(from entitlement: EntitlementInfo?) -> String? {
+        guard let entitlement else {
+            return nil
+        }
+        let productId = entitlement.productIdentifier
+        let purchaseAnchor = entitlement.originalPurchaseDate?.iso8601String
+            ?? entitlement.latestPurchaseDate?.iso8601String
+            ?? entitlement.expirationDate?.iso8601String
+        guard let purchaseAnchor else {
+            return nil
+        }
+        return "\(productId)#\(purchaseAnchor)"
     }
 
     private func resolveStatus(for entitlement: EntitlementInfo?) -> String {

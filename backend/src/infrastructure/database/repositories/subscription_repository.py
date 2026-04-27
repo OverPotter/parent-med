@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.subscription import Subscription
@@ -76,6 +76,30 @@ class SqlSubscriptionRepository(SubscriptionRepository):
             .order_by(SubscriptionModel.updated_at.desc(), SubscriptionModel.created_at.desc())
         )
         return [self._to_entity(row) for row in result.scalars().all()]
+
+    async def get_current_by_provider_identity(
+        self,
+        provider: str,
+        provider_customer_id: str | None,
+        provider_subscription_id: str | None,
+    ) -> Subscription | None:
+        clauses = []
+        if provider_subscription_id:
+            clauses.append(SubscriptionModel.provider_subscription_id == provider_subscription_id)
+        if provider_customer_id:
+            clauses.append(SubscriptionModel.provider_customer_id == provider_customer_id)
+        if not clauses:
+            return None
+
+        result = await self._session.execute(
+            select(SubscriptionModel)
+            .where(SubscriptionModel.provider == provider)
+            .where(or_(*clauses))
+            .order_by(SubscriptionModel.updated_at.desc(), SubscriptionModel.created_at.desc())
+            .limit(1)
+        )
+        row = result.scalars().one_or_none()
+        return self._to_entity(row) if row else None
 
     async def add(self, entity: Subscription) -> Subscription:
         model = self._to_model(entity)

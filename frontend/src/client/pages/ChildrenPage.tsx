@@ -118,11 +118,12 @@ export function ChildrenPage() {
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const showOfflineState = isOffline || hasNetworkUnavailableError([error]);
-  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+    useSubscriptionUpgrade(
     accountId,
     currentFamilyId,
     canManageSubscription
-  );
+    );
   const childLimitReached =
     hasReachedChildLimit(familyAccess) ||
     (familyAccess?.maxChildren !== null &&
@@ -310,7 +311,11 @@ export function ChildrenPage() {
         entryPoint="second_child"
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
-        onClose={() => setIsUpgradeDialogOpen(false)}
+        errorMessage={upgradeErrorMessage}
+        onClose={() => {
+          clearUpgradeError();
+          setIsUpgradeDialogOpen(false);
+        }}
         onUpgrade={() => {
           void upgradeToPlus().then(() => {
             setIsUpgradeDialogOpen(false);

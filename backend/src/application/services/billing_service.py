@@ -111,6 +111,24 @@ class BillingService:
             raise ValidationError("План не найден", code="PLAN_NOT_FOUND")
         return plan
 
+    async def _ensure_subscription_not_linked_to_another_family(
+        self,
+        family: Family,
+        dto: BillingProviderSyncDto,
+    ) -> None:
+        existing = await self._subscription_repo.get_current_by_provider_identity(
+            dto.provider,
+            dto.provider_customer_id,
+            dto.provider_subscription_id,
+        )
+        if existing is None or existing.family_id == family.id:
+            return
+        raise ValidationError(
+            "Эта подписка уже используется в другой семье",
+            code="SUBSCRIPTION_ALREADY_LINKED_TO_ANOTHER_FAMILY",
+            status_code=409,
+        )
+
     async def _upsert_subscription(
         self,
         family: Family,
@@ -470,6 +488,7 @@ class BillingService:
     ) -> BillingDebugResponseDto:
         """Apply a normalized provider subscription snapshot to the current family."""
         family = await self._require_subscription_manager_for_sync(account)
+        await self._ensure_subscription_not_linked_to_another_family(family, dto)
         plan = await self._require_plan(dto.plan_code)
         payload = {
             "family_id": str(family.id),

@@ -53,11 +53,12 @@ export function ChildCreatePage() {
     staleTime: 30 * 1000,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+    useSubscriptionUpgrade(
     accountId,
     currentFamilyId,
     canManageSubscription
-  );
+    );
 
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -413,7 +414,11 @@ export function ChildCreatePage() {
         entryPoint="second_child"
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
-        onClose={() => setIsUpgradeDialogOpen(false)}
+        errorMessage={upgradeErrorMessage}
+        onClose={() => {
+          clearUpgradeError();
+          setIsUpgradeDialogOpen(false);
+        }}
         onUpgrade={() => {
           void upgradeToPlus().then(() => {
             setIsUpgradeDialogOpen(false);

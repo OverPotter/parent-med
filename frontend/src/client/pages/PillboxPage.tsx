@@ -128,11 +128,12 @@ export function PillboxPage() {
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const premiumActive = familyAccess?.premiumActive ?? true;
   const freePrimaryPlanId = familyAccess?.freePrimaryPillboxPlanId ?? null;
-  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+    useSubscriptionUpgrade(
     accountId,
     currentFamilyId,
     canManageSubscription
-  );
+    );
   const pillboxPlanLimitReached = shouldLockPillboxPlanCreation({
     access: familyAccess,
     screen,
@@ -1046,7 +1047,11 @@ export function PillboxPage() {
         entryPoint="second_pillbox_plan"
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
-        onClose={() => setIsUpgradeDialogOpen(false)}
+        errorMessage={upgradeErrorMessage}
+        onClose={() => {
+          clearUpgradeError();
+          setIsUpgradeDialogOpen(false);
+        }}
         onUpgrade={() => {
           void upgradeToPlus().then(() => {
             setIsUpgradeDialogOpen(false);

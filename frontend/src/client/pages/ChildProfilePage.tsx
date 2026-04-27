@@ -38,11 +38,12 @@ export function ChildProfilePage() {
     staleTime: 60 * 1000,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+    useSubscriptionUpgrade(
     accountId,
     currentFamilyId,
     canManageSubscription
-  );
+    );
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
@@ -139,7 +140,11 @@ export function ChildProfilePage() {
         entryPoint="child_actions_locked"
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
-        onClose={() => setIsUpgradeDialogOpen(false)}
+        errorMessage={upgradeErrorMessage}
+        onClose={() => {
+          clearUpgradeError();
+          setIsUpgradeDialogOpen(false);
+        }}
         onUpgrade={() => {
           void upgradeToPlus().then(() => {
             setIsUpgradeDialogOpen(false);

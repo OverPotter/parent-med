@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { applyBillingDebugAction } from "@shared/api/billing";
 import {
   getRevenueCatDefaultPackageIdentifier,
@@ -17,6 +18,25 @@ import {
 } from "@shared/utils/revenueCatSync";
 import { clearRevenueCatSyncSuppressionForAccount } from "@shared/utils/revenueCatSyncSuppression";
 import { invalidateSubscriptionQueries } from "./invalidateSubscriptionQueries";
+
+function getMutationErrorMessage(error: unknown): string | null {
+  if (!error) {
+    return null;
+  }
+  if (isAxiosError(error)) {
+    const data =
+      typeof error.response?.data === "object" && error.response?.data
+        ? (error.response.data as { detail?: string })
+        : null;
+    if (typeof data?.detail === "string" && data.detail.trim()) {
+      return data.detail.trim();
+    }
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+  return null;
+}
 
 async function purchaseRevenueCatPlus(accountId: string | null) {
   const entitlementCode = getRevenueCatEntitlementCode();
@@ -108,6 +128,13 @@ export function useSubscriptionUpgrade(
     canUseNativeRevenueCat,
     isDebugUpgradeEnabled,
     isUpgradePending: upgradeMutation.isPending || restoreMutation.isPending,
+    upgradeErrorMessage:
+      getMutationErrorMessage(upgradeMutation.error) ??
+      getMutationErrorMessage(restoreMutation.error),
+    clearUpgradeError: () => {
+      upgradeMutation.reset();
+      restoreMutation.reset();
+    },
     upgradeToPlus: () => upgradeMutation.mutateAsync(),
     restorePurchases: () => restoreMutation.mutateAsync(),
   };

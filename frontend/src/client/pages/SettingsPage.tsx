@@ -150,11 +150,12 @@ export function SettingsPage() {
     ...familyAccessQueryOptions,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, isUpgradePending } = useSubscriptionUpgrade(
+  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+    useSubscriptionUpgrade(
     accountId,
     currentFamilyId,
     canManageSubscription
-  );
+    );
   const childrenPushEnabled = pushPreferences?.childrenEnabled ?? true;
   const pillboxPushEnabled = pushPreferences?.pillboxEnabled ?? true;
   const cabinetEarlyReminderEnabled =
@@ -1065,7 +1066,11 @@ export function SettingsPage() {
         entryPoint="live_activities"
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
-        onClose={() => setIsUpgradeDialogOpen(false)}
+        errorMessage={upgradeErrorMessage}
+        onClose={() => {
+          clearUpgradeError();
+          setIsUpgradeDialogOpen(false);
+        }}
         onUpgrade={() => {
           void upgradeToPlus().then(() => {
             setIsUpgradeDialogOpen(false);

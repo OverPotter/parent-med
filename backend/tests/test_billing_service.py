@@ -7,7 +7,7 @@ from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.billing import BillingDebugActionDto, BillingProviderSyncDto
 from src.application.services.billing_service import BillingService
 from src.application.services.subscription_access_service import SubscriptionAccessService
-from src.core.exceptions import ForbiddenError
+from src.core.exceptions import ForbiddenError, ValidationError
 from src.domain.entities.account import Account
 from src.domain.entities.billing_event import BillingEvent
 from src.domain.entities.child import Child
@@ -42,18 +42,41 @@ class StubPlanRepository:
 class StubSubscriptionRepository:
     def __init__(self) -> None:
         self.current: Subscription | None = None
+        self.items: list[Subscription] = []
 
     async def get_current_by_family_id(self, family_id):  # noqa: ANN001
-        if self.current and self.current.family_id == family_id:
-            return self.current
-        return None
+        matches = [item for item in self.items if item.family_id == family_id]
+        if not matches:
+            return None
+        return sorted(matches, key=lambda item: (item.updated_at, item.created_at), reverse=True)[0]
+
+    async def get_current_by_provider_identity(  # noqa: ANN001
+        self,
+        provider,
+        provider_customer_id,
+        provider_subscription_id,
+    ):
+        matches = []
+        for item in self.items:
+            if item.provider != provider:
+                continue
+            if provider_subscription_id and item.provider_subscription_id == provider_subscription_id:
+                matches.append(item)
+                continue
+            if provider_customer_id and item.provider_customer_id == provider_customer_id:
+                matches.append(item)
+        if not matches:
+            return None
+        return sorted(matches, key=lambda item: (item.updated_at, item.created_at), reverse=True)[0]
 
     async def add(self, entity: Subscription) -> Subscription:
         self.current = entity
+        self.items = [item for item in self.items if item.id != entity.id] + [entity]
         return entity
 
     async def update(self, entity: Subscription) -> Subscription:
         self.current = entity
+        self.items = [item for item in self.items if item.id != entity.id] + [entity]
         return entity
 
 
@@ -458,6 +481,70 @@ async def test_provider_sync_rejects_non_billing_owner_after_first_purchase() ->
                 raw_payload={"source": "test"},
             ),
         )
+
+
+@pytest.mark.asyncio
+async def test_provider_sync_rejects_subscription_transfer_to_another_family() -> None:
+    first_family_id = uuid4()
+    second_family_id = uuid4()
+    first_owner = _build_account(
+        family_id=first_family_id,
+        family_role="owner",
+        email="first@example.com",
+    )
+    second_owner = _build_account(
+        family_id=second_family_id,
+        family_role="owner",
+        email="second@example.com",
+    )
+    second_family = Family(
+        id=second_family_id,
+        name="Second family",
+        owner_account_id=second_owner.id,
+        billing_account_id=second_owner.id,
+        plan_code="free",
+        subscription_status="inactive",
+    )
+    service, subscription_repo, _, _, _ = _make_service(second_family, [second_owner])
+    existing = Subscription(
+        id=uuid4(),
+        family_id=first_family_id,
+        plan_id=uuid4(),
+        provider="revenuecat",
+        provider_customer_id="rc_customer_shared",
+        provider_subscription_id="com.pillpath.premium.monthly#2026-04-27T10:00:00Z",
+        status="active",
+        starts_at=datetime.now(UTC) - timedelta(days=1),
+        expires_at=datetime.now(UTC) + timedelta(days=29),
+        trial_ends_at=None,
+        canceled_at=None,
+        raw_payload_json={"source": "existing"},
+        created_at=datetime.now(UTC) - timedelta(days=1),
+        updated_at=datetime.now(UTC) - timedelta(days=1),
+    )
+    await subscription_repo.add(existing)
+
+    with pytest.raises(
+        ValidationError,
+        match="подписка уже используется в другой семье",
+    ) as exc:
+        await service.sync_provider_subscription(
+            _auth(second_owner),
+            BillingProviderSyncDto(
+                provider="revenuecat",
+                plan_code="plus",
+                status="active",
+                product_id="com.pillpath.premium.monthly",
+                provider_customer_id="rc_customer_shared",
+                provider_subscription_id="com.pillpath.premium.monthly#2026-04-27T10:00:00Z",
+                entitlement_code="plus",
+                expires_at=datetime.now(UTC) + timedelta(days=30),
+                trial_ends_at=None,
+                raw_payload={"source": "restore"},
+            ),
+        )
+
+    assert exc.value.code == "SUBSCRIPTION_ALREADY_LINKED_TO_ANOTHER_FAMILY"
 
 
 @pytest.mark.asyncio
