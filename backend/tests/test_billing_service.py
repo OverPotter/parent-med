@@ -60,7 +60,10 @@ class StubSubscriptionRepository:
         for item in self.items:
             if item.provider != provider:
                 continue
-            if provider_subscription_id and item.provider_subscription_id == provider_subscription_id:
+            if (
+                provider_subscription_id
+                and item.provider_subscription_id == provider_subscription_id
+            ):
                 matches.append(item)
                 continue
             if provider_customer_id and item.provider_customer_id == provider_customer_id:
