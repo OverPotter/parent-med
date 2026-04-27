@@ -1,6 +1,7 @@
 import Foundation
 import Capacitor
 import RevenueCat
+import StoreKit
 
 @objc(RevenueCatPlugin)
 public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -74,7 +75,7 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
         Task {
             do {
                 let (customerInfo, _) = try await Purchases.shared.logIn(appUserId)
-                call.resolve(["customerSnapshot": snapshotDictionary(from: customerInfo)])
+                call.resolve(["customerSnapshot": await snapshotDictionary(from: customerInfo)])
             } catch {
                 call.reject("RevenueCat logIn failed", nil, error)
             }
@@ -85,7 +86,7 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
         Task {
             do {
                 let customerInfo = try await Purchases.shared.logOut()
-                call.resolve(["customerSnapshot": snapshotDictionary(from: customerInfo)])
+                call.resolve(["customerSnapshot": await snapshotDictionary(from: customerInfo)])
             } catch {
                 call.reject("RevenueCat logOut failed", nil, error)
             }
@@ -100,7 +101,7 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
         Task {
             do {
                 let customerInfo = try await Purchases.shared.customerInfo()
-                call.resolve(["customerSnapshot": snapshotDictionary(from: customerInfo)])
+                call.resolve(["customerSnapshot": await snapshotDictionary(from: customerInfo)])
             } catch {
                 call.reject("RevenueCat customer info fetch failed", nil, error)
             }
@@ -170,14 +171,24 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
                 let result = try await Purchases.shared.purchase(package: package)
                 do {
                     let customerInfo = try await Purchases.shared.customerInfo()
-                    call.resolve(["customerSnapshot": snapshotDictionary(from: customerInfo)])
+                    call.resolve([
+                        "customerSnapshot": await snapshotDictionary(
+                            from: customerInfo,
+                            purchaseTransaction: result.transaction
+                        ),
+                    ])
                 } catch {
-                    call.resolve(["customerSnapshot": snapshotDictionary(from: result.customerInfo)])
+                    call.resolve([
+                        "customerSnapshot": await snapshotDictionary(
+                            from: result.customerInfo,
+                            purchaseTransaction: result.transaction
+                        ),
+                    ])
                 }
             } catch {
                 do {
                     let customerInfo = try await Purchases.shared.customerInfo()
-                    let snapshot = snapshotDictionary(from: customerInfo)
+                    let snapshot = await snapshotDictionary(from: customerInfo)
                     if (snapshot["entitlementActive"] as? Bool) == true {
                         call.resolve(["customerSnapshot": snapshot])
                         return
@@ -198,18 +209,26 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
         Task {
             do {
                 let customerInfo = try await Purchases.shared.restorePurchases()
-                call.resolve(["customerSnapshot": snapshotDictionary(from: customerInfo)])
+                call.resolve(["customerSnapshot": await snapshotDictionary(from: customerInfo)])
             } catch {
                 call.reject("RevenueCat restore failed", nil, error)
             }
         }
     }
 
-    private func snapshotDictionary(from customerInfo: CustomerInfo) -> [String: Any] {
+    private func snapshotDictionary(
+        from customerInfo: CustomerInfo,
+        purchaseTransaction: StoreTransaction? = nil
+    ) async -> [String: Any] {
         let selectedEntitlement = resolveEntitlement(from: customerInfo)
         let status = resolveStatus(for: selectedEntitlement)
         let providerCustomerId = customerInfo.originalAppUserId
-        let providerSubscriptionId = buildProviderSubscriptionId(from: selectedEntitlement)
+        let transactionIdentity = await resolveTransactionIdentity(
+            transaction: purchaseTransaction,
+            productIdentifier: selectedEntitlement?.productIdentifier
+        )
+        let providerSubscriptionId = transactionIdentity.originalTransactionId
+            ?? buildProviderSubscriptionId(from: selectedEntitlement)
 
         return [
             "configured": Purchases.isConfigured,
@@ -227,12 +246,16 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
             "ownershipType": jsonValue(selectedEntitlement.map { String(describing: $0.ownershipType).lowercased() }),
             "providerCustomerId": jsonValue(providerCustomerId),
             "providerSubscriptionId": jsonValue(providerSubscriptionId),
+            "storeTransactionId": jsonValue(transactionIdentity.transactionId),
+            "storeOriginalTransactionId": jsonValue(transactionIdentity.originalTransactionId),
             "rawPayload": [
                 "activeEntitlements": Array(customerInfo.entitlements.active.keys),
                 "allPurchasedProductIdentifiers": Array(customerInfo.allPurchasedProductIdentifiers),
                 "latestExpirationDate": jsonValue(customerInfo.latestExpirationDate?.iso8601String),
                 "firstSeen": customerInfo.firstSeen.iso8601String,
                 "requestDate": customerInfo.requestDate.iso8601String,
+                "storeTransactionId": jsonValue(transactionIdentity.transactionId),
+                "storeOriginalTransactionId": jsonValue(transactionIdentity.originalTransactionId),
             ],
         ]
     }
@@ -265,6 +288,63 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
             return nil
         }
         return "\(productId)#\(purchaseAnchor)"
+    }
+
+    private func resolveTransactionIdentity(
+        transaction: StoreTransaction?,
+        productIdentifier: String?
+    ) async -> (transactionId: String?, originalTransactionId: String?) {
+        if let transactionIdentity = transactionIdentity(from: transaction) {
+            return transactionIdentity
+        }
+
+        guard #available(iOS 15.0, *), let productIdentifier else {
+            return (nil, nil)
+        }
+
+        for await verificationResult in StoreKit.Transaction.currentEntitlements {
+            guard case let .verified(activeTransaction) = verificationResult else {
+                continue
+            }
+            guard activeTransaction.productID == productIdentifier else {
+                continue
+            }
+            return (
+                transactionId: String(activeTransaction.id),
+                originalTransactionId: String(activeTransaction.originalID)
+            )
+        }
+
+        return (nil, nil)
+    }
+
+    private func transactionIdentity(
+        from transaction: StoreTransaction?
+    ) -> (transactionId: String?, originalTransactionId: String?)? {
+        guard let transaction else {
+            return nil
+        }
+
+        if #available(iOS 15.0, *), let sk2Transaction = transaction.sk2Transaction {
+            return (
+                transactionId: String(sk2Transaction.id),
+                originalTransactionId: String(sk2Transaction.originalID)
+            )
+        }
+
+        if let sk1Transaction = transaction.sk1Transaction {
+            let transactionId = sk1Transaction.transactionIdentifier
+            let originalTransactionId = sk1Transaction.original?.transactionIdentifier ?? transactionId
+            return (
+                transactionId: transactionId,
+                originalTransactionId: originalTransactionId
+            )
+        }
+
+        return (
+            transactionId: transaction.transactionIdentifier,
+            originalTransactionId: transaction.transactionIdentifier
+        )
     }
 
     private func resolveStatus(for entitlement: EntitlementInfo?) -> String {
