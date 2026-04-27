@@ -1,12 +1,31 @@
 /** HitKeep: очередь до hk.js, sanitize props. */
 
+import { Capacitor } from "@capacitor/core";
 import { hashIdentifierForAnalytics, type AnalyticsHashKind } from "@shared/api/analytics";
 import { AnalyticsEvents } from "./events";
 
 const queue: Array<[string, Record<string, unknown> | undefined]> = [];
+const NATIVE_SESSION_KEY = "hk_native_session_v1";
+const NATIVE_SESSION_TTL_MS = 30 * 60 * 1000;
 
 export function isHitKeepConfigured(): boolean {
   return Boolean(import.meta.env.VITE_HITKEEP_SCRIPT_URL?.trim());
+}
+
+function isNativeRuntime(): boolean {
+  return Capacitor.isNativePlatform();
+}
+
+function getHitKeepOrigin(): string | null {
+  const raw = import.meta.env.VITE_HITKEEP_SCRIPT_URL?.trim();
+  if (!raw) {
+    return null;
+  }
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return null;
+  }
 }
 
 function sanitizeProps(props?: Record<string, unknown>): Record<string, unknown> | undefined {
@@ -38,6 +57,9 @@ function scheduleFlush(): void {
 }
 
 export function flushHitKeepQueue(): void {
+  if (isNativeRuntime()) {
+    return;
+  }
   while (queue.length > 0 && window.hk?.event) {
     const [name, props] = queue.shift()!;
     try {
@@ -57,6 +79,10 @@ export function trackEvent(name: string, props?: Record<string, unknown>): void 
   if (typeof window === "undefined") {
     return;
   }
+  if (isNativeRuntime()) {
+    void postNativeHitKeepEvent(name, payload);
+    return;
+  }
   if (window.hk?.event) {
     try {
       window.hk.event(name, payload);
@@ -65,6 +91,114 @@ export function trackEvent(name: string, props?: Record<string, unknown>): void 
   }
   queue.push([name, payload]);
   scheduleFlush();
+}
+
+function randomUuid(): string {
+  const runtimeCrypto = typeof globalThis.crypto !== "undefined" ? globalThis.crypto : null;
+  if (runtimeCrypto && typeof runtimeCrypto.randomUUID === "function") {
+    return runtimeCrypto.randomUUID();
+  }
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (char) =>
+    (
+      Number(char) ^
+      ((runtimeCrypto?.getRandomValues(new Uint8Array(1))[0] ?? 0) & 15) >> (Number(char) / 4)
+    ).toString(16)
+  );
+}
+
+function getNativeSessionId(): string {
+  const now = Date.now();
+  try {
+    const raw = window.sessionStorage.getItem(NATIVE_SESSION_KEY);
+    if (raw) {
+      const [sessionId, timestampRaw] = raw.split("|");
+      const timestamp = Number.parseInt(timestampRaw ?? "", 10);
+      if (sessionId && Number.isFinite(timestamp) && now - timestamp < NATIVE_SESSION_TTL_MS) {
+        window.sessionStorage.setItem(NATIVE_SESSION_KEY, `${sessionId}|${now}`);
+        return sessionId;
+      }
+    }
+  } catch {
+    // Ignore sessionStorage failures and regenerate a transient session id.
+  }
+
+  const sessionId = randomUuid();
+  try {
+    window.sessionStorage.setItem(NATIVE_SESSION_KEY, `${sessionId}|${now}`);
+  } catch {
+    // Ignore storage failures for transient analytics state.
+  }
+  return sessionId;
+}
+
+async function postNativeHitKeepEvent(
+  name: string,
+  props?: Record<string, unknown>
+): Promise<void> {
+  const origin = getHitKeepOrigin();
+  if (!origin || typeof window === "undefined") {
+    return;
+  }
+
+  const sessionId = getNativeSessionId();
+  try {
+    await fetch(`${origin}/ingest/event`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        n: name,
+        p: props ?? {},
+        sid: sessionId,
+      }),
+      keepalive: true,
+      credentials: "omit",
+    });
+  } catch {
+    // Best-effort analytics only.
+  }
+}
+
+export async function trackNativePageView(args: {
+  path: string;
+  isAuthenticated: boolean;
+  role: string;
+}): Promise<void> {
+  const origin = getHitKeepOrigin();
+  if (!origin || typeof window === "undefined" || !isNativeRuntime()) {
+    return;
+  }
+
+  const sessionId = getNativeSessionId();
+  const viewportWidth = typeof window.innerWidth === "number" ? window.innerWidth : null;
+  const viewportHeight = typeof window.innerHeight === "number" ? window.innerHeight : null;
+  const screenWidth = typeof window.screen?.width === "number" ? window.screen.width : null;
+  const screenHeight = typeof window.screen?.height === "number" ? window.screen.height : null;
+
+  try {
+    await fetch(`${origin}/ingest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: args.path,
+        referrer: null,
+        ua: navigator.userAgent,
+        vp_w: viewportWidth,
+        vp_h: viewportHeight,
+        sc_w: screenWidth,
+        sc_h: screenHeight,
+        lang: navigator.language,
+        unique: false,
+        session_id: sessionId,
+        page_id: randomUuid(),
+        is_authenticated: args.isAuthenticated,
+        role: args.role,
+      }),
+      keepalive: true,
+      credentials: "omit",
+    });
+  } catch {
+    // Best-effort analytics only.
+  }
 }
 
 export function normalizeClientError(err: unknown): string {

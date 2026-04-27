@@ -7,6 +7,7 @@ import { AnalyticsEvents } from "./events";
 import {
   flushHitKeepQueue,
   isHitKeepConfigured,
+  trackNativePageView,
   trackEvent,
   trackSessionIdentify,
 } from "./hitkeep";
@@ -27,6 +28,9 @@ function HitKeepScriptLoader() {
     }
     const host = window.location.hostname;
     const isNativeRuntime = Capacitor.isNativePlatform();
+    if (isNativeRuntime) {
+      return;
+    }
     if (!isNativeRuntime && (host === "localhost" || host === "127.0.0.1")) {
       console.warn(
         "[HitKeep] localhost: трекер не шлёт события — используйте pillpath.localhost:3000 / :5173"
@@ -64,6 +68,14 @@ function HitKeepPageViews() {
       return;
     }
     prevPath.current = path;
+    if (Capacitor.isNativePlatform()) {
+      void trackNativePageView({
+        path,
+        isAuthenticated: Boolean(accountId),
+        role: accountId ? role : "guest",
+      });
+      return;
+    }
     trackEvent(AnalyticsEvents.PAGE_VIEW, {
       path,
       is_authenticated: Boolean(accountId),
