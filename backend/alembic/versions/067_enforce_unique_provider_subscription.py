@@ -1,6 +1,6 @@
 """enforce unique provider subscription identity
 
-Revision ID: 067_enforce_unique_provider_subscription
+Revision ID: 067_provider_sub_unique
 Revises: 066
 Create Date: 2026-04-27 15:10:00
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "067_enforce_unique_provider_subscription"
+revision = "067_provider_sub_unique"
 down_revision = "066"
 branch_labels = None
 depends_on = None
