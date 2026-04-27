@@ -60,7 +60,10 @@ class StubSubscriptionRepository:
         for item in self.items:
             if item.provider != provider:
                 continue
-            if provider_subscription_id and item.provider_subscription_id == provider_subscription_id:
+            if (
+                provider_subscription_id
+                and item.provider_subscription_id == provider_subscription_id
+            ):
                 matches.append(item)
                 continue
             if provider_customer_id and item.provider_customer_id == provider_customer_id:
@@ -487,11 +490,6 @@ async def test_provider_sync_rejects_non_billing_owner_after_first_purchase() ->
 async def test_provider_sync_rejects_subscription_transfer_to_another_family() -> None:
     first_family_id = uuid4()
     second_family_id = uuid4()
-    first_owner = _build_account(
-        family_id=first_family_id,
-        family_role="owner",
-        email="first@example.com",
-    )
     second_owner = _build_account(
         family_id=second_family_id,
         family_role="owner",
