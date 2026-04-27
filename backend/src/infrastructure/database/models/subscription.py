@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, func
 from sqlalchemy import text as sa_text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -17,6 +17,15 @@ class SubscriptionModel(Base):
     """Subscription lifecycle table."""
 
     __tablename__ = "subscriptions"
+    __table_args__ = (
+        Index(
+            "uq_subscriptions_provider_subscription_id",
+            "provider",
+            "provider_subscription_id",
+            unique=True,
+            postgresql_where=sa_text("provider_subscription_id IS NOT NULL"),
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     family_id: Mapped[UUID] = mapped_column(
