@@ -1,18 +1,19 @@
 """enforce unique provider subscription identity
 
 Revision ID: 067_enforce_unique_provider_subscription
-Revises: 066_add_free_primary_pillbox_plan
+Revises: 066
 Create Date: 2026-04-27 15:10:00
 """
 
 from __future__ import annotations
 
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "067_enforce_unique_provider_subscription"
-down_revision = "066_add_free_primary_pillbox_plan"
+down_revision = "066"
 branch_labels = None
 depends_on = None
 
