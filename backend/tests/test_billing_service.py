@@ -490,11 +490,6 @@ async def test_provider_sync_rejects_non_billing_owner_after_first_purchase() ->
 async def test_provider_sync_rejects_subscription_transfer_to_another_family() -> None:
     first_family_id = uuid4()
     second_family_id = uuid4()
-    first_owner = _build_account(
-        family_id=first_family_id,
-        family_role="owner",
-        email="first@example.com",
-    )
     second_owner = _build_account(
         family_id=second_family_id,
         family_role="owner",
