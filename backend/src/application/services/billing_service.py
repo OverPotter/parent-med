@@ -4,6 +4,8 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
+from sqlalchemy.exc import IntegrityError
+
 from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.billing import (
     BillingDebugActionDto,
@@ -30,6 +32,8 @@ from src.domain.repositories.subscription_repository import SubscriptionReposito
 
 class BillingService:
     """Coordinates family subscription state and local billing stubs."""
+
+    _SUBSCRIPTION_OWNERSHIP_CONSTRAINT = "uq_subscriptions_provider_subscription_id"
 
     def __init__(
         self,
@@ -123,6 +127,19 @@ class BillingService:
         )
         if existing is None or existing.family_id == family.id:
             return
+        raise ValidationError(
+            "Эта подписка уже используется в другой семье",
+            code="SUBSCRIPTION_ALREADY_LINKED_TO_ANOTHER_FAMILY",
+            status_code=409,
+        )
+
+    @classmethod
+    def _is_subscription_ownership_integrity_error(cls, exc: IntegrityError) -> bool:
+        message = str(getattr(exc, "orig", exc)).lower()
+        return cls._SUBSCRIPTION_OWNERSHIP_CONSTRAINT in message
+
+    @staticmethod
+    def _raise_subscription_already_linked() -> None:
         raise ValidationError(
             "Эта подписка уже используется в другой семье",
             code="SUBSCRIPTION_ALREADY_LINKED_TO_ANOTHER_FAMILY",
@@ -503,17 +520,22 @@ class BillingService:
             "trial_ends_at": dto.trial_ends_at.isoformat() if dto.trial_ends_at else None,
             "raw_payload": dto.raw_payload,
         }
-        subscription = await self._upsert_subscription(
-            family,
-            plan,
-            status=dto.status,
-            provider=dto.provider,
-            provider_customer_id=dto.provider_customer_id,
-            provider_subscription_id=dto.provider_subscription_id,
-            expires_at=dto.expires_at,
-            trial_ends_at=dto.trial_ends_at,
-            payload=payload,
-        )
+        try:
+            subscription = await self._upsert_subscription(
+                family,
+                plan,
+                status=dto.status,
+                provider=dto.provider,
+                provider_customer_id=dto.provider_customer_id,
+                provider_subscription_id=dto.provider_subscription_id,
+                expires_at=dto.expires_at,
+                trial_ends_at=dto.trial_ends_at,
+                payload=payload,
+            )
+        except IntegrityError as exc:
+            if self._is_subscription_ownership_integrity_error(exc):
+                self._raise_subscription_already_linked()
+            raise
         updated_family = await self._sync_family_snapshot(
             family,
             plan,

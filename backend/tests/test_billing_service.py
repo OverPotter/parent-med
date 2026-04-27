@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from src.application.dto.auth import AuthenticatedAccount
 from src.application.dto.billing import BillingDebugActionDto, BillingProviderSyncDto
@@ -81,6 +82,18 @@ class StubSubscriptionRepository:
         self.current = entity
         self.items = [item for item in self.items if item.id != entity.id] + [entity]
         return entity
+
+
+class DuplicateProviderSubscriptionOnUpdateRepository(StubSubscriptionRepository):
+    async def update(self, entity: Subscription) -> Subscription:
+        raise IntegrityError(
+            statement="UPDATE subscriptions ...",
+            params={},
+            orig=Exception(
+                "duplicate key value violates unique constraint "
+                '"uq_subscriptions_provider_subscription_id"'
+            ),
+        )
 
 
 class StubBillingEventRepository:
@@ -535,6 +548,64 @@ async def test_provider_sync_rejects_subscription_transfer_to_another_family() -
                 product_id="com.pillpath.premium.monthly",
                 provider_customer_id="rc_customer_shared",
                 provider_subscription_id="com.pillpath.premium.monthly#2026-04-27T10:00:00Z",
+                entitlement_code="plus",
+                expires_at=datetime.now(UTC) + timedelta(days=30),
+                trial_ends_at=None,
+                raw_payload={"source": "restore"},
+            ),
+        )
+
+    assert exc.value.code == "SUBSCRIPTION_ALREADY_LINKED_TO_ANOTHER_FAMILY"
+
+
+@pytest.mark.asyncio
+async def test_provider_sync_maps_unique_subscription_conflict_to_business_error() -> None:
+    family_id = uuid4()
+    owner = _build_account(family_id=family_id, family_role="owner", email="mom@example.com")
+    family = Family(
+        id=family_id,
+        name="Family",
+        owner_account_id=owner.id,
+        billing_account_id=owner.id,
+        plan_code="plus",
+        subscription_status="active",
+        subscription_provider="revenuecat",
+    )
+    service, subscription_repo, _, _, _ = _make_service(family, [owner])
+    existing = Subscription(
+        id=uuid4(),
+        family_id=family_id,
+        plan_id=uuid4(),
+        provider="revenuecat",
+        provider_customer_id="rc_customer_existing",
+        provider_subscription_id=None,
+        status="active",
+        starts_at=datetime.now(UTC) - timedelta(days=1),
+        expires_at=datetime.now(UTC) + timedelta(days=29),
+        trial_ends_at=None,
+        canceled_at=None,
+        raw_payload_json={"source": "existing"},
+        created_at=datetime.now(UTC) - timedelta(days=1),
+        updated_at=datetime.now(UTC) - timedelta(days=1),
+    )
+    duplicate_repo = DuplicateProviderSubscriptionOnUpdateRepository()
+    duplicate_repo.current = existing
+    duplicate_repo.items = [existing]
+    service._subscription_repo = duplicate_repo
+
+    with pytest.raises(
+        ValidationError,
+        match="подписка уже используется в другой семье",
+    ) as exc:
+        await service.sync_provider_subscription(
+            _auth(owner),
+            BillingProviderSyncDto(
+                provider="revenuecat",
+                plan_code="plus",
+                status="active",
+                product_id="com.pillpath.premium.monthly",
+                provider_customer_id="rc_customer_existing",
+                provider_subscription_id="2000001160731048",
                 entitlement_code="plus",
                 expires_at=datetime.now(UTC) + timedelta(days=30),
                 trial_ends_at=None,
