@@ -1,6 +1,10 @@
+function hasWindow() {
+  return typeof window !== "undefined";
+}
+
 export function isPushSupported() {
   return (
-    typeof window !== "undefined" &&
+    hasWindow() &&
     window.isSecureContext &&
     "serviceWorker" in navigator &&
     "PushManager" in window &&
@@ -9,7 +13,7 @@ export function isPushSupported() {
 }
 
 export function getPushSupportIssue() {
-  if (typeof window === "undefined") {
+  if (!hasWindow()) {
     return "Клиентская среда ещё не готова.";
   }
   if (!window.isSecureContext) {
@@ -33,41 +37,6 @@ export async function getExistingPushSubscription() {
   }
   const registration = await navigator.serviceWorker.ready;
   return registration.pushManager.getSubscription();
-}
-
-export async function subscribeToPushNotifications(vapidPublicKey: string) {
-  if (!isPushSupported()) {
-    throw new Error("Push notifications are not supported on this device.");
-  }
-
-  const registration = await navigator.serviceWorker.ready;
-  const existing = await registration.pushManager.getSubscription();
-  if (existing && hasMatchingVapidKey(existing.options?.applicationServerKey, vapidPublicKey)) {
-    return existing;
-  }
-  if (existing) {
-    await existing.unsubscribe();
-  }
-
-  return registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: vapidKeyToUint8Array(vapidPublicKey),
-  });
-}
-
-export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
-  let timeoutId: number | null = null;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
-  });
-
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    if (timeoutId !== null) {
-      window.clearTimeout(timeoutId);
-    }
-  }
 }
 
 export async function unsubscribeFromPushNotifications() {
@@ -97,6 +66,21 @@ export function toPushSubscriptionPayload(subscription: PushSubscription) {
     user_agent: navigator.userAgent,
     device_label: buildDeviceLabel(),
   };
+}
+
+export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
+  let timeoutId: number | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+  }
 }
 
 function buildDeviceLabel() {
