@@ -9,6 +9,7 @@ final class AppViewController: CAPBridgeViewController {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(LiveActivitiesPlugin())
         bridge?.registerPluginInstance(RevenueCatPlugin())
+        bridge?.registerPluginInstance(NativeFileSharePlugin())
     }
 }
 
