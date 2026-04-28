@@ -13,8 +13,17 @@ import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { AppLanguage } from "@shared/i18n";
+import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
+import {
+  isNativePasswordAutofillSupported,
+  requestNativePasswordCredential,
+  saveNativePasswordCredential,
+} from "@shared/security/nativePasswordAutofill";
 import { useAppStore } from "@shared/store/useAppStore";
-import { buildNativeAppUrl, NATIVE_APP_MARKETING_FLAG } from "@shared/config/nativeAppLinks";
+import {
+  buildNativeAppUrl,
+  getAppStoreUrl,
+} from "@shared/config/nativeAppLinks";
 import { blurActiveField } from "@shared/utils/focus";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -237,8 +246,8 @@ const AuthField = memo(function AuthField({
 export function AuthPage() {
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
-  const marketingSiteUrl = import.meta.env.VITE_MARKETING_SITE_URL?.trim() || "";
-  const hasAbsoluteMarketingUrl = /^https?:\/\//i.test(marketingSiteUrl);
+  const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
+  const appStoreUrl = getAppStoreUrl();
   const { copy, language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedMode = searchParams.get("mode");
@@ -249,6 +258,7 @@ export function AuthPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [acceptLegal, setAcceptLegal] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isPasswordAutofillPending, setIsPasswordAutofillPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const stageRef = useRef<HTMLElement | null>(null);
   const submitButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -265,6 +275,7 @@ export function AuthPage() {
     onSuccess: (data, variables) => {
       applySessionToClient(data);
       void tryStoreCredentials(variables.email, variables.password);
+      void saveNativePasswordCredential(variables.email, variables.password).catch(() => {});
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "auth_page" });
     },
@@ -289,6 +300,7 @@ export function AuthPage() {
     onSuccess: (data, variables) => {
       applySessionToClient(data);
       void tryStoreCredentials(variables.email, variables.password);
+      void saveNativePasswordCredential(variables.email, variables.password).catch(() => {});
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "auth_page" });
     },
@@ -373,18 +385,14 @@ export function AuthPage() {
       : isPending
         ? copy.auth.actions.registerLoading
         : copy.auth.actions.register;
-
-  const openAbout = () => {
-    blurActiveField();
-    if (isNativeRuntime && hasAbsoluteMarketingUrl) {
-      const aboutUrl = new URL(marketingSiteUrl);
-      aboutUrl.searchParams.set(NATIVE_APP_MARKETING_FLAG, "1");
-      aboutUrl.searchParams.set("appLoginUrl", buildNativeAppUrl("/auth?mode=login"));
-      aboutUrl.searchParams.set("appRegisterUrl", buildNativeAppUrl("/auth?mode=register"));
-      window.open(aboutUrl.toString(), "_blank", "noopener,noreferrer");
-      return;
-    }
-  };
+  const isNativePasswordAutofillAvailable =
+    isNativeIOS && mode === "login" && isNativePasswordAutofillSupported();
+  const passwordAutofillLabel =
+    language === "ru" ? "Заполнить из iPhone" : "Use saved iPhone password";
+  const passwordAutofillError =
+    language === "ru"
+      ? "Не удалось получить сохранённый логин и пароль с iPhone."
+      : "Could not load saved iPhone credentials.";
 
   const ensureSubmitVisible = () => {
     if (!isNativeIOS || mode !== "login" || typeof window === "undefined") {
@@ -413,20 +421,149 @@ export function AuthPage() {
     ensureSubmitVisible();
   }, [email, ensureSubmitVisible, isNativeIOS, mode, password]);
 
-  const authAboutAction =
-    isNativeRuntime && hasAbsoluteMarketingUrl ? (
-      <button
-        type="button"
-        className="app-header-utility-button auth-v3-home-link"
-        onClick={openAbout}
-      >
-        {copy.common.aboutApp}
-      </button>
-    ) : (
-      <Link to="/" className="app-header-utility-button auth-v3-home-link">
-        {copy.common.aboutApp}
-      </Link>
+  const handleUseSavedPassword = async () => {
+    if (!isNativePasswordAutofillAvailable || isPasswordAutofillPending) {
+      return;
+    }
+
+    blurActiveField();
+    setError(null);
+    setIsPasswordAutofillPending(true);
+    try {
+      const credential = await requestNativePasswordCredential();
+      if (!credential) {
+        return;
+      }
+      setEmail(credential.username);
+      setPassword(credential.password);
+      setRememberMe(true);
+    } catch {
+      setError(passwordAutofillError);
+    } finally {
+      setIsPasswordAutofillPending(false);
+    }
+  };
+
+  if (isPublicWebsiteMode) {
+    const targetMode = mode === "register" ? "register" : "login";
+    const nativeAuthUrl = buildNativeAppUrl(`/auth?mode=${targetMode}`);
+    const title =
+      language === "ru"
+        ? targetMode === "register"
+          ? "Создание аккаунта доступно в приложении для iPhone"
+          : "Вход доступен в приложении для iPhone"
+        : targetMode === "register"
+          ? "Account creation happens in the iPhone app"
+          : "Sign-in happens in the iPhone app";
+    const description =
+      language === "ru"
+        ? "Сайт остаётся для знакомства с сервисом, юридической информации и перехода в приложение. Полноценный вход и регистрация происходят внутри PillPath для iPhone."
+        : "The website stays for product discovery, legal pages, and app handoff. Full sign-in and registration happen inside the PillPath iPhone app.";
+    const appStoreDescription =
+      language === "ru"
+        ? "Если приложения ещё нет на iPhone, сначала установите его из App Store."
+        : "If the app is not installed on the iPhone yet, install it from the App Store first.";
+    const primaryHref = appStoreUrl || nativeAuthUrl;
+    const primaryLabel = appStoreUrl
+      ? language === "ru"
+        ? "Скачать в App Store"
+        : "Download on the App Store"
+      : language === "ru"
+        ? "Открыть приложение"
+        : "Open app";
+    const fallbackLabel = language === "ru" ? "Вернуться на сайт" : "Back to website";
+
+    return (
+      <div className="auth-v3-page min-h-screen text-foreground">
+        <V3BackgroundDoodles className="auth-v3-doodle-layer" dense />
+        <div className="auth-v3-orb auth-v3-orb-left" aria-hidden="true" />
+        <div className="auth-v3-orb auth-v3-orb-right" aria-hidden="true" />
+        <div className="auth-v3-noise" aria-hidden="true" />
+        <div className="auth-v3-shell">
+          <section ref={stageRef} className="auth-v3-stage">
+            <div className="auth-v3-header">
+              <Link to="/" className="auth-v3-header-logo" aria-label={copy.common.brandName}>
+                <img
+                  src="/pwa-icon.png"
+                  alt=""
+                  className="h-10 w-10 rounded-[1.15rem] shadow-[0_16px_32px_rgba(138,123,191,0.18)]"
+                />
+              </Link>
+              <Link to="/" className="auth-v3-header-brand" aria-label={copy.common.brandName}>
+                <BrandWordmark className="auth-v3-header-brand-text" />
+              </Link>
+              <div className="auth-v3-header-actions">
+                <LanguageSwitch
+                  className="auth-v3-language-switch app-header-language-switch"
+                  triggerClassName="app-header-utility-button"
+                />
+                <button
+                  type="button"
+                  className="soft-theme-toggle app-header-theme-toggle"
+                  onClick={toggleTheme}
+                  aria-label={
+                    effectiveTheme === "light"
+                      ? copy.common.themeDarkLabel
+                      : copy.common.themeLightLabel
+                  }
+                  title={
+                    effectiveTheme === "light"
+                      ? copy.common.themeDarkLabel
+                      : copy.common.themeLightLabel
+                  }
+                >
+                  <span
+                    aria-hidden="true"
+                    className={[
+                      "soft-theme-toggle__icon",
+                      effectiveTheme === "light"
+                        ? "soft-theme-toggle__icon--moon"
+                        : "soft-theme-toggle__icon--sun",
+                    ].join(" ")}
+                  >
+                    {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="auth-v3-hero">
+              <p className="auth-v3-subtitle">{description}</p>
+            </div>
+
+            <section className="auth-v3-panel auth-v3-panel-compact soft-page-intro">
+              <div className="auth-v3-card auth-v3-handoff-card space-y-4">
+                <div>
+                  <p className="auth-v3-section-copy">{title}</p>
+                </div>
+                <p className="text-sm leading-7 text-muted">{description}</p>
+                <div className="auth-v3-handoff-stack">
+                  <a
+                    href={primaryHref}
+                    className="auth-v3-submit auth-v3-handoff-primary text-center"
+                    target={appStoreUrl ? "_blank" : undefined}
+                    rel={appStoreUrl ? "noreferrer" : undefined}
+                  >
+                    {primaryLabel}
+                  </a>
+                  {appStoreUrl ? (
+                    <a href={nativeAuthUrl} className="auth-v3-handoff-secondary text-center">
+                      {language === "ru" ? "Открыть приложение" : "Open app"}
+                    </a>
+                  ) : (
+                    <div className="auth-v3-handoff-note">{appStoreDescription}</div>
+                  )}
+                  <Link to="/" className="auth-v3-linkish auth-v3-handoff-back text-center">
+                    {fallbackLabel}
+                  </Link>
+                </div>
+              </div>
+            </section>
+          </section>
+        </div>
+      </div>
     );
+  }
 
   return (
     <div
@@ -501,7 +638,6 @@ export function AuthPage() {
                   {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
                 </span>
               </button>
-              {!isNativeIOS ? authAboutAction : null}
             </div>
           </div>
           {isNativeIOS ? (
@@ -670,6 +806,20 @@ export function AuthPage() {
                       {copy.auth.page.forgotPassword}
                     </Link>
                   </div>
+                  {isNativePasswordAutofillAvailable ? (
+                    <div className="auth-v3-row">
+                      <button
+                        type="button"
+                        onClick={handleUseSavedPassword}
+                        disabled={isPasswordAutofillPending}
+                        className="auth-v3-linkish disabled:opacity-50"
+                      >
+                        {isPasswordAutofillPending
+                          ? `${passwordAutofillLabel}…`
+                          : passwordAutofillLabel}
+                      </button>
+                    </div>
+                  ) : null}
                   {isRegisterMode ? (
                     <label className="auth-v3-checkbox">
                       <span className="auth-v3-checkbox-box">
@@ -720,9 +870,6 @@ export function AuthPage() {
               >
                 {submitLabel}
               </button>
-
-              {isNativeIOS ? <div className="auth-v3-ios-about-row">{authAboutAction}</div> : null}
-
               <p className="auth-v3-footer-note">{copy.auth.page.invitationNote}</p>
             </form>
           </section>
