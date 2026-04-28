@@ -1,8 +1,6 @@
 import { RowSurface } from "@shared/components/Surface";
 import type { AppLanguage } from "@shared/i18n";
-import {
-  appBtnJournalSecondaryClass,
-} from "../child-illness/shared";
+import { appBtnJournalSecondaryClass } from "../child-illness/shared";
 import { tFamily } from "./copy";
 
 interface FamilyInviteSectionProps {

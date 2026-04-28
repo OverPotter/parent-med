@@ -119,10 +119,8 @@ export function EpisodeActivationCard({
 
 const illnessTemperatureInputClass =
   "soft-input illness-fast-input !min-h-[2.68rem] w-full px-4 py-0 text-left text-[16px] leading-[1.15] placeholder:text-left sm:!min-h-[2.76rem]";
-const illnessTemperatureButtonClass =
-  `${illnessCompactPrimaryButtonClass} min-h-[2.82rem] px-4 shadow-[0_14px_30px_rgba(15,23,42,0.14)] transition hover:-translate-y-[1px] hover:shadow-[0_18px_34px_rgba(15,23,42,0.18)] sm:min-h-[2.92rem]`;
-const illnessAdministrationButtonClass =
-  `${illnessCompactPrimaryButtonClass} min-h-[2.82rem] px-4 shadow-[0_14px_30px_rgba(15,23,42,0.14)] transition hover:-translate-y-[1px] hover:shadow-[0_18px_34px_rgba(15,23,42,0.18)] sm:min-h-[2.92rem]`;
+const illnessTemperatureButtonClass = `${illnessCompactPrimaryButtonClass} min-h-[2.82rem] px-4 shadow-[0_14px_30px_rgba(15,23,42,0.14)] transition hover:-translate-y-[1px] hover:shadow-[0_18px_34px_rgba(15,23,42,0.18)] sm:min-h-[2.92rem]`;
+const illnessAdministrationButtonClass = `${illnessCompactPrimaryButtonClass} min-h-[2.82rem] px-4 shadow-[0_14px_30px_rgba(15,23,42,0.14)] transition hover:-translate-y-[1px] hover:shadow-[0_18px_34px_rgba(15,23,42,0.18)] sm:min-h-[2.92rem]`;
 export const illnessCompactTextareaClass =
   "soft-input min-h-[7.5rem] w-full px-4 py-3 text-left text-[16px] leading-6 placeholder:text-left";
 
@@ -215,7 +213,6 @@ export function AdministrationForm({
             className={`${illnessCompactInputClass} illness-fast-input`}
           />
         </label>
-
       </div>
       <div className="border-t border-border/60 pt-4">
         <button

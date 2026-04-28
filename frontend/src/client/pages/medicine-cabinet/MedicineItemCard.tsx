@@ -307,18 +307,14 @@ function MedicineDetails({
       (parsedMax !== null && (!Number.isFinite(parsedMax) || parsedMax <= 0))
     ) {
       setDoseCalcError(
-        language === "ru"
-          ? "Укажите значение больше нуля."
-          : "Use a value greater than zero."
+        language === "ru" ? "Укажите значение больше нуля." : "Use a value greater than zero."
       );
       return;
     }
 
     if (parsedMin === null && parsedMax === null) {
       setDoseCalcError(
-        language === "ru"
-          ? "Добавьте минимум или максимум."
-          : "Add a minimum or maximum value."
+        language === "ru" ? "Добавьте минимум или максимум." : "Add a minimum or maximum value."
       );
       return;
     }

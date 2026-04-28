@@ -50,6 +50,8 @@
     "test/authSessionErrors.test.ts",
     "test/authRecovery.test.ts",
     "test/authTokenStorage.test.ts",
+    "test/childExportDialogModel.test.ts",
+    "test/childExports.test.ts",
     "test/childrenShared.test.ts",
     "test/date.test.ts",
     "test/dateFieldBadge.test.ts",

@@ -32,10 +32,7 @@ export function normalizeFamilyAccessPolicy(
   };
 }
 
-export function hasChildAccess(
-  policy: FamilyAccessPolicy | null | undefined,
-  childId: string
-) {
+export function hasChildAccess(policy: FamilyAccessPolicy | null | undefined, childId: string) {
   const normalized = normalizeFamilyAccessPolicy(policy);
   return normalized.allChildren || normalized.childIds.includes(childId);
 }
@@ -52,10 +49,7 @@ export function hasAnyChildAccess(policy: FamilyAccessPolicy | null | undefined)
   return normalized.allChildren || normalized.childIds.length > 0;
 }
 
-export function hasChildEditAccess(
-  policy: FamilyAccessPolicy | null | undefined,
-  childId: string
-) {
+export function hasChildEditAccess(policy: FamilyAccessPolicy | null | undefined, childId: string) {
   const normalized = normalizeFamilyAccessPolicy(policy);
   return normalized.childrenAccess === "edit" && hasChildAccess(normalized, childId);
 }

@@ -199,16 +199,16 @@ export function resolveChildIllnessGuard(args: {
 
   if (
     route.screen === "active" &&
-    (route.focus === "temperature" || route.focus === "administration" || route.focus === "comment") &&
+    (route.focus === "temperature" ||
+      route.focus === "administration" ||
+      route.focus === "comment") &&
     !canActIllness
   ) {
     return activeEpisode ? "/illnesses/active" : activeOverviewRoute;
   }
 
   if (route.screen === "active" && route.focus === "reminder-create" && !canEditIllness) {
-    return activeEpisode
-      ? activeRemindersRoute
-      : activeOverviewRoute;
+    return activeEpisode ? activeRemindersRoute : activeOverviewRoute;
   }
 
   if (
@@ -279,7 +279,11 @@ export function buildChildIllnessBackState(args: {
     };
   }
 
-  if (route.screen === "active" && route.picker === "cabinet" && route.focus === "reminder-create") {
+  if (
+    route.screen === "active" &&
+    route.picker === "cabinet" &&
+    route.focus === "reminder-create"
+  ) {
     return {
       href: `/children/${childId}/illness?focus=reminder-create`,
       label: language === "ru" ? "← К созданию" : "← Back to create",
@@ -325,10 +329,7 @@ export function buildChildIllnessBackState(args: {
     };
   }
 
-  if (
-    route.screen === "active" &&
-    (route.focus !== "overview" || activeEpisode)
-  ) {
+  if (route.screen === "active" && (route.focus !== "overview" || activeEpisode)) {
     return {
       href: `/children/${childId}`,
       label: language === "ru" ? "← К профилю ребёнка" : "← Back to child profile",

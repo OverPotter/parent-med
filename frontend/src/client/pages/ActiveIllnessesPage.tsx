@@ -321,9 +321,7 @@ function ActiveIllnessCard({
                     : "Finish"}
               </button>
             </div>
-            <p className="mt-1 text-sm leading-6 text-muted">
-              {ageLabel || "—"}
-            </p>
+            <p className="mt-1 text-sm leading-6 text-muted">{ageLabel || "—"}</p>
             <p className="mt-1 text-sm leading-5 text-muted">
               {t(copy.observationSince, { date: formatDate(episode.startedAt) })}
             </p>

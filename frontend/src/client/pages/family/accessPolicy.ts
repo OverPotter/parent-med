@@ -48,17 +48,15 @@ export function buildMemberAccessSummaryItems(
           ? childrenAccessRoleLabel(accessPolicy.childrenAccess, language)
           : tFamily(language, "hidden")
       }`,
-      toneClass:
-        !hasChildAccess
-          ? "bg-[color:color-mix(in_srgb,var(--color-danger)_12%,transparent)] text-[color:color-mix(in_srgb,var(--color-danger)_82%,var(--color-foreground))]"
-          : accessPolicy.childrenAccess === "edit"
+      toneClass: !hasChildAccess
+        ? "bg-[color:color-mix(in_srgb,var(--color-danger)_12%,transparent)] text-[color:color-mix(in_srgb,var(--color-danger)_82%,var(--color-foreground))]"
+        : accessPolicy.childrenAccess === "edit"
           ? "bg-[color:color-mix(in_srgb,#10b981_12%,transparent)] text-[color:color-mix(in_srgb,#059669_86%,var(--color-foreground))]"
           : "bg-[color:color-mix(in_srgb,#f59e0b_12%,transparent)] text-[color:color-mix(in_srgb,#b45309_86%,var(--color-foreground))]",
     },
     {
       key: "cabinet-access",
-      label:
-        `${tFamily(language, "cabinetAccess")}: ${cabinetAccessRoleLabel(accessPolicy.cabinetAccess, language)}`,
+      label: `${tFamily(language, "cabinetAccess")}: ${cabinetAccessRoleLabel(accessPolicy.cabinetAccess, language)}`,
       toneClass:
         accessPolicy.cabinetAccess === "none"
           ? "bg-[color:color-mix(in_srgb,var(--color-danger)_12%,transparent)] text-[color:color-mix(in_srgb,var(--color-danger)_82%,var(--color-foreground))]"
@@ -68,8 +66,7 @@ export function buildMemberAccessSummaryItems(
     },
     {
       key: "pillbox-access",
-      label:
-        `${tFamily(language, "pillboxAccess")}: ${pillboxAccessRoleLabel(accessPolicy.pillboxAccess, language)}`,
+      label: `${tFamily(language, "pillboxAccess")}: ${pillboxAccessRoleLabel(accessPolicy.pillboxAccess, language)}`,
       toneClass:
         accessPolicy.pillboxAccess === "none"
           ? "bg-[color:color-mix(in_srgb,var(--color-danger)_12%,transparent)] text-[color:color-mix(in_srgb,var(--color-danger)_82%,var(--color-foreground))]"

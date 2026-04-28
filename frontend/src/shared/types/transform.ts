@@ -35,7 +35,14 @@ interface RawFamily {
   free_primary_child_id?: string | null;
   free_primary_pillbox_plan_id?: string | null;
   plan_code?: "free" | "plus" | "pro" | null;
-  subscription_status?: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired" | null;
+  subscription_status?:
+    | "inactive"
+    | "trialing"
+    | "active"
+    | "grace"
+    | "canceled"
+    | "expired"
+    | null;
   subscription_provider?: string | null;
   subscription_product_id?: string | null;
   subscription_expires_at?: string | null;
@@ -277,13 +284,9 @@ function toFamilyAccessPolicy(raw: RawAccount["access_policy"]): FamilyAccessPol
         ? raw.children_access
         : "edit",
     cabinetAccess:
-      raw.cabinet_access === "none" || raw.cabinet_access === "view"
-        ? raw.cabinet_access
-        : "edit",
+      raw.cabinet_access === "none" || raw.cabinet_access === "view" ? raw.cabinet_access : "edit",
     pillboxAccess:
-      raw.pillbox_access === "none" ||
-      raw.pillbox_access === "view" ||
-      raw.pillbox_access === "act"
+      raw.pillbox_access === "none" || raw.pillbox_access === "view" || raw.pillbox_access === "act"
         ? raw.pillbox_access
         : "edit",
     cabinetPushEnabled: raw.cabinet_push_enabled ?? true,

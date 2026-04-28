@@ -61,8 +61,7 @@ function getCopy(language: AppLanguage) {
   if (language === "ru") {
     return {
       title: "RevenueCat sandbox",
-      hint:
-        "Dev-only smoke test без синка в backend: configure, offerings, purchase, restore и snapshot.",
+      hint: "Dev-only smoke test без синка в backend: configure, offerings, purchase, restore и snapshot.",
       accountMissing: "Для теста нужен активный аккаунт в приложении.",
       syncDisabled: "Backend sync выключен",
       syncEnabled: "Backend sync включен",
@@ -88,8 +87,7 @@ function getCopy(language: AppLanguage) {
   }
   return {
     title: "RevenueCat sandbox",
-    hint:
-      "Dev-only smoke test without backend sync: configure, offerings, purchase, restore, and snapshot.",
+    hint: "Dev-only smoke test without backend sync: configure, offerings, purchase, restore, and snapshot.",
     accountMissing: "An active signed-in account is required for this test.",
     syncDisabled: "Backend sync is off",
     syncEnabled: "Backend sync is on",
@@ -146,10 +144,7 @@ export function SettingsRevenueCatSection({
     });
   };
 
-  const runAction = async (
-    label: string,
-    action: () => Promise<RevenueCatDebugActionResult>
-  ) => {
+  const runAction = async (label: string, action: () => Promise<RevenueCatDebugActionResult>) => {
     setIsPending(true);
     setError(null);
     try {

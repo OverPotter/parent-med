@@ -221,14 +221,13 @@ export function ProfileMenu({
     };
   }, [isOpen]);
 
-  const handleMenuNavigate =
-    (to: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
-      event.preventDefault();
-      setIsOpen(false);
-      window.requestAnimationFrame(() => {
-        navigate(to);
-      });
-    };
+  const handleMenuNavigate = (to: string) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    setIsOpen(false);
+    window.requestAnimationFrame(() => {
+      navigate(to);
+    });
+  };
 
   return (
     <div ref={rootRef} className="app-profile-menu">
@@ -604,11 +603,7 @@ export function Layout({
           {children}
         </main>
         {hasMobileNav && (
-          <BottomTabBar
-            links={mobileNavLinks}
-            forceVisible={isIosShell}
-            hidden={mobileNavHidden}
-          />
+          <BottomTabBar links={mobileNavLinks} forceVisible={isIosShell} hidden={mobileNavHidden} />
         )}
       </div>
     </div>

@@ -2,7 +2,14 @@ import type { FamilySubscriptionAccess } from "./api";
 
 export interface RawFamilySubscriptionAccess {
   plan_code?: "free" | "plus" | "pro" | null;
-  subscription_status?: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired" | null;
+  subscription_status?:
+    | "inactive"
+    | "trialing"
+    | "active"
+    | "grace"
+    | "canceled"
+    | "expired"
+    | null;
   premium_active?: boolean | null;
   has_plus_access?: boolean | null;
   is_billing_owner?: boolean | null;

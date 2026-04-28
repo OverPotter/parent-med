@@ -57,12 +57,12 @@ export function MedicationPlanList({
           ? language === "ru"
             ? "Упаковка сейчас недоступна"
             : "This pack is currently unavailable"
-            : stats?.blockedByDailyLimit
-              ? language === "ru"
-                ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
-                : `${planName}: today's dose limit is already reached`
-              : stats?.nextAllowedAt
-                ? formatDoseStatusLabel(stats.nextAllowedAt, language, currentTime)
+          : stats?.blockedByDailyLimit
+            ? language === "ru"
+              ? `Сегодня ${planName.toLowerCase()}: лимит приёмов уже достигнут`
+              : `${planName}: today's dose limit is already reached`
+            : stats?.nextAllowedAt
+              ? formatDoseStatusLabel(stats.nextAllowedAt, language, currentTime)
               : language === "ru"
                 ? "Можно дать"
                 : "Available now";

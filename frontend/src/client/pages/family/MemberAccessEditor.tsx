@@ -157,8 +157,7 @@ export function MemberAccessEditor({
               onChange({
                 ...accessPolicy,
                 cabinetAccess: value as "none" | "view" | "edit",
-                cabinetPushEnabled:
-                  value === "none" ? false : accessPolicy.cabinetPushEnabled,
+                cabinetPushEnabled: value === "none" ? false : accessPolicy.cabinetPushEnabled,
               })
             }
           />
@@ -244,7 +243,10 @@ export function MemberAccessEditor({
                     childIds: [],
                   })
                 }
-                className={["soft-choice-row", accessPolicy.allChildren ? "soft-choice-row-active" : ""].join(" ")}
+                className={[
+                  "soft-choice-row",
+                  accessPolicy.allChildren ? "soft-choice-row-active" : "",
+                ].join(" ")}
               >
                 <span className="min-w-0 text-left text-sm font-semibold tracking-[-0.02em] text-foreground">
                   {tFamily(language, "childrenScopeAll")}
@@ -252,28 +254,26 @@ export function MemberAccessEditor({
                 <span className="soft-choice-check">{accessPolicy.allChildren ? "✓" : null}</span>
               </button>
               {familyChildren.map((child) => {
-                const selected = !accessPolicy.allChildren && accessPolicy.childIds.includes(child.id);
+                const selected =
+                  !accessPolicy.allChildren && accessPolicy.childIds.includes(child.id);
                 return (
                   <button
                     key={child.id}
                     type="button"
-                    onClick={() =>
-                      {
-                        const nextChildIds = selected
-                          ? accessPolicy.childIds.filter((id) => id !== child.id)
-                          : [
-                              ...accessPolicy.childIds.filter((id) => id !== child.id),
-                              child.id,
-                            ];
+                    onClick={() => {
+                      const nextChildIds = selected
+                        ? accessPolicy.childIds.filter((id) => id !== child.id)
+                        : [...accessPolicy.childIds.filter((id) => id !== child.id), child.id];
 
-                        onChange({
-                          ...accessPolicy,
-                          allChildren: false,
-                          childIds: nextChildIds,
-                        });
-                      }
-                    }
-                    className={["soft-choice-row", selected ? "soft-choice-row-active" : ""].join(" ")}
+                      onChange({
+                        ...accessPolicy,
+                        allChildren: false,
+                        childIds: nextChildIds,
+                      });
+                    }}
+                    className={["soft-choice-row", selected ? "soft-choice-row-active" : ""].join(
+                      " "
+                    )}
                   >
                     <span className="min-w-0 text-left text-sm font-semibold tracking-[-0.02em] text-foreground">
                       {child.name}

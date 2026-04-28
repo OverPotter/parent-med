@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createAdministrationEvent, fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
+import {
+  createAdministrationEvent,
+  fetchAdministrationEventsByEpisodeId,
+} from "@shared/api/administrationEvents";
 import {
   deleteEpisodeMedicationPlan,
   fetchEpisodeMedicationPlansByEpisodeId,
@@ -20,7 +23,12 @@ import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { canEditChild, canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
-import type { EpisodeMedicationPlan, FamilyMember, IllnessEpisode, WeightEntry } from "@shared/types/api";
+import type {
+  EpisodeMedicationPlan,
+  FamilyMember,
+  IllnessEpisode,
+  WeightEntry,
+} from "@shared/types/api";
 import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
@@ -41,10 +49,7 @@ import {
   TimelineOverviewPanel,
 } from "./EpisodeOverviewPanels";
 import { createReminderWithOptionalFirstAdministration } from "./reminderCreation";
-import {
-  DoseTimeSheet,
-  useDoseLoggingFlow,
-} from "./doseLogging";
+import { DoseTimeSheet, useDoseLoggingFlow } from "./doseLogging";
 import { upsertIllnessEpisodeForChild } from "./episodeCache";
 import { buildEpisodeTimeline } from "./timeline";
 
@@ -98,7 +103,9 @@ export function EpisodeBlock({
   const isReminderCabinetPickerOpen = searchParams.get("picker") === "cabinet";
   const [isReminderEditing, setIsReminderEditing] = useState(false);
   const [editingReminderName, setEditingReminderName] = useState<string | null>(null);
-  const [recipientDraftIds, setRecipientDraftIds] = useState<string[]>(() => episode.memberAccountIds);
+  const [recipientDraftIds, setRecipientDraftIds] = useState<string[]>(
+    () => episode.memberAccountIds
+  );
   const [commentText, setCommentText] = useState("");
   const [quickComposeSuccessMessage, setQuickComposeSuccessMessage] = useState<string | null>(null);
   const now = useNow(5_000);
@@ -286,22 +293,22 @@ export function EpisodeBlock({
       payload,
     }: {
       id: string;
-        payload: {
-          household_medicine_id?: string | null;
-          custom_medicine_name?: string | null;
-          dose_amount?: string;
-          min_interval_minutes?: number;
-          max_doses_per_day?: number | null;
-          weight_kg?: number | null;
-          dose_mg_per_kg?: number | null;
-          calculated_dose_mg?: number | null;
-          calculated_dose_value?: number | null;
-          calculated_dose_unit?: string | null;
-          dose_calc_mode?: string | null;
-          dose_calc_warning?: string | null;
-          manual_dose_override?: boolean;
-          notes?: string | null;
-        };
+      payload: {
+        household_medicine_id?: string | null;
+        custom_medicine_name?: string | null;
+        dose_amount?: string;
+        min_interval_minutes?: number;
+        max_doses_per_day?: number | null;
+        weight_kg?: number | null;
+        dose_mg_per_kg?: number | null;
+        calculated_dose_mg?: number | null;
+        calculated_dose_value?: number | null;
+        calculated_dose_unit?: string | null;
+        dose_calc_mode?: string | null;
+        dose_calc_warning?: string | null;
+        manual_dose_override?: boolean;
+        notes?: string | null;
+      };
     }) => updateEpisodeMedicationPlan(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
@@ -337,9 +344,14 @@ export function EpisodeBlock({
       return { previousActiveEpisode, previousEpisodes };
     },
     onError: (_error, _memberAccountIds, context) => {
-      setRecipientDraftIds(context?.previousActiveEpisode?.memberAccountIds ?? episode.memberAccountIds);
+      setRecipientDraftIds(
+        context?.previousActiveEpisode?.memberAccountIds ?? episode.memberAccountIds
+      );
       if (context?.previousActiveEpisode !== undefined) {
-        queryClient.setQueryData(["illness-episode-active", childId], context.previousActiveEpisode);
+        queryClient.setQueryData(
+          ["illness-episode-active", childId],
+          context.previousActiveEpisode
+        );
       }
       if (context?.previousEpisodes !== undefined) {
         queryClient.setQueryData(["illness-episodes", childId], context.previousEpisodes);
@@ -652,73 +664,73 @@ export function EpisodeBlock({
       <>
         {doseTimeSheet}
         <div className="mx-auto w-full max-w-2xl">
-        <ReminderDetailQuickView
-          language={language}
-          childName={childName}
-          childId={childId}
-          selectedReminderItem={selectedReminderItem}
-          latestWeight={latestWeight}
-          isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
-          isReminderEditing={isReminderEditing}
-          editingReminderName={editingReminderName}
-          medicines={householdMedicines}
-          canEditEpisode={canMutateEpisode}
-          isSubmittingAdministration={addAdminMutation.isPending}
-          isUpdating={updatePlanMutation.isPending}
-          isDeleting={deletePlanMutation.isPending}
-          errorDetail={
-            (
-              (updatePlanMutation.error ?? deletePlanMutation.error) as {
-                response?: { data?: { detail?: string } };
-              }
-            )?.response?.data?.detail ?? null
-          }
-          onEditingChange={(nextIsEditing, planName) => {
-            setIsReminderEditing(nextIsEditing);
-            setEditingReminderName(nextIsEditing ? planName : null);
-          }}
-          onTakeDose={canMutateEpisode ? handleTakeDose : undefined}
-          onUpdate={(planId, payload) =>
-            updatePlanMutation.mutate({
-              id: planId,
-              payload: {
-                household_medicine_id: payload.householdMedicineId,
-                custom_medicine_name: payload.customMedicineName,
-                dose_amount: payload.doseAmount,
-                min_interval_minutes: payload.minIntervalMinutes,
-                max_doses_per_day: payload.maxDosesPerDay,
-                weight_kg: payload.weightKg,
-                dose_mg_per_kg: payload.doseMgPerKg,
-                calculated_dose_mg: payload.calculatedDoseMg,
-                calculated_dose_value: payload.calculatedDoseValue,
-                calculated_dose_unit: payload.calculatedDoseUnit,
-                dose_calc_mode: payload.doseCalcMode,
-                dose_calc_warning: payload.doseCalcWarning,
-                manual_dose_override: payload.manualDoseOverride,
-                notes: payload.notes,
-              },
-            })
-          }
-          onDelete={(planId) => {
-            deletePlanMutation.mutate(planId, {
-              onSuccess: () => {
-                const canGoBack =
-                  typeof window !== "undefined" &&
-                  (window.history.length > 1 ||
-                    (typeof window.history.state === "object" &&
-                      window.history.state !== null &&
-                      typeof (window.history.state as { idx?: unknown }).idx === "number" &&
-                      ((window.history.state as { idx: number }).idx ?? 0) > 0));
-
-                if (canGoBack) {
-                  navigate(-1);
-                  return;
+          <ReminderDetailQuickView
+            language={language}
+            childName={childName}
+            childId={childId}
+            selectedReminderItem={selectedReminderItem}
+            latestWeight={latestWeight}
+            isReminderCabinetPickerOpen={isReminderCabinetPickerOpen}
+            isReminderEditing={isReminderEditing}
+            editingReminderName={editingReminderName}
+            medicines={householdMedicines}
+            canEditEpisode={canMutateEpisode}
+            isSubmittingAdministration={addAdminMutation.isPending}
+            isUpdating={updatePlanMutation.isPending}
+            isDeleting={deletePlanMutation.isPending}
+            errorDetail={
+              (
+                (updatePlanMutation.error ?? deletePlanMutation.error) as {
+                  response?: { data?: { detail?: string } };
                 }
+              )?.response?.data?.detail ?? null
+            }
+            onEditingChange={(nextIsEditing, planName) => {
+              setIsReminderEditing(nextIsEditing);
+              setEditingReminderName(nextIsEditing ? planName : null);
+            }}
+            onTakeDose={canMutateEpisode ? handleTakeDose : undefined}
+            onUpdate={(planId, payload) =>
+              updatePlanMutation.mutate({
+                id: planId,
+                payload: {
+                  household_medicine_id: payload.householdMedicineId,
+                  custom_medicine_name: payload.customMedicineName,
+                  dose_amount: payload.doseAmount,
+                  min_interval_minutes: payload.minIntervalMinutes,
+                  max_doses_per_day: payload.maxDosesPerDay,
+                  weight_kg: payload.weightKg,
+                  dose_mg_per_kg: payload.doseMgPerKg,
+                  calculated_dose_mg: payload.calculatedDoseMg,
+                  calculated_dose_value: payload.calculatedDoseValue,
+                  calculated_dose_unit: payload.calculatedDoseUnit,
+                  dose_calc_mode: payload.doseCalcMode,
+                  dose_calc_warning: payload.doseCalcWarning,
+                  manual_dose_override: payload.manualDoseOverride,
+                  notes: payload.notes,
+                },
+              })
+            }
+            onDelete={(planId) => {
+              deletePlanMutation.mutate(planId, {
+                onSuccess: () => {
+                  const canGoBack =
+                    typeof window !== "undefined" &&
+                    (window.history.length > 1 ||
+                      (typeof window.history.state === "object" &&
+                        window.history.state !== null &&
+                        typeof (window.history.state as { idx?: unknown }).idx === "number" &&
+                        ((window.history.state as { idx: number }).idx ?? 0) > 0));
 
-                navigate(`/children/${childId}/illness?focus=reminders`, { replace: true });
-              },
-            });
-          }}
+                  if (canGoBack) {
+                    navigate(-1);
+                    return;
+                  }
+
+                  navigate(`/children/${childId}/illness?focus=reminders`, { replace: true });
+                },
+              });
+            }}
           />
         </div>
       </>

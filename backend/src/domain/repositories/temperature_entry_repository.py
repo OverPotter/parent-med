@@ -1,6 +1,7 @@
 """Интерфейс репозитория записей температуры."""
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from uuid import UUID
 
 from src.domain.entities.temperature_entry import TemperatureEntry
@@ -18,6 +19,13 @@ class TemperatureEntryRepository(BaseRepository[TemperatureEntry]):
     @abstractmethod
     async def get_by_episode_id(self, episode_id: UUID) -> list[TemperatureEntry]:
         """Журнал температуры по эпизоду."""
+        ...
+
+    @abstractmethod
+    async def get_by_episode_ids(
+        self, episode_ids: Sequence[UUID]
+    ) -> dict[UUID, list[TemperatureEntry]]:
+        """Журнал температуры по нескольким эпизодам."""
         ...
 
     @abstractmethod

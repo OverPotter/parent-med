@@ -99,7 +99,10 @@ export function buildEpisodeTimeline(
     familyMembers.map((member) => [member.id, member.relationshipLabel?.trim() || null])
   );
 
-  const resolveActorName = (actorName: string | null | undefined, actorAccountId: string | null) => {
+  const resolveActorName = (
+    actorName: string | null | undefined,
+    actorAccountId: string | null
+  ) => {
     const explicitName = actorName?.trim() || null;
     const relationshipLabel = actorAccountId ? relationshipByAccountId.get(actorAccountId) : null;
 

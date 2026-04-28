@@ -37,19 +37,16 @@ export function FamilyMembersPage() {
   const { members, isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
     useFamilyMembersData(currentFamilyId, currentAccountId);
 
-  const {
-    updateMemberMutation,
-    deleteMemberMutation,
-    updateMemberProfileMutation,
-  } = useFamilyPageMutations({
-    language,
-    accountId,
-    currentFamilyId,
-    currentAccountId,
-    setCurrentFamily,
-    setAccountFamilyContext,
-    setError: () => {},
-  });
+  const { updateMemberMutation, deleteMemberMutation, updateMemberProfileMutation } =
+    useFamilyPageMutations({
+      language,
+      accountId,
+      currentFamilyId,
+      currentAccountId,
+      setCurrentFamily,
+      setAccountFamilyContext,
+      setError: () => {},
+    });
 
   const isPending =
     updateMemberMutation.isPending ||
@@ -82,8 +79,12 @@ export function FamilyMembersPage() {
           >
             {language === "ru" ? "← К семье" : "← Back to family"}
           </Link>
-          <h1 className="app-mobile-section-intro__title">{tFamily(language, "allMembersTitle")}</h1>
-          <p className="app-mobile-section-intro__hint">{tFamily(language, "allMembersDescription")}</p>
+          <h1 className="app-mobile-section-intro__title">
+            {tFamily(language, "allMembersTitle")}
+          </h1>
+          <p className="app-mobile-section-intro__hint">
+            {tFamily(language, "allMembersDescription")}
+          </p>
         </div>
       </div>
 

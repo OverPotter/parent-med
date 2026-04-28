@@ -1,11 +1,7 @@
 import { EmptyState } from "./Surface";
 import type { AppLanguage } from "@shared/i18n";
 
-export function ModuleOfflineState({
-  language,
-}: {
-  language: AppLanguage;
-}) {
+export function ModuleOfflineState({ language }: { language: AppLanguage }) {
   const title = language === "ru" ? "Нет сети" : "No connection";
   const description =
     language === "ru"

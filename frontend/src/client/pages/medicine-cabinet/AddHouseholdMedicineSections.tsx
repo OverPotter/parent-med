@@ -167,10 +167,7 @@ export function SelectedCatalogMedicine({
           <div className="min-w-0">
             <p className="font-semibold text-foreground">{catalogItem.name}</p>
             <p className="mt-1 text-sm text-muted">
-              {[
-                getLocalizedMedicineForm(catalogItem.form, language),
-                catalogItem.concentration,
-              ]
+              {[getLocalizedMedicineForm(catalogItem.form, language), catalogItem.concentration]
                 .filter(Boolean)
                 .join(" · ")}
             </p>

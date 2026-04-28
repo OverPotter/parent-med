@@ -46,7 +46,9 @@ export async function fetchActiveFeedingRecordByChildId(
   if (offline.hasOverride) {
     return offline.value;
   }
-  const res = await apiClient.get<RawFeedingRecord | null>(`/feeding-records/child/${childId}/active`);
+  const res = await apiClient.get<RawFeedingRecord | null>(
+    `/feeding-records/child/${childId}/active`
+  );
   return res.data ? toFeedingRecord(res.data) : null;
 }
 

@@ -14,10 +14,7 @@ import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { AppLanguage } from "@shared/i18n";
 import { useAppStore } from "@shared/store/useAppStore";
-import {
-  buildNativeAppUrl,
-  NATIVE_APP_MARKETING_FLAG,
-} from "@shared/config/nativeAppLinks";
+import { buildNativeAppUrl, NATIVE_APP_MARKETING_FLAG } from "@shared/config/nativeAppLinks";
 import { blurActiveField } from "@shared/utils/focus";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -448,7 +445,10 @@ export function AuthPage() {
           <div className="auth-v3-header">
             <Link
               to="/"
-              className={joinClasses("auth-v3-header-logo", isNativeIOS && "auth-v3-header-logo--ios")}
+              className={joinClasses(
+                "auth-v3-header-logo",
+                isNativeIOS && "auth-v3-header-logo--ios"
+              )}
               aria-label={copy.common.brandName}
               onClick={blurActiveField}
             >
@@ -714,9 +714,7 @@ export function AuthPage() {
                   !email.trim() ||
                   (isRegisterMode ? password.length < 8 : password.length === 0) ||
                   (isRegisterMode &&
-                    (!passwordConfirm ||
-                      password !== passwordConfirm ||
-                      !acceptLegal))
+                    (!passwordConfirm || password !== passwordConfirm || !acceptLegal))
                 }
                 className="auth-v3-submit"
               >

@@ -159,8 +159,9 @@ export function CalendarPickerDialog({
               const date = parseLocalDate(day.date);
               const isCurrentSelected = isSameDay(date, selected);
               const isRangeEdge = day.date === rangeStartDate || day.date === rangeEndDate;
-              const isInsideRange =
-                normalizedRange ? isDateInsideRange(date, normalizedRange) : false;
+              const isInsideRange = normalizedRange
+                ? isDateInsideRange(date, normalizedRange)
+                : false;
               const isToday = day.date === todayIso;
 
               return (
@@ -236,8 +237,34 @@ export function CalendarPickerDialog({
 
 function getMonthLabels(language: "ru" | "en") {
   return language === "ru"
-    ? ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
-    : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    ? [
+        "Январь",
+        "Февраль",
+        "Март",
+        "Апрель",
+        "Май",
+        "Июнь",
+        "Июль",
+        "Август",
+        "Сентябрь",
+        "Октябрь",
+        "Ноябрь",
+        "Декабрь",
+      ]
+    : [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
 }
 
 function getWeekdayLabels(language: "ru" | "en") {

@@ -170,13 +170,9 @@ export function formatIllnessActiveLabel(startedAt: string, now: number, languag
   }
 
   if (totalHours > 0) {
-    return language === "ru"
-      ? `Наблюдение · ${totalHours} ч`
-      : `Observation · ${totalHours} h`;
+    return language === "ru" ? `Наблюдение · ${totalHours} ч` : `Observation · ${totalHours} h`;
   }
 
   const minutes = Math.max(1, totalMinutes);
-  return language === "ru"
-    ? `Наблюдение · ${minutes} мин`
-    : `Observation · ${minutes} min`;
+  return language === "ru" ? `Наблюдение · ${minutes} мин` : `Observation · ${minutes} min`;
 }

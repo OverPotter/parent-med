@@ -58,18 +58,20 @@ export function shouldShowClientBootSplash({
 }: BootSplashInputs): boolean {
   const shouldBlockOnFamiliesBootstrap = Boolean(
     authToken &&
-      accountId &&
-      !currentFamilyId &&
-      !isFamiliesError &&
-      (isFamiliesLoading || (!isFamiliesSuccess && familiesCount === 0))
+    accountId &&
+    !currentFamilyId &&
+    !isFamiliesError &&
+    (isFamiliesLoading || (!isFamiliesSuccess && familiesCount === 0))
   );
   const isCurrentFamilyResolving = Boolean(
     !shouldBlockOnFamiliesBootstrap && isFamiliesSuccess && familiesCount > 0 && !currentFamilyId
   );
 
-  return Boolean(authToken && accountId) &&
+  return (
+    Boolean(authToken && accountId) &&
     (!isDeferredBootReady ||
       shouldBlockOnFamiliesBootstrap ||
       isCurrentFamilyResolving ||
-      (isFirstNativeLaunch && !isDeferredShellWorkReady));
+      (isFirstNativeLaunch && !isDeferredShellWorkReady))
+  );
 }

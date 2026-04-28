@@ -7,14 +7,16 @@ import {
 } from "@shared/api/families";
 import { leaveMyFamily } from "@shared/api/auth";
 import { createFamilyInvite } from "@shared/api/familyInvites";
-import type { AuthStateResponse, Family, FamilyAccessPolicy, FamilyMember } from "@shared/types/api";
+import type {
+  AuthStateResponse,
+  Family,
+  FamilyAccessPolicy,
+  FamilyMember,
+} from "@shared/types/api";
 import { invalidateAccessSensitiveQueries } from "./invalidateAccessSensitiveQueries";
 import { tFamily } from "./copy";
 
-function getApiErrorMessage(
-  error: unknown,
-  fallback: string
-) {
+function getApiErrorMessage(error: unknown, fallback: string) {
   if (
     error &&
     typeof error === "object" &&

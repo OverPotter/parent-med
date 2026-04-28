@@ -66,7 +66,8 @@ export function ChildCalendarPage() {
   const [enabledKinds, setEnabledKinds] = useState<EventKind[]>(eventKinds);
   const calendarFeedHistoryRef = useRef(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const canViewCalendar = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
+  const canViewCalendar =
+    !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
 
   const { data: child, isLoading: isChildLoading } = useQuery({
     queryKey: ["child", childId],

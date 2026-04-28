@@ -1,6 +1,9 @@
 import { Capacitor } from "@capacitor/core";
 import { PushNotifications, Token, PermissionStatus } from "@capacitor/push-notifications";
-import { getCachedNativeDeviceId, getOrCreateNativeDeviceId } from "@shared/security/nativeDeviceId";
+import {
+  getCachedNativeDeviceId,
+  getOrCreateNativeDeviceId,
+} from "@shared/security/nativeDeviceId";
 
 type NativePushPlatform = "ios" | "android";
 export type NativePushPermissionStatus = PermissionStatus["receive"];

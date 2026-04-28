@@ -603,11 +603,7 @@ export function DateField({
         aria-expanded={isOpen}
       >
         <span
-          className={[
-            value ? "text-foreground" : "text-muted",
-            "min-w-0 flex-1",
-            valueClassName,
-          ]
+          className={[value ? "text-foreground" : "text-muted", "min-w-0 flex-1", valueClassName]
             .filter(Boolean)
             .join(" ")}
         >

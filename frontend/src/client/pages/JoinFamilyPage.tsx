@@ -128,7 +128,11 @@ export function JoinFamilyPage() {
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     const trimmedEmail = email.trim();
-    if (!token || !trimmedEmail || (mode === "register" ? password.length < 8 : password.length === 0)) {
+    if (
+      !token ||
+      !trimmedEmail ||
+      (mode === "register" ? password.length < 8 : password.length === 0)
+    ) {
       return;
     }
     if (mode === "login") {
@@ -188,10 +192,7 @@ export function JoinFamilyPage() {
         <Surface className="p-5 sm:p-6">
           <p className="app-card-title">Текущий аккаунт</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <InfoCard
-              label="Имя в семье"
-              value={accountDisplayName?.trim() || "Вы"}
-            />
+            <InfoCard label="Имя в семье" value={accountDisplayName?.trim() || "Вы"} />
             <InfoCard label="Email" value={accountEmail || "Не указан"} />
           </div>
 
@@ -276,9 +277,7 @@ export function JoinFamilyPage() {
                   </span>
                 </label>
 
-                <div
-                  className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}
-                >
+                <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
                   <AuthPasswordField
                     label="Пароль"
                     value={password}

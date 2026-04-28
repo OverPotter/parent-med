@@ -111,12 +111,9 @@ export function SettingsPage() {
     resolveLiveActivityPreferences()
   );
   const isNativeIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
-  const isDevTestPushVisible =
-    import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
+  const isDevTestPushVisible = import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
   const isRevenueCatTestVisible =
-    isNativeIos &&
-    isDevTestPushVisible &&
-    Boolean(getRevenueCatIosApiKey());
+    isNativeIos && isDevTestPushVisible && Boolean(getRevenueCatIosApiKey());
   const pushSupportIssue = getPushSupportIssue();
   const isPushEnabled = pushStatus === "enabled";
 
@@ -151,11 +148,7 @@ export function SettingsPage() {
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(
-    accountId,
-    currentFamilyId,
-    canManageSubscription
-    );
+    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
   const childrenPushEnabled = pushPreferences?.childrenEnabled ?? true;
   const pillboxPushEnabled = pushPreferences?.pillboxEnabled ?? true;
   const cabinetEarlyReminderEnabled =
@@ -239,8 +232,7 @@ export function SettingsPage() {
           return {
             ...current,
             childrenEnabled: payload.children_enabled ?? current.childrenEnabled,
-            beforeReminderMinutes:
-              payload.before_reminder_minutes ?? current.beforeReminderMinutes,
+            beforeReminderMinutes: payload.before_reminder_minutes ?? current.beforeReminderMinutes,
             pillboxEnabled: payload.pillbox_enabled ?? current.pillboxEnabled,
             pillboxBeforeReminderMinutes:
               payload.pillbox_before_reminder_minutes ?? current.pillboxBeforeReminderMinutes,
@@ -708,8 +700,7 @@ export function SettingsPage() {
     setPushError(null);
     updatePushPreferencesMutation.mutate({
       children_enabled: enabled,
-      before_reminder_minutes:
-        enabled && selectedReminderMinutes === "0" ? 10 : undefined,
+      before_reminder_minutes: enabled && selectedReminderMinutes === "0" ? 10 : undefined,
     });
   };
 

@@ -20,14 +20,21 @@ function readEnvValue(
   if (envOverrides && typeof envOverrides[key] === "string") {
     return envOverrides[key] ?? "";
   }
-  const env = (import.meta as ImportMeta & {
-    env?: InviteLinkEnv;
-  }).env;
+  const env = (
+    import.meta as ImportMeta & {
+      env?: InviteLinkEnv;
+    }
+  ).env;
   return env?.[key] ?? "";
 }
 
-export function resolveInvitePublicBaseUrl(currentOrigin?: string, envOverrides?: InviteLinkEnv): string {
-  const configuredAppUrl = normalizeAbsoluteBaseUrl(readEnvValue("VITE_APP_SITE_URL", envOverrides));
+export function resolveInvitePublicBaseUrl(
+  currentOrigin?: string,
+  envOverrides?: InviteLinkEnv
+): string {
+  const configuredAppUrl = normalizeAbsoluteBaseUrl(
+    readEnvValue("VITE_APP_SITE_URL", envOverrides)
+  );
   if (configuredAppUrl) {
     return configuredAppUrl;
   }

@@ -73,8 +73,7 @@ export const familyCopy = {
       "Вы потеряете доступ к детям, аптечке и таблетнице этой семьи. Для вас будет создана новая пустая семья.",
     confirmLeaveFamilyAction: "Да, выйти",
     confirmPromoteTitle: "Сделать участника администратором?",
-    confirmPromoteDescription:
-      "Участник сможет управлять ролями, участниками и правами доступа.",
+    confirmPromoteDescription: "Участник сможет управлять ролями, участниками и правами доступа.",
     confirmPromoteAction: "Да, сделать админом",
     confirmDemoteTitle: "Снять права администратора?",
     confirmDemoteDescription: "Участник останется в семье, но потеряет права управления семьёй.",
@@ -87,7 +86,8 @@ export const familyCopy = {
     displayNamePlaceholder: "Например: Оля",
     relationship: "Кто это в семье",
     relationshipPlaceholder: "Например: мама",
-    relationshipHint: "Можно написать так, как вас будут понимать в семье: мама, папа, бабушка, дедушка, няня.",
+    relationshipHint:
+      "Можно написать так, как вас будут понимать в семье: мама, папа, бабушка, дедушка, няня.",
     phone: "Телефон",
     email: "Email",
     emailPlaceholder: "you@example.com",
@@ -284,10 +284,7 @@ export function roleLabel(
   return role === "admin" ? tFamily(language, "admin") : tFamily(language, "member");
 }
 
-export function childrenAccessRoleLabel(
-  access: "view" | "act" | "edit",
-  language: AppLanguage
-) {
+export function childrenAccessRoleLabel(access: "view" | "act" | "edit", language: AppLanguage) {
   if (access === "edit") return tFamily(language, "childrenLead");
   if (access === "act") return tFamily(language, "childrenAct");
   return tFamily(language, "childrenObserve");
@@ -295,9 +292,7 @@ export function childrenAccessRoleLabel(
 
 export function cabinetAccessRoleLabel(access: "none" | "view" | "edit", language: AppLanguage) {
   if (access === "none") return tFamily(language, "hidden");
-  return access === "edit"
-    ? tFamily(language, "cabinetLead")
-    : tFamily(language, "cabinetObserve");
+  return access === "edit" ? tFamily(language, "cabinetLead") : tFamily(language, "cabinetObserve");
 }
 
 export function pillboxAccessRoleLabel(

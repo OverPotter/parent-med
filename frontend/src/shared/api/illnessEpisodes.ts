@@ -152,7 +152,8 @@ export async function fetchIllnessEpisodesByChildId(childId: string): Promise<Il
       const episode = toIllnessEpisode(item);
       return {
         ...episode,
-        startedAt: resolveIllnessStartedAt(childId, episode.id, episode.startedAt) ?? episode.startedAt,
+        startedAt:
+          resolveIllnessStartedAt(childId, episode.id, episode.startedAt) ?? episode.startedAt,
       };
     });
     if (!offline.hasOverride || !offline.value) {

@@ -34,7 +34,9 @@ function writeSuppressedAccountIds(accountIds: string[]) {
   storage.setItem(REVENUECAT_SYNC_SUPPRESSION_KEY, JSON.stringify(accountIds));
 }
 
-export function isRevenueCatSyncSuppressedForAccount(accountId: string | null | undefined): boolean {
+export function isRevenueCatSyncSuppressedForAccount(
+  accountId: string | null | undefined
+): boolean {
   if (!accountId) {
     return false;
   }

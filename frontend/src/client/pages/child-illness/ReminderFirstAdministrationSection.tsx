@@ -1,10 +1,7 @@
 import { DateField } from "@shared/components/DateField";
 import { finalizeTimeInput, normalizeTimeInput } from "@client/utils/feedingRecordForm";
 import { getLocalIsoDate } from "@shared/utils/date";
-import {
-  appBtnSecondaryClass,
-  illnessPanelSoftClass,
-} from "./shared";
+import { appBtnSecondaryClass, illnessPanelSoftClass } from "./shared";
 import { reminderModeButtonClass } from "./reminderUtils";
 
 const firstDoseActionButtonClass =

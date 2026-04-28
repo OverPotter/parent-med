@@ -38,9 +38,7 @@ async function refreshPillboxQueries(
 ) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-    ...(planId
-      ? [queryClient.invalidateQueries({ queryKey: ["pillbox-plan", planId] })]
-      : []),
+    ...(planId ? [queryClient.invalidateQueries({ queryKey: ["pillbox-plan", planId] })] : []),
     queryClient.refetchQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
     ...(planId ? [queryClient.refetchQueries({ queryKey: ["pillbox-plan", planId] })] : []),
   ]);

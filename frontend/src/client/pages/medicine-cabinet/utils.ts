@@ -28,10 +28,7 @@ export function hasUnknownOpenedShelfLife(openedAt: string, openedShelfDays: str
   return Boolean(openedAt && !openedShelfDays);
 }
 
-export function formatDoseCalcValue(
-  source: DoseCalcSource,
-  language: AppLanguage
-): string | null {
+export function formatDoseCalcValue(source: DoseCalcSource, language: AppLanguage): string | null {
   const minDose = source.pediatricDoseMgPerKgMin ?? null;
   const maxDose = source.pediatricDoseMgPerKgMax ?? null;
 
@@ -308,13 +305,7 @@ export function getMedicineCatalogCategoryMatch(
         "олопат",
       ]);
     case "ears":
-      return hasKeywordMatch(text, [
-        "ух",
-        "ear",
-        "otic",
-        "benzocaine",
-        "антипирин",
-      ]);
+      return hasKeywordMatch(text, ["ух", "ear", "otic", "benzocaine", "антипирин"]);
     case "skin_wounds":
       return hasKeywordMatch(text, [
         "кожа",

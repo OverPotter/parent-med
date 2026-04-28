@@ -240,7 +240,10 @@ export function CabinetMedicinePicker({
                   {getMedicineTitle(selectedMedicine)}
                 </span>
                 <span className="mt-1 block truncate text-xs text-muted">
-                  {[selectedMedicine.medicineForm, getMedicineValidUntilText(selectedMedicine, language)]
+                  {[
+                    selectedMedicine.medicineForm,
+                    getMedicineValidUntilText(selectedMedicine, language),
+                  ]
                     .filter(Boolean)
                     .join(" · ")}
                 </span>

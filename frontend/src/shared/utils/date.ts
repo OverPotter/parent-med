@@ -43,7 +43,10 @@ export function getLocalIsoDate(date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
-export function isFutureDeviceDate(dateValue: string | null | undefined, now = new Date()): boolean {
+export function isFutureDeviceDate(
+  dateValue: string | null | undefined,
+  now = new Date()
+): boolean {
   if (!dateValue || !/^\d{4}-\d{2}-\d{2}$/.test(dateValue.trim())) {
     return false;
   }

@@ -16,7 +16,9 @@ export function isFamilyOwnerAccount({
   familyOwnerAccountId,
   currentAccountId,
 }: Pick<ViewerParams, "familyOwnerAccountId" | "currentAccountId">) {
-  return Boolean(familyOwnerAccountId && currentAccountId && familyOwnerAccountId === currentAccountId);
+  return Boolean(
+    familyOwnerAccountId && currentAccountId && familyOwnerAccountId === currentAccountId
+  );
 }
 
 export function isFamilyAdminAccount(params: ViewerParams) {
@@ -47,7 +49,11 @@ export function canManageFamilyMemberAccess({
   targetFamilyRole,
 }: TargetParams) {
   const isOwner = isFamilyOwnerAccount({ familyOwnerAccountId, currentAccountId });
-  const isAdmin = isFamilyAdminAccount({ familyOwnerAccountId, currentAccountId, currentAccountRole });
+  const isAdmin = isFamilyAdminAccount({
+    familyOwnerAccountId,
+    currentAccountId,
+    currentAccountRole,
+  });
   const isCurrent = currentAccountId === targetAccountId;
 
   if (!targetAccountId || isCurrent) {
@@ -84,11 +90,7 @@ export function canDemoteFamilyMember({
   const isTargetOwner = familyOwnerAccountId === targetAccountId;
 
   return Boolean(
-    isOwner &&
-      !isCurrent &&
-      !isTargetOwner &&
-      targetFamilyRole === "admin" &&
-      adminsCount > 1
+    isOwner && !isCurrent && !isTargetOwner && targetFamilyRole === "admin" && adminsCount > 1
   );
 }
 
@@ -100,7 +102,11 @@ export function canDeleteFamilyMember({
   targetFamilyRole,
 }: TargetParams) {
   const isOwner = isFamilyOwnerAccount({ familyOwnerAccountId, currentAccountId });
-  const isAdmin = isFamilyAdminAccount({ familyOwnerAccountId, currentAccountId, currentAccountRole });
+  const isAdmin = isFamilyAdminAccount({
+    familyOwnerAccountId,
+    currentAccountId,
+    currentAccountRole,
+  });
   const isCurrent = currentAccountId === targetAccountId;
   const isTargetOwner = familyOwnerAccountId === targetAccountId;
 

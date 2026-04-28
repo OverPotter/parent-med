@@ -1,5 +1,7 @@
 """Реализация репозитория комментариев эпизода."""
 
+from collections import defaultdict
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import select
@@ -57,6 +59,27 @@ class SqlIllnessCommentRepository(IllnessCommentRepository):
             .order_by(IllnessEpisodeEventModel.occurred_at.desc())
         )
         return [self._to_entity(row) for row in result.scalars().all()]
+
+    async def get_by_episode_ids(
+        self, episode_ids: Sequence[UUID]
+    ) -> dict[UUID, list[IllnessComment]]:
+        if not episode_ids:
+            return {}
+        result = await self._session.execute(
+            select(IllnessEpisodeEventModel)
+            .where(
+                IllnessEpisodeEventModel.episode_id.in_(episode_ids),
+                IllnessEpisodeEventModel.event_type == "comment",
+            )
+            .order_by(
+                IllnessEpisodeEventModel.episode_id,
+                IllnessEpisodeEventModel.occurred_at.desc(),
+            )
+        )
+        grouped: dict[UUID, list[IllnessComment]] = defaultdict(list)
+        for row in result.scalars().all():
+            grouped[row.episode_id].append(self._to_entity(row))
+        return dict(grouped)
 
     async def add(self, entity: IllnessComment) -> IllnessComment:
         model = self._to_model(entity)

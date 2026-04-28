@@ -7,10 +7,7 @@ type Options = {
   includeCareQueries?: boolean;
 };
 
-export async function invalidateSubscriptionQueries(
-  queryClient: QueryClient,
-  options: Options
-) {
+export async function invalidateSubscriptionQueries(queryClient: QueryClient, options: Options) {
   const { accountId, currentFamilyId, includeCareQueries = false } = options;
 
   dispatchRevenueCatRefresh();

@@ -96,7 +96,9 @@ if (typeof window !== "undefined") {
         : event.reason instanceof Error
           ? event.reason.message
           : "";
-    if (/Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
+    if (
+      /Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)
+    ) {
       appLog.warn("dynamic import rejection, forcing one-time reload");
       handleChunkRecovery();
     }

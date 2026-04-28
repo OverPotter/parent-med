@@ -217,7 +217,12 @@ export function useClientLayoutPushPrompt({
   }, [isPushPromptReady]);
 
   useEffect(() => {
-    if (!isPushPromptReady || pushStatus !== "enabled" || nativePushIssue !== null || !pushPreferences) {
+    if (
+      !isPushPromptReady ||
+      pushStatus !== "enabled" ||
+      nativePushIssue !== null ||
+      !pushPreferences
+    ) {
       setCategoryPushIssue(false);
       return;
     }
@@ -231,17 +236,14 @@ export function useClientLayoutPushPrompt({
     !isNativePushSupported() &&
     isPushSupported() &&
     pushStatus === "disabled";
-  const {
-    shouldShowNotificationPrompt,
-    isNotificationBellActive,
-    notificationBellVariant,
-  } = resolvePushPromptState({
-    isPushPromptReady,
-    pushStatus,
-    nativePushIssue,
-    shouldShowWebPushPrompt: shouldShowPushPrompt,
-    hasCategoryPushIssue: categoryPushIssue,
-  });
+  const { shouldShowNotificationPrompt, isNotificationBellActive, notificationBellVariant } =
+    resolvePushPromptState({
+      isPushPromptReady,
+      pushStatus,
+      nativePushIssue,
+      shouldShowWebPushPrompt: shouldShowPushPrompt,
+      hasCategoryPushIssue: categoryPushIssue,
+    });
 
   const handleEnablePush = async () => {
     if (isNativePushSupported()) {

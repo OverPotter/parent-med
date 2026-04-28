@@ -108,10 +108,7 @@ export function IosEdgeBackGesture({
       const dy = Math.abs(touch.clientY - swipeStateRef.current.startY);
       swipeStateRef.current.latestDx = dx;
 
-      if (
-        !swipeStateRef.current.horizontalLocked &&
-        shouldLockIosBackSwipe(dx, dy)
-      ) {
+      if (!swipeStateRef.current.horizontalLocked && shouldLockIosBackSwipe(dx, dy)) {
         swipeStateRef.current.horizontalLocked = true;
         target.style.transition = "none";
       }

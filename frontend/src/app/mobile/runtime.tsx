@@ -19,7 +19,10 @@ export function RouteScrollReset() {
     previousPathnameRef.current = location.pathname;
     const routeKey = `${location.pathname}${location.search}`;
     const saveCurrentScrollPosition = () => {
-      scrollPositionsRef.current.set(routeKey, Math.max(0, window.scrollY || window.pageYOffset || 0));
+      scrollPositionsRef.current.set(
+        routeKey,
+        Math.max(0, window.scrollY || window.pageYOffset || 0)
+      );
     };
 
     if (previousPathname === location.pathname) {

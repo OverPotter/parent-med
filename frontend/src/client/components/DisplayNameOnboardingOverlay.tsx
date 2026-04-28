@@ -260,9 +260,7 @@ export function DisplayNameOnboardingOverlay() {
               <p className="soft-note-danger mt-4">
                 {(saveMutation.error as { response?: { data?: { detail?: string } } })?.response
                   ?.data?.detail ??
-                  (language === "ru"
-                    ? "Не удалось сохранить имя."
-                    : "Could not save the name.")}
+                  (language === "ru" ? "Не удалось сохранить имя." : "Could not save the name.")}
               </p>
             ) : null}
 

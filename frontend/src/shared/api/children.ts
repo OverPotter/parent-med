@@ -6,6 +6,12 @@ import { apiClient } from "./client";
 import { normalizeApiListResponse } from "./listResponse";
 import type { Child } from "@shared/types/api";
 import { toChild } from "@shared/types/transform";
+export {
+  downloadChildExportArchive,
+  downloadChildExportCsv,
+  type ChildExportKind,
+  type ChildExportPeriod,
+} from "./childExportApi";
 
 type RawChild = {
   id: string;
