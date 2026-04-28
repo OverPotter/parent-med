@@ -6,6 +6,7 @@ import { login, resetPasswordByRecoveryCode } from "@shared/api/auth";
 import { applySessionToClient } from "@shared/api/client";
 import { AuthPasswordField } from "@shared/components/AuthFormControls";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
+import { resolveInvitePublicBaseUrl } from "@shared/config/inviteLinks";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
@@ -76,6 +77,7 @@ export function RecoverPasswordPage() {
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
   const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
+  const publicSiteUrl = resolveInvitePublicBaseUrl();
   const { copy, language } = useI18n();
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
@@ -476,6 +478,19 @@ export function RecoverPasswordPage() {
               </div>
             </form>
           </section>
+          {isNativeIOS && publicSiteUrl ? (
+            <div className="auth-v3-ios-about-row">
+              <a
+                href={publicSiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="app-header-utility-button auth-v3-mobile-home-link"
+                onClick={blurActiveField}
+              >
+                {copy.common.aboutApp}
+              </a>
+            </div>
+          ) : null}
         </section>
       </div>
     </div>

@@ -395,8 +395,13 @@ export const useAppStore = create<AppState>()(
 
 if (typeof window !== "undefined") {
   const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  const syncSystemTheme = () => {
+  const handleSystemThemeChange = () => {
     useAppStore.getState().syncSystemTheme();
   };
-  mediaQuery.addEventListener("change", syncSystemTheme);
+
+  if (typeof mediaQuery.addEventListener === "function") {
+    mediaQuery.addEventListener("change", handleSystemThemeChange);
+  } else if (typeof mediaQuery.addListener === "function") {
+    mediaQuery.addListener(handleSystemThemeChange);
+  }
 }

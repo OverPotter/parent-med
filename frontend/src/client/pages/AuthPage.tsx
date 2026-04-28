@@ -13,17 +13,11 @@ import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
 import { useI18n } from "@shared/hooks/useI18n";
 import type { AppLanguage } from "@shared/i18n";
+import { resolveInvitePublicBaseUrl } from "@shared/config/inviteLinks";
 import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
-import {
-  isNativePasswordAutofillSupported,
-  requestNativePasswordCredential,
-  saveNativePasswordCredential,
-} from "@shared/security/nativePasswordAutofill";
+import { saveNativePasswordCredential } from "@shared/security/nativePasswordAutofill";
 import { useAppStore } from "@shared/store/useAppStore";
-import {
-  buildNativeAppUrl,
-  getAppStoreUrl,
-} from "@shared/config/nativeAppLinks";
+import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks";
 import { blurActiveField } from "@shared/utils/focus";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -248,6 +242,7 @@ export function AuthPage() {
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
   const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
   const appStoreUrl = getAppStoreUrl();
+  const publicSiteUrl = resolveInvitePublicBaseUrl();
   const { copy, language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedMode = searchParams.get("mode");
@@ -258,7 +253,6 @@ export function AuthPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [acceptLegal, setAcceptLegal] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isPasswordAutofillPending, setIsPasswordAutofillPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const stageRef = useRef<HTMLElement | null>(null);
   const submitButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -342,7 +336,7 @@ export function AuthPage() {
     registerMutation.mutate({
       email: trimmedEmail,
       password,
-      remember_me: rememberMe,
+      remember_me: true,
       preferred_language: language,
     });
   };
@@ -358,6 +352,7 @@ export function AuthPage() {
     setEmail("");
     setPassword("");
     setPasswordConfirm("");
+    setRememberMe(true);
     setAcceptLegal(false);
     setIsPasswordVisible(false);
   };
@@ -385,14 +380,6 @@ export function AuthPage() {
       : isPending
         ? copy.auth.actions.registerLoading
         : copy.auth.actions.register;
-  const isNativePasswordAutofillAvailable =
-    isNativeIOS && mode === "login" && isNativePasswordAutofillSupported();
-  const passwordAutofillLabel =
-    language === "ru" ? "Заполнить из iPhone" : "Use saved iPhone password";
-  const passwordAutofillError =
-    language === "ru"
-      ? "Не удалось получить сохранённый логин и пароль с iPhone."
-      : "Could not load saved iPhone credentials.";
 
   const ensureSubmitVisible = () => {
     if (!isNativeIOS || mode !== "login" || typeof window === "undefined") {
@@ -420,29 +407,6 @@ export function AuthPage() {
 
     ensureSubmitVisible();
   }, [email, ensureSubmitVisible, isNativeIOS, mode, password]);
-
-  const handleUseSavedPassword = async () => {
-    if (!isNativePasswordAutofillAvailable || isPasswordAutofillPending) {
-      return;
-    }
-
-    blurActiveField();
-    setError(null);
-    setIsPasswordAutofillPending(true);
-    try {
-      const credential = await requestNativePasswordCredential();
-      if (!credential) {
-        return;
-      }
-      setEmail(credential.username);
-      setPassword(credential.password);
-      setRememberMe(true);
-    } catch {
-      setError(passwordAutofillError);
-    } finally {
-      setIsPasswordAutofillPending(false);
-    }
-  };
 
   if (isPublicWebsiteMode) {
     const targetMode = mode === "register" ? "register" : "login";
@@ -787,37 +751,25 @@ export function AuthPage() {
                     ) : null}
                   </div>
 
-                  <div className="auth-v3-row">
-                    <label className="auth-v3-checkbox">
-                      <span className="auth-v3-checkbox-box">
-                        <input
-                          type="checkbox"
-                          checked={rememberMe}
-                          onChange={(event) => setRememberMe(event.target.checked)}
-                          className="peer absolute inset-0 cursor-pointer opacity-0"
-                        />
-                        <span className="auth-v3-checkbox-mark">
-                          <CheckIcon />
+                  {!isRegisterMode ? (
+                    <div className="auth-v3-row auth-v3-row-compact">
+                      <label className="auth-v3-checkbox">
+                        <span className="auth-v3-checkbox-box">
+                          <input
+                            type="checkbox"
+                            checked={rememberMe}
+                            onChange={(event) => setRememberMe(event.target.checked)}
+                            className="peer absolute inset-0 cursor-pointer opacity-0"
+                          />
+                          <span className="auth-v3-checkbox-mark">
+                            <CheckIcon />
+                          </span>
                         </span>
-                      </span>
-                      <span>{copy.auth.page.rememberMe}</span>
-                    </label>
-                    <Link to="/recover-password" className="auth-v3-linkish">
-                      {copy.auth.page.forgotPassword}
-                    </Link>
-                  </div>
-                  {isNativePasswordAutofillAvailable ? (
-                    <div className="auth-v3-row">
-                      <button
-                        type="button"
-                        onClick={handleUseSavedPassword}
-                        disabled={isPasswordAutofillPending}
-                        className="auth-v3-linkish disabled:opacity-50"
-                      >
-                        {isPasswordAutofillPending
-                          ? `${passwordAutofillLabel}…`
-                          : passwordAutofillLabel}
-                      </button>
+                        <span>{copy.auth.page.rememberMe}</span>
+                      </label>
+                      <Link to="/recover-password" className="auth-v3-linkish">
+                        {copy.auth.page.forgotPassword}
+                      </Link>
                     </div>
                   ) : null}
                   {isRegisterMode ? (
@@ -871,6 +823,19 @@ export function AuthPage() {
                 {submitLabel}
               </button>
               <p className="auth-v3-footer-note">{copy.auth.page.invitationNote}</p>
+              {isNativeIOS && publicSiteUrl ? (
+                <div className="auth-v3-ios-about-row">
+                  <a
+                    href={publicSiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="app-header-utility-button auth-v3-mobile-home-link"
+                    onClick={blurActiveField}
+                  >
+                    {copy.common.aboutApp}
+                  </a>
+                </div>
+              ) : null}
             </form>
           </section>
         </section>

@@ -554,6 +554,20 @@
   flex-wrap: wrap;
 }
 
+.auth-v3-row-compact {
+  flex-wrap: nowrap;
+}
+
+.auth-v3-row-compact .auth-v3-checkbox {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.auth-v3-row-compact .auth-v3-linkish {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .auth-v3-checkbox {
   display: inline-flex;
   align-items: center;
@@ -958,6 +972,15 @@ details[open] > .auth-v3-summary::after {
   .auth-v3-row .auth-v3-linkish {
     min-height: 2.4rem;
     justify-content: flex-start;
+  }
+
+  .auth-v3-row-compact {
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+
+  .auth-v3-row-compact .auth-v3-checkbox {
+    flex: 1 1 auto;
   }
 
   .auth-v3-submit {
