@@ -2,7 +2,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Capacitor } from "@capacitor/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { registerSW } from "virtual:pwa-register";
 import { appLog } from "@shared/utils/appLog";
 import App from "./App";
 import "./index.css";
@@ -52,12 +51,6 @@ const queryClient = new QueryClient({
 });
 
 loadOptionalWebFonts();
-
-if (!Capacitor.isNativePlatform() && import.meta.env.PROD) {
-  registerSW({
-    immediate: true,
-  });
-}
 
 if (typeof window !== "undefined") {
   const handleChunkRecovery = () => {

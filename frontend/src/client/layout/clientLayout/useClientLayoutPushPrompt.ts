@@ -6,14 +6,7 @@ import {
   fetchPushNotificationPreferences,
   upsertPushSubscription,
 } from "@shared/api/pushNotifications";
-import {
-  getExistingPushSubscription,
-  getPushSupportIssue,
-  isPushSupported,
-  subscribeToPushNotifications,
-  toPushSubscriptionPayload,
-  withTimeout,
-} from "@shared/utils/pushNotifications";
+import { withTimeout } from "@shared/utils/pushNotifications";
 import {
   getCachedNativePushSubscriptionPayload,
   getNativePushPermissionStatus,
@@ -148,22 +141,9 @@ export function useClientLayoutPushPrompt({
           return;
         }
 
-        if (!isPushSupported() || Notification.permission !== "granted") {
-          if (!isCancelled) {
-            setPushStatus("disabled");
-            setPushPromptSuccess(null);
-            setNativePushIssue(null);
-          }
-          return;
-        }
-
-        const subscription = await getExistingPushSubscription();
         if (!isCancelled) {
-          const nextStatus = subscription ? "enabled" : "disabled";
-          setPushStatus(nextStatus);
-          if (nextStatus === "disabled") {
-            setPushPromptSuccess(null);
-          }
+          setPushStatus("disabled");
+          setPushPromptSuccess(null);
           setNativePushIssue(null);
         }
       } catch {
@@ -233,15 +213,15 @@ export function useClientLayoutPushPrompt({
   const shouldShowPushPrompt =
     Boolean(pushConfig?.enabled) &&
     isPushPromptReady &&
-    !isNativePushSupported() &&
-    isPushSupported() &&
+    isNativePushSupported() &&
+    nativePushIssue === null &&
     pushStatus === "disabled";
   const { shouldShowNotificationPrompt, isNotificationBellActive, notificationBellVariant } =
     resolvePushPromptState({
       isPushPromptReady,
       pushStatus,
       nativePushIssue,
-      shouldShowWebPushPrompt: shouldShowPushPrompt,
+      shouldShowDisabledPushPrompt: shouldShowPushPrompt,
       hasCategoryPushIssue: categoryPushIssue,
     });
 
@@ -291,54 +271,6 @@ export function useClientLayoutPushPrompt({
         setIsPushPending(false);
       }
       return;
-    }
-
-    const pushSupportIssue = getPushSupportIssue();
-    if (pushSupportIssue) {
-      setPushPromptError(copy.clientLayout.pushErrors.supportMissing);
-      return;
-    }
-    if (!pushConfig?.enabled || !pushConfig.vapidPublicKey) {
-      setPushPromptError(copy.clientLayout.pushErrors.serverNotReady);
-      return;
-    }
-
-    setPushPromptError(null);
-    setPushPromptSuccess(null);
-    setIsPushPending(true);
-
-    try {
-      const permission = await withTimeout(
-        Notification.requestPermission(),
-        8000,
-        copy.clientLayout.pushErrors.permissionTimeout
-      );
-      if (permission !== "granted") {
-        setPushPromptError(copy.clientLayout.pushErrors.permissionDenied);
-        return;
-      }
-
-      const subscription = await withTimeout(
-        subscribeToPushNotifications(pushConfig.vapidPublicKey),
-        10000,
-        copy.clientLayout.pushErrors.subscribeTimeout
-      );
-
-      await withTimeout(
-        upsertPushSubscription(toPushSubscriptionPayload(subscription)),
-        8000,
-        copy.clientLayout.pushErrors.acceptTimeout
-      );
-
-      setPushStatus("enabled");
-      setPushPromptSuccess(copy.clientLayout.pushErrors.enabled);
-      window.dispatchEvent(new Event("push:subscription-changed"));
-    } catch (error) {
-      setPushPromptError(
-        error instanceof Error ? error.message : copy.clientLayout.pushErrors.enableFailed
-      );
-    } finally {
-      setIsPushPending(false);
     }
   };
 

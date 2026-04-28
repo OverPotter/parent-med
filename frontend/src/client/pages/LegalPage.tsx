@@ -1,8 +1,12 @@
-import { Link } from "react-router-dom";
+import { useRef } from "react";
+import { useHistoryBackFallback } from "@client/pages/legal/useHistoryBackFallback";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { getPrivacyPolicyUrl, getSupportUrl, getTermsOfUseUrl } from "@shared/config/legal";
+import { useAppStore } from "@shared/store/useAppStore";
+import { Link } from "react-router-dom";
 
 function ExternalArrow() {
   return (
@@ -14,6 +18,9 @@ function ExternalArrow() {
 
 export function LegalPage() {
   const { language } = useI18n();
+  const hasSession = useAppStore((s) => Boolean(s.authToken || s.accountId));
+  const handleBack = useHistoryBackFallback(hasSession ? "/more" : "/");
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const items = [
     {
       href: getPrivacyPolicyUrl(),
@@ -42,7 +49,8 @@ export function LegalPage() {
   ];
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div ref={rootRef} className="space-y-6 sm:space-y-8">
+      <IosEdgeBackGesture isEnabled onBack={handleBack} targetRef={rootRef} />
       <PageIntro
         title={language === "ru" ? "Правовая информация" : "Legal information"}
         subtitle={
@@ -51,12 +59,13 @@ export function LegalPage() {
             : "Privacy policy, terms of use and support contacts."
         }
         action={
-          <Link
-            to="/more"
+          <button
+            type="button"
+            onClick={handleBack}
             className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
-            {language === "ru" ? "← Ещё" : "← More"}
-          </Link>
+            {language === "ru" ? "← Назад" : "← Back"}
+          </button>
         }
         compactOnMobile
         hideOnMobile
@@ -65,12 +74,13 @@ export function LegalPage() {
 
       <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
         <div className="app-mobile-section-intro">
-          <Link
-            to="/more"
+          <button
+            type="button"
+            onClick={handleBack}
             className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
-            {language === "ru" ? "← Ещё" : "← More"}
-          </Link>
+            {language === "ru" ? "← Назад" : "← Back"}
+          </button>
           <h1 className="app-mobile-section-intro__title">
             {language === "ru" ? "Правовая информация" : "Legal information"}
           </h1>

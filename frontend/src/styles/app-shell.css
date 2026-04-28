@@ -652,7 +652,9 @@ html.ios-lock-horizontal .landing-main {
 [data-ios-shell="true"] .auth-v3-ios-about-row {
   display: flex;
   justify-content: center;
+  margin-top: 0.8rem;
   padding-top: 0.15rem;
+  padding-bottom: max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)));
 }
 
 [data-runtime="native"][data-platform="ios"] a,

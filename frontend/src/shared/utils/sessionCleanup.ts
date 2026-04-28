@@ -49,7 +49,7 @@ export async function cleanupDeviceSessionArtifacts(options?: { includeServerCle
       await unsubscribeFromPushNotifications();
     }
   } catch {
-    // Best effort only.
+    // Best effort only during PWA exit migration.
   }
 
   if (typeof window !== "undefined") {

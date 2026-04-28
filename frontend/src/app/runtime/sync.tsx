@@ -5,6 +5,7 @@ import { useAppStore } from "@shared/store/useAppStore";
 
 export function ThemeSync() {
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
+  const syncSystemTheme = useAppStore((s) => s.syncSystemTheme);
 
   useLayoutEffect(() => {
     document.documentElement.setAttribute("data-theme", effectiveTheme);
@@ -21,16 +22,18 @@ export function ThemeSync() {
 
   useEffect(() => {
     const syncThemeAfterRestore = () => {
-      const background = effectiveTheme === "dark" ? "#1e1b2e" : "#ebe4ff";
-      document.documentElement.setAttribute("data-theme", effectiveTheme);
-      document.documentElement.style.colorScheme = effectiveTheme;
+      syncSystemTheme();
+      const nextTheme = useAppStore.getState().effectiveTheme;
+      const background = nextTheme === "dark" ? "#1e1b2e" : "#ebe4ff";
+      document.documentElement.setAttribute("data-theme", nextTheme);
+      document.documentElement.style.colorScheme = nextTheme;
       document.documentElement.style.background = background;
-      document.body.style.colorScheme = effectiveTheme;
+      document.body.style.colorScheme = nextTheme;
       document.body.style.background = background;
       document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
       document
         .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
-        ?.setAttribute("content", effectiveTheme === "dark" ? "black-translucent" : "default");
+        ?.setAttribute("content", nextTheme === "dark" ? "black-translucent" : "default");
     };
 
     window.addEventListener("pageshow", syncThemeAfterRestore);
@@ -39,30 +42,7 @@ export function ThemeSync() {
       window.removeEventListener("pageshow", syncThemeAfterRestore);
       document.removeEventListener("visibilitychange", syncThemeAfterRestore);
     };
-  }, [effectiveTheme]);
-
-  return null;
-}
-
-export function DisplayModeSync() {
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(display-mode: standalone)");
-
-    const applyDisplayMode = () => {
-      const isStandalone =
-        mediaQuery.matches ||
-        Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
-      document.documentElement.setAttribute(
-        "data-display-mode",
-        isStandalone ? "standalone" : "browser"
-      );
-    };
-
-    applyDisplayMode();
-    mediaQuery.addEventListener("change", applyDisplayMode);
-
-    return () => mediaQuery.removeEventListener("change", applyDisplayMode);
-  }, []);
+  }, [syncSystemTheme]);
 
   return null;
 }

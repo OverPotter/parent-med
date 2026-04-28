@@ -12,8 +12,8 @@ export const settingsCopy = {
     passwordChangeFailed: "Не удалось сменить пароль.",
     pushServerNotReady: "Push-уведомления ещё не настроены на сервере.",
     pushUnsupported: "На этом устройстве push-уведомления недоступны.",
-    permissionTimeout: "Браузер не завершил запрос разрешения на уведомления.",
-    permissionDenied: "Браузер не дал разрешение на уведомления.",
+    permissionTimeout: "Устройство не завершило запрос разрешения на уведомления.",
+    permissionDenied: "Устройство не дало разрешение на уведомления.",
     nativePermissionBlockedTitle: "Уведомления выключены в iOS",
     nativePermissionBlockedDescription:
       "Откройте настройки iPhone и включите уведомления для приложения.",
@@ -31,7 +31,7 @@ export const settingsCopy = {
     changePasswordHint: "Обновите пароль для входа в аккаунт.",
     recoveryCode: "Код восстановления",
     recoveryCodeHint:
-      "Временный fallback для сброса пароля, пока в приложении нет восстановления по письму.",
+      "Фраза для восстановления доступа внутри приложения, пока нет сброса пароля по письму.",
     recoveryCodeLockedHint: "Кодовая фраза для смены пароля установлена.",
     recoveryCodeLabel: "Новый код восстановления",
     recoveryCodePlaceholder: "Например: quiet-river-42",
@@ -131,8 +131,8 @@ export const settingsCopy = {
     passwordChangeFailed: "Could not change the password.",
     pushServerNotReady: "Push notifications are not configured on the server yet.",
     pushUnsupported: "Push notifications are not available on this device.",
-    permissionTimeout: "The browser did not finish the notification permission request.",
-    permissionDenied: "The browser did not grant notification permission.",
+    permissionTimeout: "The device did not finish the notification permission request.",
+    permissionDenied: "The device did not grant notification permission.",
     nativePermissionBlockedTitle: "Notifications are off in iOS",
     nativePermissionBlockedDescription:
       "Open iPhone settings and enable notifications for the app.",
@@ -150,7 +150,7 @@ export const settingsCopy = {
     changePasswordHint: "Update the password used to sign in.",
     recoveryCode: "Recovery code",
     recoveryCodeHint:
-      "A temporary fallback for password reset while the app has no email reset flow.",
+      "A recovery phrase used inside the app while email-based password reset is not available yet.",
     recoveryCodeLockedHint: "The recovery phrase for password reset is set.",
     recoveryCodeLabel: "New recovery code",
     recoveryCodePlaceholder: "Example: quiet-river-42",

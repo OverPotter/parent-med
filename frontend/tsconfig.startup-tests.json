@@ -38,6 +38,7 @@
     "src/shared/utils/illnessLiveActivitySummary.ts",
     "src/shared/utils/illnessStartHints.ts",
     "src/shared/utils/offlineCareState.ts",
+    "src/shared/runtime/publicWebsiteMode.ts",
     "src/shared/utils/pushNotifications.ts",
     "src/shared/utils/recipientSelection.ts",
     "src/shared/security/authTokenStorageHelpers.ts",
@@ -67,6 +68,7 @@
     "test/medicationPlans.test.ts",
     "test/offlineCareState.test.ts",
     "test/pushNotifications.test.ts",
+    "test/publicWebsiteMode.test.ts",
     "test/recipientSelection.test.ts",
     "test/reminderUtils.test.ts",
     "test/startupDecisions.test.ts"

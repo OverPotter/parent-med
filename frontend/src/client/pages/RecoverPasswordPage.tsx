@@ -6,11 +6,14 @@ import { login, resetPasswordByRecoveryCode } from "@shared/api/auth";
 import { applySessionToClient } from "@shared/api/client";
 import { AuthPasswordField } from "@shared/components/AuthFormControls";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
+import { resolveInvitePublicBaseUrl } from "@shared/config/inviteLinks";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
+import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
+import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
 import { useAppStore } from "@shared/store/useAppStore";
 import { blurActiveField } from "@shared/utils/focus";
 import { normalizeRecoveryCode } from "@shared/utils/recoveryCode";
@@ -73,6 +76,8 @@ export function RecoverPasswordPage() {
   const isIosShell = useIsIosShell();
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
+  const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
+  const publicSiteUrl = resolveInvitePublicBaseUrl();
   const { copy, language } = useI18n();
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
@@ -154,6 +159,115 @@ export function RecoverPasswordPage() {
       }
     };
   }, []);
+
+  if (isPublicWebsiteMode) {
+    const nativeRecoveryUrl = buildNativeAppUrl("/recover-password");
+    const appStoreUrl = getAppStoreUrl();
+    const primaryRecoveryHref = appStoreUrl || nativeRecoveryUrl;
+    const title =
+      language === "ru"
+        ? "Сброс пароля доступен в приложении для iPhone"
+        : "Password reset happens in the iPhone app";
+    const description =
+      language === "ru"
+        ? "Сайт остаётся для знакомства с сервисом, юридической информации и перехода в приложение. Восстановление доступа выполняется внутри PillPath для iPhone."
+        : "The website stays for product discovery, legal pages, and app handoff. Account recovery continues inside the PillPath iPhone app.";
+
+    return (
+      <div className="auth-v3-page min-h-screen text-foreground">
+        <V3BackgroundDoodles className="auth-v3-doodle-layer" dense />
+        <div className="auth-v3-orb auth-v3-orb-left" aria-hidden="true" />
+        <div className="auth-v3-orb auth-v3-orb-right" aria-hidden="true" />
+        <div className="auth-v3-noise" aria-hidden="true" />
+        <div className="auth-v3-shell">
+          <section className="auth-v3-stage">
+            <div className="auth-v3-header">
+              <Link to="/" className="auth-v3-header-logo" aria-label={copy.common.brandName}>
+                <img
+                  src="/pwa-icon.png"
+                  alt=""
+                  className="h-10 w-10 rounded-[1.15rem] shadow-[0_16px_32px_rgba(138,123,191,0.18)]"
+                />
+              </Link>
+              <Link to="/" className="auth-v3-header-brand" aria-label={copy.common.brandName}>
+                <BrandWordmark className="auth-v3-header-brand-text" />
+              </Link>
+              <div className="auth-v3-header-actions">
+                <LanguageSwitch
+                  className="auth-v3-language-switch app-header-language-switch"
+                  triggerClassName="app-header-utility-button"
+                />
+                <button
+                  type="button"
+                  className="soft-theme-toggle app-header-theme-toggle"
+                  onClick={toggleTheme}
+                  aria-label={
+                    effectiveTheme === "light"
+                      ? copy.common.themeDarkLabel
+                      : copy.common.themeLightLabel
+                  }
+                  title={
+                    effectiveTheme === "light"
+                      ? copy.common.themeDarkLabel
+                      : copy.common.themeLightLabel
+                  }
+                >
+                  <span
+                    aria-hidden="true"
+                    className={[
+                      "soft-theme-toggle__icon",
+                      effectiveTheme === "light"
+                        ? "soft-theme-toggle__icon--moon"
+                        : "soft-theme-toggle__icon--sun",
+                    ].join(" ")}
+                  >
+                    {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="auth-v3-hero">
+              <p className="auth-v3-subtitle">{description}</p>
+            </div>
+
+            <section className="auth-v3-panel auth-v3-panel-compact soft-page-intro">
+              <div className="auth-v3-card auth-v3-handoff-card space-y-4">
+                <div>
+                  <p className="auth-v3-section-copy">{title}</p>
+                </div>
+                <p className="text-sm leading-7 text-muted">{description}</p>
+                <div className="auth-v3-handoff-stack">
+                  <a
+                    href={primaryRecoveryHref}
+                    className="auth-v3-submit auth-v3-handoff-primary text-center"
+                    target={appStoreUrl ? "_blank" : undefined}
+                    rel={appStoreUrl ? "noreferrer" : undefined}
+                  >
+                    {appStoreUrl
+                      ? language === "ru"
+                        ? "Скачать в App Store"
+                        : "Download on the App Store"
+                      : language === "ru"
+                        ? "Открыть приложение"
+                        : "Open app"}
+                  </a>
+                  {appStoreUrl ? (
+                    <a href={nativeRecoveryUrl} className="auth-v3-handoff-secondary text-center">
+                      {language === "ru" ? "Открыть приложение" : "Open app"}
+                    </a>
+                  ) : null}
+                  <Link to="/" className="auth-v3-linkish auth-v3-handoff-back text-center">
+                    {language === "ru" ? "Вернуться на сайт" : "Back to website"}
+                  </Link>
+                </div>
+              </div>
+            </section>
+          </section>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -364,6 +478,19 @@ export function RecoverPasswordPage() {
               </div>
             </form>
           </section>
+          {isNativeIOS && publicSiteUrl ? (
+            <div className="auth-v3-ios-about-row">
+              <a
+                href={publicSiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="app-header-utility-button auth-v3-mobile-home-link"
+                onClick={blurActiveField}
+              >
+                {copy.common.aboutApp}
+              </a>
+            </div>
+          ) : null}
         </section>
       </div>
     </div>

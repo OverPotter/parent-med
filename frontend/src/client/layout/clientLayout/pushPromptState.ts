@@ -31,7 +31,7 @@ export function resolvePushPromptState(input: {
   isPushPromptReady: boolean;
   pushStatus: PushPromptStatus;
   nativePushIssue: NativePushIssue;
-  shouldShowWebPushPrompt: boolean;
+  shouldShowDisabledPushPrompt: boolean;
   hasCategoryPushIssue: boolean;
 }): {
   shouldShowCategoryPrompt: boolean;
@@ -46,13 +46,13 @@ export function resolvePushPromptState(input: {
     input.nativePushIssue === null &&
     input.hasCategoryPushIssue;
   const shouldShowNotificationPrompt =
-    shouldShowNativePushPrompt || input.shouldShowWebPushPrompt || shouldShowCategoryPrompt;
+    shouldShowNativePushPrompt || input.shouldShowDisabledPushPrompt || shouldShowCategoryPrompt;
 
   return {
     shouldShowCategoryPrompt,
     shouldShowNotificationPrompt,
     isNotificationBellActive: shouldShowNotificationPrompt,
     notificationBellVariant:
-      shouldShowNativePushPrompt || input.shouldShowWebPushPrompt ? "danger" : "warning",
+      shouldShowNativePushPrompt || input.shouldShowDisabledPushPrompt ? "danger" : "warning",
   };
 }

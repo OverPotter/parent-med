@@ -41,7 +41,7 @@ export const familyCopy = {
     noMembers: "У семьи пока нет подключённых участников.",
     inviteTitle: "Пригласить в приложение",
     inviteDescription:
-      "Отправьте приглашение близкому. Он установит приложение или откроет ссылку и подключится к вашей семье под своим аккаунтом.",
+      "Отправьте приглашение близкому. Ссылка откроет приложение на iPhone или сайт-переходник, после чего он подключится к вашей семье под своим аккаунтом.",
     ownerOnly: "Только для владельца семьи",
     creatingInvite: "Готовим приглашение…",
     createInvite: "Пригласить",
@@ -173,7 +173,7 @@ export const familyCopy = {
     noMembers: "No family members are connected yet.",
     inviteTitle: "Invite to the app",
     inviteDescription:
-      "Send an invite to a family member. They can install the app or open the link and join your family with their own account.",
+      "Send an invite to a family member. The link opens the iPhone app or the website handoff page, then they join your family with their own account.",
     ownerOnly: "Family owner only",
     creatingInvite: "Preparing invite…",
     createInvite: "Invite",

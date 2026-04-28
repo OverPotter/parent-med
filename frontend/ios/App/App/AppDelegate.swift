@@ -10,6 +10,7 @@ final class AppViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(LiveActivitiesPlugin())
         bridge?.registerPluginInstance(RevenueCatPlugin())
         bridge?.registerPluginInstance(NativeFileSharePlugin())
+        bridge?.registerPluginInstance(PasswordAutofillPlugin())
     }
 }
 

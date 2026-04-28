@@ -7,11 +7,6 @@ import { PushNotifications } from "@capacitor/push-notifications";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppStore } from "@shared/store/useAppStore";
 import {
-  getExistingPushSubscription,
-  isPushSupported,
-  toPushSubscriptionPayload,
-} from "@shared/utils/pushNotifications";
-import {
   getCachedNativePushSubscriptionPayload,
   isNativePushOptedOut,
   isNativePushSupported,
@@ -126,18 +121,7 @@ export function PushSubscriptionSync() {
 
           await upsertPushSubscription(freshPayload);
           window.dispatchEvent(new Event("push:subscription-changed"));
-          return;
         }
-
-        if (!isPushSupported() || Notification.permission !== "granted") {
-          return;
-        }
-        const webSubscription = await getExistingPushSubscription();
-        if (!webSubscription || isCancelled) {
-          return;
-        }
-        await upsertPushSubscription(toPushSubscriptionPayload(webSubscription));
-        window.dispatchEvent(new Event("push:subscription-changed"));
       } catch (error) {
         appLog.dev("Push: синхронизация подписки пропущена", error);
       }

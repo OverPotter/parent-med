@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru" data-theme="light" style="background: #ebe4ff">
+<html lang="en" data-theme="light" style="background: #ebe4ff">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
@@ -12,17 +12,29 @@
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#ebe4ff" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PillPath" />
     <script>
       (() => {
-        const defaultTheme = "light";
+        const defaultTheme = "system";
         const lightBg = "#ebe4ff";
         const darkBg = "#1e1b2e";
         const storageKey = "pillpath-app";
         let themeMode = defaultTheme;
+        let language = null;
+
+        const parseLanguageTag = (tag) => {
+          if (!tag || typeof tag !== "string") {
+            return null;
+          }
+
+          const normalized = tag.trim().toLowerCase();
+          if (!normalized) {
+            return null;
+          }
+
+          return normalized.startsWith("ru") ? "ru" : "en";
+        };
 
         try {
           const raw = localStorage.getItem(storageKey);
@@ -35,9 +47,28 @@
             ) {
               themeMode = parsed.state.theme;
             }
+            if (parsed?.state?.language === "ru" || parsed?.state?.language === "en") {
+              language = parsed.state.language;
+            }
           }
         } catch {
           themeMode = defaultTheme;
+        }
+
+        if (language !== "ru" && language !== "en") {
+          const preferredLanguages = Array.isArray(navigator.languages)
+            ? navigator.languages
+            : [navigator.language];
+          for (const tag of preferredLanguages) {
+            const parsedLanguage = parseLanguageTag(tag);
+            if (parsedLanguage) {
+              language = parsedLanguage;
+              break;
+            }
+          }
+        }
+        if (language !== "ru" && language !== "en") {
+          language = "en";
         }
 
         const resolvedTheme =
@@ -47,6 +78,7 @@
               : "light"
             : themeMode;
         const bg = resolvedTheme === "dark" ? darkBg : lightBg;
+        document.documentElement.lang = language;
         document.documentElement.setAttribute("data-theme", resolvedTheme);
         document.documentElement.setAttribute("data-theme-mode", themeMode);
         document.documentElement.style.background = bg;

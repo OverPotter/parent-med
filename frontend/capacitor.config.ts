@@ -21,6 +21,7 @@ const config: CapacitorConfig & { packageClassList: string[] } = {
   packageClassList: [
     "KeyboardPlugin",
     "LiveActivitiesPlugin",
+    "PasswordAutofillPlugin",
     "PushNotificationsPlugin",
     "SecureStoragePlugin",
   ],
