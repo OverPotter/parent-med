@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Capacitor } from "@capacitor/core";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { login, register } from "@shared/api/auth";
 import { applySessionToClient } from "@shared/api/client";
@@ -8,12 +9,14 @@ import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analy
 import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
+import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks";
 import { useI18n } from "@shared/hooks/useI18n";
+import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
 import { useAppStore } from "@shared/store/useAppStore";
 
 type Mode = "register" | "login";
-const appBtnPrimaryClass =
-  "app-btn-primary-md soft-button-primary inline-flex items-center justify-center px-4";
+const INVITE_TOKEN_STORAGE_KEY = "pm_pending_family_invite_token_v1";
+const INVITE_POST_INSTALL_KEY = "pm_pending_family_invite_post_install_v1";
 
 function roleLabel(role: string): string {
   return role === "admin" ? "Администратор семьи" : "Участник семьи";
@@ -24,7 +27,10 @@ export function JoinFamilyPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isNativeRuntime = Capacitor.isNativePlatform();
+  const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
   const token = searchParams.get("token")?.trim() ?? "";
+  const appStoreUrl = getAppStoreUrl();
   const [mode, setMode] = useState<Mode>("register");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,6 +42,7 @@ export function JoinFamilyPage() {
   const accountEmail = useAppStore((s) => s.accountEmail);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const hasAttemptedPostInstallOpenRef = useRef(false);
 
   const {
     data: invitePreview,
@@ -159,6 +166,171 @@ export function JoinFamilyPage() {
   const passwordsMismatch =
     mode === "register" && passwordConfirm.length > 0 && password !== passwordConfirm;
   const isRegisterMode = mode === "register";
+  const nativeJoinFamilyUrl = buildNativeAppUrl(
+    token ? `/join-family?token=${encodeURIComponent(token)}` : "/join-family"
+  );
+  const primaryJoinFamilyHref = appStoreUrl || nativeJoinFamilyUrl;
+
+  useEffect(() => {
+    if (!isPublicWebsiteMode || !token || typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(INVITE_TOKEN_STORAGE_KEY, token);
+    } catch {
+      // Best effort only: invite preview should still work without storage.
+    }
+  }, [isPublicWebsiteMode, token]);
+
+  useEffect(() => {
+    if (
+      !isPublicWebsiteMode ||
+      !token ||
+      !appStoreUrl ||
+      typeof window === "undefined" ||
+      typeof document === "undefined"
+    ) {
+      return;
+    }
+
+    const tryOpenInstalledApp = () => {
+      if (document.visibilityState !== "visible" || hasAttemptedPostInstallOpenRef.current) {
+        return;
+      }
+
+      let savedToken: string | null = null;
+      try {
+        savedToken = window.localStorage.getItem(INVITE_POST_INSTALL_KEY);
+      } catch {
+        return;
+      }
+
+      if (savedToken !== token) {
+        return;
+      }
+
+      hasAttemptedPostInstallOpenRef.current = true;
+      window.localStorage.removeItem(INVITE_POST_INSTALL_KEY);
+      window.setTimeout(() => {
+        window.location.assign(nativeJoinFamilyUrl);
+      }, 250);
+    };
+
+    tryOpenInstalledApp();
+    window.addEventListener("pageshow", tryOpenInstalledApp);
+    document.addEventListener("visibilitychange", tryOpenInstalledApp);
+
+    return () => {
+      window.removeEventListener("pageshow", tryOpenInstalledApp);
+      document.removeEventListener("visibilitychange", tryOpenInstalledApp);
+    };
+  }, [appStoreUrl, isPublicWebsiteMode, nativeJoinFamilyUrl, token]);
+
+  const handleAppStoreInviteInstallStart = () => {
+    if (!isPublicWebsiteMode || !appStoreUrl || !token || typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(INVITE_POST_INSTALL_KEY, token);
+    } catch {
+      // Best effort only: explicit fallback button remains available.
+    }
+  };
+
+  if (isPublicWebsiteMode) {
+    return (
+      <div className="min-w-0 space-y-6">
+        <PageIntro
+          title={
+            language === "ru" ? "Приглашение открывается в приложении" : "This invite continues in the app"
+          }
+          subtitle={
+            language === "ru"
+              ? "Сайт показывает, куда ведёт ссылка. Подключение к семье, вход и регистрация происходят внутри PillPath для iPhone."
+              : "The website shows where the link leads. Joining a family, signing in, and registration happen inside the PillPath iPhone app."
+          }
+          eyebrow={language === "ru" ? "Приглашение в семью" : "Family invite"}
+          compactOnMobile
+          hideOnMobile
+        />
+
+        <Surface className="p-5 sm:p-6">
+          <p className="app-card-title">
+            {language === "ru" ? "Куда ведёт ссылка" : "Where this link leads"}
+          </p>
+          {isInviteLoading ? (
+            <p className="mt-3 text-sm text-muted">
+              {language === "ru" ? "Проверяем приглашение…" : "Checking the invite…"}
+            </p>
+          ) : inviteErrorMessage ? (
+            <p className="soft-note-danger mt-3">{inviteErrorMessage}</p>
+          ) : invitePreview ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <InfoCard
+                label={language === "ru" ? "Семья" : "Family"}
+                value={invitePreview.familyName}
+              />
+              <InfoCard
+                label={language === "ru" ? "Роль по ссылке" : "Invite role"}
+                value={roleLabel(invitePreview.familyRole)}
+              />
+              <InfoCard
+                label={language === "ru" ? "Действует до" : "Valid until"}
+                value={new Date(invitePreview.expiresAt).toLocaleString(
+                  language === "ru" ? "ru-RU" : "en-US"
+                )}
+              />
+            </div>
+          ) : null}
+        </Surface>
+
+        <Surface className="auth-v3-handoff-card p-5 sm:p-6">
+          <p className="app-card-title">
+            {language === "ru" ? "Что делать дальше" : "What to do next"}
+          </p>
+          <div className="auth-v3-handoff-stack mt-4">
+            <p className="text-sm leading-7 text-muted">
+              {language === "ru"
+                ? "Откройте PillPath на iPhone, чтобы войти, зарегистрироваться или принять приглашение в семью."
+                : "Open PillPath on iPhone to sign in, create your account, or accept the family invite."}
+            </p>
+            <a
+              href={primaryJoinFamilyHref}
+              onClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
+              target={appStoreUrl ? "_blank" : undefined}
+              rel={appStoreUrl ? "noreferrer" : undefined}
+              className="auth-v3-submit auth-v3-handoff-primary text-center"
+            >
+              {appStoreUrl
+                ? language === "ru"
+                  ? "Скачать в App Store"
+                  : "Download on the App Store"
+                : language === "ru"
+                  ? "Открыть приложение"
+                  : "Open app"}
+            </a>
+            {appStoreUrl ? (
+              <>
+                <a
+                  href={nativeJoinFamilyUrl}
+                  className="auth-v3-handoff-secondary text-center"
+                >
+                  {language === "ru" ? "Я уже установил приложение" : "I already installed the app"}
+                </a>
+                <div className="soft-note-info rounded-2xl px-4 py-3 text-sm leading-6">
+                  {language === "ru"
+                    ? "Ссылка-приглашение сохранена в этой странице. После установки вернитесь сюда и нажмите «Я уже установил приложение», чтобы открыть PillPath с этим приглашением."
+                    : "This invite link stays on this page. After installation, come back here and tap “I already installed the app” to open PillPath with the same invite."}
+                </div>
+              </>
+            ) : null}
+          </div>
+        </Surface>
+      </div>
+    );
+  }
 
   return (
     <div className="min-w-0 space-y-6">
@@ -325,7 +497,7 @@ export function JoinFamilyPage() {
                 (isRegisterMode ? password.length < 8 : password.length === 0) ||
                 (isRegisterMode && (!passwordConfirm || password !== passwordConfirm))
               }
-              className={`${appBtnPrimaryClass} w-full disabled:opacity-50`}
+              className="auth-v3-submit w-full disabled:opacity-50"
             >
               {mode === "login"
                 ? loginMutation.isPending

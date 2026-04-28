@@ -44,29 +44,6 @@ export function ThemeSync() {
   return null;
 }
 
-export function DisplayModeSync() {
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(display-mode: standalone)");
-
-    const applyDisplayMode = () => {
-      const isStandalone =
-        mediaQuery.matches ||
-        Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
-      document.documentElement.setAttribute(
-        "data-display-mode",
-        isStandalone ? "standalone" : "browser"
-      );
-    };
-
-    applyDisplayMode();
-    mediaQuery.addEventListener("change", applyDisplayMode);
-
-    return () => mediaQuery.removeEventListener("change", applyDisplayMode);
-  }, []);
-
-  return null;
-}
-
 export function RuntimePlatformSync() {
   useEffect(() => {
     const root = document.documentElement;

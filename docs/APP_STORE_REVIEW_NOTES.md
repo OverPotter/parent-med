@@ -4,7 +4,7 @@
 
 ## 0) Fill Before Submit
 
-- Замените все значения `TBD_*`.
+- Укажите реальный контакт для команды App Review в секции `Contact For Review Team`.
 - Проверьте, что demo-аккаунт активен и не требует дополнительных шагов.
 
 ## 1) Demo Access (Multi-Region)
@@ -57,17 +57,18 @@
 
 ## 6) Push Notifications (Current Build)
 
-- В текущей версии используются web push сценарии внутри приложения.
-- Если в тестовом окружении push недоступен, основные функции приложения проверяются без push.
+- В текущей iOS-сборке используются native push notifications через `APNs` и Capacitor Push Notifications.
+- Основные пользовательские сценарии приложения можно проверить без push-разрешения.
+- Если push в review-окружении недоступен, это не блокирует проверку auth, children, illness, pillbox, family и legal flows.
 
 ## 7) Contact For Review Team
 
-- Name: `TBD_CONTACT_NAME`
-- Email: `TBD_CONTACT_EMAIL`
-- Telegram/Phone (optional): `TBD_CONTACT_OPTIONAL`
+- Name: `SET_BEFORE_SUBMIT`
+- Email: `SET_BEFORE_SUBMIT`
+- Telegram/Phone (optional): `SET_BEFORE_SUBMIT`
 
 ## 8) Notes
 
-- Это мобильная iOS-обертка существующего продукта с тем же функционалом, что и web/PWA версия.
+- Это iPhone-приложение с public website для landing, invite links и legal pages. Основной продуктовый сценарий проходит внутри iOS app.
 - Если ревью требует отдельный test user или reset демо-данных, напишите на контакт выше.
 - Публикация планируется не только в RU, но и в US/EU, поэтому ревью может использовать любой из demo-аккаунтов выше.

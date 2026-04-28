@@ -5,6 +5,7 @@ const configPath = resolve("ios/App/App/capacitor.config.json");
 const requiredPlugins = [
   "KeyboardPlugin",
   "LiveActivitiesPlugin",
+  "PasswordAutofillPlugin",
   "PushNotificationsPlugin",
   "SecureStoragePlugin",
 ];

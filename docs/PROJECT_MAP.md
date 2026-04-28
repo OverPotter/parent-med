@@ -73,11 +73,15 @@ Vite proxy:
 - `VITE_TERMS_OF_USE_URL`
 - `VITE_SUPPORT_URL`
 - `VITE_MARKETING_SITE_URL`
+- `VITE_APP_STORE_URL`
 - `VITE_HITKEEP_SCRIPT_URL`
 
 Важно:
 - `VITE_*` вшиваются в build
 - после изменения `VITE_API_URL` фронт нужно пересобирать
+- `VITE_APP_STORE_URL` уже заведен для текущего app record
+- текущий формат: `https://apps.apple.com/app/id6762408566`
+- после добавления `VITE_APP_STORE_URL` нужен новый frontend build/deploy, потому что это build-time env
 
 ### iOS / Capacitor
 
@@ -90,6 +94,25 @@ Vite proxy:
 - `webDir = "www"`
 
 Backend URL там не задаётся. Он приходит из frontend env на этапе сборки web-части.
+
+### App Store URL
+
+Это не `bundle id` и не `com.overpotter.pillpath`.
+
+Нужен именно публичный URL карточки приложения в App Store, например:
+
+```text
+https://apps.apple.com/app/id6762408566
+```
+
+Где используется:
+- public website handoff для `invite`
+- public website handoff для `auth`
+- public website handoff для `recover-password`
+- `app-only` redirect screens, когда человек открыл внутренний product route вне iPhone app
+
+Точка чтения во frontend:
+- [frontend/src/shared/config/nativeAppLinks.ts](/Users/artem/project/parent-med/frontend/src/shared/config/nativeAppLinks.ts:9)
 
 ## Как запускать проект
 

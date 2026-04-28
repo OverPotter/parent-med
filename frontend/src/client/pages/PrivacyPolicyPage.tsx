@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom";
+import { useRef } from "react";
+import { useHistoryBackFallback } from "@client/pages/legal/useHistoryBackFallback";
+import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { PageIntro } from "@shared/components/PageIntro";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -6,9 +8,15 @@ import { useI18n } from "@shared/hooks/useI18n";
 export function PrivacyPolicyPage() {
   const { language } = useI18n();
   const updatedAt = "08.04.2026";
+  const handleBack = useHistoryBackFallback("/legal");
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   return (
-    <div className="legal-doc-page app-safe-top-standalone mx-auto w-full max-w-3xl space-y-6 sm:space-y-8 px-3 pb-6 sm:px-0">
+    <div
+      ref={rootRef}
+      className="legal-doc-page app-safe-top-standalone mx-auto w-full max-w-3xl space-y-6 sm:space-y-8 px-3 pb-6 sm:px-0"
+    >
+      <IosEdgeBackGesture isEnabled onBack={handleBack} targetRef={rootRef} />
       <PageIntro
         title={language === "ru" ? "Политика конфиденциальности" : "Privacy Policy"}
         subtitle={
@@ -17,12 +25,13 @@ export function PrivacyPolicyPage() {
             : "How we process and protect data in PillPath."
         }
         action={
-          <Link
-            to="/legal"
+          <button
+            type="button"
+            onClick={handleBack}
             className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
             {language === "ru" ? "← Правовая информация" : "← Legal information"}
-          </Link>
+          </button>
         }
         compactOnMobile
         hideOnMobile
@@ -31,12 +40,13 @@ export function PrivacyPolicyPage() {
 
       <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
         <div className="app-mobile-section-intro">
-          <Link
-            to="/legal"
+          <button
+            type="button"
+            onClick={handleBack}
             className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
             {language === "ru" ? "← Правовая информация" : "← Legal information"}
-          </Link>
+          </button>
           <h1 className="app-mobile-section-intro__title">
             {language === "ru" ? "Политика конфиденциальности" : "Privacy Policy"}
           </h1>
@@ -116,8 +126,8 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             {language === "ru"
-              ? "От устройства и браузера, когда вы включаете push-уведомления или используете приложение в web/PWA-режиме."
-              : "From your device and browser when you enable push notifications or use the app in web/PWA mode."}
+              ? "От устройства и браузера, когда вы включаете push-уведомления, открываете публичный сайт или используете приложение на iPhone."
+              : "From your device and browser when you enable push notifications, open the public website, or use the app on iPhone."}
           </li>
           <li>
             {language === "ru"

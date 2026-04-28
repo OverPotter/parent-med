@@ -1,6 +1,6 @@
 /** Роутинг: admin / client. */
 
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
 import { FAMILY_ACCESS_REFRESH_MS } from "@shared/hooks/useFamilyAccessQueryOptions";
@@ -18,7 +18,6 @@ import { HitKeepBridge } from "@shared/analytics";
 import { NativeUnauthedBootReady } from "@/app/boot/NativeUnauthedBootReady";
 import { RouteFallback, useDeferredNonCriticalStartupReady } from "@/app/boot/state";
 import {
-  DisplayModeSync,
   IosSafeAreaSync,
   RuntimePlatformSync,
   ThemeSync,
@@ -41,12 +40,18 @@ import { DisplayNameOnboardingOverlay } from "@client/components/DisplayNameOnbo
 import { AuthPage } from "@client/pages/AuthPage";
 import { appLog } from "@shared/utils/appLog";
 import { shouldClearSessionForAuthError } from "@shared/api/authSessionErrors";
+import { shouldUseAppEntryWebMode } from "@shared/runtime/publicWebsiteMode";
 import { cleanupDeviceSessionArtifacts } from "@shared/utils/sessionCleanup";
 const ClientLayout = lazy(() =>
   import("@client/layout/ClientLayout").then((module) => ({ default: module.ClientLayout }))
 );
 const AccountPage = lazy(() =>
   import("@client/pages/AccountPage").then((module) => ({ default: module.AccountPage }))
+);
+const AppOnlyRedirectPage = lazy(() =>
+  import("@client/pages/AppOnlyRedirectPage").then((module) => ({
+    default: module.AppOnlyRedirectPage,
+  }))
 );
 const SettingsPage = lazy(() =>
   import("@client/pages/SettingsPage").then((module) => ({ default: module.SettingsPage }))
@@ -254,18 +259,8 @@ export default function App() {
   const hydrated = useAppStore((s) => s.hydrated);
   const setHydrated = useAppStore((s) => s.setHydrated);
   const isNativeRuntime = Capacitor.isNativePlatform();
-  const isStandalonePwa = useMemo(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-    return (
-      window.matchMedia("(display-mode: standalone)").matches ||
-      Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
-    );
-  }, []);
-  const isLocalhostWeb =
-    typeof window !== "undefined" && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
-  const shouldUseAppEntryRoute = isNativeRuntime || isStandalonePwa || isLocalhostWeb;
+  const shouldUseAppEntryRoute = isNativeRuntime || shouldUseAppEntryWebMode();
+  const isPublicWebsiteMode = !isNativeRuntime && !shouldUseAppEntryWebMode();
   const isNonCriticalStartupReady = useDeferredNonCriticalStartupReady();
   const hasSession = Boolean(authToken || accountId);
   const shouldMountClientRuntime = isNonCriticalStartupReady && hasSession && role !== "admin";
@@ -344,7 +339,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {!isNativeRuntime && !isStandalonePwa ? (
+      {!isNativeRuntime ? (
         <a href="#app-route-root" className="a11y-skip-link">
           {language === "ru" ? "Перейти к содержимому" : "Skip to content"}
         </a>
@@ -357,7 +352,6 @@ export default function App() {
       <NativeUnauthedBootReady />
       {isNonCriticalStartupReady ? <HitKeepBridge /> : null}
       <ThemeSync />
-      <DisplayModeSync />
       <RouteScrollReset />
       {!isNativeRuntime && import.meta.env.DEV ? <MobileInteractionDiagnostics /> : null}
       {!isNativeRuntime ? <WarmRouteChunks /> : null}
@@ -393,66 +387,88 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </>
             ) : role === "admin" ? (
-              <>
-                <Route path="/" element={<AdminLayout />}>
-                  <Route index element={<AdminHomePage />} />
-                  <Route path="auth" element={<Navigate to="/" replace />} />
-                  <Route path="recover-password" element={<Navigate to="/" replace />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Route>
-              </>
+              isPublicWebsiteMode ? (
+                <>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/legal" element={<LegalPage />} />
+                  <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/legal/terms" element={<TermsOfUsePage />} />
+                  <Route path="/legal/support" element={<SupportPage />} />
+                  <Route path="*" element={<AppOnlyRedirectPage />} />
+                </>
+              ) : (
+                <>
+                  <Route path="/" element={<AdminLayout />}>
+                    <Route index element={<AdminHomePage />} />
+                    <Route path="auth" element={<Navigate to="/" replace />} />
+                    <Route path="recover-password" element={<Navigate to="/" replace />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Route>
+                </>
+              )
             ) : (
-              <>
-                <Route path="/" element={<ClientLayout />}>
-                  <Route path="auth" element={<Navigate to="/" replace />} />
-                  <Route path="recover-password" element={<RecoverPasswordPage />} />
-                  <Route index element={<ClientStartPage />} />
-                  <Route path="workspace" element={<ClientWorkspacePage />} />
-                  <Route path="home" element={<ClientHomePage />} />
-                  <Route path="intro" element={<Navigate to="/home" replace />} />
-                  <Route path="family" element={<FamilyPage />} />
-                  <Route path="family/members" element={<FamilyMembersPage />} />
-                  <Route
-                    path="family/members/:memberAccountId/access"
-                    element={<FamilyMemberAccessPage />}
-                  />
-                  <Route path="join-family" element={<JoinFamilyPage />} />
-                  <Route path="children" element={<ChildrenPage />} />
-                  <Route path="children/new" element={<ChildCreatePage />} />
-                  <Route path="children/:childId/edit" element={<ChildEditPage />} />
-                  <Route path="pillbox" element={<PillboxPage />} />
-                  <Route path="children/:childId" element={<ChildProfilePage />} />
-                  <Route path="children/:childId/sleep" element={<ChildSleepPage />} />
-                  <Route path="children/:childId/feeding" element={<ChildFeedingPage />} />
-                  <Route
-                    path="children/:childId/feeding/new"
-                    element={<ChildFeedingCreatePage />}
-                  />
-                  <Route path="children/:childId/weight" element={<ChildWeightPage />} />
-                  <Route path="children/:childId/height" element={<ChildHeightPage />} />
-                  <Route path="children/:childId/calendar" element={<ChildCalendarPage />} />
-                  <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
-                  <Route path="illnesses/history" element={<IllnessHistoryPage />} />
-                  <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
-                  <Route path="medicine-cabinet/add" element={<MedicineCabinetPage />} />
-                  <Route path="medicine-cabinet/add/:mode" element={<MedicineCabinetPage />} />
-                  <Route
-                    path="medicine-cabinet/:medicineId/new-pack"
-                    element={<MedicineCabinetPage />}
-                  />
-                  <Route path="more" element={<MorePage />} />
-                  <Route path="feedback" element={<FeedbackPage />} />
-                  <Route path="legal" element={<LegalPage />} />
-                  <Route path="legal/privacy" element={<PrivacyPolicyPage />} />
-                  <Route path="legal/terms" element={<TermsOfUsePage />} />
-                  <Route path="legal/support" element={<SupportPage />} />
-                  <Route path="account" element={<AccountPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                  <Route path="about" element={<AboutPage />} />
-                  <Route path="children/:childId/illness" element={<ChildIllnessPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Route>
-              </>
+              isPublicWebsiteMode ? (
+                <>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/legal" element={<LegalPage />} />
+                  <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/legal/terms" element={<TermsOfUsePage />} />
+                  <Route path="/legal/support" element={<SupportPage />} />
+                  <Route path="*" element={<AppOnlyRedirectPage />} />
+                </>
+              ) : (
+                <>
+                  <Route path="/" element={<ClientLayout />}>
+                    <Route path="auth" element={<Navigate to="/" replace />} />
+                    <Route path="recover-password" element={<RecoverPasswordPage />} />
+                    <Route index element={<ClientStartPage />} />
+                    <Route path="workspace" element={<ClientWorkspacePage />} />
+                    <Route path="home" element={<ClientHomePage />} />
+                    <Route path="intro" element={<Navigate to="/home" replace />} />
+                    <Route path="family" element={<FamilyPage />} />
+                    <Route path="family/members" element={<FamilyMembersPage />} />
+                    <Route
+                      path="family/members/:memberAccountId/access"
+                      element={<FamilyMemberAccessPage />}
+                    />
+                    <Route path="join-family" element={<JoinFamilyPage />} />
+                    <Route path="children" element={<ChildrenPage />} />
+                    <Route path="children/new" element={<ChildCreatePage />} />
+                    <Route path="children/:childId/edit" element={<ChildEditPage />} />
+                    <Route path="pillbox" element={<PillboxPage />} />
+                    <Route path="children/:childId" element={<ChildProfilePage />} />
+                    <Route path="children/:childId/sleep" element={<ChildSleepPage />} />
+                    <Route path="children/:childId/feeding" element={<ChildFeedingPage />} />
+                    <Route
+                      path="children/:childId/feeding/new"
+                      element={<ChildFeedingCreatePage />}
+                    />
+                    <Route path="children/:childId/weight" element={<ChildWeightPage />} />
+                    <Route path="children/:childId/height" element={<ChildHeightPage />} />
+                    <Route path="children/:childId/calendar" element={<ChildCalendarPage />} />
+                    <Route path="illnesses/active" element={<ActiveIllnessesPage />} />
+                    <Route path="illnesses/history" element={<IllnessHistoryPage />} />
+                    <Route path="medicine-cabinet" element={<MedicineCabinetPage />} />
+                    <Route path="medicine-cabinet/add" element={<MedicineCabinetPage />} />
+                    <Route path="medicine-cabinet/add/:mode" element={<MedicineCabinetPage />} />
+                    <Route
+                      path="medicine-cabinet/:medicineId/new-pack"
+                      element={<MedicineCabinetPage />}
+                    />
+                    <Route path="more" element={<MorePage />} />
+                    <Route path="feedback" element={<FeedbackPage />} />
+                    <Route path="legal" element={<LegalPage />} />
+                    <Route path="legal/privacy" element={<PrivacyPolicyPage />} />
+                    <Route path="legal/terms" element={<TermsOfUsePage />} />
+                    <Route path="legal/support" element={<SupportPage />} />
+                    <Route path="account" element={<AccountPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                    <Route path="about" element={<AboutPage />} />
+                    <Route path="children/:childId/illness" element={<ChildIllnessPage />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Route>
+                </>
+              )
             )}
           </Routes>
         </div>

@@ -1,5 +1,4 @@
 /// <reference types="vite/client" />
-/// <reference types="vite-plugin-pwa/client" />
 
 interface Window {
   hk?: { event?: (name: string, props?: Record<string, unknown>) => void };
@@ -12,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_APP_SITE_URL?: string;
   /** Маркетинговый лендинг (абсолютный URL) для открытия из native auth-экрана. */
   readonly VITE_MARKETING_SITE_URL?: string;
+  /** Public App Store URL for the iPhone app. */
+  readonly VITE_APP_STORE_URL?: string;
   /** Полный URL скрипта HitKeep, например http://localhost:8080/hk.js. Без переменной аналитика отключена. */
   readonly VITE_HITKEEP_SCRIPT_URL?: string;
   /** Public iOS SDK key from RevenueCat project settings. */
