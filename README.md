@@ -21,7 +21,6 @@
 4. [docs/DEVELOPMENT_GUARDRAILS.md](./docs/DEVELOPMENT_GUARDRAILS.md)
 5. [SUBSCRIPTION_ROLLOUT_PLAN.md](./SUBSCRIPTION_ROLLOUT_PLAN.md) — только для детальной матрицы подписки и downgrade
 6. [docs/APP_MIGRATION_TODO.md](./docs/APP_MIGRATION_TODO.md) и [docs/APP_STORE_REVIEW_NOTES.md](./docs/APP_STORE_REVIEW_NOTES.md) — только для release / App Store work
-
 ## Команды
 
 `make help` — полный список. Часто нужное:
