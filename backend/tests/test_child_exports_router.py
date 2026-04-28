@@ -83,7 +83,7 @@ def test_child_export_archive_route_returns_zip() -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/zip"
-    assert "filename=\"____exports.zip\"" in response.headers["content-disposition"]
+    assert 'filename="____exports.zip"' in response.headers["content-disposition"]
     assert "%D0%9C%D0%B8%D1%8F_exports.zip" in response.headers["content-disposition"]
 
 

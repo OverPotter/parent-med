@@ -304,11 +304,11 @@ async def test_analytics_summary_export_contains_human_metrics() -> None:
     assert "Показатель,Значение" in export_file.content
     assert "Ребёнок,Мия" in export_file.content
     assert "Возраст,3 года" in export_file.content
-    assert "Последний записанный вес,\"12,8 кг\"" in export_file.content
+    assert 'Последний записанный вес,"12,8 кг"' in export_file.content
     assert "Последний записанный рост,88 см" in export_file.content
     assert "Средний сон в сутки,5 ч" in export_file.content
-    assert "Кормлений в среднем за день,\"0,5\"" in export_file.content
-    assert "Максимальная температура,\"38,6 °C\"" in export_file.content
+    assert 'Кормлений в среднем за день,"0,5"' in export_file.content
+    assert 'Максимальная температура,"38,6 °C"' in export_file.content
     assert "Записанных приёмов лекарств,1" in export_file.content
 
 
@@ -840,14 +840,8 @@ async def test_child_illness_export_contains_episode_timeline() -> None:
     )
 
     assert export_file.filename == "Mia_child_illness.csv"
-    assert (
-        "Child,Mia"
-        in export_file.content
-    )
-    assert (
-        "Period,All time"
-        in export_file.content
-    )
+    assert "Child,Mia" in export_file.content
+    assert "Period,All time" in export_file.content
     assert (
         "Episode,Event,Date,Time,Value,Medicine,Recorded by,Status,Details,Note"
         in export_file.content
@@ -857,14 +851,8 @@ async def test_child_illness_export_contains_episode_timeline() -> None:
         ",Temperature,2026-04-22,18:00,38.4 °C,,Mom,,Axillary,Before medicine"
         in export_file.content
     )
-    assert (
-        ",Medication,2026-04-22,18:10,5 ml,Ibuprofen,Mom,,Fever reducer,"
-        in export_file.content
-    )
-    assert (
-        ",Comment,2026-04-22,21:00,,,Mom,,,Fell asleep earlier than usual"
-        in export_file.content
-    )
+    assert ",Medication,2026-04-22,18:10,5 ml,Ibuprofen,Mom,,Fever reducer," in export_file.content
+    assert ",Comment,2026-04-22,21:00,,,Mom,,,Fell asleep earlier than usual" in export_file.content
 
 
 @pytest.mark.asyncio
@@ -910,7 +898,7 @@ async def test_child_illness_export_keeps_overlapping_episode_started_before_per
     )
 
     assert "Затяжная температура,,10.04.2026" in export_file.content
-    assert ",Температура,21.04.2026,09:00,\"38,2 °C\"" in export_file.content
+    assert ',Температура,21.04.2026,09:00,"38,2 °C"' in export_file.content
 
 
 @pytest.mark.asyncio

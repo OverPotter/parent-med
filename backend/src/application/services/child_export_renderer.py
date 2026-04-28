@@ -156,9 +156,7 @@ class ChildExportRenderer:
         last_height = max(payload.heights, key=lambda item: item.measured_at, default=None)
         sleep_minutes = sum(self._sleep_duration_minutes(item) for item in payload.sleeps)
         formula_volume = sum(item.formula_volume_ml or 0 for item in payload.feedings)
-        temperatures = [
-            item for bundle in payload.episode_bundles for item in bundle.temperatures
-        ]
+        temperatures = [item for bundle in payload.episode_bundles for item in bundle.temperatures]
         administrations = [
             item for bundle in payload.episode_bundles for item in bundle.administrations
         ]
@@ -528,9 +526,7 @@ class ChildExportRenderer:
     def _resolve_sleep_kind(self, session: SleepSession) -> Literal["night", "day"]:
         if session.ended_at is None:
             return (
-                "night"
-                if (session.started_at.hour >= 21 or session.started_at.hour < 6)
-                else "day"
+                "night" if (session.started_at.hour >= 21 or session.started_at.hour < 6) else "day"
             )
 
         if session.ended_at.date() != session.started_at.date():

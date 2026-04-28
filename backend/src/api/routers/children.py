@@ -20,10 +20,7 @@ def _build_content_disposition(filename: str) -> str:
     ascii_fallback = "".join(char if ord(char) < 128 else "_" for char in filename)
     ascii_fallback = ascii_fallback or "export"
     quoted_filename = quote(filename)
-    return (
-        f"attachment; filename=\"{ascii_fallback}\"; "
-        f"filename*=UTF-8''{quoted_filename}"
-    )
+    return f'attachment; filename="{ascii_fallback}"; ' f"filename*=UTF-8''{quoted_filename}"
 
 
 @router.get("/management", response_model=list[ChildResponseDto])
@@ -67,9 +64,7 @@ async def export_child_archive(
         )
         return Response(
             content=workbook.content,
-            media_type=(
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            ),
+            media_type=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
             headers={"Content-Disposition": _build_content_disposition(workbook.filename)},
         )
 
@@ -110,9 +105,7 @@ async def export_child_csv(
         )
         return Response(
             content=export_file.content,
-            media_type=(
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            ),
+            media_type=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
             headers={"Content-Disposition": _build_content_disposition(export_file.filename)},
         )
 

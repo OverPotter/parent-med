@@ -156,9 +156,7 @@ class ChildExportService:
             required_sections=self._required_sections_for_export(export_kind),
         )
         sheet_rows = self._parse_csv_rows(self._renderer.render_csv(export_kind, payload))
-        workbook_bytes = self._build_xlsx_bytes(
-            [(self._sheet_title(export_kind), sheet_rows)]
-        )
+        workbook_bytes = self._build_xlsx_bytes([(self._sheet_title(export_kind), sheet_rows)])
         filename = f"{self._sanitize_filename_part(payload.child.name)}_{export_kind}.xlsx"
         return ChildExportBinaryFile(filename=filename, content=workbook_bytes)
 
@@ -493,7 +491,7 @@ class ChildExportService:
             '<Override PartName="/xl/styles.xml" '
             'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
             f"{sheet_overrides}"
-            '</Types>'
+            "</Types>"
         )
 
     def _xlsx_root_rels_xml(self) -> str:
@@ -504,14 +502,12 @@ class ChildExportService:
             "Type="
             '"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" '
             'Target="xl/workbook.xml"/>'
-            '</Relationships>'
+            "</Relationships>"
         )
 
     def _xlsx_workbook_xml(self, sheets: list[tuple[str, list[list[str]]]]) -> str:
         sheet_entries = "".join(
-            (
-                f'<sheet name="{escape(title[:31])}" sheetId="{index}" r:id="rId{index}"/>'
-            )
+            (f'<sheet name="{escape(title[:31])}" sheetId="{index}" r:id="rId{index}"/>')
             for index, (title, _) in enumerate(sheets, start=1)
         )
         return (
@@ -519,7 +515,7 @@ class ChildExportService:
             '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
             'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             f"<sheets>{sheet_entries}</sheets>"
-            '</workbook>'
+            "</workbook>"
         )
 
     def _xlsx_workbook_rels_xml(self, sheet_count: int) -> str:
@@ -540,7 +536,7 @@ class ChildExportService:
             f'<Relationship Id="rId{style_relationship_id}" '
             'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" '
             'Target="styles.xml"/>'
-            '</Relationships>'
+            "</Relationships>"
         )
 
     def _xlsx_styles_xml(self) -> str:
@@ -550,17 +546,17 @@ class ChildExportService:
             '<fonts count="2">'
             '<font><sz val="11"/><name val="Calibri"/></font>'
             '<font><b/><sz val="11"/><name val="Calibri"/></font>'
-            '</fonts>'
+            "</fonts>"
             '<fills count="1"><fill><patternFill patternType="none"/></fill></fills>'
             '<borders count="1"><border/></borders>'
             '<cellStyleXfs count="1">'
             '<xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>'
-            '</cellStyleXfs>'
+            "</cellStyleXfs>"
             '<cellXfs count="2">'
             '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
             '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
-            '</cellXfs>'
-            '</styleSheet>'
+            "</cellXfs>"
+            "</styleSheet>"
         )
 
     def _xlsx_sheet_xml(self, rows: list[list[str]]) -> str:
@@ -594,9 +590,9 @@ class ChildExportService:
         return (
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            f'<cols>{cols_xml}</cols>'
+            f"<cols>{cols_xml}</cols>"
             f'<sheetData>{"".join(sheet_rows_xml)}</sheetData>'
-            '</worksheet>'
+            "</worksheet>"
         )
 
     def _xlsx_column_name(self, index: int) -> str:
