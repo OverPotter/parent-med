@@ -80,8 +80,7 @@ export function SettingsLiveActivitiesSection({
       key: "illness",
       title: tSettings(language, "liveActivitiesIllnessPreviewTitle"),
       timer: language === "ru" ? "3 день" : "Day 3",
-      status:
-        language === "ru" ? "Маша · Дать Нурофен в 23:10" : "Mia · Give Nurofen at 11:10 PM",
+      status: language === "ru" ? "Маша · Дать Нурофен в 23:10" : "Mia · Give Nurofen at 11:10 PM",
       accentClassName: "from-[#38A39A] via-[#38A39A] to-[#38A39A]",
       accentSurfaceClassName: "bg-[#38A39A]/16 text-[#38A39A] border-[#38A39A]/14",
       surfaceClassName:
@@ -283,9 +282,7 @@ function LiveActivityPreviewCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
-            <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">
-              {title}
-            </p>
+            <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{title}</p>
             <p className="shrink-0 text-[1.1rem] font-semibold tracking-[-0.04em] text-slate-950 dark:text-white">
               {timer}
             </p>

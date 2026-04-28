@@ -78,7 +78,10 @@ function normalizeLiveActivityStartedAt(value: string | null | undefined): strin
   return new Date(timestamp).toISOString();
 }
 
-async function safeStopLiveActivity(args: { kind: "sleep" | "feeding" | "illness"; itemId: string }) {
+async function safeStopLiveActivity(args: {
+  kind: "sleep" | "feeding" | "illness";
+  itemId: string;
+}) {
   try {
     await stopNativeLiveActivity(args);
   } catch (error) {
@@ -130,7 +133,6 @@ function joinLiveActivityParts(parts: Array<string | null | undefined>) {
     .join(" · ");
 }
 
-
 function buildSinglePlanNextDose(
   plan:
     | Pick<
@@ -169,16 +171,11 @@ function buildSinglePlanNextDose(
   };
 }
 
-
 function buildSleepStatusLabel(startedAt: string, language: "ru" | "en") {
   const timeLabel = formatTimeLabel(startedAt, language);
   return joinLiveActivityParts([
     language === "ru" ? "Сейчас спит" : "Sleeping now",
-    timeLabel
-      ? language === "ru"
-        ? `с ${timeLabel}`
-        : `since ${timeLabel}`
-      : null,
+    timeLabel ? (language === "ru" ? `с ${timeLabel}` : `since ${timeLabel}`) : null,
   ]);
 }
 
@@ -186,11 +183,7 @@ function buildFeedingStatusLabel(startedAt: string, language: "ru" | "en") {
   const timeLabel = formatTimeLabel(startedAt, language);
   return joinLiveActivityParts([
     language === "ru" ? "Кормление идёт" : "Feeding now",
-    timeLabel
-      ? language === "ru"
-        ? `с ${timeLabel}`
-        : `since ${timeLabel}`
-      : null,
+    timeLabel ? (language === "ru" ? `с ${timeLabel}` : `since ${timeLabel}`) : null,
   ]);
 }
 
@@ -292,7 +285,10 @@ export async function syncIllnessLiveActivity(
     "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"
   > | null = null,
   medicationPlans: Array<
-    Pick<EpisodeMedicationPlan, "minIntervalMinutes" | "customMedicineName" | "householdMedicineId"> & {
+    Pick<
+      EpisodeMedicationPlan,
+      "minIntervalMinutes" | "customMedicineName" | "householdMedicineId"
+    > & {
       householdMedicineName?: string | null;
     }
   > = [],
@@ -321,7 +317,8 @@ export async function syncIllnessLiveActivity(
     return;
   }
 
-  const nextDose = medicationPlans.length === 1 ? buildSinglePlanNextDose(medicationPlans[0], insights) : null;
+  const nextDose =
+    medicationPlans.length === 1 ? buildSinglePlanNextDose(medicationPlans[0], insights) : null;
   const summary = buildIllnessLiveActivitySummary(insights, nextDose, episode.startedAt, language);
   const medicationLines = buildIllnessMedicationLines(
     insights,
@@ -335,7 +332,9 @@ export async function syncIllnessLiveActivity(
   const statusLabel =
     medicationLines.primaryLine ?? medicationLines.secondaryLine ?? fallbackStatusLabel ?? null;
   const subtitle =
-    medicationLines.primaryLine && medicationLines.secondaryLine ? medicationLines.secondaryLine : null;
+    medicationLines.primaryLine && medicationLines.secondaryLine
+      ? medicationLines.secondaryLine
+      : null;
 
   await safeUpsertLiveActivity({
     kind: "illness",

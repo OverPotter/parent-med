@@ -107,13 +107,7 @@ export function LegalPage() {
           }
 
           return (
-            <a
-              key={item.title}
-              href={item.href}
-              target="_blank"
-              rel="noreferrer"
-              className="block"
-            >
+            <a key={item.title} href={item.href} target="_blank" rel="noreferrer" className="block">
               {content}
             </a>
           );

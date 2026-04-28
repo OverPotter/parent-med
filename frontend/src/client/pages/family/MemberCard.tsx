@@ -52,7 +52,8 @@ export function MemberCard({
   onHideForcedEdit,
 }: MemberCardProps) {
   const isOwner = familyOwnerAccountId === member.id;
-  const canDemote = canManageRoles && member.familyRole === "admin" && adminsCount > 1 && !isCurrent && !isOwner;
+  const canDemote =
+    canManageRoles && member.familyRole === "admin" && adminsCount > 1 && !isCurrent && !isOwner;
   const canPromote = canManageRoles && member.familyRole !== "admin" && !isCurrent && !isOwner;
   const canDelete = canDeleteMember && !isCurrent && !isOwner;
   const [isEditing, setIsEditing] = useState(forceEdit);
@@ -63,8 +64,10 @@ export function MemberCard({
   const [isDemoteConfirmOpen, setIsDemoteConfirmOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const memberLabel =
-    member.displayName || (isCurrent ? tFamily(language, "yourProfileTitle") : tFamily(language, "noName"));
-  const roleToneClass = isOwner || member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill";
+    member.displayName ||
+    (isCurrent ? tFamily(language, "yourProfileTitle") : tFamily(language, "noName"));
+  const roleToneClass =
+    isOwner || member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill";
   const avatarInitial = memberLabel.trim().charAt(0).toUpperCase();
 
   useEffect(() => {
@@ -150,10 +153,14 @@ export function MemberCard({
             <div className="mt-2 grid gap-1.5">
               <p className="text-sm text-muted">
                 <span className="font-semibold text-foreground/90">Email: </span>
-                <span className="break-all">{member.email || tFamily(language, "emailMissing")}</span>
+                <span className="break-all">
+                  {member.email || tFamily(language, "emailMissing")}
+                </span>
               </p>
               <p className="text-sm text-muted">
-                <span className="font-semibold text-foreground/90">{tFamily(language, "phone")}: </span>
+                <span className="font-semibold text-foreground/90">
+                  {tFamily(language, "phone")}:{" "}
+                </span>
                 {member.phone || tFamily(language, "phoneMissing")}
               </p>
             </div>
@@ -180,7 +187,9 @@ export function MemberCard({
           <div className="flex flex-wrap gap-2">
             {canEditProfile && (
               <ActionButton
-                label={isEditing ? tFamily(language, "hideProfile") : tFamily(language, "editProfile")}
+                label={
+                  isEditing ? tFamily(language, "hideProfile") : tFamily(language, "editProfile")
+                }
                 onClick={() =>
                   setIsEditing((current) => {
                     const next = !current;
@@ -207,7 +216,10 @@ export function MemberCard({
               />
             )}
             {canManageAccess && (
-              <ActionLink label={tFamily(language, "manageAccess")} href={accessHref ?? "/family"} />
+              <ActionLink
+                label={tFamily(language, "manageAccess")}
+                href={accessHref ?? "/family"}
+              />
             )}
           </div>
         </div>

@@ -21,7 +21,8 @@ export const cabinetCopy = {
     networkProblemTitle: "Проблема с сетью",
     networkProblemDescription:
       "Для этого действия нужен интернет. Подключитесь к сети и попробуйте снова.",
-    networkProblemInline: "Для этого действия нужен интернет. Подключитесь к сети и попробуйте снова.",
+    networkProblemInline:
+      "Для этого действия нужен интернет. Подключитесь к сети и попробуйте снова.",
     noAccessTitle: "Нет доступа к аптечке",
     noAccessDescription:
       "Владелец семьи или администратор ещё не открыл для этого аккаунта аптечку.",
@@ -160,8 +161,7 @@ export const cabinetCopy = {
     networkProblemTitle: "Network problem",
     networkProblemDescription:
       "This action requires an internet connection. Reconnect and try again.",
-    networkProblemInline:
-      "This action requires an internet connection. Reconnect and try again.",
+    networkProblemInline: "This action requires an internet connection. Reconnect and try again.",
     noAccessTitle: "No access to the first aid kit",
     noAccessDescription:
       "The family owner or an admin has not granted first aid kit access to this account yet.",

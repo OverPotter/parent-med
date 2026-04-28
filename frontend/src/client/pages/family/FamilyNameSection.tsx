@@ -1,10 +1,7 @@
 import type { FormEvent } from "react";
 import { RowSurface } from "@shared/components/Surface";
 import type { AppLanguage } from "@shared/i18n";
-import {
-  appBtnJournalPrimaryClass,
-  appBtnJournalSecondaryClass,
-} from "../child-illness/shared";
+import { appBtnJournalPrimaryClass, appBtnJournalSecondaryClass } from "../child-illness/shared";
 import { tFamily } from "./copy";
 
 interface FamilyNameSectionProps {

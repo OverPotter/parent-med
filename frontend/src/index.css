@@ -236,7 +236,6 @@ p {
 }
 
 @layer components {
-
   .soft-refresh-overlay {
     position: fixed;
     inset: 0;
@@ -649,7 +648,6 @@ p {
       color: rgba(205, 153, 18, 1);
       background: rgba(255, 244, 186, 0.18);
     }
-
   }
 }
 

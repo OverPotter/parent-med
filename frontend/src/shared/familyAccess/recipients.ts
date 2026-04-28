@@ -15,9 +15,7 @@ export function getEligibleIllnessRecipients<TMember extends FamilyMemberRecipie
   members: TMember[],
   childId: string
 ) {
-  return members.filter((member) =>
-    canReceiveIllnessSignalsForChild(member.accessPolicy, childId)
-  );
+  return members.filter((member) => canReceiveIllnessSignalsForChild(member.accessPolicy, childId));
 }
 
 export function getEligiblePillboxRecipients<TMember extends FamilyMemberRecipientLike>(

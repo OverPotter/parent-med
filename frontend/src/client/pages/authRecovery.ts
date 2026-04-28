@@ -4,9 +4,6 @@ export function canSubmitRecoveryCode(email: string, recoveryCode: string): bool
   return Boolean(email.trim() && isRecoveryCodeValid(recoveryCode));
 }
 
-export function canSubmitRecoveryPassword(
-  password: string,
-  passwordConfirm: string
-): boolean {
+export function canSubmitRecoveryPassword(password: string, passwordConfirm: string): boolean {
   return password.length >= 8 && passwordConfirm.length > 0 && password === passwordConfirm;
 }

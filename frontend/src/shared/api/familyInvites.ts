@@ -38,7 +38,14 @@ interface RawAuthResponse {
     owner_account_id?: string | null;
     billing_account_id?: string | null;
     plan_code?: "free" | "plus" | "pro" | null;
-    subscription_status?: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired" | null;
+    subscription_status?:
+      | "inactive"
+      | "trialing"
+      | "active"
+      | "grace"
+      | "canceled"
+      | "expired"
+      | null;
     subscription_provider?: string | null;
     subscription_product_id?: string | null;
     subscription_expires_at?: string | null;

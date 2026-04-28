@@ -40,8 +40,7 @@ export function AddHouseholdMedicineForm({
   onCreated: () => void;
 }) {
   const [searchName, setSearchName] = useState("");
-  const [catalogCategoryFilter, setCatalogCategoryFilter] =
-    useState<MedicineCatalogCategory>("");
+  const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<MedicineCatalogCategory>("");
   const [catalogItem, setCatalogItem] = useState<MedicineCatalogItem | null>(null);
   const [expiryDate, setExpiryDate] = useState("");
   const [openedAt, setOpenedAt] = useState("");
@@ -256,15 +255,13 @@ export function AddHouseholdMedicineForm({
                 onSelect={handleAddFromCatalog}
               />
             )}
-            {!catalogItem &&
-              !searchLoading &&
-              visibleCatalogItems.length === 0 && (
-                <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
-                  {normalizedCatalogSearch || catalogCategoryFilter
-                    ? tCabinet(language, "catalogNoResults")
-                    : tCabinet(language, "catalogBrowseHint")}
-                </p>
-              )}
+            {!catalogItem && !searchLoading && visibleCatalogItems.length === 0 && (
+              <p className={`${cabinetPanelClass} px-4 py-3 text-sm text-muted`}>
+                {normalizedCatalogSearch || catalogCategoryFilter
+                  ? tCabinet(language, "catalogNoResults")
+                  : tCabinet(language, "catalogBrowseHint")}
+              </p>
+            )}
 
             {catalogItem && (
               <SelectedCatalogMedicine

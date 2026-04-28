@@ -119,15 +119,10 @@ export function ChildrenPage() {
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const showOfflineState = isOffline || hasNetworkUnavailableError([error]);
   const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(
-    accountId,
-    currentFamilyId,
-    canManageSubscription
-    );
+    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
   const childLimitReached =
     hasReachedChildLimit(familyAccess) ||
-    (familyAccess?.maxChildren !== null &&
-    familyAccess?.maxChildren !== undefined
+    (familyAccess?.maxChildren !== null && familyAccess?.maxChildren !== undefined
       ? children.length >= familyAccess.maxChildren
       : false);
 
@@ -361,9 +356,7 @@ export function ChildrenPage() {
             <Surface className="soft-panel-muted p-4">
               <div className="space-y-2">
                 <p className="app-card-title">{copy.downgradedNoticeTitle}</p>
-                <p className="text-sm leading-6 text-muted">
-                  {copy.downgradedNoticeDescription}
-                </p>
+                <p className="text-sm leading-6 text-muted">{copy.downgradedNoticeDescription}</p>
               </div>
             </Surface>
           ) : null}

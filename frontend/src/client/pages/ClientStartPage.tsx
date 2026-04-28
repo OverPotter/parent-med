@@ -3,10 +3,7 @@ import { Navigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
 import { labelForRoute, tWorkspaceIntro } from "@client/i18n/workspaceIntro";
-import {
-  normalizeNativeNavigationUrl,
-  readPendingNativeNavigationUrl,
-} from "@/app/push/sync";
+import { normalizeNativeNavigationUrl, readPendingNativeNavigationUrl } from "@/app/push/sync";
 import { useClientStartRoute } from "@client/hooks/useClientStartRoute";
 import { AnalyticsEvents, trackEvent } from "@shared/analytics";
 import { useI18n } from "@shared/hooks/useI18n";

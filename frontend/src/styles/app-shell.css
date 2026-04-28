@@ -133,13 +133,18 @@ html.ios-lock-horizontal .landing-main {
   position: sticky;
   top: 0;
   z-index: 40;
-  padding-top: var(--app-ios-top-chrome-offset, max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem)));
+  padding-top: var(
+    --app-ios-top-chrome-offset,
+    max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem))
+  );
   box-shadow: 0 1px 0 color-mix(in srgb, var(--color-border) 42%, transparent);
 }
 
 [data-runtime="native"][data-platform="ios"] .app-main-shell--hidden-chrome > .child-profile-shell,
 [data-ios-shell="true"] .app-main-shell--hidden-chrome > .child-profile-shell {
-  margin-top: calc(-1 * var(--app-ios-top-chrome-offset, max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem))));
+  margin-top: calc(
+    -1 * var(--app-ios-top-chrome-offset, max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem)))
+  );
 }
 
 [data-runtime="native"][data-platform="ios"] .auth-v3-shell {
@@ -161,7 +166,10 @@ html.ios-lock-horizontal .landing-main {
 }
 
 [data-runtime="native"][data-platform="ios"] .app-main-shell--hidden-chrome {
-  padding-top: var(--app-ios-top-chrome-offset, max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem)));
+  padding-top: var(
+    --app-ios-top-chrome-offset,
+    max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem))
+  );
 }
 
 [data-ios-shell="true"] .app-safe-top-standalone {
@@ -169,7 +177,10 @@ html.ios-lock-horizontal .landing-main {
 }
 
 [data-ios-shell="true"] .app-main-shell--hidden-chrome {
-  padding-top: var(--app-ios-top-chrome-offset, max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem)));
+  padding-top: var(
+    --app-ios-top-chrome-offset,
+    max(0.42rem, calc(var(--app-safe-top-runtime) - 0.06rem))
+  );
 }
 
 [data-runtime="web"][data-ios-shell="true"] .app-safe-top-standalone {
@@ -177,7 +188,10 @@ html.ios-lock-horizontal .landing-main {
 }
 
 [data-runtime="web"][data-ios-shell="true"] .app-main-shell--hidden-chrome {
-  padding-top: var(--app-ios-top-chrome-offset, max(0.18rem, calc(var(--app-safe-top-runtime) * 0.28)));
+  padding-top: var(
+    --app-ios-top-chrome-offset,
+    max(0.18rem, calc(var(--app-safe-top-runtime) * 0.28))
+  );
 }
 
 .legal-doc-page {
@@ -250,7 +264,9 @@ html.ios-lock-horizontal .landing-main {
   bottom: auto;
 }
 
-[data-runtime="native"][data-platform="ios"] .auth-v3-page.auth-v3-page--recovery .auth-v3-form-recovery,
+[data-runtime="native"][data-platform="ios"]
+  .auth-v3-page.auth-v3-page--recovery
+  .auth-v3-form-recovery,
 [data-ios-shell="true"] .auth-v3-page.auth-v3-page--recovery .auth-v3-form-recovery {
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
 }
@@ -551,7 +567,9 @@ html.ios-lock-horizontal .landing-main {
   letter-spacing: -0.05em;
 }
 
-[data-runtime="native"][data-platform="ios"] .auth-v3-language-switch .soft-language-dropdown__trigger,
+[data-runtime="native"][data-platform="ios"]
+  .auth-v3-language-switch
+  .soft-language-dropdown__trigger,
 [data-ios-shell="true"] .auth-v3-language-switch .soft-language-dropdown__trigger {
   min-width: 3.7rem;
   padding-left: 0.78rem;
@@ -559,7 +577,9 @@ html.ios-lock-horizontal .landing-main {
   font-size: 0.82rem;
 }
 
-[data-runtime="native"][data-platform="ios"] .auth-v3-language-switch .soft-language-dropdown__chevron,
+[data-runtime="native"][data-platform="ios"]
+  .auth-v3-language-switch
+  .soft-language-dropdown__chevron,
 [data-ios-shell="true"] .auth-v3-language-switch .soft-language-dropdown__chevron {
   right: 0.58rem;
 }
@@ -754,13 +774,12 @@ html.ios-lock-horizontal .landing-main {
   margin-top: 0.5rem;
   padding-top: 0.75rem;
   padding-bottom: max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)));
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-background) 0%, transparent) 0%,
-      color-mix(in srgb, var(--color-background) 78%, transparent) 22%,
-      var(--color-background) 100%
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-background) 0%, transparent) 0%,
+    color-mix(in srgb, var(--color-background) 78%, transparent) 22%,
+    var(--color-background) 100%
+  );
 }
 
 .app-form-action-bar--inline {
@@ -776,7 +795,8 @@ html.ios-lock-horizontal .landing-main {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
-[data-runtime="native"][data-platform="ios"][data-keyboard-open="true"] .app-form-action-bar--inline,
+[data-runtime="native"][data-platform="ios"][data-keyboard-open="true"]
+  .app-form-action-bar--inline,
 [data-ios-shell="true"][data-keyboard-open="true"] .app-form-action-bar--inline {
   padding-bottom: 0;
 }
@@ -1267,11 +1287,15 @@ html.ios-lock-horizontal .landing-main {
 
 .app-mobile-header .app-header-utility-button.app-header-notification-button--active,
 .app-desktop-header .app-header-utility-button.app-header-notification-button--active,
-[data-theme="light"] .child-section-top-bar .app-header-utility-button.app-header-notification-button--active,
-.child-section-top-bar .app-header-utility-button.app-header-notification-button--active,
-[data-ios-shell="true"][data-theme="light"] .app-mobile-header
+[data-theme="light"]
+  .child-section-top-bar
   .app-header-utility-button.app-header-notification-button--active,
-[data-theme="light"] .app-desktop-header
+.child-section-top-bar .app-header-utility-button.app-header-notification-button--active,
+[data-ios-shell="true"][data-theme="light"]
+  .app-mobile-header
+  .app-header-utility-button.app-header-notification-button--active,
+[data-theme="light"]
+  .app-desktop-header
   .app-header-utility-button.app-header-notification-button--active {
   border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
   background:
@@ -1286,11 +1310,15 @@ html.ios-lock-horizontal .landing-main {
 
 .app-mobile-header .app-header-utility-button.app-header-notification-button--warning,
 .app-desktop-header .app-header-utility-button.app-header-notification-button--warning,
-[data-theme="light"] .child-section-top-bar .app-header-utility-button.app-header-notification-button--warning,
-.child-section-top-bar .app-header-utility-button.app-header-notification-button--warning,
-[data-ios-shell="true"][data-theme="light"] .app-mobile-header
+[data-theme="light"]
+  .child-section-top-bar
   .app-header-utility-button.app-header-notification-button--warning,
-[data-theme="light"] .app-desktop-header
+.child-section-top-bar .app-header-utility-button.app-header-notification-button--warning,
+[data-ios-shell="true"][data-theme="light"]
+  .app-mobile-header
+  .app-header-utility-button.app-header-notification-button--warning,
+[data-theme="light"]
+  .app-desktop-header
   .app-header-utility-button.app-header-notification-button--warning {
   border-color: color-mix(in srgb, var(--color-warning, #f59e0b) 34%, transparent);
   background:

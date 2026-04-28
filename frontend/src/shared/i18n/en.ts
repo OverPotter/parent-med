@@ -11,7 +11,8 @@ export const en: Translations = {
     logout: "Log out",
     cancel: "Cancel",
     logoutConfirmTitle: "Log out of your account?",
-    logoutConfirmDescription: "The session on this device will end. You can sign in again at any time.",
+    logoutConfirmDescription:
+      "The session on this device will end. You can sign in again at any time.",
     logoutConfirmAction: "Yes, log out",
     profile: "Profile",
     settings: "Settings",
@@ -178,7 +179,8 @@ export const en: Translations = {
         "Confirm the install.",
       ],
       ctaTitle: "Register first, then add PillPath to your home screen.",
-      ctaDescription: "That way the icon opens your family workspace and current records right away.",
+      ctaDescription:
+        "That way the icon opens your family workspace and current records right away.",
       createAccount: "Create account",
       login: "Log in",
       closePreview: "Close",
@@ -275,7 +277,8 @@ export const en: Translations = {
       },
       family: {
         title: "Family Account",
-        description: "One parent creates the account and invites relatives into one shared care picture.",
+        description:
+          "One parent creates the account and invites relatives into one shared care picture.",
         mobilePoints: [
           "One parent sends an invite link",
           "Everyone sees the same treatment plan and reminders",
@@ -609,7 +612,8 @@ export const en: Translations = {
         items: [
           {
             title: "Set access",
-            description: "In Family, each member can get separate access to children, pillbox, and cabinet.",
+            description:
+              "In Family, each member can get separate access to children, pillbox, and cabinet.",
           },
           {
             title: "Choose children",
@@ -628,7 +632,8 @@ export const en: Translations = {
         items: [
           {
             title: "What can be enabled",
-            description: "Settings lets you enable sleep, feeding, and illness tracking separately.",
+            description:
+              "Settings lets you enable sleep, feeding, and illness tracking separately.",
           },
           {
             title: "Where it appears",
@@ -636,7 +641,8 @@ export const en: Translations = {
           },
           {
             title: "Who receives signals",
-            description: "Push reminders only go to members with the required access and notifications enabled.",
+            description:
+              "Push reminders only go to members with the required access and notifications enabled.",
           },
         ],
         action: { to: "/settings", label: "Open settings" },

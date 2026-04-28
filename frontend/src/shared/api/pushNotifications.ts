@@ -113,7 +113,9 @@ export async function sendPillboxTestPushNotification(): Promise<{
   sent: boolean;
   subscriptionCount: number;
 }> {
-  const res = await apiClient.post<RawPushNotificationTestResponse>("/push-notifications/test/pillbox");
+  const res = await apiClient.post<RawPushNotificationTestResponse>(
+    "/push-notifications/test/pillbox"
+  );
   return {
     sent: res.data.sent,
     subscriptionCount: res.data.subscription_count,

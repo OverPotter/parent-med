@@ -580,7 +580,9 @@ function RecoveryCodeDialog({
               spellCheck={false}
             />
           </label>
-          {successMessage ? <p className="soft-text-success mt-4 text-sm">{successMessage}</p> : null}
+          {successMessage ? (
+            <p className="soft-text-success mt-4 text-sm">{successMessage}</p>
+          ) : null}
           {errorMessage ? (
             <div className="soft-note-danger mt-4 rounded-2xl px-4 py-3 text-sm">
               {errorMessage}

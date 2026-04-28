@@ -4,10 +4,7 @@ import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { Surface } from "@shared/components/Surface";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
-import {
-  buildNativeAppUrl,
-  NATIVE_APP_MARKETING_FLAG,
-} from "@shared/config/nativeAppLinks";
+import { buildNativeAppUrl, NATIVE_APP_MARKETING_FLAG } from "@shared/config/nativeAppLinks";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 

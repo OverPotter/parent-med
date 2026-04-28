@@ -48,11 +48,7 @@ export function ChildWeightPage() {
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(
-    accountId,
-    currentFamilyId,
-    canManageSubscription
-    );
+    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],

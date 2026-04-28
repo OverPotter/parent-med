@@ -21,15 +21,14 @@ import { getEligibleIllnessRecipients } from "@shared/familyAccess/recipients";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
-import {
-  canActChild,
-  canEditChild,
-  canViewChild,
-} from "@shared/permissions/familyAccess";
+import { canActChild, canEditChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { isChildIllnessMutationLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
-import { stopLiveActivitiesForChildIds, syncIllnessLiveActivity } from "@shared/utils/liveActivities";
+import {
+  stopLiveActivitiesForChildIds,
+  syncIllnessLiveActivity,
+} from "@shared/utils/liveActivities";
 import {
   clearIllnessStartHint,
   setIllnessStartHint,
@@ -107,14 +106,15 @@ export function ChildIllnessPage() {
   const queryClient = useQueryClient();
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const liveQueryOptions = useLiveQueryOptions(isIosShell ? 15_000 : 10_000);
-  const [createEpisodeValidationError, setCreateEpisodeValidationError] = useState<string | null>(null);
+  const [createEpisodeValidationError, setCreateEpisodeValidationError] = useState<string | null>(
+    null
+  );
   const createModeCardRef = useRef<HTMLDivElement>(null);
   const historySectionRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const canViewIllness = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
   const canActIllness = !!childId && canActChild(childId, accountFamilyRole, accountAccessPolicy);
-  const canEditIllness =
-    !!childId && canEditChild(childId, accountFamilyRole, accountAccessPolicy);
+  const canEditIllness = !!childId && canEditChild(childId, accountFamilyRole, accountAccessPolicy);
   const { data: familyAccess } = useQuery({
     queryKey: ["families", "me", "access", currentFamilyId],
     queryFn: fetchMyFamilyAccess,
@@ -123,11 +123,7 @@ export function ChildIllnessPage() {
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(
-    accountId,
-    currentFamilyId,
-    canManageSubscription
-    );
+    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
 
   const { data: child, isLoading: childLoading } = useQuery({
     queryKey: ["child", childId],
@@ -218,7 +214,14 @@ export function ChildIllnessPage() {
       undefined,
       accountId
     );
-  }, [accountId, activeEpisode, activeEpisodeInsights, activeEpisodeMedicationPlans, child, language]);
+  }, [
+    accountId,
+    activeEpisode,
+    activeEpisodeInsights,
+    activeEpisodeMedicationPlans,
+    child,
+    language,
+  ]);
 
   const { data: familyMembers = [] } = useQuery({
     queryKey: ["families", "me", "members", currentFamilyId],
@@ -296,13 +299,12 @@ export function ChildIllnessPage() {
       }
       void trackIllnessEpisodeStarted(episode.id);
       requestLiveActivityRefresh();
-      const episodeForUi =
-        shouldKeepExactStartedAt
-          ? {
-              ...episode,
-              startedAt: startedAtHint,
-            }
-          : episode;
+      const episodeForUi = shouldKeepExactStartedAt
+        ? {
+            ...episode,
+            startedAt: startedAtHint,
+          }
+        : episode;
       upsertIllnessEpisodeForChild(queryClient, childId!, episodeForUi);
       invalidateIllnessQueriesForChild(queryClient, childId!);
       navigate("/illnesses/active");
@@ -666,7 +668,12 @@ function ChildIllnessCreateScreen({
   navigate,
   setCreateEpisodeValidationError,
 }: {
-  createEpisodeMutation: UseMutationResult<IllnessEpisode, Error, CreateIllnessEpisodePayload, unknown>;
+  createEpisodeMutation: UseMutationResult<
+    IllnessEpisode,
+    Error,
+    CreateIllnessEpisodePayload,
+    unknown
+  >;
   createEpisodeValidationError: string | null;
   language: "ru" | "en";
   navigate: ReturnType<typeof useNavigate>;

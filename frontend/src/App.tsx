@@ -264,8 +264,7 @@ export default function App() {
     );
   }, []);
   const isLocalhostWeb =
-    typeof window !== "undefined" &&
-    /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+    typeof window !== "undefined" && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
   const shouldUseAppEntryRoute = isNativeRuntime || isStandalonePwa || isLocalhostWeb;
   const isNonCriticalStartupReady = useDeferredNonCriticalStartupReady();
   const hasSession = Boolean(authToken || accountId);
@@ -308,15 +307,15 @@ export default function App() {
         window.dispatchEvent(new Event("app:boot-ready"));
       });
 
-      (bootWindow as Window & { __PM_BOOT_READY_SECOND_FRAME_ID?: number }).__PM_BOOT_READY_SECOND_FRAME_ID =
-        secondFrameId;
+      (
+        bootWindow as Window & { __PM_BOOT_READY_SECOND_FRAME_ID?: number }
+      ).__PM_BOOT_READY_SECOND_FRAME_ID = secondFrameId;
     });
 
     return () => {
       window.cancelAnimationFrame(firstFrameId);
-      const secondFrameId = (
-        bootWindow as Window & { __PM_BOOT_READY_SECOND_FRAME_ID?: number }
-      ).__PM_BOOT_READY_SECOND_FRAME_ID;
+      const secondFrameId = (bootWindow as Window & { __PM_BOOT_READY_SECOND_FRAME_ID?: number })
+        .__PM_BOOT_READY_SECOND_FRAME_ID;
       if (typeof secondFrameId === "number") {
         window.cancelAnimationFrame(secondFrameId);
       }

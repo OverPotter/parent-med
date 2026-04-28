@@ -143,7 +143,10 @@ export function getIllnessDurationMeta(
 }
 
 export function buildIllnessMedicationLines(
-  insights: Pick<IllnessEpisodeInsights, "lastAdministrationAt" | "medicineNames"> | null | undefined,
+  insights:
+    | Pick<IllnessEpisodeInsights, "lastAdministrationAt" | "medicineNames">
+    | null
+    | undefined,
   nextDose:
     | {
         nextDoseAt: Date;
@@ -206,10 +209,13 @@ export function buildIllnessMedicationLines(
 }
 
 export function buildIllnessLiveActivitySummary(
-  insights: Pick<
-    IllnessEpisodeInsights,
-    "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"
-  > | null | undefined,
+  insights:
+    | Pick<
+        IllnessEpisodeInsights,
+        "lastTemperatureCelsius" | "lastAdministrationAt" | "medicineNames" | "lastEventAt"
+      >
+    | null
+    | undefined,
   _nextDose:
     | {
         nextDoseAt: Date;

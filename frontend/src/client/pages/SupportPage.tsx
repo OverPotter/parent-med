@@ -59,7 +59,10 @@ export function SupportPage() {
 
       <ul className="grid gap-3 sm:gap-4">
         <li>
-          <Link to="/feedback" className="block transition-transform duration-200 hover:-translate-y-0.5">
+          <Link
+            to="/feedback"
+            className="block transition-transform duration-200 hover:-translate-y-0.5"
+          >
             <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -88,7 +91,10 @@ export function SupportPage() {
         </li>
 
         <li>
-          <Link to="/feedback" className="block transition-transform duration-200 hover:-translate-y-0.5">
+          <Link
+            to="/feedback"
+            className="block transition-transform duration-200 hover:-translate-y-0.5"
+          >
             <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">

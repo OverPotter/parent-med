@@ -9,7 +9,11 @@ export const DOSE_TIME_CONFIRMATION_GRACE_MS = 7 * 60 * 1000;
 
 type MedicationPlanLike = Pick<
   EpisodeMedicationPlan,
-  "householdMedicineId" | "customMedicineName" | "minIntervalMinutes" | "maxDosesPerDay" | "createdAt"
+  | "householdMedicineId"
+  | "customMedicineName"
+  | "minIntervalMinutes"
+  | "maxDosesPerDay"
+  | "createdAt"
 >;
 
 export type MedicationPlanPriorityItem<TPlan extends MedicationPlanLike = EpisodeMedicationPlan> = {
@@ -93,7 +97,9 @@ export function buildWeightDoseHint(
   doseMgPerKg: number | null,
   language: "ru" | "en" = "ru"
 ) {
-  return calculateMedicationDoseRecommendation(medicine, weightKg, doseMgPerKg, language)?.hint ?? null;
+  return (
+    calculateMedicationDoseRecommendation(medicine, weightKg, doseMgPerKg, language)?.hint ?? null
+  );
 }
 
 type DoseUnit = "ml" | "tablet" | "capsule" | "suppository" | "spray" | "drop" | "mg";
@@ -411,7 +417,10 @@ export function shouldRequestDoseTimeConfirmation(
   return now.getTime() - nextAllowedAt.getTime() > graceMs;
 }
 
-function parseMedicineDoseConversion(concentration: string | null, form: string | null): DoseConversion | null {
+function parseMedicineDoseConversion(
+  concentration: string | null,
+  form: string | null
+): DoseConversion | null {
   const normalizedConcentration = normalizeDoseText(concentration);
   const normalizedForm = normalizeDoseText(form);
 
@@ -436,9 +445,7 @@ function parseMedicineDoseConversion(concentration: string | null, form: string 
     }
   }
 
-  const singleMassMatch = normalizedConcentration.match(
-    /(\d+(?:\.\d+)?)\s*(мг|mg|мкг|mcg|μg|ug)/i
-  );
+  const singleMassMatch = normalizedConcentration.match(/(\d+(?:\.\d+)?)\s*(мг|mg|мкг|mcg|μg|ug)/i);
   if (!singleMassMatch) {
     return null;
   }
@@ -486,9 +493,7 @@ function parseDosePerKgFromGuidance(
     };
   }
 
-  const explicitSingleMatch = normalizedGuidance.match(
-    /(\d+(?:\.\d+)?)\s*(мг|mg)\s*\/\s*(кг|kg)/i
-  );
+  const explicitSingleMatch = normalizedGuidance.match(/(\d+(?:\.\d+)?)\s*(мг|mg)\s*\/\s*(кг|kg)/i);
   if (!explicitSingleMatch) {
     return null;
   }
@@ -579,11 +584,7 @@ function unitToMode(unit: Exclude<DoseUnit, "mg">): DoseConversion["mode"] {
   }
 }
 
-function formatDoseUnitLabel(
-  unit: Exclude<DoseUnit, "mg">,
-  language: "ru" | "en",
-  value: number
-) {
+function formatDoseUnitLabel(unit: Exclude<DoseUnit, "mg">, language: "ru" | "en", value: number) {
   const singular = Math.abs(value - 1) < 0.001;
   if (language === "en") {
     switch (unit) {

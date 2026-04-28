@@ -119,7 +119,10 @@ export function formatChildDateTime(
   return `${timePart} · ${dateLabel}`;
 }
 
-export function formatChildTime(value: string | null | undefined, language: AppLanguage = "ru"): string {
+export function formatChildTime(
+  value: string | null | undefined,
+  language: AppLanguage = "ru"
+): string {
   return getTimePart(value, language) ?? "";
 }
 

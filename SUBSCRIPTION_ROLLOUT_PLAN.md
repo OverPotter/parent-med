@@ -26,6 +26,8 @@ For high-level project docs, use:
 - [x] Add local force-free testing mode for subscription logic
 - [ ] Remove dev-only RevenueCat sandbox/testing controls before release
 - [ ] Add landing pricing page
+- [ ] Rework invite-link first impression and pre-auth acceptance flow
+- [ ] Design and validate a short `Plus` trial flow before the normal paywall
 - [ ] Verify device-language auto selection on first launch
 - [ ] Verify device-theme auto selection on first launch
 - [ ] Evaluate adding Polish and German localizations
@@ -607,6 +609,9 @@ All real restrictions must be enforced on backend actions, not only in UI.
 ### CSV Export
 
 - export endpoint must be premium-only
+- implemented as a child-scoped `Plus` feature from child profile
+- supports `CSV`, `XLSX`, and `All files`
+- locked state is visible in UI and routes into existing upgrade flow
 
 ### Roles And Access Settings
 
@@ -803,6 +808,95 @@ Suggested copy themes:
   - family access changes after subscription loss
 - this tooling is intentionally dev-only and must not ship as user-facing release functionality
 - `CSV export` and `Live Activities` are included in `Plus`
+
+## Invite Flow Follow-Up
+
+Current problem:
+- invite link can currently drop the user into the generic auth flow first
+- family context is shown too late, only after login or registration
+- this weakens trust and makes the invitation less understandable
+
+Desired direction:
+- add a dedicated pre-auth invite landing / accept screen
+- show family name, inviter context when available, role/access expectation, and next step before auth
+- make it explicit that login/registration will attach the account to the invited family
+
+## Trial Follow-Up
+
+Current idea:
+- give a new user or family a short `Plus` trial for a few days
+- let them use the premium family workflows before the real paywall decision
+- after the trial ends, move them either into paid `Plus` conversion or back to normal `Free`
+
+Questions to resolve:
+- is the trial scoped to account or family
+- whether invited members inherit an existing family trial or not
+- whether the trial starts on first auth, first family creation, or first premium action
+- what reminder/paywall sequence appears before expiration
+- how downgrade rules behave when trial expires with multiple children / plans already created
+
+Operational note:
+- if trial is added, it should be modeled in the same backend access layer as `free / trialing / active / grace / canceled`
+- App Store / RevenueCat path and any backend-issued support override must not conflict semantically
+
+## Admin / Support Console Follow-Up
+
+Desired capabilities:
+- view accounts, families, and basic user counts
+- view subscriptions including `trial`, `active`, `grace`, `canceled`, and manual overrides
+- inspect incoming support / feedback messages
+- store support replies or at least support-handling notes
+- grant or revoke subscription access manually for support cases outside the App Store flow when needed
+
+Constraints:
+- keep this separate from the normal client app
+- define a strict internal-only access model
+- decide whether this should be a lightweight internal frontend or a backend-only operational surface first
+
+## Invite / Family Switch Rules
+
+Agreed rules:
+- `owner` cannot accept an invite into another family
+- two existing families must not merge automatically
+- two subscriptions must not merge automatically
+- only `member/admin` accounts may switch to another family, and only through an explicit consent flow
+- if the current family still has active subscription access or billing ownership context, family switch is blocked
+- a former `owner` may join another family only after the original family has fully returned to non-premium state and the owner/billing context is gone
+- after such a switch, the invited account becomes `member`
+
+Reasoning:
+- this keeps billing ownership simple and stable
+- this avoids accidental deletion or orphaning of subscription state
+- this prevents subtle bypass flows where one paid subscription could appear to move between families
+
+## Invite / Family Switch Implementation Plan
+
+1. Lock backend family-switch rules
+- reject invite acceptance for `owner`
+- reject invite acceptance for accounts whose current family still has active/trialing/grace/canceled subscription access
+- reject invite acceptance for current billing owner / billing-bound family context
+
+2. Strengthen "current family is empty" validation
+- validate not only members, children, and medicine cabinet
+- also validate pillbox and any other family-scoped data that should block destructive switch
+- do not allow invite-switch to silently destroy a family that still has meaningful data
+
+3. Add explicit consent flow for `member/admin`
+- show current family and target family
+- explain that access to the current family will be lost
+- require explicit confirmation before switch
+
+4. Tighten anti-bypass billing behavior
+- keep one provider subscription bound to only one family
+- keep owner-only purchase/restore authority
+- verify that `member/admin` cannot activate `Plus` for a different family via Store/RevenueCat side effects
+
+5. Add tests
+- `owner` cannot accept invite
+- active/billing-bound family cannot switch
+- empty `member/admin` family can switch
+- non-empty family cannot switch
+- one provider subscription cannot activate two families
 
 ## Analytics
 

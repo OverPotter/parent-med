@@ -17,7 +17,10 @@ export function setIllnessEpisodesForChild(
     return nextEpisodes;
   });
 
-  queryClient.setQueryData(["illness-episode-active", childId], getActiveEpisodeFromList(nextEpisodes));
+  queryClient.setQueryData(
+    ["illness-episode-active", childId],
+    getActiveEpisodeFromList(nextEpisodes)
+  );
   return nextEpisodes;
 }
 

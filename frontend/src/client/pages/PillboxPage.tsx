@@ -129,11 +129,7 @@ export function PillboxPage() {
   const premiumActive = familyAccess?.premiumActive ?? true;
   const freePrimaryPlanId = familyAccess?.freePrimaryPillboxPlanId ?? null;
   const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(
-    accountId,
-    currentFamilyId,
-    canManageSubscription
-    );
+    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
   const pillboxPlanLimitReached = shouldLockPillboxPlanCreation({
     access: familyAccess,
     screen,
@@ -860,9 +856,7 @@ export function PillboxPage() {
         <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
           <div className="app-mobile-section-intro">
             <h1 className="app-mobile-section-intro__title">{tPillbox(language, "hubTitle")}</h1>
-            <p className="app-mobile-section-intro__hint">
-              {tPillbox(language, "hubMobileHint")}
-            </p>
+            <p className="app-mobile-section-intro__hint">{tPillbox(language, "hubMobileHint")}</p>
           </div>
         </div>
         <EmptyState className="text-foreground">
@@ -889,9 +883,7 @@ export function PillboxPage() {
         <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
           <div className="app-mobile-section-intro">
             <h1 className="app-mobile-section-intro__title">{tPillbox(language, "hubTitle")}</h1>
-            <p className="app-mobile-section-intro__hint">
-              {tPillbox(language, "hubMobileHint")}
-            </p>
+            <p className="app-mobile-section-intro__hint">{tPillbox(language, "hubMobileHint")}</p>
           </div>
         </div>
         <ModuleOfflineState language={language} />

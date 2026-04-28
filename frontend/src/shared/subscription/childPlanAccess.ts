@@ -1,8 +1,6 @@
 import type { FamilySubscriptionAccess } from "@shared/types/api";
 
-export function hasReachedChildLimit(
-  access: FamilySubscriptionAccess | null | undefined
-): boolean {
+export function hasReachedChildLimit(access: FamilySubscriptionAccess | null | undefined): boolean {
   if (!access) {
     return false;
   }

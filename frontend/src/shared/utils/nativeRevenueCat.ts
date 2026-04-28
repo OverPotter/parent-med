@@ -37,7 +37,11 @@ export type RevenueCatOfferingPackage = {
 
 type NativeRevenueCatPlugin = {
   setLogLevel(args: { level: "debug" | "info" | "warn" | "error" }): Promise<void>;
-  configure(args: { apiKey: string; appUserId?: string | null; entitlementCode?: string | null }): Promise<void>;
+  configure(args: {
+    apiKey: string;
+    appUserId?: string | null;
+    entitlementCode?: string | null;
+  }): Promise<void>;
   logIn(args: { appUserId: string }): Promise<{ customerSnapshot: RevenueCatCustomerSnapshot }>;
   logOut(): Promise<{ customerSnapshot: RevenueCatCustomerSnapshot }>;
   getCustomerSnapshot(args?: {

@@ -14,9 +14,7 @@ import {
   logOutNativeRevenueCat,
   setNativeRevenueCatLogLevel,
 } from "@shared/utils/nativeRevenueCat";
-import {
-  syncRevenueCatCustomerSnapshot,
-} from "@shared/utils/revenueCatSync";
+import { syncRevenueCatCustomerSnapshot } from "@shared/utils/revenueCatSync";
 import { isRevenueCatSyncSuppressedForAccount } from "@shared/utils/revenueCatSyncSuppression";
 
 export function RevenueCatSync() {

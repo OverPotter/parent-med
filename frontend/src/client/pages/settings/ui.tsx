@@ -30,7 +30,9 @@ export function SettingsSection({
               {title}
             </p>
           ) : null}
-          {hint ? <p className={`${title ? "mt-1 " : ""}text-sm leading-6 text-muted`}>{hint}</p> : null}
+          {hint ? (
+            <p className={`${title ? "mt-1 " : ""}text-sm leading-6 text-muted`}>{hint}</p>
+          ) : null}
           {badge ? <div className="absolute right-0 top-0 min-w-0 shrink-0">{badge}</div> : null}
         </div>
       ) : null}
@@ -75,7 +77,9 @@ export function SettingsRow({
       {title || hint ? (
         <div className={`min-w-0 ${forceInlineActions ? "flex-1" : ""}`}>
           {title ? <p className="text-sm font-semibold text-foreground">{title}</p> : null}
-          {hint ? <p className={`${title ? "mt-1 " : ""}text-sm leading-6 text-muted`}>{hint}</p> : null}
+          {hint ? (
+            <p className={`${title ? "mt-1 " : ""}text-sm leading-6 text-muted`}>{hint}</p>
+          ) : null}
         </div>
       ) : (
         <div className="hidden sm:block" aria-hidden="true" />

@@ -25,7 +25,10 @@ export function CabinetPushRecipientsCard({
   onChangeSelection: (memberIds: string[]) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const eligibleMemberIds = useMemo(() => familyMembers.map((member) => member.id), [familyMembers]);
+  const eligibleMemberIds = useMemo(
+    () => familyMembers.map((member) => member.id),
+    [familyMembers]
+  );
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
     resolveRecipientSelection(family.cabinetMemberAccountIds, currentAccountId, eligibleMemberIds)
   );
@@ -63,7 +66,9 @@ export function CabinetPushRecipientsCard({
         placement="bottom"
         zIndexClassName="z-[890]"
         backdropAriaLabel={
-          language === "ru" ? "Закрыть выбор получателей push по аптечке" : "Close cabinet push recipients"
+          language === "ru"
+            ? "Закрыть выбор получателей push по аптечке"
+            : "Close cabinet push recipients"
         }
         containerClassName="flex items-end"
         backdropClassName="bg-[rgba(15,23,42,0.32)]"
@@ -86,7 +91,9 @@ export function CabinetPushRecipientsCard({
             </p>
           </div>
 
-          <div className={`${cabinetPanelClass} mt-4 max-h-[min(23rem,58vh)] overflow-y-auto p-2.5`}>
+          <div
+            className={`${cabinetPanelClass} mt-4 max-h-[min(23rem,58vh)] overflow-y-auto p-2.5`}
+          >
             <div className="space-y-2">
               {familyMembers.map((member) => {
                 const selected = selectedIds.includes(member.id);

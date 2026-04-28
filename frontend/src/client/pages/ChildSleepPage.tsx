@@ -28,10 +28,7 @@ import {
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
 import { RecordHistoryRow } from "./children/RecordHistoryRow";
-import {
-  formatChildDateTime,
-  formatChildTime,
-} from "@client/utils/childDateFormat";
+import { formatChildDateTime, formatChildTime } from "@client/utils/childDateFormat";
 import {
   childActionSuccessClass,
   formatDurationMinutesHuman,

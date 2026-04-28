@@ -41,16 +41,16 @@ function generateDeviceId(): string {
 }
 
 async function readStoredNativeDeviceId(): Promise<string | null> {
-    try {
-        const result = await SecureStoragePlugin.get({ key: NATIVE_DEVICE_ID_KEY });
-        const value = result.value || null;
-        if (value) {
-            writeLocalMirror(value);
-        }
-        return value;
-    } catch {
-        return readLocalMirror();
+  try {
+    const result = await SecureStoragePlugin.get({ key: NATIVE_DEVICE_ID_KEY });
+    const value = result.value || null;
+    if (value) {
+      writeLocalMirror(value);
     }
+    return value;
+  } catch {
+    return readLocalMirror();
+  }
 }
 
 async function writeStoredNativeDeviceId(deviceId: string): Promise<void> {

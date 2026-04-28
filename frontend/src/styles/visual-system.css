@@ -270,7 +270,11 @@
   background:
     radial-gradient(circle at 30% 30%, rgb(255 255 255 / 0.3), transparent 32%),
     radial-gradient(circle at 58% 48%, rgb(255 255 255 / 0.12), transparent 18%),
-    radial-gradient(circle, color-mix(in srgb, var(--color-primary) 24%, transparent), transparent 68%);
+    radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-primary) 24%, transparent),
+      transparent 68%
+    );
 }
 
 .app-v3-background::after {

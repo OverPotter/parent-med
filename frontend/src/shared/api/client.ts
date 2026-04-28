@@ -1,10 +1,7 @@
 /** Axios: baseURL, Bearer, 401 → refresh / logout. */
 
 import axios, { type AxiosError } from "axios";
-import {
-  isCookieSessionMarker,
-  sanitizeBearerToken,
-} from "@shared/security/authSession";
+import { isCookieSessionMarker, sanitizeBearerToken } from "@shared/security/authSession";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { AuthSessionResponse } from "@shared/types/api";
 import { appLog } from "@shared/utils/appLog";

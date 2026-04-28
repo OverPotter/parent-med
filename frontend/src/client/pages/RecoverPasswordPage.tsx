@@ -78,39 +78,42 @@ export function RecoverPasswordPage() {
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const successRedirectTimeoutRef = useRef<number | null>(null);
-  const [pendingSession, setPendingSession] = useState<Awaited<ReturnType<typeof login>> | null>(null);
+  const [pendingSession, setPendingSession] = useState<Awaited<ReturnType<typeof login>> | null>(
+    null
+  );
   const [email, setEmail] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const ui = language === "ru"
-    ? {
-        title: "Восстановить пароль",
-        hint: "Введите email, секретную фразу и новый пароль.",
-        recoveryCode: "Секретная фраза",
-        recoveryPlaceholder: "Например: quiet-river-42",
-        newPassword: "Новый пароль",
-        success: "Пароль обновлён. Теперь можно войти с новым паролем.",
-        failed: "Не удалось обновить пароль.",
-        saving: "Сохраняем…",
-        done: "Готово",
-        submit: "Сохранить новый пароль",
-        back: "Назад",
-      }
-    : {
-        title: "Reset password",
-        hint: "Enter your email, recovery phrase, and a new password.",
-        recoveryCode: "Recovery phrase",
-        recoveryPlaceholder: "Example: quiet-river-42",
-        newPassword: "New password",
-        success: "Password updated. You can now sign in with the new password.",
-        failed: "Could not update the password.",
-        saving: "Saving…",
-        done: "Done",
-        submit: "Save new password",
-        back: "Back",
-      };
+  const ui =
+    language === "ru"
+      ? {
+          title: "Восстановить пароль",
+          hint: "Введите email, секретную фразу и новый пароль.",
+          recoveryCode: "Секретная фраза",
+          recoveryPlaceholder: "Например: quiet-river-42",
+          newPassword: "Новый пароль",
+          success: "Пароль обновлён. Теперь можно войти с новым паролем.",
+          failed: "Не удалось обновить пароль.",
+          saving: "Сохраняем…",
+          done: "Готово",
+          submit: "Сохранить новый пароль",
+          back: "Назад",
+        }
+      : {
+          title: "Reset password",
+          hint: "Enter your email, recovery phrase, and a new password.",
+          recoveryCode: "Recovery phrase",
+          recoveryPlaceholder: "Example: quiet-river-42",
+          newPassword: "New password",
+          success: "Password updated. You can now sign in with the new password.",
+          failed: "Could not update the password.",
+          saving: "Saving…",
+          done: "Done",
+          submit: "Save new password",
+          back: "Back",
+        };
 
   const resetMutation = useMutation({
     mutationFn: async (payload: { email: string; recovery_code: string; new_password: string }) => {
@@ -168,7 +171,10 @@ export function RecoverPasswordPage() {
           <div className="auth-v3-header">
             <Link
               to="/"
-              className={joinClasses("auth-v3-header-logo", isNativeIOS && "auth-v3-header-logo--ios")}
+              className={joinClasses(
+                "auth-v3-header-logo",
+                isNativeIOS && "auth-v3-header-logo--ios"
+              )}
               aria-label={copy.common.brandName}
               onClick={blurActiveField}
             >
@@ -180,7 +186,10 @@ export function RecoverPasswordPage() {
             </Link>
             <Link
               to="/"
-              className={joinClasses("auth-v3-header-brand", isNativeIOS && "auth-v3-header-brand--ios")}
+              className={joinClasses(
+                "auth-v3-header-brand",
+                isNativeIOS && "auth-v3-header-brand--ios"
+              )}
               aria-label={copy.common.brandName}
               onClick={blurActiveField}
             >
@@ -244,9 +253,7 @@ export function RecoverPasswordPage() {
                 <h1 className="text-[1.5rem] font-extrabold tracking-[-0.04em] text-foreground sm:text-[1.8rem]">
                   {ui.title}
                 </h1>
-                <p className="mt-2 max-w-[28rem] text-sm leading-6 text-muted">
-                  {ui.hint}
-                </p>
+                <p className="mt-2 max-w-[28rem] text-sm leading-6 text-muted">{ui.hint}</p>
               </div>
             </div>
 
@@ -324,11 +331,7 @@ export function RecoverPasswordPage() {
               {passwordsMismatch ? (
                 <p className="soft-note-warning">Пароли должны совпадать.</p>
               ) : null}
-              {pendingSession ? (
-                <p className="soft-note-success">
-                  {ui.success}
-                </p>
-              ) : null}
+              {pendingSession ? <p className="soft-note-success">{ui.success}</p> : null}
               {resetMutation.isError ? (
                 <p className="soft-note-danger">
                   {(resetMutation.error as { response?: { data?: { detail?: string } } })?.response
@@ -347,11 +350,7 @@ export function RecoverPasswordPage() {
                   }
                   className="auth-v3-submit"
                 >
-                  {resetMutation.isPending
-                    ? ui.saving
-                    : pendingSession
-                      ? ui.done
-                      : ui.submit}
+                  {resetMutation.isPending ? ui.saving : pendingSession ? ui.done : ui.submit}
                 </button>
                 <button
                   type="button"

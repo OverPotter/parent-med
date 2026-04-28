@@ -11,10 +11,7 @@ import {
   readSecureAuthTokens,
   writeSecureAuthTokens,
 } from "@shared/security/authTokenStorage";
-import {
-  buildClientSessionTokens,
-  isCookieSessionMarker,
-} from "@shared/security/authSession";
+import { buildClientSessionTokens, isCookieSessionMarker } from "@shared/security/authSession";
 import { appLog } from "@shared/utils/appLog";
 
 type Theme = "light" | "dark" | "system";

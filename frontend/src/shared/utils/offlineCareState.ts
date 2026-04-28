@@ -133,7 +133,10 @@ const emptyState = (): OfflineCareState => ({
 });
 
 function hasWindow(): boolean {
-  return typeof globalThis !== "undefined" && typeof (globalThis as { window?: unknown }).window !== "undefined";
+  return (
+    typeof globalThis !== "undefined" &&
+    typeof (globalThis as { window?: unknown }).window !== "undefined"
+  );
 }
 
 function getStorage(): StorageLike | null {

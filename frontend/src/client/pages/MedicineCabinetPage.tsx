@@ -143,11 +143,7 @@ export function MedicineCabinetPage() {
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const isCatalogLocked = isFamilyAccessResolved && familyAccess.premiumActive === false;
   const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(
-    accountId,
-    currentFamilyId,
-    canManageSubscription
-    );
+    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
 
   useEffect(() => {
     if (addFlow !== "catalog" || !isFamilyAccessResolved || !isCatalogLocked) {
@@ -163,10 +159,7 @@ export function MedicineCabinetPage() {
     staleTime: 5 * 60 * 1000,
   });
   const eligibleCabinetMembers = getEligibleCabinetRecipients(familyMembers);
-  const showOfflineState =
-    canSeeCabinet && isOffline
-      ? true
-      : hasNetworkUnavailableError([error]);
+  const showOfflineState = canSeeCabinet && isOffline ? true : hasNetworkUnavailableError([error]);
   const cabinetRecipientsSummary = useMemo(() => {
     if (!family || !canManageCabinetRecipients) {
       return null;

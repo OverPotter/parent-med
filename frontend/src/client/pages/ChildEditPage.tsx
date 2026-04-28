@@ -43,8 +43,7 @@ export function ChildEditPage() {
   const queryClient = useQueryClient();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const pageRef = useRef<HTMLDivElement | null>(null);
-  const canEditProfile =
-    !!childId && canEditChild(childId, accountFamilyRole, accountAccessPolicy);
+  const canEditProfile = !!childId && canEditChild(childId, accountFamilyRole, accountAccessPolicy);
   const { data: familyAccess } = useQuery({
     queryKey: ["families", "me", "access", currentFamilyId],
     queryFn: fetchMyFamilyAccess,

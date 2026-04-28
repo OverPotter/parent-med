@@ -32,8 +32,7 @@ export const settingsCopy = {
     recoveryCode: "Код восстановления",
     recoveryCodeHint:
       "Временный fallback для сброса пароля, пока в приложении нет восстановления по письму.",
-    recoveryCodeLockedHint:
-      "Кодовая фраза для смены пароля установлена.",
+    recoveryCodeLockedHint: "Кодовая фраза для смены пароля установлена.",
     recoveryCodeLabel: "Новый код восстановления",
     recoveryCodePlaceholder: "Например: quiet-river-42",
     recoveryCodeTooShort: "Код восстановления должен быть не короче 8 символов.",
@@ -68,8 +67,7 @@ export const settingsCopy = {
     liveActivitiesFeeding: "Кормление на экране блокировки",
     liveActivitiesFeedingHint: "Показывать большой таймер активного кормления.",
     liveActivitiesIllness: "Болезнь на экране блокировки",
-    liveActivitiesIllnessHint:
-      "Показывать активный эпизод болезни для доступных вам детей.",
+    liveActivitiesIllnessHint: "Показывать активный эпизод болезни для доступных вам детей.",
     liveActivitiesPreviewLabel: "Превью",
     liveActivitiesSleepPreviewTitle: "Сон",
     liveActivitiesFeedingPreviewTitle: "Кормление",
@@ -95,11 +93,9 @@ export const settingsCopy = {
     days7: "За 7 дней",
     days3: "За 3 дня",
     dangerZone: "Опасная зона",
-    dangerZoneHint:
-      "Эти действия нельзя отменить.",
+    dangerZoneHint: "Эти действия нельзя отменить.",
     deleteAccount: "Удалить аккаунт",
-    deleteAccountDescription:
-      "Вы выйдете из приложения, а доступ к аккаунту будет закрыт.",
+    deleteAccountDescription: "Вы выйдете из приложения, а доступ к аккаунту будет закрыт.",
     deleteAccountConfirmTitle: "Точно удалить аккаунт?",
     deleteAccountConfirmDescription:
       "Аккаунт будет деактивирован. Вход в него станет недоступен, восстановление не предусмотрено.",
@@ -109,8 +105,7 @@ export const settingsCopy = {
     cancelSubscriptionDescription:
       "Если позже захотите удалить семью, сначала отключите автопродление. Доступ Plus сохранится до конца оплаченного периода.",
     deleteFamily: "Удалить семью",
-    deleteFamilyDescription:
-      "Удалит семью и отключит доступ для всех участников.",
+    deleteFamilyDescription: "Удалит семью и отключит доступ для всех участников.",
     deleteFamilyBlockedDescription:
       "Семью нельзя удалить, пока у неё ещё действует Plus. Даже если продление уже отменено, доступ сохраняется до конца оплаченного периода.",
     subscriptionAutoRenewOn: "Автопродление: включено",
@@ -156,8 +151,7 @@ export const settingsCopy = {
     recoveryCode: "Recovery code",
     recoveryCodeHint:
       "A temporary fallback for password reset while the app has no email reset flow.",
-    recoveryCodeLockedHint:
-      "The recovery phrase for password reset is set.",
+    recoveryCodeLockedHint: "The recovery phrase for password reset is set.",
     recoveryCodeLabel: "New recovery code",
     recoveryCodePlaceholder: "Example: quiet-river-42",
     recoveryCodeTooShort: "Recovery code must be at least 8 characters long.",
@@ -218,11 +212,9 @@ export const settingsCopy = {
     days7: "7 days before",
     days3: "3 days before",
     dangerZone: "Danger zone",
-    dangerZoneHint:
-      "These actions cannot be undone.",
+    dangerZoneHint: "These actions cannot be undone.",
     deleteAccount: "Delete account",
-    deleteAccountDescription:
-      "You will be signed out and access to this account will be removed.",
+    deleteAccountDescription: "You will be signed out and access to this account will be removed.",
     deleteAccountConfirmTitle: "Delete account permanently?",
     deleteAccountConfirmDescription:
       "The account will be deactivated. Login will no longer be possible.",
@@ -232,8 +224,7 @@ export const settingsCopy = {
     cancelSubscriptionDescription:
       "If you plan to delete the family later, disable auto-renew first. Plus access will remain until the end of the paid period.",
     deleteFamily: "Delete family",
-    deleteFamilyDescription:
-      "Deletes the family and removes access for all members.",
+    deleteFamilyDescription: "Deletes the family and removes access for all members.",
     deleteFamilyBlockedDescription:
       "The family cannot be deleted while Plus access is still active. Even if renewal is already canceled, access remains until the end of the paid period.",
     subscriptionAutoRenewOn: "Auto-renew: on",

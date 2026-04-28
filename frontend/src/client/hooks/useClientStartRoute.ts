@@ -49,10 +49,9 @@ export function useClientStartRoute(): ClientStartRouteResult {
       staleTime: 30 * 1000,
     })),
   });
-  const isActiveEpisodeResolving = Boolean(familyId && canSeeChildren) && (
-    isChildrenLoading ||
-    activeEpisodeQueries.some((query) => query.isLoading || query.isPending)
-  );
+  const isActiveEpisodeResolving =
+    Boolean(familyId && canSeeChildren) &&
+    (isChildrenLoading || activeEpisodeQueries.some((query) => query.isLoading || query.isPending));
   const hasChildren = familyChildren.length > 0;
   const hasActiveEpisode = activeEpisodeQueries.some((query) => Boolean(query.data));
 

@@ -24,9 +24,11 @@ export function IOSBackSwipeZone() {
       return { html: "", scrollY: 0 };
     }
     return (
-      (window as Window & {
-        __PM_IOS_PREVIOUS_SCREEN_SNAPSHOT?: { html: string; scrollY: number };
-      }).__PM_IOS_PREVIOUS_SCREEN_SNAPSHOT ?? { html: "", scrollY: 0 }
+      (
+        window as Window & {
+          __PM_IOS_PREVIOUS_SCREEN_SNAPSHOT?: { html: string; scrollY: number };
+        }
+      ).__PM_IOS_PREVIOUS_SCREEN_SNAPSHOT ?? { html: "", scrollY: 0 }
     );
   });
   const swipeStateRef = useRef<{
@@ -71,9 +73,11 @@ export function IOSBackSwipeZone() {
       return;
     }
     setPreviousScreenSnapshot(
-      (window as Window & {
-        __PM_IOS_PREVIOUS_SCREEN_SNAPSHOT?: { html: string; scrollY: number };
-      }).__PM_IOS_PREVIOUS_SCREEN_SNAPSHOT ?? { html: "", scrollY: 0 }
+      (
+        window as Window & {
+          __PM_IOS_PREVIOUS_SCREEN_SNAPSHOT?: { html: string; scrollY: number };
+        }
+      ).__PM_IOS_PREVIOUS_SCREEN_SNAPSHOT ?? { html: "", scrollY: 0 }
     );
   }, [location.pathname, location.search]);
 

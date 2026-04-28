@@ -69,7 +69,9 @@ export function FamilyMemberAccessPage() {
     () => members.find((item) => item.id === memberAccountId) ?? null,
     [memberAccountId, members]
   );
-  const [accessPolicy, setAccessPolicy] = useState<FamilyAccessPolicy | null>(member?.accessPolicy ?? null);
+  const [accessPolicy, setAccessPolicy] = useState<FamilyAccessPolicy | null>(
+    member?.accessPolicy ?? null
+  );
 
   useEffect(() => {
     if (member) {
@@ -131,46 +133,48 @@ export function FamilyMemberAccessPage() {
   const adminsCount = members.filter((item) => item.familyRole === "admin").length;
   const canManageTarget = Boolean(
     member &&
-      canManageFamilyMemberAccess({
-        familyOwnerAccountId: family?.ownerAccountId,
-        currentAccountId,
-        currentAccountRole,
-        targetAccountId: member.id,
-        targetFamilyRole: member.familyRole,
-      })
+    canManageFamilyMemberAccess({
+      familyOwnerAccountId: family?.ownerAccountId,
+      currentAccountId,
+      currentAccountRole,
+      targetAccountId: member.id,
+      targetFamilyRole: member.familyRole,
+    })
   );
   const canPromote = Boolean(
     member &&
-      canPromoteFamilyMember({
-        familyOwnerAccountId: family?.ownerAccountId,
-        currentAccountId,
-        targetAccountId: member.id,
-        targetFamilyRole: member.familyRole,
-      })
+    canPromoteFamilyMember({
+      familyOwnerAccountId: family?.ownerAccountId,
+      currentAccountId,
+      targetAccountId: member.id,
+      targetFamilyRole: member.familyRole,
+    })
   );
   const canDemote = Boolean(
     member &&
-      canDemoteFamilyMember({
-        familyOwnerAccountId: family?.ownerAccountId,
-        currentAccountId,
-        targetAccountId: member.id,
-        targetFamilyRole: member.familyRole,
-        adminsCount,
-      })
+    canDemoteFamilyMember({
+      familyOwnerAccountId: family?.ownerAccountId,
+      currentAccountId,
+      targetAccountId: member.id,
+      targetFamilyRole: member.familyRole,
+      adminsCount,
+    })
   );
   const canDelete = Boolean(
     member &&
-      canDeleteFamilyMember({
-        familyOwnerAccountId: family?.ownerAccountId,
-        currentAccountId,
-        currentAccountRole,
-        targetAccountId: member.id,
-        targetFamilyRole: member.familyRole,
-      })
+    canDeleteFamilyMember({
+      familyOwnerAccountId: family?.ownerAccountId,
+      currentAccountId,
+      currentAccountRole,
+      targetAccountId: member.id,
+      targetFamilyRole: member.familyRole,
+    })
   );
   const hasHeaderActions = Boolean(canPromote || canDemote || canDelete);
   const isActionPending = updateMemberMutation.isPending || deleteMemberMutation.isPending;
-  const accessSummaryItems = member ? buildMemberAccessSummaryItems(member.accessPolicy, language) : [];
+  const accessSummaryItems = member
+    ? buildMemberAccessSummaryItems(member.accessPolicy, language)
+    : [];
 
   if (member && !canManageTarget && !canPromote && !canDemote && !canDelete) {
     return <Navigate to="/family" replace />;
@@ -254,7 +258,9 @@ export function FamilyMemberAccessPage() {
           >
             {language === "ru" ? "← Семья" : "← Family"}
           </Link>
-          <h1 className="app-mobile-section-intro__title">{tFamily(language, "accessEditorTitle")}</h1>
+          <h1 className="app-mobile-section-intro__title">
+            {tFamily(language, "accessEditorTitle")}
+          </h1>
           <p className="app-mobile-section-intro__hint">
             {currentFamilyName || tFamily(language, "title")}
           </p>

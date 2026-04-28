@@ -33,5 +33,9 @@ export function shouldShowPillboxFreeDowngradeNotice(
   if (!access) {
     return false;
   }
-  return access.premiumActive === false && access.maxPillboxPlans === 1 && access.currentPillboxPlanCount > 1;
+  return (
+    access.premiumActive === false &&
+    access.maxPillboxPlans === 1 &&
+    access.currentPillboxPlanCount > 1
+  );
 }

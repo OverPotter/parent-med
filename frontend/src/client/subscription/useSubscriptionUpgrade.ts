@@ -13,9 +13,7 @@ import {
   purchaseNativeRevenueCatPackage,
   restoreNativeRevenueCatPurchases,
 } from "@shared/utils/nativeRevenueCat";
-import {
-  syncRevenueCatCustomerSnapshot,
-} from "@shared/utils/revenueCatSync";
+import { syncRevenueCatCustomerSnapshot } from "@shared/utils/revenueCatSync";
 import { clearRevenueCatSyncSuppressionForAccount } from "@shared/utils/revenueCatSyncSuppression";
 import { invalidateSubscriptionQueries } from "./invalidateSubscriptionQueries";
 

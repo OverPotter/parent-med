@@ -26,7 +26,11 @@ import {
   illnessListClass,
   illnessPanelSoftClass,
 } from "./shared";
-import { EpisodeTimelineList, episodeTimelineKindStyles, type EpisodeTimelineItem } from "./timeline";
+import {
+  EpisodeTimelineList,
+  episodeTimelineKindStyles,
+  type EpisodeTimelineItem,
+} from "./timeline";
 
 function EpisodeReminderRecipientsCard({
   language,
@@ -43,7 +47,10 @@ function EpisodeReminderRecipientsCard({
   isPending: boolean;
   onChangeSelection: (memberIds: string[]) => void;
 }) {
-  const eligibleMemberIds = useMemo(() => familyMembers.map((member) => member.id), [familyMembers]);
+  const eligibleMemberIds = useMemo(
+    () => familyMembers.map((member) => member.id),
+    [familyMembers]
+  );
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
     resolveRecipientSelection(episode.memberAccountIds, currentAccountId, eligibleMemberIds)
   );
@@ -758,10 +765,7 @@ export function ReminderDetailQuickView(props: {
   errorDetail: string | null;
   onEditingChange: (nextIsEditing: boolean, planName: string | null) => void;
   onTakeDose?: (plan: EpisodeMedicationPlan) => void;
-  onUpdate: (
-    planId: string,
-    payload: MedicationPlanPayload
-  ) => void;
+  onUpdate: (planId: string, payload: MedicationPlanPayload) => void;
   onDelete: (planId: string) => void;
 }) {
   const {

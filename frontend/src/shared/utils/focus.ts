@@ -36,8 +36,9 @@ export function scrollFieldIntoView(
   }
 
   const scrollTarget =
-    element.closest<HTMLElement>("input, textarea, select, [contenteditable='true'], [role='textbox']") ??
-    element;
+    element.closest<HTMLElement>(
+      "input, textarea, select, [contenteditable='true'], [role='textbox']"
+    ) ?? element;
 
   const delayMs = options?.delayMs ?? 0;
   window.setTimeout(() => {

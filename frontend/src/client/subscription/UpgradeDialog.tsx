@@ -60,9 +60,7 @@ export function UpgradeDialog({
             </p>
           ) : null}
           {errorMessage ? (
-            <p className="soft-note-danger text-sm leading-6">
-              {errorMessage}
-            </p>
+            <p className="soft-note-danger text-sm leading-6">{errorMessage}</p>
           ) : null}
         </div>
         <div className="mt-5 space-y-2 rounded-[22px] border border-border/60 bg-card-muted/50 px-4 py-4">

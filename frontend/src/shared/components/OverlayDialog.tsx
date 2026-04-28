@@ -55,9 +55,7 @@ export function OverlayDialog({
 
   const resolvedContainerClassName =
     containerClassName ??
-    (placement === "bottom"
-      ? "flex items-end"
-      : "flex items-center justify-center p-4 sm:p-6");
+    (placement === "bottom" ? "flex items-end" : "flex items-center justify-center p-4 sm:p-6");
   const resolvedBackdropClassName =
     backdropClassName ??
     (placement === "bottom"

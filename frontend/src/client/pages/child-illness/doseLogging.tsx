@@ -8,7 +8,11 @@ import {
   normalizeTimeInput,
   toApiDateTime,
 } from "@client/utils/feedingRecordForm";
-import { illnessCompactInputClass, illnessCompactPrimaryButtonClass, illnessCompactSecondaryButtonClass } from "./shared";
+import {
+  illnessCompactInputClass,
+  illnessCompactPrimaryButtonClass,
+  illnessCompactSecondaryButtonClass,
+} from "./shared";
 import { shouldRequestDoseTimeConfirmation } from "../../utils/medicationPlans";
 
 export type DoseLoggingCandidate<T> = {
@@ -130,9 +134,7 @@ export function DoseTimeSheet({
             />
           </label>
           <label className="block space-y-1.5">
-            <span className="soft-field-label">
-              {language === "ru" ? "Во сколько" : "Time"}
-            </span>
+            <span className="soft-field-label">{language === "ru" ? "Во сколько" : "Time"}</span>
             <input
               type="text"
               inputMode="numeric"

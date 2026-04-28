@@ -14,3 +14,10 @@ test("getUpgradeDialogCopy returns second child upgrade copy", () => {
   assert.match(copy.description, /multiple child profiles/i);
   assert.equal(copy.highlights.length, 4);
 });
+
+test("getUpgradeDialogCopy returns broader data export copy", () => {
+  const copy = getUpgradeDialogCopy("ru", "csv_export");
+  assert.match(copy.title, /экспорт данных/i);
+  assert.match(copy.description, /csv/i);
+  assert.match(copy.description, /xlsx/i);
+});

@@ -20,7 +20,9 @@ export async function fetchActiveSleepSessionByChildId(
   if (offline.hasOverride) {
     return offline.value;
   }
-  const res = await apiClient.get<RawSleepSession | null>(`/sleep-sessions/child/${childId}/active`);
+  const res = await apiClient.get<RawSleepSession | null>(
+    `/sleep-sessions/child/${childId}/active`
+  );
   return res.data ? toSleepSession(res.data) : null;
 }
 
@@ -56,7 +58,10 @@ export async function stopSleepSession(
   sessionId: string,
   payload?: { ended_at?: string | null }
 ): Promise<SleepSession> {
-  const res = await apiClient.post<RawSleepSession>(`/sleep-sessions/${sessionId}/stop`, payload ?? {});
+  const res = await apiClient.post<RawSleepSession>(
+    `/sleep-sessions/${sessionId}/stop`,
+    payload ?? {}
+  );
   return toSleepSession(res.data);
 }
 

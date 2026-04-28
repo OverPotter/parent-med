@@ -2,11 +2,7 @@ import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
-import type {
-  EpisodeMedicationPlan,
-  HouseholdMedicine,
-  WeightEntry,
-} from "@shared/types/api";
+import type { EpisodeMedicationPlan, HouseholdMedicine, WeightEntry } from "@shared/types/api";
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
 import {
   buildWeightDoseHint,
@@ -196,7 +192,9 @@ export function MedicationPlanDetail({
     }
   }, [intervalUnit, plan.minIntervalMinutes, quickEditField]);
 
-  const buildUpdatePayload = (overrides: Partial<MedicationPlanPayload>): MedicationPlanPayload => ({
+  const buildUpdatePayload = (
+    overrides: Partial<MedicationPlanPayload>
+  ): MedicationPlanPayload => ({
     householdMedicineId: plan.householdMedicineId,
     customMedicineName: plan.customMedicineName,
     doseAmount: plan.doseAmount,
@@ -473,7 +471,10 @@ export function MedicationPlanDetail({
                 <button
                   type="button"
                   onClick={handleQuickIntervalSave}
-                  disabled={parseIntervalInputToMinutes(quickIntervalInput, intervalUnit) === null || isUpdating}
+                  disabled={
+                    parseIntervalInputToMinutes(quickIntervalInput, intervalUnit) === null ||
+                    isUpdating
+                  }
                   className={appBtnFilledClass}
                 >
                   {language === "ru" ? "Сохранить интервал" : "Save interval"}
@@ -552,7 +553,13 @@ export function MedicationPlanDetail({
 
       <div
         className={`grid gap-2 ${
-          canLogDoseNow && onTakeDose ? (canEdit ? "grid-cols-3" : "grid-cols-2") : canEdit ? "grid-cols-2" : "grid-cols-1"
+          canLogDoseNow && onTakeDose
+            ? canEdit
+              ? "grid-cols-3"
+              : "grid-cols-2"
+            : canEdit
+              ? "grid-cols-2"
+              : "grid-cols-1"
         }`}
       >
         {canLogDoseNow && onTakeDose ? (

@@ -109,7 +109,9 @@ export function canSubmitMedicationPlanComposer(params: {
     return false;
   }
 
-  if (params.planMode === "cabinet" ? !params.selectedMedicineId : !params.customMedicineName.trim()) {
+  if (
+    params.planMode === "cabinet" ? !params.selectedMedicineId : !params.customMedicineName.trim()
+  ) {
     return false;
   }
 

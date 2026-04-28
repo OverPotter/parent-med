@@ -218,7 +218,9 @@ function SettingsToggleSwitch({
         enabled ? "border-emerald-500/45 bg-emerald-500/25" : "border-border bg-card-muted"
       } disabled:cursor-not-allowed disabled:opacity-60`}
       aria-label={
-        enabled ? tSettings(language, "disableNotifications") : tSettings(language, "enableNotifications")
+        enabled
+          ? tSettings(language, "disableNotifications")
+          : tSettings(language, "enableNotifications")
       }
       aria-pressed={enabled}
     >

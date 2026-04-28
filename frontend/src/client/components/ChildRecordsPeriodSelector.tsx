@@ -150,7 +150,9 @@ function PeriodOptionsDialog({
                 <span className="min-w-0 text-left text-sm font-semibold tracking-[-0.02em] text-foreground">
                   {getChildRecordsPeriodOptionLabel(option, language)}
                 </span>
-                <span className="soft-choice-check">{isActive ? "✓" : language === "ru" ? "Выбрать" : "Select"}</span>
+                <span className="soft-choice-check">
+                  {isActive ? "✓" : language === "ru" ? "Выбрать" : "Select"}
+                </span>
               </button>
             );
           })}

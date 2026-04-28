@@ -43,7 +43,11 @@ export function FullscreenOverlay({
           "calc(max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom))) + var(--app-keyboard-height, 0px))",
       }}
     >
-      <IosEdgeBackGesture isEnabled={isOpen && !closeDisabled} onBack={onClose} targetRef={rootRef} />
+      <IosEdgeBackGesture
+        isEnabled={isOpen && !closeDisabled}
+        onBack={onClose}
+        targetRef={rootRef}
+      />
       <div className="app-v3-background" aria-hidden="true">
         <div className="app-v3-decor app-v3-decor-a" />
         <div className="app-v3-decor app-v3-decor-b" />
@@ -72,8 +76,7 @@ export function FullscreenOverlay({
           data-fullscreen-overlay-scroll="true"
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-6"
           style={{
-            paddingBottom:
-              "calc(0.75rem + var(--app-keyboard-height, 0px) * 0.18)",
+            paddingBottom: "calc(0.75rem + var(--app-keyboard-height, 0px) * 0.18)",
           }}
         >
           <div className={`mx-auto w-full ${maxWidthClassName}`}>{children}</div>

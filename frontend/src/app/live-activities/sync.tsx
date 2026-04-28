@@ -61,12 +61,7 @@ export function LiveActivityRuntimeSync() {
   });
 
   useEffect(() => {
-    if (
-      !isBootReady ||
-      !authToken ||
-      !currentFamilyId ||
-      !isNativeIos
-    ) {
+    if (!isBootReady || !authToken || !currentFamilyId || !isNativeIos) {
       return;
     }
 
@@ -138,7 +133,7 @@ export function LiveActivityRuntimeSync() {
             const enrichedPlans = plans.map((plan) => ({
               ...plan,
               householdMedicineName: plan.householdMedicineId
-                ? householdMedicineNameById.get(plan.householdMedicineId) ?? null
+                ? (householdMedicineNameById.get(plan.householdMedicineId) ?? null)
                 : null,
             }));
 
@@ -209,18 +204,20 @@ export function LiveActivityRuntimeSync() {
       }
       isSyncInFlightRef.current = true;
       lastSyncAtRef.current = now;
-      void sync().catch((error) => {
-        updateLiveActivityDiagnostics({
-          lastSync: "error",
-          lastError: String(error),
+      void sync()
+        .catch((error) => {
+          updateLiveActivityDiagnostics({
+            lastSync: "error",
+            lastError: String(error),
+          });
+        })
+        .finally(() => {
+          isSyncInFlightRef.current = false;
+          if (pendingForceSyncRef.current) {
+            pendingForceSyncRef.current = false;
+            syncSafely(true);
+          }
         });
-      }).finally(() => {
-        isSyncInFlightRef.current = false;
-        if (pendingForceSyncRef.current) {
-          pendingForceSyncRef.current = false;
-          syncSafely(true);
-        }
-      });
     };
 
     syncSafely(true);

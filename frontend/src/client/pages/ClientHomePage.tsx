@@ -107,10 +107,7 @@ function HelpCardSection({
       />
       <div className="mt-4 divide-y divide-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)]">
         {items.map((item, index) => (
-          <div
-            key={item.title}
-            className={index === 0 ? "pb-3 sm:pb-4" : "pt-3 sm:pt-4"}
-          >
+          <div key={item.title} className={index === 0 ? "pb-3 sm:pb-4" : "pt-3 sm:pt-4"}>
             <div className="flex items-start gap-3">
               <span
                 aria-hidden="true"

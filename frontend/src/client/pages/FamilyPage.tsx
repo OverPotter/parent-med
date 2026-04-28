@@ -25,7 +25,11 @@ import { FamilyInviteSection } from "./family/FamilyInviteSection";
 import { FamilyLeaveSection } from "./family/FamilyLeaveSection";
 import { FamilyNameSection } from "./family/FamilyNameSection";
 import { MemberCard } from "./family/MemberCard";
-import { canLeaveCurrentFamily, canManageFamilyMembers, isFamilyOwnerAccount } from "./family/memberManagement";
+import {
+  canLeaveCurrentFamily,
+  canManageFamilyMembers,
+  isFamilyOwnerAccount,
+} from "./family/memberManagement";
 import { tFamily } from "./family/copy";
 import { useFamilyMembersData } from "./family/useFamilyMembersData";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
@@ -52,8 +56,7 @@ export function FamilyPage() {
   const setAuthState = useAppStore((s) => s.setAuthState);
   const isIosShell = useIsIosShell();
   const isOffline = useIsOffline();
-  const showDevInviteShortcut =
-    import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
+  const showDevInviteShortcut = import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
   const {
     data: families = [],
     isLoading: isFamilyLoading,
@@ -71,19 +74,14 @@ export function FamilyPage() {
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(
-    accountId,
-    currentFamilyId,
-    canManageSubscription
-    );
+    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
   const [isLeaveFamilyConfirmOpen, setIsLeaveFamilyConfirmOpen] = useState(false);
 
   const { isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
     useFamilyMembersData(currentFamilyId, currentAccountId);
 
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
-  const showOfflineState =
-    isOffline || hasNetworkUnavailableError([familyError, membersError]);
+  const showOfflineState = isOffline || hasNetworkUnavailableError([familyError, membersError]);
   const isFamilyOwner = isFamilyOwnerAccount({
     familyOwnerAccountId: family?.ownerAccountId,
     currentAccountId,
@@ -430,208 +428,208 @@ export function FamilyPage() {
 
       {family ? (
         <>
-      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="app-card-title">{tFamily(language, "yourProfileTitle")}</h2>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {currentMember ? (
-              <button
-                type="button"
-                onClick={() => {
-                  const next = new URLSearchParams(searchParams);
-                  next.set("edit", "me");
-                  setSearchParams(next, { replace: true });
-                }}
+          <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="app-card-title">{tFamily(language, "yourProfileTitle")}</h2>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {currentMember ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = new URLSearchParams(searchParams);
+                      next.set("edit", "me");
+                      setSearchParams(next, { replace: true });
+                    }}
+                    className="soft-pill-primary inline-flex min-h-[2.2rem] shrink-0 items-center px-3 text-[0.78rem] font-semibold"
+                  >
+                    {tFamily(language, "editProfile")}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <p className="mt-1 text-sm leading-6 text-muted">
+              {tFamily(language, "yourProfileDescription")}
+            </p>
+
+            {isMembersLoading ? (
+              <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
+            ) : !currentMember ? (
+              <p className="mt-4 text-sm text-muted">{tFamily(language, "noMembers")}</p>
+            ) : (
+              <div className="mt-4">
+                <MemberCard
+                  key={currentMember.id}
+                  member={currentMember}
+                  familyOwnerAccountId={family?.ownerAccountId}
+                  isCurrent
+                  forceEdit={Boolean(shouldOpenCurrentProfileEditor)}
+                  canManageAccess={false}
+                  canManageRoles={false}
+                  canDeleteMember={false}
+                  canEditProfile={false}
+                  adminsCount={adminsCount}
+                  isPending={
+                    updateMemberMutation.isPending ||
+                    updateMemberProfileMutation.isPending ||
+                    deleteMemberMutation.isPending
+                  }
+                  onPromote={() => {}}
+                  onDemote={() => {}}
+                  accessHref={`/family/members/${currentMember.id}/access`}
+                  onDelete={() => deleteMemberMutation.mutate(currentMember.id)}
+                  onSaveProfile={async (payload) => {
+                    try {
+                      await updateMemberProfileMutation.mutateAsync({
+                        memberAccountId: currentMember.id,
+                        displayName: payload.displayName,
+                        relationshipLabel: payload.relationshipLabel,
+                        phone: payload.phone,
+                      });
+                      return true;
+                    } catch {
+                      return false;
+                    }
+                  }}
+                  onHideForcedEdit={() => {
+                    if (!shouldOpenCurrentProfileEditor) {
+                      return;
+                    }
+                    const next = new URLSearchParams(searchParams);
+                    next.delete("edit");
+                    setSearchParams(next, { replace: true });
+                  }}
+                  language={language}
+                />
+              </div>
+            )}
+          </RowSurface>
+
+          <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="app-card-title">{tFamily(language, "otherMembersTitle")}</h2>
+              <Link
+                to="/family/members"
                 className="soft-pill-primary inline-flex min-h-[2.2rem] shrink-0 items-center px-3 text-[0.78rem] font-semibold"
               >
-                {tFamily(language, "editProfile")}
-              </button>
-            ) : null}
-          </div>
-        </div>
-        <p className="mt-1 text-sm leading-6 text-muted">
-          {tFamily(language, "yourProfileDescription")}
-        </p>
+                {tFamily(language, "openAllMembers")}
+              </Link>
+            </div>
+            <p className="mt-1 text-sm leading-6 text-muted">
+              {tFamily(language, "otherMembersDescription")}
+            </p>
 
-        {isMembersLoading ? (
-          <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
-        ) : !currentMember ? (
-          <p className="mt-4 text-sm text-muted">{tFamily(language, "noMembers")}</p>
-        ) : (
-          <div className="mt-4">
-            <MemberCard
-              key={currentMember.id}
-              member={currentMember}
-              familyOwnerAccountId={family?.ownerAccountId}
-              isCurrent
-              forceEdit={Boolean(shouldOpenCurrentProfileEditor)}
-              canManageAccess={false}
-              canManageRoles={false}
-              canDeleteMember={false}
-              canEditProfile={false}
-              adminsCount={adminsCount}
-              isPending={
-                updateMemberMutation.isPending ||
-                updateMemberProfileMutation.isPending ||
-                deleteMemberMutation.isPending
-              }
-              onPromote={() => {}}
-              onDemote={() => {}}
-              accessHref={`/family/members/${currentMember.id}/access`}
-              onDelete={() => deleteMemberMutation.mutate(currentMember.id)}
-              onSaveProfile={async (payload) => {
-                try {
-                  await updateMemberProfileMutation.mutateAsync({
-                    memberAccountId: currentMember.id,
-                    displayName: payload.displayName,
-                    relationshipLabel: payload.relationshipLabel,
-                    phone: payload.phone,
-                  });
-                  return true;
-                } catch {
-                  return false;
-                }
-              }}
-              onHideForcedEdit={() => {
-                if (!shouldOpenCurrentProfileEditor) {
-                  return;
-                }
-                const next = new URLSearchParams(searchParams);
-                next.delete("edit");
-                setSearchParams(next, { replace: true });
-              }}
+            {isMembersLoading ? (
+              <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
+            ) : otherMembers.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">{tFamily(language, "noOtherMembers")}</p>
+            ) : (
+              <p className="mt-4 text-sm leading-6 text-muted">
+                {language === "ru"
+                  ? `В семье ещё ${otherMembers.length} ${otherMembers.length === 1 ? "участник" : "участника"}.`
+                  : `${otherMembers.length} more member${otherMembers.length === 1 ? "" : "s"} in the family.`}
+              </p>
+            )}
+          </RowSurface>
+
+          {isFamilyOwner ? (
+            <FamilyInviteSection
               language={language}
+              isPending={createInviteMutation.isPending}
+              isInviteSharePending={isInviteSharePending}
+              canShareInvite={canShareInvite}
+              inviteLocked={!canInviteMembers}
+              inviteLockedReason={inviteLockedReason}
+              inviteCopied={inviteCopied}
+              latestInviteUrl={latestInviteUrl}
+              inviteExpiresAt={createInviteMutation.data?.expiresAt}
+              onCreateInvite={() => {
+                void handleCreateInvite();
+              }}
+              onLockedInviteAttempt={() => setIsUpgradeDialogOpen(true)}
+              onShareInvite={() => {
+                void handleShareInvite(latestInviteUrl);
+              }}
+              onCopyInvite={handleCopyInvite}
             />
-          </div>
-        )}
-      </RowSurface>
+          ) : null}
 
-      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="app-card-title">{tFamily(language, "otherMembersTitle")}</h2>
-          <Link
-            to="/family/members"
-            className="soft-pill-primary inline-flex min-h-[2.2rem] shrink-0 items-center px-3 text-[0.78rem] font-semibold"
-          >
-            {tFamily(language, "openAllMembers")}
-          </Link>
-        </div>
-        <p className="mt-1 text-sm leading-6 text-muted">
-          {tFamily(language, "otherMembersDescription")}
-        </p>
+          {showDevInviteShortcut ? (
+            <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+              <h2 className="app-card-title">
+                {language === "ru" ? "Dev: последнее приглашение" : "Dev: latest invite"}
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                {latestDevInvitePreview
+                  ? language === "ru"
+                    ? `Быстрое подключение к семье «${latestDevInvitePreview.familyName}» без копирования ссылки.`
+                    : `Quickly join "${latestDevInvitePreview.familyName}" without copying a link.`
+                  : language === "ru"
+                    ? "Если owner уже создал приглашение на другом симуляторе, можно подключиться без ссылки."
+                    : "If the owner already created an invite on another simulator, you can join without a link."}
+              </p>
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => acceptLatestDevInviteMutation.mutate()}
+                  disabled={acceptLatestDevInviteMutation.isPending}
+                  className="soft-button-secondary disabled:opacity-50"
+                >
+                  {acceptLatestDevInviteMutation.isPending
+                    ? language === "ru"
+                      ? "Подключаем…"
+                      : "Joining…"
+                    : language === "ru"
+                      ? "Подключиться к последнему invite"
+                      : "Join latest invite"}
+                </button>
+              </div>
+            </RowSurface>
+          ) : null}
 
-        {isMembersLoading ? (
-          <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
-        ) : otherMembers.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">{tFamily(language, "noOtherMembers")}</p>
-        ) : (
-          <p className="mt-4 text-sm leading-6 text-muted">
-            {language === "ru"
-              ? `В семье ещё ${otherMembers.length} ${otherMembers.length === 1 ? "участник" : "участника"}.`
-              : `${otherMembers.length} more member${otherMembers.length === 1 ? "" : "s"} in the family.`}
-          </p>
-        )}
-      </RowSurface>
-
-      {isFamilyOwner ? (
-        <FamilyInviteSection
-          language={language}
-          isPending={createInviteMutation.isPending}
-          isInviteSharePending={isInviteSharePending}
-          canShareInvite={canShareInvite}
-          inviteLocked={!canInviteMembers}
-          inviteLockedReason={inviteLockedReason}
-          inviteCopied={inviteCopied}
-          latestInviteUrl={latestInviteUrl}
-          inviteExpiresAt={createInviteMutation.data?.expiresAt}
-          onCreateInvite={() => {
-            void handleCreateInvite();
-          }}
-          onLockedInviteAttempt={() => setIsUpgradeDialogOpen(true)}
-          onShareInvite={() => {
-            void handleShareInvite(latestInviteUrl);
-          }}
-          onCopyInvite={handleCopyInvite}
-        />
-      ) : null}
-
-      {showDevInviteShortcut ? (
-        <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-          <h2 className="app-card-title">
-            {language === "ru" ? "Dev: последнее приглашение" : "Dev: latest invite"}
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            {latestDevInvitePreview
-              ? language === "ru"
-                ? `Быстрое подключение к семье «${latestDevInvitePreview.familyName}» без копирования ссылки.`
-                : `Quickly join "${latestDevInvitePreview.familyName}" without copying a link.`
-              : language === "ru"
-                ? "Если owner уже создал приглашение на другом симуляторе, можно подключиться без ссылки."
-                : "If the owner already created an invite on another simulator, you can join without a link."}
-          </p>
-          <div className="mt-4">
-            <button
-              type="button"
-              onClick={() => acceptLatestDevInviteMutation.mutate()}
-              disabled={acceptLatestDevInviteMutation.isPending}
-              className="soft-button-secondary disabled:opacity-50"
-            >
-              {acceptLatestDevInviteMutation.isPending
-                ? language === "ru"
-                  ? "Подключаем…"
-                  : "Joining…"
-                : language === "ru"
-                  ? "Подключиться к последнему invite"
-                  : "Join latest invite"}
-            </button>
-          </div>
-        </RowSurface>
-      ) : null}
-
-      <FamilyNameSection
-        language={language}
-        familyName={familyName}
-        currentFamilyName={family?.name}
-        canManageFamily={canManageFamily}
-        isEditing={isEditingFamilyName}
-        isFamilyLoading={isFamilyLoading}
-        isPending={updateFamilyMutation.isPending}
-        onFamilyNameChange={setFamilyName}
-        onToggleEditing={() => {
-          if (isEditingFamilyName) {
-            setFamilyName(family?.name ?? "");
-          }
-          setIsEditingFamilyName((current) => !current);
-        }}
-        onCancel={() => {
-          setFamilyName(family?.name ?? "");
-          setIsEditingFamilyName(false);
-        }}
-        onSubmit={handleFamilySubmit}
-      />
-      {canLeaveFamily ? (
-        <FamilyLeaveSection
-          language={language}
-          onLeave={() => setIsLeaveFamilyConfirmOpen(true)}
-        />
-      ) : null}
-      <UpgradeDialog
-        isOpen={isUpgradeDialogOpen}
-        language={language}
-        entryPoint="invite_family"
-        isPending={isUpgradePending}
-        canUpgrade={canManageSubscription}
-        errorMessage={upgradeErrorMessage}
-        onClose={() => {
-          clearUpgradeError();
-          setIsUpgradeDialogOpen(false);
-        }}
-        onUpgrade={() => {
-          void upgradeToPlus().then(() => {
-            setIsUpgradeDialogOpen(false);
-          });
-        }}
-      />
+          <FamilyNameSection
+            language={language}
+            familyName={familyName}
+            currentFamilyName={family?.name}
+            canManageFamily={canManageFamily}
+            isEditing={isEditingFamilyName}
+            isFamilyLoading={isFamilyLoading}
+            isPending={updateFamilyMutation.isPending}
+            onFamilyNameChange={setFamilyName}
+            onToggleEditing={() => {
+              if (isEditingFamilyName) {
+                setFamilyName(family?.name ?? "");
+              }
+              setIsEditingFamilyName((current) => !current);
+            }}
+            onCancel={() => {
+              setFamilyName(family?.name ?? "");
+              setIsEditingFamilyName(false);
+            }}
+            onSubmit={handleFamilySubmit}
+          />
+          {canLeaveFamily ? (
+            <FamilyLeaveSection
+              language={language}
+              onLeave={() => setIsLeaveFamilyConfirmOpen(true)}
+            />
+          ) : null}
+          <UpgradeDialog
+            isOpen={isUpgradeDialogOpen}
+            language={language}
+            entryPoint="invite_family"
+            isPending={isUpgradePending}
+            canUpgrade={canManageSubscription}
+            errorMessage={upgradeErrorMessage}
+            onClose={() => {
+              clearUpgradeError();
+              setIsUpgradeDialogOpen(false);
+            }}
+            onUpgrade={() => {
+              void upgradeToPlus().then(() => {
+                setIsUpgradeDialogOpen(false);
+              });
+            }}
+          />
         </>
       ) : null}
     </div>

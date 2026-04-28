@@ -62,9 +62,7 @@ export function ClientLayout() {
     accountId,
   });
 
-  const {
-    data: navChildren = [],
-  } = useQuery({
+  const { data: navChildren = [] } = useQuery({
     queryKey: ["children", currentFamilyId],
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
     enabled: Boolean(currentFamilyId && isDeferredBootReady && canSeeChildren),
@@ -174,7 +172,8 @@ export function ClientLayout() {
   const isObservationsRoute = observationsNavItem.exactActivePaths.some((path) =>
     matchPath({ path, end: true }, location.pathname)
   );
-  const shouldShowObservationsTab = canSeeChildren && (activeEpisodesCount > 0 || isObservationsRoute);
+  const shouldShowObservationsTab =
+    canSeeChildren && (activeEpisodesCount > 0 || isObservationsRoute);
   const baseDesktopNavLinks = [
     ...(shouldShowObservationsTab ? [observationsNavItem] : []),
     ...(canSeeChildren ? [childrenNavItem] : []),
@@ -228,8 +227,7 @@ export function ClientLayout() {
   const isSettingsRoute = Boolean(matchPath({ path: "/settings", end: true }, location.pathname));
   const isAccountRoute = Boolean(matchPath({ path: "/account", end: true }, location.pathname));
   const isFamilyRoute = Boolean(matchPath({ path: "/family", end: true }, location.pathname));
-  const shouldKeepMobileNav =
-    isSettingsRoute || isFeedbackRoute || isAccountRoute || isFamilyRoute;
+  const shouldKeepMobileNav = isSettingsRoute || isFeedbackRoute || isAccountRoute || isFamilyRoute;
   const shouldHideHeader =
     isLegalRoute ||
     isFeedbackRoute ||
@@ -299,7 +297,9 @@ export function ClientLayout() {
           isNotificationBellActive={pushPrompt.isNotificationBellActive}
           notificationBellVariant={pushPrompt.notificationBellVariant}
           onNotificationBellClick={
-            pushPrompt.shouldShowNotificationPrompt ? () => pushPrompt.setIsPushDialogOpen(true) : null
+            pushPrompt.shouldShowNotificationPrompt
+              ? () => pushPrompt.setIsPushDialogOpen(true)
+              : null
           }
         >
           <Outlet />
@@ -330,9 +330,9 @@ export function ClientLayout() {
             ? copy.clientLayout.pushPrompt.openSettings
             : pushPrompt.categoryPushIssue
               ? copy.clientLayout.pushPrompt.categoriesDisabledCta
-            : pushPrompt.isPushPending
-              ? copy.clientLayout.pushPrompt.enabling
-              : copy.clientLayout.pushPrompt.enable
+              : pushPrompt.isPushPending
+                ? copy.clientLayout.pushPrompt.enabling
+                : copy.clientLayout.pushPrompt.enable
         }
         cancelLabel={copy.clientLayout.pushPrompt.hide}
         isPending={pushPrompt.isPushPending}

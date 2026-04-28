@@ -5,6 +5,7 @@ import { fetchMyFamilyAccess } from "@shared/api/families";
 import { fetchLatestHeightEntryByChildId } from "@shared/api/heightEntries";
 import { fetchLatestWeightEntryByChildId } from "@shared/api/weightEntries";
 import { Surface } from "@shared/components/Surface";
+import { PlusBadge } from "@shared/components/PlusBadge";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { canEditChild, canViewChild } from "@shared/permissions/familyAccess";
@@ -13,6 +14,8 @@ import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
+import { resolveChildExportGateState } from "@client/pages/children/childExportAccess";
+import { ChildExportDialog } from "@client/pages/children/ChildExportDialog";
 import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
 import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { formatChildDatePlain } from "@client/utils/childDateFormat";
@@ -30,8 +33,12 @@ export function ChildProfilePage() {
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const [upgradeEntryPoint, setUpgradeEntryPoint] = useState<"child_actions_locked" | "csv_export">(
+    "child_actions_locked"
+  );
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const canViewProfile = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
-  const { data: familyAccess } = useQuery({
+  const { data: familyAccess, isLoading: isFamilyAccessLoading } = useQuery({
     queryKey: ["families", "me", "access", currentFamilyId],
     queryFn: fetchMyFamilyAccess,
     enabled: Boolean(currentFamilyId),
@@ -39,11 +46,7 @@ export function ChildProfilePage() {
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(
-    accountId,
-    currentFamilyId,
-    canManageSubscription
-    );
+    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
@@ -75,6 +78,11 @@ export function ChildProfilePage() {
   const babyModeLabel = child.babyModeEnabled ? copy.babyModeEnabled : copy.babyModeDisabled;
   const canEditProfile = canEditChild(child.id, accountFamilyRole, accountAccessPolicy);
   const planLocksChildActions = isChildLockedByPlan(child.id, familyAccess);
+  const exportGateState = resolveChildExportGateState({
+    familyAccess,
+    isLoading: isFamilyAccessLoading,
+  });
+  const canExportCsv = exportGateState === "allowed";
   const profileNavActionClass = "soft-pill app-profile-action";
   const quickLinks = [
     {
@@ -114,30 +122,35 @@ export function ChildProfilePage() {
         title={`${copy.eyebrow} · ${child.name}`}
         hint={copy.subtitle}
         action={
-          canEditProfile ? (
-            planLocksChildActions ? (
-              <button
-                type="button"
-                onClick={() => setIsUpgradeDialogOpen(true)}
-                className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
-              >
-                {copy.editProfile}
-              </button>
-            ) : (
-            <Link
-              to={`/children/${child.id}/edit`}
-              className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
-            >
-              {copy.editProfile}
-            </Link>
-            )
-          ) : null
+          <div className="flex min-w-[11rem] flex-col gap-2">
+            {canEditProfile ? (
+              planLocksChildActions ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUpgradeEntryPoint("child_actions_locked");
+                    setIsUpgradeDialogOpen(true);
+                  }}
+                  className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
+                >
+                  {copy.editProfile}
+                </button>
+              ) : (
+                <Link
+                  to={`/children/${child.id}/edit`}
+                  className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
+                >
+                  {copy.editProfile}
+                </Link>
+              )
+            ) : null}
+          </div>
         }
       />
       <UpgradeDialog
         isOpen={isUpgradeDialogOpen}
         language={language}
-        entryPoint="child_actions_locked"
+        entryPoint={upgradeEntryPoint}
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
         errorMessage={upgradeErrorMessage}
@@ -151,16 +164,26 @@ export function ChildProfilePage() {
           });
         }}
       />
+      <ChildExportDialog
+        isOpen={isExportDialogOpen}
+        childId={child.id}
+        childName={child.name}
+        language={language}
+        onClose={() => setIsExportDialogOpen(false)}
+      />
 
       <div className="mx-auto w-full max-w-2xl space-y-3 pt-2">
         <Surface className="p-3 sm:p-4">
           <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-            {quickLinks.map((item) => (
+            {quickLinks.map((item) =>
               item.locked ? (
                 <button
                   key={item.to}
                   type="button"
-                  onClick={() => setIsUpgradeDialogOpen(true)}
+                  onClick={() => {
+                    setUpgradeEntryPoint("child_actions_locked");
+                    setIsUpgradeDialogOpen(true);
+                  }}
                   className={`${profileNavActionClass} min-h-[2.6rem]`}
                 >
                   {item.label}
@@ -174,7 +197,7 @@ export function ChildProfilePage() {
                   {item.label}
                 </Link>
               )
-            ))}
+            )}
           </div>
         </Surface>
       </div>
@@ -245,6 +268,29 @@ export function ChildProfilePage() {
               <p className="text-sm text-muted">{copy.noExtra}</p>
             </div>
           )}
+        </div>
+        <div className="mt-5 flex justify-end">
+          <button
+            type="button"
+            disabled={exportGateState === "loading"}
+            onClick={() => {
+              if (exportGateState === "loading") {
+                return;
+              }
+              if (canExportCsv) {
+                setIsExportDialogOpen(true);
+                return;
+              }
+              setUpgradeEntryPoint("csv_export");
+              setIsUpgradeDialogOpen(true);
+            }}
+            className={`${profileNavActionClass} inline-flex min-h-[2.4rem] shrink-0 items-center gap-2`}
+          >
+            <span>{copy.exportData}</span>
+            {exportGateState === "locked" ? (
+              <PlusBadge className="min-w-[3rem] px-2.5 py-0.5 text-[0.68rem]" />
+            ) : null}
+          </button>
         </div>
       </Surface>
     </div>

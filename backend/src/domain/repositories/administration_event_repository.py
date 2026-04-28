@@ -1,6 +1,7 @@
 """Интерфейс репозитория приёмов лекарств."""
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from uuid import UUID
 
 from src.domain.entities.administration_event import AdministrationEvent
@@ -18,6 +19,13 @@ class AdministrationEventRepository(BaseRepository[AdministrationEvent]):
     @abstractmethod
     async def get_by_episode_id(self, episode_id: UUID) -> list[AdministrationEvent]:
         """Журнал приёмов по эпизоду."""
+        ...
+
+    @abstractmethod
+    async def get_by_episode_ids(
+        self, episode_ids: Sequence[UUID]
+    ) -> dict[UUID, list[AdministrationEvent]]:
+        """Журнал приёмов по нескольким эпизодам."""
         ...
 
     @abstractmethod

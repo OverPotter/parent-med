@@ -33,8 +33,7 @@ export function ChildSectionTopBar({
     isNotificationBellActive,
     notificationBellVariant,
     onNotificationBellClick,
-  } =
-    usePushPromptControls();
+  } = usePushPromptControls();
   const accountEmail = useAppStore((s) => s.accountEmail);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const clearSession = useAppStore((s) => s.clearSession);

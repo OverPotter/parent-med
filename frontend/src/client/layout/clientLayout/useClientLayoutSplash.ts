@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { shouldShowClientBootSplash } from "@client/startup/startupDecisions";
-import {
-  IOS_FIRST_LAUNCH_SPLASH_SETTLE_MS,
-  IOS_REPEAT_LAUNCH_SPLASH_SETTLE_MS,
-} from "./constants";
+import { IOS_FIRST_LAUNCH_SPLASH_SETTLE_MS, IOS_REPEAT_LAUNCH_SPLASH_SETTLE_MS } from "./constants";
 
 type UseClientLayoutSplashArgs = {
   isIosShell: boolean;

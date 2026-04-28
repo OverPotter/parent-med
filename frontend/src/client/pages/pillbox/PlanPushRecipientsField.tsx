@@ -29,13 +29,18 @@ export function PlanPushRecipientsField({
   isPending?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const eligibleMemberIds = useMemo(() => familyMembers.map((member) => member.id), [familyMembers]);
+  const eligibleMemberIds = useMemo(
+    () => familyMembers.map((member) => member.id),
+    [familyMembers]
+  );
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
     resolveRecipientSelection(selectedMemberIds, currentAccountId, eligibleMemberIds)
   );
 
   useEffect(() => {
-    setSelectedIds(resolveRecipientSelection(selectedMemberIds, currentAccountId, eligibleMemberIds));
+    setSelectedIds(
+      resolveRecipientSelection(selectedMemberIds, currentAccountId, eligibleMemberIds)
+    );
   }, [currentAccountId, eligibleMemberIds, selectedMemberIds]);
 
   const handleToggle = (memberId: string) => {
