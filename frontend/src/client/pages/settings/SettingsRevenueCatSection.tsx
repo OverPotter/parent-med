@@ -24,6 +24,8 @@ import {
   isRevenueCatSyncSuppressedForAccount,
   suppressRevenueCatSyncForAccount,
 } from "@shared/utils/revenueCatSyncSuppression";
+import { resolveRevenueCatPlanPurchase } from "@shared/utils/revenueCatPlanPurchase";
+import type { RevenueCatPlanKey } from "@shared/utils/revenueCatOfferingSelection";
 import { invalidateSubscriptionQueries } from "@client/subscription/invalidateSubscriptionQueries";
 import { childActionPrimaryClass, childActionSecondaryClass } from "../children/shared";
 import { SettingsRow, SettingsSection } from "./ui";
@@ -62,12 +64,14 @@ function getCopy(language: AppLanguage) {
     return {
       title: "RevenueCat sandbox",
       hint: "Dev-only smoke test без синка в backend: configure, offerings, purchase, restore и snapshot.",
+      openTestPaywall: "Open test paywall",
       accountMissing: "Для теста нужен активный аккаунт в приложении.",
       syncDisabled: "Backend sync выключен",
       syncEnabled: "Backend sync включен",
       configure: "Configure",
       offerings: "Offerings",
-      buy: "Buy first package",
+      buyMonthly: "Buy monthly",
+      buyAnnual: "Buy annual",
       restore: "Restore",
       snapshot: "Snapshot",
       resetToFree: "Reset to free",
@@ -88,12 +92,14 @@ function getCopy(language: AppLanguage) {
   return {
     title: "RevenueCat sandbox",
     hint: "Dev-only smoke test without backend sync: configure, offerings, purchase, restore, and snapshot.",
+    openTestPaywall: "Open test paywall",
     accountMissing: "An active signed-in account is required for this test.",
     syncDisabled: "Backend sync is off",
     syncEnabled: "Backend sync is on",
     configure: "Configure",
     offerings: "Offerings",
-    buy: "Buy first package",
+    buyMonthly: "Buy monthly",
+    buyAnnual: "Buy annual",
     restore: "Restore",
     snapshot: "Snapshot",
     resetToFree: "Reset to free",
@@ -116,10 +122,12 @@ export function SettingsRevenueCatSection({
   language,
   accountId,
   currentFamilyId,
+  onOpenTestPaywall,
 }: {
   language: AppLanguage;
   accountId: string | null;
   currentFamilyId: string | null;
+  onOpenTestPaywall: () => void;
 }) {
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
@@ -177,6 +185,23 @@ export function SettingsRevenueCatSection({
     });
   };
 
+  const purchasePlan = async (plan: RevenueCatPlanKey) => {
+    await ensureConfigured();
+    clearRevenueCatSyncSuppressionForAccount(accountId);
+    const { offeringIdentifier, selectedPackage } = await resolveRevenueCatPlanPurchase(plan);
+    const purchaseResult = await purchaseNativeRevenueCatPackage({
+      packageIdentifier: selectedPackage.identifier,
+      offeringIdentifier,
+      entitlementCode,
+    });
+    await refreshSubscriptionState(purchaseResult?.customerSnapshot ?? null);
+    return {
+      plan,
+      selectedPackage,
+      purchaseResult,
+    };
+  };
+
   return (
     <SettingsSection title={copy.title} hint={copy.hint}>
       <div className="mx-4 rounded-[22px] border border-dashed border-border/70 bg-card-muted/35 px-4 py-3 text-sm leading-6 text-muted">
@@ -194,6 +219,14 @@ export function SettingsRevenueCatSection({
         hint={!accountId ? copy.accountMissing : undefined}
         actions={
           <div className="flex w-full flex-wrap gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={onOpenTestPaywall}
+              disabled={isPending}
+              className={`${childActionSecondaryClass} min-h-[2.6rem] px-4 text-[0.84rem] disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {copy.openTestPaywall}
+            </button>
             <button
               type="button"
               onClick={() =>
@@ -222,28 +255,19 @@ export function SettingsRevenueCatSection({
             </button>
             <button
               type="button"
-              onClick={() =>
-                void runAction(copy.buy, async () => {
-                  await ensureConfigured();
-                  clearRevenueCatSyncSuppressionForAccount(accountId);
-                  const offerings = await getNativeRevenueCatOfferings();
-                  const selectedPackage = offerings?.availablePackages?.[0] ?? null;
-                  if (!selectedPackage) {
-                    throw new Error(copy.packageMissing);
-                  }
-                  const snapshot = await purchaseNativeRevenueCatPackage({
-                    packageIdentifier: selectedPackage.identifier,
-                    offeringIdentifier: offerings?.currentOfferingIdentifier,
-                    entitlementCode,
-                  });
-                  await refreshSubscriptionState(snapshot);
-                  return snapshot;
-                })
-              }
+              onClick={() => void runAction(copy.buyMonthly, () => purchasePlan("monthly"))}
               disabled={isPending || !accountId}
               className={`${childActionPrimaryClass} min-h-[2.6rem] px-4 text-[0.84rem] disabled:cursor-not-allowed disabled:opacity-60`}
             >
-              {copy.buy}
+              {copy.buyMonthly}
+            </button>
+            <button
+              type="button"
+              onClick={() => void runAction(copy.buyAnnual, () => purchasePlan("annual"))}
+              disabled={isPending || !accountId}
+              className={`${childActionPrimaryClass} min-h-[2.6rem] px-4 text-[0.84rem] disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {copy.buyAnnual}
             </button>
             <button
               type="button"

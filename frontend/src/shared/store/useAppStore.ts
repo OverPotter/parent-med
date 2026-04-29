@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { applyLanguageToDocument, detectPreferredLanguage, type AppLanguage } from "@shared/i18n";
 import type { FamilyAccessPolicy } from "@shared/types/api";
+import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
 import {
   clearSecureAuthTokens,
   isNativeIOSRuntime,
@@ -199,6 +200,7 @@ export const useAppStore = create<AppState>()(
       setLanguage: (language) => {
         set({ language });
         applyLanguageToDocument(language);
+        requestLiveActivityRefresh();
       },
       medicationIntervalUnit: "hours",
       setMedicationIntervalUnit: (unit) => set({ medicationIntervalUnit: unit }),
@@ -223,6 +225,7 @@ export const useAppStore = create<AppState>()(
         });
         set(() => {
           applyLanguageToDocument(session.account.preferredLanguage);
+          requestLiveActivityRefresh();
           return {
             authToken: clientTokens.accessToken,
             refreshToken: clientTokens.refreshToken,
@@ -263,6 +266,7 @@ export const useAppStore = create<AppState>()(
       setAuthState: (state) =>
         set(() => {
           applyLanguageToDocument(state.account.preferredLanguage);
+          requestLiveActivityRefresh();
           return {
             accountId: state.account.id,
             accountEmail: state.account.email,
@@ -280,6 +284,7 @@ export const useAppStore = create<AppState>()(
       setAccountPreferredLanguage: (language) =>
         set(() => {
           applyLanguageToDocument(language);
+          requestLiveActivityRefresh();
           return {
             accountPreferredLanguage: language,
             language,

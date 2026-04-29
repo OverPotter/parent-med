@@ -1,0 +1,28 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800&family=Varela+Round&display=swap");
+
+.pillpath-paywall-theme {
+  --color-pink: #f45ba6;
+  --color-purple: #8b5cf6;
+  --gradient-primary: linear-gradient(90deg, #f45ba6 0%, #8b5cf6 100%);
+  --bg-main: #ebe4ff;
+  --bg-soft-top: #fff4fa;
+  --bg-soft-mid: #f3e8ff;
+  --text-primary: #1e1b2e;
+  --text-secondary: #4b5563;
+  --text-muted: #64748b;
+  --border: #e9d5ff;
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --white: #ffffff;
+  --font-main: "Nunito Sans", system-ui, sans-serif;
+  --font-logo: "Varela Round", "Nunito Sans", system-ui, sans-serif;
+  --shadow-soft: 0 10px 30px rgba(139, 92, 246, 0.08);
+  --shadow-accent: 0 12px 30px rgba(244, 91, 166, 0.15);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  background: linear-gradient(
+    180deg,
+    var(--bg-soft-top) 0%,
+    var(--bg-soft-mid) 40%,
+    var(--bg-main) 100%
+  );
+}

@@ -10,97 +10,12 @@ struct FeedingReferenceLockScreenView: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 29, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.97, green: 0.87, blue: 0.80),
-                            Color(red: 0.96, green: 0.82, blue: 0.73),
-                            Color(red: 0.95, green: 0.79, blue: 0.69)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color.white.opacity(0.20),
-                                    Color.white.opacity(0.04),
-                                    Color.clear
-                                ],
-                                center: .topLeading,
-                                startRadius: 10,
-                                endRadius: 210
-                            )
-                        )
-                )
-                .overlay(
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color(red: 0.99, green: 0.92, blue: 0.88).opacity(0.16),
-                                    Color.clear
-                                ],
-                                center: .center,
-                                startRadius: 6,
-                                endRadius: 70
-                            )
-                        )
-                        .frame(width: 148, height: 148)
-                        .offset(x: -118, y: 84)
-                )
-                .overlay(
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color(red: 0.97, green: 0.70, blue: 0.54).opacity(0.10),
-                                    Color.clear
-                                ],
-                                center: .center,
-                                startRadius: 6,
-                                endRadius: 88
-                            )
-                        )
-                        .frame(width: 156, height: 156)
-                        .offset(x: 144, y: -72)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.12),
-                                    Color.white.opacity(0.03),
-                                    Color.clear,
-                                    Color.white.opacity(0.03)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.68), lineWidth: 1.1)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .inset(by: 1.2)
-                        .strokeBorder(Color(red: 0.92, green: 0.72, blue: 0.60).opacity(0.24), lineWidth: 0.9)
-                )
-                .shadow(color: Color.white.opacity(0.08), radius: 8, x: -2, y: -2)
-                .shadow(color: Color(red: 0.86, green: 0.58, blue: 0.43).opacity(0.14), radius: 16, x: 0, y: 8)
-                .shadow(color: Color.black.opacity(0.10), radius: 20, x: 0, y: 12)
+            feedingReferenceCardBackground
 
             HStack(alignment: .center, spacing: 16) {
                 ReferenceActivityBody(
                     accentColor: Color(red: 0.94, green: 0.48, blue: 0.28),
-                    label: "Кормление",
+                    label: liveActivityText("Кормление", "Feeding", context.state.language),
                     title: context.state.title,
                     subtitle: feedingReferenceSubtitle(for: context),
                     detailText: nil,
@@ -132,6 +47,95 @@ struct FeedingReferenceLockScreenView: View {
         }
         .widgetURL(deepLink)
     }
+
+    private var feedingReferenceCardBackground: some View {
+        RoundedRectangle(cornerRadius: 29, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.97, green: 0.87, blue: 0.80),
+                        Color(red: 0.96, green: 0.82, blue: 0.73),
+                        Color(red: 0.95, green: 0.79, blue: 0.69)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.white.opacity(0.20),
+                                Color.white.opacity(0.04),
+                                Color.clear
+                            ],
+                            center: .topLeading,
+                            startRadius: 10,
+                            endRadius: 210
+                        )
+                    )
+            )
+            .overlay(
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 0.99, green: 0.92, blue: 0.88).opacity(0.16),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 6,
+                            endRadius: 70
+                        )
+                    )
+                    .frame(width: 148, height: 148)
+                    .offset(x: -118, y: 84)
+            )
+            .overlay(
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 0.97, green: 0.70, blue: 0.54).opacity(0.10),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 6,
+                            endRadius: 88
+                        )
+                    )
+                    .frame(width: 156, height: 156)
+                    .offset(x: 144, y: -72)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.12),
+                                Color.white.opacity(0.03),
+                                Color.clear,
+                                Color.white.opacity(0.03)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.68), lineWidth: 1.1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .inset(by: 1.2)
+                    .strokeBorder(Color(red: 0.92, green: 0.72, blue: 0.60).opacity(0.24), lineWidth: 0.9)
+            )
+            .shadow(color: Color.white.opacity(0.08), radius: 8, x: -2, y: -2)
+            .shadow(color: Color(red: 0.86, green: 0.58, blue: 0.43).opacity(0.14), radius: 16, x: 0, y: 8)
+            .shadow(color: Color.black.opacity(0.10), radius: 20, x: 0, y: 12)
+    }
 }
 
 @available(iOSApplicationExtension 16.1, *)
@@ -141,116 +145,12 @@ struct SleepReferenceLockScreenView: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 29, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.84, green: 0.89, blue: 0.98),
-                            Color(red: 0.75, green: 0.81, blue: 0.96),
-                            Color(red: 0.64, green: 0.72, blue: 0.93)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color(red: 0.78, green: 0.88, blue: 1.0).opacity(0.12),
-                                    Color(red: 0.78, green: 0.88, blue: 1.0).opacity(0.02),
-                                    Color.clear
-                                ],
-                                center: .topLeading,
-                                startRadius: 14,
-                                endRadius: 220
-                            )
-                        )
-                )
-                .overlay(
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color(red: 0.63, green: 0.60, blue: 0.92).opacity(0.045),
-                                    Color(red: 0.63, green: 0.60, blue: 0.92).opacity(0.008),
-                                    Color.clear,
-                                ],
-                                center: .center,
-                                startRadius: 10,
-                                endRadius: 72
-                            )
-                        )
-                        .frame(width: 136, height: 136)
-                        .offset(x: -92, y: 88)
-                )
-                .overlay(
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color(red: 0.60, green: 0.83, blue: 1.0).opacity(0.18),
-                                    Color(red: 0.60, green: 0.83, blue: 1.0).opacity(0.03),
-                                    Color.clear
-                                ],
-                                center: .center,
-                                startRadius: 6,
-                                endRadius: 88
-                            )
-                        )
-                        .frame(width: 156, height: 156)
-                        .offset(x: 144, y: -76)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.04),
-                                    Color.white.opacity(0.005),
-                                    Color.clear,
-                                    Color.white.opacity(0.01)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .mask(
-                            RoundedRectangle(cornerRadius: 29, style: .continuous)
-                                .fill(.white)
-                                .overlay(
-                                    Capsule(style: .continuous)
-                                        .fill(.white)
-                                        .frame(width: 240, height: 52)
-                                        .rotationEffect(.degrees(-16))
-                                        .offset(x: 36, y: -46)
-                                        .blur(radius: 1.2)
-                                )
-                        )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.78), lineWidth: 1.35)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .inset(by: 1.2)
-                        .strokeBorder(Color(red: 0.62, green: 0.70, blue: 0.95).opacity(0.24), lineWidth: 1)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 29, style: .continuous)
-                        .inset(by: 3)
-                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.75)
-                )
-                .shadow(color: Color.white.opacity(0.14), radius: 8, x: -2, y: -2)
-                .shadow(color: Color(red: 0.55, green: 0.66, blue: 0.95).opacity(0.12), radius: 18, x: 0, y: 8)
-                .shadow(color: Color.black.opacity(0.14), radius: 24, x: 0, y: 13)
+            sleepReferenceCardBackground
 
             HStack(alignment: .center, spacing: 16) {
                 ReferenceActivityBody(
                     accentColor: Color(red: 0.40, green: 0.38, blue: 0.82),
-                    label: "Сон",
+                    label: liveActivityText("Сон", "Sleep", context.state.language),
                     title: context.state.title,
                     subtitle: sleepReferenceSubtitle(for: context),
                     detailText: nil,
@@ -282,6 +182,114 @@ struct SleepReferenceLockScreenView: View {
         }
         .widgetURL(deepLink)
     }
+
+    private var sleepReferenceCardBackground: some View {
+        RoundedRectangle(cornerRadius: 29, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.84, green: 0.89, blue: 0.98),
+                        Color(red: 0.75, green: 0.81, blue: 0.96),
+                        Color(red: 0.64, green: 0.72, blue: 0.93)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 0.78, green: 0.88, blue: 1.0).opacity(0.12),
+                                Color(red: 0.78, green: 0.88, blue: 1.0).opacity(0.02),
+                                Color.clear
+                            ],
+                            center: .topLeading,
+                            startRadius: 14,
+                            endRadius: 220
+                        )
+                    )
+            )
+            .overlay(
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 0.63, green: 0.60, blue: 0.92).opacity(0.045),
+                                Color(red: 0.63, green: 0.60, blue: 0.92).opacity(0.008),
+                                Color.clear,
+                            ],
+                            center: .center,
+                            startRadius: 10,
+                            endRadius: 72
+                        )
+                    )
+                    .frame(width: 136, height: 136)
+                    .offset(x: -92, y: 88)
+            )
+            .overlay(
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 0.60, green: 0.83, blue: 1.0).opacity(0.18),
+                                Color(red: 0.60, green: 0.83, blue: 1.0).opacity(0.03),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 6,
+                            endRadius: 88
+                        )
+                    )
+                    .frame(width: 156, height: 156)
+                    .offset(x: 144, y: -76)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.04),
+                                Color.white.opacity(0.005),
+                                Color.clear,
+                                Color.white.opacity(0.01)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .mask(
+                        RoundedRectangle(cornerRadius: 29, style: .continuous)
+                            .fill(.white)
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .fill(.white)
+                                    .frame(width: 240, height: 52)
+                                    .rotationEffect(.degrees(-16))
+                                    .offset(x: 36, y: -46)
+                                    .blur(radius: 1.2)
+                            )
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.78), lineWidth: 1.35)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .inset(by: 1.2)
+                    .strokeBorder(Color(red: 0.62, green: 0.70, blue: 0.95).opacity(0.24), lineWidth: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 29, style: .continuous)
+                    .inset(by: 3)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.75)
+            )
+            .shadow(color: Color.white.opacity(0.14), radius: 8, x: -2, y: -2)
+            .shadow(color: Color(red: 0.55, green: 0.66, blue: 0.95).opacity(0.12), radius: 18, x: 0, y: 8)
+            .shadow(color: Color.black.opacity(0.14), radius: 24, x: 0, y: 13)
+    }
 }
 
 @available(iOSApplicationExtension 16.1, *)
@@ -296,7 +304,7 @@ struct IllnessReferenceLockScreenView: View {
             HStack(alignment: .center, spacing: 16) {
                 ReferenceActivityBody(
                     accentColor: Color(red: 0.22, green: 0.64, blue: 0.60),
-                    label: "Болезнь",
+                    label: liveActivityText("Болезнь", "Illness", context.state.language),
                     title: context.state.title,
                     subtitle: illnessReferenceSummary(for: context),
                     detailText: illnessReferenceDetail(for: context),
@@ -316,7 +324,8 @@ struct IllnessReferenceLockScreenView: View {
                         } else {
                             IllnessDayText(
                                 startedAt: context.state.startedAt,
-                                font: .system(size: 24, weight: .semibold, design: .rounded)
+                                font: .system(size: 24, weight: .semibold, design: .rounded),
+                                languageCode: context.state.language
                             )
                         }
                     },
@@ -557,9 +566,13 @@ struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
 private func illnessReferenceSummary(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
     let statusLabel = context.state.statusLabel?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     if !statusLabel.isEmpty {
-        return compactIllnessStatusLine(statusLabel)
+        return compactIllnessStatusLine(statusLabel, languageCode: context.state.language)
     }
-    return "Болеет \(illnessDurationPhrase(startedAt: context.state.startedAt))"
+    return liveActivityText(
+        "Болеет \(illnessDurationPhrase(startedAt: context.state.startedAt, languageCode: context.state.language))",
+        "Sick \(illnessDurationPhrase(startedAt: context.state.startedAt, languageCode: context.state.language))",
+        context.state.language
+    )
 }
 
 @available(iOSApplicationExtension 16.1, *)
@@ -569,11 +582,11 @@ private func illnessReferenceDetail(for context: ActivityViewContext<LiveActivit
         return nil
     }
 
-    return compactIllnessDetailLine(subtitle)
+    return compactIllnessDetailLine(subtitle, languageCode: context.state.language)
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func compactIllnessStatusLine(_ value: String) -> String {
+private func compactIllnessStatusLine(_ value: String, languageCode: String?) -> String {
     let parts = value.split(separator: "·", maxSplits: 1).map {
         $0.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -583,12 +596,12 @@ private func compactIllnessStatusLine(_ value: String) -> String {
     }
 
     let medicine = compactIllnessMedicineLabel(String(parts[0]))
-    let timing = compactIllnessRelativeLabel(parts[1])
+    let timing = compactIllnessRelativeLabel(parts[1], languageCode: languageCode)
     return "\(medicine) · \(timing)"
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func compactIllnessDetailLine(_ value: String) -> String {
+private func compactIllnessDetailLine(_ value: String, languageCode: String?) -> String {
     let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
     let parts = trimmed.split(separator: "·", maxSplits: 1).map {
@@ -612,7 +625,11 @@ private func compactIllnessDetailLine(_ value: String) -> String {
         )
         let time = String(trimmed[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
         if !medicine.isEmpty && !time.isEmpty {
-            return "Дали: \(medicine) · \(time)"
+            return liveActivityText(
+                "Дали: \(medicine) · \(time)",
+                "Given: \(medicine) · \(time)",
+                languageCode
+            )
         }
     }
 
@@ -630,14 +647,14 @@ private func compactIllnessDetailLine(_ value: String) -> String {
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func compactIllnessRelativeLabel(_ value: String) -> String {
+private func compactIllnessRelativeLabel(_ value: String, languageCode: String?) -> String {
     let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
     switch trimmed {
     case "Можно дать":
-        return "Дать сейчас"
+        return liveActivityText("Дать сейчас", "Ready now", languageCode)
     case "можно дать":
-        return "дать сейчас"
+        return liveActivityText("дать сейчас", "ready now", languageCode)
     case "Ready now":
         return "Ready now"
     case "ready now":

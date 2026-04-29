@@ -3,6 +3,17 @@ import WidgetKit
 import SwiftUI
 import CapApp_SPM
 
+func liveActivityUsesRussian(_ languageCode: String? = nil) -> Bool {
+    if let normalized = languageCode?.lowercased(), normalized.hasPrefix("ru") || normalized.hasPrefix("en") {
+        return normalized.hasPrefix("ru")
+    }
+    return Locale.preferredLanguages.first?.lowercased().hasPrefix("ru") == true
+}
+
+func liveActivityText(_ ru: String, _ en: String, _ languageCode: String? = nil) -> String {
+    liveActivityUsesRussian(languageCode) ? ru : en
+}
+
 @available(iOSApplicationExtension 16.1, *)
 struct SleepFeedingLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
@@ -34,7 +45,8 @@ struct SleepFeedingLiveActivityWidget: Widget {
                     if context.attributes.kind == "illness" {
                         IllnessDayText(
                             startedAt: context.state.startedAt,
-                            font: .system(size: 20, weight: .bold, design: .rounded)
+                            font: .system(size: 20, weight: .bold, design: .rounded),
+                            languageCode: context.state.language
                         )
                         .foregroundStyle(.white)
                         .frame(minWidth: 62, alignment: .trailing)
@@ -49,7 +61,11 @@ struct SleepFeedingLiveActivityWidget: Widget {
                 }
 
                 DynamicIslandExpandedRegion(.bottom) {
-                    OpenActivityLink(url: deepLinkURL(for: context), compact: true)
+                    OpenActivityLink(
+                        url: deepLinkURL(for: context),
+                        compact: true,
+                        languageCode: context.state.language
+                    )
                 }
             } compactLeading: {
                 ZStack {
@@ -59,11 +75,11 @@ struct SleepFeedingLiveActivityWidget: Widget {
                 }
             } compactTrailing: {
                 if context.attributes.kind == "illness" {
-                    Text(compactIllnessDayLabel(startedAt: context.state.startedAt))
+                    Text(compactIllnessDayLabel(startedAt: context.state.startedAt, languageCode: context.state.language))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.white)
                 } else {
-                    CompactElapsedText(startedAt: context.state.startedAt)
+                    CompactElapsedText(startedAt: context.state.startedAt, languageCode: context.state.language)
                         .foregroundStyle(.white)
                 }
             } minimal: {
@@ -138,7 +154,8 @@ private struct LiveActivityLockScreenView: View {
                             if kind == "illness" {
                                 IllnessDayText(
                                     startedAt: context.state.startedAt,
-                                    font: .system(size: 24, weight: .bold, design: .rounded)
+                                    font: .system(size: 24, weight: .bold, design: .rounded),
+                                    languageCode: context.state.language
                                 )
                                 .foregroundStyle(.white)
                                 .frame(minWidth: 82, alignment: .trailing)
@@ -169,7 +186,11 @@ private struct LiveActivityLockScreenView: View {
                             }
                         }
 
-                        OpenActivityLink(url: deepLink, compact: false)
+                        OpenActivityLink(
+                            url: deepLink,
+                            compact: false,
+                            languageCode: context.state.language
+                        )
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 17)
@@ -249,10 +270,11 @@ struct LeadingElapsedTimerText: View {
 @available(iOSApplicationExtension 16.1, *)
 private struct CompactElapsedText: View {
     let startedAt: Date
+    let languageCode: String?
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { timeline in
-            Text(compactElapsedLabel(startedAt: startedAt, now: timeline.date))
+            Text(compactElapsedLabel(startedAt: startedAt, now: timeline.date, languageCode: languageCode))
                 .font(.caption.weight(.semibold))
                 .monospacedDigit()
                 .lineLimit(1)
@@ -265,9 +287,10 @@ private struct CompactElapsedText: View {
 struct IllnessDayText: View {
     let startedAt: Date
     let font: Font
+    let languageCode: String?
 
     var body: some View {
-        Text(illnessDayLabel(startedAt: startedAt))
+        Text(illnessDayLabel(startedAt: startedAt, languageCode: languageCode))
             .font(font)
             .monospacedDigit()
             .multilineTextAlignment(.trailing)
@@ -280,6 +303,7 @@ struct IllnessDayText: View {
 private struct OpenActivityLink: View {
     let url: URL?
     let compact: Bool
+    let languageCode: String?
 
     var body: some View {
         Group {
@@ -287,7 +311,7 @@ private struct OpenActivityLink: View {
                 Link(destination: url) {
                     HStack(spacing: compact ? 6 : 8) {
                         Image(systemName: "arrow.up.right")
-                        Text("Открыть")
+                        Text(liveActivityText("Открыть", "Open", languageCode))
                     }
                     .font(compact ? .caption.weight(.semibold) : .subheadline.weight(.semibold))
                     .foregroundStyle(.white)
@@ -330,25 +354,25 @@ private func activityTitle(for context: ActivityViewContext<LiveActivityAttribut
 
     switch context.attributes.kind {
     case "sleep":
-        return "Сон"
+        return liveActivityText("Сон", "Sleep", context.state.language)
     case "feeding":
-        return "Кормление"
+        return liveActivityText("Кормление", "Feeding", context.state.language)
     case "illness":
-        return "Наблюдение"
+        return liveActivityText("Наблюдение", "Illness", context.state.language)
     default:
-        return "Активность"
+        return liveActivityText("Активность", "Activity", context.state.language)
     }
 }
 
 @available(iOSApplicationExtension 16.1, *)
 private func activitySubtitle(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
-    let startedAtText = startedAtLabel(context.state.startedAt)
+    let startedAtText = startedAtLabel(context.state.startedAt, languageCode: context.state.language)
 
     switch context.attributes.kind {
     case "sleep":
-        return "С \(startedAtText)"
+        return liveActivityText("С \(startedAtText)", "Since \(startedAtText)", context.state.language)
     case "feeding":
-        return "С \(startedAtText)"
+        return liveActivityText("С \(startedAtText)", "Since \(startedAtText)", context.state.language)
     case "illness":
         return activityTitle(for: context)
     default:
@@ -360,9 +384,9 @@ private func activitySubtitle(for context: ActivityViewContext<LiveActivityAttri
 private func compactActivityEyebrow(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
     switch context.attributes.kind {
     case "sleep":
-        return "Сон"
+        return liveActivityText("Сон", "Sleep", context.state.language)
     case "feeding":
-        return "Кормление"
+        return liveActivityText("Кормление", "Feeding", context.state.language)
     case "illness":
         return activityTitle(for: context)
     default:
@@ -372,31 +396,34 @@ private func compactActivityEyebrow(for context: ActivityViewContext<LiveActivit
 
 @available(iOSApplicationExtension 16.1, *)
 func sleepReferenceSubtitle(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
-    "Спит с \(startedAtLabel(context.state.startedAt))"
+    let startedAtText = startedAtLabel(context.state.startedAt, languageCode: context.state.language)
+    return liveActivityText("Спит с \(startedAtText)", "Sleeping since \(startedAtText)", context.state.language)
 }
 
 @available(iOSApplicationExtension 16.1, *)
 func feedingReferenceSubtitle(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
-    "Начато в \(startedAtLabel(context.state.startedAt))"
+    let startedAtText = startedAtLabel(context.state.startedAt, languageCode: context.state.language)
+    return liveActivityText("Начато в \(startedAtText)", "Started at \(startedAtText)", context.state.language)
 }
 
 @available(iOSApplicationExtension 16.1, *)
 func illnessReferenceSubtitle(for context: ActivityViewContext<LiveActivityAttributes>) -> String {
-    "Наблюдение с \(startedAtDateLabel(context.state.startedAt))"
+    let startedAtText = startedAtDateLabel(context.state.startedAt, languageCode: context.state.language)
+    return liveActivityText("Наблюдение с \(startedAtText)", "Tracking since \(startedAtText)", context.state.language)
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func startedAtLabel(_ date: Date) -> String {
+private func startedAtLabel(_ date: Date, languageCode: String? = nil) -> String {
     let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "ru_RU")
+    formatter.locale = liveActivityUsesRussian(languageCode) ? Locale(identifier: "ru_RU") : Locale(identifier: "en_US")
     formatter.dateFormat = "HH:mm"
     return formatter.string(from: date)
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func startedAtDateLabel(_ date: Date) -> String {
+private func startedAtDateLabel(_ date: Date, languageCode: String? = nil) -> String {
     let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "ru_RU")
+    formatter.locale = liveActivityUsesRussian(languageCode) ? Locale(identifier: "ru_RU") : Locale(identifier: "en_US")
     formatter.dateFormat = "d MMM"
     return formatter.string(from: date)
 }
@@ -472,13 +499,18 @@ private func illnessDayNumber(startedAt: Date) -> Int {
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func illnessDayLabel(startedAt: Date) -> String {
-    "\(illnessDayNumber(startedAt: startedAt)) день"
+private func illnessDayLabel(startedAt: Date, languageCode: String? = nil) -> String {
+    liveActivityUsesRussian(languageCode)
+        ? "\(illnessDayNumber(startedAt: startedAt)) день"
+        : "Day \(illnessDayNumber(startedAt: startedAt))"
 }
 
 @available(iOSApplicationExtension 16.1, *)
-func illnessDurationPhrase(startedAt: Date) -> String {
+func illnessDurationPhrase(startedAt: Date, languageCode: String? = nil) -> String {
     let days = illnessDayNumber(startedAt: startedAt)
+    if !liveActivityUsesRussian(languageCode) {
+        return days == 1 ? "1 day" : "\(days) days"
+    }
     let remainder10 = days % 10
     let remainder100 = days % 100
 
@@ -495,22 +527,24 @@ func illnessDurationPhrase(startedAt: Date) -> String {
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func compactIllnessDayLabel(startedAt: Date) -> String {
-    "\(illnessDayNumber(startedAt: startedAt))д"
+private func compactIllnessDayLabel(startedAt: Date, languageCode: String? = nil) -> String {
+    liveActivityUsesRussian(languageCode)
+        ? "\(illnessDayNumber(startedAt: startedAt))д"
+        : "D\(illnessDayNumber(startedAt: startedAt))"
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func compactElapsedLabel(startedAt: Date, now: Date) -> String {
+private func compactElapsedLabel(startedAt: Date, now: Date, languageCode: String? = nil) -> String {
     let elapsedSeconds = max(0, Int(now.timeIntervalSince(startedAt)))
     let minutes = elapsedSeconds / 60
     let hours = minutes / 60
     let days = hours / 24
 
     if days > 0 {
-        return "\(days)д"
+        return liveActivityUsesRussian(languageCode) ? "\(days)д" : "\(days)d"
     }
     if hours > 0 {
-        return "\(hours)ч"
+        return liveActivityUsesRussian(languageCode) ? "\(hours)ч" : "\(hours)h"
     }
-    return "\(max(1, minutes))м"
+    return liveActivityUsesRussian(languageCode) ? "\(max(1, minutes))м" : "\(max(1, minutes))m"
 }

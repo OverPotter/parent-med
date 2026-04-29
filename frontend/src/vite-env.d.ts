@@ -13,6 +13,8 @@ interface ImportMetaEnv {
   readonly VITE_MARKETING_SITE_URL?: string;
   /** Public App Store URL for the iPhone app. */
   readonly VITE_APP_STORE_URL?: string;
+  /** Public support inbox shown on legal/support page for App Review and user contact. */
+  readonly VITE_SUPPORT_EMAIL?: string;
   /** Полный URL скрипта HitKeep, например http://localhost:8080/hk.js. Без переменной аналитика отключена. */
   readonly VITE_HITKEEP_SCRIPT_URL?: string;
   /** Public iOS SDK key from RevenueCat project settings. */

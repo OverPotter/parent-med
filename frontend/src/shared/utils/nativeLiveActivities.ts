@@ -12,6 +12,7 @@ type NativeLiveActivityPlugin = {
   upsert(args: {
     kind: NativeLiveActivityKind;
     itemId: string;
+    language?: "ru" | "en" | null;
     title: string;
     subtitle?: string | null;
     statusLabel?: string | null;
@@ -85,6 +86,7 @@ export async function getNativeLiveActivitiesStatus(): Promise<{
 export async function upsertNativeLiveActivity(args: {
   kind: NativeLiveActivityKind;
   itemId: string;
+  language?: "ru" | "en" | null;
   title: string;
   subtitle?: string | null;
   statusLabel?: string | null;

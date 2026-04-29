@@ -172,20 +172,30 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
                 do {
                     let customerInfo = try await Purchases.shared.customerInfo()
                     call.resolve([
-                        "customerSnapshot": await snapshotDictionary(
-                            from: customerInfo,
-                            purchaseTransaction: result.transaction
-                        ),
+                        "purchaseResult": [
+                            "outcome": "purchased",
+                            "customerSnapshot": await snapshotDictionary(
+                                from: customerInfo,
+                                purchaseTransaction: result.transaction
+                            ),
+                        ],
                     ])
                 } catch {
                     call.resolve([
-                        "customerSnapshot": await snapshotDictionary(
-                            from: result.customerInfo,
-                            purchaseTransaction: result.transaction
-                        ),
+                        "purchaseResult": [
+                            "outcome": "purchased",
+                            "customerSnapshot": await snapshotDictionary(
+                                from: result.customerInfo,
+                                purchaseTransaction: result.transaction
+                            ),
+                        ],
                     ])
                 }
             } catch {
+                if isPurchaseCancelledError(error) {
+                    call.reject("RevenueCat purchase canceled", "PURCHASE_CANCELED", error)
+                    return
+                }
                 do {
                     let customerInfo = try await Purchases.shared.customerInfo()
                     let snapshot = await snapshotDictionary(from: customerInfo)
@@ -345,6 +355,26 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
             transactionId: transaction.transactionIdentifier,
             originalTransactionId: transaction.transactionIdentifier
         )
+    }
+
+    private func isPurchaseCancelledError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == SKErrorDomain && nsError.code == SKError.paymentCancelled.rawValue {
+            return true
+        }
+
+        if let underlyingError = nsError.userInfo[NSUnderlyingErrorKey] as? NSError,
+           underlyingError.domain == SKErrorDomain,
+           underlyingError.code == SKError.paymentCancelled.rawValue {
+            return true
+        }
+
+        let description = nsError.localizedDescription.lowercased()
+        if description.contains("cancel") || description.contains("cancelled") || description.contains("canceled") {
+            return true
+        }
+
+        return false
     }
 
     private func resolveStatus(for entitlement: EntitlementInfo?) -> String {

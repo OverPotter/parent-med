@@ -6,6 +6,7 @@ import type {
   IllnessEpisodeInsights,
   SleepSession,
 } from "@shared/types/api";
+import { detectPreferredLanguage } from "@shared/i18n";
 import { buildNativeAppUrl } from "@shared/config/nativeAppLinks";
 import {
   resolveLiveActivityPreferences,
@@ -92,6 +93,7 @@ async function safeStopLiveActivity(args: {
 async function safeUpsertLiveActivity(args: {
   kind: "sleep" | "feeding" | "illness";
   itemId: string;
+  language?: "ru" | "en" | null;
   title: string;
   subtitle?: string | null;
   statusLabel?: string | null;
@@ -190,7 +192,7 @@ function buildFeedingStatusLabel(startedAt: string, language: "ru" | "en") {
 export async function syncSleepLiveActivity(
   child: Pick<Child, "id" | "name">,
   session: Pick<SleepSession, "id" | "startedAt" | "endedAt" | "createdByAccountId"> | null,
-  language: "ru" | "en" = "ru",
+  language: "ru" | "en",
   preferences?: LiveActivityPreferencesCache,
   currentAccountId?: string | null
 ) {
@@ -217,6 +219,7 @@ export async function syncSleepLiveActivity(
   await safeUpsertLiveActivity({
     kind: "sleep",
     itemId: child.id,
+    language,
     title: child.name,
     subtitle: getKindLabel("sleep", language),
     statusLabel: buildSleepStatusLabel(startedAt, language),
@@ -235,7 +238,7 @@ export async function syncFeedingLiveActivity(
     FeedingRecord,
     "id" | "recordedAt" | "startedAt" | "endedAt" | "createdByAccountId"
   > | null,
-  language: "ru" | "en" = "ru",
+  language: "ru" | "en",
   preferences?: LiveActivityPreferencesCache,
   currentAccountId?: string | null
 ) {
@@ -262,6 +265,7 @@ export async function syncFeedingLiveActivity(
   await safeUpsertLiveActivity({
     kind: "feeding",
     itemId: child.id,
+    language,
     title: child.name,
     subtitle: getKindLabel("feeding", language),
     statusLabel: buildFeedingStatusLabel(startedAt, language),
@@ -293,7 +297,7 @@ export async function syncIllnessLiveActivity(
     }
   > = [],
   latestAdministrationMedicineName: string | null = null,
-  language: "ru" | "en" = "ru",
+  language: "ru" | "en",
   preferences?: LiveActivityPreferencesCache,
   currentAccountId?: string | null
 ) {
@@ -339,6 +343,7 @@ export async function syncIllnessLiveActivity(
   await safeUpsertLiveActivity({
     kind: "illness",
     itemId: child.id,
+    language,
     title: child.name,
     subtitle,
     statusLabel,
@@ -368,7 +373,7 @@ export async function syncLiveActivitiesSnapshot(args: {
   }
 
   const preferences = args.preferences ?? resolveLiveActivityPreferences();
-  const language = args.language ?? "ru";
+  const language = args.language ?? detectPreferredLanguage();
 
   await Promise.all(
     args.children.flatMap((child) => {

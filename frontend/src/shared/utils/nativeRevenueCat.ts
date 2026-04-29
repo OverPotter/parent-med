@@ -35,6 +35,11 @@ export type RevenueCatOfferingPackage = {
   priceString: string;
 };
 
+export type RevenueCatPurchaseResult = {
+  outcome: "purchased";
+  customerSnapshot: RevenueCatCustomerSnapshot | null;
+};
+
 type NativeRevenueCatPlugin = {
   setLogLevel(args: { level: "debug" | "info" | "warn" | "error" }): Promise<void>;
   configure(args: {
@@ -55,7 +60,7 @@ type NativeRevenueCatPlugin = {
     packageIdentifier: string;
     offeringIdentifier?: string | null;
     entitlementCode?: string | null;
-  }): Promise<{ customerSnapshot: RevenueCatCustomerSnapshot }>;
+  }): Promise<{ purchaseResult: RevenueCatPurchaseResult }>;
   restorePurchases(args?: {
     entitlementCode?: string | null;
   }): Promise<{ customerSnapshot: RevenueCatCustomerSnapshot }>;
@@ -176,7 +181,7 @@ export async function purchaseNativeRevenueCatPackage(args: {
   }
   try {
     const result = await RevenueCat.purchasePackage(args);
-    return result.customerSnapshot;
+    return result.purchaseResult;
   } catch (error) {
     if (isPluginUnavailableError(error)) {
       return null;
