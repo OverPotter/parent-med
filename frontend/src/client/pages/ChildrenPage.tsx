@@ -36,8 +36,9 @@ import {
 } from "@shared/subscription/childPlanAccess";
 import type { Child } from "@shared/types/api";
 import { getChildrenCopy } from "@client/i18n/children";
-import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
-import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
+import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
+import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
+import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { ChildCard } from "./children/ChildCard";
 import { FeedingRecordDialog } from "./children/FeedingDialogs";
 import { childActionPrimaryClass, childActionSecondaryClass } from "./children/shared";
@@ -60,7 +61,8 @@ export function ChildrenPage() {
   const isIosShell = useIsIosShell();
   const isOffline = useIsOffline();
   const [feedingDialog, setFeedingDialog] = useState<FeedingDialogState | null>(null);
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
+    useUpgradeDialogOpenState();
   const [isChildrenAuxReady, setIsChildrenAuxReady] = useState(!isIosShell);
   const liveStatusQueryOptions = useLiveQueryOptions(isIosShell ? 60000 : 30000);
   const illnessStatusQueryOptions = useLiveQueryOptions(isIosShell ? 10000 : 5000);
@@ -118,8 +120,20 @@ export function ChildrenPage() {
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const showOfflineState = isOffline || hasNetworkUnavailableError([error]);
-  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
+  const {
+    upgradeToPlus,
+    restorePurchases,
+    isUpgradePending,
+    upgradeErrorMessage,
+    clearUpgradeError,
+    restoreSuccessMessage,
+  } = useSubscriptionUpgradeDialogState({
+    language,
+    accountId,
+    currentFamilyId,
+    canManageSubscription,
+    subscriptionStatus: familyAccess?.subscriptionStatus ?? "inactive",
+  });
   const childLimitReached =
     hasReachedChildLimit(familyAccess) ||
     (familyAccess?.maxChildren !== null && familyAccess?.maxChildren !== undefined
@@ -265,7 +279,7 @@ export function ChildrenPage() {
             type="button"
             onClick={() => {
               if (childLimitReached) {
-                setIsUpgradeDialogOpen(true);
+                openUpgradeDialog();
                 return;
               }
               navigate("/children/new");
@@ -300,24 +314,19 @@ export function ChildrenPage() {
           onClose={() => setFeedingDialog(null)}
         />
       ) : null}
-      <UpgradeDialog
+      <SubscriptionUpgradeDialog
         isOpen={isUpgradeDialogOpen}
+        setIsOpen={setIsUpgradeDialogOpen}
         language={language}
         entryPoint="second_child"
-        onRequestOpen={() => {
-          setIsUpgradeDialogOpen(true);
-        }}
-        isPending={isUpgradePending}
-        canUpgrade={canManageSubscription}
-        errorMessage={upgradeErrorMessage}
-        onClose={() => {
-          clearUpgradeError();
-          setIsUpgradeDialogOpen(false);
-        }}
-        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
-        onRestorePurchases={() => {
-          void restorePurchases();
-        }}
+        canManageSubscription={canManageSubscription}
+        subscriptionStatus={familyAccess?.subscriptionStatus ?? "inactive"}
+        isUpgradePending={isUpgradePending}
+        upgradeErrorMessage={upgradeErrorMessage}
+        restoreSuccessMessage={restoreSuccessMessage}
+        clearUpgradeError={clearUpgradeError}
+        upgradeToPlus={upgradeToPlus}
+        restorePurchases={restorePurchases}
       />
 
       {isLoading && <p className="text-muted">{common.loading}</p>}
@@ -335,7 +344,7 @@ export function ChildrenPage() {
                 type="button"
                 onClick={() => {
                   if (childLimitReached) {
-                    setIsUpgradeDialogOpen(true);
+                    openUpgradeDialog();
                     return;
                   }
                   navigate("/children/new");
@@ -406,7 +415,7 @@ export function ChildrenPage() {
                   canEditChild={canEdit}
                   planLocksChildActions={planLocksChildActions}
                   isPrimaryFreeChild={Boolean(isPrimaryFreeChild)}
-                  onLockedActionAttempt={() => setIsUpgradeDialogOpen(true)}
+                  onLockedActionAttempt={openUpgradeDialog}
                   currentAccountId={accountId}
                   copy={copy}
                   language={language}
@@ -428,7 +437,7 @@ export function ChildrenPage() {
                 type="button"
                 onClick={() => {
                   if (childLimitReached) {
-                    setIsUpgradeDialogOpen(true);
+                    openUpgradeDialog();
                     return;
                   }
                   navigate("/children/new");

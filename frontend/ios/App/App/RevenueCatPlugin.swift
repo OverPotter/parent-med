@@ -16,6 +16,7 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getOfferings", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "purchasePackage", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "restorePurchases", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "showManageSubscriptions", returnType: CAPPluginReturnPromise),
     ]
 
     private var entitlementCode: String?
@@ -222,6 +223,35 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.resolve(["customerSnapshot": await snapshotDictionary(from: customerInfo)])
             } catch {
                 call.reject("RevenueCat restore failed", nil, error)
+            }
+        }
+    }
+
+    @objc func showManageSubscriptions(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            if #available(iOS 15.0, *), let scene = self.bridge?.viewController?.view.window?.windowScene {
+                Task {
+                    do {
+                        try await AppStore.showManageSubscriptions(in: scene)
+                        call.resolve()
+                    } catch {
+                        call.reject("RevenueCat manage subscriptions failed", nil, error)
+                    }
+                }
+                return
+            }
+
+            guard let url = URL(string: "itms-apps://apps.apple.com/account/subscriptions") else {
+                call.reject("Subscriptions URL is invalid")
+                return
+            }
+
+            UIApplication.shared.open(url, options: [:]) { success in
+                if success {
+                    call.resolve()
+                    return
+                }
+                call.reject("RevenueCat manage subscriptions failed")
             }
         }
     }

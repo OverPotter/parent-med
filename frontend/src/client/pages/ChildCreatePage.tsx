@@ -5,8 +5,9 @@ import { createChild, fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchMyFamilyAccess } from "@shared/api/families";
 import { createHeightEntry } from "@shared/api/heightEntries";
 import { createWeightEntry } from "@shared/api/weightEntries";
-import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
-import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
+import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
+import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
+import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import { trackChildCreated } from "@shared/analytics";
 import { DateField } from "@shared/components/DateField";
@@ -53,8 +54,20 @@ export function ChildCreatePage() {
     staleTime: 30 * 1000,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
+  const {
+    upgradeToPlus,
+    restorePurchases,
+    isUpgradePending,
+    upgradeErrorMessage,
+    clearUpgradeError,
+    restoreSuccessMessage,
+  } = useSubscriptionUpgradeDialogState({
+    language,
+    accountId,
+    currentFamilyId,
+    canManageSubscription,
+    subscriptionStatus: familyAccess?.subscriptionStatus ?? "inactive",
+  });
 
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -65,7 +78,8 @@ export function ChildCreatePage() {
   const [babyModeEnabled, setBabyModeEnabled] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
+    useUpgradeDialogOpenState();
   const parsedWeight = parseMeasurement(weightValue);
   const parsedHeight = parseMeasurement(heightValue);
   const pageRef = useRef<HTMLDivElement | null>(null);
@@ -145,7 +159,7 @@ export function ChildCreatePage() {
       )?.response?.data?.code;
       if (code === "PLUS_REQUIRED_FOR_ADDITIONAL_CHILDREN") {
         setValidationError(null);
-        setIsUpgradeDialogOpen(true);
+        openUpgradeDialog();
       }
     },
   });
@@ -169,7 +183,7 @@ export function ChildCreatePage() {
     }
     if (childLimitReached) {
       setValidationError(null);
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
       return;
     }
 
@@ -404,24 +418,19 @@ export function ChildCreatePage() {
           )}
         </form>
       </Surface>
-      <UpgradeDialog
+      <SubscriptionUpgradeDialog
         isOpen={isUpgradeDialogOpen}
+        setIsOpen={setIsUpgradeDialogOpen}
         language={language}
         entryPoint="second_child"
-        onRequestOpen={() => {
-          setIsUpgradeDialogOpen(true);
-        }}
-        isPending={isUpgradePending}
-        canUpgrade={canManageSubscription}
-        errorMessage={upgradeErrorMessage}
-        onClose={() => {
-          clearUpgradeError();
-          setIsUpgradeDialogOpen(false);
-        }}
-        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
-        onRestorePurchases={() => {
-          void restorePurchases();
-        }}
+        canManageSubscription={canManageSubscription}
+        subscriptionStatus={familyAccess?.subscriptionStatus ?? "inactive"}
+        isUpgradePending={isUpgradePending}
+        upgradeErrorMessage={upgradeErrorMessage}
+        restoreSuccessMessage={restoreSuccessMessage}
+        clearUpgradeError={clearUpgradeError}
+        upgradeToPlus={upgradeToPlus}
+        restorePurchases={restorePurchases}
       />
     </div>
   );

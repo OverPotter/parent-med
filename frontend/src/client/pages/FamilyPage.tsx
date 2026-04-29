@@ -19,8 +19,9 @@ import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOpti
 import { useAppStore } from "@shared/store/useAppStore";
 import { normalizeFamilyAccessPolicy } from "@shared/familyAccess/policy";
 import { buildShareableInviteUrl } from "@shared/config/inviteLinks";
-import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
-import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
+import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
+import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
+import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { FamilyInviteSection } from "./family/FamilyInviteSection";
 import { FamilyLeaveSection } from "./family/FamilyLeaveSection";
 import { FamilyNameSection } from "./family/FamilyNameSection";
@@ -45,7 +46,8 @@ export function FamilyPage() {
   const [inviteCopied, setInviteCopied] = useState(false);
   const [isInviteSharePending, setIsInviteSharePending] = useState(false);
   const [inviteToast, setInviteToast] = useState<string | null>(null);
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
+    useUpgradeDialogOpenState();
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
@@ -73,8 +75,20 @@ export function FamilyPage() {
     ...familyAccessQueryOptions,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
+  const {
+    upgradeToPlus,
+    restorePurchases,
+    isUpgradePending,
+    upgradeErrorMessage,
+    clearUpgradeError,
+    restoreSuccessMessage,
+  } = useSubscriptionUpgradeDialogState({
+    language,
+    accountId,
+    currentFamilyId,
+    canManageSubscription,
+    subscriptionStatus: familyAccess?.subscriptionStatus ?? "inactive",
+  });
   const [isLeaveFamilyConfirmOpen, setIsLeaveFamilyConfirmOpen] = useState(false);
 
   const { isMembersLoading, membersError, currentMember, otherMembers, adminsCount } =
@@ -323,7 +337,7 @@ export function FamilyPage() {
 
   const handleCreateInvite = async () => {
     if (!canInviteMembers) {
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
       return;
     }
     try {
@@ -545,7 +559,7 @@ export function FamilyPage() {
               onCreateInvite={() => {
                 void handleCreateInvite();
               }}
-              onLockedInviteAttempt={() => setIsUpgradeDialogOpen(true)}
+              onLockedInviteAttempt={openUpgradeDialog}
               onShareInvite={() => {
                 void handleShareInvite(latestInviteUrl);
               }}
@@ -613,24 +627,19 @@ export function FamilyPage() {
               onLeave={() => setIsLeaveFamilyConfirmOpen(true)}
             />
           ) : null}
-          <UpgradeDialog
+          <SubscriptionUpgradeDialog
             isOpen={isUpgradeDialogOpen}
+            setIsOpen={setIsUpgradeDialogOpen}
             language={language}
             entryPoint="invite_family"
-            onRequestOpen={() => {
-              setIsUpgradeDialogOpen(true);
-            }}
-            isPending={isUpgradePending}
-            canUpgrade={canManageSubscription}
-            errorMessage={upgradeErrorMessage}
-            onClose={() => {
-              clearUpgradeError();
-              setIsUpgradeDialogOpen(false);
-            }}
-            onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
-            onRestorePurchases={() => {
-              void restorePurchases();
-            }}
+            canManageSubscription={canManageSubscription}
+            subscriptionStatus={familyAccess?.subscriptionStatus ?? "inactive"}
+            isUpgradePending={isUpgradePending}
+            upgradeErrorMessage={upgradeErrorMessage}
+            restoreSuccessMessage={restoreSuccessMessage}
+            clearUpgradeError={clearUpgradeError}
+            upgradeToPlus={upgradeToPlus}
+            restorePurchases={restorePurchases}
           />
         </>
       ) : null}

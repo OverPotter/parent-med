@@ -21,8 +21,9 @@ import {
 } from "@shared/subscription/pillboxPlanAccess";
 import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
-import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
-import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
+import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
+import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
+import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { PillboxAnalyticsScreen } from "./pillbox/analytics";
 import { PillboxMedicationScreen } from "./pillbox/medicationScreen";
 import {
@@ -84,7 +85,8 @@ export function PillboxPage() {
   );
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [savePlanError, setSavePlanError] = useState<string | null>(null);
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog, closeUpgradeDialog } =
+    useUpgradeDialogOpenState();
   const screen =
     searchParams.get("mode") === "setup" ||
     searchParams.get("mode") === "medication" ||
@@ -128,8 +130,20 @@ export function PillboxPage() {
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const premiumActive = familyAccess?.premiumActive ?? true;
   const freePrimaryPlanId = familyAccess?.freePrimaryPillboxPlanId ?? null;
-  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
+  const {
+    upgradeToPlus,
+    restorePurchases,
+    isUpgradePending,
+    upgradeErrorMessage,
+    clearUpgradeError,
+    restoreSuccessMessage,
+  } = useSubscriptionUpgradeDialogState({
+    language,
+    accountId,
+    currentFamilyId,
+    canManageSubscription,
+    subscriptionStatus: familyAccess?.subscriptionStatus ?? "inactive",
+  });
   const pillboxPlanLimitReached = shouldLockPillboxPlanCreation({
     access: familyAccess,
     screen,
@@ -242,7 +256,7 @@ export function PillboxPage() {
     ) {
       return;
     }
-    setIsUpgradeDialogOpen(true);
+    openUpgradeDialog();
     navigate(`/pillbox?mode=details&plan=${selectedPlanId}`, { replace: true });
   }, [navigate, screen, selectedPlanId, selectedPlanSubscriptionLocked]);
 
@@ -417,7 +431,7 @@ export function PillboxPage() {
 
   const openCreate = () => {
     if (pillboxPlanLimitReached) {
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
       return;
     }
     setDraft(buildDraft(accountId, undefined));
@@ -468,7 +482,7 @@ export function PillboxPage() {
     setDraft(null);
     setSaveAttempted(false);
     setSavePlanError(null);
-    setIsUpgradeDialogOpen(false);
+    closeUpgradeDialog();
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
     navigate(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox", { replace: true });
   };
@@ -478,7 +492,7 @@ export function PillboxPage() {
     setDraft(null);
     setSaveAttempted(false);
     setSavePlanError(null);
-    setIsUpgradeDialogOpen(false);
+    closeUpgradeDialog();
     resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
     navigateBackOr(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
   };
@@ -493,7 +507,7 @@ export function PillboxPage() {
     language,
     currentFamilyId,
     currentPillboxPlanLimitReached: Boolean(pillboxPlanLimitReached),
-    onPlanLimitReached: () => setIsUpgradeDialogOpen(true),
+    onPlanLimitReached: openUpgradeDialog,
     queryClient,
     setSavePlanError,
     setPlanActionError,
@@ -645,7 +659,7 @@ export function PillboxPage() {
       return Promise.resolve();
     }
     if (selectedPlanSubscriptionLocked) {
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
       return Promise.resolve();
     }
 
@@ -703,7 +717,7 @@ export function PillboxPage() {
       selectedPlan &&
       (selectedPlan.status === "active" || selectedPlan.status === "paused")
     ) {
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
       return;
     }
     setPlanActionError(null);
@@ -734,7 +748,7 @@ export function PillboxPage() {
       group.id !== freePrimaryPlanId &&
       (group.status === "active" || group.status === "paused")
     ) {
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
       return;
     }
     takeDoseMutation.mutate({
@@ -754,7 +768,7 @@ export function PillboxPage() {
       return;
     }
     if (selectedPlanSubscriptionLocked) {
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
       return;
     }
     setPlanActionError(null);
@@ -1033,24 +1047,19 @@ export function PillboxPage() {
           setPlanActionError(null);
         }}
       />
-      <UpgradeDialog
+      <SubscriptionUpgradeDialog
         isOpen={isUpgradeDialogOpen}
+        setIsOpen={setIsUpgradeDialogOpen}
         language={language}
         entryPoint="second_pillbox_plan"
-        onRequestOpen={() => {
-          setIsUpgradeDialogOpen(true);
-        }}
-        isPending={isUpgradePending}
-        canUpgrade={canManageSubscription}
-        errorMessage={upgradeErrorMessage}
-        onClose={() => {
-          clearUpgradeError();
-          setIsUpgradeDialogOpen(false);
-        }}
-        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
-        onRestorePurchases={() => {
-          void restorePurchases();
-        }}
+        canManageSubscription={canManageSubscription}
+        subscriptionStatus={familyAccess?.subscriptionStatus ?? "inactive"}
+        isUpgradePending={isUpgradePending}
+        upgradeErrorMessage={upgradeErrorMessage}
+        restoreSuccessMessage={restoreSuccessMessage}
+        clearUpgradeError={clearUpgradeError}
+        upgradeToPlus={upgradeToPlus}
+        restorePurchases={restorePurchases}
       />
     </>
   );

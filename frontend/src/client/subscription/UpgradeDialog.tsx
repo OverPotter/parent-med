@@ -1,10 +1,13 @@
 import type { AppLanguage } from "@shared/i18n";
-import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { blurActiveField } from "@shared/utils/focus";
+import { openExternalUrl } from "@shared/utils/openExternalUrl";
+import { Capacitor } from "@capacitor/core";
 import { useLayoutEffect } from "react";
 import { getUpgradeDialogCopy, type UpgradeEntryPoint } from "./upgradeDialogCopy";
 import { TestPaywallDialogContainer } from "./TestPaywallDialogContainer";
 import { consumeUpgradeDialogReopenPending } from "./upgradeDialogReopen";
+
+type SubscriptionStatus = "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired";
 
 type UpgradeDialogProps = {
   isOpen: boolean;
@@ -12,12 +15,54 @@ type UpgradeDialogProps = {
   entryPoint: UpgradeEntryPoint;
   isPending?: boolean;
   canUpgrade?: boolean;
+  subscriptionStatus?: SubscriptionStatus | null;
   errorMessage?: string | null;
+  successMessage?: string | null;
   onClose: () => void;
   onRequestOpen?: () => void;
+  onManageSubscription?: () => void;
   onUpgrade: (preferredPackageIdentifier?: string | null) => Promise<unknown> | void;
   onRestorePurchases?: () => Promise<unknown> | void;
 };
+
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set<SubscriptionStatus>([
+  "trialing",
+  "active",
+  "grace",
+  "canceled",
+]);
+
+function getActiveStateCopy(language: AppLanguage, subscriptionStatus: SubscriptionStatus) {
+  const autoRenewOff = subscriptionStatus === "canceled";
+  if (language === "ru") {
+    return {
+      title: "Plus уже активна",
+      description: autoRenewOff
+        ? "Автопродление уже выключено, но семейный доступ Plus ещё действует до конца оплаченного периода."
+        : "У семьи уже есть доступ Plus. Покупать подписку повторно не нужно.",
+      highlights: [
+        "Все возможности Plus уже открыты для этой семьи",
+        autoRenewOff
+          ? "При необходимости можно проверить срок доступа и дождаться окончания периода"
+          : "Автопродление и отмена управляются в системных подписках Apple",
+        "Если покупка не подтянулась на этом устройстве, используйте восстановление покупок",
+      ],
+    };
+  }
+  return {
+    title: "Plus is already active",
+    description: autoRenewOff
+      ? "Auto-renew is already off, but Plus access is still active for this family until the paid period ends."
+      : "This family already has Plus access. There is no need to purchase it again.",
+    highlights: [
+      "All Plus features are already unlocked for this family",
+      autoRenewOff
+        ? "You can check the access period and wait until it ends if needed"
+        : "Auto-renew and cancellation are managed in Apple system subscriptions",
+      "If this device did not pick up the purchase yet, use Restore Purchases",
+    ],
+  };
+}
 
 export function UpgradeDialog({
   isOpen,
@@ -25,9 +70,12 @@ export function UpgradeDialog({
   entryPoint,
   isPending = false,
   canUpgrade = true,
+  subscriptionStatus = null,
   errorMessage = null,
+  successMessage = null,
   onClose,
   onRequestOpen,
+  onManageSubscription,
   onUpgrade,
   onRestorePurchases,
 }: UpgradeDialogProps) {
@@ -38,7 +86,6 @@ export function UpgradeDialog({
     if (consumeUpgradeDialogReopenPending()) {
       onRequestOpen();
       blurActiveField();
-      return;
     }
   }, [isOpen, onRequestOpen]);
 
@@ -46,90 +93,83 @@ export function UpgradeDialog({
     return null;
   }
 
-  if (canUpgrade) {
-    return (
-      <TestPaywallDialogContainer
-        isOpen={isOpen}
-        language={language}
-        onClose={() => {
-          blurActiveField();
-          onClose();
-        }}
-        onUpgrade={onUpgrade}
-        onRestorePurchases={
-          onRestorePurchases
-            ? () => {
-                blurActiveField();
-                return onRestorePurchases();
-              }
-            : async () => undefined
-        }
-        isPending={isPending}
-        errorMessage={errorMessage}
-      />
-    );
-  }
+  const effectiveSubscriptionStatus = subscriptionStatus ?? "inactive";
+  const isSubscriptionActive = ACTIVE_SUBSCRIPTION_STATUSES.has(effectiveSubscriptionStatus);
+  const purchaseCopy = getUpgradeDialogCopy(language, entryPoint);
+  const activeCopy = getActiveStateCopy(language, effectiveSubscriptionStatus);
 
-  const copy = getUpgradeDialogCopy(language, entryPoint);
+  const variant = isSubscriptionActive
+    ? "active"
+    : canUpgrade
+      ? "purchase"
+      : "owner_required";
+
+  const infoTitle =
+    variant === "active"
+      ? activeCopy.title
+      : variant === "owner_required"
+        ? purchaseCopy.title
+        : null;
+  const infoDescription =
+    variant === "active"
+      ? activeCopy.description
+      : variant === "owner_required"
+        ? purchaseCopy.description
+        : null;
+  const infoHighlights =
+    variant === "active"
+      ? activeCopy.highlights
+      : variant === "owner_required"
+        ? purchaseCopy.highlights
+        : null;
+
+  const handleManageSubscriptionAction = () => {
+    blurActiveField();
+    if (onManageSubscription) {
+      onManageSubscription();
+      return;
+    }
+    void openExternalUrl(
+      Capacitor.isNativePlatform()
+        ? "itms-apps://apps.apple.com/account/subscriptions"
+        : "https://apps.apple.com/account/subscriptions"
+    );
+  };
 
   return (
-    <OverlayDialog
+    <TestPaywallDialogContainer
       isOpen={isOpen}
-      onClose={
-        isPending
-          ? undefined
-          : () => {
+      language={language}
+      onClose={() => {
+        blurActiveField();
+        onClose();
+      }}
+      onUpgrade={onUpgrade}
+      onRestorePurchases={
+        onRestorePurchases
+          ? () => {
               blurActiveField();
-              onClose();
+              return onRestorePurchases();
             }
+          : async () => undefined
       }
-      closeDisabled={isPending}
-      zIndexClassName="z-[180]"
-      backdropAriaLabel={language === "ru" ? "Закрыть окно Plus" : "Close Plus dialog"}
-    >
-      <div className="soft-panel relative z-[1] w-full max-w-md rounded-[30px] p-5 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-6">
-        <div className="mb-3 inline-flex rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-primary">
-          Plus
-        </div>
-        <div className="space-y-2">
-          <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">{copy.title}</h2>
-          <p className="text-sm leading-6 text-muted">{copy.description}</p>
-          {!canUpgrade ? (
-            <p className="text-sm leading-6 text-primary">
-              {language === "ru"
-                ? "Plus для семьи оформляет владелец семейного аккаунта. Попросите его подключить или восстановить подписку."
-                : "The family owner manages Plus for everyone. Ask them to purchase or restore the subscription."}
-            </p>
-          ) : null}
-          {errorMessage ? (
-            <p className="soft-note-danger text-sm leading-6">{errorMessage}</p>
-          ) : null}
-        </div>
-        <div className="mt-5 space-y-2 rounded-[22px] border border-border/60 bg-card-muted/50 px-4 py-4">
-          {copy.highlights.map((item) => (
-            <div key={item} className="flex items-start gap-2 text-sm leading-6 text-foreground">
-              <span className="mt-[0.42rem] inline-flex h-2 w-2 shrink-0 rounded-full bg-primary" />
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
-        <div className={`mt-5 grid gap-2 ${canUpgrade ? "sm:grid-cols-2" : ""}`}>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isPending}
-            className="soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
-          >
-            {canUpgrade
-              ? language === "ru"
-                ? "Позже"
-                : "Later"
-              : language === "ru"
-                ? "Понятно"
-                : "Got it"}
-          </button>
-        </div>
-      </div>
-    </OverlayDialog>
+      onManageSubscription={handleManageSubscriptionAction}
+      canManageSubscription={canUpgrade}
+      subscriptionStatus={effectiveSubscriptionStatus}
+      isPending={isPending}
+      errorMessage={errorMessage}
+      successMessage={successMessage}
+      variant={variant}
+      infoTitle={infoTitle}
+      infoDescription={infoDescription}
+      infoHighlights={infoHighlights}
+      ownerNote={
+        !canUpgrade
+          ? language === "ru"
+            ? "Plus для семьи оформляет владелец семейного аккаунта. Попросите его подключить или восстановить подписку."
+            : "The family owner manages Plus for everyone. Ask them to purchase or restore the subscription."
+          : null
+      }
+    />
   );
 }

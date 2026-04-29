@@ -6,7 +6,7 @@ type UseSwipeToDismissSheetArgs = {
   scrollRef: React.RefObject<HTMLElement>;
 };
 
-const DISMISS_DISTANCE_PX = 112;
+const DISMISS_DISTANCE_PX = 78;
 const DISMISS_ANIMATION_MS = 300;
 
 function getDismissTravelDistance() {
@@ -75,7 +75,7 @@ export function useSwipeToDismissSheet({
 
     const deltaX = Math.abs(touch.clientX - start.x);
     const deltaY = touch.clientY - start.y;
-    const shouldDismiss = deltaY >= DISMISS_DISTANCE_PX && deltaY >= deltaX * 1.2;
+    const shouldDismiss = deltaY >= DISMISS_DISTANCE_PX && deltaY >= deltaX * 1.05;
     setIsSheetDismissAnimating(true);
 
     if (!shouldDismiss) {
