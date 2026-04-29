@@ -16,6 +16,7 @@ import {
   canViewPillbox,
 } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
+import { isPaywallLegalRouteState } from "@client/pages/legal/legalRouteState";
 import { PushPromptControlProvider } from "./PushPromptControlContext";
 import { useClientLayoutBoot } from "./clientLayout/useClientLayoutBoot";
 import { useClientLayoutPushPrompt } from "./clientLayout/useClientLayoutPushPrompt";
@@ -223,6 +224,7 @@ export function ClientLayout() {
     location.pathname === "/pillbox" &&
     ["setup", "medication", "details", "analytics"].includes(pillboxMode ?? "");
   const isLegalRoute = Boolean(matchPath({ path: "/legal", end: false }, location.pathname));
+  const isPaywallLegalRoute = isLegalRoute && isPaywallLegalRouteState(location.state);
   const isFeedbackRoute = Boolean(matchPath({ path: "/feedback", end: true }, location.pathname));
   const isSettingsRoute = Boolean(matchPath({ path: "/settings", end: true }, location.pathname));
   const isAccountRoute = Boolean(matchPath({ path: "/account", end: true }, location.pathname));
@@ -291,7 +293,7 @@ export function ClientLayout() {
           navLinks={desktopNavLinks}
           mobileNavLinks={mobileNavLinks}
           mobileNavHidden={shouldHideMobileNav}
-          hideHeader={isCompactNestedChrome}
+          hideHeader={isCompactNestedChrome || isPaywallLegalRoute}
           compactHiddenChrome={isCompactNestedChrome}
           showNotificationBell={pushPrompt.shouldShowNotificationPrompt}
           isNotificationBellActive={pushPrompt.isNotificationBellActive}

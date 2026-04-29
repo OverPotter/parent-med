@@ -20,6 +20,7 @@ import { useAppStore } from "@shared/store/useAppStore";
 import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks";
 import { blurActiveField } from "@shared/utils/focus";
 import { Link, useSearchParams } from "react-router-dom";
+import { AuthLegalLinks } from "./AuthLegalLinks";
 
 type Mode = "login" | "register";
 
@@ -380,6 +381,7 @@ export function AuthPage() {
       : isPending
         ? copy.auth.actions.registerLoading
         : copy.auth.actions.register;
+  const showSecondaryLegalLinks = !isRegisterMode;
 
   const ensureSubmitVisible = () => {
     if (!isNativeIOS || mode !== "login" || typeof window === "undefined") {
@@ -611,16 +613,15 @@ export function AuthPage() {
           ) : null}
           {!isNativeRuntime ? (
             <div className="auth-v3-mobile-home-wrap">
-              <Link
-                to="/"
-                className="app-header-utility-button auth-v3-mobile-home-link"
-                onClick={blurActiveField}
-              >
-                {copy.common.aboutApp}
-              </Link>
+              <AuthLegalLinks
+                aboutHref="/"
+                aboutLabel={copy.common.aboutApp}
+                language={language}
+                onNavigate={blurActiveField}
+                showSecondaryLegalLinks={showSecondaryLegalLinks}
+              />
             </div>
           ) : null}
-
           <div className={joinClasses("auth-v3-hero", isNativeIOS && "auth-v3-hero--ios-hidden")}>
             <p className="auth-v3-subtitle">{pageDescription}</p>
           </div>
@@ -825,15 +826,14 @@ export function AuthPage() {
               <p className="auth-v3-footer-note">{copy.auth.page.invitationNote}</p>
               {isNativeIOS && publicSiteUrl ? (
                 <div className="auth-v3-ios-about-row">
-                  <a
-                    href={publicSiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="app-header-utility-button auth-v3-mobile-home-link"
-                    onClick={blurActiveField}
-                  >
-                    {copy.common.aboutApp}
-                  </a>
+                  <AuthLegalLinks
+                    aboutHref={publicSiteUrl}
+                    aboutLabel={copy.common.aboutApp}
+                    aboutExternal
+                    language={language}
+                    onNavigate={blurActiveField}
+                    showSecondaryLegalLinks={showSecondaryLegalLinks}
+                  />
                 </div>
               ) : null}
             </form>

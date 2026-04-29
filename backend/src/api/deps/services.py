@@ -21,6 +21,7 @@ from src.api.deps.repositories import (
     get_parent_repo,
     get_pillbox_repo,
     get_plan_repo,
+    get_public_support_request_repo,
     get_push_subscription_repo,
     get_sleep_session_repo,
     get_subscription_repo,
@@ -49,6 +50,9 @@ from src.application.services.illness_comment_service import IllnessCommentServi
 from src.application.services.illness_episode_service import IllnessEpisodeService
 from src.application.services.parent_service import ParentService
 from src.application.services.pillbox_service import PillboxService
+from src.application.services.public_support_request_service import (
+    PublicSupportRequestService,
+)
 from src.application.services.push_notification_service import PushNotificationService
 from src.application.services.sleep_session_service import SleepSessionService
 from src.application.services.subscription_access_service import SubscriptionAccessService
@@ -60,6 +64,12 @@ def get_account_feedback_service(
     feedback_repo=Depends(get_account_feedback_repo),
 ) -> AccountFeedbackService:
     return AccountFeedbackService(feedback_repo=feedback_repo)
+
+
+def get_public_support_request_service(
+    support_repo=Depends(get_public_support_request_repo),
+) -> PublicSupportRequestService:
+    return PublicSupportRequestService(support_repo=support_repo)
 
 
 def get_auth_service(

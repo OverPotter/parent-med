@@ -122,6 +122,16 @@ export interface Translations {
         cards: Array<{ title: string; lines: [string, string] }>;
         footer: string;
       };
+      routine: {
+        title: string;
+        description: string;
+        mobilePoints: [string, string, string];
+        snapshotTitle: string;
+        snapshotItems: [string, string, string];
+        insightTitle: string;
+        insightItems: [string, string, string];
+        footer: string;
+      };
       pillbox: {
         title: string;
         description: string;
@@ -155,6 +165,32 @@ export interface Translations {
         mobilePoints: [string, string];
         cards: [string, string];
         footer: string;
+      };
+      pricing: {
+        eyebrow: string;
+        title: string;
+        description: string;
+        free: {
+          name: string;
+          price: string;
+          period: string;
+          badge: string;
+          summary: string;
+          points: [string, string, string];
+        };
+        plus: {
+          name: string;
+          price: string;
+          period: string;
+          badge: string;
+          summary: string;
+          points: [string, string, string];
+          annualNote: string;
+          cta: string;
+        };
+        tableTitle: string;
+        rows: Array<{ label: string; free: string; plus: string }>;
+        footnote: string;
       };
       faq: {
         title: string;

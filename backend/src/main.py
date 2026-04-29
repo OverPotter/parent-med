@@ -25,6 +25,7 @@ from src.api.routers import (
     illness_episodes,
     parents,
     pillbox_plans,
+    public_support,
     push_notifications,
     sleep_sessions,
     temperature_entries,
@@ -123,6 +124,10 @@ def create_app() -> FastAPI:
         feedback.router,
         prefix="/api/v1",
         dependencies=protected_dependencies,
+    )
+    app.include_router(
+        public_support.router,
+        prefix="/api/v1",
     )
     app.include_router(
         analytics.router,

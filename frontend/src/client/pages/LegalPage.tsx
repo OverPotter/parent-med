@@ -2,11 +2,13 @@ import { useRef } from "react";
 import { useHistoryBackFallback } from "@client/pages/legal/useHistoryBackFallback";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { PageIntro } from "@shared/components/PageIntro";
+import { PublicSiteHeader } from "@shared/components/PublicSiteHeader";
 import { RowSurface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { getPrivacyPolicyUrl, getSupportUrl, getTermsOfUseUrl } from "@shared/config/legal";
 import { useAppStore } from "@shared/store/useAppStore";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { getPaywallLegalRouteState, isPaywallLegalRouteState } from "./legal/legalRouteState";
 
 function ExternalArrow() {
   return (
@@ -21,6 +23,13 @@ export function LegalPage() {
   const hasSession = useAppStore((s) => Boolean(s.authToken || s.accountId));
   const handleBack = useHistoryBackFallback(hasSession ? "/more" : "/");
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const location = useLocation();
+  const fromPaywall = isPaywallLegalRouteState(location.state);
+  const preservedLegalState = getPaywallLegalRouteState(location.state);
+  const showPublicHeader = !hasSession || fromPaywall;
+  const accountHref = hasSession ? "/more" : "/auth?mode=login";
+  const accountLabel =
+    language === "ru" ? (hasSession ? "Ещё" : "Войти") : hasSession ? "More" : "Login";
   const items = [
     {
       href: getPrivacyPolicyUrl(),
@@ -49,7 +58,17 @@ export function LegalPage() {
   ];
 
   return (
-    <div ref={rootRef} className="space-y-6 sm:space-y-8">
+    <div
+      ref={rootRef}
+      className={[
+        "legal-doc-page mx-auto w-full max-w-3xl space-y-6 sm:space-y-8 px-3 pb-6 sm:px-0",
+        fromPaywall ? "legal-doc-page--paywall" : "",
+        showPublicHeader ? "" : "app-safe-top-standalone",
+      ].join(" ")}
+    >
+      {showPublicHeader ? (
+        <PublicSiteHeader accountHref={accountHref} accountLabel={accountLabel} />
+      ) : null}
       <IosEdgeBackGesture isEnabled onBack={handleBack} targetRef={rootRef} />
       <PageIntro
         title={language === "ru" ? "Правовая информация" : "Legal information"}
@@ -110,7 +129,7 @@ export function LegalPage() {
 
           if (item.href.startsWith("/")) {
             return (
-              <Link key={item.title} to={item.href} className="block">
+              <Link key={item.title} to={item.href} state={preservedLegalState} className="block">
                 {content}
               </Link>
             );
@@ -124,7 +143,7 @@ export function LegalPage() {
         })}
       </div>
 
-      <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+      <RowSurface className="legal-doc-surface rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
         <p className="text-sm leading-7 text-muted">
           {language === "ru"
             ? "Медицинский дисклеймер: сервис носит информационный характер. Мы не врачи, не ставим диагнозы, не назначаем лечение и не несем ответственность за медицинские решения."

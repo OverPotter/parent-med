@@ -29,6 +29,7 @@ from src.infrastructure.database.models.pillbox import (
     PillboxPlanModel,
 )
 from src.infrastructure.database.models.plan import PlanModel
+from src.infrastructure.database.models.public_support_request import PublicSupportRequestModel
 from src.infrastructure.database.models.push_subscription import PushSubscriptionModel
 from src.infrastructure.database.models.sleep_session import SleepSessionModel
 from src.infrastructure.database.models.subscription import SubscriptionModel
@@ -51,6 +52,7 @@ __all__ = [
     "WeightEntryModel",
     "ParentModel",
     "PlanModel",
+    "PublicSupportRequestModel",
     "PillboxPlanModel",
     "PillboxMedicationModel",
     "PillboxDoseLogModel",

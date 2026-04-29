@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import type { AppLanguage } from "@shared/i18n";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { getPrivacyPolicyUrl, getTermsOfUseUrl } from "@shared/config/legal";
@@ -37,6 +38,8 @@ export function TestPaywallDialog({
   const [selectedPlan, setSelectedPlan] = useState<PaywallPlanKey>("annual");
   const copy = useMemo(() => getTestPaywallCopy(language), [language]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const { sheetOffsetY, isSheetDismissAnimating, handleTouchEnd, handleTouchMove, handleTouchStart } =
     useSwipeToDismissSheet({
       isOpen,
@@ -56,6 +59,15 @@ export function TestPaywallDialog({
   const handleLegalNavigation = (url: string) => {
     markUpgradeDialogReopenPending();
     onClose();
+    if (url.startsWith("/")) {
+      navigate(url, {
+        state: {
+          fromPaywall: true,
+          paywallReturnTo: `${location.pathname}${location.search}${location.hash}`,
+        },
+      });
+      return;
+    }
     void openExternalUrl(url);
   };
 

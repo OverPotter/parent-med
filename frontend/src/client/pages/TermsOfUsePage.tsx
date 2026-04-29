@@ -2,20 +2,77 @@ import { useRef } from "react";
 import { useHistoryBackFallback } from "@client/pages/legal/useHistoryBackFallback";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { PageIntro } from "@shared/components/PageIntro";
+import { PublicSiteHeader } from "@shared/components/PublicSiteHeader";
 import { Surface } from "@shared/components/Surface";
+import { getPrivacyPolicyUrl, getSupportUrl } from "@shared/config/legal";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useAppStore } from "@shared/store/useAppStore";
+import { Link, useLocation } from "react-router-dom";
+import { getPaywallLegalRouteState, isPaywallLegalRouteState } from "./legal/legalRouteState";
+
+const backLinkClass = "inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary";
+
+function LegalInlineLink({
+  href,
+  state,
+  children,
+}: {
+  href: string;
+  state?: unknown;
+  children: React.ReactNode;
+}) {
+  if (href.startsWith("/")) {
+    return (
+      <Link
+        to={href}
+        state={state}
+        className="font-semibold text-primary underline-offset-4 hover:underline"
+      >
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="font-semibold text-primary underline-offset-4 hover:underline"
+    >
+      {children}
+    </a>
+  );
+}
 
 export function TermsOfUsePage() {
   const { language } = useI18n();
-  const updatedAt = "08.04.2026";
+  const updatedAt = "29.04.2026";
   const handleBack = useHistoryBackFallback("/legal");
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const location = useLocation();
+  const hasSession = useAppStore((s) => Boolean(s.authToken || s.accountId));
+  const fromPaywall = isPaywallLegalRouteState(location.state);
+  const preservedLegalState = getPaywallLegalRouteState(location.state);
+  const showPublicHeader = !hasSession || fromPaywall;
+  const privacyUrl = getPrivacyPolicyUrl();
+  const supportUrl = getSupportUrl();
+  const accountHref = hasSession ? "/more" : "/auth?mode=login";
+  const accountLabel =
+    language === "ru" ? (hasSession ? "Ещё" : "Войти") : hasSession ? "More" : "Login";
 
   return (
     <div
       ref={rootRef}
-      className="legal-doc-page app-safe-top-standalone mx-auto w-full max-w-3xl space-y-6 sm:space-y-8 px-3 pb-6 sm:px-0"
+      className={[
+        "legal-doc-page mx-auto w-full max-w-3xl min-w-0 space-y-6 px-3 pb-6 sm:space-y-8 sm:px-0",
+        fromPaywall ? "legal-doc-page--paywall" : "",
+        showPublicHeader ? "" : "app-safe-top-standalone",
+      ].join(" ")}
     >
+      {showPublicHeader ? (
+        <PublicSiteHeader accountHref={accountHref} accountLabel={accountLabel} />
+      ) : null}
       <IosEdgeBackGesture isEnabled onBack={handleBack} targetRef={rootRef} />
       <PageIntro
         title={language === "ru" ? "Условия использования" : "Terms of Use"}
@@ -25,11 +82,7 @@ export function TermsOfUsePage() {
             : "Rules for using the PillPath service."
         }
         action={
-          <button
-            type="button"
-            onClick={handleBack}
-            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
-          >
+          <button type="button" onClick={handleBack} className={backLinkClass}>
             {language === "ru" ? "← Правовая информация" : "← Legal information"}
           </button>
         }
@@ -40,11 +93,7 @@ export function TermsOfUsePage() {
 
       <div className="app-root-mobile-header app-root-mobile-header--after-hidden-intro sm:hidden">
         <div className="app-mobile-section-intro">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
-          >
+          <button type="button" onClick={handleBack} className={`mb-1 ${backLinkClass}`}>
             {language === "ru" ? "← Правовая информация" : "← Legal information"}
           </button>
           <h1 className="app-mobile-section-intro__title">
@@ -64,19 +113,52 @@ export function TermsOfUsePage() {
             ? `Дата последнего обновления: ${updatedAt}.`
             : `Last updated: ${updatedAt}.`}
         </p>
+        <p className="rounded-2xl bg-muted/40 px-4 py-3 text-sm leading-6 text-muted">
+          {language === "ru" ? (
+            <>
+              Вопросы по подписке, отмене, privacy и правам пользователя направляйте через публичную
+              страницу{" "}
+              <LegalInlineLink href={supportUrl} state={preservedLegalState}>
+                «Поддержка / Контакты»
+              </LegalInlineLink>
+              . Правила обработки данных описаны в{" "}
+              <LegalInlineLink href={privacyUrl} state={preservedLegalState}>
+                «Политике конфиденциальности»
+              </LegalInlineLink>
+              .
+            </>
+          ) : (
+            <>
+              For subscription, cancellation, privacy, and user-rights questions, use the public{" "}
+              <LegalInlineLink href={supportUrl} state={preservedLegalState}>
+                Support / Contact
+              </LegalInlineLink>{" "}
+              page. Data-handling rules are described in the{" "}
+              <LegalInlineLink href={privacyUrl} state={preservedLegalState}>
+                Privacy Policy
+              </LegalInlineLink>
+              .
+            </>
+          )}
+        </p>
 
         <h2 className="text-base font-semibold text-main">
           {language === "ru" ? "1. О сервисе" : "1. About the service"}
         </h2>
         <p>
           {language === "ru"
-            ? "PillPath — бесплатный информационный сервис для учета приема лекарств, наблюдений и задач по уходу."
-            : "PillPath is a free informational service for tracking medication intake, observations and care tasks."}
+            ? "PillPath — информационный сервис и iPhone-приложение для семейного учета лекарств, наблюдений, напоминаний и задач по уходу."
+            : "PillPath is an informational service and iPhone app for family medication tracking, observations, reminders, and care tasks."}
         </p>
         <p>
           {language === "ru"
             ? "Сервис публикуется и поддерживается физическим лицом (владельцем приложения), без отдельного юридического лица."
             : "The service is published and operated by an individual (the app owner), without a separate legal entity."}
+        </p>
+        <p>
+          {language === "ru"
+            ? "В сервисе могут быть бесплатные функции (`Free`) и платные функции по подписке (`Plus`). Конкретный состав функций зависит от текущего плана и версии приложения."
+            : "The service may include free features (`Free`) and paid subscription features (`Plus`). The exact feature set depends on the current plan and app version."}
         </p>
 
         <h2 className="text-base font-semibold text-main">
@@ -152,7 +234,31 @@ export function TermsOfUsePage() {
         </p>
 
         <h2 className="text-base font-semibold text-main">
-          {language === "ru" ? "7. Интеллектуальные права" : "7. Intellectual property"}
+          {language === "ru" ? "7. Подписки и платежи" : "7. Subscriptions and payments"}
+        </h2>
+        <p>
+          {language === "ru"
+            ? "Plus может предоставляться как auto-renewable subscription через App Store. Стоимость, пробный период, длительность и локальная цена показываются пользователю перед покупкой внутри приложения и в App Store."
+            : "Plus may be offered as an auto-renewable subscription through the App Store. Price, trial period, duration, and local pricing are shown to the user before purchase inside the app and in the App Store."}
+        </p>
+        <p>
+          {language === "ru"
+            ? "Платежи обрабатываются Apple. Подписка автоматически продлевается, если пользователь не отменит её как минимум за 24 часа до окончания текущего периода, а оплата за следующий период может быть списана Apple в течение 24 часов до окончания текущего периода согласно правилам Apple."
+            : "Payments are processed by Apple. The subscription renews automatically unless the user cancels at least 24 hours before the end of the current period, and Apple may charge the next period within 24 hours before the current period ends under Apple’s rules."}
+        </p>
+        <p>
+          {language === "ru"
+            ? "Управление подпиской, отмена и возвраты выполняются через Apple ID / App Store, если иное не предусмотрено применимым правом или правилами Apple."
+            : "Subscription management, cancellation, and refunds are handled through Apple ID / the App Store, unless otherwise required by applicable law or Apple’s rules."}
+        </p>
+        <p>
+          {language === "ru"
+            ? "Удаление аккаунта в PillPath не отменяет автоматически подписку Plus. Если вы больше не хотите продление, отмените подписку отдельно в настройках Apple ID / App Store."
+            : "Deleting a PillPath account does not automatically cancel a Plus subscription. If you no longer want renewal, cancel the subscription separately in Apple ID / App Store settings."}
+        </p>
+
+        <h2 className="text-base font-semibold text-main">
+          {language === "ru" ? "8. Интеллектуальные права" : "8. Intellectual property"}
         </h2>
         <p>
           {language === "ru"
@@ -161,16 +267,21 @@ export function TermsOfUsePage() {
         </p>
 
         <h2 className="text-base font-semibold text-main">
-          {language === "ru" ? "8. Прекращение использования" : "8. Termination"}
+          {language === "ru" ? "9. Прекращение использования" : "9. Termination"}
         </h2>
         <p>
           {language === "ru"
             ? "Вы можете прекратить использование сервиса в любой момент. Мы также можем ограничить или прекратить доступ при нарушении этих условий."
             : "You may stop using the service at any time. We may also restrict or terminate access for violations of these Terms."}
         </p>
+        <p>
+          {language === "ru"
+            ? "Если приложение поддерживает создание аккаунта, пользователь также может инициировать удаление аккаунта внутри приложения. Подробности обработки таких запросов описаны в Политике конфиденциальности."
+            : "If the app supports account creation, the user can also initiate account deletion inside the app. Details about handling those requests are described in the Privacy Policy."}
+        </p>
 
         <h2 className="text-base font-semibold text-main">
-          {language === "ru" ? "9. Изменения условий" : "9. Changes to terms"}
+          {language === "ru" ? "10. Изменения условий" : "10. Changes to terms"}
         </h2>
         <p>
           {language === "ru"
@@ -179,12 +290,12 @@ export function TermsOfUsePage() {
         </p>
 
         <h2 className="text-base font-semibold text-main">
-          {language === "ru" ? "10. Связь" : "10. Contact"}
+          {language === "ru" ? "11. Связь" : "11. Contact"}
         </h2>
         <p>
           {language === "ru"
-            ? "По вопросам условий использования и прав пользователя используйте раздел «Поддержка / Контакты»."
-            : "For questions about these Terms and user rights, use the “Support / Contact” section."}
+            ? "По вопросам условий использования, подписки, прав пользователя и запросов по данным используйте публичную страницу «Поддержка / Контакты» на сайте или соответствующий раздел внутри приложения."
+            : "For questions about these Terms, subscriptions, user rights, and data requests, use the public “Support / Contact” page on the website or the corresponding section inside the app."}
         </p>
       </Surface>
     </div>

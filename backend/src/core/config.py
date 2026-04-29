@@ -94,6 +94,12 @@ class Settings(BaseSettings):
         le=10_000,
         description="Максимум обращений обратной связи с одного аккаунта за час",
     )
+    public_support_rate_limit_per_hour: int = Field(
+        default=5,
+        ge=1,
+        le=10_000,
+        description="Максимум публичных support обращений по одному reply_contact за час",
+    )
 
     @property
     def web_push_enabled(self) -> bool:

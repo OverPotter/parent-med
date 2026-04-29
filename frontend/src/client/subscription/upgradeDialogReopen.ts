@@ -4,12 +4,12 @@ function getCurrentLocationKey() {
   return `${window.location.pathname}${window.location.search}${window.location.hash}`;
 }
 
-export function markUpgradeDialogReopenPending() {
+export function markUpgradeDialogReopenPending(locationKey?: string) {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.sessionStorage.setItem(UPGRADE_DIALOG_REOPEN_KEY, getCurrentLocationKey());
+  window.sessionStorage.setItem(UPGRADE_DIALOG_REOPEN_KEY, locationKey ?? getCurrentLocationKey());
 }
 
 export function consumeUpgradeDialogReopenPending() {
