@@ -1,0 +1,222 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800&family=Varela+Round&display=swap");
+
+/* =========================
+   PILLPATH DESIGN TOKENS
+   ========================= */
+
+:root {
+  /* ===== COLORS ===== */
+
+  /* Brand */
+  --color-pink: #F45BA6;
+  --color-purple: #8B5CF6;
+
+  /* Gradient */
+  --gradient-primary: linear-gradient(90deg, #F45BA6 0%, #8B5CF6 100%);
+
+  /* Background */
+  --bg-main: #EBE4FF;
+  --bg-soft-top: #FFF4FA;
+  --bg-soft-mid: #F3E8FF;
+
+  /* Text */
+  --text-primary: #1E1B2E;
+  --text-secondary: #4B5563;
+  --text-muted: #64748B;
+
+  /* UI */
+  --border: #E9D5FF;
+  --card-bg: rgba(255,255,255,0.85);
+  --white: #FFFFFF;
+
+  /* States */
+  --success: #22C55E;
+  --disabled: #CBD5E1;
+
+  /* ===== TYPOGRAPHY ===== */
+
+  --font-main: "Nunito Sans", system-ui, sans-serif;
+  --font-logo: "Varela Round", "Nunito Sans", system-ui, sans-serif;
+
+  /* Sizes */
+  --text-xl: 34px;
+  --text-lg: 28px;
+  --text-md: 18px;
+  --text-sm: 16px;
+  --text-xs: 14px;
+
+  /* Weights */
+  --fw-bold: 800;
+  --fw-semi: 600;
+  --fw-regular: 400;
+
+  /* Line heights */
+  --lh-tight: 1.2;
+  --lh-normal: 1.5;
+
+  /* ===== SPACING ===== */
+
+  --space-xxs: 8px;
+  --space-xs: 12px;
+  --space-sm: 16px;
+  --space-md: 20px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* ===== RADIUS ===== */
+
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  /* ===== SHADOWS ===== */
+
+  --shadow-soft: 0px 10px 30px rgba(139, 92, 246, 0.08);
+  --shadow-cta: 0px 14px 34px rgba(139, 92, 246, 0.25);
+  --shadow-accent: 0px 12px 30px rgba(244, 91, 166, 0.15);
+
+  /* ===== COMPONENT SIZES ===== */
+
+  --hero-height: 340px;
+
+  --card-height: 130px;
+
+  --cta-height: 60px;
+
+  --radio-size: 24px;
+}
+
+/* =========================
+   PAYWALL ROOT
+   ========================= */
+
+.pillpath-paywall-theme {
+  font-family: var(--font-main);
+  background: linear-gradient(
+    180deg,
+    var(--bg-soft-top) 0%,
+    var(--bg-soft-mid) 40%,
+    var(--bg-main) 100%
+  );
+  color: var(--text-primary);
+}
+
+/* =========================
+   COMPONENTS
+   ========================= */
+
+/* CARD */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+/* SELECTED CARD */
+.card--selected {
+  border: 2px solid var(--color-pink);
+  background: rgba(244,91,166,0.05);
+  box-shadow: var(--shadow-accent);
+  transform: scale(1.03);
+}
+
+/* BUTTON CTA */
+.button-primary {
+  height: var(--cta-height);
+  border-radius: var(--radius-pill);
+  background: var(--gradient-primary);
+  color: var(--white);
+  font-size: var(--text-md);
+  font-weight: var(--fw-bold);
+  box-shadow: var(--shadow-cta);
+  border: none;
+  cursor: pointer;
+}
+
+.button-primary:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* RADIO */
+.radio {
+  width: var(--radio-size);
+  height: var(--radio-size);
+  border-radius: 50%;
+  border: 2px solid var(--border);
+}
+
+.radio--active {
+  background: var(--color-pink);
+  border-color: var(--color-pink);
+  color: white;
+}
+
+/* BADGE */
+.badge {
+  background: var(--gradient-primary);
+  color: white;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semi);
+}
+
+/* HERO */
+.hero {
+  height: var(--hero-height);
+  width: 100%;
+  object-fit: cover;
+}
+
+/* HERO FADE */
+.hero-fade {
+  background: linear-gradient(
+    180deg,
+    rgba(255,244,250,0) 0%,
+    rgba(255,244,250,0.8) 50%,
+    var(--bg-main) 100%
+  );
+}
+
+/* =========================
+   TEXT HELPERS
+   ========================= */
+
+.text-title {
+  font-size: var(--text-xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+}
+
+.text-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--lh-normal);
+}
+
+.text-muted {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* =========================
+   LAYOUT HELPERS
+   ========================= */
+
+.container {
+  padding: 0 var(--space-md);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.row {
+  display: flex;
+  gap: var(--space-md);
+}

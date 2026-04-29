@@ -244,8 +244,8 @@ export function PrivacyPolicyPage() {
         </h2>
         <p>
           {language === "ru"
-            ? "Если вы находитесь в ЕС/ЕЭЗ, у вас могут быть права по GDPR, включая доступ, исправление, удаление, ограничение обработки, переносимость и возражение. В других регионах ваши права определяются применимым законодательством о конфиденциальности. Для privacy-запросов и обращений используйте раздел «Поддержка / Контакты» внутри приложения."
-            : "If you are in the EU/EEA, you may have rights under GDPR, including access, correction, deletion, restriction, portability, and objection. In other regions, your rights depend on applicable privacy law. For privacy requests and support, use the in-app “Support / Contact” section."}
+            ? "Если вы находитесь в ЕС/ЕЭЗ, у вас могут быть права по GDPR, включая доступ, исправление, удаление, ограничение обработки, переносимость и возражение. В других регионах ваши права определяются применимым законодательством о конфиденциальности. Для privacy-запросов и обращений используйте страницу «Поддержка / Контакты» на сайте или форму внутри приложения."
+            : "If you are in the EU/EEA, you may have rights under GDPR, including access, correction, deletion, restriction, portability, and objection. In other regions, your rights depend on applicable privacy law. For privacy requests and support, use the public “Support / Contact” page on the website or the in-app form."}
         </p>
 
         <h2 className="text-base font-semibold text-main">

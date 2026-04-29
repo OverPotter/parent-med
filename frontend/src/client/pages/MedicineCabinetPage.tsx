@@ -142,7 +142,7 @@ export function MedicineCabinetPage() {
   const isFamilyAccessResolved = familyAccess !== undefined;
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const isCatalogLocked = isFamilyAccessResolved && familyAccess.premiumActive === false;
-  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
     useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
 
   useEffect(() => {
@@ -689,6 +689,9 @@ export function MedicineCabinetPage() {
         isOpen={isUpgradeDialogOpen}
         language={language}
         entryPoint="medicine_catalog"
+        onRequestOpen={() => {
+          setIsUpgradeDialogOpen(true);
+        }}
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
         errorMessage={upgradeErrorMessage}
@@ -696,11 +699,10 @@ export function MedicineCabinetPage() {
           clearUpgradeError();
           setIsUpgradeDialogOpen(false);
         }}
-        onUpgrade={() =>
-          void upgradeToPlus().then(() => {
-            setIsUpgradeDialogOpen(false);
-          })
-        }
+        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
+        onRestorePurchases={() => {
+          void restorePurchases();
+        }}
       />
     </div>
   );

@@ -53,7 +53,7 @@ export function ChildCreatePage() {
     staleTime: 30 * 1000,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
     useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
 
   const [name, setName] = useState("");
@@ -408,6 +408,9 @@ export function ChildCreatePage() {
         isOpen={isUpgradeDialogOpen}
         language={language}
         entryPoint="second_child"
+        onRequestOpen={() => {
+          setIsUpgradeDialogOpen(true);
+        }}
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
         errorMessage={upgradeErrorMessage}
@@ -415,10 +418,9 @@ export function ChildCreatePage() {
           clearUpgradeError();
           setIsUpgradeDialogOpen(false);
         }}
-        onUpgrade={() => {
-          void upgradeToPlus().then(() => {
-            setIsUpgradeDialogOpen(false);
-          });
+        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
+        onRestorePurchases={() => {
+          void restorePurchases();
         }}
       />
     </div>

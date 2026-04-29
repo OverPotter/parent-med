@@ -2,6 +2,7 @@
  * Преобразование snake_case из бэка в camelCase для фронта.
  */
 
+import { detectPreferredLanguage } from "@shared/i18n";
 import { LEGACY_FULL_FAMILY_ACCESS_POLICY } from "@shared/familyAccess/policy";
 import type {
   Family,
@@ -59,7 +60,7 @@ interface RawAccount {
   has_recovery_code?: boolean | null;
   relationship_label: string | null;
   phone: string | null;
-  preferred_language: "ru" | "en";
+  preferred_language?: "ru" | "en" | null;
   family_role: string;
   access_policy?: {
     all_children?: boolean;
@@ -303,7 +304,7 @@ export function toAccount(r: RawAccount): Account {
     hasRecoveryCode: Boolean(r.has_recovery_code),
     relationshipLabel: r.relationship_label ?? null,
     phone: r.phone ?? null,
-    preferredLanguage: r.preferred_language ?? "ru",
+    preferredLanguage: r.preferred_language ?? detectPreferredLanguage(),
     familyRole: r.family_role,
     accessPolicy: toFamilyAccessPolicy(r.access_policy),
   };

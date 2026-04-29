@@ -9,3 +9,12 @@ export function getTermsOfUseUrl() {
 export function getSupportUrl() {
   return import.meta.env.VITE_SUPPORT_URL?.trim() || "/legal/support";
 }
+
+export function getSupportEmail() {
+  return import.meta.env.VITE_SUPPORT_EMAIL?.trim() || "";
+}
+
+export function getSupportMailtoUrl() {
+  const email = getSupportEmail();
+  return email ? `mailto:${email}` : "";
+}

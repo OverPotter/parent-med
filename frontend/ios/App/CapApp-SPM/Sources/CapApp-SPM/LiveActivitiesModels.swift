@@ -6,6 +6,7 @@ import ActivityKit
 @available(iOS 16.1, *)
 public struct LiveActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
+        public let language: String?
         public let title: String
         public let subtitle: String?
         public let statusLabel: String?
@@ -17,6 +18,7 @@ public struct LiveActivityAttributes: ActivityAttributes {
         public let deepLink: String?
 
         public init(
+            language: String?,
             title: String,
             subtitle: String?,
             statusLabel: String?,
@@ -27,6 +29,7 @@ public struct LiveActivityAttributes: ActivityAttributes {
             startedAt: Date,
             deepLink: String?
         ) {
+            self.language = language
             self.title = title
             self.subtitle = subtitle
             self.statusLabel = statusLabel
@@ -52,6 +55,7 @@ public struct LiveActivityAttributes: ActivityAttributes {
 struct LiveActivityPayload {
     let kind: String
     let itemId: String
+    let language: String?
     let title: String
     let subtitle: String?
     let statusLabel: String?

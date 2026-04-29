@@ -12,6 +12,7 @@ import {
   isNativeRevenueCatSupported,
   purchaseNativeRevenueCatPackage,
   restoreNativeRevenueCatPurchases,
+  type RevenueCatPurchaseResult,
 } from "@shared/utils/nativeRevenueCat";
 import { syncRevenueCatCustomerSnapshot } from "@shared/utils/revenueCatSync";
 import { clearRevenueCatSyncSuppressionForAccount } from "@shared/utils/revenueCatSyncSuppression";
@@ -19,6 +20,17 @@ import { invalidateSubscriptionQueries } from "./invalidateSubscriptionQueries";
 
 function getMutationErrorMessage(error: unknown): string | null {
   if (!error) {
+    return null;
+  }
+  if (
+    typeof error === "object" &&
+    error &&
+    "code" in error &&
+    (error as { code?: string }).code === "PURCHASE_CANCELED"
+  ) {
+    return null;
+  }
+  if (error instanceof Error && /purchase canceled|purchase cancelled/i.test(error.message)) {
     return null;
   }
   if (isAxiosError(error)) {
@@ -36,7 +48,10 @@ function getMutationErrorMessage(error: unknown): string | null {
   return null;
 }
 
-async function purchaseRevenueCatPlus(accountId: string | null) {
+async function purchaseRevenueCatPlus(
+  accountId: string | null,
+  preferredPackageIdentifier?: string | null
+) {
   const entitlementCode = getRevenueCatEntitlementCode();
   const shouldSyncBackend = isRevenueCatBackendSyncEnabled();
   clearRevenueCatSyncSuppressionForAccount(accountId);
@@ -45,7 +60,8 @@ async function purchaseRevenueCatPlus(accountId: string | null) {
     throw new Error("RevenueCat offerings are unavailable.");
   }
 
-  const preferredPackageId = getRevenueCatDefaultPackageIdentifier();
+  const preferredPackageId =
+    preferredPackageIdentifier?.trim() || getRevenueCatDefaultPackageIdentifier();
   const selectedPackage =
     (preferredPackageId
       ? offerings.availablePackages.find((item) => item.identifier === preferredPackageId)
@@ -54,18 +70,18 @@ async function purchaseRevenueCatPlus(accountId: string | null) {
     throw new Error("RevenueCat package selection failed.");
   }
 
-  const snapshot = await purchaseNativeRevenueCatPackage({
+  const purchaseResult = await purchaseNativeRevenueCatPackage({
     packageIdentifier: selectedPackage.identifier,
     offeringIdentifier: offerings.currentOfferingIdentifier,
     entitlementCode,
   });
-  if (!snapshot) {
+  if (!purchaseResult) {
     throw new Error("RevenueCat purchase is unavailable on this device.");
   }
-  if (shouldSyncBackend) {
-    await syncRevenueCatCustomerSnapshot(snapshot);
+  if (shouldSyncBackend && purchaseResult.customerSnapshot) {
+    await syncRevenueCatCustomerSnapshot(purchaseResult.customerSnapshot);
   }
-  return snapshot;
+  return purchaseResult;
 }
 
 export function useSubscriptionUpgrade(
@@ -86,17 +102,18 @@ export function useSubscriptionUpgrade(
   };
 
   const upgradeMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (preferredPackageIdentifier?: string | null) => {
       if (!canManageSubscription) {
         throw new Error("Only the billing owner can manage the family subscription.");
       }
       if (canUseNativeRevenueCat) {
-        return purchaseRevenueCatPlus(accountId);
+        return purchaseRevenueCatPlus(accountId, preferredPackageIdentifier);
       }
       if (!isDebugUpgradeEnabled) {
         throw new Error("Subscription upgrade is not configured.");
       }
-      return applyBillingDebugAction({ plan_code: "plus", status: "active" });
+      await applyBillingDebugAction({ plan_code: "plus", status: "active" });
+      return { outcome: "purchased", customerSnapshot: null } satisfies RevenueCatPurchaseResult;
     },
     onSuccess: invalidateAfterUpgrade,
   });
@@ -133,7 +150,8 @@ export function useSubscriptionUpgrade(
       upgradeMutation.reset();
       restoreMutation.reset();
     },
-    upgradeToPlus: () => upgradeMutation.mutateAsync(),
+    upgradeToPlus: (preferredPackageIdentifier?: string | null) =>
+      upgradeMutation.mutateAsync(preferredPackageIdentifier),
     restorePurchases: () => restoreMutation.mutateAsync(),
   };
 }

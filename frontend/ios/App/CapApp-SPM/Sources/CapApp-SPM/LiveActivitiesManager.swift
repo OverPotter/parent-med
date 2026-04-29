@@ -60,6 +60,7 @@ actor LiveActivitiesManager {
         return LiveActivityPayload(
             kind: kind,
             itemId: itemId,
+            language: data["language"] as? String,
             title: title,
             subtitle: data["subtitle"] as? String,
             statusLabel: data["statusLabel"] as? String,
@@ -87,6 +88,7 @@ actor LiveActivitiesManager {
 
         let attributes = LiveActivityAttributes(kind: payload.kind, itemId: payload.itemId)
         let contentState = LiveActivityAttributes.ContentState(
+            language: payload.language,
             title: payload.title,
             subtitle: payload.subtitle,
             statusLabel: payload.statusLabel,

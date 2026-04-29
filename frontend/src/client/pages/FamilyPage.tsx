@@ -73,7 +73,7 @@ export function FamilyPage() {
     ...familyAccessQueryOptions,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
     useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
   const [isLeaveFamilyConfirmOpen, setIsLeaveFamilyConfirmOpen] = useState(false);
 
@@ -617,6 +617,9 @@ export function FamilyPage() {
             isOpen={isUpgradeDialogOpen}
             language={language}
             entryPoint="invite_family"
+            onRequestOpen={() => {
+              setIsUpgradeDialogOpen(true);
+            }}
             isPending={isUpgradePending}
             canUpgrade={canManageSubscription}
             errorMessage={upgradeErrorMessage}
@@ -624,10 +627,9 @@ export function FamilyPage() {
               clearUpgradeError();
               setIsUpgradeDialogOpen(false);
             }}
-            onUpgrade={() => {
-              void upgradeToPlus().then(() => {
-                setIsUpgradeDialogOpen(false);
-              });
+            onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
+            onRestorePurchases={() => {
+              void restorePurchases();
             }}
           />
         </>

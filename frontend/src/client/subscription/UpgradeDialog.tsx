@@ -1,7 +1,10 @@
-import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { blurActiveField } from "@shared/utils/focus";
+import { useEffect } from "react";
 import { getUpgradeDialogCopy, type UpgradeEntryPoint } from "./upgradeDialogCopy";
+import { TestPaywallDialogContainer } from "./TestPaywallDialogContainer";
+import { consumeUpgradeDialogReopenPending } from "./upgradeDialogReopen";
 
 type UpgradeDialogProps = {
   isOpen: boolean;
@@ -11,7 +14,9 @@ type UpgradeDialogProps = {
   canUpgrade?: boolean;
   errorMessage?: string | null;
   onClose: () => void;
-  onUpgrade: () => void;
+  onRequestOpen?: () => void;
+  onUpgrade: (preferredPackageIdentifier?: string | null) => Promise<unknown> | void;
+  onRestorePurchases?: () => Promise<unknown> | void;
 };
 
 export function UpgradeDialog({
@@ -22,10 +27,47 @@ export function UpgradeDialog({
   canUpgrade = true,
   errorMessage = null,
   onClose,
+  onRequestOpen,
   onUpgrade,
+  onRestorePurchases,
 }: UpgradeDialogProps) {
+  useEffect(() => {
+    if (isOpen || !onRequestOpen) {
+      return;
+    }
+    if (consumeUpgradeDialogReopenPending()) {
+      onRequestOpen();
+      blurActiveField();
+      return;
+    }
+  }, [isOpen, onRequestOpen]);
+
   if (!isOpen) {
     return null;
+  }
+
+  if (canUpgrade) {
+    return (
+      <TestPaywallDialogContainer
+        isOpen={isOpen}
+        language={language}
+        onClose={() => {
+          blurActiveField();
+          onClose();
+        }}
+        onUpgrade={onUpgrade}
+        onRestorePurchases={
+          onRestorePurchases
+            ? () => {
+                blurActiveField();
+                return onRestorePurchases();
+              }
+            : async () => undefined
+        }
+        isPending={isPending}
+        errorMessage={errorMessage}
+      />
+    );
   }
 
   const copy = getUpgradeDialogCopy(language, entryPoint);
@@ -74,10 +116,7 @@ export function UpgradeDialog({
         <div className={`mt-5 grid gap-2 ${canUpgrade ? "sm:grid-cols-2" : ""}`}>
           <button
             type="button"
-            onClick={() => {
-              blurActiveField();
-              onClose();
-            }}
+            onClick={onClose}
             disabled={isPending}
             className="soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
           >
@@ -89,25 +128,6 @@ export function UpgradeDialog({
                 ? "Понятно"
                 : "Got it"}
           </button>
-          {canUpgrade ? (
-            <button
-              type="button"
-              onClick={() => {
-                blurActiveField();
-                onUpgrade();
-              }}
-              disabled={isPending}
-              className="soft-pill-success app-profile-action app-profile-action--active min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]"
-            >
-              {isPending
-                ? language === "ru"
-                  ? "Открываем оформление..."
-                  : "Unlocking Plus..."
-                : language === "ru"
-                  ? "Перейти на Plus"
-                  : "Go to Plus"}
-            </button>
-          ) : null}
         </div>
       </div>
     </OverlayDialog>

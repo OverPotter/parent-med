@@ -122,7 +122,7 @@ export function ChildIllnessPage() {
     staleTime: 60 * 1000,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
     useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
 
   const { data: child, isLoading: childLoading } = useQuery({
@@ -465,6 +465,9 @@ export function ChildIllnessPage() {
         isOpen={isUpgradeDialogOpen}
         language={language}
         entryPoint="child_actions_locked"
+        onRequestOpen={() => {
+          setIsUpgradeDialogOpen(true);
+        }}
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
         errorMessage={upgradeErrorMessage}
@@ -472,10 +475,9 @@ export function ChildIllnessPage() {
           clearUpgradeError();
           setIsUpgradeDialogOpen(false);
         }}
-        onUpgrade={() => {
-          void upgradeToPlus().then(() => {
-            setIsUpgradeDialogOpen(false);
-          });
+        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
+        onRestorePurchases={() => {
+          void restorePurchases();
         }}
       />
       <div className="mx-auto w-full max-w-5xl space-y-7">

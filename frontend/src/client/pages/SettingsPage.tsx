@@ -25,6 +25,7 @@ import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOpti
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { formatDate } from "@shared/utils/date";
+import { openExternalUrl } from "@shared/utils/openExternalUrl";
 import { withTimeout } from "@shared/utils/pushNotifications";
 import {
   getCachedNativePushSubscriptionPayload,
@@ -41,6 +42,7 @@ import {
 } from "@shared/utils/liveActivityPreferences";
 import { isRecoveryCodeValid, normalizeRecoveryCode } from "@shared/utils/recoveryCode";
 import { getRevenueCatIosApiKey } from "@shared/config/revenueCat";
+import { TestPaywallDialogContainer } from "@client/subscription/TestPaywallDialogContainer";
 import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
 import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
 import { SettingsAppPreferencesSection } from "./settings/SettingsAppPreferencesSection";
@@ -85,6 +87,7 @@ export function SettingsPage() {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isRecoveryCodeDialogOpen, setIsRecoveryCodeDialogOpen] = useState(false);
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const [isTestPaywallOpen, setIsTestPaywallOpen] = useState(false);
   const [isDeleteAccountConfirmOpen, setIsDeleteAccountConfirmOpen] = useState(false);
   const [isDeleteFamilyConfirmOpen, setIsDeleteFamilyConfirmOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -138,7 +141,7 @@ export function SettingsPage() {
     ...familyAccessQueryOptions,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
+  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
     useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
   const childrenPushEnabled = pushPreferences?.childrenEnabled ?? true;
   const pillboxPushEnabled = pushPreferences?.pillboxEnabled ?? true;
@@ -513,7 +516,7 @@ export function SettingsPage() {
       }
       return;
     }
-    window.open("https://apps.apple.com/account/subscriptions", "_blank", "noopener,noreferrer");
+    void openExternalUrl("https://apps.apple.com/account/subscriptions");
   };
 
   const resetPasswordDialogState = () => {
@@ -807,6 +810,7 @@ export function SettingsPage() {
             language={language}
             accountId={accountId}
             currentFamilyId={currentFamilyId}
+            onOpenTestPaywall={() => setIsTestPaywallOpen(true)}
           />
         </div>
       ) : null}
@@ -987,6 +991,9 @@ export function SettingsPage() {
         isOpen={isUpgradeDialogOpen}
         language={language}
         entryPoint="live_activities"
+        onRequestOpen={() => {
+          setIsUpgradeDialogOpen(true);
+        }}
         isPending={isUpgradePending}
         canUpgrade={canManageSubscription}
         errorMessage={upgradeErrorMessage}
@@ -994,11 +1001,22 @@ export function SettingsPage() {
           clearUpgradeError();
           setIsUpgradeDialogOpen(false);
         }}
-        onUpgrade={() => {
-          void upgradeToPlus().then(() => {
-            setIsUpgradeDialogOpen(false);
-          });
+        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
+        onRestorePurchases={() => {
+          void restorePurchases();
         }}
+      />
+      <TestPaywallDialogContainer
+        isOpen={isTestPaywallOpen}
+        language={language}
+        onClose={() => {
+          clearUpgradeError();
+          setIsTestPaywallOpen(false);
+        }}
+        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
+        onRestorePurchases={() => restorePurchases()}
+        isPending={isUpgradePending}
+        errorMessage={upgradeErrorMessage}
       />
     </div>
   );
