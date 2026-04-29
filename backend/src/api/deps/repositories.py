@@ -28,6 +28,9 @@ from src.domain.repositories.illness_episode_repository import IllnessEpisodeRep
 from src.domain.repositories.parent_repository import ParentRepository
 from src.domain.repositories.pillbox_repository import PillboxRepository
 from src.domain.repositories.plan_repository import PlanRepository
+from src.domain.repositories.public_support_request_repository import (
+    PublicSupportRequestRepository,
+)
 from src.domain.repositories.push_subscription_repository import PushSubscriptionRepository
 from src.domain.repositories.sleep_session_repository import SleepSessionRepository
 from src.domain.repositories.subscription_repository import SubscriptionRepository
@@ -78,6 +81,9 @@ from src.infrastructure.database.repositories.illness_episode_repository import 
 from src.infrastructure.database.repositories.parent_repository import SqlParentRepository
 from src.infrastructure.database.repositories.pillbox_repository import SqlPillboxRepository
 from src.infrastructure.database.repositories.plan_repository import SqlPlanRepository
+from src.infrastructure.database.repositories.public_support_request_repository import (
+    SqlPublicSupportRequestRepository,
+)
 from src.infrastructure.database.repositories.push_subscription_repository import (
     SqlPushSubscriptionRepository,
 )
@@ -165,6 +171,12 @@ def get_parent_repo(session: AsyncSession = Depends(get_db_session)) -> ParentRe
 
 def get_plan_repo(session: AsyncSession = Depends(get_db_session)) -> PlanRepository:
     return SqlPlanRepository(session)
+
+
+def get_public_support_request_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> PublicSupportRequestRepository:
+    return SqlPublicSupportRequestRepository(session)
 
 
 def get_pillbox_repo(session: AsyncSession = Depends(get_db_session)) -> PillboxRepository:

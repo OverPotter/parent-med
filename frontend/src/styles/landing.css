@@ -57,7 +57,7 @@
 .landing-app-header {
   max-width: 74rem;
   margin: 0 auto;
-  padding: 0.2rem 0.1rem 0;
+  padding: calc(0.2rem + max(env(safe-area-inset-top), 0px)) 0.1rem 0;
 }
 
 .app-shell-auth {
@@ -163,6 +163,21 @@
   pointer-events: auto;
 }
 
+.public-site-header-mobile-links {
+  display: none;
+}
+
+.public-site-header-mobile-link {
+  color: color-mix(in srgb, var(--color-primary) 76%, var(--color-foreground));
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.public-site-header-mobile-link:hover {
+  text-decoration: underline;
+}
+
 .landing-page-glow {
   background:
     radial-gradient(circle at 12% 0%, var(--landing-bg-top), transparent 34%),
@@ -219,6 +234,20 @@
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 1rem;
+}
+
+.landing-hero-reset-brandlink {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.landing-hero-reset-actions-shell {
+  justify-self: end;
+  min-width: 0;
 }
 
 .landing-hero-reset-actions-inline {
@@ -1395,19 +1424,18 @@
 
 @media (max-width: 640px) {
   .landing-app-header {
-    padding: 0.05rem 0 0;
+    padding: calc(0.05rem + max(env(safe-area-inset-top), 0px)) 0 0;
   }
 
   .landing-hero-reset-topline {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
     gap: 0.6rem;
   }
 
-  .landing-hero-reset-brandmark {
-    width: 100%;
-    min-width: 0;
+  .landing-hero-reset-brandlink {
     justify-self: center;
+    max-width: 100%;
   }
 
   .landing-hero-reset-logo {
@@ -1429,8 +1457,30 @@
     flex: 0 0 auto;
   }
 
+  .landing-hero-reset-actions-shell {
+    justify-self: stretch;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.15rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .landing-hero-reset-actions-shell::-webkit-scrollbar {
+    display: none;
+  }
+
   .landing-hero-reset-actions-inline {
+    display: inline-flex;
+    min-width: max-content;
     gap: 0.34rem;
+    padding-inline: 0.02rem;
+  }
+
+  .landing-hero-reset-actions-inline > a:first-child,
+  .landing-hero-reset-actions-inline > a:nth-child(2) {
+    display: none;
   }
 
   .landing-topline-button,
@@ -1448,6 +1498,15 @@
     padding-left: 0.74rem !important;
     padding-right: 1.7rem !important;
     gap: 0.28rem !important;
+  }
+
+  .public-site-header-mobile-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    justify-content: center;
+    padding-top: 0.05rem;
+    padding-inline: 0.15rem;
   }
 
   .soft-language-dropdown__menu {

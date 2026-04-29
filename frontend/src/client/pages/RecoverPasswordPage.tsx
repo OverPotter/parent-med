@@ -18,6 +18,7 @@ import { useAppStore } from "@shared/store/useAppStore";
 import { blurActiveField } from "@shared/utils/focus";
 import { normalizeRecoveryCode } from "@shared/utils/recoveryCode";
 
+import { AuthLegalLinks } from "./AuthLegalLinks";
 import { canSubmitRecoveryCode, canSubmitRecoveryPassword } from "./authRecovery";
 
 function MoonIcon() {
@@ -106,7 +107,7 @@ export function RecoverPasswordPage() {
           submit: "Сохранить новый пароль",
           back: "Назад",
         }
-      : {
+        : {
           title: "Reset password",
           hint: "Enter your email, recovery phrase, and a new password.",
           recoveryCode: "Recovery phrase",
@@ -119,7 +120,6 @@ export function RecoverPasswordPage() {
           submit: "Save new password",
           back: "Back",
         };
-
   const resetMutation = useMutation({
     mutationFn: async (payload: { email: string; recovery_code: string; new_password: string }) => {
       await resetPasswordByRecoveryCode(payload);
@@ -346,13 +346,12 @@ export function RecoverPasswordPage() {
 
           {!isNativeRuntime ? (
             <div className="auth-v3-mobile-home-wrap">
-              <Link
-                to="/"
-                className="app-header-utility-button auth-v3-mobile-home-link"
-                onClick={blurActiveField}
-              >
-                {copy.common.aboutApp}
-              </Link>
+              <AuthLegalLinks
+                aboutHref="/"
+                aboutLabel={copy.common.aboutApp}
+                language={language}
+                onNavigate={blurActiveField}
+              />
             </div>
           ) : null}
 
@@ -480,15 +479,13 @@ export function RecoverPasswordPage() {
           </section>
           {isNativeIOS && publicSiteUrl ? (
             <div className="auth-v3-ios-about-row">
-              <a
-                href={publicSiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="app-header-utility-button auth-v3-mobile-home-link"
-                onClick={blurActiveField}
-              >
-                {copy.common.aboutApp}
-              </a>
+              <AuthLegalLinks
+                aboutHref={publicSiteUrl}
+                aboutLabel={copy.common.aboutApp}
+                aboutExternal
+                language={language}
+                onNavigate={blurActiveField}
+              />
             </div>
           ) : null}
         </section>

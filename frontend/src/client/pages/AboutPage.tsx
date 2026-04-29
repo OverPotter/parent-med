@@ -1,10 +1,11 @@
+import { Link } from "react-router-dom";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { PageIntro } from "@shared/components/PageIntro";
 import { RowSurface, Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 
 export function AboutPage() {
-  const { copy } = useI18n();
+  const { copy, language } = useI18n();
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
@@ -14,6 +15,45 @@ export function AboutPage() {
         compactOnMobile
         className="app-safe-top-standalone"
       />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+          <Link to="/legal" className="block">
+            <h2 className="app-card-title">
+              {language === "ru" ? "Privacy · Terms" : "Privacy · Terms"}
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-muted">
+              {language === "ru"
+                ? "Политика конфиденциальности и условия использования."
+                : "Privacy policy and terms of use."}
+            </p>
+          </Link>
+        </RowSurface>
+        <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+          <Link to="/legal/support" className="block">
+            <h2 className="app-card-title">
+              {language === "ru" ? "Поддержка" : "Support"}
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-muted">
+              {language === "ru"
+                ? "Публичный канал связи и privacy-запросы."
+                : "Public contact channel and privacy requests."}
+            </p>
+          </Link>
+        </RowSurface>
+        <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
+          <Link to="/feedback" className="block">
+            <h2 className="app-card-title">
+              {language === "ru" ? "Feedback" : "Feedback"}
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-muted">
+              {language === "ru"
+                ? "Сообщение команде из приложения."
+                : "Send a message to the team from the app."}
+            </p>
+          </Link>
+        </RowSurface>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {copy.about.features.map((item) => (

@@ -25,12 +25,12 @@
     - Примечание: обновлены in-app документы `/legal/privacy` и `/legal/terms` (редакция от 08.04.2026) под модель публикации от физлица и бесплатного сервиса.
   - [x] Проверить, что consent-тексты и ссылки корректны для EN локали.
   - [x] Подготовить EN demo-аккаунт для App Review.
-- [ ] Сделать публичный support channel без регистрации на `/legal/support`:
-  - [ ] не редиректить публичную support-страницу в auth-only `/feedback`
-  - [ ] добавить public web-form без логина
-  - [ ] сохранять обращения в отдельную public support table в БД, не смешивая с `account_feedback`
-  - [ ] собирать обязательный `reply_contact` для ответа пользователю
-  - [ ] использовать эту страницу как `Support URL` в App Store Connect
+- [x] Сделать публичный support channel без регистрации на `/legal/support`:
+  - [x] не редиректить публичную support-страницу в auth-only `/feedback`
+  - [x] добавить public web-form без логина
+  - [x] сохранять обращения в отдельную public support table в БД, не смешивая с `account_feedback`
+  - [x] собирать обязательный `reply_contact` для ответа пользователю
+  - [x] использовать эту страницу как `Support URL` в App Store Connect
 
 ## 3. Push-уведомления для iOS app (нативный канал)
 - [x] Перейти с web-push сценария на APNs через Capacitor Push Notifications.

@@ -1,7 +1,7 @@
 import type { AppLanguage } from "@shared/i18n";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { blurActiveField } from "@shared/utils/focus";
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { getUpgradeDialogCopy, type UpgradeEntryPoint } from "./upgradeDialogCopy";
 import { TestPaywallDialogContainer } from "./TestPaywallDialogContainer";
 import { consumeUpgradeDialogReopenPending } from "./upgradeDialogReopen";
@@ -31,7 +31,7 @@ export function UpgradeDialog({
   onUpgrade,
   onRestorePurchases,
 }: UpgradeDialogProps) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isOpen || !onRequestOpen) {
       return;
     }

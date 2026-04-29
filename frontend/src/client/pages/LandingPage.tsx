@@ -8,11 +8,11 @@ import { buildNativeAppUrl, NATIVE_APP_MARKETING_FLAG } from "@shared/config/nat
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 
-const FEATURE_SECTION_IDS = ["children", "pillbox", "cabinet", "family", "trust"] as const;
+const FEATURE_SECTION_IDS = ["children", "routine", "pillbox", "cabinet", "family", "trust"] as const;
 type FeatureSectionId = (typeof FEATURE_SECTION_IDS)[number];
 
 export function LandingPage() {
-  const { copy } = useI18n();
+  const { copy, language } = useI18n();
   const [searchParams] = useSearchParams();
   const MOBILE_FAQ_LIMIT = 4;
   const [isHeroMobile, setIsHeroMobile] = useState(() =>
@@ -34,6 +34,7 @@ export function LandingPage() {
     () =>
       FEATURE_SECTION_IDS.map((sectionId) => {
         if (sectionId === "children") return copy.landing.sections.children.title;
+        if (sectionId === "routine") return copy.landing.sections.routine.title;
         if (sectionId === "pillbox") return copy.landing.sections.pillbox.title;
         if (sectionId === "cabinet") return copy.landing.sections.cabinet.title;
         if (sectionId === "family") return copy.landing.sections.family.title;
@@ -449,6 +450,65 @@ export function LandingPage() {
       );
     }
 
+    if (sectionId === "routine") {
+      return (
+        <div className="landing-feature-slide-inner px-0 py-4 sm:py-5">
+          <div className="landing-child-hero-shell">
+            <h2 className="landing-section-title">{copy.landing.sections.routine.title}</h2>
+            <p className="landing-section-body mt-4 max-w-[62rem] text-sm leading-7 text-muted sm:text-base">
+              {copy.landing.sections.routine.description}
+            </p>
+
+            <ul className="landing-mobile-summary mt-4 md:hidden">
+              {copy.landing.sections.routine.mobilePoints.map((line) => (
+                <li key={line} className="landing-mobile-summary-item">
+                  <span className="landing-mobile-summary-text">{line}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="landing-child-shell mt-6 hidden md:block">
+              <div className="grid gap-3 lg:grid-cols-2">
+                <Surface className="landing-feature-card rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-4">
+                  <div className="flex h-full flex-col gap-2">
+                    <h3 className="landing-card-title text-[1.02rem] font-semibold leading-7 text-foreground">
+                      {copy.landing.sections.routine.snapshotTitle}
+                    </h3>
+                    <ul className="space-y-1.5 text-sm font-medium leading-7 text-muted sm:text-base">
+                      {copy.landing.sections.routine.snapshotItems.map((line) => (
+                        <li key={line} className="flex items-start gap-2">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-primary)]" />
+                          <span className="landing-card-body">{line}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Surface>
+                <Surface className="landing-feature-card rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-4">
+                  <div className="flex h-full flex-col gap-2">
+                    <h3 className="landing-card-title text-[1.02rem] font-semibold leading-7 text-foreground">
+                      {copy.landing.sections.routine.insightTitle}
+                    </h3>
+                    <ul className="space-y-1.5 text-sm font-medium leading-7 text-muted sm:text-base">
+                      {copy.landing.sections.routine.insightItems.map((line) => (
+                        <li key={line} className="flex items-start gap-2">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-primary)]" />
+                          <span className="landing-card-body">{line}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Surface>
+              </div>
+            </div>
+            <p className="mt-4 text-sm font-semibold leading-6 text-[color:var(--color-primary)] sm:text-base">
+              {copy.landing.sections.routine.footer}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     if (sectionId === "cabinet") {
       return (
         <div className="landing-feature-slide-inner px-0 py-4 sm:py-5">
@@ -610,22 +670,29 @@ export function LandingPage() {
             <div className="landing-hero-reset-topline">
               <Link
                 to="/"
-                className="landing-hero-reset-brandicon"
+                className="landing-hero-reset-brandlink"
                 aria-label={copy.common.brandName}
               >
                 <img src="/pwa-icon.png" alt="" className="landing-hero-reset-logo" />
-              </Link>
-              <Link
-                to="/"
-                className="landing-hero-reset-brandmark"
-                aria-label={copy.common.brandName}
-              >
                 <BrandWordmark
                   className="landing-hero-reset-brand"
                   ariaLabel={copy.common.brandName}
                 />
               </Link>
-              <div className="landing-hero-reset-actions-inline">
+              <div className="landing-hero-reset-actions-shell">
+                <div className="landing-hero-reset-actions-inline">
+                <Link
+                  to="/legal/support"
+                  className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                >
+                  {language === "ru" ? "Поддержка" : "Support"}
+                </Link>
+                <Link
+                  to="/legal"
+                  className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
+                >
+                  {language === "ru" ? "Privacy · Terms" : "Privacy · Terms"}
+                </Link>
                 {shouldOpenAuthInApp ? (
                   <button
                     type="button"
@@ -665,6 +732,7 @@ export function LandingPage() {
                     {effectiveTheme === "light" ? <LandingMoonIcon /> : <LandingSunIcon />}
                   </span>
                 </button>
+                </div>
               </div>
             </div>
           </div>
@@ -877,6 +945,117 @@ export function LandingPage() {
               ))}
             </div>
           </div>
+
+          <section className="landing-section-shell landing-section-shell--child overflow-hidden">
+            <div className="px-0 py-4 sm:py-5">
+              <div className="landing-child-hero-shell">
+                <p className="landing-section-label inline-flex w-fit items-center rounded-full border border-[color:rgba(159,140,219,0.2)] bg-[color:rgba(205,191,241,0.34)] px-3 py-1.5 justify-start">
+                  {copy.landing.sections.pricing.eyebrow}
+                </p>
+                <h2 className="landing-section-title mt-3">{copy.landing.sections.pricing.title}</h2>
+                <p className="landing-section-body mt-4 max-w-[66rem] text-sm leading-7 text-muted sm:text-base">
+                  {copy.landing.sections.pricing.description}
+                </p>
+
+                <div className="mt-6 grid gap-3 lg:grid-cols-2">
+                  <Surface className="landing-feature-card rounded-[1.6rem] px-5 py-5 sm:px-6 sm:py-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[1.06rem] font-semibold leading-7 text-foreground">
+                          {copy.landing.sections.pricing.free.name}
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-muted">
+                          {copy.landing.sections.pricing.free.summary}
+                        </p>
+                      </div>
+                      <span className="landing-child-pill">
+                        {copy.landing.sections.pricing.free.badge}
+                      </span>
+                    </div>
+                    <div className="mt-5 flex items-end gap-2">
+                      <span className="text-[2rem] font-[760] leading-none tracking-[-0.04em] text-foreground">
+                        {copy.landing.sections.pricing.free.price}
+                      </span>
+                      {copy.landing.sections.pricing.free.period ? (
+                        <span className="pb-1 text-sm font-medium leading-6 text-muted">
+                          {copy.landing.sections.pricing.free.period}
+                        </span>
+                      ) : null}
+                    </div>
+                    <ul className="mt-5 space-y-2.5">
+                      {copy.landing.sections.pricing.free.points.map((point) => (
+                        <li key={point} className="flex items-start gap-2.5 text-sm leading-7 text-muted sm:text-[0.96rem]">
+                          <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:rgba(138,123,191,0.08)] text-[color:var(--color-primary)]">
+                            <PricingDotIcon />
+                          </span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Surface>
+
+                  <Surface className="landing-feature-card rounded-[1.6rem] border-[color:rgba(138,123,191,0.28)] bg-[color:rgba(205,191,241,0.18)] px-5 py-5 sm:px-6 sm:py-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[1.06rem] font-semibold leading-7 text-foreground">
+                          {copy.landing.sections.pricing.plus.name}
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-muted">
+                          {copy.landing.sections.pricing.plus.summary}
+                        </p>
+                      </div>
+                      <span className="landing-child-pill landing-child-pill--active">
+                        {copy.landing.sections.pricing.plus.badge}
+                      </span>
+                    </div>
+                    <div className="mt-5 flex items-end gap-2">
+                      <span className="text-[2rem] font-[760] leading-none tracking-[-0.04em] text-foreground">
+                        {copy.landing.sections.pricing.plus.price}
+                      </span>
+                      <span className="pb-1 text-sm font-medium leading-6 text-muted">
+                        {copy.landing.sections.pricing.plus.period}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm font-semibold leading-6 text-[color:var(--color-primary)]">
+                      {copy.landing.sections.pricing.plus.annualNote}
+                    </p>
+                    <ul className="mt-5 space-y-2.5">
+                      {copy.landing.sections.pricing.plus.points.map((point) => (
+                        <li key={point} className="flex items-start gap-2.5 text-sm leading-7 text-muted sm:text-[0.96rem]">
+                          <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:rgba(138,123,191,0.12)] text-[color:var(--color-primary)]">
+                            <PricingCheckIcon />
+                          </span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-6">
+                      {shouldOpenAuthInApp ? (
+                        <button
+                          type="button"
+                          onClick={() => openInApp(registerTarget)}
+                          className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
+                        >
+                          {copy.landing.sections.pricing.plus.cta}
+                        </button>
+                      ) : (
+                        <Link
+                          to="/auth?mode=register"
+                          className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
+                        >
+                          {copy.landing.sections.pricing.plus.cta}
+                        </Link>
+                      )}
+                    </div>
+                  </Surface>
+                </div>
+
+                <p className="mt-4 text-sm leading-7 text-muted sm:text-base">
+                  {copy.landing.sections.pricing.footnote}
+                </p>
+              </div>
+            </div>
+          </section>
 
           <section className="landing-section-shell landing-section-shell--child landing-faq-section overflow-hidden">
             <div className="px-0 py-4 sm:py-5">
@@ -1093,6 +1272,27 @@ function HeroFamilyIcon() {
       <circle cx="10" cy="7" r="4" />
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function PricingCheckIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-4 w-4 fill-none stroke-current stroke-[2.2]"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m4.5 10.3 3.2 3.2 7.8-7.8" />
+    </svg>
+  );
+}
+
+function PricingDotIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current">
+      <circle cx="10" cy="10" r="4.1" />
     </svg>
   );
 }

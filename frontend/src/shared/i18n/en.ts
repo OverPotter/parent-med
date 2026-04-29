@@ -72,8 +72,9 @@ export const en: Translations = {
       login: "Log in",
       highlights: [
         "One timeline for the whole illness story",
+        "Sleep, feeding, growth, and weight stay with the same child profile",
         "The family sees what is done and what comes next",
-        "Reminders and expiry dates stay under control",
+        "Reminders, calendar context, and expiry dates stay under control",
       ],
       themeToggleAriaDark: "Dark theme",
       themeToggleAriaLight: "Light theme",
@@ -84,16 +85,16 @@ export const en: Translations = {
         description: "Symptoms, temperature, notes, and doses in one timeline.",
       },
       {
+        title: "Sleep & feeding",
+        description: "Daily routine, feeding, growth, and weight in the same profile.",
+      },
+      {
         title: "Dose reminders",
         description: "Flexible schedules and reminders for the family.",
       },
       {
         title: "Home medicine cabinet",
         description: "See what is at home, what is running out, and what to replace.",
-      },
-      {
-        title: "Family account",
-        description: "One shared picture for parents and relatives.",
       },
     ],
     product: {
@@ -190,7 +191,7 @@ export const en: Translations = {
       strip: [
         {
           title: "Children",
-          description: "The whole illness story day by day in one timeline.",
+          description: "The illness story, calendar context, and notes in one timeline.",
         },
         {
           title: "Dose reminders",
@@ -198,7 +199,7 @@ export const en: Translations = {
         },
         {
           title: "Home Medicine Cabinet",
-          description: "Expiry dates and stock levels under control.",
+          description: "Stock, expiry dates, and restock prompts under control.",
         },
         {
           title: "Family Account",
@@ -208,28 +209,51 @@ export const en: Translations = {
       children: {
         title: "Children",
         description:
-          "Create a child profile and track illness day by day: symptoms, temperature, notes, doses, and reminders in one timeline.",
+          "Create a child profile and track illness day by day: symptoms, temperature, notes, doses, calendar context, and key records in one timeline.",
         mobilePoints: [
-          "Symptoms, temperature, and notes in one timeline",
+          "Symptoms, temperature, calendar context, and notes in one timeline",
           "See what is already done and what comes next",
           "A history you can quickly share with a doctor or family",
         ],
-        chips: ["Child profile created", "Day-by-day timeline"],
+        chips: ["Child profile created", "Timeline and calendar by day"],
         cards: [
           {
             title: "Condition",
             lines: ["Symptoms: cough, weakness", "Temperature: 38.1°"],
           },
           {
-            title: "Treatment",
+            title: "History",
             lines: ["Medication plan added", "Note: day 2, feeling better"],
           },
           {
-            title: "Reminders",
-            lines: ["Give medicine at 2:00 PM", "Next step is clear"],
+            title: "Calendar",
+            lines: ["Checkup and follow-up are planned", "The next step is clear"],
           },
         ],
         footer: "The whole illness story stays in one place for the family.",
+      },
+      routine: {
+        title: "Sleep, feeding, and growth",
+        description:
+          "Alongside illness tracking and medicines, PillPath can keep the child’s daily rhythm in the same place: sleep, feeding, weight, height, and related records without a separate tracker.",
+        mobilePoints: [
+          "Sleep and feeding stay in the same child profile",
+          "Height and weight become a readable history",
+          "No need to split the routine into another app",
+        ],
+        snapshotTitle: "What you can log day to day",
+        snapshotItems: [
+          "Sleep sessions and current status",
+          "Feedings and daily records",
+          "Height, weight, and basic growth changes",
+        ],
+        insightTitle: "What the family gets",
+        insightItems: [
+          "One child profile instead of multiple trackers",
+          "Daily routine signals next to illness and treatment",
+          "A quick path into the child calendar and everyday rhythm",
+        ],
+        footer: "Routine, development, and tracking remain part of one shared picture.",
       },
       pillbox: {
         title: "Dose reminders",
@@ -302,6 +326,52 @@ export const en: Translations = {
         cards: ["You control who gets access.", "You can grant or revoke access anytime."],
         footer: "Shared data is visible only to family members you invite.",
       },
+      pricing: {
+        eyebrow: "Pricing",
+        title: "Free to start, Plus for full family coordination",
+        description:
+          "The website should make it obvious what stays in the free plan and what opens up in Plus. The current local Plus price is shown in the app and in the App Store before purchase.",
+        free: {
+          name: "Free",
+          price: "Included",
+          period: "",
+          badge: "Base",
+          summary:
+            "A good starting point to try the workflow and keep one main care flow without a subscription.",
+          points: [
+            "1 active child",
+            "1 working pillbox plan",
+            "Core tracking, sleep/feeding logs, and home medicine cabinet",
+          ],
+        },
+        plus: {
+          name: "Plus",
+          price: "App Store",
+          period: "",
+          badge: "For families",
+          summary:
+            "For families who need multiple children, more medication plans, exports, and richer shared workflows.",
+          points: [
+            "Multiple children and family members",
+            "Multiple medication plans and Live Activities",
+            "Data export, calendar workflow, and medicine guide",
+          ],
+          annualNote: "The current local price is shown before purchase.",
+          cta: "Choose Plus",
+        },
+        tableTitle: "What is included",
+        rows: [
+          { label: "Child profiles", free: "1 active child", plus: "Multiple children" },
+          { label: "Sleep, feeding, growth, and weight", free: "Core records", plus: "Shared in the family workflow" },
+          { label: "Pillbox", free: "1 working plan", plus: "Multiple family plans" },
+          { label: "Family access", free: "Basic flow", plus: "Full coordination for loved ones" },
+          { label: "CSV/XLSX export", free: "—", plus: "+" },
+          { label: "Live Activities", free: "—", plus: "+" },
+          { label: "Medicine guide", free: "—", plus: "+" },
+        ],
+        footnote:
+          "Purchase, local pricing, and subscription management happen inside the iPhone app through the App Store.",
+      },
       faq: {
         title: "FAQ",
         showMore: "Show more",
@@ -325,7 +395,11 @@ export const en: Translations = {
           },
           {
             question: "What can I log in Children?",
-            answer: "Symptoms, temperature, notes, doses, and reminders for your child.",
+            answer: "Symptoms, temperature, notes, doses, calendar context, and related records for your child.",
+          },
+          {
+            question: "Can I log sleep, feeding, height, and weight?",
+            answer: "Yes, those records can live inside the child profile next to the main care timeline.",
           },
           {
             question: "What does Home Medicine Cabinet warn about?",
@@ -336,7 +410,7 @@ export const en: Translations = {
       finalCta: {
         title: "When a child is sick, it helps to miss nothing important.",
         description:
-          "PillPath combines child tracking, dose reminders, and home medicine cabinet control.",
+          "PillPath combines child tracking, routine, dose reminders, and home medicine cabinet control.",
         primary: "Try it free",
         secondary: "Log in",
       },
