@@ -36,6 +36,7 @@ import {
   openNativeNotificationSettings,
   setNativePushOptOut,
 } from "@shared/utils/nativePushNotifications";
+import { showNativeManageSubscriptions } from "@shared/utils/nativeRevenueCat";
 import {
   resolveLiveActivityPreferences,
   syncLiveActivityPreferencesMirror,
@@ -43,15 +44,38 @@ import {
 import { isRecoveryCodeValid, normalizeRecoveryCode } from "@shared/utils/recoveryCode";
 import { getRevenueCatIosApiKey } from "@shared/config/revenueCat";
 import { TestPaywallDialogContainer } from "@client/subscription/TestPaywallDialogContainer";
-import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
-import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
+import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
+import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
+import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { SettingsAppPreferencesSection } from "./settings/SettingsAppPreferencesSection";
 import { tSettings } from "./settings/copy";
 import { SettingsLiveActivitiesSection } from "./settings/SettingsLiveActivitiesSection";
 import { SettingsNotificationsSection } from "./settings/SettingsNotificationsSection";
 import { SettingsRevenueCatSection } from "./settings/SettingsRevenueCatSection";
 import { SettingsSecuritySection } from "./settings/SettingsSecuritySection";
+import { SettingsRow, SettingsSection } from "./settings/ui";
 import { stopDisabledLiveActivities } from "@shared/utils/liveActivities";
+
+function getSubscriptionStatusLabel(
+  language: "ru" | "en",
+  status: "inactive" | "trialing" | "active" | "grace" | "canceled" | "expired"
+) {
+  switch (status) {
+    case "trialing":
+      return tSettings(language, "subscriptionStatusTrialing");
+    case "active":
+      return tSettings(language, "subscriptionStatusActive");
+    case "grace":
+      return tSettings(language, "subscriptionStatusGrace");
+    case "canceled":
+      return tSettings(language, "subscriptionStatusCanceled");
+    case "expired":
+      return tSettings(language, "subscriptionStatusExpired");
+    case "inactive":
+    default:
+      return tSettings(language, "subscriptionStatusInactive");
+  }
+}
 
 function getInitialPushStatus() {
   if (!isNativePushSupported()) {
@@ -86,7 +110,8 @@ export function SettingsPage() {
   const [isNativePushSettingsDialogOpen, setIsNativePushSettingsDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isRecoveryCodeDialogOpen, setIsRecoveryCodeDialogOpen] = useState(false);
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
+    useUpgradeDialogOpenState();
   const [isTestPaywallOpen, setIsTestPaywallOpen] = useState(false);
   const [isDeleteAccountConfirmOpen, setIsDeleteAccountConfirmOpen] = useState(false);
   const [isDeleteFamilyConfirmOpen, setIsDeleteFamilyConfirmOpen] = useState(false);
@@ -141,8 +166,6 @@ export function SettingsPage() {
     ...familyAccessQueryOptions,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
   const childrenPushEnabled = pushPreferences?.childrenEnabled ?? true;
   const pillboxPushEnabled = pushPreferences?.pillboxEnabled ?? true;
   const cabinetEarlyReminderEnabled =
@@ -171,9 +194,25 @@ export function SettingsPage() {
     ["trialing", "active", "grace", "canceled"].includes(
       familyAccess?.subscriptionStatus ?? family?.subscriptionStatus ?? "inactive"
     );
+  const subscriptionStatus = familyAccess?.subscriptionStatus ?? family?.subscriptionStatus ?? "inactive";
+  const {
+    upgradeToPlus,
+    restorePurchases,
+    isUpgradePending,
+    upgradeErrorMessage,
+    clearUpgradeError,
+    restoreSuccessMessage,
+  } = useSubscriptionUpgradeDialogState({
+    language,
+    accountId,
+    currentFamilyId,
+    canManageSubscription,
+    subscriptionStatus,
+  });
   const subscriptionAutoRenewEnabled =
-    (familyAccess?.subscriptionStatus ?? family?.subscriptionStatus ?? "inactive") !== "canceled";
+    subscriptionStatus !== "canceled";
   const subscriptionExpiresAt = family?.subscriptionExpiresAt ?? null;
+  const subscriptionStatusLabel = getSubscriptionStatusLabel(language, subscriptionStatus);
   const familyDangerActionLabel = familyDeleteBlockedBySubscription
     ? tSettings(language, "cancelSubscription")
     : tSettings(language, "deleteFamily");
@@ -516,7 +555,20 @@ export function SettingsPage() {
       }
       return;
     }
+    if (isNativeIos) {
+      void showNativeManageSubscriptions().then((didOpen) => {
+        if (!didOpen) {
+          void openExternalUrl("itms-apps://apps.apple.com/account/subscriptions");
+        }
+      });
+      return;
+    }
     void openExternalUrl("https://apps.apple.com/account/subscriptions");
+  };
+
+  const openSubscriptionDialog = () => {
+    clearUpgradeError();
+    setIsTestPaywallOpen(true);
   };
 
   const resetPasswordDialogState = () => {
@@ -672,7 +724,7 @@ export function SettingsPage() {
 
   const handleLiveActivitySleepToggle = (enabled: boolean) => {
     if (!canUseLiveActivities) {
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
       return;
     }
     setPushError(null);
@@ -687,7 +739,7 @@ export function SettingsPage() {
 
   const handleLiveActivityFeedingToggle = (enabled: boolean) => {
     if (!canUseLiveActivities) {
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
       return;
     }
     setPushError(null);
@@ -702,7 +754,7 @@ export function SettingsPage() {
 
   const handleLiveActivityIllnessToggle = (enabled: boolean) => {
     if (!canUseLiveActivities) {
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
       return;
     }
     setPushError(null);
@@ -798,7 +850,7 @@ export function SettingsPage() {
         disabled={!isNativeIos}
         lockedReason={isNativeIos ? liveActivitiesLockedReason : null}
         onLockedPress={
-          isNativeIos && liveActivitiesLockedReason ? () => setIsUpgradeDialogOpen(true) : undefined
+          isNativeIos && liveActivitiesLockedReason ? openUpgradeDialog : undefined
         }
         onSleepToggle={handleLiveActivitySleepToggle}
         onFeedingToggle={handleLiveActivityFeedingToggle}
@@ -845,6 +897,47 @@ export function SettingsPage() {
           onCabinetReminderSelect={handleCabinetReminderSelect}
         />
       </div>
+      <SettingsSection
+        title={tSettings(language, "subscriptionSection")}
+        hint={tSettings(language, "subscriptionSectionHint")}
+      >
+        <SettingsRow
+          title={tSettings(language, "subscriptionStatusLabel")}
+          hint={
+            subscriptionExpiresAt
+              ? `${subscriptionStatusLabel}. ${tSettings(language, "subscriptionActiveUntil")}: ${formatDate(
+                  subscriptionExpiresAt
+                )}`
+              : subscriptionStatusLabel
+          }
+          actions={
+            <div className="flex w-full flex-col gap-2 sm:w-[15.5rem]">
+              <button
+                type="button"
+                onClick={openSubscriptionDialog}
+                className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.08rem] w-full px-2.75 text-[0.69rem] tracking-[-0.022em] sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]"
+              >
+                {tSettings(language, "subscriptionManageAction")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void restorePurchases();
+                }}
+                disabled={isUpgradePending || !canManageSubscription}
+                className="soft-pill app-profile-action min-h-[2.08rem] w-full px-2.75 text-[0.69rem] tracking-[-0.022em] disabled:opacity-50 sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]"
+              >
+                {language === "ru" ? "Восстановить покупки" : "Restore purchases"}
+              </button>
+            </div>
+          }
+        />
+        {restoreSuccessMessage ? (
+          <div className="soft-note-success mx-4 mt-1 rounded-2xl px-4 py-3 text-sm">
+            {restoreSuccessMessage}
+          </div>
+        ) : null}
+      </SettingsSection>
       <SettingsSecuritySection
         language={language}
         hasRecoveryCode={accountHasRecoveryCode}
@@ -987,24 +1080,20 @@ export function SettingsPage() {
         onCancel={() => setIsDeleteFamilyConfirmOpen(false)}
         onConfirm={() => deleteFamilyMutation.mutate()}
       />
-      <UpgradeDialog
+      <SubscriptionUpgradeDialog
         isOpen={isUpgradeDialogOpen}
+        setIsOpen={setIsUpgradeDialogOpen}
         language={language}
         entryPoint="live_activities"
-        onRequestOpen={() => {
-          setIsUpgradeDialogOpen(true);
-        }}
-        isPending={isUpgradePending}
-        canUpgrade={canManageSubscription}
-        errorMessage={upgradeErrorMessage}
-        onClose={() => {
-          clearUpgradeError();
-          setIsUpgradeDialogOpen(false);
-        }}
-        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
-        onRestorePurchases={() => {
-          void restorePurchases();
-        }}
+        canManageSubscription={canManageSubscription}
+        subscriptionStatus={subscriptionStatus}
+        isUpgradePending={isUpgradePending}
+        upgradeErrorMessage={upgradeErrorMessage}
+        restoreSuccessMessage={restoreSuccessMessage}
+        clearUpgradeError={clearUpgradeError}
+        upgradeToPlus={upgradeToPlus}
+        restorePurchases={restorePurchases}
+        onManageSubscription={handleManageSubscription}
       />
       <TestPaywallDialogContainer
         isOpen={isTestPaywallOpen}
@@ -1013,10 +1102,14 @@ export function SettingsPage() {
           clearUpgradeError();
           setIsTestPaywallOpen(false);
         }}
+        onManageSubscription={handleManageSubscription}
         onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
         onRestorePurchases={() => restorePurchases()}
+        canManageSubscription={canManageSubscription}
+        subscriptionStatus={subscriptionStatus}
         isPending={isUpgradePending}
         errorMessage={upgradeErrorMessage}
+        successMessage={restoreSuccessMessage}
       />
     </div>
   );

@@ -29,8 +29,9 @@ import { canEditCabinet, canViewCabinet } from "@shared/permissions/familyAccess
 import { useAppStore } from "@shared/store/useAppStore";
 import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
-import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
-import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
+import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
+import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
+import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { AddHouseholdMedicineForm } from "./medicine-cabinet/AddHouseholdMedicineForm";
 import { AddMedicineChoiceDialog } from "./medicine-cabinet/AddMedicineChoiceDialog";
 import { CabinetPushRecipientsCard } from "./medicine-cabinet/CabinetPushRecipientsCard";
@@ -65,7 +66,8 @@ export function MedicineCabinetPage() {
   const [selectedFilter, setSelectedFilter] = useState<CabinetFilterKey | null>(null);
   const [expandedMedicineId, setExpandedMedicineId] = useState<string | null>(null);
   const [networkRequiredNotice, setNetworkRequiredNotice] = useState(false);
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
+    useUpgradeDialogOpenState();
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
@@ -100,7 +102,7 @@ export function MedicineCabinetPage() {
   const openCatalogUpgradeDialog = () => {
     closeAddFlow({ replace: true });
     window.setTimeout(() => {
-      setIsUpgradeDialogOpen(true);
+      openUpgradeDialog();
     }, 0);
   };
 
@@ -142,8 +144,20 @@ export function MedicineCabinetPage() {
   const isFamilyAccessResolved = familyAccess !== undefined;
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const isCatalogLocked = isFamilyAccessResolved && familyAccess.premiumActive === false;
-  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
+  const {
+    upgradeToPlus,
+    restorePurchases,
+    isUpgradePending,
+    upgradeErrorMessage,
+    clearUpgradeError,
+    restoreSuccessMessage,
+  } = useSubscriptionUpgradeDialogState({
+    language,
+    accountId,
+    currentFamilyId,
+    canManageSubscription,
+    subscriptionStatus: familyAccess?.subscriptionStatus ?? "inactive",
+  });
 
   useEffect(() => {
     if (addFlow !== "catalog" || !isFamilyAccessResolved || !isCatalogLocked) {
@@ -685,24 +699,19 @@ export function MedicineCabinetPage() {
           onExpandChange={setExpandedMedicineId}
         />
       )}
-      <UpgradeDialog
+      <SubscriptionUpgradeDialog
         isOpen={isUpgradeDialogOpen}
+        setIsOpen={setIsUpgradeDialogOpen}
         language={language}
         entryPoint="medicine_catalog"
-        onRequestOpen={() => {
-          setIsUpgradeDialogOpen(true);
-        }}
-        isPending={isUpgradePending}
-        canUpgrade={canManageSubscription}
-        errorMessage={upgradeErrorMessage}
-        onClose={() => {
-          clearUpgradeError();
-          setIsUpgradeDialogOpen(false);
-        }}
-        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
-        onRestorePurchases={() => {
-          void restorePurchases();
-        }}
+        canManageSubscription={canManageSubscription}
+        subscriptionStatus={familyAccess?.subscriptionStatus ?? "inactive"}
+        isUpgradePending={isUpgradePending}
+        upgradeErrorMessage={upgradeErrorMessage}
+        restoreSuccessMessage={restoreSuccessMessage}
+        clearUpgradeError={clearUpgradeError}
+        upgradeToPlus={upgradeToPlus}
+        restorePurchases={restorePurchases}
       />
     </div>
   );

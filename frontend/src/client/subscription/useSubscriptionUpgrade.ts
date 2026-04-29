@@ -12,6 +12,7 @@ import {
   isNativeRevenueCatSupported,
   purchaseNativeRevenueCatPackage,
   restoreNativeRevenueCatPurchases,
+  type RevenueCatCustomerSnapshot,
   type RevenueCatPurchaseResult,
 } from "@shared/utils/nativeRevenueCat";
 import { syncRevenueCatCustomerSnapshot } from "@shared/utils/revenueCatSync";
@@ -139,10 +140,21 @@ export function useSubscriptionUpgrade(
     onSuccess: invalidateAfterUpgrade,
   });
 
+  const restoreSnapshot = restoreMutation.data as RevenueCatCustomerSnapshot | null | undefined;
+  const restoreOutcome =
+    restoreSnapshot === undefined
+      ? null
+      : restoreSnapshot === null
+        ? null
+        : restoreSnapshot.entitlementActive
+        ? ("restored_active" as const)
+        : ("restored_inactive" as const);
+
   return {
     canUseNativeRevenueCat,
     isDebugUpgradeEnabled,
     isUpgradePending: upgradeMutation.isPending || restoreMutation.isPending,
+    restoreOutcome,
     upgradeErrorMessage:
       getMutationErrorMessage(upgradeMutation.error) ??
       getMutationErrorMessage(restoreMutation.error),

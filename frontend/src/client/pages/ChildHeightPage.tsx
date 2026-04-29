@@ -18,8 +18,9 @@ import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { MeasurementCard } from "@client/components/MeasurementCard";
 import { getChildrenCopy } from "@client/i18n/children";
-import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
-import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
+import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
+import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
+import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { formatChildDate } from "@client/utils/childDateFormat";
 import { buildMeasurementTrend, formatDecimal, parseMeasurement } from "./measurementUtils";
 
@@ -37,7 +38,8 @@ export function ChildHeightPage() {
   const queryClient = useQueryClient();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [heightValue, setHeightValue] = useState("");
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
+    useUpgradeDialogOpenState();
   const parsedHeight = parseMeasurement(heightValue);
   const canViewHeight = !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
   const { data: familyAccess } = useQuery({
@@ -47,8 +49,20 @@ export function ChildHeightPage() {
     staleTime: 60 * 1000,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
+  const {
+    upgradeToPlus,
+    restorePurchases,
+    isUpgradePending,
+    upgradeErrorMessage,
+    clearUpgradeError,
+    restoreSuccessMessage,
+  } = useSubscriptionUpgradeDialogState({
+    language,
+    accountId,
+    currentFamilyId,
+    canManageSubscription,
+    subscriptionStatus: familyAccess?.subscriptionStatus ?? "inactive",
+  });
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
@@ -105,24 +119,19 @@ export function ChildHeightPage() {
         title={`${copy.heightCardTitle} · ${child.name}`}
         hint={copy.measurementsSectionSubtitle}
       />
-      <UpgradeDialog
+      <SubscriptionUpgradeDialog
         isOpen={isUpgradeDialogOpen}
+        setIsOpen={setIsUpgradeDialogOpen}
         language={language}
         entryPoint="child_actions_locked"
-        onRequestOpen={() => {
-          setIsUpgradeDialogOpen(true);
-        }}
-        isPending={isUpgradePending}
-        canUpgrade={canManageSubscription}
-        errorMessage={upgradeErrorMessage}
-        onClose={() => {
-          clearUpgradeError();
-          setIsUpgradeDialogOpen(false);
-        }}
-        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
-        onRestorePurchases={() => {
-          void restorePurchases();
-        }}
+        canManageSubscription={canManageSubscription}
+        subscriptionStatus={familyAccess?.subscriptionStatus ?? "inactive"}
+        isUpgradePending={isUpgradePending}
+        upgradeErrorMessage={upgradeErrorMessage}
+        restoreSuccessMessage={restoreSuccessMessage}
+        clearUpgradeError={clearUpgradeError}
+        upgradeToPlus={upgradeToPlus}
+        restorePurchases={restorePurchases}
       />
 
       <div
@@ -155,7 +164,7 @@ export function ChildHeightPage() {
           isPending={addHeightMutation.isPending}
           isSubmitDisabled={parsedHeight === null}
           isLocked={planLocksChildActions}
-          onLockedSubmit={() => setIsUpgradeDialogOpen(true)}
+          onLockedSubmit={openUpgradeDialog}
           onInputChange={setHeightValue}
           onSubmit={() => addHeightMutation.mutate()}
           history={heightHistory.map((entry) => ({

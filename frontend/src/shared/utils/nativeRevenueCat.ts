@@ -64,6 +64,7 @@ type NativeRevenueCatPlugin = {
   restorePurchases(args?: {
     entitlementCode?: string | null;
   }): Promise<{ customerSnapshot: RevenueCatCustomerSnapshot }>;
+  showManageSubscriptions(): Promise<void>;
 };
 
 const RevenueCat = registerPlugin<NativeRevenueCatPlugin>("RevenueCat");
@@ -202,6 +203,21 @@ export async function restoreNativeRevenueCatPurchases(entitlementCode?: string 
   } catch (error) {
     if (isPluginUnavailableError(error)) {
       return null;
+    }
+    throw error;
+  }
+}
+
+export async function showNativeManageSubscriptions() {
+  if (!isNativeRevenueCatSupported()) {
+    return false;
+  }
+  try {
+    await RevenueCat.showManageSubscriptions();
+    return true;
+  } catch (error) {
+    if (isPluginUnavailableError(error)) {
+      return false;
     }
     throw error;
   }

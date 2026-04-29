@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getPaywallReturnTo } from "./legalRouteState";
 import { markUpgradeDialogReopenPending } from "@client/subscription/upgradeDialogReopen";
@@ -7,21 +7,6 @@ export function useHistoryBackFallback(fallbackHref: string) {
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = getPaywallReturnTo(location.state);
-
-  useEffect(() => {
-    if (!returnTo || typeof window === "undefined") {
-      return;
-    }
-
-    const handlePopState = () => {
-      markUpgradeDialogReopenPending(returnTo);
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [returnTo]);
 
   return useCallback(() => {
     if (returnTo) {

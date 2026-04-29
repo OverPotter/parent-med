@@ -16,8 +16,9 @@ import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 import { resolveChildExportGateState } from "@client/pages/children/childExportAccess";
 import { ChildExportDialog } from "@client/pages/children/ChildExportDialog";
-import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
-import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
+import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
+import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
+import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { formatChildDatePlain } from "@client/utils/childDateFormat";
 import { useRef, useState } from "react";
 
@@ -32,7 +33,8 @@ export function ChildProfilePage() {
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
+    useUpgradeDialogOpenState();
   const [upgradeEntryPoint, setUpgradeEntryPoint] = useState<"child_actions_locked" | "csv_export">(
     "child_actions_locked"
   );
@@ -45,8 +47,20 @@ export function ChildProfilePage() {
     staleTime: 60 * 1000,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
+  const {
+    upgradeToPlus,
+    restorePurchases,
+    isUpgradePending,
+    upgradeErrorMessage,
+    clearUpgradeError,
+    restoreSuccessMessage,
+  } = useSubscriptionUpgradeDialogState({
+    language,
+    accountId,
+    currentFamilyId,
+    canManageSubscription,
+    subscriptionStatus: familyAccess?.subscriptionStatus ?? "inactive",
+  });
 
   const { data: child, isLoading } = useQuery({
     queryKey: ["child", childId],
@@ -129,7 +143,7 @@ export function ChildProfilePage() {
                   type="button"
                   onClick={() => {
                     setUpgradeEntryPoint("child_actions_locked");
-                    setIsUpgradeDialogOpen(true);
+                    openUpgradeDialog();
                   }}
                   className={`${profileNavActionClass} min-h-[2.4rem] shrink-0`}
                 >
@@ -147,24 +161,19 @@ export function ChildProfilePage() {
           </div>
         }
       />
-      <UpgradeDialog
+      <SubscriptionUpgradeDialog
         isOpen={isUpgradeDialogOpen}
+        setIsOpen={setIsUpgradeDialogOpen}
         language={language}
         entryPoint={upgradeEntryPoint}
-        onRequestOpen={() => {
-          setIsUpgradeDialogOpen(true);
-        }}
-        isPending={isUpgradePending}
-        canUpgrade={canManageSubscription}
-        errorMessage={upgradeErrorMessage}
-        onClose={() => {
-          clearUpgradeError();
-          setIsUpgradeDialogOpen(false);
-        }}
-        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
-        onRestorePurchases={() => {
-          void restorePurchases();
-        }}
+        canManageSubscription={canManageSubscription}
+        subscriptionStatus={familyAccess?.subscriptionStatus ?? "inactive"}
+        isUpgradePending={isUpgradePending}
+        upgradeErrorMessage={upgradeErrorMessage}
+        restoreSuccessMessage={restoreSuccessMessage}
+        clearUpgradeError={clearUpgradeError}
+        upgradeToPlus={upgradeToPlus}
+        restorePurchases={restorePurchases}
       />
       <ChildExportDialog
         isOpen={isExportDialogOpen}
@@ -184,7 +193,7 @@ export function ChildProfilePage() {
                   type="button"
                   onClick={() => {
                     setUpgradeEntryPoint("child_actions_locked");
-                    setIsUpgradeDialogOpen(true);
+                    openUpgradeDialog();
                   }}
                   className={`${profileNavActionClass} min-h-[2.6rem]`}
                 >
@@ -284,7 +293,7 @@ export function ChildProfilePage() {
                 return;
               }
               setUpgradeEntryPoint("csv_export");
-              setIsUpgradeDialogOpen(true);
+              openUpgradeDialog();
             }}
             className={`${profileNavActionClass} inline-flex min-h-[2.4rem] shrink-0 items-center gap-2`}
           >

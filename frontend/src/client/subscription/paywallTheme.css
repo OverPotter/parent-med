@@ -26,3 +26,11 @@
     var(--bg-main) 100%
   );
 }
+
+.pillpath-paywall-success {
+  border: 1px solid rgba(244, 91, 166, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 244, 250, 0.96) 48%, rgba(243, 232, 255, 0.94) 100%);
+  color: #8f2d68;
+  box-shadow: 0 16px 36px rgba(244, 91, 166, 0.12);
+}

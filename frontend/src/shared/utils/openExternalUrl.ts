@@ -10,6 +10,7 @@ export async function openExternalUrl(url: string) {
 
   const isAbsoluteHttpUrl = /^https?:\/\//i.test(trimmedUrl);
   const isInAppPath = trimmedUrl.startsWith("/");
+  const isCustomSchemeUrl = /^[a-z][a-z0-9+.-]*:/i.test(trimmedUrl) && !isAbsoluteHttpUrl;
 
   if (isInAppPath) {
     window.location.assign(trimmedUrl);
@@ -32,6 +33,11 @@ export async function openExternalUrl(url: string) {
 
   if (isAbsoluteHttpUrl) {
     window.open(trimmedUrl, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  if (isCustomSchemeUrl) {
+    window.location.assign(trimmedUrl);
     return;
   }
 

@@ -42,8 +42,9 @@ import {
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { formatChildAgeLabel } from "@client/i18n/children";
-import { UpgradeDialog } from "@client/subscription/UpgradeDialog";
-import { useSubscriptionUpgrade } from "@client/subscription/useSubscriptionUpgrade";
+import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
+import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
+import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { formatChildDatePlain } from "@client/utils/childDateFormat";
 import type { FamilyMember, IllnessEpisode, WeightEntry } from "@shared/types/api";
 import { EpisodeActivationCard } from "./child-illness/forms";
@@ -104,7 +105,8 @@ export function ChildIllnessPage() {
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
-  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
+    useUpgradeDialogOpenState();
   const liveQueryOptions = useLiveQueryOptions(isIosShell ? 15_000 : 10_000);
   const [createEpisodeValidationError, setCreateEpisodeValidationError] = useState<string | null>(
     null
@@ -122,8 +124,20 @@ export function ChildIllnessPage() {
     staleTime: 60 * 1000,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
-  const { upgradeToPlus, restorePurchases, isUpgradePending, upgradeErrorMessage, clearUpgradeError } =
-    useSubscriptionUpgrade(accountId, currentFamilyId, canManageSubscription);
+  const {
+    upgradeToPlus,
+    restorePurchases,
+    isUpgradePending,
+    upgradeErrorMessage,
+    clearUpgradeError,
+    restoreSuccessMessage,
+  } = useSubscriptionUpgradeDialogState({
+    language,
+    accountId,
+    currentFamilyId,
+    canManageSubscription,
+    subscriptionStatus: familyAccess?.subscriptionStatus ?? "inactive",
+  });
 
   const { data: child, isLoading: childLoading } = useQuery({
     queryKey: ["child", childId],
@@ -461,24 +475,19 @@ export function ChildIllnessPage() {
         hint={topBarHint}
         containerClassName="max-w-5xl"
       />
-      <UpgradeDialog
+      <SubscriptionUpgradeDialog
         isOpen={isUpgradeDialogOpen}
+        setIsOpen={setIsUpgradeDialogOpen}
         language={language}
         entryPoint="child_actions_locked"
-        onRequestOpen={() => {
-          setIsUpgradeDialogOpen(true);
-        }}
-        isPending={isUpgradePending}
-        canUpgrade={canManageSubscription}
-        errorMessage={upgradeErrorMessage}
-        onClose={() => {
-          clearUpgradeError();
-          setIsUpgradeDialogOpen(false);
-        }}
-        onUpgrade={(preferredPackageIdentifier) => upgradeToPlus(preferredPackageIdentifier)}
-        onRestorePurchases={() => {
-          void restorePurchases();
-        }}
+        canManageSubscription={canManageSubscription}
+        subscriptionStatus={familyAccess?.subscriptionStatus ?? "inactive"}
+        isUpgradePending={isUpgradePending}
+        upgradeErrorMessage={upgradeErrorMessage}
+        restoreSuccessMessage={restoreSuccessMessage}
+        clearUpgradeError={clearUpgradeError}
+        upgradeToPlus={upgradeToPlus}
+        restorePurchases={restorePurchases}
       />
       <div className="mx-auto w-full max-w-5xl space-y-7">
         <ChildIllnessShellSummary
@@ -518,7 +527,7 @@ export function ChildIllnessPage() {
             quickTimelineMode={quickTimelineMode}
             reminderPlanId={reminderPlanId}
             planLocksChildActions={illnessMutationLocksByPlan}
-            onLockedActionAttempt={() => setIsUpgradeDialogOpen(true)}
+            onLockedActionAttempt={openUpgradeDialog}
           />
         ) : createMode ? (
           <div ref={createModeCardRef}>
