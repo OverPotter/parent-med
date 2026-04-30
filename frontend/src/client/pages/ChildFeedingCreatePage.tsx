@@ -11,6 +11,7 @@ import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { FeedingRecordForm } from "@client/components/FeedingRecordForm";
 import { getChildrenCopy } from "@client/i18n/children";
+import { useChildBackNavigation } from "@client/pages/children/useChildBackNavigation";
 import {
   getCurrentLocalDateInputValue,
   getCurrentLocalTimeInputValue,
@@ -175,6 +176,9 @@ export function ChildFeedingCreatePage() {
   ) {
     return <Navigate to={`/children/${child.id}/feeding`} replace />;
   }
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: `/children/${child.id}`,
+  });
 
   return (
     <div
@@ -186,12 +190,14 @@ export function ChildFeedingCreatePage() {
       }}
     >
       <IosEdgeBackGesture
-        isEnabled={isIosShell}
-        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        isEnabled={isIosShell && enableLocalSwipe}
+        onBack={handleBack}
         targetRef={pageRef}
+        presentation="route"
+        underlaySnapshotKey={localUnderlaySnapshotKey}
       />
       <ChildSectionTopBar
-        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        onBack={handleBack}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
         title={`${copy.feedingDialogTitle} · ${child.name}`}
         hint={

@@ -2,6 +2,18 @@ import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import {
+  notifyIosUnderlaySnapshotChange,
+  setIosActiveUnderlaySnapshotKey,
+} from "../../app/mobile/ios/snapshotState";
+import {
+  cancelIosBackSwipeRootVisuals,
+  clearIosBackSwipeRootFlags,
+  commitIosBackSwipeRootVisuals,
+  resetIosBackSwipeRootVisuals,
+  startIosBackSwipeRootVisuals,
+  updateIosBackSwipeRootProgress,
+} from "../../app/mobile/ios/swipeVisuals";
+import {
   IOS_BACK_SWIPE_CANCEL_MS,
   IOS_BACK_SWIPE_COMMIT_MS,
   canStartIosBackSwipe,
@@ -18,10 +30,14 @@ export function IosEdgeBackGesture({
   isEnabled,
   onBack,
   targetRef,
+  presentation = "local",
+  underlaySnapshotKey,
 }: {
   isEnabled: boolean;
   onBack: () => void;
   targetRef: RefObject<HTMLElement | null>;
+  presentation?: "local" | "route";
+  underlaySnapshotKey?: string;
 }) {
   const isIosShell = useIsIosShell();
   const swipeStateRef = useRef({
@@ -34,14 +50,20 @@ export function IosEdgeBackGesture({
     resetTimeoutId: null as number | null,
   });
 
-  const resetTargetStyles = () => {
+  const resetLocalTargetStyles = () => {
     const target = targetRef.current;
-    if (!target) {
+    const animatedTarget =
+      presentation === "route"
+        ? target?.closest(".app-shell-frame") instanceof HTMLElement
+          ? (target.closest(".app-shell-frame") as HTMLElement)
+          : null
+        : target;
+    if (!animatedTarget) {
       return;
     }
-    target.style.transition = "";
-    target.style.transform = "";
-    target.style.boxShadow = "";
+    animatedTarget.style.transition = "";
+    animatedTarget.style.transform = "";
+    animatedTarget.style.boxShadow = "";
   };
 
   useEffect(() => {
@@ -55,13 +77,40 @@ export function IosEdgeBackGesture({
     }
 
     target.setAttribute("data-ios-local-back-swipe", "true");
+    const animatedTarget =
+      presentation === "route"
+        ? target.closest(".app-shell-frame") instanceof HTMLElement
+          ? (target.closest(".app-shell-frame") as HTMLElement)
+          : null
+        : target;
+    if (!animatedTarget) {
+      return;
+    }
+
+    const syncUnderlaySnapshot = (snapshotKey?: string | null) => {
+      setIosActiveUnderlaySnapshotKey(snapshotKey);
+      notifyIosUnderlaySnapshotChange();
+    };
+
+    const resetRouteVisuals = () => {
+      resetIosBackSwipeRootVisuals();
+      syncUnderlaySnapshot(null);
+    };
 
     const finishCancel = () => {
-      target.style.transition = `transform ${IOS_BACK_SWIPE_CANCEL_MS}ms cubic-bezier(0.08, 0.82, 0.17, 1)`;
-      target.style.transform = "translate3d(0, 0, 0)";
-      target.style.boxShadow = "";
+      if (presentation === "route") {
+        cancelIosBackSwipeRootVisuals();
+      } else {
+        animatedTarget.style.transition = `transform ${IOS_BACK_SWIPE_CANCEL_MS}ms cubic-bezier(0.08, 0.82, 0.17, 1)`;
+        animatedTarget.style.transform = "translate3d(0, 0, 0)";
+        animatedTarget.style.boxShadow = "";
+      }
       swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
-        resetTargetStyles();
+        if (presentation === "route") {
+          resetRouteVisuals();
+        } else {
+          resetLocalTargetStyles();
+        }
         swipeStateRef.current.resetTimeoutId = null;
       }, IOS_BACK_SWIPE_CANCEL_MS);
     };
@@ -91,9 +140,14 @@ export function IosEdgeBackGesture({
       swipeStateRef.current.renderedDx = 0;
       swipeStateRef.current.horizontalLocked = false;
       swipeStateRef.current.active = true;
-      target.style.transition = "none";
-      target.style.transform = "";
-      target.style.boxShadow = "";
+      if (presentation === "route") {
+        syncUnderlaySnapshot(underlaySnapshotKey ?? null);
+        clearIosBackSwipeRootFlags();
+      } else {
+        animatedTarget.style.transition = "none";
+        animatedTarget.style.transform = "";
+        animatedTarget.style.boxShadow = "";
+      }
     };
 
     const handleTouchMove = (event: TouchEvent) => {
@@ -110,7 +164,11 @@ export function IosEdgeBackGesture({
 
       if (!swipeStateRef.current.horizontalLocked && shouldLockIosBackSwipe(dx, dy)) {
         swipeStateRef.current.horizontalLocked = true;
-        target.style.transition = "none";
+        if (presentation === "route") {
+          startIosBackSwipeRootVisuals();
+        } else {
+          animatedTarget.style.transition = "none";
+        }
       }
 
       if (
@@ -132,9 +190,16 @@ export function IosEdgeBackGesture({
 
       const offset = getIosBackSwipeOffset(dx, window.innerWidth);
       swipeStateRef.current.renderedDx = offset;
-      const progress = Math.min(1, offset / Math.max(window.innerWidth * 0.82, 1));
-      target.style.transform = `translate3d(${offset}px, 0, 0)`;
-      target.style.boxShadow = `-18px 0 42px rgba(15, 23, 42, ${0.08 + progress * 0.12})`;
+      if (presentation === "route") {
+        updateIosBackSwipeRootProgress(
+          offset,
+          Math.min(1, offset / Math.max(window.innerWidth * 0.72, 1))
+        );
+      } else {
+        const progress = Math.min(1, offset / Math.max(window.innerWidth * 0.82, 1));
+        animatedTarget.style.transform = `translate3d(${offset}px, 0, 0)`;
+        animatedTarget.style.boxShadow = `-18px 0 42px rgba(15, 23, 42, ${0.08 + progress * 0.12})`;
+      }
     };
 
     const handleTouchEnd = (event: TouchEvent) => {
@@ -157,11 +222,14 @@ export function IosEdgeBackGesture({
       );
 
       if (canCommit) {
-        target.style.transition = `transform ${IOS_BACK_SWIPE_COMMIT_MS}ms cubic-bezier(0.08, 0.82, 0.17, 1)`;
-        target.style.transform = `translate3d(${window.innerWidth}px, 0, 0)`;
-        target.style.boxShadow = "";
+        if (presentation === "route") {
+          commitIosBackSwipeRootVisuals(Math.min(dx, window.innerWidth));
+        } else {
+          animatedTarget.style.transition = `transform ${IOS_BACK_SWIPE_COMMIT_MS}ms cubic-bezier(0.08, 0.82, 0.17, 1)`;
+          animatedTarget.style.transform = `translate3d(${window.innerWidth}px, 0, 0)`;
+          animatedTarget.style.boxShadow = "";
+        }
         swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
-          resetTargetStyles();
           swipeStateRef.current.resetTimeoutId = null;
           onBack();
         }, IOS_BACK_SWIPE_COMMIT_MS);
@@ -186,9 +254,13 @@ export function IosEdgeBackGesture({
         window.clearTimeout(swipeStateRef.current.resetTimeoutId);
         swipeStateRef.current.resetTimeoutId = null;
       }
-      resetTargetStyles();
+      if (presentation === "route") {
+        resetRouteVisuals();
+      } else {
+        resetLocalTargetStyles();
+      }
     };
-  }, [isEnabled, isIosShell, onBack, targetRef]);
+  }, [isEnabled, isIosShell, onBack, presentation, targetRef, underlaySnapshotKey]);
 
   return null;
 }

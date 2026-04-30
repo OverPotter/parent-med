@@ -55,6 +55,9 @@ export function PillboxSetupScreen({
   deleteTarget,
   onConfirmDelete,
   onCloseDeleteDialog,
+  underlaySnapshotKey,
+  enableBackGesture = true,
+  backLabel,
 }: {
   language: AppLanguage;
   draft: SetupDraft;
@@ -76,11 +79,18 @@ export function PillboxSetupScreen({
   deleteTarget: PillboxDeleteTarget | null;
   onConfirmDelete: () => void;
   onCloseDeleteDialog: () => void;
+  underlaySnapshotKey?: string;
+  enableBackGesture?: boolean;
+  backLabel?: string;
 }) {
   return (
-    <EditorShell onBack={onBack}>
+    <EditorShell
+      onBack={onBack}
+      underlaySnapshotKey={underlaySnapshotKey}
+      enableBackGesture={enableBackGesture}
+    >
       <FlowScreenHeader
-        backLabel={tPillbox(language, "setupBack")}
+        backLabel={backLabel ?? tPillbox(language, "setupBack")}
         onBack={onBack}
         eyebrow=""
         title={

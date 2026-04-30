@@ -21,6 +21,8 @@ export function PillboxAnalyticsScreen({
   initialFilter,
   onBack,
   onSelectPlan,
+  underlaySnapshotKey,
+  enableBackGesture = true,
 }: {
   language: AppLanguage;
   groups: PillboxGroup[];
@@ -28,6 +30,8 @@ export function PillboxAnalyticsScreen({
   initialFilter: PillboxPlanListFilter;
   onBack: () => void;
   onSelectPlan: (planId: string, filter: PillboxPlanListFilter) => void;
+  underlaySnapshotKey?: string;
+  enableBackGesture?: boolean;
 }) {
   const [planFilter, setPlanFilter] = useState<PillboxPlanListFilter>(initialFilter);
   const [isPlanPickerOpen, setIsPlanPickerOpen] = useState(false);
@@ -100,7 +104,11 @@ export function PillboxAnalyticsScreen({
   }, [planFilter, activePlanId]);
 
   return (
-    <EditorShell onBack={onBack}>
+    <EditorShell
+      onBack={onBack}
+      underlaySnapshotKey={underlaySnapshotKey}
+      enableBackGesture={enableBackGesture}
+    >
       <FlowScreenHeader
         backLabel={tPillbox(language, "analyticsBack")}
         onBack={onBack}

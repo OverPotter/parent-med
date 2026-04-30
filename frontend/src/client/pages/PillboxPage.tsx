@@ -24,6 +24,19 @@ import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelecti
 import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
 import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
 import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
+import {
+  buildPillboxAnalyticsRoute,
+  buildPillboxDetailsRoute,
+  buildPillboxHubRoute,
+  buildPillboxMedicationRoute,
+  buildPillboxSetupRoute,
+  getPillboxBackSource,
+  getPillboxListFilter,
+  getPillboxRouteOrigin,
+  getPillboxScreen,
+  resolvePillboxMedicationUnderlaySnapshotKey,
+  resolvePillboxSetupUnderlaySnapshotKey,
+} from "./pillbox/navigation";
 import { PillboxAnalyticsScreen } from "./pillbox/analytics";
 import { PillboxMedicationScreen } from "./pillbox/medicationScreen";
 import {
@@ -87,21 +100,14 @@ export function PillboxPage() {
   const [savePlanError, setSavePlanError] = useState<string | null>(null);
   const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog, closeUpgradeDialog } =
     useUpgradeDialogOpenState();
-  const screen =
-    searchParams.get("mode") === "setup" ||
-    searchParams.get("mode") === "medication" ||
-    searchParams.get("mode") === "details" ||
-    searchParams.get("mode") === "analytics"
-      ? (searchParams.get("mode") as "setup" | "medication" | "details" | "analytics")
-      : "hub";
+  const screen = getPillboxScreen(searchParams);
   const isEditorScreen = screen === "setup" || screen === "medication" || screen === "details";
   const previousScreenRef = useRef(screen);
   const activeMedicationId = searchParams.get("med");
   const selectedPlanId = searchParams.get("plan");
-  const listFilter: PillboxPlanListFilter =
-    searchParams.get("tab") === "archive" || searchParams.get("tab") === "completed"
-      ? "completed"
-      : "active";
+  const backSource = getPillboxBackSource(searchParams);
+  const routeOrigin = getPillboxRouteOrigin(searchParams);
+  const listFilter: PillboxPlanListFilter = getPillboxListFilter(searchParams);
   const highlightedPlanId = screen === "hub" ? searchParams.get("highlightPlan") : null;
   const highlightedAction = screen === "hub" ? searchParams.get("action") : null;
   const isCreating = isEditorScreen && (selectedPlanId === "new" || !selectedPlanId);
@@ -229,6 +235,8 @@ export function PillboxPage() {
       freePrimaryPlanId !== null &&
       selectedPlan.id !== freePrimaryPlanId
     : false;
+  const selectedPlanCompleted =
+    selectedPlan?.status === "completed" || selectedPlan?.status === "archived";
   const showOfflineState =
     canSeePillbox &&
     (isOffline ||
@@ -243,10 +251,13 @@ export function PillboxPage() {
     if (!canSeePillbox) {
       return;
     }
-    if (!canMutatePillbox && (screen === "setup" || screen === "medication")) {
-      navigate("/pillbox", { replace: true });
+    if (
+      (!canMutatePillbox && (screen === "setup" || screen === "medication")) ||
+      (selectedPlanCompleted && (screen === "setup" || screen === "medication"))
+    ) {
+      navigate(buildPillboxHubRoute(listFilter), { replace: true });
     }
-  }, [canMutatePillbox, canSeePillbox, navigate, screen]);
+  }, [canMutatePillbox, canSeePillbox, listFilter, navigate, screen, selectedPlanCompleted]);
 
   useEffect(() => {
     if (
@@ -257,8 +268,15 @@ export function PillboxPage() {
       return;
     }
     openUpgradeDialog();
-    navigate(`/pillbox?mode=details&plan=${selectedPlanId}`, { replace: true });
-  }, [navigate, screen, selectedPlanId, selectedPlanSubscriptionLocked]);
+    navigate(buildPillboxDetailsRoute(selectedPlanId, listFilter), { replace: true });
+  }, [
+    listFilter,
+    navigate,
+    openUpgradeDialog,
+    screen,
+    selectedPlanId,
+    selectedPlanSubscriptionLocked,
+  ]);
 
   const allGroups = useMemo(() => {
     const mapped = planSummaries.map((summary) => toGroupSummary(summary, language));
@@ -303,13 +321,13 @@ export function PillboxPage() {
       if (isCreating) {
         setDraft(buildDraft(accountId, undefined));
       } else if (!selectedPlanLoading && !selectedPlanId) {
-        navigate("/pillbox", { replace: true });
+        navigate(buildPillboxHubRoute(listFilter), { replace: true });
       }
       return;
     }
 
     if (screen === "medication" && draft && !activeMedication) {
-      navigate(`/pillbox?mode=setup${draft.id ? `&plan=${draft.id}` : "&plan=new"}`, {
+      navigate(buildPillboxSetupRoute(draft.id, "hub"), {
         replace: true,
       });
     }
@@ -320,6 +338,7 @@ export function PillboxPage() {
     isEditorScreen,
     isCreating,
     navigate,
+    listFilter,
     screen,
     selectedPlanId,
     selectedPlanLoading,
@@ -435,23 +454,36 @@ export function PillboxPage() {
       return;
     }
     setDraft(buildDraft(accountId, undefined));
-    navigate("/pillbox?mode=setup&plan=new", { replace: screen !== "hub" });
+    navigate(buildPillboxSetupRoute(null, "hub"), { replace: screen !== "hub" });
   };
 
-  const navigateBackOr = (fallbackHref: string) => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      navigate(-1);
-      return;
-    }
-    navigate(fallbackHref, { replace: true });
+  const hubRoute = buildPillboxHubRoute(listFilter);
+  const resetPillboxTransientState = () => {
+    setDeleteTarget(null);
+    setPlanActionTarget(null);
+    setPlanActionError(null);
+    setPendingNewMedicationId(null);
+    closeUpgradeDialog();
+  };
+  const resetPillboxEditorState = () => {
+    setDraft(null);
+    setSaveAttempted(false);
+    setSavePlanError(null);
+    resetPillboxTransientState();
+    resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
+    setEditorCoursePreset("custom");
+    setEditorMedicationBaseline(null);
+  };
+  const navigateWithDeferredCleanup = (to: string, options?: { replace?: boolean }) => {
+    navigate(to, options);
+    window.setTimeout(() => {
+      resetPillboxEditorState();
+    }, 0);
   };
 
   const openDetails = (group: PillboxGroup) => {
     setDraft(null);
-    navigate(
-      `/pillbox?mode=details&plan=${group.id}${listFilter === "completed" ? "&tab=completed" : ""}`,
-      { replace: screen !== "hub" }
-    );
+    navigate(buildPillboxDetailsRoute(group.id, listFilter), { replace: screen !== "hub" });
   };
 
   const discardUnsavedNewMedication = () => {
@@ -479,23 +511,38 @@ export function PillboxPage() {
 
   const goToHub = () => {
     discardUnsavedNewMedication();
-    setDraft(null);
-    setSaveAttempted(false);
-    setSavePlanError(null);
-    closeUpgradeDialog();
-    resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-    navigate(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox", { replace: true });
+    navigateWithDeferredCleanup(hubRoute, { replace: true });
   };
 
-  const goBackToHub = () => {
+  const goBackFromSetupByRoute = () => {
     discardUnsavedNewMedication();
-    setDraft(null);
-    setSaveAttempted(false);
-    setSavePlanError(null);
-    closeUpgradeDialog();
-    resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-    navigateBackOr(listFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox");
+    const targetPlanId = draft?.id ?? selectedPlanId;
+    if (backSource === "details" && targetPlanId) {
+      navigateWithDeferredCleanup(buildPillboxDetailsRoute(targetPlanId, listFilter), {
+        replace: true,
+      });
+      return;
+    }
+    navigateWithDeferredCleanup(hubRoute, { replace: true });
   };
+  const enableLocalPillboxSwipe = screen !== "hub";
+  const hubSnapshotKey = hubRoute;
+  const setupSnapshotKey = resolvePillboxSetupUnderlaySnapshotKey({
+    backSource,
+    selectedPlanId,
+    listFilter,
+  });
+  const detailsSnapshotKey = hubRoute;
+  const editorPlanId = draft?.id ?? selectedPlanId;
+  const medicationSnapshotKey = resolvePillboxMedicationUnderlaySnapshotKey({
+    editorPlanId,
+    backSource,
+    routeOrigin,
+    listFilter,
+  });
+  const analyticsSnapshotKey = hubSnapshotKey;
+  const setupBackLabel =
+    backSource === "details" ? tPillbox(language, "medicationBack") : tPillbox(language, "setupBack");
 
   const {
     createPlanMutation,
@@ -541,36 +588,51 @@ export function PillboxPage() {
   }, [accountId, eligiblePillboxMembers, selectedPlan, selectedPlanId, updatePlanMutation]);
 
   const goToSetup = () => {
+    if (selectedPlanCompleted) {
+      return;
+    }
     const targetPlanId = draft?.id ?? selectedPlanId;
-    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`, {
+    navigate(buildPillboxSetupRoute(targetPlanId, "details"), {
       replace: true,
     });
-  };
-
-  const goToSetupFromMedication = () => {
-    discardUnsavedNewMedication();
-    resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-    setEditorCoursePreset("custom");
-    const targetPlanId = draft?.id ?? selectedPlanId;
-    navigateBackOr(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`);
   };
 
   const closeMedicationEditor = () => {
-    resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
-    setEditorCoursePreset("custom");
-    setEditorMedicationBaseline(null);
     const targetPlanId = draft?.id ?? selectedPlanId;
-    navigate(`/pillbox?mode=setup${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`, {
+    if (backSource === "details" && targetPlanId) {
+      navigateWithDeferredCleanup(buildPillboxDetailsRoute(targetPlanId, listFilter), {
+        replace: true,
+      });
+      return;
+    }
+    navigateWithDeferredCleanup(buildPillboxSetupRoute(targetPlanId, routeOrigin), {
       replace: true,
     });
   };
 
-  const goToMedication = (medicationId: string) => {
+  const goToMedicationFromSetup = (medicationId: string) => {
     const targetPlanId = draft?.id ?? selectedPlanId;
     navigate(
-      `/pillbox?mode=medication&med=${medicationId}${targetPlanId ? `&plan=${targetPlanId}` : "&plan=new"}`,
-      { replace: screen === "medication" }
+      buildPillboxMedicationRoute(
+        medicationId,
+        targetPlanId,
+        "setup",
+        backSource === "details" ? "details" : "hub"
+      ),
+      {
+        replace: screen === "medication",
+      }
     );
+  };
+
+  const goToMedicationFromDetails = (medicationId: string) => {
+    if (selectedPlanCompleted) {
+      return;
+    }
+    const targetPlanId = selectedPlanId;
+    navigate(buildPillboxMedicationRoute(medicationId, targetPlanId, "details", "details"), {
+      replace: screen === "medication",
+    });
   };
 
   const addMedication = () => {
@@ -584,7 +646,7 @@ export function PillboxPage() {
           }
         : current
     );
-    goToMedication(nextMedication.id);
+    goToMedicationFromSetup(nextMedication.id);
   };
 
   const updateMedication = (id: string, patch: Partial<MedicationItem>) => {
@@ -797,9 +859,7 @@ export function PillboxPage() {
     if (screen !== "hub") {
       return;
     }
-    navigate(nextFilter === "completed" ? "/pillbox?tab=completed" : "/pillbox", {
-      replace: true,
-    });
+    navigate(buildPillboxHubRoute(nextFilter), { replace: true });
   };
 
   const openAnalytics = (
@@ -814,10 +874,9 @@ export function PillboxPage() {
         : allGroups.find((group) => group.status !== "archived" && group.status !== "completed")
             ?.id) ??
       null;
-    navigate(
-      `/pillbox?mode=analytics${resolvedPlanId ? `&plan=${resolvedPlanId}` : ""}${targetFilter === "completed" ? "&tab=completed" : ""}`,
-      { replace: screen !== "hub" }
-    );
+    navigate(buildPillboxAnalyticsRoute(resolvedPlanId, targetFilter), {
+      replace: screen !== "hub",
+    });
   };
 
   const saveMedication = () => {
@@ -847,12 +906,11 @@ export function PillboxPage() {
         groups={allGroups}
         selectedPlanId={selectedPlanIdForAnalytics}
         initialFilter={listFilter}
-        onBack={goBackToHub}
+        onBack={goToHub}
+        underlaySnapshotKey={analyticsSnapshotKey}
+        enableBackGesture={enableLocalPillboxSwipe}
         onSelectPlan={(planId, filter) =>
-          navigate(
-            `/pillbox?mode=analytics&plan=${planId}${filter === "completed" ? "&tab=completed" : ""}`,
-            { replace: true }
-          )
+          navigate(buildPillboxAnalyticsRoute(planId, filter), { replace: true })
         }
       />
     );
@@ -914,7 +972,16 @@ export function PillboxPage() {
   }
 
   if (isEditorScreen && !isCreating && selectedPlanLoading && !draft) {
-    return <PillboxLoadingScreen language={language} screen={screen} onBack={goBackToHub} />;
+    return (
+      <PillboxLoadingScreen
+        language={language}
+        screen={screen}
+        onBack={screen === "setup" ? goBackFromSetupByRoute : goToHub}
+        underlaySnapshotKey={screen === "setup" ? setupSnapshotKey : hubSnapshotKey}
+        enableBackGesture={enableLocalPillboxSwipe}
+        backLabel={screen === "setup" ? setupBackLabel : undefined}
+      />
+    );
   }
 
   if (screen === "medication" && draft && activeMedication) {
@@ -927,7 +994,7 @@ export function PillboxPage() {
         editorTimes={editorTimes}
         editorCoursePreset={editorCoursePreset}
         canSaveMedication={canSaveMedication}
-        onBack={goToSetupFromMedication}
+        onBack={closeMedicationEditor}
         onTitleChange={setEditorTitle}
         onDoseChange={setEditorDose}
         onUpdateEditorTimeAt={updateEditorTimeAt}
@@ -937,6 +1004,8 @@ export function PillboxPage() {
         onUpdateMedication={updateMedication}
         onCoursePresetChange={setEditorCoursePreset}
         onSaveMedication={saveMedication}
+        underlaySnapshotKey={medicationSnapshotKey}
+        enableBackGesture={enableLocalPillboxSwipe}
       />
     );
   }
@@ -950,16 +1019,18 @@ export function PillboxPage() {
         allGroups={allGroups}
         canAct={canActInPillbox}
         canEdit={canMutatePillbox}
-        disableEditingActions={disablePillboxEditingActions || selectedPlanSubscriptionLocked}
+        disableEditingActions={
+          disablePillboxEditingActions || selectedPlanSubscriptionLocked || selectedPlanCompleted
+        }
         planActionTarget={planActionTarget}
         planActionError={planActionError}
         togglePlanStatusPending={togglePlanStatusMutation.isPending}
         deletePlanPending={deletePlanMutation.isPending}
         deleteTarget={deleteTarget}
-        onBack={goBackToHub}
+        onBack={goToHub}
         onToggleStatus={toggleSelectedPlanStatus}
         onGoToSetup={goToSetup}
-        onOpenMedication={goToMedication}
+        onOpenMedication={goToMedicationFromDetails}
         familyMembers={eligiblePillboxMembers}
         currentAccountId={accountId}
         recipientsSummary={selectedPlanRecipientsSummary}
@@ -972,6 +1043,8 @@ export function PillboxPage() {
           setPlanActionError(null);
         }}
         onConfirmDelete={confirmDelete}
+        underlaySnapshotKey={detailsSnapshotKey}
+        enableBackGesture={enableLocalPillboxSwipe}
         onCloseDelete={() => {
           setDeleteTarget(null);
           setPlanActionError(null);
@@ -993,9 +1066,9 @@ export function PillboxPage() {
           saveAttempted={saveAttempted}
           savePlanError={savePlanError}
           isEditing={isEditing}
-          onBack={goBackToHub}
+          onBack={goBackFromSetupByRoute}
           onAddMedication={addMedication}
-          onOpenMedication={goToMedication}
+          onOpenMedication={goToMedicationFromSetup}
           onRequestDeleteMedication={requestDeleteMedication}
           onTitleChange={(value) =>
             setDraft((current) => (current ? { ...current, title: value } : current))
@@ -1012,6 +1085,9 @@ export function PillboxPage() {
           onSavePlan={saveGroup}
           recipientsSummary={pillboxRecipientsSummary}
           deleteTarget={deleteTarget}
+          underlaySnapshotKey={setupSnapshotKey}
+          enableBackGesture={enableLocalPillboxSwipe}
+          backLabel={setupBackLabel}
           onConfirmDelete={confirmDelete}
           onCloseDeleteDialog={() => setDeleteTarget(null)}
         />

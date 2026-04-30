@@ -39,6 +39,8 @@ type PillboxMedicationScreenProps = {
   onUpdateMedication: (id: string, patch: Partial<MedicationItem>) => void;
   onCoursePresetChange: (preset: CoursePreset) => void;
   onSaveMedication: () => void;
+  underlaySnapshotKey?: string;
+  enableBackGesture?: boolean;
 };
 
 export function PillboxMedicationScreen({
@@ -59,6 +61,8 @@ export function PillboxMedicationScreen({
   onUpdateMedication,
   onCoursePresetChange,
   onSaveMedication,
+  underlaySnapshotKey,
+  enableBackGesture = true,
 }: PillboxMedicationScreenProps) {
   const editorFieldWrapClass = "mx-auto w-full max-w-[36rem]";
   const [isCourseDialogOpen, setIsCourseDialogOpen] = useState(false);
@@ -122,7 +126,11 @@ export function PillboxMedicationScreen({
     "text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground/88 sm:text-[0.94rem]";
 
   return (
-    <EditorShell onBack={onBack}>
+    <EditorShell
+      onBack={onBack}
+      underlaySnapshotKey={underlaySnapshotKey}
+      enableBackGesture={enableBackGesture}
+    >
       <FlowScreenHeader
         backLabel={tPillbox(language, "medicationBack")}
         onBack={onBack}

@@ -11,6 +11,7 @@ import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { hasBrowserBack } from "@shared/navigation/browserHistory";
 import { canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { getLocalIsoDate } from "@shared/utils/date";
@@ -66,6 +67,7 @@ export function ChildCalendarPage() {
   const [enabledKinds, setEnabledKinds] = useState<EventKind[]>(eventKinds);
   const calendarFeedHistoryRef = useRef(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const hasHistoryBack = hasBrowserBack();
   const canViewCalendar =
     !!childId && canViewChild(childId, accountFamilyRole, accountAccessPolicy);
 
@@ -232,7 +234,13 @@ export function ChildCalendarPage() {
       ref={rootRef}
       className="child-profile-shell child-overview-page min-h-[100dvh] space-y-4 sm:space-y-5"
     >
-      <IosEdgeBackGesture isEnabled={isIosShell} onBack={handleBack} targetRef={rootRef} />
+      <IosEdgeBackGesture
+        isEnabled={isIosShell && !hasHistoryBack}
+        onBack={handleBack}
+        targetRef={rootRef}
+        presentation="route"
+        underlaySnapshotKey={`/children/${child.id}`}
+      />
       <ChildSectionTopBar
         onBack={handleBack}
         backLabel={text.back}

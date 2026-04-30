@@ -190,7 +190,11 @@ export function ChildCard({
                   ))}
                 </div>
               </div>
-              <Link to={`/children/${child.id}`} className={`${quickActionClass} shrink-0`}>
+              <Link
+                to={`/children/${child.id}`}
+                state={{ pmChildProfileBackTarget: "children" }}
+                className={`${quickActionClass} shrink-0`}
+              >
                 {copy.childCard.profile}
               </Link>
             </div>

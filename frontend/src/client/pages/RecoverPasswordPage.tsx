@@ -14,9 +14,11 @@ import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
+import { saveNativePasswordCredential } from "@shared/security/nativePasswordAutofill";
 import { useAppStore } from "@shared/store/useAppStore";
 import { blurActiveField } from "@shared/utils/focus";
 import { normalizeRecoveryCode } from "@shared/utils/recoveryCode";
+import { navigateBackWithFallback, shouldUseBrowserBack } from "@shared/navigation/browserHistory";
 
 import { AuthLegalLinks } from "./AuthLegalLinks";
 import { canSubmitRecoveryCode, canSubmitRecoveryPassword } from "./authRecovery";
@@ -129,7 +131,12 @@ export function RecoverPasswordPage() {
         remember_me: false,
       });
     },
-    onSuccess: (session) => {
+    onSuccess: async (session, variables) => {
+      try {
+        await saveNativePasswordCredential(variables.email, variables.new_password);
+      } catch {
+        // Password reset should still complete if iOS autofill update does not present a prompt.
+      }
       setPendingSession(session);
       successRedirectTimeoutRef.current = window.setTimeout(() => {
         applySessionToClient(session);
@@ -145,11 +152,9 @@ export function RecoverPasswordPage() {
     if (pendingSession) {
       return;
     }
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      navigate(-1);
-      return;
-    }
-    navigate("/auth?mode=login", { replace: true });
+    navigateBackWithFallback(navigate, "/auth?mode=login", {
+      shouldUseBrowserBack: shouldUseBrowserBack(),
+    });
   }, [navigate, pendingSession]);
 
   useEffect(() => {

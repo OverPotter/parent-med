@@ -15,21 +15,30 @@ import {
   shouldLockIosBackSwipe,
   shouldPreventScrollDuringIosBackSwipe,
 } from "@shared/navigation/iosBackSwipe";
+import {
+  IOS_UNDERLAY_SNAPSHOT_CHANGE_EVENT,
+  readIosActiveSnapshot,
+} from "./snapshotState";
+import { shouldDisableGlobalIosBackSwipe } from "./swipeRoutes";
+import {
+  cancelIosBackSwipeRootVisuals,
+  clearIosBackSwipeRootFlags,
+  commitIosBackSwipeRootVisuals,
+  resetIosBackSwipeRootVisuals,
+  startIosBackSwipeRootVisuals,
+  updateIosBackSwipeRootProgress,
+} from "./swipeVisuals";
+
+function isInsideLocalSwipeRoot(target: EventTarget | null): boolean {
+  return target instanceof Element && Boolean(target.closest("[data-ios-local-back-swipe='true']"));
+}
 
 export function IOSBackSwipeZone() {
   const location = useLocation();
   const navigate = useNavigate();
+  const currentPathKey = `${location.pathname}${location.search}`;
   const [previousScreenSnapshot, setPreviousScreenSnapshot] = useState(() => {
-    if (typeof window === "undefined") {
-      return { html: "", scrollY: 0 };
-    }
-    return (
-      (
-        window as Window & {
-          __PM_IOS_PREVIOUS_SCREEN_SNAPSHOT?: { html: string; scrollY: number };
-        }
-      ).__PM_IOS_PREVIOUS_SCREEN_SNAPSHOT ?? { html: "", scrollY: 0 }
-    );
+    return readIosActiveSnapshot(currentPathKey);
   });
   const swipeStateRef = useRef<{
     startX: number;
@@ -59,11 +68,7 @@ export function IOSBackSwipeZone() {
       if (swipeStateRef.current.resetTimeoutId !== null) {
         window.clearTimeout(swipeStateRef.current.resetTimeoutId);
       }
-      document.documentElement.style.removeProperty("--ios-back-swipe-offset");
-      document.documentElement.style.removeProperty("--ios-back-swipe-progress");
-      document.documentElement.removeAttribute("data-ios-back-swipe-active");
-      document.documentElement.removeAttribute("data-ios-back-swipe-commit");
-      document.documentElement.removeAttribute("data-ios-back-swipe-cancel");
+      resetIosBackSwipeRootVisuals();
       document.documentElement.removeAttribute("data-ios-back-swipe-zone");
     };
   }, []);
@@ -72,24 +77,24 @@ export function IOSBackSwipeZone() {
     if (typeof window === "undefined") {
       return;
     }
-    setPreviousScreenSnapshot(
-      (
-        window as Window & {
-          __PM_IOS_PREVIOUS_SCREEN_SNAPSHOT?: { html: string; scrollY: number };
-        }
-      ).__PM_IOS_PREVIOUS_SCREEN_SNAPSHOT ?? { html: "", scrollY: 0 }
-    );
-  }, [location.pathname, location.search]);
+    setPreviousScreenSnapshot(readIosActiveSnapshot(currentPathKey));
+  }, [currentPathKey]);
 
-  const pillboxMode = new URLSearchParams(location.search).get("mode");
-  const shouldDisableSwipeBack =
-    location.pathname === "/" ||
-    location.pathname === "/auth" ||
-    location.pathname === "/start" ||
-    location.pathname === "/children" ||
-    location.pathname === "/medicine-cabinet" ||
-    location.pathname === "/illnesses/active" ||
-    (location.pathname === "/pillbox" && !pillboxMode);
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const handleSnapshotChange = () => {
+      setPreviousScreenSnapshot(readIosActiveSnapshot(currentPathKey));
+    };
+    window.addEventListener(IOS_UNDERLAY_SNAPSHOT_CHANGE_EVENT, handleSnapshotChange);
+    return () => window.removeEventListener(IOS_UNDERLAY_SNAPSHOT_CHANGE_EVENT, handleSnapshotChange);
+  }, [currentPathKey]);
+
+  const shouldDisableSwipeBack = shouldDisableGlobalIosBackSwipe(
+    location.pathname,
+    location.search
+  );
 
   useEffect(() => {
     if (
@@ -99,24 +104,10 @@ export function IOSBackSwipeZone() {
     ) {
       return;
     }
-
-    const root = document.documentElement;
-
-    const resetSwipeVisuals = () => {
-      root.removeAttribute("data-ios-back-swipe-active");
-      root.removeAttribute("data-ios-back-swipe-commit");
-      root.removeAttribute("data-ios-back-swipe-cancel");
-      root.style.removeProperty("--ios-back-swipe-offset");
-      root.style.removeProperty("--ios-back-swipe-progress");
-    };
-
     const finishCancel = () => {
-      root.removeAttribute("data-ios-back-swipe-active");
-      root.setAttribute("data-ios-back-swipe-cancel", "true");
-      root.style.setProperty("--ios-back-swipe-offset", "0px");
-      root.style.setProperty("--ios-back-swipe-progress", "0");
+      cancelIosBackSwipeRootVisuals();
       swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
-        resetSwipeVisuals();
+        resetIosBackSwipeRootVisuals();
         swipeStateRef.current.resetTimeoutId = null;
       }, IOS_BACK_SWIPE_CANCEL_MS);
     };
@@ -124,6 +115,9 @@ export function IOSBackSwipeZone() {
     const handleTouchStart = (event: TouchEvent) => {
       const touch = event.touches.item(0);
       if (!touch || event.touches.length !== 1) {
+        return;
+      }
+      if (isInsideLocalSwipeRoot(event.target)) {
         return;
       }
       if (shouldIgnoreIosBackSwipeStartTarget(event.target, touch.clientX)) {
@@ -142,16 +136,15 @@ export function IOSBackSwipeZone() {
       swipeStateRef.current.renderedDx = 0;
       swipeStateRef.current.horizontalLocked = false;
       swipeStateRef.current.active = true;
-      root.removeAttribute("data-ios-back-swipe-commit");
-      root.removeAttribute("data-ios-back-swipe-cancel");
-      root.removeAttribute("data-ios-back-swipe-active");
-      root.style.removeProperty("--ios-back-swipe-offset");
-      root.style.removeProperty("--ios-back-swipe-progress");
+      clearIosBackSwipeRootFlags();
     };
 
     const handleTouchMove = (event: TouchEvent) => {
       const touch = event.touches.item(0);
       if (!touch || !swipeStateRef.current.active) {
+        return;
+      }
+      if (isInsideLocalSwipeRoot(event.target)) {
         return;
       }
       if (shouldIgnoreIosBackSwipeTarget(event.target)) {
@@ -163,9 +156,7 @@ export function IOSBackSwipeZone() {
 
       if (!swipeStateRef.current.horizontalLocked && shouldLockIosBackSwipe(dx, dy)) {
         swipeStateRef.current.horizontalLocked = true;
-        root.setAttribute("data-ios-back-swipe-active", "true");
-        root.style.setProperty("--ios-back-swipe-offset", "0px");
-        root.style.setProperty("--ios-back-swipe-progress", "0");
+        startIosBackSwipeRootVisuals();
       }
 
       if (
@@ -187,16 +178,19 @@ export function IOSBackSwipeZone() {
 
       const offset = getIosBackSwipeOffset(dx, window.innerWidth);
       swipeStateRef.current.renderedDx = offset;
-      root.style.setProperty("--ios-back-swipe-offset", `${offset}px`);
-      root.style.setProperty(
-        "--ios-back-swipe-progress",
-        `${getIosBackSwipeProgress(offset, window.innerWidth)}`
+      updateIosBackSwipeRootProgress(
+        offset,
+        getIosBackSwipeProgress(offset, window.innerWidth)
       );
     };
 
     const handleTouchEnd = (event: TouchEvent) => {
       const touch = event.changedTouches.item(0);
       if (!touch || !swipeStateRef.current.active) {
+        return;
+      }
+      if (isInsideLocalSwipeRoot(event.target)) {
+        swipeStateRef.current.active = false;
         return;
       }
       if (shouldIgnoreIosBackSwipeTarget(event.target)) {
@@ -224,12 +218,8 @@ export function IOSBackSwipeZone() {
           return;
         }
 
-        root.removeAttribute("data-ios-back-swipe-active");
-        root.setAttribute("data-ios-back-swipe-commit", "true");
-        root.style.setProperty("--ios-back-swipe-offset", `${Math.min(dx, window.innerWidth)}px`);
-        root.style.setProperty("--ios-back-swipe-progress", "1");
+        commitIosBackSwipeRootVisuals(Math.min(dx, window.innerWidth));
         swipeStateRef.current.resetTimeoutId = window.setTimeout(() => {
-          resetSwipeVisuals();
           swipeStateRef.current.resetTimeoutId = null;
           navigate(-1);
         }, IOS_BACK_SWIPE_COMMIT_MS);
@@ -253,7 +243,7 @@ export function IOSBackSwipeZone() {
         window.clearTimeout(swipeStateRef.current.resetTimeoutId);
         swipeStateRef.current.resetTimeoutId = null;
       }
-      resetSwipeVisuals();
+      resetIosBackSwipeRootVisuals();
     };
   }, [navigate, shouldDisableSwipeBack]);
 
@@ -273,6 +263,9 @@ export function IOSBackSwipeZone() {
             style={{ transform: `translate3d(0, -${previousScreenSnapshot.scrollY}px, 0)` }}
             dangerouslySetInnerHTML={{ __html: previousScreenSnapshot.html }}
           />
+          {previousScreenSnapshot.bottomNavHtml ? (
+            <div dangerouslySetInnerHTML={{ __html: previousScreenSnapshot.bottomNavHtml }} />
+          ) : null}
         </div>
       ) : null}
     </div>

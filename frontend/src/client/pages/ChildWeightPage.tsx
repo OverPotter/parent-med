@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { fetchMyFamilyAccess } from "@shared/api/families";
@@ -18,6 +18,7 @@ import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { MeasurementCard } from "@client/components/MeasurementCard";
 import { getChildrenCopy } from "@client/i18n/children";
+import { useChildBackNavigation } from "@client/pages/children/useChildBackNavigation";
 import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
 import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
 import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
@@ -30,7 +31,6 @@ export function ChildWeightPage() {
   const common = getChildrenCopy(language).common;
   const { childId } = useParams<{ childId: string }>();
   const isIosShell = useIsIosShell();
-  const navigate = useNavigate();
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
@@ -105,16 +105,21 @@ export function ChildWeightPage() {
     return <p className="text-sm text-muted">{common.loading}</p>;
   }
   const planLocksChildActions = isChildLockedByPlan(child.id, familyAccess);
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: `/children/${child.id}`,
+  });
 
   return (
     <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-6">
       <IosEdgeBackGesture
-        isEnabled={isIosShell}
-        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        isEnabled={isIosShell && enableLocalSwipe}
+        onBack={handleBack}
         targetRef={rootRef}
+        presentation="route"
+        underlaySnapshotKey={localUnderlaySnapshotKey}
       />
       <ChildSectionTopBar
-        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        onBack={handleBack}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
         title={`${copy.weightCardTitle} · ${child.name}`}
         hint={copy.measurementsSectionSubtitle}

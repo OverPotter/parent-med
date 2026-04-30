@@ -25,6 +25,7 @@ import { useIsOffline } from "@shared/hooks/useIsOffline";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
+import { navigateBackWithFallback } from "@shared/navigation/browserHistory";
 import { canEditCabinet, canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
@@ -97,6 +98,9 @@ export function MedicineCabinetPage() {
 
   const closeAddFlow = (options?: { replace?: boolean }) => {
     navigate("/medicine-cabinet", { replace: options?.replace ?? false });
+  };
+  const closeCabinetFlowWithHistoryFallback = (fallbackHref: string) => {
+    navigateBackWithFallback(navigate, fallbackHref);
   };
 
   const openCatalogUpgradeDialog = () => {
@@ -394,7 +398,7 @@ export function MedicineCabinetPage() {
       <AddHouseholdMedicineForm
         language={language}
         mode={addFlow}
-        onClose={() => openAddFlow("choice", { replace: true })}
+        onClose={() => closeCabinetFlowWithHistoryFallback("/medicine-cabinet/add")}
         onCreated={() => {
           closeAddFlow({ replace: true });
           setCabinetSearch("");
@@ -421,7 +425,13 @@ export function MedicineCabinetPage() {
       return <Navigate to="/medicine-cabinet" replace />;
     }
 
-    return <NewPackPage language={language} medicine={currentMedicine} onClose={closeAddFlow} />;
+    return (
+      <NewPackPage
+        language={language}
+        medicine={currentMedicine}
+        onClose={() => closeCabinetFlowWithHistoryFallback("/medicine-cabinet")}
+      />
+    );
   }
 
   return (
@@ -511,7 +521,7 @@ export function MedicineCabinetPage() {
         <AddMedicineChoiceDialog
           language={language}
           catalogLocked={isCatalogLocked}
-          onClose={() => closeAddFlow()}
+          onClose={() => closeCabinetFlowWithHistoryFallback("/medicine-cabinet")}
           onCatalog={() => openAddFlow("catalog")}
           onLockedCatalogAttempt={openCatalogUpgradeDialog}
           onManual={() => openAddFlow("manual")}

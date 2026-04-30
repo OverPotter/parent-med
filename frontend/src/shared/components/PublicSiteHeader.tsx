@@ -78,8 +78,8 @@ function resolvePublicSiteHeaderActions(params: {
 }
 
 export function PublicSiteHeader({ accountHref, accountLabel, actions }: PublicSiteHeaderProps) {
-    const { selectedLanguage, copy } = useI18n();
-    const localCopy = getPublicSiteHeaderCopy(selectedLanguage);
+    const { language, copy } = useI18n();
+    const localCopy = getPublicSiteHeaderCopy(language);
     const effectiveTheme = useAppStore((s) => s.effectiveTheme);
     const toggleTheme = useAppStore((s) => s.toggleTheme);
     const isIosShell = useIsIosShell();

@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getPaywallReturnTo } from "./legalRouteState";
 import { markUpgradeDialogReopenPending } from "@client/subscription/upgradeDialogReopen";
+import { navigateBackWithFallback, shouldUseBrowserBack } from "@shared/navigation/browserHistory";
 
 export function useHistoryBackFallback(fallbackHref: string) {
   const navigate = useNavigate();
@@ -14,11 +15,9 @@ export function useHistoryBackFallback(fallbackHref: string) {
       navigate(returnTo, { replace: true });
       return;
     }
-    const historyState = typeof window !== "undefined" ? window.history.state : null;
-    if (typeof historyState?.idx === "number" && historyState.idx > 0) {
-      navigate(-1);
-      return;
-    }
-    navigate(fallbackHref);
+    navigateBackWithFallback(navigate, fallbackHref, {
+      fallbackReplace: false,
+      shouldUseBrowserBack: shouldUseBrowserBack(),
+    });
   }, [fallbackHref, navigate, returnTo]);
 }

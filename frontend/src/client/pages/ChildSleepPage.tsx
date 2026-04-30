@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { fetchMyFamilyAccess } from "@shared/api/families";
@@ -27,6 +27,7 @@ import {
 } from "@client/components/ChildRecordsPeriodSelector";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
+import { useChildBackNavigation } from "@client/pages/children/useChildBackNavigation";
 import { RecordHistoryRow } from "./children/RecordHistoryRow";
 import { formatChildDateTime, formatChildTime } from "@client/utils/childDateFormat";
 import {
@@ -41,7 +42,6 @@ export function ChildSleepPage() {
   const common = getChildrenCopy(language).common;
   const { childId } = useParams<{ childId: string }>();
   const isIosShell = useIsIosShell();
-  const navigate = useNavigate();
   const currentAccountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
@@ -116,12 +116,17 @@ export function ChildSleepPage() {
     .map((session) => session.durationMinutes)
     .filter(isNumber);
   const averageDuration = getAverage(completedDurations);
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: `/children/${child.id}`,
+  });
   return (
     <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-6">
       <IosEdgeBackGesture
-        isEnabled={isIosShell}
-        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        isEnabled={isIosShell && enableLocalSwipe}
+        onBack={handleBack}
         targetRef={rootRef}
+        presentation="route"
+        underlaySnapshotKey={localUnderlaySnapshotKey}
       />
       <ConfirmDialog
         isOpen={!!sleepToDelete}
@@ -144,7 +149,7 @@ export function ChildSleepPage() {
       />
 
       <ChildSectionTopBar
-        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        onBack={handleBack}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
         title={`${copy.sleepSection} · ${child.name}`}
         hint={copy.sleepSectionSubtitle}

@@ -121,7 +121,7 @@ export function BottomTabBar({
     </nav>
   );
 
-  if (typeof document === "undefined") {
+  if (typeof document === "undefined" || isIosShell) {
     return nav;
   }
 

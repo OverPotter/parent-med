@@ -13,10 +13,7 @@ public final class PasswordAutofillPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "requestCredential", returnType: CAPPluginReturnPromise)
     ]
 
-    private let defaultDomains = [
-        "parent-med-production-frontend.up.railway.app",
-        "pillpath-production-frontend.up.railway.app"
-    ]
+    private let defaultDomains = ["parent-med-production-frontend.up.railway.app"]
     private var pendingAuthorizationCall: CAPPluginCall?
     private var authorizationControllerDelegate: AuthorizationControllerDelegate?
 
