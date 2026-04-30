@@ -62,7 +62,7 @@ export function LiveActivityRuntimeSync() {
   });
 
   useEffect(() => {
-    if (!isBootReady || !authToken || !currentFamilyId || !isNativeIos) {
+    if (!isBootReady || !authToken || !currentFamilyId || !accountId || !isNativeIos || !familyAccess) {
       return;
     }
 
@@ -286,7 +286,7 @@ export function LiveActivityRuntimeSync() {
     accountId,
     authToken,
     currentFamilyId,
-    familyAccess?.canUseLiveActivities,
+    familyAccess,
     isBootReady,
     isNativeIos,
     language,

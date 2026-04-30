@@ -54,5 +54,44 @@ export default defineConfig({
   build: {
     outDir: "www",
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) {
+            return;
+          }
+
+          if (
+            id.includes("/react/") ||
+            id.includes("/react-dom/") ||
+            id.includes("/scheduler/")
+          ) {
+            return "react-vendor";
+          }
+
+          if (
+            id.includes("/react-router-dom/") ||
+            id.includes("/@remix-run/router/")
+          ) {
+            return "router-vendor";
+          }
+
+          if (id.includes("/@tanstack/")) {
+            return "query-vendor";
+          }
+
+          if (
+            id.includes("/@capacitor/") ||
+            id.includes("/capacitor-secure-storage-plugin/")
+          ) {
+            return "capacitor-vendor";
+          }
+
+          if (id.includes("/axios/")) {
+            return "network-vendor";
+          }
+        },
+      },
+    },
   },
 });

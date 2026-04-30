@@ -163,11 +163,11 @@ export function ChildFeedingCreatePage() {
           return items.some((item) => item.id === feeding.id) ? items : [feeding, ...items];
         }
       );
+      void syncFeedingLiveActivity(child!, feeding, language, undefined, accountId);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["feeding-records", childId] }),
         queryClient.invalidateQueries({ queryKey: ["feeding-record-active", childId] }),
       ]);
-      void syncFeedingLiveActivity(child!, feeding, language, undefined, accountId);
       navigate("/children", { replace: true });
     },
     onError: (error: { message?: string; response?: { data?: { detail?: string } } }) => {

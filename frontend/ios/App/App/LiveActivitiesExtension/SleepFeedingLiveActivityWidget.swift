@@ -32,15 +32,15 @@ struct SleepFeedingLiveActivityWidget: Widget {
                         ActivityIcon(kind: context.attributes.kind, size: 28)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(context.state.title)
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.64)
-                            Text(compactActivityEyebrow(for: context))
-                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .minimumScaleFactor(0.52)
+                            CompactActivityEyebrowText(context: context)
+                                .font(.system(size: 8, weight: .medium, design: .rounded))
                                 .foregroundStyle(.white.opacity(0.62))
-                                .lineLimit(1)
                         }
+                        .frame(maxWidth: 88, alignment: .leading)
                         .layoutPriority(1)
                     }
                 }
@@ -55,11 +55,11 @@ struct SleepFeedingLiveActivityWidget: Widget {
                         .foregroundStyle(.white)
                         .frame(minWidth: 62, alignment: .trailing)
                     } else {
-                                ElapsedTimerText(
-                                    startedAt: context.state.startedAt,
-                                    font: .system(size: 22, weight: .bold, design: .rounded),
-                                    languageCode: context.state.language
-                                )
+                        ElapsedTimerText(
+                            startedAt: context.state.startedAt,
+                            font: .system(size: 20, weight: .bold, design: .rounded),
+                            languageCode: context.state.language
+                        )
                         .foregroundStyle(.white)
                         .frame(minWidth: 62, alignment: .trailing)
                     }
@@ -84,7 +84,12 @@ struct SleepFeedingLiveActivityWidget: Widget {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.white)
                 } else {
-                    CompactElapsedText(startedAt: context.state.startedAt, languageCode: context.state.language)
+                    CompactElapsedText(
+                        startedAt: context.state.startedAt,
+                        languageCode: context.state.language,
+                        font: .caption.weight(.semibold),
+                        minimumScaleFactor: 0.85
+                    )
                         .foregroundStyle(.white)
                 }
             } minimal: {
@@ -281,14 +286,32 @@ struct LeadingElapsedTimerText: View {
 private struct CompactElapsedText: View {
     let startedAt: Date
     let languageCode: String?
+    let font: Font
+    let minimumScaleFactor: CGFloat
 
     var body: some View {
-        Text(startedAt, style: .timer)
-        .environment(\.locale, liveActivityLocale(languageCode))
-        .font(.caption.weight(.semibold))
-        .monospacedDigit()
-        .lineLimit(1)
-        .minimumScaleFactor(0.85)
+        TimelineView(.periodic(from: startedAt, by: 60)) { timeline in
+            Text(abbreviatedElapsedLabel(
+                startedAt: startedAt,
+                now: timeline.date,
+                languageCode: languageCode
+            ))
+            .font(font)
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(minimumScaleFactor)
+        }
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private struct CompactActivityEyebrowText: View {
+    let context: ActivityViewContext<LiveActivityAttributes>
+
+    var body: some View {
+        Text(compactActivityEyebrow(for: context))
+            .lineLimit(1)
+            .minimumScaleFactor(0.66)
     }
 }
 
@@ -395,7 +418,7 @@ private func compactActivityEyebrow(for context: ActivityViewContext<LiveActivit
     case "sleep":
         return liveActivityText("Сон", "Sleep", context.state.language)
     case "feeding":
-        return liveActivityText("Кормление", "Feeding", context.state.language)
+        return liveActivityText("Еда", "Feed", context.state.language)
     case "illness":
         return activityTitle(for: context)
     default:
@@ -545,7 +568,7 @@ private func compactIllnessDayLabel(startedAt: Date, languageCode: String? = nil
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func compactElapsedLabel(startedAt: Date, now: Date, languageCode: String? = nil) -> String {
+private func abbreviatedElapsedLabel(startedAt: Date, now: Date, languageCode: String? = nil) -> String {
     let elapsedSeconds = max(0, Int(now.timeIntervalSince(startedAt)))
     let minutes = elapsedSeconds / 60
     let hours = minutes / 60
@@ -555,14 +578,10 @@ private func compactElapsedLabel(startedAt: Date, now: Date, languageCode: Strin
         return liveActivityUsesRussian(languageCode) ? "\(days)д" : "\(days)d"
     }
     if hours > 0 {
-        let remainingMinutes = minutes % 60
-        return liveActivityUsesRussian(languageCode) ? "\(hours)ч \(remainingMinutes)м" : "\(hours)h \(remainingMinutes)m"
+        return liveActivityUsesRussian(languageCode) ? "\(hours)ч" : "\(hours)h"
     }
-    if minutes > 0 {
-        let remainingSeconds = elapsedSeconds % 60
-        return liveActivityUsesRussian(languageCode) ? "\(minutes)м \(remainingSeconds)с" : "\(minutes)m \(remainingSeconds)s"
-    }
-    return liveActivityUsesRussian(languageCode) ? "\(elapsedSeconds)с" : "\(elapsedSeconds)s"
+    let visibleMinutes = max(1, minutes)
+    return liveActivityUsesRussian(languageCode) ? "\(visibleMinutes)м" : "\(visibleMinutes)m"
 }
 
 @available(iOSApplicationExtension 16.1, *)

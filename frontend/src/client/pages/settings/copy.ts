@@ -76,9 +76,9 @@ export const settingsCopy = {
     testPushFailed: "Тестовый push не отправлен",
     liveActivities: "Live Activity",
     liveActivitiesHint:
-      "Большой живой статус на экране блокировки iPhone для сна, кормления и наблюдения за болезнью.",
+      "Живой статус на iPhone: большая карточка на экране блокировки и компактная бровь в Dynamic Island.",
     liveActivitiesAppleOnly:
-      "На iPhone покажет компактный живой статус на локскрине и в Dynamic Island.",
+      "На iPhone Live Activity показывает карточку на локскрине и компактную бровь сверху в Dynamic Island.",
     liveActivitiesSleep: "Сон на экране блокировки",
     liveActivitiesSleepHint: "Показывать большой таймер, пока сессия сна активна.",
     liveActivitiesFeeding: "Кормление на экране блокировки",
@@ -233,9 +233,9 @@ export const settingsCopy = {
     testPushFailed: "Test push failed",
     liveActivities: "Live Activity",
     liveActivitiesHint:
-      "A large live status on the iPhone lock screen for sleep, feeding, and illness tracking.",
+      "A live status on iPhone: a large card on the lock screen and a compact eyebrow in Dynamic Island.",
     liveActivitiesAppleOnly:
-      "On iPhone it shows a compact live status on the lock screen and in the Dynamic Island.",
+      "On iPhone, Live Activity shows a lock screen card and a compact top eyebrow in Dynamic Island.",
     liveActivitiesSleep: "Sleep on the lock screen",
     liveActivitiesSleepHint: "Show a large timer while a sleep session is active.",
     liveActivitiesFeeding: "Feeding on the lock screen",

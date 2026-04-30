@@ -233,6 +233,17 @@ export function SettingsPage() {
       await queryClient.cancelQueries({ queryKey: preferencesQueryKey });
       const previousPreferences = queryClient.getQueryData(preferencesQueryKey);
       const previousLiveActivitySettings = liveActivitySettings;
+      const nextLiveActivitySettings = {
+        sleepEnabled:
+          payload.live_activity_sleep_enabled ?? previousLiveActivitySettings.sleepEnabled,
+        feedingEnabled:
+          payload.live_activity_feeding_enabled ?? previousLiveActivitySettings.feedingEnabled,
+        illnessEnabled:
+          payload.live_activity_illness_enabled ?? previousLiveActivitySettings.illnessEnabled,
+      };
+
+      setLiveActivitySettings(nextLiveActivitySettings);
+      syncLiveActivityPreferencesMirror(nextLiveActivitySettings);
 
       queryClient.setQueryData(
         preferencesQueryKey,
