@@ -2,11 +2,10 @@
 
 Это рабочий high-level статус проекта.
 
-Документ отвечает на три вопроса:
+Документ отвечает на два вопроса:
 
 1. Что уже считается реализованным.
 2. Что сейчас является source of truth.
-3. Что осталось добить.
 
 ## Current Source Of Truth
 
@@ -19,6 +18,8 @@
 ### Subscription / Downgrade / Billing
 
 - [SUBSCRIPTION_ROLLOUT_PLAN.md](../SUBSCRIPTION_ROLLOUT_PLAN.md)
+  - current baseline is implemented
+  - this doc should be read as source of truth for current rules and behavior
 
 ### Release / App Store
 
@@ -79,77 +80,6 @@
   - `Аптечка`
   - `Приёмы`
 - если сети нет, модуль показывает единый `Нет сети` экран
-
-## Current Open Work
-
-### Release cleanup
-
-- убрать dev-only RevenueCat sandbox controls перед релизом
-- проверить production CTA для `Manage subscription`
-- пройти final release smoke-test на iOS device
-- перед релизом пройти checklist из [DEVELOPMENT_GUARDRAILS.md](./DEVELOPMENT_GUARDRAILS.md)
-
-### Documentation cleanup
-
-- держать `APP_ARCHITECTURE.md` и `DATABASE_ARCHITECTURE.md` как main docs
-- использовать `SUBSCRIPTION_ROLLOUT_PLAN.md` только для detailed rollout logic
-- старые worklog/spec файлы уже удалены из root как дублирующие
-
-### Product follow-ups
-
-- отдельно продумать семейный switch / merge flow:
-  - что делать, если уже существующий аккаунт с непустой семьёй хотят пригласить в другую семью
-- пересмотреть pre-auth UX invite flow:
-  - сейчас пользователь по invite-ссылке сначала попадает на общий экран login/register
-  - контекст семьи появляется только после входа или регистрации, из-за чего теряется смысл приглашения
-  - нужен отдельный invite landing / accept screen до auth, чтобы сразу было понятно:
-    - кто приглашает
-    - в какую семью зовут
-    - что произойдёт после входа или регистрации
-- продумать короткий trial для `Plus`:
-  - дать новому пользователю несколько дней полного доступа после первого входа / онбординга
-  - после trial явно переводить в обычный `Plus` purchase flow или обратно в `Free`
-  - заранее определить продуктовые правила:
-    - trial только один раз на семью или на аккаунт
-    - как trial сочетается с invite flow и owner-only billing
-    - какие paywall и reminder события нужны перед окончанием trial
-- отдельно продумать legal/data-retention story для family deletion
-- проверить автоопределение языка по устройству и первый launch-language flow
-- проверить автоопределение темы по устройству и initial theme sync
-- оценить добавление `Polish` и `German` локализаций:
-  - где хватит текущей i18n-архитектуры
-  - какие продуктовые экраны и paywall-copy будут самыми дорогими по переводу
-- продумать internal admin/support console:
-  - можно ли локально или по отдельному internal URL поднимать админку
-  - ручное выставление `Free / Plus` в обход store-платежей для support и тестов
-  - просмотр аккаунтов и семей
-  - базовый обзор количества аккаунтов / семей
-  - просмотр входящих сообщений / обращений от пользователей
-  - просмотр активных/trial/canceled подписок и их статусов
-  - возможность выдавать доступ к подписке вручную через backend/БД вне App Store сценария
-  - интерфейс для просмотра обращений и фиксации ответов/support history
-  - аккуратная модель доступа, чтобы это не смешивалось с обычным клиентским приложением
-
-### Invite / Family Switch Plan
-
-Agreed product rules:
-- `owner` не может принимать invite в другую семью
-- две семьи не merge'ятся автоматически
-- две подписки не объединяются
-- если аккаунт уже состоит в семье и хочет перейти в другую, это допустимо только для `member/admin`
-- переход `member/admin` в другую семью требует явного consent flow
-- если у текущей семьи активная подписка или billing-контекст, переход запрещён до полного завершения подписочного периода
-- бывший `owner` может быть приглашён в другую семью только после потери owner/billing-контекста и затем становится `member`
-
-Implementation plan:
-- зафиксировать эти правила как source of truth в invite/subscription docs
-- закрыть backend-дыру в `accept invite`: запретить `owner`-switch и переход при активной подписке
-- усилить проверку "текущая семья пустая" до полной проверки семейных данных, а не только части модулей
-- убрать silent family deletion как побочный эффект invite-switch без отдельной безопасной валидации
-- сделать consent-based family switch flow для `member/admin`
-- переписать invite/join UI, чтобы он объяснял текущий family context и последствия перехода
-- проверить anti-bypass billing cases: одна store subscription не должна активировать две семьи, `member/admin` не должен покупать `Plus`
-- покрыть сценарии backend/frontend тестами
 
 ### CSV / XLSX Export
 

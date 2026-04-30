@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
-import { PlanPushRecipientsField } from "./PlanPushRecipientsField";
+import { getAccountDisplayLabel, getAccountSecondaryLabel } from "@shared/utils/accountLabels";
+import { buildPillboxPlanTargetLabel } from "./planTarget";
 import {
   actionPrimaryClass,
   actionSecondaryClass,
@@ -38,7 +41,6 @@ export function PillboxSetupScreen({
   language,
   draft,
   familyMembers,
-  currentAccountId,
   canSavePlan,
   saveBlockedReason,
   saveAttempted,
@@ -49,9 +51,8 @@ export function PillboxSetupScreen({
   onOpenMedication,
   onRequestDeleteMedication,
   onTitleChange,
-  onToggleMember,
+  onSelectTargetMember,
   onSavePlan,
-  recipientsSummary,
   deleteTarget,
   onConfirmDelete,
   onCloseDeleteDialog,
@@ -62,7 +63,6 @@ export function PillboxSetupScreen({
   language: AppLanguage;
   draft: SetupDraft;
   familyMembers: FamilyMemberLike[];
-  currentAccountId: string | null;
   canSavePlan: boolean;
   saveBlockedReason: string | null;
   saveAttempted: boolean;
@@ -73,9 +73,8 @@ export function PillboxSetupScreen({
   onOpenMedication: (medicationId: string) => void;
   onRequestDeleteMedication: (medicationId: string, medicationName: string) => void;
   onTitleChange: (value: string) => void;
-  onToggleMember: (memberIds: string[]) => void | Promise<void>;
+  onSelectTargetMember: (memberId: string) => void;
   onSavePlan: () => void;
-  recipientsSummary: string | null;
   deleteTarget: PillboxDeleteTarget | null;
   onConfirmDelete: () => void;
   onCloseDeleteDialog: () => void;
@@ -83,6 +82,20 @@ export function PillboxSetupScreen({
   enableBackGesture?: boolean;
   backLabel?: string;
 }) {
+  const [targetSheetOpen, setTargetSheetOpen] = useState(false);
+  const selectedTargetMember =
+    familyMembers.find((member) => member.id === draft.targetMemberId) ?? null;
+  const targetMemberLabel = selectedTargetMember
+    ? buildPillboxPlanTargetLabel(selectedTargetMember)
+    : language === "ru"
+      ? "Выберите участника семьи"
+      : "Choose a family member";
+  const generatedTitlePreview = draft.title.trim()
+    ? draft.title
+    : language === "ru"
+      ? "Название появится после выбора участника"
+      : "The plan name will appear after you choose a family member";
+
   return (
     <EditorShell
       onBack={onBack}
@@ -202,39 +215,56 @@ export function PillboxSetupScreen({
             </button>
           </section>
 
-          <section className="space-y-3 pt-1">
-            <label className="block space-y-1.5" htmlFor="pillbox-group-title">
-              <span className="soft-field-label">{tPillbox(language, "titleLabel")}</span>
-              <input
-                id="pillbox-group-title"
-                value={draft.title}
-                onChange={(event) => onTitleChange(event.target.value)}
-                placeholder={language === "ru" ? "Например: Для бабушки" : "Example: For grandma"}
-                className="soft-input w-full px-4"
-              />
-            </label>
-          </section>
+          {!isEditing ? (
+            <section className="space-y-3 pt-1">
+              <div className="space-y-1.5">
+                <span className="soft-field-label">
+                  {language === "ru" ? "Для кого план" : "Who is this plan for"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTargetSheetOpen(true)}
+                  className="soft-input flex min-h-[2.82rem] w-full items-center justify-between gap-3 px-4 py-0 text-left text-[16px] leading-[1.15] sm:min-h-[2.92rem]"
+                >
+                  <span
+                    className={selectedTargetMember ? "text-foreground" : "text-muted"}
+                  >
+                    {targetMemberLabel}
+                  </span>
+                  <span aria-hidden="true" className="text-muted">
+                    ›
+                  </span>
+                </button>
+                <p className="text-[0.78rem] leading-5 text-muted">
+                  {language === "ru"
+                    ? "Выберите, для кого этот план. Получатель уведомлений сохранится автоматически, а позже его можно изменить в самом плане."
+                    : "Choose who this plan is for. The reminder recipient will be saved automatically, and you can change it later in the plan."}
+                </p>
+                <p className="text-[0.86rem] font-semibold leading-5 text-foreground/88">
+                  {generatedTitlePreview}
+                </p>
+              </div>
+            </section>
+          ) : null}
+
+          {isEditing ? (
+            <section className="space-y-3 pt-1">
+              <label className="block space-y-1.5" htmlFor="pillbox-group-title">
+                <span className="soft-field-label">{tPillbox(language, "titleLabel")}</span>
+                <input
+                  id="pillbox-group-title"
+                  value={draft.title}
+                  onChange={(event) => onTitleChange(event.target.value)}
+                  placeholder={
+                    language === "ru" ? "Например: Для Артема" : "Example: For Artem"
+                  }
+                  className="soft-input w-full px-4"
+                />
+              </label>
+            </section>
+          ) : null}
 
           <section className="space-y-3 pt-1">
-            {!isEditing ? (
-              <>
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="app-card-title">{tPillbox(language, "membersTitle")}</h2>
-                  <PlanPushRecipientsField
-                    language={language}
-                    familyMembers={familyMembers}
-                    currentAccountId={currentAccountId}
-                    selectedMemberIds={draft.members}
-                    onSubmit={onToggleMember}
-                  />
-                </div>
-                {recipientsSummary ? (
-                  <p className="overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-6 text-muted">
-                    {recipientsSummary}
-                  </p>
-                ) : null}
-              </>
-            ) : null}
             {!canSavePlan && saveBlockedReason && saveAttempted ? (
               <p className="text-[0.78rem] leading-5 text-[color:var(--color-danger)]">
                 {saveBlockedReason}
@@ -276,6 +306,61 @@ export function PillboxSetupScreen({
         onConfirm={onConfirmDelete}
         onCancel={onCloseDeleteDialog}
       />
+      <OverlayDialog
+        isOpen={!isEditing && targetSheetOpen}
+        onClose={() => setTargetSheetOpen(false)}
+        placement="bottom"
+        zIndexClassName="z-[890]"
+        backdropAriaLabel={language === "ru" ? "Для кого план" : "Who is this plan for"}
+        containerClassName="flex items-end"
+        backdropClassName="bg-[rgba(15,23,42,0.32)]"
+      >
+        <div
+          data-ios-disable-back-swipe="true"
+          className="relative z-[1] w-full rounded-t-[30px] bg-background px-4 pb-[max(1.25rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))] pt-4 shadow-[0_-24px_64px_rgba(15,23,42,0.24)] sm:mx-auto sm:max-w-xl"
+        >
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
+          <div className="space-y-1.5">
+            <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
+              {language === "ru" ? "Для кого план" : "Who is this plan for"}
+            </h2>
+            <p className="text-sm leading-5 text-muted">
+              {language === "ru"
+                ? "Выберите участника семьи, чтобы сразу подставить название плана и получателя уведомлений."
+                : "Choose a family member to prefill the plan name and reminder recipient."}
+            </p>
+          </div>
+
+          <div className="soft-choice-list mt-4">
+            {familyMembers.map((member) => {
+              const selected = member.id === draft.targetMemberId;
+              return (
+                <button
+                  key={member.id}
+                  type="button"
+                  onClick={() => {
+                    onSelectTargetMember(member.id);
+                    setTargetSheetOpen(false);
+                  }}
+                  className={["soft-choice-row", selected ? "soft-choice-row-active" : ""].join(
+                    " "
+                  )}
+                >
+                  <span className="grid min-w-0 gap-0.5 text-left">
+                    <span className="min-w-0 truncate whitespace-nowrap text-sm font-semibold tracking-[-0.02em] text-foreground">
+                      {getAccountDisplayLabel(member)}
+                    </span>
+                    <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
+                      {getAccountSecondaryLabel(member)}
+                    </span>
+                  </span>
+                  <span className="soft-choice-check">{selected ? "✓" : null}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </OverlayDialog>
     </EditorShell>
   );
 }

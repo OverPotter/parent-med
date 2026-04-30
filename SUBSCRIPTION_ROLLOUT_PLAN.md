@@ -1,6 +1,6 @@
-# Subscription Rollout Plan
+# Subscription Source Of Truth
 
-This is the detailed rollout/status document for subscription, downgrade, billing ownership, and related family-access rules.
+This is the current source-of-truth document for subscription, downgrade, billing ownership, and related family-access rules.
 
 For high-level project docs, use:
 
@@ -8,117 +8,22 @@ For high-level project docs, use:
 - [docs/DATABASE_ARCHITECTURE.md](./docs/DATABASE_ARCHITECTURE.md)
 - [docs/PROJECT_STATUS.md](./docs/PROJECT_STATUS.md)
 
-## Implementation Checklist
+## Current Status
 
-- [x] Create a dedicated rollout plan in the repo
-- [x] Add subscription access layer on backend
-- [x] Expose access payload for frontend
-- [x] Enforce backend free-plan limits on owner-only invites
-- [x] Enforce backend free-plan limits on child count
-- [x] Enforce backend free-plan limits on pillbox plans
-- [x] Add billing tables: `plans`, `subscriptions`, `billing_events`
-- [x] Add stub billing flow for local development
-- [x] Add initial frontend access wiring and paylocked states
-- [x] Add shared paywall UX
-- [x] Add downgrade-safe child access model for `Free`
-- [x] Preserve active illness flows after downgrade
-- [x] Add RevenueCat test integration and backend sync scaffold
-- [x] Add local force-free testing mode for subscription logic
-- [ ] Remove dev-only RevenueCat sandbox/testing controls before release
-- [ ] Add landing pricing page
-- [ ] Rework invite-link first impression and pre-auth acceptance flow
-- [ ] Design and validate a short `Plus` trial flow before the normal paywall
-- [ ] Verify device-language auto selection on first launch
-- [ ] Verify device-theme auto selection on first launch
-- [ ] Evaluate adding Polish and German localizations
-- [ ] Evaluate internal admin/support console for manual subscription overrides and account support
+Subscription baseline is already implemented.
 
-## Completed Work
-
-- [x] Rollout document created and committed in repo
-- [x] Backend subscription access layer added via `SubscriptionAccessService`
-- [x] Access payload exposed via `GET /families/me/access`
-- [x] Free-plan backend limits added for invites, children, and pillbox plans
-- [x] Invite flow simplified to owner-only:
-  - only `owner` may create/share invites
-  - `admin` no longer participates in invite management
-- [x] Family leave flow added:
-  - `member` and `admin` may leave the current family
-  - leaving keeps the same account and credentials
-  - the leaving account is moved into a new empty family
-  - the leaving account becomes the `owner` of that new family
-  - `owner` may not use `leave family`
-- [x] Billing foundation added:
-  - migration `062_add_billing_foundation.py`
-  - entities for `Plan`, `Subscription`, `BillingEvent`
-  - SQLAlchemy models and repositories for billing tables
-- [x] Local stub billing flow added:
-  - `BillingService`
-  - `POST /api/v1/billing/debug/apply`
-  - `POST /api/v1/billing/debug/reset-free`
-- [x] Initial frontend access wiring and paylocked states added:
-  - frontend fetches `GET /families/me/access`
-  - family invite action is locked in `Free`
-  - `Live Activities` settings are locked in `Free`
-  - second child creation is blocked in `Free`
-  - second pillbox plan creation is blocked in `Free`
-- [x] Shared upgrade flow added:
-  - reusable `UpgradeDialog`
-  - reusable dev upgrade hook wired to local stub billing
-  - upgrade entry points connected in family, child create, pillbox, and settings
-- [x] Downgrade-safe child access model added:
-  - migration `063_add_free_primary_child.py`
-  - `children.created_at` persisted for stable ordering
-  - `families.free_primary_child_id` stores the one child that stays fully active in `Free`
-  - after downgrade from `Plus`, all children remain visible
-  - child-level mutations are locked only for non-primary children
-- [x] Active illness continuation after downgrade added:
-  - non-primary child can finish an already active illness episode after downgrade
-  - new illness episode creation for non-primary child stays blocked in `Free`
-  - temperature, administrations, comments, and episode medication plans stay available only while that episode is active
-  - after the episode is closed, non-primary child returns to normal `Free` locked state
-- [x] Provider-agnostic billing sync foundation added:
-  - normalized provider sync DTO in billing service
-  - shared subscription lifecycle reused for debug and future RevenueCat/App Store sync
-  - `trialing` status supported end-to-end in family snapshots and premium policy
-- [x] RevenueCat test/store wiring finished for development:
-  - backend `provider-sync` route is added
-  - frontend native RevenueCat runtime/init/sync scaffold is added
-  - native iOS bridge/plugin is added and validated with Test Store purchase flow
-  - local test keys are wired in env for sandbox smoke tests
-  - dev-only `RevenueCat sandbox` section is added in Settings for `configure / offerings / purchase / restore / snapshot`
-  - backend sync is gateable via `VITE_REVENUECAT_SYNC_BACKEND`
-  - local `Force free mode` / `Resume RevenueCat sync` controls are added for repeatable downgrade testing without waiting for expiration
-- [ ] Dev-only test tooling still present in the current development build and must be removed or hidden before release:
-  - `Settings -> RevenueCat sandbox`
-  - `Reset to free`
-  - `Force free mode`
-  - `Resume RevenueCat sync`
-  - local RevenueCat sync suppression helpers used only for manual downgrade testing
-- [x] Covered by targeted backend tests:
-  - `backend/tests/test_subscription_access_service.py`
-  - `backend/tests/test_family_service.py`
-  - `backend/tests/test_child_service.py`
-  - `backend/tests/test_family_invite_service.py`
-  - `backend/tests/test_family_access_services.py`
-  - `backend/tests/test_billing_service.py`
-- [x] Pillbox downgrade model added:
-  - migration `066_add_free_primary_pillbox_plan.py`
-  - `families.free_primary_pillbox_plan_id` stores the one plan that stays operational in `Free`
-  - after downgrade from `Plus`, one pillbox plan stays operational in `Free`
-  - every additional active or paused plan is frozen in `paused`
-  - frozen non-primary plans stay visible, but no longer allow dose logging, resume, edit, or delete in `Free`
-- [x] Covered by targeted frontend tests:
-  - `frontend/test/familySubscriptionAccess.test.ts`
-  - `frontend/test/familyMemberManagement.test.ts`
-  - `frontend/test/upgradeDialogCopy.test.ts`
-  - `frontend/test/pillboxPlanAccess.test.ts`
-  - `npm test -- --runInBand` passed with `85` tests
-  - `npm run build` passed
-- [x] UI cleanup after final role/subscription flows:
-  - duplicated `Plus` badge markup removed into shared `PlusBadge`
-  - pillbox free-limit visibility logic extracted into shared frontend helper
-  - paywall copy tests updated to match the new product text
+Implemented now:
+- backend access layer via `SubscriptionAccessService`
+- frontend access payload via `GET /families/me/access`
+- owner-only invites and owner-only billing
+- `Free` limits for children, pillbox plans, `CSV export`, and `Live Activities`
+- shared paywall / upgrade flow in family, child, pillbox, and settings screens
+- downgrade-safe child model via `free_primary_child_id`
+- downgrade-safe pillbox model via `free_primary_pillbox_plan_id`
+- active illness continuation for non-primary child after downgrade
+- RevenueCat dev/test integration scaffold and provider-sync backend flow
+- local debug billing / force-free tooling for development
+- targeted backend/frontend test coverage for subscription and downgrade flows
 
 ## Goal
 
@@ -423,179 +328,6 @@ Deletion and exit rules:
 Important rule:
 - `free` is also a `family`, just with one member
 
-## Existing Fields To Keep
-
-Keep these fields on `families` as a denormalized snapshot:
-
-- `owner_account_id`
-- `billing_account_id`
-- `plan_code`
-- `subscription_status`
-- `subscription_provider`
-- `subscription_product_id`
-- `subscription_expires_at`
-
-They are useful for reads, but lifecycle logic should move into dedicated billing tables.
-
-## New Database Tables
-
-### `plans`
-
-Purpose:
-- tariff dictionary
-- link plans to App Store products and RevenueCat entitlements
-
-Suggested fields:
-- `id`
-- `code` unique: `free`, `plus`, `pro`
-- `name`
-- `is_active`
-- `apple_product_id` nullable
-- `revenuecat_entitlement_code` nullable
-- `sort_order`
-- `created_at`
-
-### `subscriptions`
-
-Purpose:
-- store actual subscription lifecycle for a family
-
-Suggested fields:
-- `id`
-- `family_id` FK -> `families.id`
-- `plan_id` FK -> `plans.id`
-- `provider` (`apple`, `revenuecat`, `admin`, `stub`)
-- `provider_customer_id`
-- `provider_subscription_id`
-- `status` (`inactive`, `trialing`, `active`, `grace`, `canceled`, `expired`)
-- `starts_at`
-- `expires_at`
-- `trial_ends_at`
-- `canceled_at`
-- `raw_payload_json`
-- `created_at`
-- `updated_at`
-
-Notes:
-- one family may have many historical subscriptions over time
-- only one should be treated as current/active in business logic
-
-### `billing_events`
-
-Purpose:
-- idempotent processing of provider updates
-- debugging and audit trail for billing sync
-
-Suggested fields:
-- `id`
-- `subscription_id` FK -> `subscriptions.id` nullable
-- `family_id` FK -> `families.id`
-- `provider`
-- `event_type`
-- `external_event_id` unique
-- `payload_json`
-- `processed_at`
-- `created_at`
-
-### `feature_overrides` optional
-
-Purpose:
-- support grants
-- beta access
-- promo unlocks
-- temporary manual overrides
-
-Suggested fields:
-- `id`
-- `family_id`
-- `feature_code`
-- `enabled`
-- `expires_at`
-- `reason`
-- `created_at`
-
-This table can be deferred if you want a smaller first release.
-
-## Table Relationships
-
-- `users` belong to `families`
-- `families` have subscription state
-- `plans` define commercial plan types
-- `subscriptions.family_id` -> `families.id`
-- `subscriptions.plan_id` -> `plans.id`
-- `billing_events.subscription_id` -> `subscriptions.id`
-
-## What Should Stay In Code
-
-Do not move feature entitlements into DB yet.
-
-Compute in backend code:
-- `max_children`
-- `max_adults`
-- `max_pillbox_plans`
-- `can_invite_members`
-- `can_manage_roles`
-- `can_export_csv`
-- `can_use_live_activities`
-
-Suggested rules:
-
-`free`
-- `max_children = 1`
-- `max_adults = 1`
-- `max_pillbox_plans = 1`
-- `can_invite_members = false`
-- `can_manage_roles = false`
-- `can_export_csv = false`
-- `can_use_live_activities = false`
-
-`plus`
-- unlimited children
-- unlimited adults
-- unlimited pillbox plans
-- all premium capabilities enabled
-
-## Backend Access Layer
-
-Create a dedicated service, for example:
-
-- `backend/src/application/services/subscription_access_service.py`
-
-It should return effective access for a given account/family:
-
-- `plan_code`
-- `subscription_status`
-- `premium_active`
-- `has_plus_access`
-- `can_invite_members`
-- `can_manage_member_roles`
-- `can_use_live_activities`
-- `can_export_csv`
-- `max_children`
-- `max_adults`
-- `max_pillbox_plans`
-- `is_billing_owner`
-- `can_manage_subscription`
-
-Rules:
-- backend computes access
-- iOS and PWA only consume access flags
-
-## Backend Use Cases To Protect
-
-All real restrictions must be enforced on backend actions, not only in UI.
-
-### Family Invites
-
-- `free` cannot create invites
-- only the `owner` can create/share invites
-
-### Family Join / Accept Invite
-
-- `free` cannot end up with a second family member
-
-### Children
-
 - `free` cannot create a second child
 
 ### Pillbox Plans
@@ -619,12 +351,11 @@ All real restrictions must be enforced on backend actions, not only in UI.
 
 ## API Contract For Frontend
 
-Expose one access-oriented payload.
+Frontend consumes one access-oriented payload.
 
-Preferred shape:
 - `GET /families/me/access`
 
-Response should contain:
+Response contains:
 - `planCode`
 - `subscriptionStatus`
 - `premiumActive`
@@ -640,9 +371,6 @@ Response should contain:
 - `currentChildrenCount`
 - `currentAdultsCount`
 - `currentPillboxPlanCount`
-
-Alternative:
-- expand current `/families/me`
 
 ## Frontend Paylocked Model
 
@@ -686,9 +414,9 @@ Example message:
 
 ## Paywall UX
 
-Create one reusable paywall component.
+One reusable paywall component is used across the app.
 
-Suggested entry points:
+Current entry points:
 - `invite_family`
 - `second_child`
 - `second_plan`
@@ -704,40 +432,6 @@ Paywall content:
 - restore purchases CTA
 - dismiss action
 
-## Local Development And Stub Billing
-
-Before Apple and RevenueCat, add stub billing.
-
-Dev-only endpoints:
-- `POST /billing/debug/activate-plus`
-- `POST /billing/debug/deactivate`
-- `POST /billing/debug/expire`
-
-Behavior:
-- write/update `subscriptions`
-- sync snapshot fields on `families`
-- recompute access payload
-
-Purpose:
-- develop full access and paywall flows before real App Store integration
-
-## Apple And RevenueCat Integration
-
-Recommended production setup:
-- Apple IAP on iOS
-- RevenueCat as billing orchestration
-- backend as access authority
-
-Flow:
-1. user logs into app
-2. app calls `RevenueCat.logIn(appUserId)`
-3. user purchases or restores
-4. app or webhook syncs billing state to backend
-5. backend updates `subscriptions`
-6. backend refreshes family snapshot fields
-7. client refetches access
-8. locked features become active
-
 ## Ownership Model
 
 The current product model intentionally avoids a separate dynamic `billing owner`.
@@ -749,7 +443,7 @@ The current product model intentionally avoids a separate dynamic `billing owner
 
 ## Downgrade Behavior
 
-This must be designed before launch.
+Downgrade behavior is intentionally conservative.
 
 When `Plus` expires:
 - do not delete data
@@ -770,89 +464,6 @@ Example:
 - adding a 4th child is blocked
 - paywall explains that `Plus` is required to continue expanding
 
-## PWA And Website
-
-Current recommendation:
-- reuse the same backend access payload in PWA
-- keep the same paylocked logic in web UI
-- defer web checkout if needed
-
-That lets you finish access and billing architecture once and reuse it everywhere.
-
-## Landing And Pricing
-
-This can be done last.
-
-Recommended additions:
-- `/pricing` page
-- `Free vs Plus` comparison table
-- FAQ:
-  - how family billing works
-  - who pays
-  - how cancellation works
-  - what happens after expiration
-
-Suggested copy themes:
-- one adult and one child are free
-- family collaboration is included in `Plus`
-
-## Current Testing Notes
-
-- `Reset to free` only resets backend state and will be overwritten again by an active RevenueCat/Test Store subscription
-- `Force free mode` is the intended local testing tool for downgrade logic
-- `Resume RevenueCat sync` returns the current account to normal RevenueCat-driven behavior
-- use `Force free mode` when you need to test:
-  - `free_primary_child`
-  - non-primary child locks
-  - active illness continuation after downgrade
-  - family access changes after subscription loss
-- this tooling is intentionally dev-only and must not ship as user-facing release functionality
-- `CSV export` and `Live Activities` are included in `Plus`
-
-## Invite Flow Follow-Up
-
-Current problem:
-- invite link can currently drop the user into the generic auth flow first
-- family context is shown too late, only after login or registration
-- this weakens trust and makes the invitation less understandable
-
-Desired direction:
-- add a dedicated pre-auth invite landing / accept screen
-- show family name, inviter context when available, role/access expectation, and next step before auth
-- make it explicit that login/registration will attach the account to the invited family
-
-## Trial Follow-Up
-
-Current idea:
-- give a new user or family a short `Plus` trial for a few days
-- let them use the premium family workflows before the real paywall decision
-- after the trial ends, move them either into paid `Plus` conversion or back to normal `Free`
-
-Questions to resolve:
-- is the trial scoped to account or family
-- whether invited members inherit an existing family trial or not
-- whether the trial starts on first auth, first family creation, or first premium action
-- what reminder/paywall sequence appears before expiration
-- how downgrade rules behave when trial expires with multiple children / plans already created
-
-Operational note:
-- if trial is added, it should be modeled in the same backend access layer as `free / trialing / active / grace / canceled`
-- App Store / RevenueCat path and any backend-issued support override must not conflict semantically
-
-## Admin / Support Console Follow-Up
-
-Desired capabilities:
-- view accounts, families, and basic user counts
-- view subscriptions including `trial`, `active`, `grace`, `canceled`, and manual overrides
-- inspect incoming support / feedback messages
-- store support replies or at least support-handling notes
-- grant or revoke subscription access manually for support cases outside the App Store flow when needed
-
-Constraints:
-- keep this separate from the normal client app
-- define a strict internal-only access model
-- decide whether this should be a lightweight internal frontend or a backend-only operational surface first
-
 ## Invite / Family Switch Rules
 
 Agreed rules:
@@ -868,149 +479,3 @@ Reasoning:
 - this keeps billing ownership simple and stable
 - this avoids accidental deletion or orphaning of subscription state
 - this prevents subtle bypass flows where one paid subscription could appear to move between families
-
-## Invite / Family Switch Implementation Plan
-
-1. Lock backend family-switch rules
-- reject invite acceptance for `owner`
-- reject invite acceptance for accounts whose current family still has active/trialing/grace/canceled subscription access
-- reject invite acceptance for current billing owner / billing-bound family context
-
-2. Strengthen "current family is empty" validation
-- validate not only members, children, and medicine cabinet
-- also validate pillbox and any other family-scoped data that should block destructive switch
-- do not allow invite-switch to silently destroy a family that still has meaningful data
-
-3. Add explicit consent flow for `member/admin`
-- show current family and target family
-- explain that access to the current family will be lost
-- require explicit confirmation before switch
-
-4. Tighten anti-bypass billing behavior
-- keep one provider subscription bound to only one family
-- keep owner-only purchase/restore authority
-- verify that `member/admin` cannot activate `Plus` for a different family via Store/RevenueCat side effects
-
-5. Add tests
-- `owner` cannot accept invite
-- active/billing-bound family cannot switch
-- empty `member/admin` family can switch
-- non-empty family cannot switch
-- one provider subscription cannot activate two families
-
-## Analytics
-
-Track subscription funnel events:
-- `paywall_opened`
-- `paywall_entry_point`
-- `purchase_started`
-- `purchase_completed`
-- `purchase_failed`
-- `purchase_restored`
-- `limit_hit_second_child`
-- `limit_hit_second_plan`
-- `limit_hit_invite_member`
-
-## Tests
-
-### Backend
-
-- `free` cannot invite members
-- `free` cannot add second child
-- `free` cannot add second pillbox plan
-- `plus` can do all these
-- invited members receive shared family access
-- owner-only billing rules work
-- downgrade and expired states work correctly
-
-### Frontend
-
-- locked actions render correctly
-- paywall opens from each entry point
-- free hides or locks `Live Activities`
-- UI unlocks after stub upgrade
-
-### Billing
-
-- stub activation works
-- stub expiration works
-- restore flow works
-- repeated sync events are idempotent
-
-## Recommended Rollout Order
-
-### Phase 1
-
-- freeze `Free` and `Plus` rules
-- finalize downgrade behavior
-- finalize owner/admin separation
-
-### Phase 2
-
-- add `plans`
-- add `subscriptions`
-- add `billing_events`
-- seed base plans
-
-### Phase 3
-
-- implement `subscription_access_service`
-- expose `/families/me/access`
-- sync family snapshot fields from subscription state
-
-### Phase 4
-
-- enforce backend limits on invites, children, plans, exports, live activities
-
-### Phase 5
-
-- add frontend locked states
-- add reusable paywall
-- add contextual entry points
-
-### Phase 6
-
-- add stub billing endpoints
-- test end-to-end upgrade and downgrade flows locally
-
-### Phase 7
-
-- add Apple products in App Store Connect
-- configure RevenueCat entitlement
-- add iOS purchase and restore flow
-- sync billing to backend
-
-### Phase 8
-
-- add landing pricing page
-- add FAQ and conversion copy
-
-## Commonly Missed Details
-
-- `Restore Purchases`
-- `grace period`
-- `billing issue` handling
-- downgrade behavior
-- transfer of billing owner
-- preventing deletion of active billing owner
-- idempotent billing event processing
-- backend validation instead of only UI hiding
-- development stubs before real App Store testing
-
-## Family Switching Follow-up
-
-- today one account can belong to only one family at a time
-- joining another family with an existing account is allowed only if the current family is effectively empty:
-  - no other active accounts
-  - no children
-  - no household medicines
-  - no parent profiles
-- this is acceptable for now for the flow:
-  - one parent registered first
-  - did not set up data yet
-  - then got invited into the real family
-- later we need an explicit product decision for non-empty families:
-  - hard block with clear UX copy
-  - guided leave-and-join flow
-  - or real merge/transfer tooling
-- this must remain an explicit product/data-safety decision, not a silent reassignment flow

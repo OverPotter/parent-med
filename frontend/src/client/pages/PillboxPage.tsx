@@ -19,7 +19,6 @@ import {
   shouldLockPillboxPlanCreation,
   shouldShowPillboxFreeDowngradeNotice,
 } from "@shared/subscription/pillboxPlanAccess";
-import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
 import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
 import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
@@ -66,6 +65,7 @@ import {
   toPlanWrite,
   toPlanWriteFromPlan,
 } from "./pillbox/shared";
+import { buildPillboxPlanTargetTitle } from "./pillbox/planTarget";
 import { usePillboxMutations } from "./pillbox/usePillboxMutations";
 
 export function PillboxPage() {
@@ -114,10 +114,15 @@ export function PillboxPage() {
 
   const isEditing = Boolean(draft?.id);
   const hasReadyMedication = Boolean(draft?.medications.some(isMedicationReady));
-  const canSavePlan = hasReadyMedication;
+  const hasSelectedTargetMember = Boolean(draft?.targetMemberId || isEditing);
+  const canSavePlan = hasReadyMedication && hasSelectedTargetMember;
   const saveBlockedReason = !hasReadyMedication
     ? tPillbox(language, "saveRequiresMedication")
-    : null;
+    : !hasSelectedTargetMember
+      ? language === "ru"
+        ? "Сначала выберите, для кого этот план."
+        : "Choose who this plan is for first."
+      : null;
   const activeMedication =
     draft?.medications.find((medication) => medication.id === activeMedicationId) ?? null;
   const canSaveMedication = Boolean(editorTitle.trim());
@@ -160,24 +165,6 @@ export function PillboxPage() {
     () => getEligiblePillboxRecipients(familyMembers),
     [familyMembers]
   );
-  const pillboxRecipientsSummary = useMemo(() => {
-    if (!draft) {
-      return null;
-    }
-    const labels = eligiblePillboxMembers
-      .filter((member) => draft.members.includes(member.id))
-      .map(getAccountDisplayLabel);
-
-    if (labels.length === 0) {
-      return tPillbox(language, "remindersNobody");
-    }
-    if (labels.length <= 2) {
-      return tPillbox(language, "reminderRecipients", { labels: labels.join(", ") });
-    }
-    const visible = labels.slice(0, 2).join(", ");
-    const remaining = labels.length - 2;
-    return tPillbox(language, "reminderRecipientsMore", { visible, remaining });
-  }, [draft, eligiblePillboxMembers, language]);
   const {
     data: planSummaries = [],
     isLoading: plansLoading,
@@ -199,24 +186,6 @@ export function PillboxPage() {
     enabled: Boolean(selectedPlanId && selectedPlanId !== "new" && canSeePillbox),
     ...pillboxLiveQueryOptions,
   });
-  const selectedPlanRecipientsSummary = useMemo(() => {
-    if (!selectedPlan) {
-      return null;
-    }
-    const labels = eligiblePillboxMembers
-      .filter((member) => selectedPlan.memberAccountIds.includes(member.id))
-      .map(getAccountDisplayLabel);
-
-    if (labels.length === 0) {
-      return tPillbox(language, "remindersNobody");
-    }
-    if (labels.length <= 2) {
-      return tPillbox(language, "reminderRecipients", { labels: labels.join(", ") });
-    }
-    const visible = labels.slice(0, 2).join(", ");
-    const remaining = labels.length - 2;
-    return tPillbox(language, "reminderRecipientsMore", { visible, remaining });
-  }, [eligiblePillboxMembers, language, selectedPlan]);
   const selectedPlanSubscriptionLocked = selectedPlan
     ? premiumActive === false &&
       (selectedPlan.status === "active" || selectedPlan.status === "paused") &&
@@ -1021,7 +990,6 @@ export function PillboxPage() {
         onOpenMedication={goToMedicationFromDetails}
         familyMembers={eligiblePillboxMembers}
         currentAccountId={accountId}
-        recipientsSummary={selectedPlanRecipientsSummary}
         onToggleRecipient={toggleSelectedPlanRecipient}
         recipientSelectionPending={updatePlanMutation.isPending}
         onRequestDelete={requestDeletePlan}
@@ -1048,7 +1016,6 @@ export function PillboxPage() {
           language={language}
           draft={draft}
           familyMembers={eligiblePillboxMembers}
-          currentAccountId={accountId}
           canSavePlan={canSavePlan}
           saveBlockedReason={saveBlockedReason}
           saveAttempted={saveAttempted}
@@ -1061,17 +1028,20 @@ export function PillboxPage() {
           onTitleChange={(value) =>
             setDraft((current) => (current ? { ...current, title: value } : current))
           }
-          onToggleMember={(memberIds) =>
+          onSelectTargetMember={(memberId) =>
             setDraft((current) => {
               if (!current) return current;
+              const member = eligiblePillboxMembers.find((item) => item.id === memberId);
+              if (!member) return current;
               return {
                 ...current,
-                members: memberIds,
+                targetMemberId: memberId,
+                title: buildPillboxPlanTargetTitle(member, language),
+                members: [memberId],
               };
             })
           }
           onSavePlan={saveGroup}
-          recipientsSummary={pillboxRecipientsSummary}
           deleteTarget={deleteTarget}
           underlaySnapshotKey={setupSnapshotKey}
           enableBackGesture={enableLocalPillboxSwipe}
