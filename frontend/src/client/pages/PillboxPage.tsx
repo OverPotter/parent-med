@@ -66,6 +66,7 @@ import {
   toPlanWrite,
   toPlanWriteFromPlan,
 } from "./pillbox/shared";
+import { buildPillboxPlanTargetTitle } from "./pillbox/planTarget";
 import { usePillboxMutations } from "./pillbox/usePillboxMutations";
 
 export function PillboxPage() {
@@ -1061,12 +1062,26 @@ export function PillboxPage() {
           onTitleChange={(value) =>
             setDraft((current) => (current ? { ...current, title: value } : current))
           }
+          onSelectTargetMember={(memberId) =>
+            setDraft((current) => {
+              if (!current) return current;
+              const member = eligiblePillboxMembers.find((item) => item.id === memberId);
+              if (!member) return current;
+              return {
+                ...current,
+                targetMemberId: memberId,
+                title: buildPillboxPlanTargetTitle(member, language),
+                members: current.recipientsCustomized ? current.members : [memberId],
+              };
+            })
+          }
           onToggleMember={(memberIds) =>
             setDraft((current) => {
               if (!current) return current;
               return {
                 ...current,
                 members: memberIds,
+                recipientsCustomized: true,
               };
             })
           }

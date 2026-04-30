@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
+import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { getAccountDisplayLabel, getAccountSecondaryLabel } from "@shared/utils/accountLabels";
 import { PlanPushRecipientsField } from "./PlanPushRecipientsField";
+import { buildPillboxPlanTargetLabel } from "./planTarget";
 import {
   actionPrimaryClass,
   actionSecondaryClass,
@@ -49,6 +53,7 @@ export function PillboxSetupScreen({
   onOpenMedication,
   onRequestDeleteMedication,
   onTitleChange,
+  onSelectTargetMember,
   onToggleMember,
   onSavePlan,
   recipientsSummary,
@@ -73,6 +78,7 @@ export function PillboxSetupScreen({
   onOpenMedication: (medicationId: string) => void;
   onRequestDeleteMedication: (medicationId: string, medicationName: string) => void;
   onTitleChange: (value: string) => void;
+  onSelectTargetMember: (memberId: string) => void;
   onToggleMember: (memberIds: string[]) => void | Promise<void>;
   onSavePlan: () => void;
   recipientsSummary: string | null;
@@ -83,6 +89,15 @@ export function PillboxSetupScreen({
   enableBackGesture?: boolean;
   backLabel?: string;
 }) {
+  const [targetSheetOpen, setTargetSheetOpen] = useState(false);
+  const selectedTargetMember =
+    familyMembers.find((member) => member.id === draft.targetMemberId) ?? null;
+  const targetMemberLabel = selectedTargetMember
+    ? buildPillboxPlanTargetLabel(selectedTargetMember)
+    : language === "ru"
+      ? "Выберите участника семьи"
+      : "Choose a family member";
+
   return (
     <EditorShell
       onBack={onBack}
@@ -202,6 +217,35 @@ export function PillboxSetupScreen({
             </button>
           </section>
 
+          {!isEditing ? (
+            <section className="space-y-3 pt-1">
+              <div className="space-y-1.5">
+                <span className="soft-field-label">
+                  {language === "ru" ? "Кому план" : "Who is this plan for"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTargetSheetOpen(true)}
+                  className="soft-input flex min-h-[2.82rem] w-full items-center justify-between gap-3 px-4 py-0 text-left text-[16px] leading-[1.15] sm:min-h-[2.92rem]"
+                >
+                  <span
+                    className={selectedTargetMember ? "text-foreground" : "text-muted"}
+                  >
+                    {targetMemberLabel}
+                  </span>
+                  <span aria-hidden="true" className="text-muted">
+                    ›
+                  </span>
+                </button>
+                <p className="text-[0.78rem] leading-5 text-muted">
+                  {language === "ru"
+                    ? "Выберите, для кого этот план. Название и уведомления подставятся автоматически, но их можно изменить."
+                    : "Choose who this plan is for. The name and reminder recipients will be filled automatically, but you can still change both."}
+                </p>
+              </div>
+            </section>
+          ) : null}
+
           <section className="space-y-3 pt-1">
             <label className="block space-y-1.5" htmlFor="pillbox-group-title">
               <span className="soft-field-label">{tPillbox(language, "titleLabel")}</span>
@@ -209,7 +253,9 @@ export function PillboxSetupScreen({
                 id="pillbox-group-title"
                 value={draft.title}
                 onChange={(event) => onTitleChange(event.target.value)}
-                placeholder={language === "ru" ? "Например: Для бабушки" : "Example: For grandma"}
+                placeholder={
+                  language === "ru" ? "Например: Для Артема" : "Example: For Artem"
+                }
                 className="soft-input w-full px-4"
               />
             </label>
@@ -276,6 +322,61 @@ export function PillboxSetupScreen({
         onConfirm={onConfirmDelete}
         onCancel={onCloseDeleteDialog}
       />
+      <OverlayDialog
+        isOpen={!isEditing && targetSheetOpen}
+        onClose={() => setTargetSheetOpen(false)}
+        placement="bottom"
+        zIndexClassName="z-[890]"
+        backdropAriaLabel={language === "ru" ? "Кому план" : "Who is this plan for"}
+        containerClassName="flex items-end"
+        backdropClassName="bg-[rgba(15,23,42,0.32)]"
+      >
+        <div
+          data-ios-disable-back-swipe="true"
+          className="relative z-[1] w-full rounded-t-[30px] bg-background px-4 pb-[max(1.25rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom)))] pt-4 shadow-[0_-24px_64px_rgba(15,23,42,0.24)] sm:mx-auto sm:max-w-xl"
+        >
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
+          <div className="space-y-1.5">
+            <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
+              {language === "ru" ? "Кому план" : "Who is this plan for"}
+            </h2>
+            <p className="text-sm leading-5 text-muted">
+              {language === "ru"
+                ? "Выберите участника семьи, чтобы сразу подставить понятное название плана и получателя уведомлений."
+                : "Choose a family member to prefill a clear plan name and reminder recipient."}
+            </p>
+          </div>
+
+          <div className="soft-choice-list mt-4">
+            {familyMembers.map((member) => {
+              const selected = member.id === draft.targetMemberId;
+              return (
+                <button
+                  key={member.id}
+                  type="button"
+                  onClick={() => {
+                    onSelectTargetMember(member.id);
+                    setTargetSheetOpen(false);
+                  }}
+                  className={["soft-choice-row", selected ? "soft-choice-row-active" : ""].join(
+                    " "
+                  )}
+                >
+                  <span className="grid min-w-0 gap-0.5 text-left">
+                    <span className="min-w-0 truncate whitespace-nowrap text-sm font-semibold tracking-[-0.02em] text-foreground">
+                      {getAccountDisplayLabel(member)}
+                    </span>
+                    <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
+                      {getAccountSecondaryLabel(member)}
+                    </span>
+                  </span>
+                  <span className="soft-choice-check">{selected ? "✓" : null}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </OverlayDialog>
     </EditorShell>
   );
 }
