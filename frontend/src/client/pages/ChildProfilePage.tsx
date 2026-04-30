@@ -1,4 +1,4 @@
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import { fetchMyFamilyAccess } from "@shared/api/families";
@@ -16,6 +16,7 @@ import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 import { resolveChildExportGateState } from "@client/pages/children/childExportAccess";
 import { ChildExportDialog } from "@client/pages/children/ChildExportDialog";
+import { useChildBackNavigation } from "@client/pages/children/useChildBackNavigation";
 import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
 import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
 import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
@@ -26,7 +27,7 @@ export function ChildProfilePage() {
   const { language } = useI18n();
   const copy = getChildrenCopy(language).childProfile;
   const { childId } = useParams<{ childId: string }>();
-  const navigate = useNavigate();
+  const location = useLocation();
   const isIosShell = useIsIosShell();
   const accountId = useAppStore((s) => s.accountId);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
@@ -79,6 +80,18 @@ export function ChildProfilePage() {
     queryFn: () => fetchLatestHeightEntryByChildId(childId!),
     enabled: !!childId && canViewProfile,
   });
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: "/children",
+    underlaySnapshotKey: "/children",
+  });
+  const shouldPreferChildrenUnderlay =
+    typeof location.state === "object" &&
+    location.state !== null &&
+    (location.state as Record<string, unknown>).pmChildProfileBackTarget === "children";
+  const shouldEnableChildrenSwipe = enableLocalSwipe || shouldPreferChildrenUnderlay;
+  const childrenUnderlaySnapshotKey = shouldPreferChildrenUnderlay
+    ? "/children"
+    : localUnderlaySnapshotKey;
 
   if (!childId || !canViewProfile) {
     return <Navigate to="/children" replace />;
@@ -126,12 +139,14 @@ export function ChildProfilePage() {
   return (
     <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-6">
       <IosEdgeBackGesture
-        isEnabled={isIosShell}
-        onBack={() => navigate("/children", { replace: true })}
+        isEnabled={isIosShell && shouldEnableChildrenSwipe}
+        onBack={handleBack}
         targetRef={rootRef}
+        presentation="route"
+        underlaySnapshotKey={childrenUnderlaySnapshotKey}
       />
       <ChildSectionTopBar
-        onBack={() => navigate("/children", { replace: true })}
+        onBack={handleBack}
         backLabel={language === "ru" ? "← К детям" : "← Back to children"}
         title={`${copy.eyebrow} · ${child.name}`}
         hint={copy.subtitle}

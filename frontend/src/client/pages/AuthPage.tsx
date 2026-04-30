@@ -25,7 +25,7 @@ import { AuthLegalLinks } from "./AuthLegalLinks";
 type Mode = "login" | "register";
 
 async function tryStoreCredentials(login: string, password: string): Promise<void> {
-  if (typeof window === "undefined" || !login || !password) {
+  if (typeof window === "undefined" || !login || !password || Capacitor.isNativePlatform()) {
     return;
   }
 

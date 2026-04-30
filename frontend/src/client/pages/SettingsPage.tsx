@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { Link, useLocation } from "react-router-dom";
@@ -23,6 +23,7 @@ import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PageIntro } from "@shared/components/PageIntro";
 import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { useI18n } from "@shared/hooks/useI18n";
+import { saveNativePasswordCredential } from "@shared/security/nativePasswordAutofill";
 import { useAppStore } from "@shared/store/useAppStore";
 import { formatDate } from "@shared/utils/date";
 import { openExternalUrl } from "@shared/utils/openExternalUrl";
@@ -92,6 +93,7 @@ export function SettingsPage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
+  const accountEmail = useAppStore((s) => s.accountEmail);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountHasRecoveryCode = useAppStore((s) => s.accountHasRecoveryCode);
   const setAccountProfile = useAppStore((s) => s.setAccountProfile);
@@ -125,6 +127,7 @@ export function SettingsPage() {
   const [recoveryCodeSuccess, setRecoveryCodeSuccess] = useState<string | null>(null);
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
   const [deleteFamilyError, setDeleteFamilyError] = useState<string | null>(null);
+  const manageSubscriptionPendingRef = useRef(false);
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
   const [selectedPillboxReminderMinutes, setSelectedPillboxReminderMinutes] = useState("10");
   const [liveActivitySettings, setLiveActivitySettings] = useState(() =>
@@ -490,8 +493,15 @@ export function SettingsPage() {
         ...payload,
         refresh_token: useAppStore.getState().refreshToken,
       }),
-    onSuccess: () => {
+    onSuccess: async (_data, variables) => {
       const currentRefreshToken = useAppStore.getState().refreshToken;
+      if (accountEmail) {
+        try {
+          await saveNativePasswordCredential(accountEmail, variables.new_password);
+        } catch {
+          // Keep password update successful even if iOS autofill update does not surface a prompt.
+        }
+      }
       setIsPasswordDialogOpen(false);
       setCurrentPassword("");
       setNewPassword("");
@@ -548,27 +558,21 @@ export function SettingsPage() {
   });
 
   const handleManageSubscription = () => {
-    if (isRevenueCatTestVisible) {
-      const target = document.getElementById("settings-revenuecat");
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+    if (manageSubscriptionPendingRef.current) {
       return;
     }
+    manageSubscriptionPendingRef.current = true;
     if (isNativeIos) {
-      void showNativeManageSubscriptions().then((didOpen) => {
-        if (!didOpen) {
-          void openExternalUrl("itms-apps://apps.apple.com/account/subscriptions");
-        }
+      void showNativeManageSubscriptions().finally(() => {
+        window.setTimeout(() => {
+          manageSubscriptionPendingRef.current = false;
+        }, 900);
       });
       return;
     }
-    void openExternalUrl("https://apps.apple.com/account/subscriptions");
-  };
-
-  const openSubscriptionDialog = () => {
-    clearUpgradeError();
-    setIsTestPaywallOpen(true);
+    void openExternalUrl("https://apps.apple.com/account/subscriptions").finally(() => {
+      manageSubscriptionPendingRef.current = false;
+    });
   };
 
   const resetPasswordDialogState = () => {
@@ -914,7 +918,7 @@ export function SettingsPage() {
             <div className="flex w-full flex-col gap-2 sm:w-[15.5rem]">
               <button
                 type="button"
-                onClick={openSubscriptionDialog}
+                onClick={handleManageSubscription}
                 className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.08rem] w-full px-2.75 text-[0.69rem] tracking-[-0.022em] sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]"
               >
                 {tSettings(language, "subscriptionManageAction")}

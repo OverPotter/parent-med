@@ -12,9 +12,11 @@ import { canEditChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { getLocalIsoDate } from "@shared/utils/date";
+import { normalizeIsoDateInput } from "@shared/utils/dateInput";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
+import { useChildBackNavigation } from "@client/pages/children/useChildBackNavigation";
 import { scrollFieldIntoView } from "@shared/utils/focus";
 
 type ChildProfileDetails = {
@@ -106,6 +108,9 @@ export function ChildEditPage() {
   if (isLoading || !child) {
     return <p className="text-sm text-muted">{common.loading}</p>;
   }
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: `/children/${child.id}`,
+  });
 
   return (
     <div
@@ -117,9 +122,11 @@ export function ChildEditPage() {
       }}
     >
       <IosEdgeBackGesture
-        isEnabled={isIosShell}
-        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        isEnabled={isIosShell && enableLocalSwipe}
+        onBack={handleBack}
         targetRef={pageRef}
+        presentation="route"
+        underlaySnapshotKey={localUnderlaySnapshotKey}
       />
       <ConfirmDialog
         isOpen={isDeleteConfirmOpen}
@@ -138,7 +145,7 @@ export function ChildEditPage() {
       />
 
       <ChildSectionTopBar
-        onBack={() => navigate(`/children/${child.id}`, { replace: true })}
+        onBack={handleBack}
         backLabel={language === "ru" ? "← К профилю ребёнка" : "← Back to child profile"}
         title={`${copy.form.title} · ${child.name}`}
         hint={copy.form.subtitle}
@@ -152,6 +159,10 @@ export function ChildEditPage() {
         onRequestDeleteConfirm={() => setIsDeleteConfirmOpen(true)}
         isSaving={updateMutation.isPending}
         isDeleting={deleteMutation.isPending}
+        apiError={
+          (updateMutation.error as { response?: { data?: { detail?: string } } })?.response?.data
+            ?.detail ?? null
+        }
         copy={copy}
         language={language}
       />
@@ -165,6 +176,7 @@ function EditChildProfileForm({
   onRequestDeleteConfirm,
   isSaving,
   isDeleting,
+  apiError,
   copy,
   language,
 }: {
@@ -184,6 +196,7 @@ function EditChildProfileForm({
   onRequestDeleteConfirm: () => void;
   isSaving: boolean;
   isDeleting: boolean;
+  apiError: string | null;
   copy: ReturnType<typeof getChildrenCopy>["childProfile"];
   language: "ru" | "en";
 }) {
@@ -193,17 +206,41 @@ function EditChildProfileForm({
   const [notes, setNotes] = useState(child.notes ?? "");
   const [babyModeEnabled, setBabyModeEnabled] = useState(child.babyModeEnabled);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!draftName.trim()) {
+      return;
+    }
+
+    const normalizedBirthDate = normalizeIsoDateInput(draftBirthDate);
+    if (draftBirthDate && !normalizedBirthDate) {
+      setValidationError(copy.form.validationBirthDate);
+      return;
+    }
+
+    setValidationError(null);
+    onSave(draftName.trim(), normalizedBirthDate, {
+      babyModeEnabled,
+      allergies: allergies.trim() || null,
+      notes: notes.trim() || null,
+    });
+  };
 
   return (
     <Surface className="app-section-surface mx-auto w-full max-w-2xl pt-2">
-      <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px]">
           <label className="block min-w-0 space-y-1.5">
             <span className="soft-field-label">{copy.form.nameLabel}</span>
             <input
               type="text"
               value={draftName}
-              onChange={(e) => setDraftName(e.target.value)}
+              onChange={(e) => {
+                setDraftName(e.target.value);
+                setValidationError(null);
+              }}
               className="soft-input w-full px-4"
               placeholder={language === "ru" ? "Например: Миша" : "Example: Misha"}
             />
@@ -212,7 +249,10 @@ function EditChildProfileForm({
             <span className="soft-field-label">{copy.form.birthDateLabel}</span>
             <DateField
               value={draftBirthDate}
-              onChange={setDraftBirthDate}
+              onChange={(value) => {
+                setDraftBirthDate(value);
+                setValidationError(null);
+              }}
               language={language}
               max={getLocalIsoDate()}
               className="w-full"
@@ -279,21 +319,14 @@ function EditChildProfileForm({
         </div>
 
         <div className="border-t border-border/70 pt-4">
-          <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center">
-            <button
-              type="button"
-              onClick={() =>
-                onSave(draftName.trim(), draftBirthDate || null, {
-                  babyModeEnabled,
-                  allergies: allergies.trim() || null,
-                  notes: notes.trim() || null,
-                })
-              }
-              disabled={isSaving || !draftName.trim()}
-              className={`${appBtnPrimaryClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:w-auto`}
-            >
-              {isSaving ? copy.form.saving : copy.form.save}
-            </button>
+            <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center">
+              <button
+                type="submit"
+                disabled={isSaving || !draftName.trim()}
+                className={`${appBtnPrimaryClass} min-h-[2.95rem] w-full disabled:opacity-50 sm:w-auto`}
+              >
+                {isSaving ? copy.form.saving : copy.form.save}
+              </button>
             <button
               type="button"
               onClick={onRequestDeleteConfirm}
@@ -304,7 +337,10 @@ function EditChildProfileForm({
             </button>
           </div>
         </div>
-      </div>
+        {(validationError || apiError) && (
+          <p className="soft-note-danger">{validationError ?? apiError}</p>
+        )}
+      </form>
     </Surface>
   );
 }

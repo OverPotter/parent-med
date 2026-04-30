@@ -67,7 +67,6 @@ export const en: Translations = {
       eyebrow: "Family care for sick days and daily meds",
       titleLines: ["When a child is sick,", "the family needs one", "clear plan."],
       lead: "See what is happening now, what is already done, and what comes next: child tracking, dose reminders, and the home medicine cabinet in one place.",
-      createAccount: "Try it free",
       loginPrompt: "Already have an account?",
       login: "Log in",
       highlights: [
@@ -181,13 +180,13 @@ export const en: Translations = {
       ctaTitle: "The recommended path is website entry followed by app handoff.",
       ctaDescription:
         "That keeps invite links, sign-in, and everyday usage inside one clear iPhone flow.",
-      createAccount: "Create account",
       login: "Log in",
       closePreview: "Close",
       previewCloseLabel: "Close enlarged preview",
       previewOpenLabel: "Open enlarged preview",
     },
     sections: {
+      carouselHeading: "What PillPath can do",
       strip: [
         {
           title: "Children",
@@ -362,7 +361,11 @@ export const en: Translations = {
         tableTitle: "What is included",
         rows: [
           { label: "Child profiles", free: "1 active child", plus: "Multiple children" },
-          { label: "Sleep, feeding, growth, and weight", free: "Core records", plus: "Shared in the family workflow" },
+          {
+            label: "Sleep, feeding, growth, and weight",
+            free: "Core records",
+            plus: "Shared in the family workflow",
+          },
           { label: "Pillbox", free: "1 working plan", plus: "Multiple family plans" },
           { label: "Family access", free: "Basic flow", plus: "Full coordination for loved ones" },
           { label: "CSV/XLSX export", free: "—", plus: "+" },
@@ -395,11 +398,13 @@ export const en: Translations = {
           },
           {
             question: "What can I log in Children?",
-            answer: "Symptoms, temperature, notes, doses, calendar context, and related records for your child.",
+            answer:
+              "Symptoms, temperature, notes, doses, calendar context, and related records for your child.",
           },
           {
             question: "Can I log sleep, feeding, height, and weight?",
-            answer: "Yes, those records can live inside the child profile next to the main care timeline.",
+            answer:
+              "Yes, those records can live inside the child profile next to the main care timeline.",
           },
           {
             question: "What does Home Medicine Cabinet warn about?",
@@ -411,7 +416,7 @@ export const en: Translations = {
         title: "When a child is sick, it helps to miss nothing important.",
         description:
           "PillPath combines child tracking, routine, dose reminders, and home medicine cabinet control.",
-        primary: "Try it free",
+        primary: "Create account",
         secondary: "Log in",
       },
     },

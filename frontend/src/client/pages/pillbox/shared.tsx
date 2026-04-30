@@ -403,10 +403,14 @@ export function EditorShell({
   children,
   maxWidthClassName = flowShellClass,
   onBack,
+  underlaySnapshotKey,
+  enableBackGesture = true,
 }: {
   children: ReactNode;
   maxWidthClassName?: string;
   onBack?: () => void;
+  underlaySnapshotKey?: string;
+  enableBackGesture?: boolean;
 }) {
   const shellRef = useRef<HTMLDivElement | null>(null);
   const isIosShell = useIsIosShell();
@@ -420,8 +424,14 @@ export function EditorShell({
           "calc(7.5rem + var(--app-keyboard-height, 0px) + var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)))",
       }}
     >
-      {onBack ? (
-        <IosEdgeBackGesture isEnabled={isIosShell} onBack={onBack} targetRef={shellRef} />
+      {onBack && enableBackGesture ? (
+        <IosEdgeBackGesture
+          isEnabled={isIosShell}
+          onBack={onBack}
+          targetRef={shellRef}
+          presentation="route"
+          underlaySnapshotKey={underlaySnapshotKey}
+        />
       ) : null}
       <div className={`mx-auto w-full ${maxWidthClassName}`}>{children}</div>
     </div>

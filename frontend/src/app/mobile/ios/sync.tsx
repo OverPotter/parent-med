@@ -4,6 +4,11 @@ import { Keyboard } from "@capacitor/keyboard";
 import { useLocation, useNavigationType } from "react-router-dom";
 import { detectIosShell } from "@shared/hooks/useIsIosShell";
 import { scrollFieldIntoView } from "@shared/utils/focus";
+import {
+  type IOSScreenSnapshot,
+  setIosPreviousScreenSnapshot,
+  setIosRouteSnapshot,
+} from "./snapshotState";
 
 export function IOSRouteSnapshotSync() {
   const location = useLocation();
@@ -14,10 +19,11 @@ export function IOSRouteSnapshotSync() {
       return;
     }
 
-    return () => {
-      if (navigationType === "REPLACE") {
-        return;
-      }
+    const root = document.documentElement;
+    let frameId: number | null = null;
+    let timeoutId: number | null = null;
+
+    const captureSnapshot = (updatePrevious = false) => {
       const frame = document.querySelector(".app-shell-frame");
       if (!(frame instanceof HTMLElement)) {
         return;
@@ -29,15 +35,66 @@ export function IOSRouteSnapshotSync() {
       clone.classList.remove("app-shell-frame");
       clone.classList.add("app-shell-auth", "ios-back-swipe-underlay-screen__content");
       clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+      const bottomNav = clone.querySelector(".app-bottom-nav-wrap");
+      const bottomNavHtml = bottomNav instanceof HTMLElement ? bottomNav.outerHTML : "";
+      bottomNav?.remove();
       const scrollY = Math.max(0, window.scrollY || window.pageYOffset || 0);
-      (
-        window as Window & {
-          __PM_IOS_PREVIOUS_SCREEN_SNAPSHOT?: { html: string; scrollY: number };
-        }
-      ).__PM_IOS_PREVIOUS_SCREEN_SNAPSHOT = {
+      const snapshot: IOSScreenSnapshot = {
         html: clone.outerHTML,
+        bottomNavHtml,
         scrollY,
       };
+      setIosRouteSnapshot(`${location.pathname}${location.search}`, snapshot);
+      if (updatePrevious && root.getAttribute("data-ios-back-swipe-active") !== "true") {
+        setIosPreviousScreenSnapshot(snapshot);
+      }
+    };
+
+    const scheduleSnapshotCapture = () => {
+      if (frameId !== null || timeoutId !== null) {
+        return;
+      }
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        timeoutId = window.setTimeout(() => {
+          timeoutId = null;
+          captureSnapshot();
+        }, 40);
+      });
+    };
+
+    captureSnapshot(false);
+
+    const frame = document.querySelector(".app-shell-frame");
+    const observer =
+      frame instanceof HTMLElement
+        ? new MutationObserver(() => {
+            scheduleSnapshotCapture();
+          })
+        : null;
+    if (observer && frame instanceof HTMLElement) {
+      observer.observe(frame, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        characterData: true,
+      });
+    }
+
+    window.addEventListener("resize", scheduleSnapshotCapture);
+    window.addEventListener("load", scheduleSnapshotCapture);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", scheduleSnapshotCapture);
+      window.removeEventListener("load", scheduleSnapshotCapture);
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      captureSnapshot(true);
     };
   }, [location.pathname, location.search, navigationType]);
 

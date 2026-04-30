@@ -229,7 +229,8 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func showManageSubscriptions(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            if #available(iOS 15.0, *), let scene = self.bridge?.viewController?.view.window?.windowScene {
+            if #available(iOS 15.0, *),
+               let scene = self.bridge?.viewController?.view.window?.windowScene {
                 Task {
                     do {
                         try await AppStore.showManageSubscriptions(in: scene)
@@ -241,18 +242,27 @@ public final class RevenueCatPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
 
-            guard let url = URL(string: "itms-apps://apps.apple.com/account/subscriptions") else {
-                call.reject("Subscriptions URL is invalid")
-                return
-            }
+            let candidateUrls = [
+                "itms-apps://apps.apple.com/account/subscriptions",
+                "https://apps.apple.com/account/subscriptions"
+            ].compactMap(URL.init(string:))
 
-            UIApplication.shared.open(url, options: [:]) { success in
-                if success {
-                    call.resolve()
+            func openCandidate(at index: Int) {
+                guard index < candidateUrls.count else {
+                    call.reject("RevenueCat manage subscriptions failed")
                     return
                 }
-                call.reject("RevenueCat manage subscriptions failed")
+
+                UIApplication.shared.open(candidateUrls[index], options: [:]) { success in
+                    if success {
+                        call.resolve()
+                        return
+                    }
+                    openCandidate(at: index + 1)
+                }
             }
+
+            openCandidate(at: 0)
         }
     }
 

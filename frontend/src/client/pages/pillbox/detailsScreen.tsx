@@ -46,6 +46,8 @@ export function PillboxDetailsScreen({
   onClosePlanAction,
   onConfirmDelete,
   onCloseDelete,
+  underlaySnapshotKey,
+  enableBackGesture = true,
 }: {
   language: AppLanguage;
   selectedPlan: PillboxPlan;
@@ -78,6 +80,8 @@ export function PillboxDetailsScreen({
   onClosePlanAction: () => void;
   onConfirmDelete: () => void;
   onCloseDelete: () => void;
+  underlaySnapshotKey?: string;
+  enableBackGesture?: boolean;
 }) {
   const selectedGroup = allGroups.find((group) => group.id === selectedPlanId) ?? null;
   const selectedGroupOverdue = selectedGroup
@@ -106,7 +110,11 @@ export function PillboxDetailsScreen({
   const canDeletePlan = canEdit || (canAct && isCompletedPlan);
 
   return (
-    <EditorShell onBack={onBack}>
+    <EditorShell
+      onBack={onBack}
+      underlaySnapshotKey={underlaySnapshotKey}
+      enableBackGesture={enableBackGesture}
+    >
       <FlowScreenHeader
         backLabel={tPillbox(language, "detailsBack")}
         onBack={onBack}

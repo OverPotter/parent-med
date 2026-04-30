@@ -63,9 +63,15 @@ export function ChildrenPage() {
   const [feedingDialog, setFeedingDialog] = useState<FeedingDialogState | null>(null);
   const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
     useUpgradeDialogOpenState();
-  const [isChildrenAuxReady, setIsChildrenAuxReady] = useState(!isIosShell);
+  const isChildrenAuxReady = true;
   const liveStatusQueryOptions = useLiveQueryOptions(isIosShell ? 60000 : 30000);
   const illnessStatusQueryOptions = useLiveQueryOptions(isIosShell ? 10000 : 5000);
+  const stableIosChildrenQueryOptions = isIosShell
+    ? {
+        refetchOnMount: false as const,
+        refetchOnWindowFocus: false as const,
+      }
+    : {};
   const canSeeChildren = canViewAnyChildren(accountFamilyRole, accountAccessPolicy);
   const canCreateChild = canManageChildrenList(accountFamilyRole, accountAccessPolicy);
   const liveTargetChildId = searchParams.get("liveChild")?.trim() ?? "";
@@ -76,32 +82,6 @@ export function ChildrenPage() {
         ? "feeding"
         : null;
 
-  useEffect(() => {
-    if (!isIosShell) {
-      setIsChildrenAuxReady(true);
-      return;
-    }
-
-    setIsChildrenAuxReady(false);
-    let timeoutId: number | null = null;
-    let frameId: number | null = null;
-
-    frameId = window.requestAnimationFrame(() => {
-      timeoutId = window.setTimeout(() => {
-        setIsChildrenAuxReady(true);
-      }, 700);
-    });
-
-    return () => {
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, [isIosShell, currentFamilyId]);
-
   const {
     data: children = [],
     isLoading,
@@ -111,6 +91,7 @@ export function ChildrenPage() {
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
     enabled: !!currentFamilyId && canSeeChildren,
     ...liveStatusQueryOptions,
+    ...stableIosChildrenQueryOptions,
   });
   const { data: familyAccess } = useQuery({
     queryKey: ["families", "me", "access", currentFamilyId],
@@ -146,6 +127,7 @@ export function ChildrenPage() {
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
       enabled: !!child.id && isChildrenAuxReady,
       ...illnessStatusQueryOptions,
+      ...stableIosChildrenQueryOptions,
     })),
   });
 
@@ -155,7 +137,8 @@ export function ChildrenPage() {
       queryFn: () => fetchLatestWeightEntryByChildId(child.id),
       enabled: !!child.id && isChildrenAuxReady,
       staleTime: 60_000,
-      refetchOnWindowFocus: true,
+      refetchOnMount: (isIosShell ? false : "always") as false | "always",
+      refetchOnWindowFocus: isIosShell ? false : true,
       refetchOnReconnect: true,
     })),
   });
@@ -166,6 +149,7 @@ export function ChildrenPage() {
       queryFn: () => fetchActiveSleepSessionByChildId(child.id),
       enabled: !!child.id && child.babyModeEnabled && isChildrenAuxReady,
       ...liveStatusQueryOptions,
+      ...stableIosChildrenQueryOptions,
     })),
   });
 
@@ -175,6 +159,7 @@ export function ChildrenPage() {
       queryFn: () => fetchActiveFeedingRecordByChildId(child.id),
       enabled: !!child.id && child.babyModeEnabled && isChildrenAuxReady,
       ...liveStatusQueryOptions,
+      ...stableIosChildrenQueryOptions,
     })),
   });
 

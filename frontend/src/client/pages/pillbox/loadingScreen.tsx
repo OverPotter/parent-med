@@ -5,20 +5,31 @@ export function PillboxLoadingScreen({
   language,
   screen,
   onBack,
+  underlaySnapshotKey,
+  enableBackGesture = true,
+  backLabel,
 }: {
   language: AppLanguage;
   screen: "setup" | "medication" | "details";
   onBack: () => void;
+  underlaySnapshotKey?: string;
+  enableBackGesture?: boolean;
+  backLabel?: string;
 }) {
   return (
-    <EditorShell onBack={onBack}>
+    <EditorShell
+      onBack={onBack}
+      underlaySnapshotKey={underlaySnapshotKey}
+      enableBackGesture={enableBackGesture}
+    >
       <FlowScreenHeader
         backLabel={
-          screen === "medication"
+          backLabel ??
+          (screen === "medication"
             ? tPillbox(language, "medicationBack")
             : screen === "details"
               ? tPillbox(language, "detailsBack")
-              : tPillbox(language, "setupBack")
+              : tPillbox(language, "setupBack"))
         }
         onBack={onBack}
         eyebrow={tPillbox(language, "eyebrow")}

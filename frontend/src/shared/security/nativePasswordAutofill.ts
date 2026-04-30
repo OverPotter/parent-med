@@ -15,10 +15,7 @@ type NativePasswordAutofillPlugin = {
 
 const PasswordAutofill = registerPlugin<NativePasswordAutofillPlugin>("PasswordAutofill");
 
-const FALLBACK_ASSOCIATED_DOMAINS = [
-  "parent-med-production-frontend.up.railway.app",
-  "pillpath-production-frontend.up.railway.app",
-];
+const FALLBACK_ASSOCIATED_DOMAINS = ["parent-med-production-frontend.up.railway.app"];
 
 function isPluginUnavailableError(error: unknown): boolean {
   if (!error || typeof error !== "object") {
@@ -43,13 +40,13 @@ function readConfiguredDomain(value: string | undefined): string | null {
 }
 
 function resolveAssociatedDomains(): string[] {
-  const domains = [
-    readConfiguredDomain(import.meta.env.VITE_APP_SITE_URL),
-    readConfiguredDomain(import.meta.env.VITE_MARKETING_SITE_URL),
-    ...FALLBACK_ASSOCIATED_DOMAINS,
-  ].filter((domain): domain is string => Boolean(domain));
+  const preferredDomain =
+    readConfiguredDomain(import.meta.env.VITE_APP_SITE_URL) ??
+    readConfiguredDomain(import.meta.env.VITE_MARKETING_SITE_URL) ??
+    FALLBACK_ASSOCIATED_DOMAINS[0] ??
+    null;
 
-  return Array.from(new Set(domains));
+  return preferredDomain ? [preferredDomain] : [];
 }
 
 export function isNativePasswordAutofillSupported(): boolean {

@@ -20,6 +20,7 @@ import { normalizeIsoDateInput } from "@shared/utils/dateInput";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { ChildSectionTopBar } from "@client/components/ChildSectionTopBar";
 import { getChildrenCopy } from "@client/i18n/children";
+import { useChildBackNavigation } from "@client/pages/children/useChildBackNavigation";
 import { scrollFieldIntoView } from "@shared/utils/focus";
 
 type ChildProfileDetails = {
@@ -218,6 +219,10 @@ export function ChildCreatePage() {
   const apiError =
     (createMutation.error as { response?: { data?: { detail?: string } } })?.response?.data
       ?.detail ?? null;
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: "/children",
+    underlaySnapshotKey: "/children",
+  });
 
   return (
     <div
@@ -229,12 +234,14 @@ export function ChildCreatePage() {
       }}
     >
       <IosEdgeBackGesture
-        isEnabled={isIosShell}
-        onBack={() => navigate("/children", { replace: true })}
+        isEnabled={isIosShell && enableLocalSwipe}
+        onBack={handleBack}
         targetRef={pageRef}
+        presentation="route"
+        underlaySnapshotKey={localUnderlaySnapshotKey}
       />
       <ChildSectionTopBar
-        onBack={() => navigate("/children", { replace: true })}
+        onBack={handleBack}
         backLabel={language === "ru" ? "← К детям" : "← Back to children"}
         title={`${copy.formTitle} · ${copy.title}`}
         hint={copy.formSubtitle}

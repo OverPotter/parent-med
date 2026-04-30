@@ -21,6 +21,8 @@ import { getEligibleIllnessRecipients } from "@shared/familyAccess/recipients";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
+import { hasBrowserBack } from "@shared/navigation/browserHistory";
+import { navigateBackWithFallback } from "@shared/navigation/browserHistory";
 import { canActChild, canEditChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { isChildIllnessMutationLockedByPlan } from "@shared/subscription/childPlanAccess";
@@ -443,13 +445,7 @@ export function ChildIllnessPage() {
     route,
     activeEpisode,
   });
-  const hasBrowserBack =
-    typeof window !== "undefined" &&
-    (window.history.length > 1 ||
-      (typeof window.history.state === "object" &&
-        window.history.state !== null &&
-        typeof (window.history.state as { idx?: unknown }).idx === "number" &&
-        ((window.history.state as { idx: number }).idx ?? 0) > 0));
+  const hasHistoryBack = hasBrowserBack();
   const { title: topBarTitle, hint: topBarHint } = buildChildIllnessTopBarState({
     language,
     child,
@@ -458,19 +454,22 @@ export function ChildIllnessPage() {
     historyEpisodesCount: historyEpisodes.length,
   });
   const handleBack = () => {
-    if (hasBrowserBack) {
-      navigate(-1);
-      return;
-    }
-    navigate(backHref, { replace: true });
+    navigateBackWithFallback(navigate, backHref, { shouldUseBrowserBack: hasHistoryBack });
   };
+  const shouldUseLocalRouteSwipe = backHref.startsWith(`/children/${child.id}/illness`);
 
   return (
     <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-7">
-      <IosEdgeBackGesture isEnabled={isIosShell} onBack={handleBack} targetRef={rootRef} />
+      <IosEdgeBackGesture
+        isEnabled={isIosShell && shouldUseLocalRouteSwipe}
+        onBack={handleBack}
+        targetRef={rootRef}
+        presentation="route"
+        underlaySnapshotKey={shouldUseLocalRouteSwipe ? backHref : undefined}
+      />
       <ChildSectionTopBar
         onBack={handleBack}
-        backLabel={hasBrowserBack ? (language === "ru" ? "← Назад" : "← Back") : backLabel}
+        backLabel={hasHistoryBack ? (language === "ru" ? "← Назад" : "← Back") : backLabel}
         title={topBarTitle}
         hint={topBarHint}
         containerClassName="max-w-5xl"
