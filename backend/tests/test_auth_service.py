@@ -361,6 +361,54 @@ async def test_billing_owner_cannot_leave_family() -> None:
 
 
 @pytest.mark.asyncio
+async def test_billing_owner_cannot_accept_family_invite() -> None:
+    old_family = Family(
+        id=uuid4(),
+        name="Моя семья",
+        owner_account_id=uuid4(),
+    )
+    target_family = Family(id=uuid4(), name="Семья Петровых", owner_account_id=uuid4())
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=target_family.id,
+        created_by_account_id=target_family.owner_account_id,
+        token_hash="hashed-token",
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    account_repo = StubAccountRepository()
+    billing_owner = build_account(
+        family_id=old_family.id,
+        email="owner@example.com",
+        display_name="Владелец",
+        family_role="admin",
+    )
+    await account_repo.add(billing_owner)
+    family_repo = StubFamilyRepository(old_family)
+    family_repo.items[old_family.id] = Family(
+        id=old_family.id,
+        name=old_family.name,
+        owner_account_id=old_family.owner_account_id,
+        billing_account_id=billing_owner.id,
+    )
+    family_repo.items[target_family.id] = target_family
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=family_repo,
+        family_invite_repo=StubFamilyInviteRepository(invite),
+    )
+
+    with pytest.raises(ValidationError) as exc_info:
+        await service.accept_latest_family_invite_for_dev(billing_owner.id)
+
+    assert exc_info.value.code == "BILLING_OWNER_TRANSFER_REQUIRED"
+
+
+@pytest.mark.asyncio
 async def test_signup_creates_family_owner_for_new_family() -> None:
     initial_family = Family(id=uuid4(), name="Моя семья")
     family_repo = StubFamilyRepository(initial_family)

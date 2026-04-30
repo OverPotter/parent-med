@@ -45,6 +45,8 @@ class StubAuthService:
     def __init__(self, *, fail_signin: bool = False) -> None:
         self.fail_signin = fail_signin
         self.logout_calls: list[tuple[object, object]] = []
+        self.delete_me_calls: list[object] = []
+        self.delete_family_calls: list[object] = []
 
     async def signup(self, dto: RegisterDto) -> AuthResponseDto:
         return _make_auth_response()
@@ -67,10 +69,10 @@ class StubAuthService:
         self.logout_calls.append((account_id, refresh_token))
 
     async def delete_me(self, account_id) -> None:  # noqa: ANN001
-        raise NotImplementedError
+        self.delete_me_calls.append(account_id)
 
     async def delete_family(self, account_id) -> None:  # noqa: ANN001
-        raise NotImplementedError
+        self.delete_family_calls.append(account_id)
 
     async def change_password(self, account_id, dto) -> None:  # noqa: ANN001
         raise NotImplementedError
@@ -226,6 +228,28 @@ def test_web_family_invite_accept_omits_tokens() -> None:
     assert payload["access_token"] is None
     assert payload["refresh_token"] is None
     assert "set-cookie" in response.headers
+
+
+def test_delete_me_calls_account_deletion() -> None:
+    service = StubAuthService()
+    client = _build_test_app(auth_service=service, attempts_repo=StubAuthAttemptRepository())
+
+    response = client.delete("/api/v1/auth/me")
+
+    assert response.status_code == 204
+    assert len(service.delete_me_calls) == 1
+    assert len(service.delete_family_calls) == 0
+
+
+def test_delete_family_calls_family_deletion() -> None:
+    service = StubAuthService()
+    client = _build_test_app(auth_service=service, attempts_repo=StubAuthAttemptRepository())
+
+    response = client.delete("/api/v1/auth/family")
+
+    assert response.status_code == 204
+    assert len(service.delete_family_calls) == 1
+    assert len(service.delete_me_calls) == 0
 
 
 def test_native_family_invite_accept_returns_tokens() -> None:

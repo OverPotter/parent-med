@@ -46,6 +46,7 @@
     "src/client/components/displayNameOnboardingKeys.ts",
     "src/client/components/profileOnboarding.ts",
     "src/client/pages/authRecovery.ts",
+    "src/client/pages/settings/deleteFlow.ts",
     "src/client/pages/child-illness/timelineHelpers.ts",
     "src/client/pages/child-illness/reminderUtils.ts",
     "test/authSessionErrors.test.ts",
@@ -71,6 +72,7 @@
     "test/publicWebsiteMode.test.ts",
     "test/recipientSelection.test.ts",
     "test/reminderUtils.test.ts",
+    "test/settingsDeleteAction.test.ts",
     "test/startupDecisions.test.ts"
   ]
 }

@@ -71,13 +71,9 @@ export function SettingsSecuritySection({
   recoveryCodeSuccess,
   recoveryCodeError,
   canDeleteAccount,
-  canDeleteFamily,
-  familyDangerActionLabel,
-  familyDangerActionDescription,
+  deleteAccountDescription,
   deleteAccountError,
-  deleteFamilyError,
   onDeleteAccount,
-  onDeleteFamily,
 }: {
   language: AppLanguage;
   hasRecoveryCode: boolean;
@@ -104,13 +100,9 @@ export function SettingsSecuritySection({
   recoveryCodeSuccess: string | null;
   recoveryCodeError: string | null;
   canDeleteAccount: boolean;
-  canDeleteFamily: boolean;
-  familyDangerActionLabel: string;
-  familyDangerActionDescription: string;
+  deleteAccountDescription: string;
   deleteAccountError: string | null;
-  deleteFamilyError: string | null;
   onDeleteAccount: () => void;
-  onDeleteFamily: () => void;
 }) {
   return (
     <>
@@ -172,7 +164,7 @@ export function SettingsSecuritySection({
           <>
             <SettingsRow
               title={tSettings(language, "deleteAccount")}
-              hint={tSettings(language, "deleteAccountDescription")}
+              hint={deleteAccountDescription}
               align="start"
               forceInlineActions
               actions={
@@ -184,27 +176,6 @@ export function SettingsSecuritySection({
             {deleteAccountError ? (
               <div className="soft-note-danger mx-4 mt-1 rounded-2xl px-4 py-3 text-sm">
                 {deleteAccountError}
-              </div>
-            ) : null}
-          </>
-        ) : null}
-        {canDeleteFamily ? (
-          <>
-            <SettingsRow
-              title={familyDangerActionLabel}
-              hint={familyDangerActionDescription}
-              separated
-              align="start"
-              forceInlineActions
-              actions={
-                <button type="button" onClick={onDeleteFamily} className={destructiveActionClass}>
-                  {familyDangerActionLabel}
-                </button>
-              }
-            />
-            {deleteFamilyError ? (
-              <div className="soft-note-danger mx-4 mt-1 rounded-2xl px-4 py-3 text-sm">
-                {deleteFamilyError}
               </div>
             ) : null}
           </>

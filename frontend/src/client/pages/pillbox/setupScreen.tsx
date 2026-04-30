@@ -41,6 +41,8 @@ export function PillboxSetupScreen({
   language,
   draft,
   familyMembers,
+  canAddMedication,
+  addMedicationBlockedReason,
   canSavePlan,
   saveBlockedReason,
   saveAttempted,
@@ -63,6 +65,8 @@ export function PillboxSetupScreen({
   language: AppLanguage;
   draft: SetupDraft;
   familyMembers: FamilyMemberLike[];
+  canAddMedication: boolean;
+  addMedicationBlockedReason: string | null;
   canSavePlan: boolean;
   saveBlockedReason: string | null;
   saveAttempted: boolean;
@@ -121,13 +125,50 @@ export function PillboxSetupScreen({
               ? "Обновите лекарства и название плана. Настройки уведомлений доступны в карточке плана."
               : "Update medicines and the plan name. Notification settings are available in plan details."
             : language === "ru"
-              ? "Сначала добавьте лекарства, потом дайте плану имя и выберите, кому приходят push."
-              : "Add medicines first, then name the plan and choose who gets push reminders."
+              ? "Сначала выберите, для кого этот план, а потом добавьте лекарства."
+              : "Choose who this plan is for first, then add medicines."
         }
       />
 
       <div className="pt-2 space-y-4">
         <div className="soft-panel space-y-5 rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
+          {!isEditing ? (
+            <section className="space-y-3 pt-1">
+              <div className="space-y-1.5">
+                <span className="soft-field-label">
+                  {language === "ru" ? "Для кого план" : "Who is this plan for"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTargetSheetOpen(true)}
+                  className="soft-input flex min-h-[2.82rem] w-full items-center justify-between gap-3 px-4 py-0 text-left text-[16px] leading-[1.15] sm:min-h-[2.92rem]"
+                >
+                  <span
+                    className={selectedTargetMember ? "text-foreground" : "text-muted"}
+                  >
+                    {targetMemberLabel}
+                  </span>
+                  <span aria-hidden="true" className="text-muted">
+                    ›
+                  </span>
+                </button>
+                <p className="text-[0.78rem] leading-5 text-muted">
+                  {language === "ru"
+                    ? "Выберите, для кого этот план. Получатель уведомлений сохранится автоматически, а позже его можно изменить в самом плане."
+                    : "Choose who this plan is for. The reminder recipient will be saved automatically, and you can change it later in the plan."}
+                </p>
+                <p className="text-[0.86rem] font-semibold leading-5 text-foreground/88">
+                  {generatedTitlePreview}
+                </p>
+                {!canAddMedication && addMedicationBlockedReason ? (
+                  <p className="text-[0.78rem] leading-5 text-muted">
+                    {addMedicationBlockedReason}
+                  </p>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <h1 className="app-card-title">{tPillbox(language, "medsTitle")}</h1>
@@ -210,42 +251,15 @@ export function PillboxSetupScreen({
               </div>
             ) : null}
 
-            <button type="button" onClick={onAddMedication} className={actionSecondaryClass}>
+            <button
+              type="button"
+              onClick={onAddMedication}
+              disabled={!canAddMedication}
+              className={`${actionSecondaryClass} disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none`}
+            >
               {tPillbox(language, "addMedicine")}
             </button>
           </section>
-
-          {!isEditing ? (
-            <section className="space-y-3 pt-1">
-              <div className="space-y-1.5">
-                <span className="soft-field-label">
-                  {language === "ru" ? "Для кого план" : "Who is this plan for"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setTargetSheetOpen(true)}
-                  className="soft-input flex min-h-[2.82rem] w-full items-center justify-between gap-3 px-4 py-0 text-left text-[16px] leading-[1.15] sm:min-h-[2.92rem]"
-                >
-                  <span
-                    className={selectedTargetMember ? "text-foreground" : "text-muted"}
-                  >
-                    {targetMemberLabel}
-                  </span>
-                  <span aria-hidden="true" className="text-muted">
-                    ›
-                  </span>
-                </button>
-                <p className="text-[0.78rem] leading-5 text-muted">
-                  {language === "ru"
-                    ? "Выберите, для кого этот план. Получатель уведомлений сохранится автоматически, а позже его можно изменить в самом плане."
-                    : "Choose who this plan is for. The reminder recipient will be saved automatically, and you can change it later in the plan."}
-                </p>
-                <p className="text-[0.86rem] font-semibold leading-5 text-foreground/88">
-                  {generatedTitlePreview}
-                </p>
-              </div>
-            </section>
-          ) : null}
 
           {isEditing ? (
             <section className="space-y-3 pt-1">

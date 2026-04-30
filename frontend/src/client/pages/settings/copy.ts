@@ -119,9 +119,14 @@ export const settingsCopy = {
     subscriptionSection: "Подписка",
     subscriptionSectionHint:
       "Проверяйте статус Plus, восстанавливайте покупки и открывайте системное управление подпиской.",
+    subscriptionSectionHintFreeOwner:
+      "Семья сейчас на Free. Plus можно подключить в любой момент из этого раздела.",
+    subscriptionSectionHintReadOnly:
+      "Здесь видно текущий статус Plus для вашей семьи. Управлять подпиской может только тот аккаунт, который её купил.",
     subscriptionStatusLabel: "Статус подписки",
     subscriptionManageAction: "Управлять подпиской",
     subscriptionRestorePurchases: "Восстановить покупки",
+    subscriptionUpgradeAction: "Подключить Plus",
     subscriptionStatusInactive: "Plus не активна",
     subscriptionStatusTrialing: "Пробный период Plus",
     subscriptionStatusActive: "Plus активна",
@@ -129,12 +134,21 @@ export const settingsCopy = {
     subscriptionStatusCanceled: "Автопродление выключено, доступ ещё действует",
     subscriptionStatusExpired: "Plus истекла",
     deleteAccount: "Удалить аккаунт",
-    deleteAccountDescription: "Вы выйдете из приложения, а доступ к аккаунту будет закрыт.",
+    deleteAccountDescription:
+      "Вы выйдете из приложения, а доступ к аккаунту будет закрыт. Если этот аккаунт держит Plus для семьи, сначала нужно завершить подписочный период.",
+    deleteAccountOwnerDescription:
+      "Для владельца это действие удалит всю семью и отключит доступ для всех участников. Если на семье ещё действует Plus, сначала нужно завершить подписочный период.",
     deleteAccountConfirmTitle: "Точно удалить аккаунт?",
     deleteAccountConfirmDescription:
       "Аккаунт будет деактивирован. Вход в него станет недоступен, восстановление не предусмотрено.",
+    deleteAccountOwnerConfirmDescription:
+      "Будет удалена вся семья, а все связанные аккаунты потеряют доступ. Действие необратимо.",
     deleteAccountConfirmAction: "Да, удалить аккаунт",
     deleteAccountFailed: "Не удалось удалить аккаунт.",
+    deleteAccountBlockedTitle: "Аккаунт пока нельзя удалить",
+    deleteAccountBlockedDescription:
+      "На этом аккаунте ещё держится Plus для семьи. Сначала откройте подписку Apple, отключите продление и дождитесь окончания текущего оплаченного периода.",
+    deleteAccountBlockedConfirmAction: "Управлять подпиской",
     cancelSubscription: "Отменить подписку",
     cancelSubscriptionDescription:
       "Если позже захотите удалить семью, сначала отключите автопродление. Доступ Plus сохранится до конца оплаченного периода.",
@@ -276,9 +290,14 @@ export const settingsCopy = {
     subscriptionSection: "Subscription",
     subscriptionSectionHint:
       "Check Plus status, restore purchases, and open the system subscription management screen.",
+    subscriptionSectionHintFreeOwner:
+      "Your family is currently on Free. You can upgrade to Plus from this section at any time.",
+    subscriptionSectionHintReadOnly:
+      "This section shows your family's current Plus status. Only the account that bought it can manage the subscription.",
     subscriptionStatusLabel: "Subscription status",
     subscriptionManageAction: "Manage subscription",
     subscriptionRestorePurchases: "Restore purchases",
+    subscriptionUpgradeAction: "Get Plus",
     subscriptionStatusInactive: "Plus is not active",
     subscriptionStatusTrialing: "Plus trial is active",
     subscriptionStatusActive: "Plus is active",
@@ -286,12 +305,21 @@ export const settingsCopy = {
     subscriptionStatusCanceled: "Auto-renew is off, access is still active",
     subscriptionStatusExpired: "Plus has expired",
     deleteAccount: "Delete account",
-    deleteAccountDescription: "You will be signed out and access to this account will be removed.",
+    deleteAccountDescription:
+      "You will be signed out and access to this account will be removed. If this account holds Plus for the family, the subscription period must end first.",
+    deleteAccountOwnerDescription:
+      "For the family owner, this action deletes the whole family and removes access for all members. If Plus is still active for the family, the subscription period must end first.",
     deleteAccountConfirmTitle: "Delete account permanently?",
     deleteAccountConfirmDescription:
       "The account will be deactivated. Login will no longer be possible.",
+    deleteAccountOwnerConfirmDescription:
+      "The whole family will be deleted and all related accounts will lose access. This action cannot be undone.",
     deleteAccountConfirmAction: "Yes, delete account",
     deleteAccountFailed: "Could not delete the account.",
+    deleteAccountBlockedTitle: "This account cannot be deleted yet",
+    deleteAccountBlockedDescription:
+      "This account still holds Plus for the family. Open Apple subscriptions first, turn off renewal, and wait until the current paid period fully ends.",
+    deleteAccountBlockedConfirmAction: "Manage subscription",
     cancelSubscription: "Cancel subscription",
     cancelSubscriptionDescription:
       "If you plan to delete the family later, disable auto-renew first. Plus access will remain until the end of the paid period.",

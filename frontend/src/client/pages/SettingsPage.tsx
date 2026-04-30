@@ -54,6 +54,12 @@ import { SettingsLiveActivitiesSection } from "./settings/SettingsLiveActivities
 import { SettingsNotificationsSection } from "./settings/SettingsNotificationsSection";
 import { SettingsRevenueCatSection } from "./settings/SettingsRevenueCatSection";
 import { SettingsSecuritySection } from "./settings/SettingsSecuritySection";
+import {
+  isSettingsFreeSubscriptionState,
+  resolveSettingsDeleteAction,
+  shouldBlockSettingsDeletion,
+  type SettingsDeleteAction,
+} from "./settings/deleteFlow";
 import { SettingsRow, SettingsSection } from "./settings/ui";
 import { stopDisabledLiveActivities } from "@shared/utils/liveActivities";
 
@@ -116,7 +122,7 @@ export function SettingsPage() {
     useUpgradeDialogOpenState();
   const [isTestPaywallOpen, setIsTestPaywallOpen] = useState(false);
   const [isDeleteAccountConfirmOpen, setIsDeleteAccountConfirmOpen] = useState(false);
-  const [isDeleteFamilyConfirmOpen, setIsDeleteFamilyConfirmOpen] = useState(false);
+  const [isDeleteAccountBlockedOpen, setIsDeleteAccountBlockedOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -126,7 +132,6 @@ export function SettingsPage() {
   const [recoveryCodeError, setRecoveryCodeError] = useState<string | null>(null);
   const [recoveryCodeSuccess, setRecoveryCodeSuccess] = useState<string | null>(null);
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
-  const [deleteFamilyError, setDeleteFamilyError] = useState<string | null>(null);
   const manageSubscriptionPendingRef = useRef(false);
   const [selectedReminderMinutes, setSelectedReminderMinutes] = useState("10");
   const [selectedPillboxReminderMinutes, setSelectedPillboxReminderMinutes] = useState("10");
@@ -209,8 +214,23 @@ export function SettingsPage() {
   });
   const subscriptionExpiresAt = family?.subscriptionExpiresAt ?? null;
   const subscriptionStatusLabel = getSubscriptionStatusLabel(language, subscriptionStatus);
-  const familyDangerActionLabel = tSettings(language, "deleteFamily");
-  const familyDangerActionDescription = tSettings(language, "deleteFamilyDescription");
+  const isPayerDeleteBlocked = shouldBlockSettingsDeletion(
+    canManageSubscription,
+    subscriptionStatus
+  );
+  const isFreeSubscriptionState = isSettingsFreeSubscriptionState(subscriptionStatus);
+  const showUpgradeAction = isFamilyOwner && isFreeSubscriptionState;
+  const subscriptionSectionHint = canManageSubscription
+    ? tSettings(language, "subscriptionSectionHint")
+    : showUpgradeAction
+      ? tSettings(language, "subscriptionSectionHintFreeOwner")
+      : tSettings(language, "subscriptionSectionHintReadOnly");
+  const deleteAccountDescription = isFamilyOwner
+    ? tSettings(language, "deleteAccountOwnerDescription")
+    : tSettings(language, "deleteAccountDescription");
+  const deleteAccountConfirmDescription = isFamilyOwner
+    ? tSettings(language, "deleteAccountOwnerConfirmDescription")
+    : tSettings(language, "deleteAccountConfirmDescription");
   const liveActivitiesLockedReason = !canUseLiveActivities
     ? tSettings(language, "liveActivitiesLockedReason")
     : null;
@@ -504,34 +524,33 @@ export function SettingsPage() {
     },
   });
 
-  const deleteAccountMutation = useMutation({
-    mutationFn: deleteMyAccount,
-    onSuccess: () => {
-      queryClient.clear();
-      broadcastAuthLogout();
+  const handleDeletionSuccess = () => {
+    queryClient.clear();
+    broadcastAuthLogout();
+  };
+
+  const handleDeletionError = (error: unknown) => {
+    setDeleteAccountError(
+      (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
+        (error instanceof Error ? error.message : tSettings(language, "deleteAccountFailed"))
+    );
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (action: SettingsDeleteAction) => {
+      if (action === "delete_family") {
+        await deleteMyFamily();
+        return;
+      }
+      await deleteMyAccount();
     },
-    onError: (error) => {
-      setDeleteAccountError(
-        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
-          (error instanceof Error ? error.message : tSettings(language, "deleteAccountFailed"))
-      );
-    },
+    onSuccess: handleDeletionSuccess,
+    onError: handleDeletionError,
   });
 
-  const deleteFamilyMutation = useMutation({
-    mutationFn: deleteMyFamily,
-    onSuccess: () => {
-      queryClient.clear();
-      broadcastAuthLogout();
-    },
-    onError: (error) => {
-      setIsDeleteFamilyConfirmOpen(false);
-      setDeleteFamilyError(
-        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
-          (error instanceof Error ? error.message : tSettings(language, "deleteFamilyFailed"))
-      );
-    },
-  });
+  const handleConfirmedDeletion = () => {
+    deleteMutation.mutate(resolveSettingsDeleteAction(isFamilyOwner));
+  };
 
   const handleManageSubscription = () => {
     if (manageSubscriptionPendingRef.current) {
@@ -879,44 +898,60 @@ export function SettingsPage() {
       </div>
       <SettingsSection
         title={tSettings(language, "subscriptionSection")}
-        hint={tSettings(language, "subscriptionSectionHint")}
+        hint={subscriptionSectionHint}
       >
-        <SettingsRow
-          title={tSettings(language, "subscriptionStatusLabel")}
-          hint={
-            subscriptionExpiresAt
-              ? `${subscriptionStatusLabel}. ${tSettings(language, "subscriptionActiveUntil")}: ${formatDate(
-                  subscriptionExpiresAt
-                )}`
-              : subscriptionStatusLabel
-          }
-          actions={
-            <div className="flex w-full flex-col gap-2 sm:w-[15.5rem]">
-              <button
-                type="button"
-                onClick={handleManageSubscription}
-                className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.08rem] w-full px-2.75 text-[0.69rem] tracking-[-0.022em] sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]"
-              >
-                {tSettings(language, "subscriptionManageAction")}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void restorePurchases();
-                }}
-                disabled={isUpgradePending || !canManageSubscription}
-                className="soft-pill app-profile-action min-h-[2.08rem] w-full px-2.75 text-[0.69rem] tracking-[-0.022em] disabled:opacity-50 sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]"
-              >
-                {tSettings(language, "subscriptionRestorePurchases")}
-              </button>
-            </div>
-          }
-        />
-        {restoreSuccessMessage ? (
-          <div className="soft-note-success mx-4 mt-1 rounded-2xl px-4 py-3 text-sm">
-            {restoreSuccessMessage}
+        {showUpgradeAction ? (
+          <div className="px-4 py-1">
+            <button
+              type="button"
+              onClick={openUpgradeDialog}
+              className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.08rem] w-full px-2.75 text-[0.69rem] tracking-[-0.022em] sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]"
+            >
+              {tSettings(language, "subscriptionUpgradeAction")}
+            </button>
           </div>
-        ) : null}
+        ) : (
+          <>
+            <SettingsRow
+              title={tSettings(language, "subscriptionStatusLabel")}
+              hint={
+                subscriptionExpiresAt
+                  ? `${subscriptionStatusLabel}. ${tSettings(language, "subscriptionActiveUntil")}: ${formatDate(
+                      subscriptionExpiresAt
+                    )}`
+                  : subscriptionStatusLabel
+              }
+              actions={
+                canManageSubscription ? (
+                  <div className="flex w-full flex-col gap-2 sm:w-[15.5rem]">
+                    <button
+                      type="button"
+                      onClick={handleManageSubscription}
+                      className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.08rem] w-full px-2.75 text-[0.69rem] tracking-[-0.022em] sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]"
+                    >
+                      {tSettings(language, "subscriptionManageAction")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void restorePurchases();
+                      }}
+                      disabled={isUpgradePending}
+                      className="soft-pill app-profile-action min-h-[2.08rem] w-full px-2.75 text-[0.69rem] tracking-[-0.022em] disabled:opacity-50 sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]"
+                    >
+                      {tSettings(language, "subscriptionRestorePurchases")}
+                    </button>
+                  </div>
+                ) : undefined
+              }
+            />
+            {restoreSuccessMessage ? (
+              <div className="soft-note-success mx-4 mt-1 rounded-2xl px-4 py-3 text-sm">
+                {restoreSuccessMessage}
+              </div>
+            ) : null}
+          </>
+        )}
       </SettingsSection>
       <SettingsSecuritySection
         language={language}
@@ -978,19 +1013,16 @@ export function SettingsPage() {
         passwordError={passwordError}
         recoveryCodeSuccess={recoveryCodeSuccess}
         recoveryCodeError={recoveryCodeError}
-        canDeleteAccount={!isFamilyOwner}
-        canDeleteFamily={isFamilyOwner}
-        familyDangerActionLabel={familyDangerActionLabel}
-        familyDangerActionDescription={familyDangerActionDescription}
+        canDeleteAccount
+        deleteAccountDescription={deleteAccountDescription}
         deleteAccountError={deleteAccountError}
-        deleteFamilyError={deleteFamilyError}
         onDeleteAccount={() => {
           setDeleteAccountError(null);
+          if (isPayerDeleteBlocked) {
+            setIsDeleteAccountBlockedOpen(true);
+            return;
+          }
           setIsDeleteAccountConfirmOpen(true);
-        }}
-        onDeleteFamily={() => {
-          setDeleteFamilyError(null);
-          setIsDeleteFamilyConfirmOpen(true);
         }}
       />
       <ConfirmDialog
@@ -1027,34 +1059,31 @@ export function SettingsPage() {
         }}
       />
       <ConfirmDialog
+        isOpen={isDeleteAccountBlockedOpen}
+        title={tSettings(language, "deleteAccountBlockedTitle")}
+        description={tSettings(language, "deleteAccountBlockedDescription")}
+        confirmLabel={tSettings(language, "deleteAccountBlockedConfirmAction")}
+        cancelLabel={tSettings(language, "cancel")}
+        onCancel={() => setIsDeleteAccountBlockedOpen(false)}
+        onConfirm={() => {
+          handleManageSubscription();
+          setIsDeleteAccountBlockedOpen(false);
+        }}
+      />
+      <ConfirmDialog
         isOpen={isDeleteAccountConfirmOpen}
         title={tSettings(language, "deleteAccountConfirmTitle")}
-        description={tSettings(language, "deleteAccountConfirmDescription")}
+        description={deleteAccountConfirmDescription}
         confirmLabel={
-          deleteAccountMutation.isPending
+          deleteMutation.isPending
             ? tSettings(language, "saving")
             : tSettings(language, "deleteAccountConfirmAction")
         }
         cancelLabel={tSettings(language, "cancel")}
         confirmTone="danger"
-        isPending={deleteAccountMutation.isPending}
+        isPending={deleteMutation.isPending}
         onCancel={() => setIsDeleteAccountConfirmOpen(false)}
-        onConfirm={() => deleteAccountMutation.mutate()}
-      />
-      <ConfirmDialog
-        isOpen={isDeleteFamilyConfirmOpen}
-        title={tSettings(language, "deleteFamilyConfirmTitle")}
-        description={tSettings(language, "deleteFamilyConfirmDescription")}
-        confirmLabel={
-          deleteFamilyMutation.isPending
-            ? tSettings(language, "saving")
-            : tSettings(language, "deleteFamilyConfirmAction")
-        }
-        cancelLabel={tSettings(language, "cancel")}
-        confirmTone="danger"
-        isPending={deleteFamilyMutation.isPending}
-        onCancel={() => setIsDeleteFamilyConfirmOpen(false)}
-        onConfirm={() => deleteFamilyMutation.mutate()}
+        onConfirm={handleConfirmedDeletion}
       />
       <SubscriptionUpgradeDialog
         isOpen={isUpgradeDialogOpen}
