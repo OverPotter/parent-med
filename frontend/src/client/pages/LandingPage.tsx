@@ -1,18 +1,28 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { BrandWordmark } from "@shared/components/BrandWordmark";
-import { LanguageSwitch } from "@shared/components/LanguageSwitch";
+import { PublicSiteHeader } from "@shared/components/PublicSiteHeader";
 import { Surface } from "@shared/components/Surface";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
-import { buildNativeAppUrl, NATIVE_APP_MARKETING_FLAG } from "@shared/config/nativeAppLinks";
+import {
+  buildNativeAppUrl,
+  getSafeNativeMarketingUrl,
+  NATIVE_APP_MARKETING_FLAG,
+} from "@shared/config/nativeAppLinks";
 import { useI18n } from "@shared/hooks/useI18n";
-import { useAppStore } from "@shared/store/useAppStore";
+import { useLoopedMobileCarousel } from "./landing/useLoopedMobileCarousel";
 
-const FEATURE_SECTION_IDS = ["children", "routine", "pillbox", "cabinet", "family", "trust"] as const;
+const FEATURE_SECTION_IDS = [
+  "children",
+  "routine",
+  "pillbox",
+  "cabinet",
+  "family",
+  "trust",
+] as const;
 type FeatureSectionId = (typeof FEATURE_SECTION_IDS)[number];
 
 export function LandingPage() {
-  const { copy, language } = useI18n();
+  const { copy } = useI18n();
   const [searchParams] = useSearchParams();
   const MOBILE_FAQ_LIMIT = 4;
   const [isHeroMobile, setIsHeroMobile] = useState(() =>
@@ -21,13 +31,8 @@ export function LandingPage() {
   const [isFeatureMobile, setIsFeatureMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth <= 767 : false
   );
-  const effectiveTheme = useAppStore((s) => s.effectiveTheme);
-  const toggleTheme = useAppStore((s) => s.toggleTheme);
   const heroCardsCarouselRef = useRef<HTMLDivElement | null>(null);
   const featureCarouselRef = useRef<HTMLDivElement | null>(null);
-  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
-  const [featureSlideIndex, setFeatureSlideIndex] = useState(0);
-  const [featureVirtualIndex, setFeatureVirtualIndex] = useState(1);
   const [featureSlideHeight, setFeatureSlideHeight] = useState<number | null>(null);
   const [showAllFaqMobile, setShowAllFaqMobile] = useState(false);
   const featureSlides = useMemo(
@@ -60,9 +65,8 @@ export function LandingPage() {
   }, []);
   const shouldOpenAuthInApp = searchParams.get(NATIVE_APP_MARKETING_FLAG) === "1";
   const loginTarget =
-    searchParams.get("appLoginUrl")?.trim() || buildNativeAppUrl("/auth?mode=login");
-  const registerTarget =
-    searchParams.get("appRegisterUrl")?.trim() || buildNativeAppUrl("/auth?mode=register");
+    getSafeNativeMarketingUrl(searchParams.get("appLoginUrl")) ||
+    buildNativeAppUrl("/auth?mode=login");
 
   const openInApp = (url: string) => {
     if (typeof window === "undefined") {
@@ -70,6 +74,31 @@ export function LandingPage() {
     }
     window.location.href = url;
   };
+
+  const headerActions = shouldOpenAuthInApp
+    ? [{ label: copy.landing.hero.login, onClick: () => openInApp(loginTarget) }]
+    : [{ label: copy.landing.hero.login, to: "/auth?mode=login" }];
+
+  const {
+    activeIndex: heroSlideIndex,
+    scrollToIndex: scrollToHeroSlide,
+  } = useLoopedMobileCarousel({
+    trackRef: heroCardsCarouselRef,
+    itemCount: heroRealSlidesCount,
+    enabled: isHeroMobile,
+    snapDelayMs: 120,
+  });
+
+  const {
+    activeIndex: featureSlideIndex,
+    virtualIndex: featureVirtualIndex,
+    scrollToIndex: scrollToFeatureSlide,
+  } = useLoopedMobileCarousel({
+    trackRef: featureCarouselRef,
+    itemCount: realSlidesCount,
+    enabled: isFeatureMobile,
+    snapDelayMs: 130,
+  });
 
   useEffect(() => {
     const onResize = () => {
@@ -84,206 +113,6 @@ export function LandingPage() {
       window.removeEventListener("orientationchange", onResize);
     };
   }, []);
-
-  const toRealIndex = (virtualIndex: number) => {
-    if (virtualIndex <= 0) return realSlidesCount - 1;
-    if (virtualIndex >= realSlidesCount + 1) return 0;
-    return virtualIndex - 1;
-  };
-
-  const toRealHeroIndex = (virtualIndex: number) => {
-    if (virtualIndex <= 0) return heroRealSlidesCount - 1;
-    if (virtualIndex >= heroRealSlidesCount + 1) return 0;
-    return virtualIndex - 1;
-  };
-
-  useEffect(() => {
-    const track = heroCardsCarouselRef.current;
-    if (!track || heroRealSlidesCount <= 1 || !isHeroMobile) return;
-    let snapTimeoutId: number | null = null;
-    const getSlideStep = () => {
-      return Math.max(track.clientWidth, 1);
-    };
-
-    const jumpWithoutAnimation = (targetVirtualIndex: number) => {
-      const previousBehavior = track.style.scrollBehavior;
-      track.style.scrollBehavior = "auto";
-      track.scrollLeft = getSlideStep() * targetVirtualIndex;
-      track.style.scrollBehavior = previousBehavior;
-      setHeroSlideIndex(toRealHeroIndex(targetVirtualIndex));
-    };
-
-    const ensureInitialOffset = () => {
-      const step = getSlideStep();
-      if (track.scrollLeft < step * 0.5 || track.scrollLeft > step * (heroRealSlidesCount + 0.5)) {
-        jumpWithoutAnimation(1);
-      }
-    };
-
-    const markInteraction = () => {
-      if (snapTimeoutId) {
-        window.clearTimeout(snapTimeoutId);
-      }
-    };
-
-    const releaseInteraction = () => {
-      if (snapTimeoutId) {
-        window.clearTimeout(snapTimeoutId);
-      }
-      snapTimeoutId = window.setTimeout(() => {
-        const step = getSlideStep();
-        const nearestVirtualIndex = Math.round(track.scrollLeft / step);
-        if (nearestVirtualIndex <= 0) {
-          jumpWithoutAnimation(heroRealSlidesCount);
-          return;
-        }
-        if (nearestVirtualIndex >= heroRealSlidesCount + 1) {
-          jumpWithoutAnimation(1);
-          return;
-        }
-        track.scrollTo({ left: step * nearestVirtualIndex, behavior: "auto" });
-        setHeroSlideIndex(toRealHeroIndex(nearestVirtualIndex));
-      }, 120);
-    };
-
-    const onScroll = () => {
-      const step = getSlideStep();
-      setHeroSlideIndex(toRealHeroIndex(Math.round(track.scrollLeft / step)));
-    };
-
-    ensureInitialOffset();
-    track.addEventListener("scroll", onScroll, { passive: true });
-    track.addEventListener("touchstart", markInteraction, { passive: true });
-    track.addEventListener("pointerdown", markInteraction, { passive: true });
-    track.addEventListener("touchend", releaseInteraction, { passive: true });
-    track.addEventListener("pointerup", releaseInteraction, { passive: true });
-    track.addEventListener("pointercancel", releaseInteraction, { passive: true });
-    window.addEventListener("touchend", releaseInteraction, { passive: true });
-    window.addEventListener("pointerup", releaseInteraction, { passive: true });
-    window.addEventListener("pointercancel", releaseInteraction, { passive: true });
-
-    const onResize = () => ensureInitialOffset();
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
-
-    return () => {
-      if (snapTimeoutId) {
-        window.clearTimeout(snapTimeoutId);
-      }
-      track.removeEventListener("scroll", onScroll);
-      track.removeEventListener("touchstart", markInteraction);
-      track.removeEventListener("pointerdown", markInteraction);
-      track.removeEventListener("touchend", releaseInteraction);
-      track.removeEventListener("pointerup", releaseInteraction);
-      track.removeEventListener("pointercancel", releaseInteraction);
-      window.removeEventListener("touchend", releaseInteraction);
-      window.removeEventListener("pointerup", releaseInteraction);
-      window.removeEventListener("pointercancel", releaseInteraction);
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
-    };
-  }, [heroRealSlidesCount, isHeroMobile]);
-
-  const scrollToHeroSlide = (index: number) => {
-    const track = heroCardsCarouselRef.current;
-    if (!track) return;
-    const step = Math.max(track.clientWidth, 1);
-    const targetVirtualIndex = index + 1;
-    track.scrollTo({ left: step * targetVirtualIndex, behavior: "smooth" });
-    setHeroSlideIndex(index);
-  };
-
-  useEffect(() => {
-    const track = featureCarouselRef.current;
-    if (!track || !isFeatureMobile) return;
-    let snapTimeoutId: number | null = null;
-    const getSlideStep = () => {
-      // Every mobile slide is exactly 100% width, so using track width avoids
-      // fractional drift and clipped neighboring cards.
-      return Math.max(track.clientWidth, 1);
-    };
-
-    const jumpWithoutAnimation = (targetVirtualIndex: number) => {
-      const previousBehavior = track.style.scrollBehavior;
-      track.style.scrollBehavior = "auto";
-      track.scrollLeft = getSlideStep() * targetVirtualIndex;
-      track.style.scrollBehavior = previousBehavior;
-      setFeatureVirtualIndex(targetVirtualIndex);
-      setFeatureSlideIndex(toRealIndex(targetVirtualIndex));
-    };
-
-    const ensureInitialOffset = () => {
-      if (window.innerWidth >= 768) return;
-      const step = getSlideStep();
-      if (track.scrollLeft < step * 0.5 || track.scrollLeft > step * (realSlidesCount + 0.5)) {
-        jumpWithoutAnimation(1);
-      }
-    };
-
-    const markInteraction = () => {
-      if (snapTimeoutId) {
-        window.clearTimeout(snapTimeoutId);
-      }
-    };
-
-    const releaseInteraction = () => {
-      if (snapTimeoutId) {
-        window.clearTimeout(snapTimeoutId);
-      }
-      snapTimeoutId = window.setTimeout(() => {
-        const step = getSlideStep();
-        const nearestVirtualIndex = Math.round(track.scrollLeft / step);
-
-        if (nearestVirtualIndex <= 0) {
-          jumpWithoutAnimation(realSlidesCount);
-          return;
-        }
-        if (nearestVirtualIndex >= realSlidesCount + 1) {
-          jumpWithoutAnimation(1);
-          return;
-        }
-        const targetLeft = step * nearestVirtualIndex;
-        track.scrollTo({ left: targetLeft, behavior: "auto" });
-        setFeatureVirtualIndex(nearestVirtualIndex);
-        setFeatureSlideIndex(toRealIndex(nearestVirtualIndex));
-      }, 130);
-    };
-
-    const onScroll = () => {
-      const step = getSlideStep();
-      const rawVirtualIndex = track.scrollLeft / step;
-      const virtualIndex = Math.round(rawVirtualIndex);
-      setFeatureVirtualIndex(virtualIndex);
-      setFeatureSlideIndex(toRealIndex(virtualIndex));
-    };
-
-    ensureInitialOffset();
-
-    track.addEventListener("scroll", onScroll, { passive: true });
-    track.addEventListener("touchstart", markInteraction, { passive: true });
-    track.addEventListener("pointerdown", markInteraction, { passive: true });
-    track.addEventListener("touchend", releaseInteraction, { passive: true });
-    track.addEventListener("pointerup", releaseInteraction, { passive: true });
-    track.addEventListener("pointercancel", releaseInteraction, { passive: true });
-    window.addEventListener("touchend", releaseInteraction, { passive: true });
-    window.addEventListener("pointerup", releaseInteraction, { passive: true });
-    window.addEventListener("pointercancel", releaseInteraction, { passive: true });
-
-    return () => {
-      if (snapTimeoutId) {
-        window.clearTimeout(snapTimeoutId);
-      }
-      track.removeEventListener("scroll", onScroll);
-      track.removeEventListener("touchstart", markInteraction);
-      track.removeEventListener("pointerdown", markInteraction);
-      track.removeEventListener("touchend", releaseInteraction);
-      track.removeEventListener("pointerup", releaseInteraction);
-      track.removeEventListener("pointercancel", releaseInteraction);
-      window.removeEventListener("touchend", releaseInteraction);
-      window.removeEventListener("pointerup", releaseInteraction);
-      window.removeEventListener("pointercancel", releaseInteraction);
-    };
-  }, [realSlidesCount, isFeatureMobile]);
 
   useEffect(() => {
     const track = featureCarouselRef.current;
@@ -330,16 +159,6 @@ export function LandingPage() {
       window.removeEventListener("orientationchange", recalcSlideHeight);
     };
   }, [copy.landing.sections, isFeatureMobile]);
-
-  const scrollToFeatureSlide = (index: number) => {
-    const track = featureCarouselRef.current;
-    if (!track) return;
-    const step = Math.max(track.clientWidth, 1);
-    const targetVirtualIndex = index + 1;
-    track.scrollTo({ left: step * targetVirtualIndex, behavior: "smooth" });
-    setFeatureVirtualIndex(targetVirtualIndex);
-    setFeatureSlideIndex(index);
-  };
 
   const renderFeatureSlide = (sectionId: FeatureSectionId) => {
     if (sectionId === "children") {
@@ -666,76 +485,7 @@ export function LandingPage() {
 
       <main className="px-4 pb-10 pt-5 sm:px-6 sm:pb-14 sm:pt-6">
         <div className="mx-auto max-w-[78rem] space-y-6 sm:space-y-8 lg:space-y-10">
-          <div className="landing-app-header">
-            <div className="landing-hero-reset-topline">
-              <Link
-                to="/"
-                className="landing-hero-reset-brandlink"
-                aria-label={copy.common.brandName}
-              >
-                <img src="/pwa-icon.png" alt="" className="landing-hero-reset-logo" />
-                <BrandWordmark
-                  className="landing-hero-reset-brand"
-                  ariaLabel={copy.common.brandName}
-                />
-              </Link>
-              <div className="landing-hero-reset-actions-shell">
-                <div className="landing-hero-reset-actions-inline">
-                <Link
-                  to="/legal/support"
-                  className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
-                >
-                  {language === "ru" ? "Поддержка" : "Support"}
-                </Link>
-                <Link
-                  to="/legal"
-                  className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
-                >
-                  {language === "ru" ? "Privacy · Terms" : "Privacy · Terms"}
-                </Link>
-                {shouldOpenAuthInApp ? (
-                  <button
-                    type="button"
-                    onClick={() => openInApp(loginTarget)}
-                    className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
-                  >
-                    {copy.landing.hero.login}
-                  </button>
-                ) : (
-                  <Link
-                    to="/auth?mode=login"
-                    className="landing-topline-button rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15"
-                  >
-                    {copy.landing.hero.login}
-                  </Link>
-                )}
-                <LanguageSwitch
-                  className="landing-language-switch"
-                  triggerClassName="landing-topline-button"
-                />
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className="landing-topline-button landing-theme-toggle rounded-full"
-                  aria-label={
-                    effectiveTheme === "light"
-                      ? copy.landing.hero.themeToggleAriaDark
-                      : copy.landing.hero.themeToggleAriaLight
-                  }
-                  title={
-                    effectiveTheme === "light"
-                      ? copy.landing.hero.themeToggleAriaDark
-                      : copy.landing.hero.themeToggleAriaLight
-                  }
-                >
-                  <span aria-hidden="true" className="inline-flex">
-                    {effectiveTheme === "light" ? <LandingMoonIcon /> : <LandingSunIcon />}
-                  </span>
-                </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PublicSiteHeader actions={headerActions} />
 
           <section className="landing-hero-reset">
             <div className="landing-hero-reset-inner">
@@ -780,17 +530,17 @@ export function LandingPage() {
                     {shouldOpenAuthInApp ? (
                       <button
                         type="button"
-                        onClick={() => openInApp(registerTarget)}
+                        onClick={() => openInApp(loginTarget)}
                         className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                       >
-                        {copy.landing.hero.createAccount}
+                        {copy.landing.hero.login}
                       </button>
                     ) : (
                       <Link
-                        to="/auth?mode=register"
+                        to="/auth?mode=login"
                         className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                       >
-                        {copy.landing.hero.createAccount}
+                        {copy.landing.hero.login}
                       </Link>
                     )}
                   </div>
@@ -905,7 +655,9 @@ export function LandingPage() {
 
           <div className="landing-feature-carousel">
             <div className="mb-2 px-1 md:hidden">
-              <h2 className="landing-feature-carousel-heading">Что умеет PillPath</h2>
+              <h2 className="landing-feature-carousel-heading">
+                {copy.landing.sections.carouselHeading}
+              </h2>
             </div>
             <div
               ref={featureCarouselRef}
@@ -952,7 +704,9 @@ export function LandingPage() {
                 <p className="landing-section-label inline-flex w-fit items-center rounded-full border border-[color:rgba(159,140,219,0.2)] bg-[color:rgba(205,191,241,0.34)] px-3 py-1.5 justify-start">
                   {copy.landing.sections.pricing.eyebrow}
                 </p>
-                <h2 className="landing-section-title mt-3">{copy.landing.sections.pricing.title}</h2>
+                <h2 className="landing-section-title mt-3">
+                  {copy.landing.sections.pricing.title}
+                </h2>
                 <p className="landing-section-body mt-4 max-w-[66rem] text-sm leading-7 text-muted sm:text-base">
                   {copy.landing.sections.pricing.description}
                 </p>
@@ -984,7 +738,10 @@ export function LandingPage() {
                     </div>
                     <ul className="mt-5 space-y-2.5">
                       {copy.landing.sections.pricing.free.points.map((point) => (
-                        <li key={point} className="flex items-start gap-2.5 text-sm leading-7 text-muted sm:text-[0.96rem]">
+                        <li
+                          key={point}
+                          className="flex items-start gap-2.5 text-sm leading-7 text-muted sm:text-[0.96rem]"
+                        >
                           <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:rgba(138,123,191,0.08)] text-[color:var(--color-primary)]">
                             <PricingDotIcon />
                           </span>
@@ -1021,7 +778,10 @@ export function LandingPage() {
                     </p>
                     <ul className="mt-5 space-y-2.5">
                       {copy.landing.sections.pricing.plus.points.map((point) => (
-                        <li key={point} className="flex items-start gap-2.5 text-sm leading-7 text-muted sm:text-[0.96rem]">
+                        <li
+                          key={point}
+                          className="flex items-start gap-2.5 text-sm leading-7 text-muted sm:text-[0.96rem]"
+                        >
                           <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:rgba(138,123,191,0.12)] text-[color:var(--color-primary)]">
                             <PricingCheckIcon />
                           </span>
@@ -1033,17 +793,17 @@ export function LandingPage() {
                       {shouldOpenAuthInApp ? (
                         <button
                           type="button"
-                          onClick={() => openInApp(registerTarget)}
+                          onClick={() => openInApp(loginTarget)}
                           className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                         >
-                          {copy.landing.sections.pricing.plus.cta}
+                          {copy.landing.hero.login}
                         </button>
                       ) : (
                         <Link
-                          to="/auth?mode=register"
+                          to="/auth?mode=login"
                           className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                         >
-                          {copy.landing.sections.pricing.plus.cta}
+                          {copy.landing.hero.login}
                         </Link>
                       )}
                     </div>
@@ -1113,12 +873,22 @@ export function LandingPage() {
                   {copy.landing.sections.finalCta.description}
                 </p>
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <Link
-                    to="/auth?mode=register"
-                    className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
-                  >
-                    {copy.landing.sections.finalCta.primary}
-                  </Link>
+                  {shouldOpenAuthInApp ? (
+                    <button
+                      type="button"
+                      onClick={() => openInApp(loginTarget)}
+                      className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
+                    >
+                      {copy.landing.hero.login}
+                    </button>
+                  ) : (
+                    <Link
+                      to="/auth?mode=login"
+                      className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
+                    >
+                      {copy.landing.hero.login}
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -1139,40 +909,6 @@ function HeroStethoscopeIcon() {
     >
       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
       <path d="M3 12h4.5l1.5 -6l4 12l2 -9l1.5 3h4.5" />
-    </svg>
-  );
-}
-
-function LandingMoonIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className="h-[1rem] w-[1rem] fill-none stroke-current"
-    >
-      <path
-        d="M14.5 3.5a7.9 7.9 0 1 0 6 13.05A8.7 8.7 0 0 1 14.5 3.5Z"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function LandingSunIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className="h-[1rem] w-[1rem] fill-none stroke-current"
-    >
-      <circle cx="12" cy="12" r="4" strokeWidth="1.8" />
-      <path
-        d="M12 2.75v2.1M12 19.15v2.1M21.25 12h-2.1M4.85 12h-2.1M18.54 5.46l-1.49 1.49M6.95 17.05l-1.49 1.49M18.54 18.54l-1.49-1.49M6.95 6.95 5.46 5.46"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
     </svg>
   );
 }

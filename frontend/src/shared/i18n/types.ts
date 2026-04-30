@@ -64,7 +64,6 @@ export interface Translations {
       eyebrow: string;
       titleLines: [string, string, string];
       lead: string;
-      createAccount: string;
       loginPrompt: string;
       login: string;
       highlights: string[];
@@ -106,13 +105,13 @@ export interface Translations {
       androidSteps: string[];
       ctaTitle: string;
       ctaDescription: string;
-      createAccount: string;
       login: string;
       closePreview: string;
       previewCloseLabel: string;
       previewOpenLabel: string;
     };
     sections: {
+      carouselHeading: string;
       strip: Array<{ title: string; description: string }>;
       children: {
         title: string;
