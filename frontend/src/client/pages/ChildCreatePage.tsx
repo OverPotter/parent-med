@@ -92,6 +92,10 @@ export function ChildCreatePage() {
     familyAccess?.maxChildren !== null &&
     familyAccess?.maxChildren !== undefined &&
     existingChildren.length >= familyAccess.maxChildren;
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: "/children",
+    underlaySnapshotKey: "/children",
+  });
 
   useEffect(() => {
     const page = pageRef.current;
@@ -219,10 +223,6 @@ export function ChildCreatePage() {
   const apiError =
     (createMutation.error as { response?: { data?: { detail?: string } } })?.response?.data
       ?.detail ?? null;
-  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
-    fallbackHref: "/children",
-    underlaySnapshotKey: "/children",
-  });
 
   return (
     <div

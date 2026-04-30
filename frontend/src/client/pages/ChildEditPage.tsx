@@ -73,6 +73,9 @@ export function ChildEditPage() {
     queryFn: () => fetchChild(childId!),
     enabled: !!childId && canEditProfile,
   });
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: childId ? `/children/${childId}` : "/children",
+  });
 
   const updateMutation = useMutation({
     mutationFn: ({
@@ -108,9 +111,6 @@ export function ChildEditPage() {
   if (isLoading || !child) {
     return <p className="text-sm text-muted">{common.loading}</p>;
   }
-  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
-    fallbackHref: `/children/${child.id}`,
-  });
 
   return (
     <div

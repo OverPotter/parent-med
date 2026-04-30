@@ -58,6 +58,9 @@ export function ChildFeedingPage() {
     enabled: Boolean(currentFamilyId),
     staleTime: 60 * 1000,
   });
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: childId ? `/children/${childId}` : "/children",
+  });
 
   const { data: child, isLoading: isChildLoading } = useQuery({
     queryKey: ["child", childId],
@@ -122,9 +125,6 @@ export function ChildFeedingPage() {
   const averageVolume = getAverage(
     filteredRecords.map((record) => record.formulaVolumeMl).filter(isNumber)
   );
-  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
-    fallbackHref: `/children/${child.id}`,
-  });
   return (
     <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-6">
       <IosEdgeBackGesture
