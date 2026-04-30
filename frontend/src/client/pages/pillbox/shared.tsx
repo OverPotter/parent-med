@@ -156,6 +156,9 @@ export const pillboxCopy = {
       "Напоминания по этому плану временно перестанут приходить всем участникам.",
     confirmResumePlanTitle: "Возобновить план?",
     confirmResumePlanDescription: "Напоминания по этому плану снова начнут приходить участникам.",
+    remindersNobody: "Уведомления по плану сейчас никому не отправляются.",
+    reminderRecipients: "Получатели уведомлений: {{labels}}",
+    reminderRecipientsMore: "Получатели уведомлений: {{visible}} и ещё {{remaining}}",
     cancel: "Отмена",
   },
   en: {
@@ -259,6 +262,9 @@ export const pillboxCopy = {
     confirmResumePlanTitle: "Resume this plan?",
     confirmResumePlanDescription:
       "Reminders for this plan will start coming again for participants.",
+    remindersNobody: "Plan reminders are currently not sent to anyone.",
+    reminderRecipients: "Reminder recipients: {{labels}}",
+    reminderRecipientsMore: "Reminder recipients: {{visible}} and {{remaining}} more",
     cancel: "Cancel",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;

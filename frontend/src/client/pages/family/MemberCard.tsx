@@ -152,7 +152,9 @@ export function MemberCard({
             </div>
             <div className="mt-2 grid gap-1.5">
               <p className="text-sm text-muted">
-                <span className="font-semibold text-foreground/90">Email: </span>
+                <span className="font-semibold text-foreground/90">
+                  {tFamily(language, "email")}:{" "}
+                </span>
                 <span className="break-all">
                   {member.email || tFamily(language, "emailMissing")}
                 </span>

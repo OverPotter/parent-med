@@ -38,6 +38,7 @@ export function LiveActivityRuntimeSync() {
   const authToken = useAppStore((s) => s.authToken);
   const isBootReady = useGlobalBootReady();
   const previousChildIdsRef = useRef<string[]>([]);
+  const previousLanguageRef = useRef<"ru" | "en" | null>(null);
   const lastSyncAtRef = useRef(0);
   const isSyncInFlightRef = useRef(false);
   const pendingForceSyncRef = useRef(false);
@@ -66,9 +67,16 @@ export function LiveActivityRuntimeSync() {
     }
 
     let isCancelled = false;
+    const normalizedLanguage = language === "en" ? "en" : "ru";
+    const shouldResetActivitiesForLanguage =
+      previousLanguageRef.current !== null && previousLanguageRef.current !== normalizedLanguage;
+    previousLanguageRef.current = normalizedLanguage;
 
     const sync = async () => {
-      const preferences = resolveLiveActivityPreferences(pushPreferences);
+      // Use the local mirror as the immediate source of truth so a just-disabled
+      // live activity is not recreated from stale query data before the server
+      // preferences round-trip finishes.
+      const preferences = resolveLiveActivityPreferences();
       const effectivePreferences =
         familyAccess?.canUseLiveActivities === false
           ? {
@@ -81,6 +89,13 @@ export function LiveActivityRuntimeSync() {
         lastSync: `start family=${currentFamilyId}`,
         lastError: null,
       });
+      if (isNativeIos && shouldResetActivitiesForLanguage) {
+        await stopDisabledLiveActivities({
+          sleepEnabled: false,
+          feedingEnabled: false,
+          illnessEnabled: false,
+        });
+      }
       await stopDisabledLiveActivities(effectivePreferences);
       if (familyAccess?.canUseLiveActivities === false) {
         previousChildIdsRef.current = [];
@@ -183,7 +198,7 @@ export function LiveActivityRuntimeSync() {
         ),
         activeSleepByChildId: Object.fromEntries(sleepEntries),
         activeFeedingByChildId: Object.fromEntries(feedingEntries),
-        language: language === "en" ? "en" : "ru",
+        language: normalizedLanguage,
         preferences: effectivePreferences,
         currentAccountId: accountId,
       });

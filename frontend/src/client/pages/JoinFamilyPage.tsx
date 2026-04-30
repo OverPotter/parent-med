@@ -18,12 +18,15 @@ type Mode = "register" | "login";
 const INVITE_TOKEN_STORAGE_KEY = "pm_pending_family_invite_token_v1";
 const INVITE_POST_INSTALL_KEY = "pm_pending_family_invite_post_install_v1";
 
-function roleLabel(role: string): string {
-  return role === "admin" ? "Администратор семьи" : "Участник семьи";
+function roleLabel(role: string, language: "ru" | "en"): string {
+  if (role === "admin") {
+    return language === "ru" ? "Администратор семьи" : "Family admin";
+  }
+  return language === "ru" ? "Участник семьи" : "Family member";
 }
 
 export function JoinFamilyPage() {
-  const { language } = useI18n();
+  const { language, copy } = useI18n();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -43,6 +46,106 @@ export function JoinFamilyPage() {
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const hasAttemptedPostInstallOpenRef = useRef(false);
+  const ui =
+    language === "ru"
+      ? {
+          incompleteInviteLink:
+            "Ссылка приглашения неполная. Откройте корректную ссылку из сообщения.",
+          loginFailed: "Не удалось войти в аккаунт.",
+          registerFailed: "Не удалось создать аккаунт по приглашению.",
+          acceptInviteFailed: "Не удалось принять приглашение.",
+          passwordsMismatch: "Пароли не совпадают.",
+          pageTitle: "Присоединиться к семейному кабинету",
+          pageSubtitle:
+            "У каждого взрослого свой личный аккаунт, но дети, аптечка и история болезни общие на уровне семьи.",
+          pageEyebrow: "Приглашение в семью",
+          leadsToTitle: "Куда ведёт ссылка",
+          checkingInvite: "Проверяем приглашение…",
+          family: "Семья",
+          inviteRole: "Роль по ссылке",
+          validUntil: "Действует до",
+          currentAccountTitle: "Текущий аккаунт",
+          familyName: "Имя в семье",
+          you: "Вы",
+          notSpecified: "Не указан",
+          alreadyInFamily: "Этот аккаунт уже находится в нужной семье.",
+          afterConfirmPrefix: "После подтверждения аккаунт войдёт в семью",
+          joining: "Подключаем…",
+          joinFamily: "Присоединиться к семье",
+          authTitle: "Создать аккаунт или войти",
+          authHint:
+            "Новый аккаунт можно сразу привязать к семье по этой ссылке. Если аккаунт уже есть, войдите под ним, затем подтвердите присоединение.",
+          requiredFields: "Обязательные поля",
+          requiredFieldsHint: "Для входа и регистрации нужен только email и пароль.",
+          emailHint:
+            "После входа можно будет отдельно заполнить, как вас показывать в семье.",
+          profileHint:
+            "Имя в семье и дополнительные данные можно будет заполнить уже после подключения к семейному кабинету.",
+          loginSubmit: "Войти и продолжить",
+          loginLoading: "Входим…",
+          registerSubmit: "Создать аккаунт в семье",
+          registerLoading: "Создаём аккаунт…",
+          publicTitle: "Приглашение открывается в приложении",
+          publicSubtitle:
+            "Сайт показывает, куда ведёт ссылка. Подключение к семье, вход и регистрация происходят внутри PillPath для iPhone.",
+          publicEyebrow: "Приглашение в семью",
+          nextStepTitle: "Что делать дальше",
+          nextStepDescription:
+            "Откройте PillPath на iPhone, чтобы войти, зарегистрироваться или принять приглашение в семью.",
+          downloadApp: "Скачать в App Store",
+          openApp: "Открыть приложение",
+          installedApp: "Я уже установил приложение",
+          installedAppHint:
+            "Ссылка-приглашение сохранена в этой странице. После установки вернитесь сюда и нажмите «Я уже установил приложение», чтобы открыть PillPath с этим приглашением.",
+        }
+      : {
+          incompleteInviteLink: "The invite link is incomplete. Open the full link from the message.",
+          loginFailed: "Could not sign in.",
+          registerFailed: "Could not create an account from this invite.",
+          acceptInviteFailed: "Could not accept the invite.",
+          passwordsMismatch: "Passwords do not match.",
+          pageTitle: "Join the family workspace",
+          pageSubtitle:
+            "Each adult has a personal account, while children, the medicine cabinet, and the health history stay shared at the family level.",
+          pageEyebrow: "Family invite",
+          leadsToTitle: "Where this link leads",
+          checkingInvite: "Checking the invite…",
+          family: "Family",
+          inviteRole: "Invite role",
+          validUntil: "Valid until",
+          currentAccountTitle: "Current account",
+          familyName: "Family name",
+          you: "You",
+          notSpecified: "Not set",
+          alreadyInFamily: "This account is already in the target family.",
+          afterConfirmPrefix: "After confirmation this account will join the family",
+          joining: "Joining…",
+          joinFamily: "Join family",
+          authTitle: "Create an account or sign in",
+          authHint:
+            "A new account can be linked to the family right from this link. If you already have an account, sign in first and then confirm joining.",
+          requiredFields: "Required fields",
+          requiredFieldsHint: "Only email and password are required for sign-in and registration.",
+          emailHint: "After sign-in you can separately choose how your name appears inside the family.",
+          profileHint:
+            "Your family display name and extra details can be filled in after you join the family workspace.",
+          loginSubmit: "Sign in and continue",
+          loginLoading: "Signing in…",
+          registerSubmit: "Create family account",
+          registerLoading: "Creating account…",
+          publicTitle: "This invite continues in the app",
+          publicSubtitle:
+            "The website shows where the link leads. Joining a family, signing in, and registration happen inside the PillPath iPhone app.",
+          publicEyebrow: "Family invite",
+          nextStepTitle: "What to do next",
+          nextStepDescription:
+            "Open PillPath on iPhone to sign in, create your account, or accept the family invite.",
+          downloadApp: "Download on the App Store",
+          openApp: "Open app",
+          installedApp: "I already installed the app",
+          installedAppHint:
+            "This invite link stays on this page. After installation, come back here and tap “I already installed the app” to open PillPath with the same invite.",
+        };
 
   const {
     data: invitePreview,
@@ -62,13 +165,13 @@ export function JoinFamilyPage() {
 
   const inviteErrorMessage = useMemo(() => {
     if (!token) {
-      return "Ссылка приглашения неполная. Откройте корректную ссылку из сообщения.";
+      return ui.incompleteInviteLink;
     }
     return (
       (inviteError as { response?: { data?: { detail?: string } } } | null)?.response?.data
         ?.detail ?? null
     );
-  }, [inviteError, token]);
+  }, [inviteError, token, ui.incompleteInviteLink]);
 
   const loginMutation = useMutation({
     mutationFn: (payload: { email: string; password: string; remember_me: boolean }) =>
@@ -79,7 +182,7 @@ export function JoinFamilyPage() {
       trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "join_family" });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Не удалось войти в аккаунт.");
+      setError(err.response?.data?.detail ?? ui.loginFailed);
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "login",
         entry: "join_family",
@@ -104,7 +207,7 @@ export function JoinFamilyPage() {
       navigate("/family", { replace: true });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Не удалось создать аккаунт по приглашению.");
+      setError(err.response?.data?.detail ?? ui.registerFailed);
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "register",
         entry: "join_family",
@@ -124,7 +227,7 @@ export function JoinFamilyPage() {
       navigate("/family", { replace: true });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Не удалось принять приглашение.");
+      setError(err.response?.data?.detail ?? ui.acceptInviteFailed);
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "accept_invite",
         message: normalizeClientError(err),
@@ -148,7 +251,7 @@ export function JoinFamilyPage() {
       return;
     }
     if (password !== passwordConfirm) {
-      setError("Пароли не совпадают.");
+      setError(ui.passwordsMismatch);
       return;
     }
     setError(null);
@@ -243,41 +346,25 @@ export function JoinFamilyPage() {
     return (
       <div className="min-w-0 space-y-6">
         <PageIntro
-          title={
-            language === "ru" ? "Приглашение открывается в приложении" : "This invite continues in the app"
-          }
-          subtitle={
-            language === "ru"
-              ? "Сайт показывает, куда ведёт ссылка. Подключение к семье, вход и регистрация происходят внутри PillPath для iPhone."
-              : "The website shows where the link leads. Joining a family, signing in, and registration happen inside the PillPath iPhone app."
-          }
-          eyebrow={language === "ru" ? "Приглашение в семью" : "Family invite"}
+          title={ui.publicTitle}
+          subtitle={ui.publicSubtitle}
+          eyebrow={ui.publicEyebrow}
           compactOnMobile
           hideOnMobile
         />
 
         <Surface className="p-5 sm:p-6">
-          <p className="app-card-title">
-            {language === "ru" ? "Куда ведёт ссылка" : "Where this link leads"}
-          </p>
+          <p className="app-card-title">{ui.leadsToTitle}</p>
           {isInviteLoading ? (
-            <p className="mt-3 text-sm text-muted">
-              {language === "ru" ? "Проверяем приглашение…" : "Checking the invite…"}
-            </p>
+            <p className="mt-3 text-sm text-muted">{ui.checkingInvite}</p>
           ) : inviteErrorMessage ? (
             <p className="soft-note-danger mt-3">{inviteErrorMessage}</p>
           ) : invitePreview ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <InfoCard label={ui.family} value={invitePreview.familyName} />
+              <InfoCard label={ui.inviteRole} value={roleLabel(invitePreview.familyRole, language)} />
               <InfoCard
-                label={language === "ru" ? "Семья" : "Family"}
-                value={invitePreview.familyName}
-              />
-              <InfoCard
-                label={language === "ru" ? "Роль по ссылке" : "Invite role"}
-                value={roleLabel(invitePreview.familyRole)}
-              />
-              <InfoCard
-                label={language === "ru" ? "Действует до" : "Valid until"}
+                label={ui.validUntil}
                 value={new Date(invitePreview.expiresAt).toLocaleString(
                   language === "ru" ? "ru-RU" : "en-US"
                 )}
@@ -287,15 +374,9 @@ export function JoinFamilyPage() {
         </Surface>
 
         <Surface className="auth-v3-handoff-card p-5 sm:p-6">
-          <p className="app-card-title">
-            {language === "ru" ? "Что делать дальше" : "What to do next"}
-          </p>
+          <p className="app-card-title">{ui.nextStepTitle}</p>
           <div className="auth-v3-handoff-stack mt-4">
-            <p className="text-sm leading-7 text-muted">
-              {language === "ru"
-                ? "Откройте PillPath на iPhone, чтобы войти, зарегистрироваться или принять приглашение в семью."
-                : "Open PillPath on iPhone to sign in, create your account, or accept the family invite."}
-            </p>
+            <p className="text-sm leading-7 text-muted">{ui.nextStepDescription}</p>
             <a
               href={primaryJoinFamilyHref}
               onClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
@@ -303,26 +384,15 @@ export function JoinFamilyPage() {
               rel={appStoreUrl ? "noreferrer" : undefined}
               className="auth-v3-submit auth-v3-handoff-primary text-center"
             >
-              {appStoreUrl
-                ? language === "ru"
-                  ? "Скачать в App Store"
-                  : "Download on the App Store"
-                : language === "ru"
-                  ? "Открыть приложение"
-                  : "Open app"}
+              {appStoreUrl ? ui.downloadApp : ui.openApp}
             </a>
             {appStoreUrl ? (
               <>
-                <a
-                  href={nativeJoinFamilyUrl}
-                  className="auth-v3-handoff-secondary text-center"
-                >
-                  {language === "ru" ? "Я уже установил приложение" : "I already installed the app"}
+                <a href={nativeJoinFamilyUrl} className="auth-v3-handoff-secondary text-center">
+                  {ui.installedApp}
                 </a>
                 <div className="soft-note-info rounded-2xl px-4 py-3 text-sm leading-6">
-                  {language === "ru"
-                    ? "Ссылка-приглашение сохранена в этой странице. После установки вернитесь сюда и нажмите «Я уже установил приложение», чтобы открыть PillPath с этим приглашением."
-                    : "This invite link stays on this page. After installation, come back here and tap “I already installed the app” to open PillPath with the same invite."}
+                  {ui.installedAppHint}
                 </div>
               </>
             ) : null}
@@ -335,26 +405,28 @@ export function JoinFamilyPage() {
   return (
     <div className="min-w-0 space-y-6">
       <PageIntro
-        title="Присоединиться к семейному кабинету"
-        subtitle="У каждого взрослого свой личный аккаунт, но дети, аптечка и история болезни общие на уровне семьи."
-        eyebrow="Приглашение в семью"
+        title={ui.pageTitle}
+        subtitle={ui.pageSubtitle}
+        eyebrow={ui.pageEyebrow}
         compactOnMobile
         hideOnMobile
       />
 
       <Surface className="p-5 sm:p-6">
-        <p className="app-card-title">Куда ведёт ссылка</p>
+        <p className="app-card-title">{ui.leadsToTitle}</p>
         {isInviteLoading ? (
-          <p className="mt-3 text-sm text-muted">Проверяем приглашение…</p>
+          <p className="mt-3 text-sm text-muted">{ui.checkingInvite}</p>
         ) : inviteErrorMessage ? (
           <p className="soft-note-danger mt-3">{inviteErrorMessage}</p>
         ) : invitePreview ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <InfoCard label="Семья" value={invitePreview.familyName} />
-            <InfoCard label="Роль по ссылке" value={roleLabel(invitePreview.familyRole)} />
+            <InfoCard label={ui.family} value={invitePreview.familyName} />
+            <InfoCard label={ui.inviteRole} value={roleLabel(invitePreview.familyRole, language)} />
             <InfoCard
-              label="Действует до"
-              value={new Date(invitePreview.expiresAt).toLocaleString("ru-RU")}
+              label={ui.validUntil}
+              value={new Date(invitePreview.expiresAt).toLocaleString(
+                language === "ru" ? "ru-RU" : "en-US"
+              )}
             />
           </div>
         ) : null}
@@ -362,18 +434,18 @@ export function JoinFamilyPage() {
 
       {invitePreview && isAuthenticated ? (
         <Surface className="p-5 sm:p-6">
-          <p className="app-card-title">Текущий аккаунт</p>
+          <p className="app-card-title">{ui.currentAccountTitle}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <InfoCard label="Имя в семье" value={accountDisplayName?.trim() || "Вы"} />
-            <InfoCard label="Email" value={accountEmail || "Не указан"} />
+            <InfoCard label={ui.familyName} value={accountDisplayName?.trim() || ui.you} />
+            <InfoCard label={copy.auth.fields.email} value={accountEmail || ui.notSpecified} />
           </div>
 
           {isAlreadyInTargetFamily ? (
-            <p className="soft-note-warning mt-4">Этот аккаунт уже находится в нужной семье.</p>
+            <p className="soft-note-warning mt-4">{ui.alreadyInFamily}</p>
           ) : (
             <>
               <p className="mt-4 text-sm leading-6 text-muted">
-                После подтверждения аккаунт войдёт в семью{" "}
+                {ui.afterConfirmPrefix}{" "}
                 <span className="font-medium text-foreground">{invitePreview.familyName}</span>.
               </p>
               {error && <p className="soft-note-danger mt-4">{error}</p>}
@@ -383,18 +455,15 @@ export function JoinFamilyPage() {
                 disabled={isPending}
                 className="soft-button-primary mt-4 disabled:opacity-50"
               >
-                {acceptInviteMutation.isPending ? "Подключаем…" : "Присоединиться к семье"}
+                {acceptInviteMutation.isPending ? ui.joining : ui.joinFamily}
               </button>
             </>
           )}
         </Surface>
       ) : (
         <Surface className="p-5 sm:p-6">
-          <h2 className="app-card-title">Создать аккаунт или войти</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            Новый аккаунт можно сразу привязать к семье по этой ссылке. Если аккаунт уже есть,
-            войдите под ним, затем подтвердите присоединение.
-          </p>
+          <h2 className="app-card-title">{ui.authTitle}</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">{ui.authHint}</p>
 
           <div className="soft-panel-muted mt-6 flex rounded-[20px] p-1.5">
             <button
@@ -404,7 +473,7 @@ export function JoinFamilyPage() {
                 mode === "register" ? "soft-tab-active" : "soft-tab"
               }`}
             >
-              Регистрация
+              {copy.auth.page.registerTab}
             </button>
             <button
               type="button"
@@ -413,7 +482,7 @@ export function JoinFamilyPage() {
                 mode === "login" ? "soft-tab-active" : "soft-tab"
               }`}
             >
-              Вход
+              {copy.auth.page.loginTab}
             </button>
           </div>
 
@@ -421,40 +490,36 @@ export function JoinFamilyPage() {
             <div className="soft-panel rounded-[24px] p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="app-card-title">Обязательные поля</p>
-                  <p className="soft-field-hint mt-1">
-                    Для входа и регистрации нужен только email и пароль.
-                  </p>
+                  <p className="app-card-title">{ui.requiredFields}</p>
+                  <p className="soft-field-hint mt-1">{ui.requiredFieldsHint}</p>
                 </div>
               </div>
 
               <div className="mt-4 grid gap-3">
                 <label className="block">
-                  <span className="soft-field-label">Email</span>
+                  <span className="soft-field-label">{copy.auth.fields.email}</span>
                   <input
                     name="username"
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     className="soft-input w-full px-4"
-                    placeholder="you@example.com"
+                    placeholder={copy.auth.fields.emailPlaceholder}
                     autoComplete="username"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
                     inputMode="email"
                   />
-                  <span className="soft-field-hint">
-                    После входа можно будет отдельно заполнить, как вас показывать в семье.
-                  </span>
+                  <span className="soft-field-hint">{ui.emailHint}</span>
                 </label>
 
                 <div className={`grid gap-3 ${isRegisterMode ? "sm:grid-cols-2" : "grid-cols-1"}`}>
                   <AuthPasswordField
-                    label="Пароль"
+                    label={copy.auth.fields.password}
                     value={password}
                     onChange={setPassword}
-                    placeholder="Минимум 8 символов"
+                    placeholder={copy.auth.fields.passwordPlaceholder}
                     isVisible={isPasswordVisible}
                     onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
                     name={isRegisterMode ? "new-password" : "current-password"}
@@ -462,10 +527,10 @@ export function JoinFamilyPage() {
                   />
                   {isRegisterMode && (
                     <AuthPasswordField
-                      label="Повторите пароль"
+                      label={copy.auth.fields.passwordConfirm}
                       value={passwordConfirm}
                       onChange={setPasswordConfirm}
-                      placeholder="Повторите пароль"
+                      placeholder={copy.auth.fields.passwordConfirmPlaceholder}
                       isVisible={isPasswordVisible}
                       onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
                       name="new-password-confirm"
@@ -479,13 +544,10 @@ export function JoinFamilyPage() {
             <RememberMeCard checked={rememberMe} onChange={setRememberMe} />
 
             {isRegisterMode && (
-              <p className="soft-field-hint">
-                Имя в семье и дополнительные данные можно будет заполнить уже после подключения к
-                семейному кабинету.
-              </p>
+              <p className="soft-field-hint">{ui.profileHint}</p>
             )}
 
-            {passwordsMismatch && <p className="soft-note-warning">Пароли должны совпадать.</p>}
+            {passwordsMismatch && <p className="soft-note-warning">{copy.auth.page.passwordsMismatch}</p>}
             {error && <p className="soft-note-danger">{error}</p>}
 
             <button
@@ -501,11 +563,11 @@ export function JoinFamilyPage() {
             >
               {mode === "login"
                 ? loginMutation.isPending
-                  ? "Входим…"
-                  : "Войти и продолжить"
+                  ? ui.loginLoading
+                  : ui.loginSubmit
                 : registerMutation.isPending
-                  ? "Создаём аккаунт…"
-                  : "Создать аккаунт в семье"}
+                  ? ui.registerLoading
+                  : ui.registerSubmit}
             </button>
           </form>
         </Surface>

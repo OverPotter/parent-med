@@ -372,7 +372,7 @@ function PasswordChangeDialog({
     <FullscreenOverlay
       isOpen={isOpen}
       onClose={handleClose}
-      backLabel={language === "ru" ? "← Настройки" : "← Settings"}
+      backLabel={tSettings(language, "settingsBack")}
       title={tSettings(language, "changePassword")}
       hint={tSettings(language, "changePasswordHint")}
       maxWidthClassName="max-w-[32rem]"
@@ -382,6 +382,7 @@ function PasswordChangeDialog({
         <div className="p-4 sm:p-5" onFocusCapture={ensureSaveButtonVisible}>
           <div className="grid gap-4">
             <PasswordField
+              language={language}
               label={tSettings(language, "currentPassword")}
               value={currentPassword}
               onChange={onCurrentPasswordChange}
@@ -391,6 +392,7 @@ function PasswordChangeDialog({
               onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
             />
             <PasswordField
+              language={language}
               label={tSettings(language, "newPassword")}
               value={newPassword}
               onChange={onNewPasswordChange}
@@ -400,6 +402,7 @@ function PasswordChangeDialog({
               onToggleVisibility={() => setIsPasswordVisible((current) => !current)}
             />
             <PasswordField
+              language={language}
               label={tSettings(language, "confirmNewPassword")}
               value={confirmPassword}
               onChange={onConfirmPasswordChange}
@@ -435,6 +438,7 @@ function PasswordChangeDialog({
 }
 
 function PasswordField({
+  language,
   label,
   value,
   onChange,
@@ -443,6 +447,7 @@ function PasswordField({
   isVisible,
   onToggleVisibility,
 }: {
+  language: AppLanguage;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -471,8 +476,12 @@ function PasswordField({
           type="button"
           onClick={onToggleVisibility}
           className="absolute right-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground"
-          aria-label={isVisible ? "Скрыть пароль" : "Показать пароль"}
-          title={isVisible ? "Скрыть пароль" : "Показать пароль"}
+          aria-label={
+            isVisible ? tSettings(language, "hidePassword") : tSettings(language, "showPassword")
+          }
+          title={
+            isVisible ? tSettings(language, "hidePassword") : tSettings(language, "showPassword")
+          }
         >
           {isVisible ? <EyeOffIcon /> : <EyeIcon />}
         </button>
@@ -559,7 +568,7 @@ function RecoveryCodeDialog({
     <FullscreenOverlay
       isOpen={isOpen}
       onClose={handleClose}
-      backLabel={language === "ru" ? "← Настройки" : "← Settings"}
+      backLabel={tSettings(language, "settingsBack")}
       title={tSettings(language, "recoveryCode")}
       hint={tSettings(language, "recoveryCodeHint")}
       maxWidthClassName="max-w-[32rem]"

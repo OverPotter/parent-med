@@ -192,11 +192,6 @@ export function SettingsPage() {
       };
   const family = families.find((item) => item.id === currentFamilyId) ?? families[0] ?? null;
   const isFamilyOwner = Boolean(family?.ownerAccountId && family.ownerAccountId === accountId);
-  const familyDeleteBlockedBySubscription =
-    isFamilyOwner &&
-    ["trialing", "active", "grace", "canceled"].includes(
-      familyAccess?.subscriptionStatus ?? family?.subscriptionStatus ?? "inactive"
-    );
   const subscriptionStatus = familyAccess?.subscriptionStatus ?? family?.subscriptionStatus ?? "inactive";
   const {
     upgradeToPlus,
@@ -212,32 +207,12 @@ export function SettingsPage() {
     canManageSubscription,
     subscriptionStatus,
   });
-  const subscriptionAutoRenewEnabled =
-    subscriptionStatus !== "canceled";
   const subscriptionExpiresAt = family?.subscriptionExpiresAt ?? null;
   const subscriptionStatusLabel = getSubscriptionStatusLabel(language, subscriptionStatus);
-  const familyDangerActionLabel = familyDeleteBlockedBySubscription
-    ? tSettings(language, "cancelSubscription")
-    : tSettings(language, "deleteFamily");
-  const familyDangerActionDescription = familyDeleteBlockedBySubscription
-    ? [
-        tSettings(language, "cancelSubscriptionDescription"),
-        subscriptionExpiresAt
-          ? `${tSettings(language, "subscriptionActiveUntil")}: ${formatDate(
-              subscriptionExpiresAt
-            )}`
-          : null,
-        subscriptionAutoRenewEnabled
-          ? tSettings(language, "subscriptionAutoRenewOn")
-          : tSettings(language, "subscriptionAutoRenewOff"),
-      ]
-        .filter(Boolean)
-        .join(" ")
-    : tSettings(language, "deleteFamilyDescription");
+  const familyDangerActionLabel = tSettings(language, "deleteFamily");
+  const familyDangerActionDescription = tSettings(language, "deleteFamilyDescription");
   const liveActivitiesLockedReason = !canUseLiveActivities
-    ? language === "ru"
-      ? "Откройте Live Activities в Plus."
-      : "Unlock Live Activities in Plus."
+    ? tSettings(language, "liveActivitiesLockedReason")
     : null;
 
   const updatePushPreferencesMutation = useMutation({
@@ -316,31 +291,21 @@ export function SettingsPage() {
     mutationFn: sendTestPushNotification,
     onMutate: () => {
       setPushError(null);
-      setTestPushStatus(language === "ru" ? "Отправляем тестовый push..." : "Sending test push...");
+      setTestPushStatus(tSettings(language, "testPushSending"));
     },
     onSuccess: (result) => {
       if (result.sent) {
         setTestPushStatus(
-          language === "ru"
-            ? `Тестовый push отправлен. Подписок: ${result.subscriptionCount}.`
-            : `Test push sent. Subscriptions: ${result.subscriptionCount}.`
+          tSettings(language, "testPushSent").replace("{{count}}", String(result.subscriptionCount))
         );
         return;
       }
-      setTestPushStatus(
-        language === "ru"
-          ? "У аккаунта нет активных push-подписок."
-          : "This account has no active push subscriptions."
-      );
+      setTestPushStatus(tSettings(language, "testPushNoSubscriptions"));
     },
     onError: (error) => {
       setTestPushStatus(null);
       setPushError(
-        error instanceof Error
-          ? error.message
-          : language === "ru"
-            ? "Тестовый push не отправлен"
-            : "Test push failed"
+        error instanceof Error ? error.message : tSettings(language, "testPushFailed")
       );
     },
   });
@@ -819,7 +784,7 @@ export function SettingsPage() {
             to="/more"
             className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
-            {language === "ru" ? "← Ещё" : "← More"}
+            {tSettings(language, "moreBack")}
           </Link>
         }
         compactOnMobile
@@ -832,7 +797,7 @@ export function SettingsPage() {
             to="/more"
             className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
-            {language === "ru" ? "← Ещё" : "← More"}
+            {tSettings(language, "moreBack")}
           </Link>
           <h1 className="app-mobile-section-intro__title">{tSettings(language, "title")}</h1>
           <p className="app-mobile-section-intro__hint">{tSettings(language, "mobileHint")}</p>
@@ -931,7 +896,7 @@ export function SettingsPage() {
                 disabled={isUpgradePending || !canManageSubscription}
                 className="soft-pill app-profile-action min-h-[2.08rem] w-full px-2.75 text-[0.69rem] tracking-[-0.022em] disabled:opacity-50 sm:min-h-[2.16rem] sm:px-3 sm:text-[0.71rem]"
               >
-                {language === "ru" ? "Восстановить покупки" : "Restore purchases"}
+                {tSettings(language, "subscriptionRestorePurchases")}
               </button>
             </div>
           }
@@ -1014,10 +979,6 @@ export function SettingsPage() {
         }}
         onDeleteFamily={() => {
           setDeleteFamilyError(null);
-          if (familyDeleteBlockedBySubscription) {
-            handleManageSubscription();
-            return;
-          }
           setIsDeleteFamilyConfirmOpen(true);
         }}
       />

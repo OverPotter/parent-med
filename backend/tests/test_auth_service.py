@@ -933,7 +933,7 @@ async def test_delete_family_requires_owner() -> None:
 
 
 @pytest.mark.asyncio
-async def test_delete_family_is_blocked_while_subscription_is_active() -> None:
+async def test_delete_family_soft_deletes_accounts_even_with_active_subscription() -> None:
     family = Family(
         id=uuid4(),
         name="Моя семья",
@@ -941,20 +941,38 @@ async def test_delete_family_is_blocked_while_subscription_is_active() -> None:
         subscription_status="active",
     )
     account_repo = StubAccountRepository()
+    session_repo = StubSessionRepository()
     owner = build_account(
         family_id=family.id,
         email="owner@example.com",
         display_name="Владелец",
         family_role="owner",
     )
+    member = build_account(
+        family_id=family.id,
+        email="member@example.com",
+        display_name="Участник",
+        family_role="member",
+    )
     family.owner_account_id = owner.id
     await account_repo.add(owner)
+    await account_repo.add(member)
     service = AuthService(
         account_repo=account_repo,
-        session_repo=StubSessionRepository(),
+        session_repo=session_repo,
         family_repo=StubFamilyRepository(family),
         family_invite_repo=StubFamilyInviteRepository(None),
     )
 
-    with pytest.raises(ValidationError, match="Сначала отмените семейную подписку"):
-        await service.delete_family(owner.id)
+    await service.delete_family(owner.id)
+
+    deleted_owner = await account_repo.get_by_id(owner.id)
+    deleted_member = await account_repo.get_by_id(member.id)
+
+    assert deleted_owner is not None
+    assert deleted_member is not None
+    assert deleted_owner.family_role == "deleted"
+    assert deleted_member.family_role == "deleted"
+    assert deleted_owner.email is None
+    assert deleted_member.email is None
+    assert session_repo.deleted_account_ids == [owner.id, member.id]

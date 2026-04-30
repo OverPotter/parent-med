@@ -348,11 +348,6 @@ class AuthService(BaseAuthService):
             raise ForbiddenError("Семья не найдена", code="FAMILY_NOT_LINKED")
         if family.owner_account_id != account.id:
             raise ForbiddenError("Только владелец семьи может удалить семью")
-        if family.subscription_status in {"active", "trialing", "grace", "canceled"}:
-            raise ValidationError(
-                "Сначала отмените семейную подписку или дождитесь окончания периода доступа",
-                code="FAMILY_SUBSCRIPTION_ACTIVE",
-            )
 
         family_accounts = await self._account_repo.list_by_family_id(account.family_id)
         active_accounts = [item for item in family_accounts if item.family_role != "deleted"]

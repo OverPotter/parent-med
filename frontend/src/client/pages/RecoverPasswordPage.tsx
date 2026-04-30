@@ -169,14 +169,24 @@ export function RecoverPasswordPage() {
     const nativeRecoveryUrl = buildNativeAppUrl("/recover-password");
     const appStoreUrl = getAppStoreUrl();
     const primaryRecoveryHref = appStoreUrl || nativeRecoveryUrl;
-    const title =
+    const publicUi =
       language === "ru"
-        ? "Сброс пароля доступен в приложении для iPhone"
-        : "Password reset happens in the iPhone app";
-    const description =
-      language === "ru"
-        ? "Сайт остаётся для знакомства с сервисом, юридической информации и перехода в приложение. Восстановление доступа выполняется внутри PillPath для iPhone."
-        : "The website stays for product discovery, legal pages, and app handoff. Account recovery continues inside the PillPath iPhone app.";
+        ? {
+            title: "Сброс пароля доступен в приложении для iPhone",
+            description:
+              "Сайт остаётся для знакомства с сервисом, юридической информации и перехода в приложение. Восстановление доступа выполняется внутри PillPath для iPhone.",
+            download: "Скачать в App Store",
+            open: "Открыть приложение",
+            back: "Вернуться на сайт",
+          }
+        : {
+            title: "Password reset happens in the iPhone app",
+            description:
+              "The website stays for product discovery, legal pages, and app handoff. Account recovery continues inside the PillPath iPhone app.",
+            download: "Download on the App Store",
+            open: "Open app",
+            back: "Back to website",
+          };
 
     return (
       <div className="auth-v3-page min-h-screen text-foreground">
@@ -233,15 +243,15 @@ export function RecoverPasswordPage() {
             </div>
 
             <div className="auth-v3-hero">
-              <p className="auth-v3-subtitle">{description}</p>
+              <p className="auth-v3-subtitle">{publicUi.description}</p>
             </div>
 
             <section className="auth-v3-panel auth-v3-panel-compact soft-page-intro">
               <div className="auth-v3-card auth-v3-handoff-card space-y-4">
                 <div>
-                  <p className="auth-v3-section-copy">{title}</p>
+                  <p className="auth-v3-section-copy">{publicUi.title}</p>
                 </div>
-                <p className="text-sm leading-7 text-muted">{description}</p>
+                <p className="text-sm leading-7 text-muted">{publicUi.description}</p>
                 <div className="auth-v3-handoff-stack">
                   <a
                     href={primaryRecoveryHref}
@@ -249,21 +259,15 @@ export function RecoverPasswordPage() {
                     target={appStoreUrl ? "_blank" : undefined}
                     rel={appStoreUrl ? "noreferrer" : undefined}
                   >
-                    {appStoreUrl
-                      ? language === "ru"
-                        ? "Скачать в App Store"
-                        : "Download on the App Store"
-                      : language === "ru"
-                        ? "Открыть приложение"
-                        : "Open app"}
+                    {appStoreUrl ? publicUi.download : publicUi.open}
                   </a>
                   {appStoreUrl ? (
                     <a href={nativeRecoveryUrl} className="auth-v3-handoff-secondary text-center">
-                      {language === "ru" ? "Открыть приложение" : "Open app"}
+                      {publicUi.open}
                     </a>
                   ) : null}
                   <Link to="/" className="auth-v3-linkish auth-v3-handoff-back text-center">
-                    {language === "ru" ? "Вернуться на сайт" : "Back to website"}
+                    {publicUi.back}
                   </Link>
                 </div>
               </div>
@@ -391,14 +395,14 @@ export function RecoverPasswordPage() {
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="soft-field-label">Email</span>
+                  <span className="soft-field-label">{copy.auth.fields.email}</span>
                   <input
                     name="username"
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     className="soft-input mt-2 w-full px-4"
-                    placeholder="you@example.com"
+                    placeholder={copy.auth.fields.emailPlaceholder}
                     autoComplete="username"
                     autoCapitalize="none"
                     autoCorrect="off"
@@ -447,7 +451,7 @@ export function RecoverPasswordPage() {
               </div>
 
               {passwordsMismatch ? (
-                <p className="soft-note-warning">Пароли должны совпадать.</p>
+                <p className="soft-note-warning">{copy.auth.page.passwordsMismatch}</p>
               ) : null}
               {pendingSession ? <p className="soft-note-success">{ui.success}</p> : null}
               {resetMutation.isError ? (

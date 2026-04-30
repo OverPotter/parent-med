@@ -169,20 +169,14 @@ export function PillboxPage() {
       .map(getAccountDisplayLabel);
 
     if (labels.length === 0) {
-      return language === "ru"
-        ? "Уведомления по плану сейчас никому не отправляются."
-        : "Plan reminders are currently not sent to anyone.";
+      return tPillbox(language, "remindersNobody");
     }
     if (labels.length <= 2) {
-      return language === "ru"
-        ? `Получатели уведомлений: ${labels.join(", ")}`
-        : `Reminder recipients: ${labels.join(", ")}`;
+      return tPillbox(language, "reminderRecipients", { labels: labels.join(", ") });
     }
     const visible = labels.slice(0, 2).join(", ");
     const remaining = labels.length - 2;
-    return language === "ru"
-      ? `Получатели уведомлений: ${visible} и ещё ${remaining}`
-      : `Reminder recipients: ${visible} and ${remaining} more`;
+    return tPillbox(language, "reminderRecipientsMore", { visible, remaining });
   }, [draft, eligiblePillboxMembers, language]);
   const {
     data: planSummaries = [],
@@ -214,20 +208,14 @@ export function PillboxPage() {
       .map(getAccountDisplayLabel);
 
     if (labels.length === 0) {
-      return language === "ru"
-        ? "Уведомления по плану сейчас никому не отправляются."
-        : "Plan reminders are currently not sent to anyone.";
+      return tPillbox(language, "remindersNobody");
     }
     if (labels.length <= 2) {
-      return language === "ru"
-        ? `Получатели уведомлений: ${labels.join(", ")}`
-        : `Reminder recipients: ${labels.join(", ")}`;
+      return tPillbox(language, "reminderRecipients", { labels: labels.join(", ") });
     }
     const visible = labels.slice(0, 2).join(", ");
     const remaining = labels.length - 2;
-    return language === "ru"
-      ? `Получатели уведомлений: ${visible} и ещё ${remaining}`
-      : `Reminder recipients: ${visible} and ${remaining} more`;
+    return tPillbox(language, "reminderRecipientsMore", { visible, remaining });
   }, [eligiblePillboxMembers, language, selectedPlan]);
   const selectedPlanSubscriptionLocked = selectedPlan
     ? premiumActive === false &&

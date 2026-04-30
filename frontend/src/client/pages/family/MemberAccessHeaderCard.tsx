@@ -54,7 +54,7 @@ export function MemberAccessHeaderCard({
               </span>
             </div>
             <p className="text-sm text-muted">
-              <span className="font-semibold text-foreground/90">Email: </span>
+              <span className="font-semibold text-foreground/90">{tFamily(language, "email")}: </span>
               {member.email || tFamily(language, "emailMissing")}
             </p>
           </div>

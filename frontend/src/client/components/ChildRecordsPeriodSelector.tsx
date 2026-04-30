@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { childCalendarCopy } from "@client/pages/child-calendar/copy";
 import { CalendarPickerDialog as SharedCalendarPickerDialog } from "@shared/components/CalendarPickerDialog";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import { getLocalIsoDate } from "@shared/utils/date";
@@ -106,13 +107,14 @@ function PeriodOptionsDialog({
   onClose: () => void;
   onSelect: (value: ChildRecordsPeriod) => void;
 }) {
+  const text = childCalendarCopy[language];
   return (
     <OverlayDialog
       isOpen={isOpen}
       onClose={onClose}
       placement="bottom"
       zIndexClassName="z-[890]"
-      backdropAriaLabel={language === "ru" ? "Закрыть выбор периода" : "Close period options"}
+      backdropAriaLabel={text.closePeriodDialog}
       containerClassName="flex items-end"
       backdropClassName="bg-[rgba(15,23,42,0.32)]"
     >
@@ -123,16 +125,10 @@ function PeriodOptionsDialog({
         <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[color:color-mix(in_srgb,var(--color-foreground)_16%,transparent)]" />
         <div className="space-y-1.5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
-            {language === "ru" ? "За период" : "For period"}
+            {text.summaryPeriodPrefix}
           </p>
-          <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
-            {language === "ru" ? "Выберите период" : "Choose period"}
-          </h2>
-          <p className="text-sm leading-5 text-muted">
-            {language === "ru"
-              ? "Это влияет на ленту, календарь и графики."
-              : "This updates feed, calendar and charts."}
-          </p>
+          <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">{text.choosePeriod}</h2>
+          <p className="text-sm leading-5 text-muted">{text.periodAffectsFeed}</p>
         </div>
 
         <div className="soft-choice-list mt-4">
@@ -151,7 +147,7 @@ function PeriodOptionsDialog({
                   {getChildRecordsPeriodOptionLabel(option, language)}
                 </span>
                 <span className="soft-choice-check">
-                  {isActive ? "✓" : language === "ru" ? "Выбрать" : "Select"}
+                  {isActive ? "✓" : text.select}
                 </span>
               </button>
             );
@@ -238,6 +234,7 @@ function CustomPeriodDialog({
   onCancel: () => void;
   onApply: () => void;
 }) {
+  const text = childCalendarCopy[language];
   const [calendarEdge, setCalendarEdge] = useState<"start" | "end" | null>(null);
 
   useEffect(() => {
@@ -278,32 +275,26 @@ function CustomPeriodDialog({
       isOpen={isOpen}
       onClose={onCancel}
       zIndexClassName="z-[900]"
-      backdropAriaLabel={language === "ru" ? "Закрыть выбор периода" : "Close period picker"}
+      backdropAriaLabel={text.closePeriodDialog}
     >
       <div className="soft-panel relative z-[1] max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-[30px] border border-[color:color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_94%,var(--color-background)_6%)] p-4 shadow-[0_32px_90px_rgba(15,23,42,0.24)] sm:p-5">
         <div className="mb-4 h-1.5 w-14 rounded-full bg-primary/45" aria-hidden="true" />
         <div className="space-y-1.5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
-            {language === "ru" ? "За период" : "For period"}
+            {text.summaryPeriodPrefix}
           </p>
-          <h2 className="app-card-title text-[1.15rem]">
-            {language === "ru" ? "Выбор даты" : "Custom dates"}
-          </h2>
-          <p className="text-sm leading-5 text-muted">
-            {language === "ru"
-              ? "Выберите период для ленты и краткой аналитики."
-              : "Choose the period for feed and quick summary."}
-          </p>
+          <h2 className="app-card-title text-[1.15rem]">{text.customDatesTitle}</h2>
+          <p className="text-sm leading-5 text-muted">{text.customDatesHint}</p>
         </div>
 
         <div className="mt-4 grid gap-3">
           <DateRangeButton
-            label={language === "ru" ? "Начало" : "Start"}
+            label={text.dateFrom}
             value={formatShortDate(parseLocalDate(startDate), language)}
             onClick={() => setCalendarEdge("start")}
           />
           <DateRangeButton
-            label={language === "ru" ? "Конец" : "End"}
+            label={text.dateTo}
             value={formatShortDate(parseLocalDate(endDate), language)}
             onClick={() => setCalendarEdge("end")}
           />
@@ -315,14 +306,14 @@ function CustomPeriodDialog({
             onClick={onCancel}
             className="soft-pill app-profile-action min-h-[2.9rem] px-4 text-sm font-extrabold"
           >
-            {language === "ru" ? "Отмена" : "Cancel"}
+            {text.cancel}
           </button>
           <button
             type="button"
             onClick={onApply}
             className="soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.9rem] px-4 text-sm font-extrabold"
           >
-            {language === "ru" ? "Применить" : "Apply"}
+            {text.apply}
           </button>
         </div>
       </div>
@@ -330,13 +321,7 @@ function CustomPeriodDialog({
       <CalendarPickerDialog
         isOpen={calendarEdge !== null}
         title={
-          calendarEdge === "start"
-            ? language === "ru"
-              ? "Начало"
-              : "Start"
-            : language === "ru"
-              ? "Конец"
-              : "End"
+          calendarEdge === "start" ? text.dateFrom : text.dateTo
         }
         language={language}
         startDate={startDate}

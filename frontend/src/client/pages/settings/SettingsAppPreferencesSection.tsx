@@ -29,17 +29,17 @@ export function SettingsAppPreferencesSection({
     {
       value: "light",
       label: tSettings(language, "themeLight"),
-      shortLabel: language === "ru" ? "День" : "Day",
+      shortLabel: tSettings(language, "themeShortLight"),
     },
     {
       value: "dark",
       label: tSettings(language, "themeDark"),
-      shortLabel: language === "ru" ? "Ночь" : "Night",
+      shortLabel: tSettings(language, "themeShortDark"),
     },
     {
       value: "system",
       label: tSettings(language, "themeAuto"),
-      shortLabel: language === "ru" ? "Авто" : "Auto",
+      shortLabel: tSettings(language, "themeShortAuto"),
     },
   ];
 
@@ -47,12 +47,12 @@ export function SettingsAppPreferencesSection({
     {
       value: "hours",
       label: tSettings(language, "hours"),
-      shortLabel: language === "ru" ? "Часы" : "Hours",
+      shortLabel: tSettings(language, "hoursShort"),
     },
     {
       value: "minutes",
       label: tSettings(language, "minutes"),
-      shortLabel: language === "ru" ? "Мин." : "Min.",
+      shortLabel: tSettings(language, "minutesShort"),
     },
   ];
 
@@ -74,11 +74,11 @@ export function SettingsAppPreferencesSection({
             value={theme}
             options={themeOptions}
             onChange={async (nextTheme) => setTheme(nextTheme)}
-            dialogTitle={language === "ru" ? "Выберите тему" : "Choose theme"}
+            dialogTitle={tSettings(language, "chooseTheme")}
             dialogHint={tSettings(language, "interfaceThemeHint")}
-            dialogAriaLabel={language === "ru" ? "Выбор темы" : "Choose theme"}
+            dialogAriaLabel={tSettings(language, "chooseThemeAria")}
             triggerClassName={settingsChoiceTriggerClassName}
-            selectActionLabel={language === "ru" ? "Выбрать" : "Select"}
+            selectActionLabel={tSettings(language, "chooseAction")}
           />
         }
       >
@@ -93,11 +93,11 @@ export function SettingsAppPreferencesSection({
             value={medicationIntervalUnit}
             options={medicationPlanOptions}
             onChange={async (nextUnit) => setMedicationIntervalUnit(nextUnit)}
-            dialogTitle={language === "ru" ? "Единица интервала" : "Interval unit"}
+            dialogTitle={tSettings(language, "intervalUnitTitle")}
             dialogHint={tSettings(language, "medicationPlansHint")}
-            dialogAriaLabel={language === "ru" ? "Единица интервала" : "Interval unit"}
+            dialogAriaLabel={tSettings(language, "intervalUnitTitle")}
             triggerClassName={settingsChoiceTriggerClassName}
-            selectActionLabel={language === "ru" ? "Выбрать" : "Select"}
+            selectActionLabel={tSettings(language, "chooseAction")}
           />
         }
       >
@@ -152,11 +152,11 @@ function SettingsLanguageField({ language }: { language: AppLanguage }) {
           }
         }
       }}
-      dialogTitle={language === "ru" ? "Выберите язык" : "Choose language"}
+      dialogTitle={tSettings(language, "chooseLanguage")}
       dialogHint={tSettings(language, "interfaceLanguageHint")}
-      dialogAriaLabel={language === "ru" ? "Выбор языка" : "Choose language"}
+      dialogAriaLabel={tSettings(language, "chooseLanguageAria")}
       triggerClassName={settingsChoiceTriggerClassName}
-      selectActionLabel={language === "ru" ? "Выбрать" : "Select"}
+      selectActionLabel={tSettings(language, "chooseAction")}
       disabled={isChangingLanguage || isPersisting}
     />
   );

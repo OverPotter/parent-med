@@ -4,6 +4,8 @@ export const familyCopy = {
   ru: {
     title: "Семья",
     subtitle: "Родители и близкие работают в одном семейном пространстве.",
+    moreBack: "← Ещё",
+    familyBack: "← Семья",
     loadFamilyFailed: "Не удалось загрузить семью.",
     loadMembersFailed: "Не удалось загрузить участников.",
     updateFamilyFailed: "Не удалось обновить название семьи.",
@@ -26,6 +28,8 @@ export const familyCopy = {
     membersDescription:
       "Владелец семьи приглашает участников. Администраторы помогают управлять доступом для обычных участников.",
     yourProfileTitle: "Вы",
+    currentNoAccessDescription:
+      "Сейчас у вас нет доступа к данным семьи. Обратитесь к владельцу семьи или администратору.",
     yourProfileDescription: "Ваш профиль и ваши настройки внутри семьи.",
     otherMembersTitle: "Остальные участники",
     otherMembersDescription: "Полный список участников и доступов открыт на отдельной странице.",
@@ -45,6 +49,7 @@ export const familyCopy = {
     ownerOnly: "Только для владельца семьи",
     creatingInvite: "Готовим приглашение…",
     createInvite: "Пригласить",
+    invitesPlusOnly: "Приглашения доступны в Plus.",
     newLink: "Новая ссылка",
     validUntil: "Действует до",
     inviteCopied: "Ссылка скопирована",
@@ -53,6 +58,8 @@ export const familyCopy = {
     inviteShareFailed: "Не удалось открыть меню «Поделиться».",
     shareInvite: "Поделиться",
     copyInvite: "Скопировать ссылку",
+    inviteShareTextPrefix: "Присоединяйся к нашей семье в приложении",
+    inviteShareTextSuffix: "Открой приглашение:",
     familyOwner: "Владелец семьи",
     admin: "Администратор",
     member: "Участник",
@@ -104,9 +111,18 @@ export const familyCopy = {
     selectedChildren: "Выбранные дети",
     selectedChildrenEmpty: "Дети не выбраны",
     selectedChildrenAction: "Выбрать детей",
+    selectedChildrenHint: "Сразу выберите всех детей или только тех, кого увидит участник.",
     childrenAccess: "Доступ к детям / журналу",
+    childrenAccessHint:
+      "Нет доступа — дети и журнал скрыты. Только смотреть — без записей. Может записывать уход — температуру, кормление, сон и факты по болезни. Полный доступ — может ещё и менять сам сценарий.",
     cabinetAccess: "Аптечка",
+    cabinetAccessHint:
+      "Только смотреть — видит аптечку и сроки. Полный доступ — добавляет, редактирует и удаляет лекарства.",
     pillboxAccess: "Таблетница",
+    pillboxAccessHintFull:
+      "Только смотреть — видит план. Может отмечать приём — подтверждает, что лекарство дали. Полный доступ — меняет план и участников.",
+    pillboxAccessHintLimited:
+      "Если к детям нет полного доступа, в приёмах можно оставить только просмотр или отметку приёма.",
     view: "Только просмотр",
     actAccess: "Можно отмечать",
     editAccess: "Можно менять",
@@ -120,6 +136,9 @@ export const familyCopy = {
     pillboxLead: "Полный доступ",
     hidden: "Нет доступа",
     cabinetPush: "Может получать уведомления",
+    cabinetPushLabel: "Уведомления по аптечке",
+    cabinetPushHint:
+      "Если включено, push по срокам и просрочке будут приходить этому участнику.",
     manageAccess: "Настроить",
     hideAccess: "Скрыть",
     saveAccess: "Сохранить настройки доступа",
@@ -132,10 +151,23 @@ export const familyCopy = {
     noFamilyAccessTitle: "Нет доступа",
     noFamilyAccessDescription:
       "Сейчас участник не увидит детей, приёмы и аптечку. Если нужен доступ, его сможет открыть владелец семьи или администратор.",
+    pillboxActNotice:
+      "Участник сможет отметить, что лекарство дали, но не сможет менять сам план.",
+    chooseAriaPrefix: "Выбрать",
+    memberPickerHint: "Выберите участника, чтобы открыть его настройки.",
+    devLatestInviteTitle: "Dev: последнее приглашение",
+    devLatestInviteHintWithFamily:
+      "Быстрое подключение к семье «{familyName}» без копирования ссылки.",
+    devLatestInviteHintWithoutFamily:
+      "Если owner уже создал приглашение на другом симуляторе, можно подключиться без ссылки.",
+    devJoinLatestInvite: "Подключиться к последнему invite",
+    devJoining: "Подключаем…",
   },
   en: {
     title: "Family",
     subtitle: "Parents and relatives work together in one family space.",
+    moreBack: "← More",
+    familyBack: "← Family",
     loadFamilyFailed: "Could not load family.",
     loadMembersFailed: "Could not load members.",
     updateFamilyFailed: "Could not update the family name.",
@@ -158,6 +190,8 @@ export const familyCopy = {
     membersDescription:
       "The family owner invites members. Admins help manage access for regular members.",
     yourProfileTitle: "You",
+    currentNoAccessDescription:
+      "You currently do not have access to family data. Contact the family owner or an admin.",
     yourProfileDescription: "Your profile and your settings inside the family.",
     otherMembersTitle: "Other members",
     otherMembersDescription: "The full member list and access settings are on a separate page.",
@@ -177,6 +211,7 @@ export const familyCopy = {
     ownerOnly: "Family owner only",
     creatingInvite: "Preparing invite…",
     createInvite: "Invite",
+    invitesPlusOnly: "Invites are available in Plus.",
     newLink: "New link",
     validUntil: "Valid until",
     inviteCopied: "Link copied",
@@ -185,6 +220,8 @@ export const familyCopy = {
     inviteShareFailed: "Could not open the share sheet.",
     shareInvite: "Share",
     copyInvite: "Copy link",
+    inviteShareTextPrefix: "Join our family in the",
+    inviteShareTextSuffix: "app. Open this invite:",
     familyOwner: "Family owner",
     admin: "Admin",
     member: "Member",
@@ -238,9 +275,18 @@ export const familyCopy = {
     selectedChildren: "Selected children",
     selectedChildrenEmpty: "No children selected",
     selectedChildrenAction: "Choose children",
+    selectedChildrenHint: "Choose all children or only the children this member can see.",
     childrenAccess: "Children / journal access",
+    childrenAccessHint:
+      "No access hides children and the journal. View only means no records. Can log care covers temperature, feeding, sleep, and illness facts. Full access can also manage the workflow.",
     cabinetAccess: "Medicine cabinet",
+    cabinetAccessHint:
+      "View only can see the cabinet and dates. Full access can add, change, and remove medicines.",
     pillboxAccess: "Pillbox",
+    pillboxAccessHintFull:
+      "View only can monitor the plan. Can mark doses confirms the medicine was given. Full access can edit the plan itself.",
+    pillboxAccessHintLimited:
+      "Without full child access, pillbox can only stay in view or mark-dose mode.",
     view: "View only",
     actAccess: "Can mark doses",
     editAccess: "Can edit",
@@ -254,6 +300,9 @@ export const familyCopy = {
     pillboxLead: "Full access",
     hidden: "No access",
     cabinetPush: "Can receive reminders",
+    cabinetPushLabel: "Cabinet reminders",
+    cabinetPushHint:
+      "When enabled, this member receives cabinet push reminders about expiry and overdue packs.",
     manageAccess: "Configure",
     hideAccess: "Hide",
     saveAccess: "Save access settings",
@@ -266,6 +315,16 @@ export const familyCopy = {
     noFamilyAccessTitle: "No access",
     noFamilyAccessDescription:
       "This member will not see children, pillbox, or the cabinet. The family owner or an admin can reopen access later.",
+    pillboxActNotice: "This actor can log doses, but cannot create or edit plans.",
+    chooseAriaPrefix: "Choose",
+    memberPickerHint: "Choose a member to open their settings.",
+    devLatestInviteTitle: "Dev: latest invite",
+    devLatestInviteHintWithFamily:
+      "Quickly join \"{familyName}\" without copying a link.",
+    devLatestInviteHintWithoutFamily:
+      "If the owner already created an invite on another simulator, you can join without a link.",
+    devJoinLatestInvite: "Join latest invite",
+    devJoining: "Joining…",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
 
@@ -303,4 +362,27 @@ export function pillboxAccessRoleLabel(
   if (access === "edit") return tFamily(language, "pillboxLead");
   if (access === "act") return tFamily(language, "pillboxAct");
   return tFamily(language, "pillboxObserve");
+}
+
+export function familyInviteShareText(language: AppLanguage, familyTitle: string) {
+  const prefix = tFamily(language, "inviteShareTextPrefix");
+  const suffix = tFamily(language, "inviteShareTextSuffix");
+  return language === "ru"
+    ? `${prefix} ${familyTitle}. ${suffix}`
+    : `${prefix} ${familyTitle} ${suffix}`;
+}
+
+export function otherMembersCountLabel(language: AppLanguage, count: number) {
+  if (language === "ru") {
+    return `В семье ещё ${count} ${count === 1 ? "участник" : "участника"}.`;
+  }
+  return `${count} more member${count === 1 ? "" : "s"} in the family.`;
+}
+
+export function familyTemplateText(
+  language: AppLanguage,
+  key: "devLatestInviteHintWithFamily",
+  params: { familyName: string }
+) {
+  return tFamily(language, key).replace("{familyName}", params.familyName);
 }

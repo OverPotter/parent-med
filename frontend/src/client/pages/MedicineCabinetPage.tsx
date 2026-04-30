@@ -189,22 +189,16 @@ export function MedicineCabinetPage() {
     const labels = selectedMembers.map(getAccountDisplayLabel);
 
     if (labels.length === 0) {
-      return language === "ru"
-        ? "Уведомления по аптечке сейчас никому не отправляются."
-        : "Cabinet reminders are currently not sent to anyone.";
+      return tCabinet(language, "remindersNobody");
     }
 
     if (labels.length <= 2) {
-      return language === "ru"
-        ? `Получатели уведомлений: ${labels.join(", ")}`
-        : `Reminder recipients: ${labels.join(", ")}`;
+      return tCabinet(language, "reminderRecipients", { labels: labels.join(", ") });
     }
 
     const visible = labels.slice(0, 2).join(", ");
     const remaining = labels.length - 2;
-    return language === "ru"
-      ? `Получатели уведомлений: ${visible} и ещё ${remaining}`
-      : `Reminder recipients: ${visible} and ${remaining} more`;
+    return tCabinet(language, "reminderRecipientsMore", { visible, remaining });
   }, [canManageCabinetRecipients, eligibleCabinetMembers, family, language]);
 
   const deleteMutation = useMutation({

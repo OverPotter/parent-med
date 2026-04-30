@@ -20,6 +20,8 @@ const accountCopy = {
   ru: {
     title: "Профиль",
     subtitle: "Личные данные и основные параметры аккаунта.",
+    moreBack: "← Ещё",
+    profileBack: "← Профиль",
     detailsTitle: "Данные аккаунта",
     detailsHint: "Основные данные аккаунта.",
     settingsTitle: "Параметры приложения",
@@ -29,6 +31,7 @@ const accountCopy = {
     phone: "Телефон",
     relationship: "Кто вы в семье",
     role: "Роль",
+    selfName: "Вы",
     language: "Язык",
     theme: "Тема",
     notSet: "Не указано",
@@ -53,6 +56,8 @@ const accountCopy = {
   en: {
     title: "Profile",
     subtitle: "Personal details and key account preferences.",
+    moreBack: "← More",
+    profileBack: "← Profile",
     detailsTitle: "Account details",
     detailsHint: "Main account details.",
     settingsTitle: "App preferences",
@@ -62,6 +67,7 @@ const accountCopy = {
     phone: "Phone",
     relationship: "Relationship",
     role: "Role",
+    selfName: "You",
     language: "Language",
     theme: "Theme",
     notSet: "Not set",
@@ -174,7 +180,7 @@ export function AccountPage() {
             to="/more"
             className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
-            {language === "ru" ? "← Ещё" : "← More"}
+            {copy.moreBack}
           </Link>
         }
         compactOnMobile
@@ -188,7 +194,7 @@ export function AccountPage() {
             to="/more"
             className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
-            {language === "ru" ? "← Ещё" : "← More"}
+            {copy.moreBack}
           </Link>
           <h1 className="app-mobile-section-intro__title">{copy.title}</h1>
           <p className="app-mobile-section-intro__hint">{copy.subtitle}</p>
@@ -212,7 +218,7 @@ export function AccountPage() {
 
         <div className="mt-4">
           <div className="grid grid-cols-2 gap-x-6">
-            <ProfileGridCell label={copy.name} value={accountDisplayName?.trim() || "Вы"} />
+            <ProfileGridCell label={copy.name} value={accountDisplayName?.trim() || copy.selfName} />
             <ProfileGridCell label={copy.phone} value={currentMember?.phone || copy.notSet} />
             <ProfileGridCell label={copy.role} value={roleLabel} borderedTop />
             <ProfileGridCell label={copy.email} value={accountEmail || copy.notSet} borderedTop />
@@ -248,7 +254,6 @@ export function AccountPage() {
       </RowSurface>
 
       <ProfileEditDialog
-        language={language}
         isOpen={isProfileDialogOpen}
         isPending={saveProfileMutation.isPending}
         displayName={displayName}
@@ -302,7 +307,6 @@ function ProfileGridCell({
 }
 
 function ProfileEditDialog({
-  language,
   isOpen,
   isPending,
   displayName,
@@ -316,7 +320,6 @@ function ProfileEditDialog({
   onPhoneChange,
   onSubmit,
 }: {
-  language: "ru" | "en";
   isOpen: boolean;
   isPending: boolean;
   displayName: string;
@@ -382,7 +385,7 @@ function ProfileEditDialog({
     <FullscreenOverlay
       isOpen={isOpen}
       onClose={handleClose}
-      backLabel={language === "ru" ? "← Профиль" : "← Profile"}
+      backLabel={copy.profileBack}
       title={copy.editTitle}
       hint={copy.editHint}
       maxWidthClassName="max-w-[32rem]"

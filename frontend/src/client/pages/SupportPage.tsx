@@ -19,7 +19,7 @@ import { isPaywallLegalRouteState } from "./legal/legalRouteState";
 const backLinkClass = "inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary";
 
 export function SupportPage() {
-  const { language } = useI18n();
+  const { language, copy: appCopy } = useI18n();
   const hasSession = useAppStore((s) => Boolean(s.authToken || s.accountId));
   const handleBack = useHistoryBackFallback("/legal");
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -202,7 +202,7 @@ export function SupportPage() {
               to="/feedback"
               className="font-semibold text-primary underline-offset-4 hover:underline"
             >
-              Feedback
+              {appCopy.feedback.navShort}
             </Link>
           </p>
         ) : null}
