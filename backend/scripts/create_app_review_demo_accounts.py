@@ -100,9 +100,11 @@ async def _cleanup_existing_review_family(session: AsyncSession) -> None:
 
 
 async def _create_family(session: AsyncSession) -> tuple[FamilyModel, list[AccountModel]]:
+    owner_account_id = uuid4()
     family = FamilyModel(
         id=uuid4(),
         name=DEMO_FAMILY_NAME,
+        owner_account_id=owner_account_id,
         plan_code="pro",
         subscription_status="active",
         subscription_provider="manual",
@@ -116,9 +118,9 @@ async def _create_family(session: AsyncSession) -> tuple[FamilyModel, list[Accou
     default_policy = serialize_family_access_policy(build_default_family_access_policy())
     now = datetime.now(UTC)
     accounts: list[AccountModel] = []
-    for spec in DEMO_ACCOUNTS:
+    for index, spec in enumerate(DEMO_ACCOUNTS):
         account = AccountModel(
-            id=uuid4(),
+            id=owner_account_id if index == 0 else uuid4(),
             email=spec.email,
             password_hash=hash_password(DEMO_PASSWORD),
             recovery_code_hash=hash_password(DEMO_RECOVERY_CODE),

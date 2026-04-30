@@ -742,6 +742,7 @@ async def _create_child_history(
             doctor_phone=seed.doctor_phone,
             allergies=seed.allergies,
             notes=seed.notes,
+            created_at=datetime.now(UTC),
         )
         session.add(child)
         await session.flush()
