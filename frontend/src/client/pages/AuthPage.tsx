@@ -124,6 +124,7 @@ function CheckIcon() {
 }
 
 function getLocalizedAuthError(
+  code: string | undefined,
   detail: string | undefined,
   language: AppLanguage,
   fallback: string
@@ -134,6 +135,14 @@ function getLocalizedAuthError(
 
   if (language === "ru") {
     return detail;
+  }
+
+  const knownCodes: Record<string, string> = {
+    INVALID_CREDENTIALS: "Invalid email or password.",
+    ACCOUNT_EMAIL_ALREADY_EXISTS: "An account with this email already exists.",
+  };
+  if (code && knownCodes[code]) {
+    return knownCodes[code];
   }
 
   const knownMessages: Record<string, string> = {
@@ -274,9 +283,14 @@ export function AuthPage() {
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "auth_page" });
     },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
+    onError: (err: { response?: { data?: { detail?: string; code?: string } } }) => {
       setError(
-        getLocalizedAuthError(err.response?.data?.detail, language, copy.auth.errors.loginFailed)
+        getLocalizedAuthError(
+          err.response?.data?.code,
+          err.response?.data?.detail,
+          language,
+          copy.auth.errors.loginFailed
+        )
       );
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "login",
@@ -299,9 +313,14 @@ export function AuthPage() {
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "auth_page" });
     },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
+    onError: (err: { response?: { data?: { detail?: string; code?: string } } }) => {
       setError(
-        getLocalizedAuthError(err.response?.data?.detail, language, copy.auth.errors.registerFailed)
+        getLocalizedAuthError(
+          err.response?.data?.code,
+          err.response?.data?.detail,
+          language,
+          copy.auth.errors.registerFailed
+        )
       );
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "register",
@@ -413,31 +432,40 @@ export function AuthPage() {
   if (isPublicWebsiteMode) {
     const targetMode = mode === "register" ? "register" : "login";
     const nativeAuthUrl = buildNativeAppUrl(`/auth?mode=${targetMode}`);
-    const title =
+    const publicUi =
       language === "ru"
-        ? targetMode === "register"
-          ? "Создание аккаунта доступно в приложении для iPhone"
-          : "Вход доступен в приложении для iPhone"
-        : targetMode === "register"
-          ? "Account creation happens in the iPhone app"
-          : "Sign-in happens in the iPhone app";
-    const description =
-      language === "ru"
-        ? "Сайт остаётся для знакомства с сервисом, юридической информации и перехода в приложение. Полноценный вход и регистрация происходят внутри PillPath для iPhone."
-        : "The website stays for product discovery, legal pages, and app handoff. Full sign-in and registration happen inside the PillPath iPhone app.";
-    const appStoreDescription =
-      language === "ru"
-        ? "Если приложения ещё нет на iPhone, сначала установите его из App Store."
-        : "If the app is not installed on the iPhone yet, install it from the App Store first.";
+        ? {
+            title:
+              targetMode === "register"
+                ? "Создание аккаунта доступно в приложении для iPhone"
+                : "Вход доступен в приложении для iPhone",
+            description:
+              "Сайт остаётся для знакомства с сервисом, юридической информации и перехода в приложение. Полноценный вход и регистрация происходят внутри PillPath для iPhone.",
+            appStoreDescription:
+              "Если приложения ещё нет на iPhone, сначала установите его из App Store.",
+            primaryDownload: "Скачать в App Store",
+            primaryOpen: "Открыть приложение",
+            secondaryOpen: "Открыть приложение",
+            fallback: "Вернуться на сайт",
+          }
+        : {
+            title:
+              targetMode === "register"
+                ? "Account creation happens in the iPhone app"
+                : "Sign-in happens in the iPhone app",
+            description:
+              "The website stays for product discovery, legal pages, and app handoff. Full sign-in and registration happen inside the PillPath iPhone app.",
+            appStoreDescription:
+              "If the app is not installed on the iPhone yet, install it from the App Store first.",
+            primaryDownload: "Download on the App Store",
+            primaryOpen: "Open app",
+            secondaryOpen: "Open app",
+            fallback: "Back to website",
+          };
     const primaryHref = appStoreUrl || nativeAuthUrl;
     const primaryLabel = appStoreUrl
-      ? language === "ru"
-        ? "Скачать в App Store"
-        : "Download on the App Store"
-      : language === "ru"
-        ? "Открыть приложение"
-        : "Open app";
-    const fallbackLabel = language === "ru" ? "Вернуться на сайт" : "Back to website";
+      ? publicUi.primaryDownload
+      : publicUi.primaryOpen;
 
     return (
       <div className="auth-v3-page min-h-screen text-foreground">
@@ -494,15 +522,15 @@ export function AuthPage() {
             </div>
 
             <div className="auth-v3-hero">
-              <p className="auth-v3-subtitle">{description}</p>
+              <p className="auth-v3-subtitle">{publicUi.description}</p>
             </div>
 
             <section className="auth-v3-panel auth-v3-panel-compact soft-page-intro">
               <div className="auth-v3-card auth-v3-handoff-card space-y-4">
                 <div>
-                  <p className="auth-v3-section-copy">{title}</p>
+                  <p className="auth-v3-section-copy">{publicUi.title}</p>
                 </div>
-                <p className="text-sm leading-7 text-muted">{description}</p>
+                <p className="text-sm leading-7 text-muted">{publicUi.description}</p>
                 <div className="auth-v3-handoff-stack">
                   <a
                     href={primaryHref}
@@ -514,13 +542,13 @@ export function AuthPage() {
                   </a>
                   {appStoreUrl ? (
                     <a href={nativeAuthUrl} className="auth-v3-handoff-secondary text-center">
-                      {language === "ru" ? "Открыть приложение" : "Open app"}
+                      {publicUi.secondaryOpen}
                     </a>
                   ) : (
-                    <div className="auth-v3-handoff-note">{appStoreDescription}</div>
+                    <div className="auth-v3-handoff-note">{publicUi.appStoreDescription}</div>
                   )}
                   <Link to="/" className="auth-v3-linkish auth-v3-handoff-back text-center">
-                    {fallbackLabel}
+                    {publicUi.fallback}
                   </Link>
                 </div>
               </div>

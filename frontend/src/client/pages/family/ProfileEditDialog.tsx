@@ -90,7 +90,7 @@ export function ProfileEditDialog({
     <FullscreenOverlay
       isOpen={isOpen}
       onClose={handleClose}
-      backLabel={language === "ru" ? "← Семья" : "← Family"}
+      backLabel={tFamily(language, "familyBack")}
       title={tFamily(language, "editProfile")}
       maxWidthClassName="max-w-[34rem]"
       closeDisabled={isPending}

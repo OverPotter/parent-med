@@ -313,14 +313,26 @@ export function ChildIllnessPage() {
       } else {
         clearIllnessStartHint(childId!);
       }
-      void trackIllnessEpisodeStarted(episode.id);
-      requestLiveActivityRefresh();
       const episodeForUi = shouldKeepExactStartedAt
         ? {
             ...episode,
             startedAt: startedAtHint,
           }
         : episode;
+      if (child) {
+        void syncIllnessLiveActivity(
+          child,
+          episodeForUi,
+          null,
+          [],
+          null,
+          language,
+          undefined,
+          accountId
+        );
+      }
+      void trackIllnessEpisodeStarted(episode.id);
+      requestLiveActivityRefresh();
       upsertIllnessEpisodeForChild(queryClient, childId!, episodeForUi);
       invalidateIllnessQueriesForChild(queryClient, childId!);
       navigate("/illnesses/active");

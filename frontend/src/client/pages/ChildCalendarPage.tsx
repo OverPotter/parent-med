@@ -361,7 +361,7 @@ export function ChildCalendarPage() {
         onClose={() => setIsPeriodMenuOpen(false)}
         placement="bottom"
         zIndexClassName="z-[890]"
-        backdropAriaLabel={language === "ru" ? "Закрыть выбор периода" : "Close period options"}
+        backdropAriaLabel={text.closePeriodDialog}
         containerClassName="flex items-end"
         backdropClassName="bg-[rgba(15,23,42,0.32)]"
       >
@@ -374,9 +374,7 @@ export function ChildCalendarPage() {
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted">
               {text.summaryPeriodPrefix}
             </p>
-            <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
-              {language === "ru" ? "Выберите период" : "Choose period"}
-            </h2>
+            <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">{text.choosePeriod}</h2>
             <p className="text-sm leading-5 text-muted">{periodLabel}</p>
           </div>
 
@@ -396,7 +394,7 @@ export function ChildCalendarPage() {
                     {getPeriodOptionLabel(option, text)}
                   </span>
                   <span className="soft-choice-check">
-                    {isActive ? "✓" : language === "ru" ? "Выбрать" : "Select"}
+                    {isActive ? "✓" : text.select}
                   </span>
                 </button>
               );

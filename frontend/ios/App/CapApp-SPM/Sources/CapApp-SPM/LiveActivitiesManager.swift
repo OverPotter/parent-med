@@ -1,11 +1,19 @@
 import Foundation
+import SwiftKeychainWrapper
 
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
 
-actor LiveActivitiesManager {
+public actor LiveActivitiesManager {
+    public static let shared = LiveActivitiesManager()
+
+    private static let accessTokenKey = "pillpath_auth_access_token"
+    private static let refreshTokenKey = "pillpath_auth_refresh_token"
+
     private var inFlightUpsertKeys = Set<String>()
+    private let persistenceKey = "pillpath.liveActivities.persistedPayloads.v1"
+    private let keychain = KeychainWrapper(serviceName: "cap_sec")
 
     private let iso8601Formatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
@@ -109,6 +117,7 @@ actor LiveActivitiesManager {
 
         if let existing = matched.first {
             await existing.update(using: contentState)
+            persistPayload(payload)
             return existing.id
         }
 
@@ -117,6 +126,7 @@ actor LiveActivitiesManager {
             contentState: contentState,
             pushType: nil
         )
+        persistPayload(payload)
         return activity.id
 #else
         return nil
@@ -130,6 +140,7 @@ actor LiveActivitiesManager {
         }
 
         inFlightUpsertKeys.remove(activityKey(kind: kind, itemId: itemId))
+        removePersistedPayload(kind: kind, itemId: itemId)
         let matched = matchingActivities(kind: kind, itemId: itemId)
         for activity in matched {
             await activity.end(using: activity.contentState, dismissalPolicy: .immediate)
@@ -151,11 +162,43 @@ actor LiveActivitiesManager {
         }
         if let kind {
             inFlightUpsertKeys = inFlightUpsertKeys.filter { !$0.hasPrefix("\(kind)::") }
+            removePersistedPayloads(kind: kind)
         } else {
             inFlightUpsertKeys.removeAll()
+            clearPersistedPayloads()
         }
         for activity in matched {
             await activity.end(using: activity.contentState, dismissalPolicy: .immediate)
+        }
+#endif
+    }
+
+    public func restorePersistedActivities() async {
+#if canImport(ActivityKit)
+        guard #available(iOS 16.1, *), canImportActivityKit else {
+            return
+        }
+
+        let info = ActivityAuthorizationInfo()
+        guard info.areActivitiesEnabled else {
+            return
+        }
+        guard hasValidPersistedAuthSession() else {
+            clearPersistedPayloads()
+            return
+        }
+
+        let payloads = loadPersistedPayloads()
+        guard !payloads.isEmpty else {
+            return
+        }
+
+        for payload in payloads {
+            do {
+                _ = try await upsert(payload: payload)
+            } catch {
+                continue
+            }
         }
 #endif
     }
@@ -176,6 +219,95 @@ actor LiveActivitiesManager {
 
     private func activityKey(kind: String, itemId: String) -> String {
         "\(kind)::\(itemId)"
+    }
+
+    private func loadPersistedPayloadMap() -> [String: LiveActivityPayload] {
+        guard
+            let data = UserDefaults.standard.data(forKey: persistenceKey),
+            let payloads = try? JSONDecoder().decode([String: LiveActivityPayload].self, from: data)
+        else {
+            return [:]
+        }
+        return payloads
+    }
+
+    private func savePersistedPayloadMap(_ payloads: [String: LiveActivityPayload]) {
+        guard let data = try? JSONEncoder().encode(payloads) else {
+            return
+        }
+        UserDefaults.standard.set(data, forKey: persistenceKey)
+    }
+
+    private func loadPersistedPayloads() -> [LiveActivityPayload] {
+        Array(loadPersistedPayloadMap().values)
+    }
+
+    private func persistPayload(_ payload: LiveActivityPayload) {
+        var payloads = loadPersistedPayloadMap()
+        payloads[activityKey(kind: payload.kind, itemId: payload.itemId)] = payload
+        savePersistedPayloadMap(payloads)
+    }
+
+    private func removePersistedPayload(kind: String, itemId: String) {
+        var payloads = loadPersistedPayloadMap()
+        payloads.removeValue(forKey: activityKey(kind: kind, itemId: itemId))
+        savePersistedPayloadMap(payloads)
+    }
+
+    private func removePersistedPayloads(kind: String) {
+        let prefix = "\(kind)::"
+        let nextPayloads = loadPersistedPayloadMap().filter { !$0.key.hasPrefix(prefix) }
+        savePersistedPayloadMap(nextPayloads)
+    }
+
+    private func clearPersistedPayloads() {
+        UserDefaults.standard.removeObject(forKey: persistenceKey)
+    }
+
+    private func hasValidPersistedAuthSession() -> Bool {
+        if let accessToken = keychain.string(forKey: Self.accessTokenKey), isJwtStillActive(accessToken) {
+            return true
+        }
+        if let refreshToken = keychain.string(forKey: Self.refreshTokenKey), isJwtStillActive(refreshToken) {
+            return true
+        }
+        return false
+    }
+
+    private func isJwtStillActive(_ token: String) -> Bool {
+        guard
+            let payloadSegment = token.split(separator: ".").dropFirst().first,
+            let payloadData = decodeBase64URL(String(payloadSegment)),
+            let payloadJson = try? JSONSerialization.jsonObject(with: payloadData) as? [String: Any]
+        else {
+            return false
+        }
+
+        let now = Date().timeIntervalSince1970
+
+        if let exp = payloadJson["exp"] as? TimeInterval {
+            return exp > now
+        }
+        if let exp = payloadJson["exp"] as? Double {
+            return exp > now
+        }
+        if let exp = payloadJson["exp"] as? Int {
+            return Double(exp) > now
+        }
+        return false
+    }
+
+    private func decodeBase64URL(_ value: String) -> Data? {
+        var normalized = value
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+
+        let remainder = normalized.count % 4
+        if remainder != 0 {
+            normalized += String(repeating: "=", count: 4 - remainder)
+        }
+
+        return Data(base64Encoded: normalized)
     }
 }
 

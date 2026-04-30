@@ -38,6 +38,7 @@ import {
 } from "@/app/mobile/runtime";
 import { DisplayNameOnboardingOverlay } from "@client/components/DisplayNameOnboardingOverlay";
 import { AuthPage } from "@client/pages/AuthPage";
+import { ChildFeedingCreatePage } from "@client/pages/ChildFeedingCreatePage";
 import { appLog } from "@shared/utils/appLog";
 import { shouldClearSessionForAuthError } from "@shared/api/authSessionErrors";
 import { shouldUseAppEntryWebMode } from "@shared/runtime/publicWebsiteMode";
@@ -111,11 +112,6 @@ const ChildSleepPage = lazy(() =>
 );
 const ChildFeedingPage = lazy(() =>
   import("@client/pages/ChildFeedingPage").then((module) => ({ default: module.ChildFeedingPage }))
-);
-const ChildFeedingCreatePage = lazy(() =>
-  import("@client/pages/ChildFeedingCreatePage").then((module) => ({
-    default: module.ChildFeedingCreatePage,
-  }))
 );
 const ChildWeightPage = lazy(() =>
   import("@client/pages/ChildWeightPage").then((module) => ({
@@ -354,7 +350,7 @@ export default function App() {
       <ThemeSync />
       <RouteScrollReset />
       {!isNativeRuntime && import.meta.env.DEV ? <MobileInteractionDiagnostics /> : null}
-      {!isNativeRuntime ? <WarmRouteChunks /> : null}
+      <WarmRouteChunks />
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <AuthSync />

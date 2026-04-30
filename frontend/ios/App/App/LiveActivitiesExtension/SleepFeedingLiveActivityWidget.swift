@@ -14,6 +14,10 @@ func liveActivityText(_ ru: String, _ en: String, _ languageCode: String? = nil)
     liveActivityUsesRussian(languageCode) ? ru : en
 }
 
+func liveActivityLocale(_ languageCode: String? = nil) -> Locale {
+    liveActivityUsesRussian(languageCode) ? Locale(identifier: "ru_RU") : Locale(identifier: "en_US")
+}
+
 @available(iOSApplicationExtension 16.1, *)
 struct SleepFeedingLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
@@ -28,15 +32,15 @@ struct SleepFeedingLiveActivityWidget: Widget {
                         ActivityIcon(kind: context.attributes.kind, size: 28)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(context.state.title)
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.64)
-                            Text(compactActivityEyebrow(for: context))
-                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .minimumScaleFactor(0.52)
+                            CompactActivityEyebrowText(context: context)
+                                .font(.system(size: 8, weight: .medium, design: .rounded))
                                 .foregroundStyle(.white.opacity(0.62))
-                                .lineLimit(1)
                         }
+                        .frame(maxWidth: 88, alignment: .leading)
                         .layoutPriority(1)
                     }
                 }
@@ -53,7 +57,8 @@ struct SleepFeedingLiveActivityWidget: Widget {
                     } else {
                         ElapsedTimerText(
                             startedAt: context.state.startedAt,
-                            font: .system(size: 23, weight: .bold, design: .rounded)
+                            font: .system(size: 20, weight: .bold, design: .rounded),
+                            languageCode: context.state.language
                         )
                         .foregroundStyle(.white)
                         .frame(minWidth: 62, alignment: .trailing)
@@ -79,7 +84,12 @@ struct SleepFeedingLiveActivityWidget: Widget {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.white)
                 } else {
-                    CompactElapsedText(startedAt: context.state.startedAt, languageCode: context.state.language)
+                    CompactElapsedText(
+                        startedAt: context.state.startedAt,
+                        languageCode: context.state.language,
+                        font: .caption.weight(.semibold),
+                        minimumScaleFactor: 0.85
+                    )
                         .foregroundStyle(.white)
                 }
             } minimal: {
@@ -162,7 +172,8 @@ private struct LiveActivityLockScreenView: View {
                             } else {
                                 ElapsedTimerText(
                                     startedAt: context.state.startedAt,
-                                    font: .system(size: 27, weight: .bold, design: .rounded)
+                                    font: .system(size: 24, weight: .bold, design: .rounded),
+                                    languageCode: context.state.language
                                 )
                                 .foregroundStyle(.white)
                                 .frame(minWidth: 82, alignment: .trailing)
@@ -240,14 +251,16 @@ private func detailRow(value: String?, caption: String?) -> AnyView? {
 private struct ElapsedTimerText: View {
     let startedAt: Date
     let font: Font
+    let languageCode: String?
 
     var body: some View {
         Text(startedAt, style: .timer)
-            .font(font)
-            .monospacedDigit()
-            .multilineTextAlignment(.trailing)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
+        .environment(\.locale, liveActivityLocale(languageCode))
+        .font(font)
+        .monospacedDigit()
+        .multilineTextAlignment(.trailing)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
     }
 }
 
@@ -255,15 +268,17 @@ private struct ElapsedTimerText: View {
 struct LeadingElapsedTimerText: View {
     let startedAt: Date
     let font: Font
+    let languageCode: String?
 
     var body: some View {
         Text(startedAt, style: .timer)
-            .font(font)
-            .monospacedDigit()
-            .multilineTextAlignment(.leading)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
+        .environment(\.locale, liveActivityLocale(languageCode))
+        .font(font)
+        .monospacedDigit()
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
     }
 }
 
@@ -271,15 +286,32 @@ struct LeadingElapsedTimerText: View {
 private struct CompactElapsedText: View {
     let startedAt: Date
     let languageCode: String?
+    let font: Font
+    let minimumScaleFactor: CGFloat
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 60)) { timeline in
-            Text(compactElapsedLabel(startedAt: startedAt, now: timeline.date, languageCode: languageCode))
-                .font(.caption.weight(.semibold))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+        TimelineView(.periodic(from: startedAt, by: 60)) { timeline in
+            Text(abbreviatedElapsedLabel(
+                startedAt: startedAt,
+                now: timeline.date,
+                languageCode: languageCode
+            ))
+            .font(font)
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(minimumScaleFactor)
         }
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private struct CompactActivityEyebrowText: View {
+    let context: ActivityViewContext<LiveActivityAttributes>
+
+    var body: some View {
+        Text(compactActivityEyebrow(for: context))
+            .lineLimit(1)
+            .minimumScaleFactor(0.66)
     }
 }
 
@@ -386,7 +418,7 @@ private func compactActivityEyebrow(for context: ActivityViewContext<LiveActivit
     case "sleep":
         return liveActivityText("Сон", "Sleep", context.state.language)
     case "feeding":
-        return liveActivityText("Кормление", "Feeding", context.state.language)
+        return liveActivityText("Еда", "Feed", context.state.language)
     case "illness":
         return activityTitle(for: context)
     default:
@@ -500,9 +532,11 @@ private func illnessDayNumber(startedAt: Date) -> Int {
 
 @available(iOSApplicationExtension 16.1, *)
 private func illnessDayLabel(startedAt: Date, languageCode: String? = nil) -> String {
-    liveActivityUsesRussian(languageCode)
-        ? "\(illnessDayNumber(startedAt: startedAt)) день"
-        : "Day \(illnessDayNumber(startedAt: startedAt))"
+    let days = illnessDayNumber(startedAt: startedAt)
+    if liveActivityUsesRussian(languageCode) {
+        return illnessDurationPhrase(startedAt: startedAt, languageCode: languageCode)
+    }
+    return "Day \(days)"
 }
 
 @available(iOSApplicationExtension 16.1, *)
@@ -534,7 +568,7 @@ private func compactIllnessDayLabel(startedAt: Date, languageCode: String? = nil
 }
 
 @available(iOSApplicationExtension 16.1, *)
-private func compactElapsedLabel(startedAt: Date, now: Date, languageCode: String? = nil) -> String {
+private func abbreviatedElapsedLabel(startedAt: Date, now: Date, languageCode: String? = nil) -> String {
     let elapsedSeconds = max(0, Int(now.timeIntervalSince(startedAt)))
     let minutes = elapsedSeconds / 60
     let hours = minutes / 60
@@ -546,5 +580,55 @@ private func compactElapsedLabel(startedAt: Date, now: Date, languageCode: Strin
     if hours > 0 {
         return liveActivityUsesRussian(languageCode) ? "\(hours)ч" : "\(hours)h"
     }
-    return liveActivityUsesRussian(languageCode) ? "\(max(1, minutes))м" : "\(max(1, minutes))m"
+    let visibleMinutes = max(1, minutes)
+    return liveActivityUsesRussian(languageCode) ? "\(visibleMinutes)м" : "\(visibleMinutes)m"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+func elapsedClockLabel(startedAt: Date, now: Date, languageCode: String? = nil) -> String {
+    let elapsedSeconds = max(0, Int(now.timeIntervalSince(startedAt)))
+    let days = elapsedSeconds / 86_400
+    let hours = (elapsedSeconds % 86_400) / 3_600
+    let minutes = (elapsedSeconds % 3_600) / 60
+    let seconds = elapsedSeconds % 60
+
+    if days > 0 {
+        let dayLabel = durationDayLabel(days: days, languageCode: languageCode)
+        if hours > 0 {
+            return liveActivityUsesRussian(languageCode) ? "\(dayLabel) \(hours) ч" : "\(dayLabel) \(hours) hr"
+        }
+        return dayLabel
+    }
+    if hours > 0 {
+        return liveActivityUsesRussian(languageCode)
+            ? "\(hours) ч \(minutes) мин"
+            : "\(hours) hr \(minutes) min"
+    }
+    if minutes > 0 {
+        return liveActivityUsesRussian(languageCode)
+            ? "\(minutes) мин \(seconds) сек"
+            : "\(minutes) min \(seconds) sec"
+    }
+    return liveActivityUsesRussian(languageCode) ? "\(seconds) сек" : "\(seconds) sec"
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private func durationDayLabel(days: Int, languageCode: String? = nil) -> String {
+    if !liveActivityUsesRussian(languageCode) {
+        return days == 1 ? "1 day" : "\(days) days"
+    }
+
+    let remainder10 = days % 10
+    let remainder100 = days % 100
+
+    let suffix: String
+    if remainder10 == 1 && remainder100 != 11 {
+        suffix = "день"
+    } else if (2...4).contains(remainder10) && !(12...14).contains(remainder100) {
+        suffix = "дня"
+    } else {
+        suffix = "дней"
+    }
+
+    return "\(days) \(suffix)"
 }

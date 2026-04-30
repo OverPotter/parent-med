@@ -31,7 +31,12 @@ import {
   canManageFamilyMembers,
   isFamilyOwnerAccount,
 } from "./family/memberManagement";
-import { tFamily } from "./family/copy";
+import {
+  familyInviteShareText,
+  familyTemplateText,
+  otherMembersCountLabel,
+  tFamily,
+} from "./family/copy";
 import { useFamilyMembersData } from "./family/useFamilyMembersData";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
 
@@ -158,15 +163,10 @@ export function FamilyPage() {
   const canInviteMembers = familyAccess?.canInviteMembers ?? false;
   const inviteLockedReason =
     isFamilyOwner && !canInviteMembers
-      ? language === "ru"
-        ? "Приглашения доступны в Plus."
-        : "Invites are available in Plus."
+      ? tFamily(language, "invitesPlusOnly")
       : null;
 
-  const inviteShareText =
-    language === "ru"
-      ? `Присоединяйся к нашей семье в приложении ${familyTitle}. Открой приглашение:`
-      : `Join our family in the ${familyTitle} app. Open this invite:`;
+  const inviteShareText = familyInviteShareText(language, familyTitle);
   const { data: latestDevInvitePreview } = useQuery({
     queryKey: ["family-invites", "dev", "latest"],
     queryFn: fetchLatestDevFamilyInvitePreview,
@@ -183,7 +183,12 @@ export function FamilyPage() {
       navigate("/family", { replace: true });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? "Не удалось подключиться к dev-приглашению.");
+      setError(
+        err.response?.data?.detail ??
+          (language === "ru"
+            ? "Не удалось подключиться к dev-приглашению."
+            : "Could not join the dev invite.")
+      );
     },
   });
 
@@ -210,7 +215,7 @@ export function FamilyPage() {
               to="/more"
               className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
             >
-              {language === "ru" ? "← Ещё" : "← More"}
+              {tFamily(language, "moreBack")}
             </Link>
           }
           compactOnMobile
@@ -223,7 +228,7 @@ export function FamilyPage() {
               to="/more"
               className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
             >
-              {language === "ru" ? "← Ещё" : "← More"}
+              {tFamily(language, "moreBack")}
             </Link>
             <h1 className="app-mobile-section-intro__title">{familyTitle}</h1>
             <p className="app-mobile-section-intro__hint">{tFamily(language, "subtitle")}</p>
@@ -245,7 +250,7 @@ export function FamilyPage() {
               to="/more"
               className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
             >
-              {language === "ru" ? "← Ещё" : "← More"}
+              {tFamily(language, "moreBack")}
             </Link>
           }
           compactOnMobile
@@ -258,7 +263,7 @@ export function FamilyPage() {
               to="/more"
               className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
             >
-              {language === "ru" ? "← Ещё" : "← More"}
+              {tFamily(language, "moreBack")}
             </Link>
             <h1 className="app-mobile-section-intro__title">{familyTitle}</h1>
             <p className="app-mobile-section-intro__hint">{tFamily(language, "subtitle")}</p>
@@ -384,11 +389,11 @@ export function FamilyPage() {
         title={familyTitle}
         subtitle={tFamily(language, "subtitle")}
         action={
-          <Link
-            to="/more"
-            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
-          >
-            {language === "ru" ? "← Ещё" : "← More"}
+            <Link
+              to="/more"
+              className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+            >
+            {tFamily(language, "moreBack")}
           </Link>
         }
         compactOnMobile
@@ -402,7 +407,7 @@ export function FamilyPage() {
             to="/more"
             className="mb-1 inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
           >
-            {language === "ru" ? "← Ещё" : "← More"}
+            {tFamily(language, "moreBack")}
           </Link>
           <h1 className="app-mobile-section-intro__title">{familyTitle}</h1>
           <p className="app-mobile-section-intro__hint">{tFamily(language, "subtitle")}</p>
@@ -424,9 +429,7 @@ export function FamilyPage() {
       {currentMember && !currentMemberHasAnyFamilyAccess ? (
         <p className="soft-note-danger">
           <span className="font-semibold">{tFamily(language, "noFamilyAccessTitle")}. </span>
-          {language === "ru"
-            ? "Сейчас у вас нет доступа к данным семьи. Обратитесь к владельцу семьи или администратору."
-            : "You currently do not have access to family data. Contact the family owner or an admin."}
+          {tFamily(language, "currentNoAccessDescription")}
         </p>
       ) : null}
       {!isFamilyLoading && !family ? (
@@ -538,9 +541,7 @@ export function FamilyPage() {
               <p className="mt-4 text-sm text-muted">{tFamily(language, "noOtherMembers")}</p>
             ) : (
               <p className="mt-4 text-sm leading-6 text-muted">
-                {language === "ru"
-                  ? `В семье ещё ${otherMembers.length} ${otherMembers.length === 1 ? "участник" : "участника"}.`
-                  : `${otherMembers.length} more member${otherMembers.length === 1 ? "" : "s"} in the family.`}
+                {otherMembersCountLabel(language, otherMembers.length)}
               </p>
             )}
           </RowSurface>
@@ -570,16 +571,14 @@ export function FamilyPage() {
           {showDevInviteShortcut ? (
             <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
               <h2 className="app-card-title">
-                {language === "ru" ? "Dev: последнее приглашение" : "Dev: latest invite"}
+                {tFamily(language, "devLatestInviteTitle")}
               </h2>
               <p className="mt-1 text-sm leading-6 text-muted">
                 {latestDevInvitePreview
-                  ? language === "ru"
-                    ? `Быстрое подключение к семье «${latestDevInvitePreview.familyName}» без копирования ссылки.`
-                    : `Quickly join "${latestDevInvitePreview.familyName}" without copying a link.`
-                  : language === "ru"
-                    ? "Если owner уже создал приглашение на другом симуляторе, можно подключиться без ссылки."
-                    : "If the owner already created an invite on another simulator, you can join without a link."}
+                  ? familyTemplateText(language, "devLatestInviteHintWithFamily", {
+                      familyName: latestDevInvitePreview.familyName,
+                    })
+                  : tFamily(language, "devLatestInviteHintWithoutFamily")}
               </p>
               <div className="mt-4">
                 <button
@@ -589,12 +588,8 @@ export function FamilyPage() {
                   className="soft-button-secondary disabled:opacity-50"
                 >
                   {acceptLatestDevInviteMutation.isPending
-                    ? language === "ru"
-                      ? "Подключаем…"
-                      : "Joining…"
-                    : language === "ru"
-                      ? "Подключиться к последнему invite"
-                      : "Join latest invite"}
+                    ? tFamily(language, "devJoining")
+                    : tFamily(language, "devJoinLatestInvite")}
                 </button>
               </div>
             </RowSurface>

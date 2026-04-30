@@ -52,7 +52,7 @@ public struct LiveActivityAttributes: ActivityAttributes {
 }
 #endif
 
-struct LiveActivityPayload {
+struct LiveActivityPayload: Codable {
     let kind: String
     let itemId: String
     let language: String?

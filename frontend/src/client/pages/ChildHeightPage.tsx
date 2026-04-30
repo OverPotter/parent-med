@@ -75,6 +75,9 @@ export function ChildHeightPage() {
     queryFn: () => fetchLatestHeightEntryByChildId(childId!),
     enabled: !!childId && canViewHeight,
   });
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: childId ? `/children/${childId}` : "/children",
+  });
 
   const { data: heightHistory = [] } = useQuery({
     queryKey: ["height-entries", childId],
@@ -105,9 +108,6 @@ export function ChildHeightPage() {
     return <p className="text-sm text-muted">{common.loading}</p>;
   }
   const planLocksChildActions = isChildLockedByPlan(child.id, familyAccess);
-  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
-    fallbackHref: `/children/${child.id}`,
-  });
 
   return (
     <div ref={rootRef} className="child-profile-shell min-h-[100dvh] space-y-6">

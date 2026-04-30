@@ -114,12 +114,10 @@ export function SettingsNotificationsSection({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-foreground">
-                    {language === "ru" ? "Тестовый push" : "Test push"}
+                    {tSettings(language, "testPushTitle")}
                   </p>
                   <p className="mt-1 text-sm leading-6 text-muted">
-                    {language === "ru"
-                      ? "Dev-only отправка уведомления на текущие подписки аккаунта."
-                      : "Dev-only notification to the current account subscriptions."}
+                    {tSettings(language, "testPushHint")}
                   </p>
                   {testPushStatus ? (
                     <p className="mt-2 text-sm leading-6 text-muted">{testPushStatus}</p>
@@ -131,13 +129,7 @@ export function SettingsNotificationsSection({
                   disabled={isTestPushPending || !isPushEnabled}
                   className={`${childActionSecondaryClass} min-h-[2.6rem] px-4 text-[0.84rem] disabled:cursor-not-allowed disabled:opacity-60`}
                 >
-                  {isTestPushPending
-                    ? language === "ru"
-                      ? "Отправляем..."
-                      : "Sending..."
-                    : language === "ru"
-                      ? "Отправить"
-                      : "Send"}
+                  {isTestPushPending ? tSettings(language, "saving") : tSettings(language, "testPushTitle")}
                 </button>
               </div>
             </div>

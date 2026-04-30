@@ -59,11 +59,7 @@ export function MemberAccessEditor({
             <AccessSelect
               language={language}
               label={tFamily(language, "childrenAccess")}
-              dialogHint={
-                language === "ru"
-                  ? "Нет доступа — дети и журнал скрыты. Только смотреть — без записей. Может записывать уход — температуру, кормление, сон и факты по болезни. Полный доступ — может ещё и менять сам сценарий."
-                  : "No access hides children and the journal. View only means no records. Can log care covers temperature, feeding, sleep, and illness facts. Full access can also manage the workflow."
-              }
+              dialogHint={tFamily(language, "childrenAccessHint")}
               value={effectiveChildrenAccess}
               options={[
                 { value: "none", label: tFamily(language, "hidden") },
@@ -121,15 +117,12 @@ export function MemberAccessEditor({
           <AccessSelect
             language={language}
             label={tFamily(language, "pillboxAccess")}
-            dialogHint={
-              language === "ru"
-                ? accessPolicy.childrenAccess === "edit"
-                  ? "Только смотреть — видит план. Может отмечать приём — подтверждает, что лекарство дали. Полный доступ — меняет план и участников."
-                  : "Если к детям нет полного доступа, в приёмах можно оставить только просмотр или отметку приёма."
-                : accessPolicy.childrenAccess === "edit"
-                  ? "View only can monitor the plan. Can mark doses confirms the medicine was given. Full access can edit the plan itself."
-                  : "Without full child access, pillbox can only stay in view or mark-dose mode."
-            }
+            dialogHint={tFamily(
+              language,
+              accessPolicy.childrenAccess === "edit"
+                ? "pillboxAccessHintFull"
+                : "pillboxAccessHintLimited"
+            )}
             value={accessPolicy.pillboxAccess}
             options={pillboxOptions}
             onChange={(value) =>
@@ -142,11 +135,7 @@ export function MemberAccessEditor({
           <AccessSelect
             language={language}
             label={tFamily(language, "cabinetAccess")}
-            dialogHint={
-              language === "ru"
-                ? "Только смотреть — видит аптечку и сроки. Полный доступ — добавляет, редактирует и удаляет лекарства."
-                : "View only can see the cabinet and dates. Full access can add, change, and remove medicines."
-            }
+            dialogHint={tFamily(language, "cabinetAccessHint")}
             value={accessPolicy.cabinetAccess}
             options={[
               { value: "none", label: tFamily(language, "hidden") },
@@ -166,12 +155,8 @@ export function MemberAccessEditor({
         <div className="space-y-4 border-t border-border/55 pt-4">
           {accessPolicy.cabinetAccess !== "none" ? (
             <ToggleRow
-              label={language === "ru" ? "Уведомления по аптечке" : "Cabinet reminders"}
-              hint={
-                language === "ru"
-                  ? "Если включено, push по срокам и просрочке будут приходить этому участнику."
-                  : "When enabled, this member receives cabinet push reminders about expiry and overdue packs."
-              }
+              label={tFamily(language, "cabinetPushLabel")}
+              hint={tFamily(language, "cabinetPushHint")}
               checked={accessPolicy.cabinetPushEnabled}
               onChange={(checked) => onChange({ ...accessPolicy, cabinetPushEnabled: checked })}
             />
@@ -186,9 +171,7 @@ export function MemberAccessEditor({
 
           {effectiveChildrenAccess !== "edit" && accessPolicy.pillboxAccess === "act" ? (
             <p className="text-xs leading-5 text-muted">
-              {language === "ru"
-                ? "Участник сможет отметить, что лекарство дали, но не сможет менять сам план."
-                : "This actor can log doses, but cannot create or edit plans."}
+              {tFamily(language, "pillboxActNotice")}
             </p>
           ) : null}
         </div>
@@ -223,11 +206,9 @@ export function MemberAccessEditor({
             <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
               {tFamily(language, "childrenScope")}
             </h2>
-            <p className="text-sm leading-5 text-muted">
-              {language === "ru"
-                ? "Сразу выберите всех детей или только тех, кого увидит участник."
-                : "Choose all children or only the children this member can see."}
-            </p>
+          <p className="text-sm leading-5 text-muted">
+              {tFamily(language, "selectedChildrenHint")}
+          </p>
           </div>
 
           {familyChildren.length === 0 ? (
@@ -315,7 +296,7 @@ function AccessSelect({
         dialogTitle={label}
         dialogHint={dialogHint}
         dialogAriaLabel={
-          language === "ru" ? `Выбрать: ${label.toLowerCase()}` : `Choose ${label.toLowerCase()}`
+          `${tFamily(language, "chooseAriaPrefix")}: ${label.toLowerCase()}`
         }
       />
     </label>

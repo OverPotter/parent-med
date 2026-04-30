@@ -23,6 +23,7 @@ import { canActChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
 import { scrollFieldIntoView } from "@shared/utils/focus";
+import type { FeedingRecord } from "@shared/types/api";
 
 export function ChildFeedingCreatePage() {
   const { language } = useI18n();
@@ -53,6 +54,9 @@ export function ChildFeedingCreatePage() {
     queryFn: fetchMyFamilyAccess,
     enabled: Boolean(currentFamilyId),
     staleTime: 60 * 1000,
+  });
+  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
+    fallbackHref: childId ? `/children/${childId}` : "/children",
   });
 
   useEffect(() => {
@@ -150,11 +154,30 @@ export function ChildFeedingCreatePage() {
           note: note.trim() || null,
         },
       }),
-    onSuccess: (feeding) => {
-      queryClient.invalidateQueries({ queryKey: ["feeding-records", childId] });
-      queryClient.invalidateQueries({ queryKey: ["feeding-record-active", childId] });
+    onSuccess: async (feeding) => {
+      queryClient.setQueryData(["feeding-record-active", childId], feeding);
+      queryClient.setQueryData(
+        ["feeding-records", childId],
+        (current: FeedingRecord[] | undefined) => {
+          const items = current ?? [];
+          return items.some((item) => item.id === feeding.id) ? items : [feeding, ...items];
+        }
+      );
       void syncFeedingLiveActivity(child!, feeding, language, undefined, accountId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["feeding-records", childId] }),
+        queryClient.invalidateQueries({ queryKey: ["feeding-record-active", childId] }),
+      ]);
       navigate("/children", { replace: true });
+    },
+    onError: (error: { message?: string; response?: { data?: { detail?: string } } }) => {
+      setValidationError(
+        error.response?.data?.detail ??
+          error.message ??
+          (language === "ru"
+            ? "Не удалось запустить таймер кормления."
+            : "Could not start the feeding timer.")
+      );
     },
   });
 
@@ -176,9 +199,6 @@ export function ChildFeedingCreatePage() {
   ) {
     return <Navigate to={`/children/${child.id}/feeding`} replace />;
   }
-  const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
-    fallbackHref: `/children/${child.id}`,
-  });
 
   return (
     <div

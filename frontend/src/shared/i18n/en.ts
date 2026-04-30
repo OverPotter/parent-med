@@ -714,7 +714,8 @@ export const en: Translations = {
           },
           {
             title: "Where it appears",
-            description: "On iPhone it appears on the lock screen and in Dynamic Island.",
+            description:
+              "On iPhone it appears as a large card on the lock screen and as a compact eyebrow in Dynamic Island.",
           },
           {
             title: "Who receives signals",

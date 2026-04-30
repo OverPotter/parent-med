@@ -30,7 +30,10 @@ struct FeedingReferenceLockScreenView: View {
                     detailFontWeight: .regular,
                     badge: { FeedingIconBadge() },
                     value: {
-                        HeaderElapsedTimerText(startedAt: context.state.startedAt)
+                        HeaderElapsedTimerText(
+                            startedAt: context.state.startedAt,
+                            languageCode: context.state.language
+                        )
                     },
                     trailing: {
                         ReferenceActivityOpenChip(
@@ -165,7 +168,10 @@ struct SleepReferenceLockScreenView: View {
                     detailFontWeight: .regular,
                     badge: { SleepIconBadge() },
                     value: {
-                        HeaderElapsedTimerText(startedAt: context.state.startedAt)
+                        HeaderElapsedTimerText(
+                            startedAt: context.state.startedAt,
+                            languageCode: context.state.language
+                        )
                     },
                     trailing: {
                         ReferenceActivityOpenChip(
@@ -511,10 +517,13 @@ struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
                     Text(label)
                         .font(.system(size: 16, weight: .medium, design: .rounded))
                         .foregroundStyle(accentColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
                     Circle()
                         .fill(Color(red: 0.36, green: 0.80, blue: 0.48))
                         .frame(width: 9, height: 9)
                 }
+                .layoutPriority(1)
 
                 Spacer(minLength: 10)
 
@@ -522,6 +531,8 @@ struct ReferenceActivityBody<Badge: View, Value: View, Trailing: View>: View {
                     .font(.system(size: 24, weight: .semibold, design: .rounded))
                     .foregroundStyle(accentColor)
                     .shadow(color: Color.white.opacity(0.14), radius: 1, x: 0, y: -1)
+                    .frame(minWidth: 84, alignment: .trailing)
+                    .layoutPriority(1)
                     .lineLimit(1)
                     .minimumScaleFactor(0.74)
             }
@@ -749,14 +760,16 @@ struct IllnessIconBadge: View {
 @available(iOSApplicationExtension 16.1, *)
 struct HeaderElapsedTimerText: View {
     let startedAt: Date
+    let languageCode: String?
 
     var body: some View {
         Text(startedAt, style: .timer)
-            .font(.system(size: 24, weight: .semibold, design: .rounded))
-            .monospacedDigit()
-            .multilineTextAlignment(.trailing)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
+        .environment(\.locale, liveActivityLocale(languageCode))
+        .font(.system(size: 22, weight: .semibold, design: .rounded))
+        .monospacedDigit()
+        .multilineTextAlignment(.trailing)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
     }
 }
 

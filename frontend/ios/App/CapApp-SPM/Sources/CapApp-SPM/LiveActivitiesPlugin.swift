@@ -12,7 +12,7 @@ public final class LiveActivitiesPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "stopAll", returnType: CAPPluginReturnPromise),
     ]
 
-    private let manager = LiveActivitiesManager()
+    private let manager = LiveActivitiesManager.shared
 
     @objc func getStatus(_ call: CAPPluginCall) {
         Task {

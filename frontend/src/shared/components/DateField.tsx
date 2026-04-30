@@ -18,6 +18,7 @@ const DATE_FIELD_COPY: Record<
     today: string;
     clear: string;
     dateBadge: string;
+    close: string;
   }
 > = {
   ru: {
@@ -44,6 +45,7 @@ const DATE_FIELD_COPY: Record<
     today: "Сегодня",
     clear: "Очистить",
     dateBadge: "Календарь",
+    close: "Закрыть выбор даты",
   },
   en: {
     months: [
@@ -69,6 +71,7 @@ const DATE_FIELD_COPY: Record<
     today: "Today",
     clear: "Clear",
     dateBadge: "Calendar",
+    close: "Close date picker",
   },
 };
 
@@ -349,7 +352,7 @@ export function DateField({
             {isMobileViewport ? (
               <button
                 type="button"
-                aria-label="Close date picker"
+                aria-label={copy.close}
                 className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--color-background)_82%,transparent)] backdrop-blur-md"
                 onClick={() => setIsOpen(false)}
               />

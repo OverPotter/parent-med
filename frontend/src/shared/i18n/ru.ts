@@ -714,7 +714,8 @@ export const ru: Translations = {
           },
           {
             title: "Где это видно",
-            description: "На iPhone это видно на экране блокировки и в Dynamic Island.",
+            description:
+              "На iPhone это видно как большая карточка на экране блокировки и как компактная бровь в Dynamic Island.",
           },
           {
             title: "Кому идут сигналы",

@@ -37,11 +37,7 @@ export function OtherMembersSheet({
           <h2 className="app-card-title text-[1.08rem] sm:text-[1.15rem]">
             {tFamily(language, "otherMembersTitle")}
           </h2>
-          <p className="text-sm leading-5 text-muted">
-            {language === "ru"
-              ? "Выберите участника, чтобы открыть его настройки."
-              : "Choose a member to open their settings."}
-          </p>
+          <p className="text-sm leading-5 text-muted">{tFamily(language, "memberPickerHint")}</p>
         </div>
 
         {members.length === 0 ? (

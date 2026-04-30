@@ -81,6 +81,7 @@ export function RouteScrollReset() {
 export function PullToRefreshSync() {
   const queryClient = useQueryClient();
   const location = useLocation();
+  const language = useAppStore((s) => s.language);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isRefreshingRef = useRef(false);
   const refreshTimeoutRef = useRef<number | null>(null);
@@ -188,10 +189,14 @@ export function PullToRefreshSync() {
   }
 
   return (
-    <div className="soft-refresh-overlay" aria-live="polite" aria-label="Обновляем страницу">
+    <div
+      className="soft-refresh-overlay"
+      aria-live="polite"
+      aria-label={language === "ru" ? "Обновляем страницу" : "Refreshing page"}
+    >
       <div className="soft-refresh-indicator">
         <span className="soft-refresh-spinner" aria-hidden="true" />
-        <span>Обновляем…</span>
+        <span>{language === "ru" ? "Обновляем…" : "Refreshing…"}</span>
       </div>
     </div>
   );

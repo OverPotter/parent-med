@@ -79,8 +79,8 @@ export function SettingsLiveActivitiesSection({
     {
       key: "illness",
       title: tSettings(language, "liveActivitiesIllnessPreviewTitle"),
-      timer: language === "ru" ? "3 день" : "Day 3",
-      status: language === "ru" ? "Маша · Дать Нурофен в 23:10" : "Mia · Give Nurofen at 11:10 PM",
+      timer: tSettings(language, "liveActivitiesIllnessPreviewTimer"),
+      status: tSettings(language, "liveActivitiesIllnessPreviewDetails"),
       accentClassName: "from-[#38A39A] via-[#38A39A] to-[#38A39A]",
       accentSurfaceClassName: "bg-[#38A39A]/16 text-[#38A39A] border-[#38A39A]/14",
       surfaceClassName:
@@ -104,7 +104,7 @@ export function SettingsLiveActivitiesSection({
               onClick={onLockedPress}
               className="mt-3 inline-flex min-h-[2.35rem] items-center rounded-full border border-primary/18 bg-white/80 px-3 text-[0.78rem] font-semibold text-primary shadow-[0_10px_22px_rgba(15,23,42,0.08)]"
             >
-              {language === "ru" ? "Подключить Plus" : "Get Plus"}
+              {tSettings(language, "liveActivitiesUpgrade")}
             </button>
           ) : null}
         </div>
@@ -300,7 +300,7 @@ function LiveActivityPreviewCard({
           {tSettings(language, "liveActivitiesPreviewFromLockScreen")}
         </span>
         <span className="inline-flex shrink-0 items-center rounded-full border border-slate-900/10 bg-white/55 px-3 py-1 text-[0.72rem] font-semibold text-slate-950 dark:border-white/10 dark:bg-white/15 dark:text-white">
-          {language === "ru" ? "Открыть" : "Open"}
+          {tSettings(language, "liveActivitiesPreviewOpen")}
         </span>
       </div>
     </div>
