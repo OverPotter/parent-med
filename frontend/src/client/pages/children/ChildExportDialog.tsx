@@ -7,10 +7,9 @@ import {
 } from "@shared/api/children";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import {
-  childActionPrimaryClass,
   childActionSecondaryClass,
-  childActionSuccessClass,
 } from "./shared";
+import { exportOptionActiveClass, exportSaveActionClass } from "./exportSheetStyles";
 import {
   allExportsOption,
   clampExportSheetOffset,
@@ -242,7 +241,7 @@ export function ChildExportDialog({
                     type="button"
                     disabled={isPending}
                     onClick={() => setSelectedExport(kind)}
-                    className={`${isActive ? childActionPrimaryClass : childActionSecondaryClass} min-h-[3.5rem] items-center justify-center text-center`}
+                    className={`${isActive ? exportOptionActiveClass : childActionSecondaryClass} min-h-[3.5rem] items-center justify-center text-center`}
                   >
                     <span className="block text-[0.84rem] font-bold leading-5">
                       {copy.kindOptions[kind]}
@@ -256,7 +255,7 @@ export function ChildExportDialog({
                 onClick={() => setSelectedExport(allExportsOption)}
                 className={`${
                   selectedExport === allExportsOption
-                    ? childActionPrimaryClass
+                    ? exportOptionActiveClass
                     : childActionSecondaryClass
                 } min-h-[3.5rem] items-center justify-center text-center`}
               >
@@ -281,7 +280,7 @@ export function ChildExportDialog({
                     type="button"
                     disabled={isPending}
                     onClick={() => setPeriod(value)}
-                    className={isActive ? childActionPrimaryClass : childActionSecondaryClass}
+                    className={isActive ? exportOptionActiveClass : childActionSecondaryClass}
                   >
                     {copy.periodOptions[value]}
                   </button>
@@ -307,7 +306,7 @@ export function ChildExportDialog({
             type="button"
             onClick={() => void runPrimaryAction("csv")}
             disabled={isPending}
-            className={childActionSuccessClass}
+            className={exportSaveActionClass}
           >
             {isPending
               ? selectedExport === allExportsOption
@@ -319,7 +318,7 @@ export function ChildExportDialog({
             type="button"
             onClick={() => void runPrimaryAction("xlsx")}
             disabled={isPending}
-            className={childActionPrimaryClass}
+            className={exportSaveActionClass}
           >
             {isPending
               ? selectedExport === allExportsOption
