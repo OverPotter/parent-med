@@ -311,6 +311,18 @@ class AuthService(BaseAuthService):
             )
         )
 
+    @staticmethod
+    def _ensure_account_is_not_family_billing_owner(
+        family: Family | None,
+        account: Account,
+        detail: str,
+    ) -> None:
+        if family is not None and family.billing_account_id == account.id:
+            raise ValidationError(
+                detail,
+                code="BILLING_OWNER_TRANSFER_REQUIRED",
+            )
+
     async def delete_me(self, account_id: UUID) -> None:
         account = await self._account_repo.get_by_id(account_id)
         if account is None:
@@ -330,11 +342,11 @@ class AuthService(BaseAuthService):
                 "Нельзя удалить владельца семьи без явной передачи владения",
                 code="FAMILY_OWNER_TRANSFER_REQUIRED",
             )
-        if family is not None and family.billing_account_id == account.id:
-            raise ValidationError(
-                "Нельзя удалить аккаунт, пока на нём привязана семейная подписка",
-                code="BILLING_OWNER_TRANSFER_REQUIRED",
-            )
+        self._ensure_account_is_not_family_billing_owner(
+            family,
+            account,
+            "Нельзя удалить аккаунт, пока на нём привязана семейная подписка",
+        )
 
         await self._session_repo.delete_by_account_id(account.id)
         await self._soft_delete_account(account)
@@ -371,11 +383,11 @@ class AuthService(BaseAuthService):
                 "Владелец семьи не может просто выйти из семьи",
                 code="FAMILY_OWNER_CANNOT_LEAVE",
             )
-        if family.billing_account_id == account.id:
-            raise ValidationError(
-                "Нельзя выйти из семьи, пока на аккаунте привязана семейная подписка",
-                code="BILLING_OWNER_TRANSFER_REQUIRED",
-            )
+        self._ensure_account_is_not_family_billing_owner(
+            family,
+            account,
+            "Нельзя выйти из семьи, пока на аккаунте привязана семейная подписка",
+        )
 
         new_family = await self._family_repo.add(
             Family(
@@ -561,6 +573,14 @@ class AuthService(BaseAuthService):
         return self._account_to_response(account)
 
     async def _ensure_can_leave_current_family(self, account: Account) -> None:
+        family = await self._family_repo.get_by_id(account.family_id)
+        if family is None:
+            raise ForbiddenError("Семья не найдена", code="FAMILY_NOT_LINKED")
+        self._ensure_account_is_not_family_billing_owner(
+            family,
+            account,
+            "Нельзя присоединиться к другой семье, пока на аккаунте привязана семейная подписка",
+        )
         family_accounts = await self._account_repo.list_by_family_id(account.family_id)
         if len(family_accounts) != 1 or family_accounts[0].id != account.id:
             raise ValidationError(

@@ -11,6 +11,7 @@ import {
   configureNativeRevenueCat,
   getNativeRevenueCatCustomerSnapshot,
   getNativeRevenueCatOfferings,
+  logInNativeRevenueCat,
   purchaseNativeRevenueCatPackage,
   restoreNativeRevenueCatPurchases,
   setNativeRevenueCatLogLevel,
@@ -140,7 +141,7 @@ export function SettingsRevenueCatSection({
   const syncSuppressed = isRevenueCatSyncSuppressedForAccount(accountId);
 
   const refreshSubscriptionState = async (snapshot: RevenueCatCustomerSnapshot | null) => {
-    if (!snapshot || !backendSyncEnabled) {
+    if (!snapshot || !backendSyncEnabled || !accountId) {
       return;
     }
 
@@ -183,6 +184,7 @@ export function SettingsRevenueCatSection({
       appUserId: accountId,
       entitlementCode,
     });
+    await logInNativeRevenueCat(accountId);
   };
 
   const purchasePlan = async (plan: RevenueCatPlanKey) => {

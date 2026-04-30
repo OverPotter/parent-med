@@ -298,8 +298,8 @@ export function PrivacyPolicyPage() {
         </p>
         <p>
           {language === "ru"
-            ? "Удаление аккаунта PillPath не отменяет автоматически подписку Plus в App Store. Подпиской нужно управлять отдельно через Apple ID / App Store."
-            : "Deleting a PillPath account does not automatically cancel a Plus subscription in the App Store. The subscription must be managed separately through Apple ID / the App Store."}
+            ? "Удаление аккаунта PillPath не отменяет автоматически подписку Plus в App Store. Если этот аккаунт управляет Plus для семьи, сначала нужно отдельно отключить продление через Apple ID / App Store и дождаться окончания текущего оплаченного периода."
+            : "Deleting a PillPath account does not automatically cancel a Plus subscription in the App Store. If this account manages Plus for the family, renewal must first be turned off separately through Apple ID / the App Store, and the current paid period must be allowed to end."}
         </p>
 
         <h2 className="text-base font-semibold text-main">

@@ -115,6 +115,13 @@ export function PillboxPage() {
   const isEditing = Boolean(draft?.id);
   const hasReadyMedication = Boolean(draft?.medications.some(isMedicationReady));
   const hasSelectedTargetMember = Boolean(draft?.targetMemberId || isEditing);
+  const canAddMedication = isEditing || hasSelectedTargetMember;
+  const addMedicationBlockedReason =
+    !isEditing && !hasSelectedTargetMember
+      ? language === "ru"
+        ? "Сначала выберите, для кого этот план."
+        : "Choose who this plan is for first."
+      : null;
   const canSavePlan = hasReadyMedication && hasSelectedTargetMember;
   const saveBlockedReason = !hasReadyMedication
     ? tPillbox(language, "saveRequiresMedication")
@@ -557,12 +564,12 @@ export function PillboxPage() {
   const closeMedicationEditor = () => {
     const targetPlanId = draft?.id ?? selectedPlanId;
     if (backSource === "details" && targetPlanId) {
-      navigateWithDeferredCleanup(buildPillboxDetailsRoute(targetPlanId, listFilter), {
+      navigate(buildPillboxDetailsRoute(targetPlanId, listFilter), {
         replace: true,
       });
       return;
     }
-    navigateWithDeferredCleanup(buildPillboxSetupRoute(targetPlanId, routeOrigin), {
+    navigate(buildPillboxSetupRoute(targetPlanId, routeOrigin), {
       replace: true,
     });
   };
@@ -593,6 +600,9 @@ export function PillboxPage() {
   };
 
   const addMedication = () => {
+    if (!canAddMedication) {
+      return;
+    }
     const nextMedication = createMedication();
     setPendingNewMedicationId(nextMedication.id);
     setDraft((current) =>
@@ -1016,6 +1026,8 @@ export function PillboxPage() {
           language={language}
           draft={draft}
           familyMembers={eligiblePillboxMembers}
+          canAddMedication={canAddMedication}
+          addMedicationBlockedReason={addMedicationBlockedReason}
           canSavePlan={canSavePlan}
           saveBlockedReason={saveBlockedReason}
           saveAttempted={saveAttempted}
