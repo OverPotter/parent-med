@@ -1,6 +1,7 @@
 import type { PillboxPlan } from "@shared/api/pillboxPlans.contract";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { PlanPushRecipientsField } from "./PlanPushRecipientsField";
 import {
   actionCompactDangerClass,
@@ -38,7 +39,6 @@ export function PillboxDetailsScreen({
   onOpenMedication,
   familyMembers,
   currentAccountId,
-  recipientsSummary,
   onToggleRecipient,
   recipientSelectionPending,
   onRequestDelete,
@@ -72,7 +72,6 @@ export function PillboxDetailsScreen({
     relationshipLabel?: string | null;
   }>;
   currentAccountId: string | null;
-  recipientsSummary: string | null;
   onToggleRecipient: (memberIds: string[]) => void | Promise<void>;
   recipientSelectionPending: boolean;
   onRequestDelete: () => void;
@@ -101,10 +100,15 @@ export function PillboxDetailsScreen({
     return left.position - right.position;
   });
   const factsLine = formatPlanFactsLine(
-    selectedPlan.memberAccountIds.length,
     sortedMedications.length,
     language,
     selectedPlan.status === "archived" || selectedPlan.status === "completed"
+  );
+  const remindersLine = formatReminderRecipientsLine(
+    familyMembers
+      .filter((member) => selectedPlan.memberAccountIds.includes(member.id))
+      .map((member) => getAccountDisplayLabel(member)),
+    language
   );
   const isCompletedPlan = selectedPlan.status === "completed" || selectedPlan.status === "archived";
   const canDeletePlan = canEdit || (canAct && isCompletedPlan);
@@ -149,30 +153,45 @@ export function PillboxDetailsScreen({
                     {displayPillboxText(selectedPlan.title)}
                   </p>
                 </div>
-                {canAct &&
-                (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={selectedPlan.status === "active"}
-                    onClick={onToggleStatus}
-                    disabled={togglePlanStatusPending}
-                    className={[
-                      "baby-mode-switch relative mt-0.5 inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors",
-                      selectedPlan.status === "active" ? "baby-mode-switch--active" : "",
-                      togglePlanStatusPending ? "cursor-not-allowed opacity-60" : "",
-                    ].join(" ")}
-                  >
-                    <span
-                      className={[
-                        "baby-mode-switch__thumb absolute left-1 inline-block h-6 w-6 rounded-full transition-transform",
-                        selectedPlan.status === "active" ? "translate-x-6" : "translate-x-0",
-                      ].join(" ")}
+                <div className="flex shrink-0 items-center gap-2">
+                  {canEdit &&
+                  !disableEditingActions &&
+                  (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
+                    <PlanPushRecipientsField
+                      language={language}
+                      familyMembers={familyMembers}
+                      currentAccountId={currentAccountId}
+                      selectedMemberIds={selectedPlan.memberAccountIds}
+                      onSubmit={onToggleRecipient}
+                      isPending={recipientSelectionPending}
                     />
-                  </button>
-                ) : null}
+                  ) : null}
+                  {canAct &&
+                  (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={selectedPlan.status === "active"}
+                      onClick={onToggleStatus}
+                      disabled={togglePlanStatusPending}
+                      className={[
+                        "baby-mode-switch relative mt-0.5 inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors",
+                        selectedPlan.status === "active" ? "baby-mode-switch--active" : "",
+                        togglePlanStatusPending ? "cursor-not-allowed opacity-60" : "",
+                      ].join(" ")}
+                    >
+                      <span
+                        className={[
+                          "baby-mode-switch__thumb absolute left-1 inline-block h-6 w-6 rounded-full transition-transform",
+                          selectedPlan.status === "active" ? "translate-x-6" : "translate-x-0",
+                        ].join(" ")}
+                      />
+                    </button>
+                  ) : null}
+                </div>
               </div>
               <p className="text-[0.8rem] leading-5 text-muted">{factsLine}</p>
+              <p className="text-[0.8rem] leading-5 text-muted">{remindersLine}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
@@ -223,31 +242,6 @@ export function PillboxDetailsScreen({
             </div>
           </div>
         </div>
-
-        {canEdit &&
-        !disableEditingActions &&
-        (selectedPlan.status === "active" || selectedPlan.status === "paused") ? (
-          <div className="soft-panel rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="app-card-title">{tPillbox(language, "membersTitle")}</h2>
-                <PlanPushRecipientsField
-                  language={language}
-                  familyMembers={familyMembers}
-                  currentAccountId={currentAccountId}
-                  selectedMemberIds={selectedPlan.memberAccountIds}
-                  onSubmit={onToggleRecipient}
-                  isPending={recipientSelectionPending}
-                />
-              </div>
-              {recipientsSummary ? (
-                <p className="overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-6 text-muted">
-                  {recipientsSummary}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
 
         <div className="divide-y divide-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] overflow-hidden rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]">
           <div className="px-4 pb-2 pt-3 sm:px-5">
@@ -420,16 +414,12 @@ function formatTimesPerDayLabel(count: number, language: AppLanguage) {
 }
 
 function formatPlanFactsLine(
-  membersCount: number,
   medicationsCount: number,
   language: AppLanguage,
   isCompleted: boolean
 ) {
   if (language === "en") {
-    const facts = [
-      `${medicationsCount} ${medicationsCount === 1 ? "medicine" : "medicines"}`,
-      `${membersCount} ${membersCount === 1 ? "member" : "members"}`,
-    ];
+    const facts = [`${medicationsCount} ${medicationsCount === 1 ? "medicine" : "medicines"}`];
     if (isCompleted) facts.unshift("Completed");
     return facts.join(" · ");
   }
@@ -442,14 +432,25 @@ function formatPlanFactsLine(
           (medicationsCount % 100 < 12 || medicationsCount % 100 > 14)
         ? `${medicationsCount} лекарства`
         : `${medicationsCount} лекарств`;
-  const members =
-    membersCount % 10 === 1 && membersCount % 100 !== 11
-      ? `${membersCount} участник`
-      : membersCount % 10 >= 2 &&
-          membersCount % 10 <= 4 &&
-          (membersCount % 100 < 12 || membersCount % 100 > 14)
-        ? `${membersCount} участника`
-        : `${membersCount} участников`;
+  return [isCompleted ? "Завершён" : null, meds].filter(Boolean).join(" · ");
+}
 
-  return [isCompleted ? "Завершён" : null, meds, members].filter(Boolean).join(" · ");
+function formatReminderRecipientsLine(labels: string[], language: AppLanguage) {
+  if (language === "en") {
+    if (labels.length === 0) return "Reminders: nobody";
+    if (labels.length <= 2) return `Reminders: ${labels.join(", ")}`;
+    return `Reminders: ${labels.length} ${labels.length === 1 ? "member" : "members"}`;
+  }
+
+  if (labels.length === 0) return "Напоминания: никому";
+  if (labels.length <= 2) return `Напоминания: ${labels.join(", ")}`;
+  const participants =
+    labels.length % 10 === 1 && labels.length % 100 !== 11
+      ? `${labels.length} участник`
+      : labels.length % 10 >= 2 &&
+          labels.length % 10 <= 4 &&
+          (labels.length % 100 < 12 || labels.length % 100 > 14)
+        ? `${labels.length} участника`
+        : `${labels.length} участников`;
+  return `Напоминания: ${participants}`;
 }

@@ -26,7 +26,7 @@ test("buildPillboxPlanTargetTitle combines role and name for Russian copy", () =
       },
       "ru"
     ),
-    "Для Анна"
+    "Для мамы Анны"
   );
 });
 
@@ -52,6 +52,19 @@ test("buildPillboxPlanTargetTitle falls back to relationship label when name is 
       },
       "ru"
     ),
-    "Для мама"
+    "Для мамы"
+  );
+});
+
+test("buildPillboxPlanTargetTitle inflects a Russian display name with a simple consonant ending", () => {
+  assert.equal(
+    buildPillboxPlanTargetTitle(
+      {
+        id: "member-4",
+        displayName: "Артем",
+      },
+      "ru"
+    ),
+    "Для Артема"
   );
 });

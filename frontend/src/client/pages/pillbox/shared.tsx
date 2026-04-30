@@ -46,7 +46,6 @@ export type SetupDraft = {
   title: string;
   members: string[];
   targetMemberId: string | null;
-  recipientsCustomized: boolean;
   medications: MedicationItem[];
 };
 
@@ -743,7 +742,6 @@ export function buildDraft(accountId: string | null, plan?: PillboxPlan): SetupD
       title: "",
       members: accountId ? [accountId] : [],
       targetMemberId: null,
-      recipientsCustomized: false,
       medications: [],
     };
   }
@@ -752,7 +750,6 @@ export function buildDraft(accountId: string | null, plan?: PillboxPlan): SetupD
     title: plan.title,
     members: [...plan.memberAccountIds],
     targetMemberId: null,
-    recipientsCustomized: true,
     medications: plan.medications
       .slice()
       .sort((left, right) => left.position - right.position)
