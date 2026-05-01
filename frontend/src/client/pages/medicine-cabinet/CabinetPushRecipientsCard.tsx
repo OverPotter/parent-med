@@ -104,7 +104,6 @@ export function CabinetPushRecipientsCard({
                     : tFamily(language, "noName"));
                 const meta =
                   member.relationshipLabel ||
-                  member.email ||
                   (currentAccountId && member.id === currentAccountId
                     ? tFamily(language, "thisIsYou")
                     : tFamily(language, "member"));

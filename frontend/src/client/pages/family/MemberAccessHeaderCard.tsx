@@ -31,6 +31,21 @@ export function MemberAccessHeaderCard({
   onDelete: () => void;
 }) {
   const isOwner = familyOwnerAccountId === member.id;
+  const profileFacts = [
+    member.relationshipLabel
+      ? {
+          label: tFamily(language, "relationship"),
+          value: member.relationshipLabel,
+        }
+      : null,
+    member.phone
+      ? {
+          label: tFamily(language, "phone"),
+          value: member.phone,
+        }
+      : null,
+  ].filter((item): item is { label: string; value: string } => Boolean(item));
+
   return (
     <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
       <div className="space-y-4">
@@ -40,11 +55,6 @@ export function MemberAccessHeaderCard({
               <p className="app-card-title text-base">
                 {member.displayName || tFamily(language, "noName")}
               </p>
-              {member.relationshipLabel ? (
-                <span className="soft-pill rounded-full px-2.5 py-1 text-[11px]">
-                  {member.relationshipLabel}
-                </span>
-              ) : null}
               <span
                 className={`rounded-full px-2.5 py-1 text-[11px] ${
                   isOwner || member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill"
@@ -53,10 +63,16 @@ export function MemberAccessHeaderCard({
                 {roleLabel(member.familyRole, language, { isOwner })}
               </span>
             </div>
-            <p className="text-sm text-muted">
-              <span className="font-semibold text-foreground/90">{tFamily(language, "email")}: </span>
-              {member.email || tFamily(language, "emailMissing")}
-            </p>
+            {profileFacts.length ? (
+              <div className="grid gap-1.5">
+                {profileFacts.map((fact) => (
+                  <p key={fact.label} className="text-sm text-muted">
+                    <span className="font-semibold text-foreground/90">{fact.label}: </span>
+                    <span className="break-all">{fact.value}</span>
+                  </p>
+                ))}
+              </div>
+            ) : null}
           </div>
           {hasHeaderActions ? (
             <div className="min-w-0 shrink-0 space-y-2 sm:max-w-[18rem]">

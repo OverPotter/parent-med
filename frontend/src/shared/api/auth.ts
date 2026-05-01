@@ -95,6 +95,7 @@ export async function register(payload: {
   password: string;
   remember_me?: boolean;
   invite_token?: string;
+  use_latest_dev_invite?: boolean;
   preferred_language?: "ru" | "en";
 }): Promise<AuthSessionResponse> {
   const endpoint = isNativeClientRuntime() ? "/auth/native/signup" : "/auth/signup";

@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { fetchFamilies, fetchMyFamilyAccess } from "@shared/api/families";
-import {
-  acceptLatestDevFamilyInvite,
-  fetchLatestDevFamilyInvitePreview,
-} from "@shared/api/familyInvites";
-import { applySessionToClient } from "@shared/api/client";
+import { fetchLatestDevFamilyInvitePreview } from "@shared/api/familyInvites";
 import { hasNetworkUnavailableError } from "@shared/api/network";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { ModuleOfflineState } from "@shared/components/ModuleOfflineState";
@@ -18,7 +14,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import { normalizeFamilyAccessPolicy } from "@shared/familyAccess/policy";
-import { buildShareableInviteUrl } from "@shared/config/inviteLinks";
+import { buildLatestDevInviteUrl, buildShareableInviteUrl } from "@shared/config/inviteLinks";
 import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
 import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
 import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
@@ -44,11 +40,11 @@ export function FamilyPage() {
   const { language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [familyName, setFamilyName] = useState("");
   const [isEditingFamilyName, setIsEditingFamilyName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [devLatestInviteCopied, setDevLatestInviteCopied] = useState(false);
   const [isInviteSharePending, setIsInviteSharePending] = useState(false);
   const [inviteToast, setInviteToast] = useState<string | null>(null);
   const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
@@ -156,15 +152,16 @@ export function FamilyPage() {
   const latestInviteUrl = createInviteMutation.data
     ? buildShareableInviteUrl(createInviteMutation.data.invitePath, window.location.origin)
     : "";
+  const latestDevInviteUrl = buildLatestDevInviteUrl(
+    typeof window !== "undefined" ? window.location.origin : undefined
+  );
   const shouldOpenCurrentProfileEditor =
     searchParams.get("edit") === "profile" || searchParams.get("edit") === "me";
   const canShareInvite = typeof navigator !== "undefined" && typeof navigator.share === "function";
   const shouldUseDirectNativeInvite = isIosShell && canShareInvite;
   const canInviteMembers = familyAccess?.canInviteMembers ?? false;
   const inviteLockedReason =
-    isFamilyOwner && !canInviteMembers
-      ? tFamily(language, "invitesPlusOnly")
-      : null;
+    isFamilyOwner && !canInviteMembers ? tFamily(language, "invitesPlusOnly") : null;
 
   const inviteShareText = familyInviteShareText(language, familyTitle);
   const { data: latestDevInvitePreview } = useQuery({
@@ -172,24 +169,6 @@ export function FamilyPage() {
     queryFn: fetchLatestDevFamilyInvitePreview,
     enabled: Boolean(accountId && showDevInviteShortcut),
     retry: false,
-  });
-  const acceptLatestDevInviteMutation = useMutation({
-    mutationFn: () => acceptLatestDevFamilyInvite(),
-    onSuccess: (data) => {
-      applySessionToClient(data);
-      queryClient.invalidateQueries({ queryKey: ["families"] });
-      queryClient.invalidateQueries({ queryKey: ["family-members"] });
-      setError(null);
-      navigate("/family", { replace: true });
-    },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(
-        err.response?.data?.detail ??
-          (language === "ru"
-            ? "Не удалось подключиться к dev-приглашению."
-            : "Could not join the dev invite.")
-      );
-    },
   });
 
   useEffect(() => {
@@ -369,6 +348,27 @@ export function FamilyPage() {
     }
   };
 
+  const handleCopyDevInviteUrl = async () => {
+    try {
+      if (!latestDevInviteUrl) {
+        setError(
+          language === "ru"
+            ? "Не удалось собрать dev invite URL."
+            : "Could not build the dev invite URL."
+        );
+        return;
+      }
+      await navigator.clipboard.writeText(latestDevInviteUrl);
+      setDevLatestInviteCopied(true);
+      setInviteToast(tFamily(language, "devLatestInviteCopied"));
+      setError(null);
+    } catch {
+      setError(
+        language === "ru" ? "Не удалось скопировать dev URL." : "Could not copy the dev URL."
+      );
+    }
+  };
+
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <ConfirmDialog
@@ -389,10 +389,10 @@ export function FamilyPage() {
         title={familyTitle}
         subtitle={tFamily(language, "subtitle")}
         action={
-            <Link
-              to="/more"
-              className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
-            >
+          <Link
+            to="/more"
+            className="inline-flex min-h-[2.1rem] items-center text-sm font-extrabold text-primary"
+          >
             {tFamily(language, "moreBack")}
           </Link>
         }
@@ -570,9 +570,7 @@ export function FamilyPage() {
 
           {showDevInviteShortcut ? (
             <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-              <h2 className="app-card-title">
-                {tFamily(language, "devLatestInviteTitle")}
-              </h2>
+              <h2 className="app-card-title">{tFamily(language, "devLatestInviteTitle")}</h2>
               <p className="mt-1 text-sm leading-6 text-muted">
                 {latestDevInvitePreview
                   ? familyTemplateText(language, "devLatestInviteHintWithFamily", {
@@ -580,16 +578,37 @@ export function FamilyPage() {
                     })
                   : tFamily(language, "devLatestInviteHintWithoutFamily")}
               </p>
-              <div className="mt-4">
+              <div className="mt-4 space-y-3">
+                <div className="soft-panel-muted rounded-[20px] px-4 py-3">
+                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-muted">
+                    {tFamily(language, "devLatestInviteUrlLabel")}
+                  </p>
+                  <p className="mt-2 break-all text-sm leading-6 text-foreground">
+                    {latestDevInviteUrl || tFamily(language, "devLatestInviteUrlEmpty")}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleCopyDevInviteUrl();
+                    }}
+                    className="soft-button-secondary"
+                  >
+                    {devLatestInviteCopied
+                      ? tFamily(language, "devLatestInviteCopied")
+                      : tFamily(language, "devCopyLatestInvite")}
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => acceptLatestDevInviteMutation.mutate()}
-                  disabled={acceptLatestDevInviteMutation.isPending}
+                  onClick={() => {
+                    setError(null);
+                    navigate("/join-family?dev-latest=1");
+                  }}
                   className="soft-button-secondary disabled:opacity-50"
                 >
-                  {acceptLatestDevInviteMutation.isPending
-                    ? tFamily(language, "devJoining")
-                    : tFamily(language, "devJoinLatestInvite")}
+                  {tFamily(language, "devJoinLatestInvite")}
                 </button>
               </div>
             </RowSurface>

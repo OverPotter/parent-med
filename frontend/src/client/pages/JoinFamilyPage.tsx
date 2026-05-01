@@ -4,7 +4,12 @@ import { Capacitor } from "@capacitor/core";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { login, register } from "@shared/api/auth";
 import { applySessionToClient } from "@shared/api/client";
-import { acceptFamilyInvite, fetchFamilyInvitePreview } from "@shared/api/familyInvites";
+import {
+  acceptFamilyInvite,
+  acceptLatestDevFamilyInvite,
+  fetchFamilyInvitePreview,
+  fetchLatestDevFamilyInvitePreview,
+} from "@shared/api/familyInvites";
 import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
 import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
 import { PageIntro } from "@shared/components/PageIntro";
@@ -22,6 +27,11 @@ import { useAppStore } from "@shared/store/useAppStore";
 
 type Mode = "register" | "login";
 
+const appBtnPrimaryClass =
+  "app-btn-primary-md soft-button-primary inline-flex items-center justify-center";
+const appBtnSecondaryClass =
+  "app-btn-secondary-md soft-button-secondary inline-flex items-center justify-center";
+
 function roleLabel(role: string, language: "ru" | "en"): string {
   if (role === "admin") {
     return language === "ru" ? "Администратор семьи" : "Family admin";
@@ -35,7 +45,11 @@ export function JoinFamilyPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isNativeRuntime = Capacitor.isNativePlatform();
-  const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
+  const isDevLatestShortcut =
+    (import.meta.env.DEV || import.meta.env.MODE === "mobile-dev") &&
+    searchParams.get("dev-latest") === "1";
+  const isPublicWebsiteMode =
+    !isNativeRuntime && shouldUsePublicWebsiteMode() && !isDevLatestShortcut;
   const token = searchParams.get("token")?.trim() ?? "";
   const appStoreUrl = getAppStoreUrl();
   const [mode, setMode] = useState<Mode>("register");
@@ -58,17 +72,24 @@ export function JoinFamilyPage() {
           loginFailed: "Не удалось войти в аккаунт.",
           registerFailed: "Не удалось создать аккаунт по приглашению.",
           acceptInviteFailed: "Не удалось принять приглашение.",
+          devLatestAuthHint:
+            "Это dev-сценарий для последнего локального приглашения. Войдите под уже существующим test-аккаунтом, затем подтвердите присоединение как в обычном invite-flow.",
           passwordsMismatch: "Пароли не совпадают.",
           pageTitle: "Присоединиться к семейному кабинету",
           pageSubtitle:
             "У каждого взрослого свой личный аккаунт, но дети, аптечка и история болезни общие на уровне семьи.",
           pageEyebrow: "Приглашение в семью",
-          leadsToTitle: "Куда ведёт ссылка",
+          leadsToTitle: "Вы присоединяетесь к семье",
+          leadsToSubtitle:
+            "После подтверждения у вас будет свой аккаунт, а дети, аптечка и записи останутся общими для всей семьи.",
           checkingInvite: "Проверяем приглашение…",
           family: "Семья",
           inviteRole: "Роль по ссылке",
           validUntil: "Действует до",
+          continueInApp: "Дальше сценарий продолжится в приложении PillPath для iPhone.",
           currentAccountTitle: "Текущий аккаунт",
+          currentAccountSubtitle:
+            "Проверьте, что это тот аккаунт, который должен войти в новую семью.",
           familyName: "Имя в семье",
           you: "Вы",
           notSpecified: "Не указан",
@@ -81,8 +102,7 @@ export function JoinFamilyPage() {
             "Новый аккаунт можно сразу привязать к семье по этой ссылке. Если аккаунт уже есть, войдите под ним, затем подтвердите присоединение.",
           requiredFields: "Обязательные поля",
           requiredFieldsHint: "Для входа и регистрации нужен только email и пароль.",
-          emailHint:
-            "После входа можно будет отдельно заполнить, как вас показывать в семье.",
+          emailHint: "После входа можно будет отдельно заполнить, как вас показывать в семье.",
           profileHint:
             "Имя в семье и дополнительные данные можно будет заполнить уже после подключения к семейному кабинету.",
           loginSubmit: "Войти и продолжить",
@@ -91,16 +111,19 @@ export function JoinFamilyPage() {
           registerLoading: "Создаём аккаунт…",
           publicTitle: "Приглашение открывается в приложении",
           publicSubtitle:
-            "Сайт показывает, куда ведёт ссылка. Если приложения ещё нет, здесь можно сразу создать аккаунт по приглашению, а дальше продолжить в PillPath для iPhone.",
+            "Здесь можно посмотреть, в какую семью ведёт приглашение, и при необходимости создать аккаунт. Дальше вы продолжите в приложении PillPath для iPhone.",
           publicEyebrow: "Приглашение в семью",
           nextStepTitle: "Создать аккаунт по приглашению",
           nextStepDescription:
             "Если у вас ещё нет аккаунта, создайте его прямо здесь. После регистрации продолжение семейного кабинета будет в приложении для iPhone.",
-          downloadApp: "Скачать в App Store",
-          openApp: "Открыть приложение",
-          installedApp: "Я уже установил приложение",
+          handoffTitle: "Продолжить в приложении",
+          handoffHint:
+            "Если приложение уже установлено, откройте приглашение сразу. Если нет, сначала установите PillPath, а затем вернитесь на эту страницу.",
+          downloadApp: "Скачать PillPath",
+          openApp: "Открыть PillPath",
+          installedApp: "Вернуться после установки",
           installedAppHint:
-            "Ссылка-приглашение сохранена в этой странице. После установки вернитесь сюда и нажмите «Я уже установил приложение», чтобы открыть PillPath с этим приглашением.",
+            "После установки снова откройте эту страницу и нажмите «Вернуться после установки», чтобы продолжить с тем же приглашением.",
           publicRegisterTitle: "Создать аккаунт",
           publicRegisterHint:
             "Новый аккаунт сразу привяжется к семье из этого приглашения. После этого установите приложение и войдите под тем же email.",
@@ -109,23 +132,33 @@ export function JoinFamilyPage() {
           publicRegisterSuccessTitle: "Аккаунт создан",
           publicRegisterSuccessDescription:
             "Теперь установите или откройте PillPath на iPhone и войдите под этим email, чтобы продолжить в семейном кабинете.",
+          invalidInviteHelpTitle: "Нужна новая ссылка",
+          invalidInviteHelpDescription:
+            "По этой ссылке нельзя создать аккаунт или присоединиться к семье. Попросите владельца семьи отправить новое приглашение.",
         }
       : {
-          incompleteInviteLink: "The invite link is incomplete. Open the full link from the message.",
+          incompleteInviteLink:
+            "The invite link is incomplete. Open the full link from the message.",
           loginFailed: "Could not sign in.",
           registerFailed: "Could not create an account from this invite.",
           acceptInviteFailed: "Could not accept the invite.",
+          devLatestAuthHint:
+            "This is a dev shortcut for the latest local invite. Sign in with an existing test account first, then confirm joining through the normal invite flow.",
           passwordsMismatch: "Passwords do not match.",
           pageTitle: "Join the family workspace",
           pageSubtitle:
             "Each adult has a personal account, while children, the medicine cabinet, and the health history stay shared at the family level.",
           pageEyebrow: "Family invite",
-          leadsToTitle: "Where this link leads",
+          leadsToTitle: "You are joining this family",
+          leadsToSubtitle:
+            "After confirmation you will keep your own account, while children, the medicine cabinet, and records stay shared for the family.",
           checkingInvite: "Checking the invite…",
           family: "Family",
           inviteRole: "Invite role",
           validUntil: "Valid until",
+          continueInApp: "The rest of this flow continues in the PillPath iPhone app.",
           currentAccountTitle: "Current account",
+          currentAccountSubtitle: "Check that this is the account that should join the new family.",
           familyName: "Family name",
           you: "You",
           notSpecified: "Not set",
@@ -138,7 +171,8 @@ export function JoinFamilyPage() {
             "A new account can be linked to the family right from this link. If you already have an account, sign in first and then confirm joining.",
           requiredFields: "Required fields",
           requiredFieldsHint: "Only email and password are required for sign-in and registration.",
-          emailHint: "After sign-in you can separately choose how your name appears inside the family.",
+          emailHint:
+            "After sign-in you can separately choose how your name appears inside the family.",
           profileHint:
             "Your family display name and extra details can be filled in after you join the family workspace.",
           loginSubmit: "Sign in and continue",
@@ -147,16 +181,19 @@ export function JoinFamilyPage() {
           registerLoading: "Creating account…",
           publicTitle: "This invite continues in the app",
           publicSubtitle:
-            "The website shows where the link leads. If the app is not installed yet, you can create an account from this invite here and continue in the PillPath iPhone app.",
+            "This page shows which family the invite belongs to and lets you create an account if needed. After that, continue in the PillPath iPhone app.",
           publicEyebrow: "Family invite",
           nextStepTitle: "Create an account from this invite",
           nextStepDescription:
             "If you do not have an account yet, create it here first. After that, continue the family flow in the PillPath iPhone app.",
-          downloadApp: "Download on the App Store",
-          openApp: "Open app",
-          installedApp: "I already installed the app",
+          handoffTitle: "Continue in the app",
+          handoffHint:
+            "If the app is already installed, open the invite now. If not, install PillPath first and then return to this page.",
+          downloadApp: "Download PillPath",
+          openApp: "Open PillPath",
+          installedApp: "Return after install",
           installedAppHint:
-            "This invite link stays on this page. After installation, come back here and tap “I already installed the app” to open PillPath with the same invite.",
+            "After installation, open this page again and tap “Return after install” to continue with the same invite.",
           publicRegisterTitle: "Create account",
           publicRegisterHint:
             "A new account created here will be linked to this family invite immediately. Then install or open the iPhone app and sign in with the same email.",
@@ -165,19 +202,24 @@ export function JoinFamilyPage() {
           publicRegisterSuccessTitle: "Account created",
           publicRegisterSuccessDescription:
             "Now install or open PillPath on iPhone and sign in with this email to continue inside the family workspace.",
+          invalidInviteHelpTitle: "A new invite link is needed",
+          invalidInviteHelpDescription:
+            "You cannot create an account or join a family from this link. Ask the family owner to send a new invite.",
         };
   const [publicInviteRegisteredEmail, setPublicInviteRegisteredEmail] = useState<string | null>(
     null
   );
+  const canRegisterFromInvite = Boolean(token) || isDevLatestShortcut;
 
   const {
     data: invitePreview,
     isLoading: isInviteLoading,
     error: inviteError,
   } = useQuery({
-    queryKey: ["family-invite", "preview", token],
-    queryFn: () => fetchFamilyInvitePreview(token),
-    enabled: Boolean(token),
+    queryKey: ["family-invite", isDevLatestShortcut ? "dev-latest" : "preview", token],
+    queryFn: () =>
+      isDevLatestShortcut ? fetchLatestDevFamilyInvitePreview() : fetchFamilyInvitePreview(token),
+    enabled: isDevLatestShortcut || Boolean(token),
     retry: false,
   });
 
@@ -187,15 +229,20 @@ export function JoinFamilyPage() {
   );
 
   const inviteErrorMessage = useMemo(() => {
-    if (!token) {
+    if (!token && !isDevLatestShortcut) {
       return ui.incompleteInviteLink;
     }
     return (
       (inviteError as { response?: { data?: { detail?: string } } } | null)?.response?.data
         ?.detail ?? null
     );
-  }, [inviteError, token, ui.incompleteInviteLink]);
-  const canRenderPublicInviteRegistration = Boolean(token && invitePreview && !inviteErrorMessage);
+  }, [inviteError, isDevLatestShortcut, token, ui.incompleteInviteLink]);
+  const canRenderPublicInviteRegistration = Boolean(
+    token && invitePreview && !inviteErrorMessage && !isDevLatestShortcut
+  );
+  const isInvalidPublicInvite = Boolean(
+    !publicInviteRegisteredEmail && !isInviteLoading && inviteErrorMessage && !isDevLatestShortcut
+  );
 
   const loginMutation = useMutation({
     mutationFn: (payload: { email: string; password: string; remember_me: boolean }) =>
@@ -220,7 +267,8 @@ export function JoinFamilyPage() {
       email: string;
       password: string;
       remember_me: boolean;
-      invite_token: string;
+      invite_token?: string;
+      use_latest_dev_invite?: boolean;
       preferred_language: "ru" | "en";
     }) => register(payload),
     onSuccess: (data) => {
@@ -248,7 +296,8 @@ export function JoinFamilyPage() {
   });
 
   const acceptInviteMutation = useMutation({
-    mutationFn: () => acceptFamilyInvite(token),
+    mutationFn: () =>
+      isDevLatestShortcut ? acceptLatestDevFamilyInvite() : acceptFamilyInvite(token),
     onSuccess: (data) => {
       applySessionToClient(data);
       setError(null);
@@ -270,7 +319,7 @@ export function JoinFamilyPage() {
     event.preventDefault();
     const trimmedEmail = email.trim();
     if (
-      !token ||
+      (!token && !isDevLatestShortcut) ||
       !trimmedEmail ||
       (mode === "register" ? password.length < 8 : password.length === 0)
     ) {
@@ -290,7 +339,8 @@ export function JoinFamilyPage() {
       email: trimmedEmail,
       password,
       remember_me: rememberMe,
-      invite_token: token,
+      invite_token: token || undefined,
+      use_latest_dev_invite: isDevLatestShortcut || undefined,
       preferred_language: language,
     });
   };
@@ -298,8 +348,11 @@ export function JoinFamilyPage() {
   const isPending =
     loginMutation.isPending || registerMutation.isPending || acceptInviteMutation.isPending;
   const passwordsMismatch =
-    mode === "register" && passwordConfirm.length > 0 && password !== passwordConfirm;
-  const isRegisterMode = mode === "register";
+    canRegisterFromInvite &&
+    mode === "register" &&
+    passwordConfirm.length > 0 &&
+    password !== passwordConfirm;
+  const isRegisterMode = canRegisterFromInvite && mode === "register";
   const joinFamilyRoute = buildJoinFamilyRoute(token);
   const nativeJoinFamilyUrl = buildNativeAppUrl(joinFamilyRoute);
   const primaryJoinFamilyHref = appStoreUrl || nativeJoinFamilyUrl;
@@ -373,6 +426,15 @@ export function JoinFamilyPage() {
     }
   };
 
+  const handleModeChange = (nextMode: Mode) => {
+    setMode(nextMode);
+    setEmail("");
+    setPassword("");
+    setPasswordConfirm("");
+    setError(null);
+    setIsPasswordVisible(false);
+  };
+
   if (isPublicWebsiteMode) {
     return (
       <div className="min-w-0 space-y-6">
@@ -391,25 +453,34 @@ export function JoinFamilyPage() {
           ) : inviteErrorMessage ? (
             <p className="soft-note-danger mt-3">{inviteErrorMessage}</p>
           ) : invitePreview ? (
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <InfoCard label={ui.family} value={invitePreview.familyName} />
-              <InfoCard label={ui.inviteRole} value={roleLabel(invitePreview.familyRole, language)} />
-              <InfoCard
-                label={ui.validUntil}
-                value={new Date(invitePreview.expiresAt).toLocaleString(
+            <InviteSummaryCard
+              familyName={invitePreview.familyName}
+              subtitle={ui.leadsToSubtitle}
+              metadata={[
+                `${ui.inviteRole}: ${roleLabel(invitePreview.familyRole, language)}`,
+                `${ui.validUntil} ${new Date(invitePreview.expiresAt).toLocaleString(
                   language === "ru" ? "ru-RU" : "en-US"
-                )}
-              />
-            </div>
+                )}`,
+              ]}
+              note={appStoreUrl ? ui.continueInApp : null}
+            />
           ) : null}
         </Surface>
 
         <Surface className="p-5 sm:p-6">
           <h2 className="app-card-title">
-            {publicInviteRegisteredEmail ? ui.publicRegisterSuccessTitle : ui.publicRegisterTitle}
+            {publicInviteRegisteredEmail
+              ? ui.publicRegisterSuccessTitle
+              : isInvalidPublicInvite
+                ? ui.invalidInviteHelpTitle
+                : ui.publicRegisterTitle}
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            {publicInviteRegisteredEmail ? ui.publicRegisterSuccessDescription : ui.publicRegisterHint}
+            {publicInviteRegisteredEmail
+              ? ui.publicRegisterSuccessDescription
+              : isInvalidPublicInvite
+                ? ui.invalidInviteHelpDescription
+                : ui.publicRegisterHint}
           </p>
 
           {publicInviteRegisteredEmail ? (
@@ -418,28 +489,21 @@ export function JoinFamilyPage() {
                 <InfoCard label={copy.auth.fields.email} value={publicInviteRegisteredEmail} />
                 <InfoCard label={ui.family} value={invitePreview?.familyName ?? ui.notSpecified} />
               </div>
-              <div className="auth-v3-handoff-stack mt-6">
-                <a
-                  href={primaryJoinFamilyHref}
-                  onClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
-                  target={appStoreUrl ? "_blank" : undefined}
-                  rel={appStoreUrl ? "noreferrer" : undefined}
-                  className="auth-v3-submit auth-v3-handoff-primary text-center"
-                >
-                  {appStoreUrl ? ui.downloadApp : ui.openApp}
-                </a>
-                {appStoreUrl ? (
-                  <>
-                    <a href={nativeJoinFamilyUrl} className="auth-v3-handoff-secondary text-center">
-                      {ui.installedApp}
-                    </a>
-                    <div className="soft-note-info rounded-2xl px-4 py-3 text-sm leading-6">
-                      {ui.installedAppHint}
-                    </div>
-                  </>
-                ) : null}
-              </div>
+              <PublicHandoffActions
+                title={ui.handoffTitle}
+                hint={ui.handoffHint}
+                primaryLabel={appStoreUrl ? ui.downloadApp : ui.openApp}
+                secondaryLabel={appStoreUrl ? ui.installedApp : null}
+                secondaryHint={appStoreUrl ? ui.installedAppHint : null}
+                primaryHref={primaryJoinFamilyHref}
+                secondaryHref={appStoreUrl ? nativeJoinFamilyUrl : null}
+                onPrimaryClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
+              />
             </>
+          ) : isInvalidPublicInvite ? (
+            <div className="mt-4">
+              <p className="text-sm leading-6 text-muted">{inviteErrorMessage}</p>
+            </div>
           ) : canRenderPublicInviteRegistration ? (
             <form
               onSubmit={handleSubmit}
@@ -494,7 +558,7 @@ export function JoinFamilyPage() {
               <button
                 type="button"
                 onClick={() => setIsPasswordVisible((current) => !current)}
-                className="auth-v3-handoff-secondary"
+                className={`${appBtnSecondaryClass} w-full px-4 sm:w-auto`}
               >
                 {isPasswordVisible
                   ? copy.auth.actions.hidePassword
@@ -510,27 +574,22 @@ export function JoinFamilyPage() {
                   !passwordConfirm ||
                   password !== passwordConfirm
                 }
-                className="auth-v3-submit"
+                className={`${appBtnPrimaryClass} w-full px-4 disabled:opacity-50`}
               >
                 {registerMutation.isPending ? ui.publicRegisterLoading : ui.publicRegisterSubmit}
               </button>
 
-              <div className="auth-v3-handoff-stack pt-2">
-                <a
-                  href={primaryJoinFamilyHref}
-                  onClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
-                  target={appStoreUrl ? "_blank" : undefined}
-                  rel={appStoreUrl ? "noreferrer" : undefined}
-                  className="auth-v3-handoff-secondary text-center"
-                >
-                  {appStoreUrl ? ui.downloadApp : ui.openApp}
-                </a>
-                {appStoreUrl ? (
-                  <a href={nativeJoinFamilyUrl} className="auth-v3-handoff-secondary text-center">
-                    {ui.installedApp}
-                  </a>
-                ) : null}
-              </div>
+              <PublicHandoffActions
+                title={ui.handoffTitle}
+                hint={ui.handoffHint}
+                primaryLabel={appStoreUrl ? ui.downloadApp : ui.openApp}
+                secondaryLabel={appStoreUrl ? ui.installedApp : null}
+                secondaryHint={appStoreUrl ? ui.installedAppHint : null}
+                primaryHref={primaryJoinFamilyHref}
+                secondaryHref={appStoreUrl ? nativeJoinFamilyUrl : null}
+                onPrimaryClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
+                className="pt-2"
+              />
             </form>
           ) : null}
         </Surface>
@@ -555,25 +614,33 @@ export function JoinFamilyPage() {
         ) : inviteErrorMessage ? (
           <p className="soft-note-danger mt-3">{inviteErrorMessage}</p>
         ) : invitePreview ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <InfoCard label={ui.family} value={invitePreview.familyName} />
-            <InfoCard label={ui.inviteRole} value={roleLabel(invitePreview.familyRole, language)} />
-            <InfoCard
-              label={ui.validUntil}
-              value={new Date(invitePreview.expiresAt).toLocaleString(
+          <InviteSummaryCard
+            familyName={invitePreview.familyName}
+            subtitle={ui.leadsToSubtitle}
+            metadata={[
+              `${ui.inviteRole}: ${roleLabel(invitePreview.familyRole, language)}`,
+              `${ui.validUntil} ${new Date(invitePreview.expiresAt).toLocaleString(
                 language === "ru" ? "ru-RU" : "en-US"
-              )}
-            />
-          </div>
+              )}`,
+            ]}
+          />
         ) : null}
       </Surface>
 
       {invitePreview && isAuthenticated ? (
         <Surface className="p-5 sm:p-6">
           <p className="app-card-title">{ui.currentAccountTitle}</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <InfoCard label={ui.familyName} value={accountDisplayName?.trim() || ui.you} />
-            <InfoCard label={copy.auth.fields.email} value={accountEmail || ui.notSpecified} />
+          <p className="mt-2 text-sm leading-6 text-muted">{ui.currentAccountSubtitle}</p>
+          <div className="mt-4">
+            <p className="text-[1.08rem] font-bold tracking-[-0.03em] text-foreground">
+              {accountEmail || ui.notSpecified}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              {ui.familyName}:{" "}
+              <span className="font-semibold text-foreground">
+                {accountDisplayName?.trim() || ui.you}
+              </span>
+            </p>
           </div>
 
           {isAlreadyInTargetFamily ? (
@@ -589,7 +656,7 @@ export function JoinFamilyPage() {
                 type="button"
                 onClick={() => acceptInviteMutation.mutate()}
                 disabled={isPending}
-                className="soft-button-primary mt-4 disabled:opacity-50"
+                className={`${appBtnPrimaryClass} mt-4 w-full px-4 disabled:opacity-50 sm:w-auto`}
               >
                 {acceptInviteMutation.isPending ? ui.joining : ui.joinFamily}
               </button>
@@ -599,28 +666,32 @@ export function JoinFamilyPage() {
       ) : (
         <Surface className="p-5 sm:p-6">
           <h2 className="app-card-title">{ui.authTitle}</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">{ui.authHint}</p>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            {isDevLatestShortcut ? ui.devLatestAuthHint : ui.authHint}
+          </p>
 
-          <div className="soft-panel-muted mt-6 flex rounded-[20px] p-1.5">
-            <button
-              type="button"
-              onClick={() => setMode("register")}
-              className={`flex-1 px-3 py-2.5 text-sm transition-colors ${
-                mode === "register" ? "soft-tab-active" : "soft-tab"
-              }`}
-            >
-              {copy.auth.page.registerTab}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("login")}
-              className={`flex-1 px-3 py-2.5 text-sm transition-colors ${
-                mode === "login" ? "soft-tab-active" : "soft-tab"
-              }`}
-            >
-              {copy.auth.page.loginTab}
-            </button>
-          </div>
+          {canRegisterFromInvite ? (
+            <div className="soft-panel-muted mt-6 flex rounded-[20px] p-1.5">
+              <button
+                type="button"
+                onClick={() => handleModeChange("register")}
+                className={`flex-1 px-3 py-2.5 text-sm transition-colors ${
+                  mode === "register" ? "soft-tab-active" : "soft-tab"
+                }`}
+              >
+                {copy.auth.page.registerTab}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModeChange("login")}
+                className={`flex-1 px-3 py-2.5 text-sm transition-colors ${
+                  mode === "login" ? "soft-tab-active" : "soft-tab"
+                }`}
+              >
+                {copy.auth.page.loginTab}
+              </button>
+            </div>
+          ) : null}
 
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div className="soft-panel rounded-[24px] p-4">
@@ -679,23 +750,23 @@ export function JoinFamilyPage() {
 
             <RememberMeCard checked={rememberMe} onChange={setRememberMe} />
 
-            {isRegisterMode && (
-              <p className="soft-field-hint">{ui.profileHint}</p>
-            )}
+            {isRegisterMode && <p className="soft-field-hint">{ui.profileHint}</p>}
 
-            {passwordsMismatch && <p className="soft-note-warning">{copy.auth.page.passwordsMismatch}</p>}
+            {passwordsMismatch && (
+              <p className="soft-note-warning">{copy.auth.page.passwordsMismatch}</p>
+            )}
             {error && <p className="soft-note-danger">{error}</p>}
 
             <button
               type="submit"
               disabled={
-                !token ||
+                !canRegisterFromInvite ||
                 isPending ||
                 !email.trim() ||
                 (isRegisterMode ? password.length < 8 : password.length === 0) ||
                 (isRegisterMode && (!passwordConfirm || password !== passwordConfirm))
               }
-              className="auth-v3-submit w-full disabled:opacity-50"
+              className={`${appBtnPrimaryClass} w-full px-4 disabled:opacity-50`}
             >
               {mode === "login"
                 ? loginMutation.isPending
@@ -719,6 +790,80 @@ function InfoCard({ label, value }: { label: string; value: string }) {
       <p className="mt-2 text-[0.98rem] font-semibold tracking-[-0.025em] text-foreground">
         {value}
       </p>
+    </div>
+  );
+}
+
+function InviteSummaryCard({
+  familyName,
+  subtitle,
+  metadata,
+  note,
+}: {
+  familyName: string;
+  subtitle: string;
+  metadata: string[];
+  note?: string | null;
+}) {
+  return (
+    <div className="mt-4">
+      <p className="text-[1.24rem] font-extrabold tracking-[-0.04em] text-foreground sm:text-[1.36rem]">
+        {familyName}
+      </p>
+      <p className="mt-3 max-w-[34rem] text-sm leading-6 text-muted">{subtitle}</p>
+      <p className="mt-4 text-sm leading-6 text-muted">{metadata.join(" • ")}</p>
+      {note ? <p className="mt-3 text-sm leading-6 text-muted">{note}</p> : null}
+    </div>
+  );
+}
+
+function PublicHandoffActions({
+  title,
+  hint,
+  primaryLabel,
+  secondaryLabel,
+  secondaryHint,
+  primaryHref,
+  secondaryHref,
+  onPrimaryClick,
+  className,
+}: {
+  title: string;
+  hint: string;
+  primaryLabel: string;
+  secondaryLabel?: string | null;
+  secondaryHint?: string | null;
+  primaryHref: string;
+  secondaryHref?: string | null;
+  onPrimaryClick?: (() => void) | undefined;
+  className?: string;
+}) {
+  return (
+    <div className={`mt-6 space-y-3 ${className ?? ""}`.trim()}>
+      <div className="space-y-1.5">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-sm leading-6 text-muted">{hint}</p>
+      </div>
+      <div className="auth-v3-handoff-stack">
+        <a
+          href={primaryHref}
+          onClick={onPrimaryClick}
+          target={onPrimaryClick ? "_blank" : undefined}
+          rel={onPrimaryClick ? "noreferrer" : undefined}
+          className={`${appBtnPrimaryClass} w-full px-4 text-center no-underline`}
+        >
+          {primaryLabel}
+        </a>
+        {secondaryLabel && secondaryHref ? (
+          <a
+            href={secondaryHref}
+            className={`${appBtnSecondaryClass} w-full px-4 text-center no-underline`}
+          >
+            {secondaryLabel}
+          </a>
+        ) : null}
+      </div>
+      {secondaryHint ? <p className="text-sm leading-6 text-muted">{secondaryHint}</p> : null}
     </div>
   );
 }

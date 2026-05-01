@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useI18n } from "@shared/hooks/useI18n";
-import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { HouseholdMedicine, WeightEntry } from "@shared/types/api";
 import { getCurrentDeviceTimestampIso, getLocalIsoDate } from "@shared/utils/date";
-import { blurActiveField, scrollFieldIntoView } from "@shared/utils/focus";
+import { scrollFieldIntoView } from "@shared/utils/focus";
 import {
   calculateMedicationDoseRecommendation,
   getMedicationDosePerKgReference,
@@ -91,7 +90,6 @@ export function MedicationPlanComposer({
   onCancel?: () => void;
 }) {
   const { language } = useI18n();
-  const isIosShell = useIsIosShell();
   const [searchParams, setSearchParams] = useSearchParams();
   const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const isCabinetPickerOpen = searchParams.get("picker") === "cabinet";
@@ -135,7 +133,6 @@ export function MedicationPlanComposer({
   );
   const [firstDoseDate, setFirstDoseDate] = useState(getLocalIsoDate());
   const [firstDoseTime, setFirstDoseTime] = useState(getCurrentLocalTimeValue());
-  const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
   const autoAppliedWeightRef = useRef<string | null>(null);
   const autoAppliedDosePerKgRef = useRef<string | null>(null);
   const autoFillWeightEnabledRef = useRef(true);
@@ -300,28 +297,12 @@ export function MedicationPlanComposer({
       ) {
         return;
       }
-      setHasKeyboardFocus(true);
       scrollFieldIntoView(target, { delayMs: 140, block: "center" });
     };
 
-    const handleFocusOut = () => {
-      window.setTimeout(() => {
-        const activeElement = document.activeElement;
-        const stillInForm =
-          activeElement instanceof HTMLElement &&
-          root.contains(activeElement) &&
-          activeElement.matches(
-            "input:not([type='hidden']):not([type='checkbox']):not([type='radio']), textarea, select, [contenteditable='true']"
-          );
-        setHasKeyboardFocus(Boolean(stillInForm));
-      }, 0);
-    };
-
     root.addEventListener("focusin", handleFocusIn);
-    root.addEventListener("focusout", handleFocusOut);
     return () => {
       root.removeEventListener("focusin", handleFocusIn);
-      root.removeEventListener("focusout", handleFocusOut);
     };
   }, []);
 
@@ -619,18 +600,6 @@ export function MedicationPlanComposer({
       ) : null}
 
       <div className="grid gap-2 border-t border-border/60 pt-4">
-        {isIosShell && hasKeyboardFocus ? (
-          <button
-            type="button"
-            onClick={() => {
-              blurActiveField();
-              setHasKeyboardFocus(false);
-            }}
-            className={`${reminderComposerSecondaryActionClass} w-full`}
-          >
-            {language === "ru" ? "Скрыть клавиатуру" : "Hide keyboard"}
-          </button>
-        ) : null}
         <div className={`grid gap-2 ${onCancel ? "grid-cols-2" : "grid-cols-1"}`}>
           {onCancel ? (
             <button
