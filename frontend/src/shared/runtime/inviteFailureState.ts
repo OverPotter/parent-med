@@ -66,40 +66,6 @@ export function resolveInviteFailureState(params: {
         blocksAuth: true,
         clearPendingRoute: true,
       };
-    case "FAMILY_INVITE_HANDOFF_ALREADY_USED":
-      return {
-        title:
-          params.language === "ru"
-            ? "Продолжение приглашения уже использовано"
-            : "Invite handoff already used",
-        description:
-          params.language === "ru"
-            ? "Этот шаг приглашения уже был использован. Откройте исходную ссылку приглашения ещё раз или попросите новую."
-            : "This invite handoff has already been used. Open the original invite link again or ask for a new one.",
-        inlineMessage:
-          params.language === "ru"
-            ? "Этот шаг приглашения уже использован. Откройте ссылку приглашения ещё раз."
-            : "This invite handoff has already been used. Open the invite link again.",
-        blocksAuth: true,
-        clearPendingRoute: true,
-      };
-    case "FAMILY_INVITE_HANDOFF_EXPIRED":
-      return {
-        title:
-          params.language === "ru"
-            ? "Шаг приглашения истёк"
-            : "Invite handoff expired",
-        description:
-          params.language === "ru"
-            ? "Временный шаг для продолжения в приложении истёк. Откройте исходную ссылку приглашения ещё раз."
-            : "The temporary app handoff step has expired. Open the original invite link again.",
-        inlineMessage:
-          params.language === "ru"
-            ? "Нужно снова открыть ссылку приглашения."
-            : "Open the invite link again to continue.",
-        blocksAuth: true,
-        clearPendingRoute: true,
-      };
     case "FAMILY_INVITE_INVALID":
     case "DEV_INVITE_DISABLED":
       return {

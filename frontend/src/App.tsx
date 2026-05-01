@@ -16,6 +16,7 @@ import {
   type CookieConsentDecision,
 } from "@shared/privacy/cookieConsent";
 import { HitKeepBridge } from "@shared/analytics";
+import { PUBLIC_WEBSITE_SHARED_ROUTE_PATHS } from "@/app/publicWebsiteRoutes";
 import { NativeUnauthedBootReady } from "@/app/boot/NativeUnauthedBootReady";
 import { RouteFallback, useDeferredNonCriticalStartupReady } from "@/app/boot/state";
 import {
@@ -95,11 +96,6 @@ const FamilyMemberAccessPage = lazy(() =>
 );
 const JoinFamilyPage = lazy(() =>
   import("@client/pages/JoinFamilyPage").then((module) => ({ default: module.JoinFamilyPage }))
-);
-const JoinFamilyHandoffPage = lazy(() =>
-  import("@client/pages/JoinFamilyHandoffPage").then((module) => ({
-    default: module.JoinFamilyHandoffPage,
-  }))
 );
 const RecoverPasswordPage = lazy(() =>
   import("@client/pages/RecoverPasswordPage").then((module) => ({
@@ -186,6 +182,27 @@ const AdminLayout = lazy(() =>
 const AdminHomePage = lazy(() =>
   import("@admin/pages/AdminHomePage").then((module) => ({ default: module.AdminHomePage }))
 );
+
+function renderPublicWebsiteRoutes() {
+  return PUBLIC_WEBSITE_SHARED_ROUTE_PATHS.map((path) => {
+    if (path === "/") {
+      return <Route key={path} path={path} element={<LandingPage />} />;
+    }
+    if (path === "/join-family") {
+      return <Route key={path} path={path} element={<JoinFamilyPage />} />;
+    }
+    if (path === "/legal") {
+      return <Route key={path} path={path} element={<LegalPage />} />;
+    }
+    if (path === "/legal/privacy") {
+      return <Route key={path} path={path} element={<PrivacyPolicyPage />} />;
+    }
+    if (path === "/legal/terms") {
+      return <Route key={path} path={path} element={<TermsOfUsePage />} />;
+    }
+    return <Route key={path} path={path} element={<SupportPage />} />;
+  });
+}
 
 function AuthSync() {
   const queryClient = useQueryClient();
@@ -419,7 +436,6 @@ export default function App() {
                   }
                 />
                 <Route path="/join-family" element={<JoinFamilyPage />} />
-                <Route path="/join-family-handoff" element={<JoinFamilyHandoffPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/recover-password" element={<RecoverPasswordPage />} />
                 <Route path="/legal" element={<LegalPage />} />
@@ -431,11 +447,7 @@ export default function App() {
             ) : role === "admin" ? (
               isPublicWebsiteMode ? (
                 <>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/legal" element={<LegalPage />} />
-                  <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
-                  <Route path="/legal/terms" element={<TermsOfUsePage />} />
-                  <Route path="/legal/support" element={<SupportPage />} />
+                  {renderPublicWebsiteRoutes()}
                   <Route path="*" element={<AppOnlyRedirectPage />} />
                 </>
               ) : (
@@ -451,11 +463,7 @@ export default function App() {
             ) : (
               isPublicWebsiteMode ? (
                 <>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/legal" element={<LegalPage />} />
-                  <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
-                  <Route path="/legal/terms" element={<TermsOfUsePage />} />
-                  <Route path="/legal/support" element={<SupportPage />} />
+                  {renderPublicWebsiteRoutes()}
                   <Route path="*" element={<AppOnlyRedirectPage />} />
                 </>
               ) : (
@@ -468,7 +476,6 @@ export default function App() {
                     <Route path="home" element={<ClientHomePage />} />
                     <Route path="intro" element={<Navigate to="/home" replace />} />
                     <Route path="family" element={<FamilyPage />} />
-                    <Route path="join-family-handoff" element={<JoinFamilyHandoffPage />} />
                     <Route path="family/members" element={<FamilyMembersPage />} />
                     <Route
                       path="family/members/:memberAccountId/access"

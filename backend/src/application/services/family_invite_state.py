@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from src.core.exceptions import NotFoundError, ValidationError
 from src.domain.entities.family import Family
 from src.domain.entities.family_invite import FamilyInvite
-from src.domain.entities.family_invite_handoff import FamilyInviteHandoff
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.domain.repositories.family_repository import FamilyRepository
@@ -65,30 +64,3 @@ async def resolve_active_family_invite(
         raise NotFoundError("Семья не найдена", resource="family")
     return invite, family
 
-
-async def resolve_active_family_invite_handoff(
-    handoff: FamilyInviteHandoff,
-    *,
-    invite_repo: FamilyInviteRepository,
-    account_repo: AccountRepository,
-    family_repo: FamilyRepository,
-) -> tuple[FamilyInviteHandoff, FamilyInvite, Family]:
-    """Вернуть активный handoff и связанный invite context."""
-
-    if handoff.consumed_at is not None:
-        raise ValidationError(
-            "Invite handoff already used",
-            code="FAMILY_INVITE_HANDOFF_ALREADY_USED",
-        )
-    if handoff.expires_at <= datetime.now(UTC):
-        raise ValidationError("Invite handoff expired", code="FAMILY_INVITE_HANDOFF_EXPIRED")
-    invite = await invite_repo.get_by_id(handoff.invite_id)
-    if invite is None:
-        raise NotFoundError("Приглашение не найдено", resource="family_invite")
-    invite, family = await resolve_active_family_invite(
-        invite,
-        account_repo=account_repo,
-        invite_repo=invite_repo,
-        family_repo=family_repo,
-    )
-    return handoff, invite, family

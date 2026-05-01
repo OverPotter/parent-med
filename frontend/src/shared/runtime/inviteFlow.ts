@@ -1,6 +1,4 @@
-export const PENDING_FAMILY_INVITE_POST_INSTALL_KEY = "pm_pending_family_invite_post_install_v1";
 export const PENDING_FAMILY_INVITE_ROUTE_STORAGE_KEY = "pm_pending_family_invite_route_v1";
-export const PENDING_POST_INSTALL_APP_ROUTE_STORAGE_KEY = "pm_pending_post_install_app_route_v1";
 export type InviteAuthIntent = "login" | "register";
 
 type MinimalStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -31,13 +29,6 @@ export function buildAuthLoginRoute(): string {
   return "/auth?mode=login";
 }
 
-export function buildJoinFamilyRouteFromHandoff(handoffId: string | null | undefined): string {
-  const normalizedHandoffId = handoffId?.trim() ?? "";
-  return normalizedHandoffId
-    ? `/join-family?hid=${encodeURIComponent(normalizedHandoffId)}`
-    : "/join-family";
-}
-
 export function appendInviteAuthIntent(
   route: string | null | undefined,
   intent: InviteAuthIntent | null | undefined
@@ -53,23 +44,11 @@ export function appendInviteAuthIntent(
   return `${parsed.pathname}${parsed.search}${parsed.hash}`;
 }
 
-export function buildJoinFamilyHandoffRoute(handoffId: string | null | undefined): string {
-  const normalizedHandoffId = handoffId?.trim() ?? "";
-  return normalizedHandoffId
-    ? `/join-family-handoff?hid=${encodeURIComponent(normalizedHandoffId)}`
-    : "/join-family-handoff";
-}
-
 export function isInviteRoute(url: string | null | undefined): boolean {
   if (!url) {
     return false;
   }
-  return (
-    url === "/join-family" ||
-    url.startsWith("/join-family?") ||
-    url === "/join-family-handoff" ||
-    url.startsWith("/join-family-handoff?")
-  );
+  return url === "/join-family" || url.startsWith("/join-family?");
 }
 
 export function shouldOpenNativeRouteWithoutSession(url: string | null | undefined): boolean {
@@ -87,20 +66,12 @@ export function normalizeInviteRoute(url: string | null | undefined): string | n
     if (!isInviteRoute(route)) {
       return null;
     }
-    return getInviteTokenFromRawRoute(route) ||
-      getInviteHandoffIdFromRawRoute(route) ||
-      isDevLatestInviteRoute(route)
-      ? route
-      : null;
+    return getInviteTokenFromRawRoute(route) || isDevLatestInviteRoute(route) ? route : null;
   } catch {
     if (!isInviteRoute(url)) {
       return null;
     }
-    return getInviteTokenFromRawRoute(url) ||
-      getInviteHandoffIdFromRawRoute(url) ||
-      isDevLatestInviteRoute(url)
-      ? url
-      : null;
+    return getInviteTokenFromRawRoute(url) || isDevLatestInviteRoute(url) ? url : null;
   }
 }
 
@@ -111,15 +82,6 @@ export function getInviteTokenFromRoute(url: string | null | undefined): string 
   }
 
   return getInviteTokenFromRawRoute(route);
-}
-
-export function getInviteHandoffIdFromRoute(url: string | null | undefined): string | null {
-  const route = normalizeInviteRoute(url);
-  if (!route) {
-    return null;
-  }
-
-  return getInviteHandoffIdFromRawRoute(route);
 }
 
 export function getInviteAuthIntentFromRoute(
@@ -139,27 +101,6 @@ export function getInviteAuthIntentFromRoute(
   }
 }
 
-function normalizePostInstallAppRoute(url: string | null | undefined): string | null {
-  const inviteRoute = normalizeInviteRoute(url);
-  if (inviteRoute) {
-    return inviteRoute;
-  }
-
-  if (!url) {
-    return null;
-  }
-
-  try {
-    const parsed = new URL(url, "https://pillpath.local");
-    if (parsed.pathname !== "/auth" || parsed.searchParams.get("mode") !== "login") {
-      return null;
-    }
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-  } catch {
-    return null;
-  }
-}
-
 function getInviteTokenFromRawRoute(url: string): string | null {
   try {
     const parsed = new URL(url, "https://pillpath.local");
@@ -167,21 +108,6 @@ function getInviteTokenFromRawRoute(url: string): string | null {
       return null;
     }
     return normalizeInviteToken(parsed.searchParams.get("token"));
-  } catch {
-    return null;
-  }
-}
-
-function getInviteHandoffIdFromRawRoute(url: string): string | null {
-  try {
-    const parsed = new URL(url, "https://pillpath.local");
-    if (parsed.pathname === "/join-family") {
-      return normalizeInviteToken(parsed.searchParams.get("hid"));
-    }
-    if (parsed.pathname !== "/join-family-handoff") {
-      return null;
-    }
-    return normalizeInviteToken(parsed.searchParams.get("hid"));
   } catch {
     return null;
   }
@@ -235,46 +161,12 @@ export function persistPendingFamilyInviteRoute(
   return normalizedRoute;
 }
 
-export function readPendingPostInstallAppRoute(storage?: MinimalStorage | null): string | null {
-  const resolvedStorage = getStorage(storage);
-  if (!resolvedStorage) {
-    return null;
-  }
-  return normalizePostInstallAppRoute(
-    resolvedStorage.getItem(PENDING_POST_INSTALL_APP_ROUTE_STORAGE_KEY)
-  );
-}
-
-export function persistPendingPostInstallAppRoute(
-  route: string | null | undefined,
-  storage?: MinimalStorage | null
-): string | null {
-  const normalizedRoute = normalizePostInstallAppRoute(route);
-  const resolvedStorage = getStorage(storage);
-  if (!normalizedRoute || !resolvedStorage) {
-    return null;
-  }
-
-  resolvedStorage.setItem(PENDING_POST_INSTALL_APP_ROUTE_STORAGE_KEY, normalizedRoute);
-  return normalizedRoute;
-}
-
-export function clearPendingPostInstallAppRoute(storage?: MinimalStorage | null) {
-  const resolvedStorage = getStorage(storage);
-  if (!resolvedStorage) {
-    return;
-  }
-  resolvedStorage.removeItem(PENDING_POST_INSTALL_APP_ROUTE_STORAGE_KEY);
-}
-
 export function clearPendingFamilyInviteRoute(storage?: MinimalStorage | null) {
   const resolvedStorage = getStorage(storage);
   if (!resolvedStorage) {
     return;
   }
   resolvedStorage.removeItem(PENDING_FAMILY_INVITE_ROUTE_STORAGE_KEY);
-  resolvedStorage.removeItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY);
-  clearPendingPostInstallAppRoute(resolvedStorage);
 }
 
 export function resolveInviteAwareSignedOutPath(params: {

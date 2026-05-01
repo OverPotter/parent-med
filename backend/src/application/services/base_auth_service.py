@@ -9,6 +9,7 @@ from src.application.dto.auth import (
     AuthResponseDto,
     AuthStateResponseDto,
     ChangePasswordDto,
+    LoginFamilyInviteDto,
     LoginDto,
     RecoverPasswordByCodeDto,
     RefreshDto,
@@ -95,6 +96,10 @@ class BaseAuthService(ABC):
         """Авторизовать пользователя и выдать токены."""
 
     @abstractmethod
+    async def signin_and_accept_family_invite(self, dto: LoginFamilyInviteDto) -> AuthResponseDto:
+        """Атомарно авторизовать пользователя и принять семейное приглашение."""
+
+    @abstractmethod
     async def refresh(self, dto: RefreshDto) -> AuthResponseDto:
         """Обновить JWT-пару по refresh token."""
 
@@ -145,17 +150,3 @@ class BaseAuthService(ABC):
         self, account_id: UUID, dto: UpdateAccountProfileDto
     ) -> AccountResponseDto:
         """Обновить профиль текущего аккаунта."""
-
-    @abstractmethod
-    async def accept_family_invite(self, account_id: UUID, token: str) -> AuthResponseDto:
-        """Принять приглашение в другую семью для существующего аккаунта."""
-
-    @abstractmethod
-    async def accept_family_invite_handoff(
-        self, account_id: UUID, handoff_id: str
-    ) -> AuthResponseDto:
-        """Принять приглашение в другую семью через handoff-контекст."""
-
-    @abstractmethod
-    async def accept_latest_family_invite_for_dev(self, account_id: UUID) -> AuthResponseDto:
-        """Dev-only: принять последнее активное приглашение без копирования ссылки."""

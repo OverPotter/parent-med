@@ -32,26 +32,3 @@ class FamilyInvitePreviewResponseDto(ResponseBase):
     family_name: str
     family_role: str
     expires_at: datetime
-
-
-class FamilyInviteHandoffCreateResponseDto(ResponseBase):
-    """Ответ на создание handoff-сессии для invite-flow."""
-
-    handoff_id: str
-    handoff_path: str
-    family_id: UUID
-    family_name: str
-    family_role: str
-    expires_at: datetime
-    invite_expires_at: datetime
-
-
-class FamilyInviteHandoffResolveResponseDto(ResponseBase):
-    """Ответ на разрешение handoff-сессии обратно в invite-flow."""
-
-    handoff_id: str
-    family_id: UUID
-    family_name: str
-    family_role: str
-    expires_at: datetime
-    invite_expires_at: datetime

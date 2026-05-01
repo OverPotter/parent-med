@@ -93,25 +93,6 @@ export interface FamilyInvitePreview {
   expiresAt: string;
 }
 
-export interface FamilyInviteHandoffCreate {
-  handoffId: string;
-  handoffPath: string;
-  familyId: string;
-  familyName: string;
-  familyRole: string;
-  expiresAt: string;
-  inviteExpiresAt: string;
-}
-
-export interface FamilyInviteHandoffResolve {
-  handoffId: string;
-  familyId: string;
-  familyName: string;
-  familyRole: string;
-  expiresAt: string;
-  inviteExpiresAt: string;
-}
-
 export interface Parent {
   id: string;
   familyId: string;
