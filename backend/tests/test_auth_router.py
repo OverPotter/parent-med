@@ -26,7 +26,6 @@ from src.application.dto.auth import (
 )
 from src.application.dto.family import FamilyResponseDto
 from src.application.dto.family_invite import (
-    FamilyInviteCreateDto,
     FamilyInviteHandoffCreateResponseDto,
     FamilyInviteHandoffResolveResponseDto,
     FamilyInvitePreviewResponseDto,

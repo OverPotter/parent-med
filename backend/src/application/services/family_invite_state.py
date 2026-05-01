@@ -3,9 +3,9 @@
 from datetime import UTC, datetime
 
 from src.core.exceptions import NotFoundError, ValidationError
+from src.domain.entities.family import Family
 from src.domain.entities.family_invite import FamilyInvite
 from src.domain.entities.family_invite_handoff import FamilyInviteHandoff
-from src.domain.entities.family import Family
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.domain.repositories.family_repository import FamilyRepository
