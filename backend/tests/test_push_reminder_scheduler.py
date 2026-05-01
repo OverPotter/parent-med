@@ -1,9 +1,10 @@
+from datetime import UTC, datetime, timedelta
+
 from src.application.services.push_reminder_scheduler import (
     _extract_web_push_error_reason,
     _is_stale_web_push_response,
     _resolve_illness_next_allowed_at,
 )
-from datetime import UTC, datetime, timedelta
 
 
 class _ResponseWithJson:
