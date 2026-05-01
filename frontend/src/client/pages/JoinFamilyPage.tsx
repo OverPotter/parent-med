@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -21,7 +21,6 @@ import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
 import {
   buildJoinFamilyRoute,
   clearPendingFamilyInviteRoute,
-  PENDING_FAMILY_INVITE_APP_STORE_REDIRECT_KEY,
   PENDING_FAMILY_INVITE_POST_INSTALL_KEY,
   PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY,
   persistPendingFamilyInviteRoute,
@@ -29,6 +28,23 @@ import {
 import { useAppStore } from "@shared/store/useAppStore";
 
 type Mode = "register" | "login";
+type InviteFailureState = {
+  title: string;
+  description: string;
+  inlineMessage: string;
+  blocksAuth: boolean;
+  clearPendingRoute: boolean;
+  transient?: boolean;
+};
+
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      detail?: string;
+      code?: string;
+    };
+  };
+};
 
 const appBtnPrimaryClass =
   "app-btn-primary-md soft-button-primary inline-flex items-center justify-center";
@@ -42,6 +58,139 @@ function roleLabel(role: string, language: "ru" | "en"): string {
   return language === "ru" ? "Участник семьи" : "Family member";
 }
 
+function getApiErrorCode(error: unknown): string | null {
+  const code = (error as ApiErrorLike | null)?.response?.data?.code;
+  return typeof code === "string" && code.trim() ? code : null;
+}
+
+function getApiErrorDetail(error: unknown): string | null {
+  const detail = (error as ApiErrorLike | null)?.response?.data?.detail;
+  return typeof detail === "string" && detail.trim() ? detail : null;
+}
+
+function resolveInviteFailureState(params: {
+  language: "ru" | "en";
+  code: string | null;
+  detail: string | null;
+  kind: "preview" | "action";
+}): InviteFailureState {
+  const fallbackDescription =
+    params.language === "ru"
+      ? "Не удалось проверить приглашение. Попробуйте ещё раз немного позже."
+      : "Could not verify the invite right now. Try again a bit later.";
+  const fallbackInlineMessage =
+    params.detail ||
+    (params.language === "ru"
+      ? "Не удалось продолжить по приглашению."
+      : "Could not continue with this invite.");
+
+  switch (params.code) {
+    case "FAMILY_INVITE_NOT_FOUND":
+      return {
+        title: params.language === "ru" ? "Приглашение не найдено" : "Invite not found",
+        description:
+          params.language === "ru"
+            ? "Эта ссылка больше не работает. Попросите владельца семьи отправить новое приглашение."
+            : "This link no longer works. Ask the family owner to send a new invite.",
+        inlineMessage:
+          params.language === "ru"
+            ? "Эта ссылка больше не работает. Нужна новая ссылка."
+            : "This link no longer works. A new invite link is needed.",
+        blocksAuth: true,
+        clearPendingRoute: true,
+      };
+    case "FAMILY_INVITE_ALREADY_USED":
+      return {
+        title: params.language === "ru" ? "Приглашение уже использовано" : "Invite already used",
+        description:
+          params.language === "ru"
+            ? "По этой ссылке уже присоединились к семье. Попросите отправить новое приглашение."
+            : "This link has already been used to join the family. Ask for a new invite.",
+        inlineMessage:
+          params.language === "ru"
+            ? "Это приглашение уже использовано. Нужна новая ссылка."
+            : "This invite has already been used. A new link is needed.",
+        blocksAuth: true,
+        clearPendingRoute: true,
+      };
+    case "FAMILY_INVITE_EXPIRED":
+      return {
+        title: params.language === "ru" ? "Срок приглашения истёк" : "Invite expired",
+        description:
+          params.language === "ru"
+            ? "Срок действия этой ссылки закончился. Попросите владельца семьи отправить новое приглашение."
+            : "This invite link has expired. Ask the family owner to send a new one.",
+        inlineMessage:
+          params.language === "ru"
+            ? "Срок действия приглашения истёк. Нужна новая ссылка."
+            : "This invite has expired. A new link is needed.",
+        blocksAuth: true,
+        clearPendingRoute: true,
+      };
+    case "FAMILY_INVITE_INVALID":
+    case "DEV_INVITE_DISABLED":
+      return {
+        title: params.language === "ru" ? "Приглашение недоступно" : "Invite unavailable",
+        description:
+          params.language === "ru"
+            ? "Семья по этой ссылке недоступна. Попросите отправить новое приглашение."
+            : "The family behind this link is unavailable. Ask for a new invite.",
+        inlineMessage:
+          params.language === "ru"
+            ? "По этой ссылке сейчас нельзя присоединиться к семье."
+            : "You cannot join the family through this link right now.",
+        blocksAuth: true,
+        clearPendingRoute: true,
+      };
+    case "ALREADY_IN_FAMILY":
+      return {
+        title:
+          params.language === "ru"
+            ? "Аккаунт уже в этой семье"
+            : "This account is already in the family",
+        description:
+          params.language === "ru"
+            ? "Вы уже подключены к этой семье. Можно просто открыть семейный кабинет."
+            : "You are already connected to this family. Open the family workspace directly.",
+        inlineMessage:
+          params.language === "ru"
+            ? "Этот аккаунт уже состоит в нужной семье."
+            : "This account is already in the target family.",
+        blocksAuth: params.kind === "preview",
+        clearPendingRoute: true,
+      };
+    case "CURRENT_FAMILY_NOT_EMPTY":
+      return {
+        title:
+          params.language === "ru"
+            ? "Сначала освободите текущую семью"
+            : "Leave your current family first",
+        description:
+          params.language === "ru"
+            ? "Нельзя перейти в другую семью, пока в вашей текущей семье есть другие участники."
+            : "You cannot move to another family while your current family still has other members.",
+        inlineMessage:
+          params.language === "ru"
+            ? "Сначала нужно освободить текущую семью: в ней ещё есть другие участники."
+            : "Your current family still has other members, so you cannot join another family yet.",
+        blocksAuth: false,
+        clearPendingRoute: false,
+      };
+    default:
+      return {
+        title:
+          params.language === "ru"
+            ? "Не удалось продолжить по приглашению"
+            : "Could not continue with this invite",
+        description: params.detail || fallbackDescription,
+        inlineMessage: fallbackInlineMessage,
+        blocksAuth: params.kind === "preview",
+        clearPendingRoute: false,
+        transient: true,
+      };
+  }
+}
+
 export function JoinFamilyPage() {
   const { language, copy } = useI18n();
   const [searchParams] = useSearchParams();
@@ -53,6 +202,7 @@ export function JoinFamilyPage() {
     searchParams.get("dev-latest") === "1";
   const isPublicWebsiteMode =
     !isNativeRuntime && shouldUsePublicWebsiteMode() && !isDevLatestShortcut;
+  const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
   const token = searchParams.get("token")?.trim() ?? "";
   const appStoreUrl = getAppStoreUrl();
   const [mode, setMode] = useState<Mode>("register");
@@ -67,6 +217,7 @@ export function JoinFamilyPage() {
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const hasAttemptedPostInstallOpenRef = useRef(false);
+  const submitButtonRef = useRef<HTMLButtonElement | null>(null);
   const hasSession = Boolean(accountId);
   const ui =
     language === "ru"
@@ -231,6 +382,29 @@ export function JoinFamilyPage() {
   const isAlreadyInTargetFamily = Boolean(
     invitePreview && currentFamilyId === invitePreview.familyId
   );
+  const invitePreviewFailure = useMemo(() => {
+    if (!token && !isDevLatestShortcut) {
+      return {
+        title:
+          language === "ru" ? "Ссылка приглашения неполная" : "The invite link is incomplete",
+        description: ui.incompleteInviteLink,
+        inlineMessage: ui.incompleteInviteLink,
+        blocksAuth: true,
+        clearPendingRoute: true,
+      } satisfies InviteFailureState;
+    }
+
+    if (!inviteError) {
+      return null;
+    }
+
+    return resolveInviteFailureState({
+      language,
+      code: getApiErrorCode(inviteError),
+      detail: getApiErrorDetail(inviteError),
+      kind: "preview",
+    });
+  }, [inviteError, isDevLatestShortcut, language, token, ui.incompleteInviteLink]);
 
   useEffect(() => {
     if (!isAuthenticated || !isAlreadyInTargetFamily) {
@@ -240,20 +414,15 @@ export function JoinFamilyPage() {
     navigate("/family", { replace: true });
   }, [isAlreadyInTargetFamily, isAuthenticated, navigate]);
 
-  const inviteErrorMessage = useMemo(() => {
-    if (!token && !isDevLatestShortcut) {
-      return ui.incompleteInviteLink;
-    }
-    return (
-      (inviteError as { response?: { data?: { detail?: string } } } | null)?.response?.data
-        ?.detail ?? null
-    );
-  }, [inviteError, isDevLatestShortcut, token, ui.incompleteInviteLink]);
+  const inviteErrorMessage = invitePreviewFailure?.inlineMessage ?? null;
   const canRenderPublicInviteRegistration = Boolean(
-    token && invitePreview && !inviteErrorMessage && !isDevLatestShortcut
+    token && invitePreview && !invitePreviewFailure && !isDevLatestShortcut
   );
   const isInvalidPublicInvite = Boolean(
-    !publicInviteRegisteredEmail && !isInviteLoading && inviteErrorMessage && !isDevLatestShortcut
+    !publicInviteRegisteredEmail &&
+      !isInviteLoading &&
+      invitePreviewFailure?.blocksAuth &&
+      !isDevLatestShortcut
   );
 
   const loginMutation = useMutation({
@@ -265,7 +434,7 @@ export function JoinFamilyPage() {
       trackEvent(AnalyticsEvents.AUTH_LOGIN_SUCCESS, { entry: "join_family" });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? ui.loginFailed);
+      setError(getApiErrorDetail(err) ?? ui.loginFailed);
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "login",
         entry: "join_family",
@@ -299,7 +468,16 @@ export function JoinFamilyPage() {
       navigate("/family", { replace: true });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? ui.registerFailed);
+      const failure = resolveInviteFailureState({
+        language,
+        code: getApiErrorCode(err),
+        detail: getApiErrorDetail(err),
+        kind: "action",
+      });
+      if (failure.clearPendingRoute) {
+        clearPendingFamilyInviteRoute();
+      }
+      setError(failure.inlineMessage ?? ui.registerFailed);
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "register",
         entry: "join_family",
@@ -321,7 +499,16 @@ export function JoinFamilyPage() {
       navigate("/family", { replace: true });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setError(err.response?.data?.detail ?? ui.acceptInviteFailed);
+      const failure = resolveInviteFailureState({
+        language,
+        code: getApiErrorCode(err),
+        detail: getApiErrorDetail(err),
+        kind: "action",
+      });
+      if (failure.clearPendingRoute) {
+        clearPendingFamilyInviteRoute();
+      }
+      setError(failure.inlineMessage ?? ui.acceptInviteFailed);
       trackEvent(AnalyticsEvents.AUTH_ERROR, {
         mode: "accept_invite",
         message: normalizeClientError(err),
@@ -379,7 +566,13 @@ export function JoinFamilyPage() {
     try {
       const route = isDevLatestShortcut
         ? "/join-family?dev-latest=1"
-        : buildJoinFamilyRoute(token);
+        : token
+          ? buildJoinFamilyRoute(token)
+          : null;
+      if (!route) {
+        clearPendingFamilyInviteRoute();
+        return;
+      }
       persistPendingFamilyInviteRoute(route);
       if (token) {
         window.localStorage.setItem(PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY, token);
@@ -389,7 +582,14 @@ export function JoinFamilyPage() {
     }
   }, [isDevLatestShortcut, token]);
 
-  const accountHref = hasSession ? "/more" : "/auth?mode=login";
+  useEffect(() => {
+    if (!invitePreviewFailure?.clearPendingRoute) {
+      return;
+    }
+    clearPendingFamilyInviteRoute();
+  }, [invitePreviewFailure]);
+
+  const accountHref = hasSession ? "/more" : "/auth?mode=login&next=invite";
   const accountLabel =
     language === "ru" ? (hasSession ? "Ещё" : "Войти") : hasSession ? "More" : "Login";
 
@@ -442,7 +642,6 @@ export function JoinFamilyPage() {
       return;
     }
 
-    window.sessionStorage.setItem(PENDING_FAMILY_INVITE_APP_STORE_REDIRECT_KEY, token);
     try {
       window.localStorage.setItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY, token);
     } catch {
@@ -459,9 +658,36 @@ export function JoinFamilyPage() {
     setIsPasswordVisible(false);
   };
 
+  const ensureSubmitVisible = useCallback(() => {
+    if (!isNativeIOS || typeof window === "undefined") {
+      return;
+    }
+
+    const submitButton = submitButtonRef.current;
+    if (!submitButton) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      submitButton.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+    }, 120);
+  }, [isNativeIOS]);
+
+  useEffect(() => {
+    if (!isNativeIOS || (!email.trim() && !password.trim() && !passwordConfirm.trim())) {
+      return;
+    }
+
+    ensureSubmitVisible();
+  }, [email, ensureSubmitVisible, isNativeIOS, password, passwordConfirm]);
+
   if (isPublicWebsiteMode) {
     return (
-      <div className="mx-auto w-full max-w-3xl min-w-0 space-y-6 px-3 pb-6 sm:px-0">
+      <div className="join-family-page mx-auto w-full max-w-3xl min-w-0 space-y-6 px-3 pb-6 sm:px-0">
         <PublicSiteHeader accountHref={accountHref} accountLabel={accountLabel} />
         <PageIntro
           title={ui.publicTitle}
@@ -472,40 +698,42 @@ export function JoinFamilyPage() {
           className="app-safe-top-standalone"
         />
 
-        <Surface className="p-5 sm:p-6">
-          <p className="app-card-title">{ui.leadsToTitle}</p>
-          {isInviteLoading ? (
-            <p className="mt-3 text-sm text-muted">{ui.checkingInvite}</p>
-          ) : inviteErrorMessage ? (
-            <p className="soft-note-danger mt-3">{inviteErrorMessage}</p>
-          ) : invitePreview ? (
-            <InviteSummaryCard
-              familyName={invitePreview.familyName}
-              subtitle={ui.leadsToSubtitle}
-              metadata={[
-                `${ui.inviteRole}: ${roleLabel(invitePreview.familyRole, language)}`,
-                `${ui.validUntil} ${new Date(invitePreview.expiresAt).toLocaleString(
-                  language === "ru" ? "ru-RU" : "en-US"
-                )}`,
-              ]}
-              note={appStoreUrl ? ui.continueInApp : null}
-            />
-          ) : null}
-        </Surface>
+        {!invitePreviewFailure?.blocksAuth ? (
+          <Surface className="p-5 sm:p-6">
+            <p className="app-card-title">{ui.leadsToTitle}</p>
+            {isInviteLoading ? (
+              <p className="mt-3 text-sm text-muted">{ui.checkingInvite}</p>
+            ) : inviteErrorMessage ? (
+              <p className="soft-note-danger mt-3">{inviteErrorMessage}</p>
+            ) : invitePreview ? (
+              <InviteSummaryCard
+                familyName={invitePreview.familyName}
+                subtitle={ui.leadsToSubtitle}
+                metadata={[
+                  `${ui.inviteRole}: ${roleLabel(invitePreview.familyRole, language)}`,
+                  `${ui.validUntil} ${new Date(invitePreview.expiresAt).toLocaleString(
+                    language === "ru" ? "ru-RU" : "en-US"
+                  )}`,
+                ]}
+                note={appStoreUrl ? ui.continueInApp : null}
+              />
+            ) : null}
+          </Surface>
+        ) : null}
 
         <Surface className="p-5 sm:p-6">
           <h2 className="app-card-title">
             {publicInviteRegisteredEmail
               ? ui.publicRegisterSuccessTitle
               : isInvalidPublicInvite
-                ? ui.invalidInviteHelpTitle
+                ? invitePreviewFailure?.title ?? ui.invalidInviteHelpTitle
                 : ui.publicRegisterTitle}
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted">
             {publicInviteRegisteredEmail
               ? ui.publicRegisterSuccessDescription
               : isInvalidPublicInvite
-                ? ui.invalidInviteHelpDescription
+                ? invitePreviewFailure?.description ?? ui.invalidInviteHelpDescription
                 : ui.publicRegisterHint}
           </p>
 
@@ -528,11 +756,23 @@ export function JoinFamilyPage() {
             </>
           ) : isInvalidPublicInvite ? (
             <div className="mt-4">
-              <p className="text-sm leading-6 text-muted">{inviteErrorMessage}</p>
+              <p className="text-sm leading-6 text-muted">
+                {invitePreviewFailure?.description ?? inviteErrorMessage}
+              </p>
+              {invitePreviewFailure?.transient ? (
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className={`${appBtnSecondaryClass} mt-4 px-4`}
+                >
+                  {language === "ru" ? "Попробовать снова" : "Try again"}
+                </button>
+              ) : null}
             </div>
           ) : canRenderPublicInviteRegistration ? (
             <form
               onSubmit={handleSubmit}
+              onFocusCapture={ensureSubmitVisible}
               className="mt-6 space-y-4"
               method="post"
               autoComplete="on"
@@ -592,6 +832,7 @@ export function JoinFamilyPage() {
               </button>
 
               <button
+                ref={submitButtonRef}
                 type="submit"
                 disabled={
                   registerMutation.isPending ||
@@ -624,7 +865,7 @@ export function JoinFamilyPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl min-w-0 space-y-6 px-3 pb-6 sm:px-0">
+    <div className="join-family-page mx-auto w-full max-w-3xl min-w-0 space-y-5 px-3 pb-6 sm:space-y-6 sm:px-0">
       <PublicSiteHeader accountHref={accountHref} accountLabel={accountLabel} />
       <PageIntro
         title={ui.pageTitle}
@@ -635,25 +876,27 @@ export function JoinFamilyPage() {
         className="app-safe-top-standalone"
       />
 
-      <Surface className="p-5 sm:p-6">
-        <p className="app-card-title">{ui.leadsToTitle}</p>
-        {isInviteLoading ? (
-          <p className="mt-3 text-sm text-muted">{ui.checkingInvite}</p>
-        ) : inviteErrorMessage ? (
-          <p className="soft-note-danger mt-3">{inviteErrorMessage}</p>
-        ) : invitePreview ? (
-          <InviteSummaryCard
-            familyName={invitePreview.familyName}
-            subtitle={ui.leadsToSubtitle}
-            metadata={[
-              `${ui.inviteRole}: ${roleLabel(invitePreview.familyRole, language)}`,
-              `${ui.validUntil} ${new Date(invitePreview.expiresAt).toLocaleString(
-                language === "ru" ? "ru-RU" : "en-US"
-              )}`,
-            ]}
-          />
-        ) : null}
-      </Surface>
+      {!invitePreviewFailure?.blocksAuth ? (
+        <Surface className="p-5 sm:p-6">
+          <p className="app-card-title">{ui.leadsToTitle}</p>
+          {isInviteLoading ? (
+            <p className="mt-3 text-sm text-muted">{ui.checkingInvite}</p>
+          ) : inviteErrorMessage ? (
+            <p className="soft-note-danger mt-3">{inviteErrorMessage}</p>
+          ) : invitePreview ? (
+            <InviteSummaryCard
+              familyName={invitePreview.familyName}
+              subtitle={ui.leadsToSubtitle}
+              metadata={[
+                `${ui.inviteRole}: ${roleLabel(invitePreview.familyRole, language)}`,
+                `${ui.validUntil} ${new Date(invitePreview.expiresAt).toLocaleString(
+                  language === "ru" ? "ru-RU" : "en-US"
+                )}`,
+              ]}
+            />
+          ) : null}
+        </Surface>
+      ) : null}
 
       {invitePreview && isAuthenticated ? (
         <Surface className="p-5 sm:p-6">
@@ -691,6 +934,20 @@ export function JoinFamilyPage() {
             </>
           )}
         </Surface>
+      ) : invitePreviewFailure?.blocksAuth ? (
+        <Surface className="p-5 sm:p-6">
+          <h2 className="app-card-title">{invitePreviewFailure.title}</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">{invitePreviewFailure.description}</p>
+          {invitePreviewFailure.transient ? (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className={`${appBtnSecondaryClass} mt-4 px-4`}
+            >
+              {language === "ru" ? "Попробовать снова" : "Try again"}
+            </button>
+          ) : null}
+        </Surface>
       ) : (
         <Surface className="p-5 sm:p-6">
           <h2 className="app-card-title">{ui.authTitle}</h2>
@@ -721,7 +978,7 @@ export function JoinFamilyPage() {
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <form onSubmit={handleSubmit} onFocusCapture={ensureSubmitVisible} className="mt-5 space-y-4">
             <div className="soft-panel rounded-[24px] p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -786,6 +1043,7 @@ export function JoinFamilyPage() {
             {error && <p className="soft-note-danger">{error}</p>}
 
             <button
+              ref={submitButtonRef}
               type="submit"
               disabled={
                 !canRegisterFromInvite ||

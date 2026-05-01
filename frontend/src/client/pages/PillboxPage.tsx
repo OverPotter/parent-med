@@ -9,6 +9,7 @@ import { ModuleOfflineState } from "@shared/components/ModuleOfflineState";
 import { PageIntro } from "@shared/components/PageIntro";
 import { EmptyState } from "@shared/components/Surface";
 import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
+import { FAMILY_ACCESS_REFRESH_MS } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { useIsOffline } from "@shared/hooks/useIsOffline";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -135,11 +136,16 @@ export function PillboxPage() {
   const activeMedication =
     draft?.medications.find((medication) => medication.id === activeMedicationId) ?? null;
   const canSaveMedication = Boolean(editorTitle.trim());
-  const { data: familyMembers = [], error: familyMembersError } = useQuery({
+  const {
+    data: familyMembers = [],
+    error: familyMembersError,
+    refetch: refetchFamilyMembers,
+  } = useQuery({
     queryKey: ["families", "me", "members", currentFamilyId],
     queryFn: fetchMyFamilyMembers,
     enabled: Boolean(currentFamilyId && canSeePillbox),
-    staleTime: 5 * 60 * 1000,
+    staleTime: FAMILY_ACCESS_REFRESH_MS,
+    refetchOnWindowFocus: true,
   });
   const { data: familyAccess, error: familyAccessError } = useQuery({
     queryKey: ["families", "me", "access", currentFamilyId],
@@ -150,6 +156,12 @@ export function PillboxPage() {
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
   const premiumActive = familyAccess?.premiumActive ?? true;
   const freePrimaryPlanId = familyAccess?.freePrimaryPillboxPlanId ?? null;
+  async function refreshPillboxFamilyMembers() {
+    if (!currentFamilyId || !canSeePillbox) {
+      return;
+    }
+    await refetchFamilyMembers();
+  }
   const {
     upgradeToPlus,
     restorePurchases,
@@ -999,6 +1011,7 @@ export function PillboxPage() {
         familyMembers={eligiblePillboxMembers}
         currentAccountId={accountId}
         onToggleRecipient={toggleSelectedPlanRecipient}
+        onOpenRecipientsSheet={refreshPillboxFamilyMembers}
         recipientSelectionPending={updatePlanMutation.isPending}
         onRequestDelete={requestDeletePlan}
         onConfirmPlanAction={confirmPlanAction}
@@ -1055,6 +1068,7 @@ export function PillboxPage() {
           onSelectRecipients={(memberIds) =>
             setDraft((current) => (current ? { ...current, members: memberIds } : current))
           }
+          onOpenRecipientsSheet={refreshPillboxFamilyMembers}
           onSavePlan={saveGroup}
           deleteTarget={deleteTarget}
           underlaySnapshotKey={setupSnapshotKey}

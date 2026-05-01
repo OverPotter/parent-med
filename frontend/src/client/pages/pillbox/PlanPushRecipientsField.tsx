@@ -20,6 +20,7 @@ export function PlanPushRecipientsField({
   currentAccountId,
   selectedMemberIds,
   onSubmit,
+  onOpen,
   isPending = false,
   buttonLabel,
 }: {
@@ -28,10 +29,12 @@ export function PlanPushRecipientsField({
   currentAccountId: string | null;
   selectedMemberIds: string[];
   onSubmit: (memberIds: string[]) => void | Promise<void>;
+  onOpen?: () => void | Promise<void>;
   isPending?: boolean;
   buttonLabel?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
   const eligibleMemberIds = useMemo(
     () => familyMembers.map((member) => member.id),
     [familyMembers]
@@ -46,8 +49,23 @@ export function PlanPushRecipientsField({
     );
   }, [currentAccountId, eligibleMemberIds, selectedMemberIds]);
 
+  const isBusy = isPending || isOpening;
+
+  const handleOpen = async () => {
+    if (isBusy) {
+      return;
+    }
+    setIsOpening(true);
+    try {
+      await onOpen?.();
+    } finally {
+      setIsOpening(false);
+      setIsOpen(true);
+    }
+  };
+
   const handleToggle = (memberId: string) => {
-    if (isPending) {
+    if (isBusy) {
       return;
     }
     setSelectedIds((current) => {
@@ -70,8 +88,10 @@ export function PlanPushRecipientsField({
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
-        disabled={isPending}
+        onClick={() => {
+          void handleOpen();
+        }}
+        disabled={isBusy}
         className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
       >
         {buttonLabel ?? (language === "ru" ? "Уведомления" : "Notifications")}
@@ -116,11 +136,11 @@ export function PlanPushRecipientsField({
                   key={member.id}
                   type="button"
                   onClick={() => handleToggle(member.id)}
-                  disabled={isPending}
+                  disabled={isBusy}
                   className={[
                     "soft-choice-row",
                     selected ? "soft-choice-row-active" : "",
-                    isPending ? "cursor-not-allowed opacity-60" : "",
+                    isBusy ? "cursor-not-allowed opacity-60" : "",
                   ].join(" ")}
                 >
                   <span className="grid min-w-0 gap-0.5 text-left">

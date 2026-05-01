@@ -67,6 +67,7 @@ export function PillboxSetupScreen({
   onSelectTargetMember,
   currentAccountId,
   onSelectRecipients,
+  onOpenRecipientsSheet,
   onSavePlan,
   deleteTarget,
   onConfirmDelete,
@@ -93,6 +94,7 @@ export function PillboxSetupScreen({
   onSelectTargetMember: (memberId: string) => void;
   currentAccountId: string | null;
   onSelectRecipients: (memberIds: string[]) => void | Promise<void>;
+  onOpenRecipientsSheet?: () => void | Promise<void>;
   onSavePlan: () => void;
   deleteTarget: PillboxDeleteTarget | null;
   onConfirmDelete: () => void;
@@ -207,6 +209,7 @@ export function PillboxSetupScreen({
                   currentAccountId={currentAccountId}
                   selectedMemberIds={draft.members}
                   onSubmit={onSelectRecipients}
+                  onOpen={onOpenRecipientsSheet}
                   buttonLabel={language === "ru" ? "Изменить" : "Change"}
                 />
               </div>
