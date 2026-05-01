@@ -63,4 +63,3 @@ async def resolve_active_family_invite(
     if family is None:
         raise NotFoundError("Семья не найдена", resource="family")
     return invite, family
-

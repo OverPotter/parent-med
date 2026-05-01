@@ -66,9 +66,7 @@ class StubAuthService:
             raise UnauthorizedError("Неверный email или пароль", code="INVALID_CREDENTIALS")
         return _make_auth_response()
 
-    async def signin_and_accept_family_invite(
-        self, dto: LoginFamilyInviteDto
-    ) -> AuthResponseDto:
+    async def signin_and_accept_family_invite(self, dto: LoginFamilyInviteDto) -> AuthResponseDto:
         if self.fail_signin:
             raise UnauthorizedError("Неверный email или пароль", code="INVALID_CREDENTIALS")
         return _make_auth_response()
@@ -306,6 +304,7 @@ def test_create_family_invite_returns_fresh_token_on_each_request() -> None:
     assert first.json()["token"] != second.json()["token"]
     assert first.json()["invite_path"] != second.json()["invite_path"]
     assert invite_service.create_calls == 2
+
 
 def test_delete_me_calls_account_deletion() -> None:
     service = StubAuthService()

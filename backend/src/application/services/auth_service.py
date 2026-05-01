@@ -267,7 +267,9 @@ class AuthService(BaseAuthService):
     async def signin_and_accept_family_invite(self, dto: LoginFamilyInviteDto) -> AuthResponseDto:
         account, _family = await self._authenticate_account_by_login(dto)
         if dto.invite_token:
-            invite = await self._family_invite_repo.get_by_token_hash(hash_session_token(dto.invite_token))
+            invite = await self._family_invite_repo.get_by_token_hash(
+                hash_session_token(dto.invite_token)
+            )
             if not invite:
                 raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
             return await self._accept_family_invite_entity(
@@ -277,7 +279,9 @@ class AuthService(BaseAuthService):
             )
         if dto.use_latest_dev_invite:
             if not settings.is_local_environment:
-                raise ValidationError("Dev invite shortcut is unavailable", code="DEV_INVITE_DISABLED")
+                raise ValidationError(
+                    "Dev invite shortcut is unavailable", code="DEV_INVITE_DISABLED"
+                )
             invite = await self._family_invite_repo.get_latest_active()
             if not invite:
                 raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")

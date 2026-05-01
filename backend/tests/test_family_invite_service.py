@@ -119,6 +119,7 @@ async def test_create_family_invite_generates_fresh_token_each_time() -> None:
     assert first.invite_path != second.invite_path
     assert len(repo.items) == 2
 
+
 async def test_preview_reopens_invite_when_accepted_account_was_deleted() -> None:
     owner_id = uuid4()
     accepted_account_id = uuid4()

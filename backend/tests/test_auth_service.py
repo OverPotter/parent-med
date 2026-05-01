@@ -340,6 +340,7 @@ async def test_signin_and_accept_family_invite_joins_existing_account() -> None:
     assert source_family.id in family_repo.deleted_ids
     assert account.id in session_repo.deleted_account_ids
 
+
 @pytest.mark.asyncio
 async def test_signup_with_latest_dev_invite_joins_existing_family(monkeypatch) -> None:
     family = Family(id=uuid4(), name="Семья Смирновых")
@@ -442,7 +443,9 @@ async def test_signin_and_accept_latest_family_invite_for_dev_joins_existing_fam
 
 
 @pytest.mark.asyncio
-async def test_signin_and_accept_family_invite_moves_empty_solo_account_and_clears_old_family() -> None:
+async def test_signin_and_accept_family_invite_moves_empty_solo_account_and_clears_old_family() -> (
+    None
+):
     raw_token = "invite-token"
     old_family = Family(id=uuid4(), name="Solo family", owner_account_id=uuid4())
     target_family = Family(id=uuid4(), name="Target family", owner_account_id=uuid4())
@@ -551,6 +554,7 @@ async def test_signin_and_accept_family_invite_reopens_link_after_deleted_accoun
     assert family_invite_repo.invite is not None
     assert family_invite_repo.invite.accepted_by_account_id == account.id
 
+
 @pytest.mark.asyncio
 async def test_signin_and_accept_family_invite_rejects_when_current_family_has_children() -> None:
     raw_token = "invite-token"
@@ -650,7 +654,9 @@ async def test_leave_family_creates_new_family_for_member() -> None:
 
 
 @pytest.mark.asyncio
-async def test_signin_and_accept_family_invite_rejects_when_current_family_has_pillbox_plans() -> None:
+async def test_signin_and_accept_family_invite_rejects_when_current_family_has_pillbox_plans() -> (
+    None
+):
     raw_token = "invite-token"
     old_family = Family(id=uuid4(), name="Моя семья", owner_account_id=uuid4())
     target_family = Family(id=uuid4(), name="Target family", owner_account_id=uuid4())
