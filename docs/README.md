@@ -20,10 +20,14 @@
 
 - [PROJECT_MAP.md](./PROJECT_MAP.md)
   - domains, environments, Railway, local/mobile build notes
+- [DEV_TESTING.md](./DEV_TESTING.md)
+  - dev invite flows, RevenueCat sandbox tools, and manual testing shortcuts
 - [APP_MIGRATION_TODO.md](./APP_MIGRATION_TODO.md)
   - App Store / mobile migration backlog
 - [APP_STORE_REVIEW_NOTES.md](./APP_STORE_REVIEW_NOTES.md)
   - review notes template for App Store Connect
+- [FAMILY_TRANSFER_INVITE_PLAN.md](./FAMILY_TRANSFER_INVITE_PLAN.md)
+  - plan for destructive join flow when the current solo-family already has data
 
 ## 4. Module Readmes
 
