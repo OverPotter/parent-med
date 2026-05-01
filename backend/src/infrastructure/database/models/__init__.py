@@ -13,6 +13,7 @@ from src.infrastructure.database.models.curated_medicine_catalog_item import (
 from src.infrastructure.database.models.episode_medication_plan import EpisodeMedicationPlanModel
 from src.infrastructure.database.models.family import FamilyModel
 from src.infrastructure.database.models.family_invite import FamilyInviteModel
+from src.infrastructure.database.models.family_invite_handoff import FamilyInviteHandoffModel
 from src.infrastructure.database.models.feeding_record import FeedingRecordModel
 from src.infrastructure.database.models.height_entry import HeightEntryModel
 from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
@@ -44,6 +45,7 @@ __all__ = [
     "AuthAttemptModel",
     "FamilyModel",
     "FamilyInviteModel",
+    "FamilyInviteHandoffModel",
     "ChildModel",
     "CuratedMedicineCatalogItemModel",
     "FeedingRecordModel",

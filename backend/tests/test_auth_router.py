@@ -8,7 +8,12 @@ from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.api.deps import get_auth_attempt_repo, get_auth_service, get_current_account
+from src.api.deps import (
+    get_auth_attempt_repo,
+    get_auth_service,
+    get_current_account,
+    get_family_invite_service,
+)
 from src.api.routers import auth, family_invites
 from src.application.dto.auth import (
     AccountResponseDto,
@@ -20,6 +25,13 @@ from src.application.dto.auth import (
     RegisterDto,
 )
 from src.application.dto.family import FamilyResponseDto
+from src.application.dto.family_invite import (
+    FamilyInviteCreateDto,
+    FamilyInviteHandoffCreateResponseDto,
+    FamilyInviteHandoffResolveResponseDto,
+    FamilyInvitePreviewResponseDto,
+    FamilyInviteResponseDto,
+)
 from src.core.exception_handlers import app_exception_handler
 from src.core.exceptions import AppException, UnauthorizedError
 from src.domain.entities.auth_attempt import AuthAttempt
@@ -92,6 +104,63 @@ class StubAuthService:
     async def accept_family_invite(self, account_id, token) -> AuthResponseDto:  # noqa: ANN001
         return _make_auth_response()
 
+    async def accept_family_invite_handoff(self, account_id, handoff_id) -> AuthResponseDto:  # noqa: ANN001
+        return _make_auth_response()
+
+
+class StubFamilyInviteService:
+    def __init__(self) -> None:
+        self.create_calls = 0
+
+    async def create_for_account(self, family_id, current_account_id, dto):  # noqa: ANN001
+        self.create_calls += 1
+        token = f"invite-token-{self.create_calls}"
+        return FamilyInviteResponseDto(
+            token=token,
+            family_id=family_id,
+            family_name="Моя семья",
+            family_role=dto.family_role,
+            invite_path=f"/join-family?token={token}",
+            expires_at=datetime(2030, 1, 1),
+        )
+
+    async def get_latest_preview_for_dev(self) -> FamilyInvitePreviewResponseDto:
+        return FamilyInvitePreviewResponseDto(
+            family_id=uuid4(),
+            family_name="Моя семья",
+            family_role="member",
+            expires_at=datetime(2030, 1, 1),
+        )
+
+    async def get_preview(self, token: str) -> FamilyInvitePreviewResponseDto:
+        return FamilyInvitePreviewResponseDto(
+            family_id=uuid4(),
+            family_name=f"Invite {token}",
+            family_role="member",
+            expires_at=datetime(2030, 1, 1),
+        )
+
+    async def create_handoff(self, token: str) -> FamilyInviteHandoffCreateResponseDto:
+        return FamilyInviteHandoffCreateResponseDto(
+            handoff_id=f"handoff-{token}",
+            handoff_path=f"/join-family-handoff?hid=handoff-{token}",
+            family_id=uuid4(),
+            family_name="Моя семья",
+            family_role="member",
+            expires_at=datetime(2030, 1, 1),
+            invite_expires_at=datetime(2030, 1, 2),
+        )
+
+    async def resolve_handoff(self, handoff_id: str) -> FamilyInviteHandoffResolveResponseDto:
+        return FamilyInviteHandoffResolveResponseDto(
+            handoff_id=handoff_id,
+            family_id=uuid4(),
+            family_name="Моя семья",
+            family_role="member",
+            expires_at=datetime(2030, 1, 1),
+            invite_expires_at=datetime(2030, 1, 2),
+        )
+
 
 @dataclass
 class StubAuthAttemptRepository:
@@ -142,7 +211,10 @@ class _RepositoryContext(AbstractAsyncContextManager):
 
 
 def _build_test_app(
-    *, auth_service: StubAuthService, attempts_repo: StubAuthAttemptRepository
+    *,
+    auth_service: StubAuthService,
+    attempts_repo: StubAuthAttemptRepository,
+    family_invite_service: StubFamilyInviteService | None = None,
 ) -> TestClient:
     app = FastAPI()
     app.add_exception_handler(AppException, app_exception_handler)
@@ -150,6 +222,9 @@ def _build_test_app(
     app.include_router(family_invites.router, prefix="/api/v1")
     app.dependency_overrides[get_auth_service] = lambda: auth_service
     app.dependency_overrides[get_auth_attempt_repo] = lambda: attempts_repo
+    app.dependency_overrides[get_family_invite_service] = (
+        lambda: family_invite_service or StubFamilyInviteService()
+    )
     app.dependency_overrides[get_current_account] = lambda: AuthenticatedAccount(
         id=uuid4(),
         email="mama@example.com",
@@ -228,6 +303,84 @@ def test_web_family_invite_accept_omits_tokens() -> None:
     assert payload["access_token"] is None
     assert payload["refresh_token"] is None
     assert "set-cookie" in response.headers
+
+
+def test_create_family_invite_returns_fresh_token_on_each_request() -> None:
+    invite_service = StubFamilyInviteService()
+    client = _build_test_app(
+        auth_service=StubAuthService(),
+        attempts_repo=StubAuthAttemptRepository(),
+        family_invite_service=invite_service,
+    )
+
+    first = client.post("/api/v1/family-invites", json={"family_role": "member"})
+    second = client.post("/api/v1/family-invites", json={"family_role": "member"})
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert first.json()["token"] != second.json()["token"]
+    assert first.json()["invite_path"] != second.json()["invite_path"]
+    assert invite_service.create_calls == 2
+
+
+def test_create_family_invite_handoff_returns_app_route() -> None:
+    invite_service = StubFamilyInviteService()
+    client = _build_test_app(
+        auth_service=StubAuthService(),
+        attempts_repo=StubAuthAttemptRepository(),
+        family_invite_service=invite_service,
+    )
+
+    response = client.post("/api/v1/family-invites/invite-token-123/handoff")
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["handoff_id"] == "handoff-invite-token-123"
+    assert payload["handoff_path"] == "/join-family-handoff?hid=handoff-invite-token-123"
+
+
+def test_resolve_family_invite_handoff_returns_invite_token() -> None:
+    invite_service = StubFamilyInviteService()
+    client = _build_test_app(
+        auth_service=StubAuthService(),
+        attempts_repo=StubAuthAttemptRepository(),
+        family_invite_service=invite_service,
+    )
+
+    response = client.get("/api/v1/family-invites/handoff/handoff-123")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["handoff_id"] == "handoff-123"
+    assert payload["family_role"] == "member"
+
+
+def test_accept_family_invite_handoff_omits_tokens() -> None:
+    client = _build_test_app(
+        auth_service=StubAuthService(), attempts_repo=StubAuthAttemptRepository()
+    )
+
+    response = client.post("/api/v1/family-invites/handoff/handoff-123/accept")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["access_token"] is None
+    assert payload["refresh_token"] is None
+    assert "set-cookie" in response.headers
+
+
+def test_accept_family_invite_handoff_native_returns_tokens() -> None:
+    client = _build_test_app(
+        auth_service=StubAuthService(), attempts_repo=StubAuthAttemptRepository()
+    )
+
+    response = client.post("/api/v1/family-invites/handoff/handoff-123/accept/native")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["access_token"] == "access-token"
+    assert payload["refresh_token"] == "refresh-token"
+    assert "set-cookie" not in response.headers
 
 
 def test_delete_me_calls_account_deletion() -> None:

@@ -20,9 +20,14 @@ from src.application.dto.auth import (
     UpdateRecoveryCodeDto,
 )
 from src.application.services.base_auth_service import BaseAuthService
+from src.application.services.family_invite_state import (
+    ensure_reusable_family_invite,
+    resolve_active_family_invite,
+    resolve_active_family_invite_handoff,
+)
 from src.application.services.subscription_policy import has_billing_ownership_context
 from src.core.config import settings
-from src.core.exceptions import ForbiddenError, UnauthorizedError, ValidationError
+from src.core.exceptions import ForbiddenError, NotFoundError, UnauthorizedError, ValidationError
 from src.core.security import (
     create_access_token,
     create_refresh_token,
@@ -41,6 +46,7 @@ from src.domain.entities.account_session import AccountSession
 from src.domain.entities.family import Family, build_personal_family
 from src.domain.entities.family_access import build_default_family_access_policy
 from src.domain.entities.family_invite import FamilyInvite
+from src.domain.entities.family_invite_handoff import FamilyInviteHandoff
 from src.domain.entities.family_roles import is_family_admin, normalize_family_role
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
@@ -57,6 +63,7 @@ class AuthService(BaseAuthService):
         session_repo,
         family_repo,
         family_invite_repo,
+        handoff_repo=None,
         child_repo: ChildRepository | None = None,
         household_repo: HouseholdMedicineRepository | None = None,
         parent_repo: ParentRepository | None = None,
@@ -68,6 +75,7 @@ class AuthService(BaseAuthService):
             family_repo=family_repo,
             family_invite_repo=family_invite_repo,
         )
+        self._handoff_repo = handoff_repo
         self._child_repo = child_repo
         self._household_repo = household_repo
         self._parent_repo = parent_repo
@@ -130,65 +138,84 @@ class AuthService(BaseAuthService):
         message = str(getattr(exc, "orig", exc)).lower()
         return "accounts" in message and "email" in message and "unique" in message
 
+    async def _require_active_invite_by_token(self, token: str) -> tuple[FamilyInvite, Family]:
+        invite = await self._family_invite_repo.get_by_token_hash(hash_session_token(token))
+        if not invite:
+            raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+        try:
+            return await resolve_active_family_invite(
+                invite,
+                account_repo=self._account_repo,
+                invite_repo=self._family_invite_repo,
+                family_repo=self._family_repo,
+            )
+        except (ValidationError, ForbiddenError):
+            raise
+        except NotFoundError as exc:
+            raise ValidationError(
+                "Семья по приглашению не найдена",
+                code="FAMILY_INVITE_INVALID",
+            ) from exc
+
+    async def _require_latest_dev_invite(self) -> tuple[FamilyInvite, Family]:
+        if not settings.is_local_environment:
+            raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+        invite = await self._family_invite_repo.get_latest_active()
+        if not invite:
+            raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+        try:
+            return await resolve_active_family_invite(
+                invite,
+                account_repo=self._account_repo,
+                invite_repo=self._family_invite_repo,
+                family_repo=self._family_repo,
+            )
+        except (ValidationError, ForbiddenError):
+            raise
+        except NotFoundError as exc:
+            raise ValidationError(
+                "Семья по приглашению не найдена",
+                code="FAMILY_INVITE_INVALID",
+            ) from exc
+
+    async def _resolve_signup_family_context(
+        self, dto: RegisterDto, account_id: UUID
+    ) -> tuple[FamilyInvite | None, Family, str, FamilyInviteHandoff | None]:
+        family_name = build_personal_family(account_id).name
+        family_role = "admin"
+        invite: FamilyInvite | None = None
+        handoff: FamilyInviteHandoff | None = None
+
+        if dto.invite_token:
+            invite, created_family = await self._require_active_invite_by_token(dto.invite_token)
+            family_role = normalize_family_role(invite.family_role)
+            family_name = created_family.name
+            return invite, created_family, family_role, handoff
+
+        if dto.invite_handoff_id:
+            handoff, invite, created_family = await self._require_active_handoff(dto.invite_handoff_id)
+            family_role = normalize_family_role(invite.family_role)
+            family_name = created_family.name
+            return invite, created_family, family_role, handoff
+
+        if dto.use_latest_dev_invite:
+            invite, created_family = await self._require_latest_dev_invite()
+            family_role = normalize_family_role(invite.family_role)
+            family_name = created_family.name
+            return invite, created_family, family_role, handoff
+
+        family = Family(id=uuid4(), name=family_name, owner_account_id=account_id)
+        created_family = await self._family_repo.add(family)
+        return invite, created_family, family_role, handoff
+
     async def signup(self, dto: RegisterDto) -> AuthResponseDto:
         email = dto.email.strip().lower() if dto.email else None
         if email and await self._account_repo.get_by_email(email) is not None:
             self._raise_duplicate_email()
         account_id = uuid4()
-        family_role = "admin"
-        invite: FamilyInvite | None = None
-        family_name = build_personal_family(account_id).name
-        if dto.invite_token:
-            invite = await self._family_invite_repo.get_by_token_hash(
-                hash_session_token(dto.invite_token)
-            )
-            if not invite:
-                raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
-            if invite.accepted_at is not None:
-                raise ValidationError(
-                    "Приглашение уже использовано",
-                    code="FAMILY_INVITE_ALREADY_USED",
-                )
-            if invite.expires_at <= datetime.now(UTC):
-                raise ValidationError(
-                    "Срок действия приглашения истёк",
-                    code="FAMILY_INVITE_EXPIRED",
-                )
-            created_family = await self._family_repo.get_by_id(invite.family_id)
-            if created_family is None:
-                raise ValidationError(
-                    "Семья по приглашению не найдена",
-                    code="FAMILY_INVITE_INVALID",
-                )
-            family_role = normalize_family_role(invite.family_role)
-            family_name = created_family.name
-        elif dto.use_latest_dev_invite:
-            if not settings.is_local_environment:
-                raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
-            invite = await self._family_invite_repo.get_latest_active()
-            if not invite:
-                raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
-            if invite.accepted_at is not None:
-                raise ValidationError(
-                    "Приглашение уже использовано",
-                    code="FAMILY_INVITE_ALREADY_USED",
-                )
-            if invite.expires_at <= datetime.now(UTC):
-                raise ValidationError(
-                    "Срок действия приглашения истёк",
-                    code="FAMILY_INVITE_EXPIRED",
-                )
-            created_family = await self._family_repo.get_by_id(invite.family_id)
-            if created_family is None:
-                raise ValidationError(
-                    "Семья по приглашению не найдена",
-                    code="FAMILY_INVITE_INVALID",
-                )
-            family_role = normalize_family_role(invite.family_role)
-            family_name = created_family.name
-        else:
-            family = Family(id=uuid4(), name=family_name, owner_account_id=account_id)
-            created_family = await self._family_repo.add(family)
+        invite, created_family, family_role, handoff = await self._resolve_signup_family_context(
+            dto, account_id
+        )
         account = Account(
             id=account_id,
             email=email,
@@ -224,6 +251,8 @@ class AuthService(BaseAuthService):
             invite.accepted_at = datetime.now(UTC)
             invite.accepted_by_account_id = created_account.id
             await self._family_invite_repo.update(invite)
+        if dto.invite_handoff_id:
+            await self._consume_handoff(handoff)
         return await self._create_auth_response(
             created_account,
             created_family,
@@ -515,11 +544,11 @@ class AuthService(BaseAuthService):
         account: Account,
         invite: FamilyInvite,
     ) -> AuthResponseDto:
-        if invite.accepted_at is not None:
-            raise ValidationError(
-                "Приглашение уже использовано",
-                code="FAMILY_INVITE_ALREADY_USED",
-            )
+        invite = await ensure_reusable_family_invite(
+            invite,
+            account_repo=self._account_repo,
+            invite_repo=self._family_invite_repo,
+        )
         if invite.expires_at <= datetime.now(UTC):
             raise ValidationError(
                 "Срок действия приглашения истёк",
@@ -570,6 +599,15 @@ class AuthService(BaseAuthService):
             raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
         return await self._accept_family_invite_entity(account, invite)
 
+    async def accept_family_invite_handoff(self, account_id: UUID, handoff_id: str) -> AuthResponseDto:
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None:
+            raise UnauthorizedError()
+        handoff, invite, _family = await self._require_active_handoff(handoff_id)
+        result = await self._accept_family_invite_entity(account, invite)
+        await self._consume_handoff(handoff)
+        return result
+
     async def accept_latest_family_invite_for_dev(self, account_id: UUID) -> AuthResponseDto:
         if not settings.is_local_environment:
             raise ValidationError("Dev invite shortcut is unavailable", code="DEV_INVITE_DISABLED")
@@ -580,6 +618,46 @@ class AuthService(BaseAuthService):
         if not invite:
             raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
         return await self._accept_family_invite_entity(account, invite)
+
+    async def _require_active_handoff(
+        self, handoff_id: str
+    ) -> tuple[FamilyInviteHandoff, FamilyInvite, Family]:
+        if self._handoff_repo is None:
+            raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+        handoff = await self._handoff_repo.get_by_handoff_token_hash(hash_session_token(handoff_id))
+        if not handoff:
+            raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+        try:
+            return await resolve_active_family_invite_handoff(
+                handoff,
+                invite_repo=self._family_invite_repo,
+                account_repo=self._account_repo,
+                family_repo=self._family_repo,
+            )
+        except ValidationError:
+            raise
+        except NotFoundError as exc:
+            raise ValidationError(
+                "Семья по приглашению не найдена",
+                code="FAMILY_INVITE_INVALID",
+            ) from exc
+
+    async def _consume_handoff(self, handoff: FamilyInviteHandoff) -> None:
+        if self._handoff_repo is None:
+            return
+        await self._handoff_repo.update(
+            FamilyInviteHandoff(
+                id=handoff.id,
+                handoff_token_hash=handoff.handoff_token_hash,
+                invite_id=handoff.invite_id,
+                family_id=handoff.family_id,
+                family_name=handoff.family_name,
+                family_role=handoff.family_role,
+                created_at=handoff.created_at,
+                expires_at=handoff.expires_at,
+                consumed_at=datetime.now(UTC),
+            )
+        )
 
     async def update_language(self, account_id: UUID, dto: UpdateLanguageDto) -> AccountResponseDto:
         account = await self._account_repo.get_by_id(account_id)

@@ -96,6 +96,11 @@ const FamilyMemberAccessPage = lazy(() =>
 const JoinFamilyPage = lazy(() =>
   import("@client/pages/JoinFamilyPage").then((module) => ({ default: module.JoinFamilyPage }))
 );
+const JoinFamilyHandoffPage = lazy(() =>
+  import("@client/pages/JoinFamilyHandoffPage").then((module) => ({
+    default: module.JoinFamilyHandoffPage,
+  }))
+);
 const RecoverPasswordPage = lazy(() =>
   import("@client/pages/RecoverPasswordPage").then((module) => ({
     default: module.RecoverPasswordPage,
@@ -414,6 +419,7 @@ export default function App() {
                   }
                 />
                 <Route path="/join-family" element={<JoinFamilyPage />} />
+                <Route path="/join-family-handoff" element={<JoinFamilyHandoffPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/recover-password" element={<RecoverPasswordPage />} />
                 <Route path="/legal" element={<LegalPage />} />
@@ -462,6 +468,7 @@ export default function App() {
                     <Route path="home" element={<ClientHomePage />} />
                     <Route path="intro" element={<Navigate to="/home" replace />} />
                     <Route path="family" element={<FamilyPage />} />
+                    <Route path="join-family-handoff" element={<JoinFamilyHandoffPage />} />
                     <Route path="family/members" element={<FamilyMembersPage />} />
                     <Route
                       path="family/members/:memberAccountId/access"

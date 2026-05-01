@@ -1,10 +1,18 @@
 import { apiClient } from "./client";
 import { buildClientSessionTokens, isNativeClientRuntime } from "@shared/security/authSession";
-import type { AuthSessionResponse, FamilyInvite, FamilyInvitePreview } from "@shared/types/api";
+import type {
+  AuthSessionResponse,
+  FamilyInvite,
+  FamilyInviteHandoffCreate,
+  FamilyInviteHandoffResolve,
+  FamilyInvitePreview,
+} from "@shared/types/api";
 import {
   toAccount,
   toFamily,
   toFamilyInvite,
+  toFamilyInviteHandoffCreate,
+  toFamilyInviteHandoffResolve,
   toFamilyInvitePreview,
 } from "@shared/types/transform";
 
@@ -97,6 +105,43 @@ export async function fetchLatestDevFamilyInvitePreview(): Promise<FamilyInviteP
     expires_at: string;
   }>("/family-invites/dev/latest");
   return toFamilyInvitePreview(res.data);
+}
+
+export async function createFamilyInviteHandoff(
+  token: string
+): Promise<FamilyInviteHandoffCreate> {
+  const res = await apiClient.post<{
+    handoff_id: string;
+    handoff_path: string;
+    family_id: string;
+    family_name: string;
+    family_role: string;
+    expires_at: string;
+    invite_expires_at: string;
+  }>(`/family-invites/${token}/handoff`);
+  return toFamilyInviteHandoffCreate(res.data);
+}
+
+export async function resolveFamilyInviteHandoff(
+  handoffId: string
+): Promise<FamilyInviteHandoffResolve> {
+  const res = await apiClient.get<{
+    handoff_id: string;
+    family_id: string;
+    family_name: string;
+    family_role: string;
+    expires_at: string;
+    invite_expires_at: string;
+  }>(`/family-invites/handoff/${handoffId}`);
+  return toFamilyInviteHandoffResolve(res.data);
+}
+
+export async function acceptFamilyInviteHandoff(handoffId: string): Promise<AuthSessionResponse> {
+  const endpoint = isNativeClientRuntime()
+    ? `/family-invites/handoff/${handoffId}/accept/native`
+    : `/family-invites/handoff/${handoffId}/accept`;
+  const res = await apiClient.post<RawAuthResponse>(endpoint);
+  return toAuthResponse(res.data);
 }
 
 export async function acceptFamilyInvite(token: string): Promise<AuthSessionResponse> {

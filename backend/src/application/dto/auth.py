@@ -40,6 +40,10 @@ class RegisterDto(BaseModel):
     password: str = Field(..., min_length=8, description="Пароль")
     remember_me: bool = Field(False, description="Оставаться в системе на этом устройстве")
     invite_token: str | None = Field(None, description="Токен приглашения в существующую семью")
+    invite_handoff_id: str | None = Field(
+        None,
+        description="Handoff-сессия приглашения для продолжения invite-flow в приложении",
+    )
     use_latest_dev_invite: bool = Field(
         False,
         description="Dev-only: использовать последнее активное приглашение без токена",

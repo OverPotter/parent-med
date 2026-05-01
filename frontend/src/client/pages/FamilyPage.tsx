@@ -19,6 +19,7 @@ import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgr
 import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
 import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { FamilyInviteSection } from "./family/FamilyInviteSection";
+import { runCreateInviteFlow } from "./family/inviteActions";
 import { FamilyLeaveSection } from "./family/FamilyLeaveSection";
 import { FamilyNameSection } from "./family/FamilyNameSection";
 import { MemberCard } from "./family/MemberCard";
@@ -325,24 +326,15 @@ export function FamilyPage() {
       return;
     }
     try {
-      if (shouldUseDirectNativeInvite && latestInviteUrl) {
-        await handleShareInvite(latestInviteUrl);
-        return;
-      }
-
-      const invite = await createInviteMutation.mutateAsync();
-      setInviteCopied(false);
-      const inviteUrl = buildShareableInviteUrl(invite.invitePath, window.location.origin);
-      if (shouldUseDirectNativeInvite) {
-        if (!inviteUrl) {
-          setError(tFamily(language, "inviteShareFailed"));
-        }
-        return;
-      }
-
-      if (canShareInvite && inviteUrl) {
-        await handleShareInvite(inviteUrl);
-      }
+      await runCreateInviteFlow({
+        canShareInvite,
+        currentOrigin: window.location.origin,
+        createInvite: () => createInviteMutation.mutateAsync(),
+        markInviteCopied: setInviteCopied,
+        onShareInvite: handleShareInvite,
+        setError,
+        shareFailedMessage: tFamily(language, "inviteShareFailed"),
+      });
     } catch {
       // Ошибка уже обработана в mutation.onError.
     }

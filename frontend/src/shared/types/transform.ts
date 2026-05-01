@@ -10,6 +10,8 @@ import type {
   FamilyAccessPolicy,
   FamilyMember,
   FamilyInvite,
+  FamilyInviteHandoffCreate,
+  FamilyInviteHandoffResolve,
   FamilyInvitePreview,
   HeightEntry,
   Parent,
@@ -252,6 +254,25 @@ interface RawFamilyInvitePreview {
   family_name: string;
   family_role: string;
   expires_at: string;
+}
+
+interface RawFamilyInviteHandoffCreate {
+  handoff_id: string;
+  handoff_path: string;
+  family_id: string;
+  family_name: string;
+  family_role: string;
+  expires_at: string;
+  invite_expires_at: string;
+}
+
+interface RawFamilyInviteHandoffResolve {
+  handoff_id: string;
+  family_id: string;
+  family_name: string;
+  family_role: string;
+  expires_at: string;
+  invite_expires_at: string;
 }
 
 export function toFamily(r: RawFamily): Family {
@@ -500,6 +521,33 @@ export function toFamilyInvitePreview(r: RawFamilyInvitePreview): FamilyInvitePr
     familyName: r.family_name,
     familyRole: r.family_role,
     expiresAt: r.expires_at,
+  };
+}
+
+export function toFamilyInviteHandoffCreate(
+  r: RawFamilyInviteHandoffCreate
+): FamilyInviteHandoffCreate {
+  return {
+    handoffId: r.handoff_id,
+    handoffPath: r.handoff_path,
+    familyId: r.family_id,
+    familyName: r.family_name,
+    familyRole: r.family_role,
+    expiresAt: r.expires_at,
+    inviteExpiresAt: r.invite_expires_at,
+  };
+}
+
+export function toFamilyInviteHandoffResolve(
+  r: RawFamilyInviteHandoffResolve
+): FamilyInviteHandoffResolve {
+  return {
+    handoffId: r.handoff_id,
+    familyId: r.family_id,
+    familyName: r.family_name,
+    familyRole: r.family_role,
+    expiresAt: r.expires_at,
+    inviteExpiresAt: r.invite_expires_at,
   };
 }
 
