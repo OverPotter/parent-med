@@ -21,12 +21,19 @@ class FamilyPlanPolicy:
 
 PREMIUM_PLAN_CODES = {"plus", "pro"}
 ACTIVE_SUBSCRIPTION_STATUSES = {"trialing", "active", "grace"}
+NON_BILLING_CONTEXT_STATUSES = {"inactive", "expired"}
 
 
 def is_premium_active(family: Family) -> bool:
     return (
         family.plan_code in PREMIUM_PLAN_CODES
         and family.subscription_status in ACTIVE_SUBSCRIPTION_STATUSES
+    )
+
+
+def has_billing_ownership_context(family: Family) -> bool:
+    return not (
+        family.plan_code == "free" and family.subscription_status in NON_BILLING_CONTEXT_STATUSES
     )
 
 

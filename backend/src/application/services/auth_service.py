@@ -19,6 +19,7 @@ from src.application.dto.auth import (
     UpdateLanguageDto,
     UpdateRecoveryCodeDto,
 )
+from src.application.services.subscription_policy import has_billing_ownership_context
 from src.application.services.base_auth_service import BaseAuthService
 from src.core.config import settings
 from src.core.exceptions import ForbiddenError, UnauthorizedError, ValidationError
@@ -137,6 +138,30 @@ class AuthService(BaseAuthService):
             invite = await self._family_invite_repo.get_by_token_hash(
                 hash_session_token(dto.invite_token)
             )
+            if not invite:
+                raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+            if invite.accepted_at is not None:
+                raise ValidationError(
+                    "Приглашение уже использовано",
+                    code="FAMILY_INVITE_ALREADY_USED",
+                )
+            if invite.expires_at <= datetime.now(UTC):
+                raise ValidationError(
+                    "Срок действия приглашения истёк",
+                    code="FAMILY_INVITE_EXPIRED",
+                )
+            created_family = await self._family_repo.get_by_id(invite.family_id)
+            if created_family is None:
+                raise ValidationError(
+                    "Семья по приглашению не найдена",
+                    code="FAMILY_INVITE_INVALID",
+                )
+            family_role = normalize_family_role(invite.family_role)
+            family_name = created_family.name
+        elif dto.use_latest_dev_invite:
+            if not settings.is_local_environment:
+                raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+            invite = await self._family_invite_repo.get_latest_active()
             if not invite:
                 raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
             if invite.accepted_at is not None:
@@ -317,7 +342,11 @@ class AuthService(BaseAuthService):
         account: Account,
         detail: str,
     ) -> None:
-        if family is not None and family.billing_account_id == account.id:
+        if (
+            family is not None
+            and family.billing_account_id == account.id
+            and has_billing_ownership_context(family)
+        ):
             raise ValidationError(
                 detail,
                 code="BILLING_OWNER_TRANSFER_REQUIRED",

@@ -354,6 +354,7 @@ async def test_reset_debug_subscription_to_free_downgrades_access() -> None:
 
     assert result.family.plan_code == "free"
     assert result.family.subscription_status == "inactive"
+    assert result.family.billing_account_id is None
     assert result.family.free_primary_child_id == oldest_child.id
     assert result.access.free_primary_child_id == oldest_child.id
     assert result.access.premium_active is False
@@ -428,6 +429,42 @@ async def test_provider_sync_updates_subscription_provider_fields_and_access() -
     assert subscription_repo.current.trial_ends_at == trial_ends_at
     assert len(billing_event_repo.items) == 1
     assert billing_event_repo.items[0].event_type == "sync_revenuecat_trialing"
+
+
+@pytest.mark.asyncio
+async def test_provider_sync_free_inactive_clears_billing_owner() -> None:
+    family_id = uuid4()
+    owner = _build_account(family_id=family_id, family_role="owner", email="mom@example.com")
+    family = Family(
+        id=family_id,
+        name="Family",
+        owner_account_id=owner.id,
+        billing_account_id=owner.id,
+        plan_code="plus",
+        subscription_status="active",
+        subscription_provider="revenuecat",
+    )
+    service, _, _, _, _ = _make_service(family, [owner])
+
+    result = await service.sync_provider_subscription(
+        _auth(owner),
+        BillingProviderSyncDto(
+            provider="revenuecat",
+            plan_code="free",
+            status="inactive",
+            product_id=None,
+            provider_customer_id=None,
+            provider_subscription_id=None,
+            entitlement_code="plus",
+            expires_at=None,
+            trial_ends_at=None,
+            raw_payload={"source": "sync"},
+        ),
+    )
+
+    assert result.family.plan_code == "free"
+    assert result.family.subscription_status == "inactive"
+    assert result.family.billing_account_id is None
 
 
 @pytest.mark.asyncio

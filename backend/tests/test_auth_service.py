@@ -218,8 +218,53 @@ async def test_signup_with_invite_joins_existing_family() -> None:
     assert result.account.email == "dad@example.com"
     assert result.account.display_name == DEFAULT_ACCOUNT_DISPLAY_NAME
     assert result.account.needs_profile_completion is True
+
+
+@pytest.mark.asyncio
+async def test_signup_with_latest_dev_invite_joins_existing_family(monkeypatch) -> None:
+    family = Family(id=uuid4(), name="Семья Смирновых")
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=family.id,
+        created_by_account_id=uuid4(),
+        token_hash=hash_session_token("unused-dev-token"),
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    account_repo = StubAccountRepository()
+    family_invite_repo = StubFamilyInviteRepository(invite)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=family_invite_repo,
+    )
+    from src.application.services import auth_service as auth_service_module
+
+    monkeypatch.setattr(
+        type(auth_service_module.settings),
+        "is_local_environment",
+        property(lambda self: True),
+    )
+
+    result = await service.signup(
+        RegisterDto(
+            email="mom@example.com",
+            password="password123",
+            remember_me=True,
+            use_latest_dev_invite=True,
+        )
+    )
+
+    assert result.family.id == family.id
+    assert result.account.family_role == "member"
+    assert result.account.email == "mom@example.com"
+    assert family_invite_repo.invite is not None
+    assert family_invite_repo.invite.accepted_by_account_id == result.account.id
     assert result.account.has_recovery_code is False
-    assert result.account.email == "dad@example.com"
 
 
 @pytest.mark.asyncio
@@ -391,6 +436,8 @@ async def test_billing_owner_cannot_leave_family() -> None:
         name="Семья Петровых",
         owner_account_id=uuid4(),
         billing_account_id=billing_owner.id,
+        plan_code="plus",
+        subscription_status="active",
     )
     account_repo = StubAccountRepository()
     await account_repo.add(billing_owner)
@@ -440,6 +487,8 @@ async def test_billing_owner_cannot_accept_family_invite() -> None:
         name=old_family.name,
         owner_account_id=old_family.owner_account_id,
         billing_account_id=billing_owner.id,
+        plan_code="plus",
+        subscription_status="active",
     )
     family_repo.items[target_family.id] = target_family
     service = AuthService(
@@ -453,6 +502,59 @@ async def test_billing_owner_cannot_accept_family_invite() -> None:
         await service.accept_latest_family_invite_for_dev(billing_owner.id)
 
     assert exc_info.value.code == "BILLING_OWNER_TRANSFER_REQUIRED"
+
+
+@pytest.mark.asyncio
+async def test_stale_free_billing_owner_can_accept_family_invite() -> None:
+    old_family = Family(
+        id=uuid4(),
+        name="Моя семья",
+        owner_account_id=uuid4(),
+        billing_account_id=None,
+        plan_code="free",
+        subscription_status="inactive",
+    )
+    target_family = Family(id=uuid4(), name="Семья Петровых", owner_account_id=uuid4())
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=target_family.id,
+        created_by_account_id=target_family.owner_account_id,
+        token_hash="hashed-token",
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    account_repo = StubAccountRepository()
+    account = build_account(
+        family_id=old_family.id,
+        email="alex@example.com",
+        display_name="Alex",
+        family_role="admin",
+    )
+    await account_repo.add(account)
+    family_repo = StubFamilyRepository(old_family)
+    family_repo.items[old_family.id] = Family(
+        id=old_family.id,
+        name=old_family.name,
+        owner_account_id=old_family.owner_account_id,
+        billing_account_id=account.id,
+        plan_code="free",
+        subscription_status="inactive",
+    )
+    family_repo.items[target_family.id] = target_family
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=family_repo,
+        family_invite_repo=StubFamilyInviteRepository(invite),
+    )
+
+    result = await service.accept_latest_family_invite_for_dev(account.id)
+
+    assert result.family.id == target_family.id
+    assert result.account.family_id == target_family.id
 
 
 @pytest.mark.asyncio

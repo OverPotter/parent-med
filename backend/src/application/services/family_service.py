@@ -11,6 +11,7 @@ from src.application.dto.family import (
     FamilyUpdateDto,
 )
 from src.application.dto.family_access import FamilyAccessPolicyDto
+from src.application.services.subscription_policy import has_billing_ownership_context
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.account import Account, copy_account
 from src.domain.entities.account_identity import (
@@ -282,7 +283,11 @@ class FamilyService:
                 "Нельзя удалить владельца семьи без явной передачи владения",
                 code="FAMILY_OWNER_TRANSFER_REQUIRED",
             )
-        if family and family.billing_account_id == target.id:
+        if (
+            family
+            and family.billing_account_id == target.id
+            and has_billing_ownership_context(family)
+        ):
             raise ValidationError(
                 "Нельзя удалить участника, пока на нём привязана семейная подписка",
                 code="BILLING_OWNER_TRANSFER_REQUIRED",
