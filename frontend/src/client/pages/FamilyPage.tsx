@@ -464,10 +464,6 @@ export function FamilyPage() {
                 ) : null}
               </div>
             </div>
-            <p className="mt-1 text-sm leading-6 text-muted">
-              {tFamily(language, "yourProfileDescription")}
-            </p>
-
             {isMembersLoading ? (
               <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
             ) : !currentMember ? (

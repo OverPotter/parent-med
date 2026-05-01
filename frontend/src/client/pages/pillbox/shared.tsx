@@ -651,6 +651,55 @@ export function resetMedicationEditorFields(
   setEditorTimes([""]);
 }
 
+export function resolveMedicationExitDraft(params: {
+  medications: MedicationItem[];
+  pendingNewMedicationId: string | null;
+  editorMedicationBaseline: MedicationItem | null;
+  saveCommitted: boolean;
+}) {
+  const { medications, pendingNewMedicationId, editorMedicationBaseline, saveCommitted } = params;
+
+  if (saveCommitted) {
+    return {
+      medications,
+      pendingNewMedicationId: null,
+      editorMedicationBaseline: null,
+    };
+  }
+
+  if (pendingNewMedicationId) {
+    const pendingMedication = medications.find((item) => item.id === pendingNewMedicationId);
+    if (!pendingMedication || isMedicationReady(pendingMedication)) {
+      return {
+        medications,
+        pendingNewMedicationId: null,
+        editorMedicationBaseline: null,
+      };
+    }
+    return {
+      medications: medications.filter((item) => item.id !== pendingNewMedicationId),
+      pendingNewMedicationId: null,
+      editorMedicationBaseline: null,
+    };
+  }
+
+  if (!editorMedicationBaseline) {
+    return {
+      medications,
+      pendingNewMedicationId,
+      editorMedicationBaseline: null,
+    };
+  }
+
+  return {
+    medications: medications.map((item) =>
+      item.id === editorMedicationBaseline.id ? editorMedicationBaseline : item
+    ),
+    pendingNewMedicationId,
+    editorMedicationBaseline: null,
+  };
+}
+
 export function displayPillboxText(value: string) {
   return value;
 }
