@@ -44,6 +44,22 @@ export interface BootSplashInputs {
   isFirstNativeLaunch: boolean;
 }
 
+export interface SessionLossRedirectInputs {
+  hadSession: boolean;
+  hasSession: boolean;
+  currentPath: string;
+  targetPath: string;
+}
+
+export function shouldRedirectAfterSessionLoss({
+  hadSession,
+  hasSession,
+  currentPath,
+  targetPath,
+}: SessionLossRedirectInputs): boolean {
+  return hadSession && !hasSession && currentPath !== targetPath;
+}
+
 export function shouldShowClientBootSplash({
   authToken,
   accountId,

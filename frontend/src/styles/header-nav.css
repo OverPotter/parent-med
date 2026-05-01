@@ -92,10 +92,10 @@
   top: calc(100% + 0.45rem);
   right: 0;
   z-index: 260;
-  min-width: 13rem;
-  padding: 0.42rem;
-  border: 1px solid color-mix(in srgb, var(--color-border) 84%, transparent);
-  border-radius: 1rem;
+  min-width: 13.7rem;
+  padding: 0.46rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+  border-radius: 1.05rem;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.36), transparent 34%),
     color-mix(in srgb, var(--color-surface-soft) 98%, transparent);
@@ -108,18 +108,18 @@
 .app-profile-menu__item {
   display: flex;
   width: 100%;
-  min-height: 2.25rem;
+  min-height: 2.6rem;
   align-items: center;
   border: 0;
-  border-radius: 0.78rem;
+  border-radius: 0.9rem;
   background: transparent;
   color: color-mix(in srgb, var(--color-primary) 78%, var(--color-foreground));
-  padding: 0.52rem 0.7rem;
+  padding: 0.62rem 0.78rem;
   text-decoration: none;
   text-align: left;
-  font-size: 0.77rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.018em;
   line-height: 1.2;
   cursor: pointer;
   transition:
@@ -517,17 +517,17 @@
   .app-profile-menu__panel {
     right: 0;
     top: calc(100% + 0.38rem);
-    min-width: 11rem;
+    min-width: 11.75rem;
     max-width: calc(100vw - 1.75rem);
-    padding: 0.34rem;
-    border-radius: 0.9rem;
+    padding: 0.36rem;
+    border-radius: 0.96rem;
   }
 
   .app-profile-menu__item {
-    min-height: 2.1rem;
-    border-radius: 0.72rem;
-    font-size: 0.72rem;
-    padding: 0.45rem 0.58rem;
+    min-height: 2.42rem;
+    border-radius: 0.8rem;
+    font-size: 0.78rem;
+    padding: 0.54rem 0.64rem;
   }
 
   .soft-language-dropdown__trigger {

@@ -36,6 +36,50 @@ test("temperature and pain category matches common fever medicines", () => {
   );
 });
 
+test("gut category combines stomach, diarrhea, constipation, and nausea filters", () => {
+  assert.equal(
+    getMedicineCatalogCategoryMatch(
+      {
+        name: "Лоперамид",
+        form: "капсулы",
+        concentration: null,
+        description: "Средство при поносе",
+        dosage: null,
+      },
+      "gut"
+    ),
+    true
+  );
+
+  assert.equal(
+    getMedicineCatalogCategoryMatch(
+      {
+        name: "Лактулоза",
+        form: "сироп",
+        concentration: null,
+        description: "При запоре у детей",
+        dosage: null,
+      },
+      "gut"
+    ),
+    true
+  );
+
+  assert.equal(
+    getMedicineCatalogCategoryMatch(
+      {
+        name: "Ондансетрон",
+        form: "таблетки",
+        concentration: null,
+        description: "От тошноты и рвоты",
+        dosage: null,
+      },
+      "gut"
+    ),
+    true
+  );
+});
+
 test("manual medicine category options use broad categories", () => {
   const options = getManualMedicineCategoryOptions("ru");
   assert.deepEqual(

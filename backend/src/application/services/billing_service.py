@@ -14,6 +14,7 @@ from src.application.dto.billing import (
 )
 from src.application.dto.family import FamilyResponseDto
 from src.application.services.subscription_access_service import SubscriptionAccessService
+from src.application.services.subscription_policy import has_billing_ownership_context
 from src.core.config import settings
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.billing_event import BillingEvent
@@ -262,6 +263,23 @@ class BillingService:
         )
         return persisted
 
+    @staticmethod
+    def _resolve_billing_account_id(
+        family: Family,
+        *,
+        plan_code: str,
+        status: str,
+        fallback_account_id: UUID | None,
+    ) -> UUID | None:
+        next_family = replace(
+            family,
+            plan_code=plan_code,
+            subscription_status=status,
+        )
+        if has_billing_ownership_context(next_family):
+            return fallback_account_id
+        return None
+
     async def _resolve_free_primary_child_id(
         self,
         family: Family,
@@ -444,7 +462,12 @@ class BillingService:
             provider="stub",
             product_id=plan.apple_product_id,
             expires_at=expires_at,
-            billing_account_id=family.owner_account_id,
+            billing_account_id=self._resolve_billing_account_id(
+                family,
+                plan_code=plan.code,
+                status=dto.status,
+                fallback_account_id=family.owner_account_id,
+            ),
         )
         await self._append_billing_event(
             family_id=family.id,
@@ -484,7 +507,12 @@ class BillingService:
             provider="stub",
             product_id=plan.apple_product_id,
             expires_at=None,
-            billing_account_id=family.billing_account_id,
+            billing_account_id=self._resolve_billing_account_id(
+                family,
+                plan_code=plan.code,
+                status="inactive",
+                fallback_account_id=family.billing_account_id,
+            ),
         )
         await self._append_billing_event(
             family_id=family.id,
@@ -543,7 +571,12 @@ class BillingService:
             provider=dto.provider,
             product_id=dto.product_id or plan.apple_product_id,
             expires_at=dto.expires_at,
-            billing_account_id=family.owner_account_id,
+            billing_account_id=self._resolve_billing_account_id(
+                family,
+                plan_code=plan.code,
+                status=dto.status,
+                fallback_account_id=family.owner_account_id,
+            ),
         )
         await self._append_billing_event(
             family_id=family.id,

@@ -15,6 +15,7 @@ export const en: Translations = {
       "The session on this device will end. You can sign in again at any time.",
     logoutConfirmAction: "Yes, log out",
     profile: "Profile",
+    family: "Family",
     settings: "Settings",
     logoutFromAccount: "Log out",
     profileMenuLabel: "Profile menu",

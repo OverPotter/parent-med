@@ -15,6 +15,7 @@ export const ru: Translations = {
       "Сессия на этом устройстве завершится. Вы сможете войти снова в любой момент.",
     logoutConfirmAction: "Да, выйти",
     profile: "Профиль",
+    family: "Семья",
     settings: "Настройки",
     logoutFromAccount: "Выйти из аккаунта",
     profileMenuLabel: "Меню профиля",

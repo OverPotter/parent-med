@@ -20,6 +20,7 @@ from src.application.dto.auth import (
     UpdateRecoveryCodeDto,
 )
 from src.application.services.base_auth_service import BaseAuthService
+from src.application.services.subscription_policy import has_billing_ownership_context
 from src.core.config import settings
 from src.core.exceptions import ForbiddenError, UnauthorizedError, ValidationError
 from src.core.security import (
@@ -37,15 +38,14 @@ from src.domain.entities.account_identity import (
     resolve_display_name,
 )
 from src.domain.entities.account_session import AccountSession
-from src.domain.entities.family import Family
+from src.domain.entities.family import Family, build_personal_family
 from src.domain.entities.family_access import build_default_family_access_policy
 from src.domain.entities.family_invite import FamilyInvite
 from src.domain.entities.family_roles import is_family_admin, normalize_family_role
 from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.parent_repository import ParentRepository
-
-_DEFAULT_FAMILY_NAME = "Моя семья"
+from src.domain.repositories.pillbox_repository import PillboxRepository
 
 
 class AuthService(BaseAuthService):
@@ -60,6 +60,7 @@ class AuthService(BaseAuthService):
         child_repo: ChildRepository | None = None,
         household_repo: HouseholdMedicineRepository | None = None,
         parent_repo: ParentRepository | None = None,
+        pillbox_repo: PillboxRepository | None = None,
     ) -> None:
         super().__init__(
             account_repo=account_repo,
@@ -70,6 +71,10 @@ class AuthService(BaseAuthService):
         self._child_repo = child_repo
         self._household_repo = household_repo
         self._parent_repo = parent_repo
+        self._pillbox_repo = pillbox_repo
+
+    async def _create_solo_family(self, account: Account) -> Family:
+        return await self._family_repo.add(build_personal_family(account.id))
 
     async def _create_auth_response(
         self,
@@ -132,11 +137,35 @@ class AuthService(BaseAuthService):
         account_id = uuid4()
         family_role = "admin"
         invite: FamilyInvite | None = None
-        family_name = _DEFAULT_FAMILY_NAME
+        family_name = build_personal_family(account_id).name
         if dto.invite_token:
             invite = await self._family_invite_repo.get_by_token_hash(
                 hash_session_token(dto.invite_token)
             )
+            if not invite:
+                raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+            if invite.accepted_at is not None:
+                raise ValidationError(
+                    "Приглашение уже использовано",
+                    code="FAMILY_INVITE_ALREADY_USED",
+                )
+            if invite.expires_at <= datetime.now(UTC):
+                raise ValidationError(
+                    "Срок действия приглашения истёк",
+                    code="FAMILY_INVITE_EXPIRED",
+                )
+            created_family = await self._family_repo.get_by_id(invite.family_id)
+            if created_family is None:
+                raise ValidationError(
+                    "Семья по приглашению не найдена",
+                    code="FAMILY_INVITE_INVALID",
+                )
+            family_role = normalize_family_role(invite.family_role)
+            family_name = created_family.name
+        elif dto.use_latest_dev_invite:
+            if not settings.is_local_environment:
+                raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
+            invite = await self._family_invite_repo.get_latest_active()
             if not invite:
                 raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
             if invite.accepted_at is not None:
@@ -317,7 +346,11 @@ class AuthService(BaseAuthService):
         account: Account,
         detail: str,
     ) -> None:
-        if family is not None and family.billing_account_id == account.id:
+        if (
+            family is not None
+            and family.billing_account_id == account.id
+            and has_billing_ownership_context(family)
+        ):
             raise ValidationError(
                 detail,
                 code="BILLING_OWNER_TRANSFER_REQUIRED",
@@ -389,13 +422,7 @@ class AuthService(BaseAuthService):
             "Нельзя выйти из семьи, пока на аккаунте привязана семейная подписка",
         )
 
-        new_family = await self._family_repo.add(
-            Family(
-                id=uuid4(),
-                name=_DEFAULT_FAMILY_NAME,
-                owner_account_id=account.id,
-            )
-        )
+        new_family = await self._create_solo_family(account)
         updated_account = await self._account_repo.update(
             copy_account(
                 account,
@@ -605,6 +632,13 @@ class AuthService(BaseAuthService):
             account.family_id
         ):
             raise ValidationError(
-                "Нельзя присоединиться к другой семье, пока в вашей семье есть участники-родители",
+                "Нельзя присоединиться к другой семье, пока в вашей семье есть данные родителей",
                 code="CURRENT_FAMILY_HAS_PARENTS",
+            )
+        if self._pillbox_repo is not None and await self._pillbox_repo.list_by_family_id(
+            account.family_id
+        ):
+            raise ValidationError(
+                "Нельзя присоединиться к другой семье, пока в вашей семье есть планы приёма",
+                code="CURRENT_FAMILY_HAS_PILLBOX",
             )

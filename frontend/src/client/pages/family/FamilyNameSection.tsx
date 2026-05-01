@@ -2,6 +2,7 @@ import { useRef } from "react";
 import type { FocusEvent, FormEvent } from "react";
 import { RowSurface } from "@shared/components/Surface";
 import type { AppLanguage } from "@shared/i18n";
+import { scrollFieldIntoView } from "@shared/utils/focus";
 import { appBtnJournalPrimaryClass, appBtnJournalSecondaryClass } from "../child-illness/shared";
 import { tFamily } from "./copy";
 
@@ -35,7 +36,7 @@ export function FamilyNameSection({
   const saveButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const ensureEditingFieldVisible = (event: FocusEvent<HTMLFormElement>) => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || typeof document === "undefined") {
       return;
     }
 
@@ -45,19 +46,20 @@ export function FamilyNameSection({
     }
 
     const saveButton = saveButtonRef.current;
+    const documentElement = document.documentElement;
+
+    const readKeyboardHeight = () => {
+      const raw = window
+        .getComputedStyle(documentElement)
+        .getPropertyValue("--app-keyboard-height")
+        .trim()
+        .replace("px", "");
+      const parsed = Number.parseFloat(raw);
+      return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    };
 
     const scrollIntoComfortView = () => {
-      target.scrollIntoView({
-        block: "nearest",
-        inline: "nearest",
-        behavior: "smooth",
-      });
-
-      saveButton?.scrollIntoView({
-        block: "nearest",
-        inline: "nearest",
-        behavior: "smooth",
-      });
+      scrollFieldIntoView(target, { block: "center" });
 
       const scrollContainer =
         target.closest<HTMLElement>('[data-client-scroll-root="true"]') ??
@@ -68,18 +70,46 @@ export function FamilyNameSection({
       }
 
       const containerRect = scrollContainer.getBoundingClientRect();
-      const buttonRect = (saveButton ?? target).getBoundingClientRect();
-      const bottomGap = buttonRect.bottom - containerRect.bottom;
+      const keyboardHeight = readKeyboardHeight();
+      const safeBottomInset = 24;
+      const visibleBottom = Math.min(
+        containerRect.bottom,
+        window.innerHeight - keyboardHeight - safeBottomInset
+      );
+      const targetRect = target.getBoundingClientRect();
+      const bottomGap = targetRect.bottom - visibleBottom;
       if (bottomGap > 0) {
         scrollContainer.scrollBy({
           top: bottomGap + 24,
           behavior: "smooth",
         });
       }
+
+      const visibleTop = containerRect.top + 12;
+      const topGap = visibleTop - targetRect.top;
+      if (topGap > 0) {
+        scrollContainer.scrollBy({
+          top: -(topGap + 12),
+          behavior: "smooth",
+        });
+      }
+
+      if (saveButton) {
+        const buttonRect = saveButton.getBoundingClientRect();
+        const buttonBottomGap = buttonRect.bottom - visibleBottom;
+        if (buttonBottomGap > 0) {
+          scrollContainer.scrollBy({
+            top: buttonBottomGap + 16,
+            behavior: "smooth",
+          });
+        }
+      }
     };
 
+    scrollIntoComfortView();
     window.setTimeout(scrollIntoComfortView, 120);
     window.setTimeout(scrollIntoComfortView, 320);
+    window.setTimeout(scrollIntoComfortView, 520);
   };
 
   return (
@@ -121,6 +151,11 @@ export function FamilyNameSection({
                 onChange={(event) => onFamilyNameChange(event.target.value)}
                 className="soft-input w-full px-4"
                 placeholder={tFamily(language, "newFamilyNamePlaceholder")}
+                style={{
+                  scrollMarginTop: "1rem",
+                  scrollMarginBottom:
+                    "calc(8rem + var(--app-keyboard-height, 0px) + max(1rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom))))",
+                }}
               />
             </label>
             <div className="flex w-full flex-wrap gap-2 sm:w-auto">

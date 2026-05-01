@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
-import { getAccountDisplayLabel, getAccountSecondaryLabel } from "@shared/utils/accountLabels";
+import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
+import { tFamily } from "../family/copy";
 import { appPillActionClass } from "../child-illness/shared";
 import { tPillbox } from "./shared";
 
@@ -105,7 +106,11 @@ export function PlanPushRecipientsField({
             {familyMembers.map((member) => {
               const selected = selectedIds.includes(member.id);
               const memberLabel = getAccountDisplayLabel(member);
-              const memberMeta = getAccountSecondaryLabel(member);
+              const memberMeta =
+                member.relationshipLabel?.trim() ||
+                (currentAccountId && member.id === currentAccountId
+                  ? tFamily(language, "thisIsYou")
+                  : "");
               return (
                 <button
                   key={member.id}
@@ -122,9 +127,11 @@ export function PlanPushRecipientsField({
                     <span className="min-w-0 truncate whitespace-nowrap text-sm font-semibold tracking-[-0.02em] text-foreground">
                       {memberLabel}
                     </span>
-                    <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
-                      {memberMeta}
-                    </span>
+                    {memberMeta ? (
+                      <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
+                        {memberMeta}
+                      </span>
+                    ) : null}
                   </span>
                   <span className="soft-choice-check">{selected ? "✓" : null}</span>
                 </button>

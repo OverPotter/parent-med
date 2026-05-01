@@ -14,6 +14,7 @@ export interface Translations {
     logoutConfirmDescription: string;
     logoutConfirmAction: string;
     profile: string;
+    family: string;
     settings: string;
     logoutFromAccount: string;
     profileMenuLabel: string;

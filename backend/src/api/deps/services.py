@@ -80,6 +80,7 @@ def get_auth_service(
     child_repo=Depends(get_child_repo),
     household_repo=Depends(get_household_medicine_repo),
     parent_repo=Depends(get_parent_repo),
+    pillbox_repo=Depends(get_pillbox_repo),
 ) -> BaseAuthService:
     return AuthService(
         account_repo=account_repo,
@@ -89,6 +90,7 @@ def get_auth_service(
         child_repo=child_repo,
         household_repo=household_repo,
         parent_repo=parent_repo,
+        pillbox_repo=pillbox_repo,
     )
 
 

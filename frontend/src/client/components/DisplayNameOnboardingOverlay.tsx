@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { updateRecoveryCode } from "@shared/api/auth";
 import { FullscreenOverlay } from "@shared/components/FullscreenOverlay";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
-import { updateFamilyMemberProfile } from "@shared/api/families";
+import { fetchFamilies, updateFamilyMemberProfile, updateMyFamily } from "@shared/api/families";
 import { isRecoveryCodeValid, normalizeRecoveryCode } from "@shared/utils/recoveryCode";
 import { tFamily } from "../pages/family/copy";
 import { tSettings } from "../pages/settings/copy";
@@ -24,11 +24,33 @@ export function DisplayNameOnboardingOverlay() {
   const accountNeedsProfileCompletion = useAppStore((s) => s.accountNeedsProfileCompletion);
   const accountHasRecoveryCode = useAppStore((s) => s.accountHasRecoveryCode);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
+  const currentFamilyName = useAppStore((s) => s.currentFamilyName);
   const setAccountProfile = useAppStore((s) => s.setAccountProfile);
+  const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const [displayName, setDisplayName] = useState("");
   const [relationshipLabel, setRelationshipLabel] = useState("");
+  const [phone, setPhone] = useState("");
+  const [familyName, setFamilyName] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
   const [step, setStep] = useState<"display-name" | "recovery-code" | null>(null);
+
+  const { data: families = [] } = useQuery({
+    queryKey: ["families", accountId],
+    queryFn: fetchFamilies,
+    enabled: Boolean(accountId),
+    retry: false,
+  });
+  const currentFamily = useMemo(
+    () => families.find((family) => family.id === currentFamilyId) ?? families[0] ?? null,
+    [currentFamilyId, families]
+  );
+  const canEditFamilyName = Boolean(
+    accountId && currentFamily && currentFamily.ownerAccountId === accountId
+  );
+
+  useEffect(() => {
+    setFamilyName(currentFamily?.name ?? currentFamilyName ?? "");
+  }, [currentFamily?.name, currentFamilyName]);
 
   useEffect(() => {
     if (!accountId || typeof window === "undefined") {
@@ -70,14 +92,29 @@ export function DisplayNameOnboardingOverlay() {
       if (!accountId) {
         throw new Error("Account is not ready");
       }
-      return updateFamilyMemberProfile(accountId, {
-        display_name: displayName.trim(),
-        relationship_label: relationshipLabel.trim() || null,
+      const trimmedDisplayName = displayName.trim();
+      const trimmedRelationshipLabel = relationshipLabel.trim() || null;
+      const trimmedPhone = phone.trim() || null;
+      const trimmedFamilyName = familyName.trim();
+      const member = await updateFamilyMemberProfile(accountId, {
+        display_name: trimmedDisplayName,
+        relationship_label: trimmedRelationshipLabel,
+        phone: trimmedPhone,
       });
+      const shouldUpdateFamilyName =
+        canEditFamilyName &&
+        trimmedFamilyName.length > 0 &&
+        trimmedFamilyName !== (currentFamily?.name ?? currentFamilyName ?? "").trim();
+      const updatedFamily = shouldUpdateFamilyName ? await updateMyFamily(trimmedFamilyName) : null;
+      return { member, updatedFamily };
     },
-    onSuccess: (member) => {
+    onSuccess: ({ member, updatedFamily }) => {
       setAccountProfile({ displayName: member.displayName });
+      if (updatedFamily) {
+        setCurrentFamily({ id: updatedFamily.id, name: updatedFamily.name });
+      }
       void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["families"] }),
         queryClient.invalidateQueries({ queryKey: ["family-members"] }),
         queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] }),
         queryClient.invalidateQueries({ queryKey: ["families", "me", "members", currentFamilyId] }),
@@ -98,6 +135,8 @@ export function DisplayNameOnboardingOverlay() {
       }
       setDisplayName("");
       setRelationshipLabel("");
+      setPhone("");
+      setFamilyName(updatedFamily?.name ?? currentFamily?.name ?? currentFamilyName ?? "");
     },
   });
 
@@ -130,6 +169,8 @@ export function DisplayNameOnboardingOverlay() {
     }
     setDisplayName("");
     setRelationshipLabel("");
+    setPhone("");
+    setFamilyName(currentFamily?.name ?? currentFamilyName ?? "");
     if (
       shouldShowRecoveryCodeOnboarding({
         accountId,
@@ -254,6 +295,42 @@ export function DisplayNameOnboardingOverlay() {
                   {tFamily(language, "relationshipHint")}
                 </p>
               </label>
+
+              <label className="block">
+                <span className="soft-field-label">{tFamily(language, "phone")}</span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  className="soft-input mt-2 w-full px-4"
+                  placeholder={tFamily(language, "phonePlaceholder")}
+                  autoComplete="tel"
+                  inputMode="tel"
+                />
+              </label>
+
+              {canEditFamilyName ? (
+                <label className="block">
+                  <span className="soft-field-label">
+                    {language === "ru" ? "Название семьи" : "Family title"}
+                  </span>
+                  <input
+                    type="text"
+                    value={familyName}
+                    onChange={(event) => setFamilyName(event.target.value)}
+                    className="soft-input mt-2 w-full px-4"
+                    placeholder={
+                      language === "ru" ? "Например: Семья Ивановых" : "Example: The Johnson family"
+                    }
+                    autoComplete="off"
+                  />
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    {language === "ru"
+                      ? "Это общее название семьи. Его видно в приглашениях и семейном разделе."
+                      : "This shared family title is shown in invites and the Family section."}
+                  </p>
+                </label>
+              ) : null}
             </div>
 
             {saveMutation.isError ? (
@@ -275,7 +352,11 @@ export function DisplayNameOnboardingOverlay() {
               <button
                 type="button"
                 onClick={() => saveMutation.mutate()}
-                disabled={saveMutation.isPending || !displayName.trim()}
+                disabled={
+                  saveMutation.isPending ||
+                  !displayName.trim() ||
+                  (canEditFamilyName && !familyName.trim())
+                }
                 className="app-btn-primary-md soft-button-primary inline-flex min-h-[2.8rem] flex-1 items-center justify-center px-4 disabled:opacity-50"
               >
                 {saveMutation.isPending

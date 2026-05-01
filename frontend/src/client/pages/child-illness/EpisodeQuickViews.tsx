@@ -10,12 +10,13 @@ import type {
   IllnessEpisode,
   WeightEntry,
 } from "@shared/types/api";
-import { getAccountDisplayLabel, getAccountSecondaryLabel } from "@shared/utils/accountLabels";
+import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
 import type { MedicationPlanPriorityItem } from "../../utils/medicationPlans";
 import type { MedicationPlanPayload } from "./reminderUtils";
 import { AdministrationForm, TemperatureForm, illnessCompactTextareaClass } from "./forms";
+import { tFamily } from "../family/copy";
 import { MedicationPlanComposer, MedicationPlanDetail, MedicationPlanList } from "./reminders";
 import {
   appBtnFilledClass,
@@ -114,6 +115,11 @@ function EpisodeReminderRecipientsCard({
               {familyMembers.map((member) => {
                 const selected = selectedIds.includes(member.id);
                 const label = getAccountDisplayLabel(member);
+                const memberMeta =
+                  member.relationshipLabel?.trim() ||
+                  (currentAccountId && member.id === currentAccountId
+                    ? tFamily(language, "thisIsYou")
+                    : "");
                 return (
                   <button
                     key={member.id}
@@ -140,9 +146,11 @@ function EpisodeReminderRecipientsCard({
                       <span className="min-w-0 truncate text-sm font-semibold tracking-[-0.02em] text-foreground">
                         {label}
                       </span>
-                      <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
-                        {getAccountSecondaryLabel(member)}
-                      </span>
+                      {memberMeta ? (
+                        <span className="min-w-0 text-[0.81rem] leading-5 text-muted">
+                          {memberMeta}
+                        </span>
+                      ) : null}
                     </span>
                     <span className="soft-choice-check">{selected ? "✓" : null}</span>
                   </button>

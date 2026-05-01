@@ -70,10 +70,7 @@ export type MedicineCatalogCategory =
   | "cold_cough"
   | "nose_throat"
   | "allergy"
-  | "stomach"
-  | "diarrhea"
-  | "constipation"
-  | "nausea"
+  | "gut"
   | "eyes"
   | "ears"
   | "skin_wounds";
@@ -86,10 +83,7 @@ export function getMedicineCatalogCategoryOptions(language: AppLanguage) {
         { value: "cold_cough", label: "Простуда и кашель" },
         { value: "nose_throat", label: "Нос и горло" },
         { value: "allergy", label: "Аллергия" },
-        { value: "stomach", label: "Живот" },
-        { value: "diarrhea", label: "Понос" },
-        { value: "constipation", label: "Запор" },
-        { value: "nausea", label: "Тошнота" },
+        { value: "gut", label: "ЖКТ" },
         { value: "eyes", label: "Глаза" },
         { value: "ears", label: "Уши" },
         { value: "skin_wounds", label: "Кожа и раны" },
@@ -100,15 +94,63 @@ export function getMedicineCatalogCategoryOptions(language: AppLanguage) {
         { value: "cold_cough", label: "Cold and cough" },
         { value: "nose_throat", label: "Nose and throat" },
         { value: "allergy", label: "Allergy" },
-        { value: "stomach", label: "Stomach" },
-        { value: "diarrhea", label: "Diarrhea" },
-        { value: "constipation", label: "Constipation" },
-        { value: "nausea", label: "Nausea" },
+        { value: "gut", label: "GI tract" },
         { value: "eyes", label: "Eyes" },
         { value: "ears", label: "Ears" },
         { value: "skin_wounds", label: "Skin and wounds" },
       ];
 }
+
+const GUT_CATEGORY_KEYWORDS = [
+  "живот",
+  "stomach",
+  "изжог",
+  "heartburn",
+  "reflux",
+  "antacid",
+  "омепраз",
+  "omepraz",
+  "фамотид",
+  "famotid",
+  "симетик",
+  "simeth",
+  "gas",
+  "bloating",
+  "кальция карбонат",
+  "calcium carbonate",
+  "понос",
+  "diarr",
+  "лоперам",
+  "loperam",
+  "регидрат",
+  "rehydra",
+  "ors",
+  "oral rehydr",
+  "висмут",
+  "bismuth",
+  "запор",
+  "constip",
+  "лактул",
+  "lactul",
+  "бисакод",
+  "bisacod",
+  "сенна",
+  "senna",
+  "полиэтиленглик",
+  "polyethylene glycol",
+  "peg",
+  "тошнот",
+  "nause",
+  "рвот",
+  "vomit",
+  "ондансет",
+  "ondanset",
+  "меклиз",
+  "mecliz",
+  "дименгидр",
+  "dimenhydr",
+  "motion sickness",
+];
 
 function normalizeMedicineCatalogText(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase();
@@ -234,66 +276,8 @@ export function getMedicineCatalogCategoryMatch(
         "олопат",
         "olopat",
       ]);
-    case "stomach":
-      return hasKeywordMatch(text, [
-        "живот",
-        "stomach",
-        "изжог",
-        "heartburn",
-        "reflux",
-        "antacid",
-        "омепраз",
-        "omepraz",
-        "фамотид",
-        "famotid",
-        "симетик",
-        "simeth",
-        "gas",
-        "bloating",
-        "кальция карбонат",
-        "calcium carbonate",
-      ]);
-    case "diarrhea":
-      return hasKeywordMatch(text, [
-        "понос",
-        "diarr",
-        "лоперам",
-        "loperam",
-        "регидрат",
-        "rehydra",
-        "ors",
-        "oral rehydr",
-        "висмут",
-        "bismuth",
-      ]);
-    case "constipation":
-      return hasKeywordMatch(text, [
-        "запор",
-        "constip",
-        "лактул",
-        "lactul",
-        "бисакод",
-        "bisacod",
-        "сенна",
-        "senna",
-        "полиэтиленглик",
-        "polyethylene glycol",
-        "peg",
-      ]);
-    case "nausea":
-      return hasKeywordMatch(text, [
-        "тошнот",
-        "nause",
-        "рвот",
-        "vomit",
-        "ондансет",
-        "ondanset",
-        "меклиз",
-        "mecliz",
-        "дименгидр",
-        "dimenhydr",
-        "motion sickness",
-      ]);
+    case "gut":
+      return hasKeywordMatch(text, GUT_CATEGORY_KEYWORDS);
     case "eyes":
       return hasKeywordMatch(text, [
         "глаз",

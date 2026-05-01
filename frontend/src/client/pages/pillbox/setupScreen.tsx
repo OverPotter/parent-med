@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
-import { getAccountDisplayLabel, getAccountSecondaryLabel } from "@shared/utils/accountLabels";
+import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { PlanPushRecipientsField } from "./PlanPushRecipientsField";
 import { buildPillboxPlanTargetLabel } from "./planTarget";
 import {
@@ -10,7 +10,6 @@ import {
   actionSecondaryClass,
   displayPillboxText,
   EditorShell,
-  formatPillboxReminderRecipientsLine,
   formatPillboxDoseAmount,
   FlowScreenHeader,
   formatMealRule,
@@ -37,6 +36,16 @@ function formatMedicationListCount(count: number, language: AppLanguage) {
   if (mod10 === 1 && mod100 !== 11) return `${count} лекарство`;
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} лекарства`;
   return `${count} лекарств`;
+}
+
+function formatCompactRecipientsSummary(labels: string[], language: AppLanguage): string {
+  if (!labels.length) {
+    return language === "ru" ? "никто не выбран" : "no one selected";
+  }
+  if (labels.length <= 3) {
+    return labels.join(", ");
+  }
+  return language === "ru" ? `${labels.length} участников` : `${labels.length} members`;
 }
 
 export function PillboxSetupScreen({
@@ -105,7 +114,7 @@ export function PillboxSetupScreen({
     : language === "ru"
       ? "Название появится после выбора участника"
       : "The plan name will appear after you choose a family member";
-  const reminderRecipientsLine = formatPillboxReminderRecipientsLine(
+  const compactReminderRecipientsLine = formatCompactRecipientsSummary(
     familyMembers
       .filter((member) => draft.members.includes(member.id))
       .map((member) => getAccountDisplayLabel(member)),
@@ -146,56 +155,70 @@ export function PillboxSetupScreen({
         <div className="soft-panel space-y-5 rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
           {!isEditing ? (
             <section className="space-y-3 pt-1">
-              <div className="space-y-1.5">
-                <span className="soft-field-label">
-                  {language === "ru" ? "Для кого план" : "Who is this plan for"}
-                </span>
-                <div className="flex items-center justify-between gap-3">
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <span className="soft-field-label">
+                    {language === "ru" ? "Для кого план" : "Who is this plan for"}
+                  </span>
                   <p className="text-[0.78rem] leading-5 text-muted">
                     {language === "ru"
-                      ? "Выберите участника, а затем при необходимости настройте, кому придут уведомления."
-                      : "Choose the member first, then adjust who receives reminders if needed."}
+                      ? "Сначала выберите, для кого будет этот план."
+                      : "Choose who this plan is for first."}
                   </p>
-                  <PlanPushRecipientsField
-                    language={language}
-                    familyMembers={familyMembers}
-                    currentAccountId={currentAccountId}
-                    selectedMemberIds={draft.members}
-                    onSubmit={onSelectRecipients}
-                    buttonLabel={language === "ru" ? "Уведомления" : "Notifications"}
-                  />
                 </div>
                 <button
                   type="button"
                   onClick={() => setTargetSheetOpen(true)}
                   className="soft-input flex min-h-[2.82rem] w-full items-center justify-between gap-3 px-4 py-0 text-left text-[16px] leading-[1.15] sm:min-h-[2.92rem]"
                 >
-                  <span
-                    className={selectedTargetMember ? "text-foreground" : "text-muted"}
-                  >
+                  <span className={selectedTargetMember ? "text-foreground" : "text-muted"}>
                     {targetMemberLabel}
                   </span>
                   <span aria-hidden="true" className="text-muted">
                     ›
                   </span>
                 </button>
-                <p className="text-[0.78rem] leading-5 text-muted">
-                  {language === "ru"
-                    ? "Выберите, для кого этот план. Получатель уведомлений сохранится автоматически, а позже его можно изменить в самом плане."
-                    : "Choose who this plan is for. The reminder recipient will be saved automatically, and you can change it later in the plan."}
+                <p className="text-sm leading-6 text-muted">
+                  {language === "ru" ? "План:" : "Plan:"}{" "}
+                  <span className="font-bold text-foreground underline decoration-[color:color-mix(in_srgb,var(--color-primary)_38%,transparent)] decoration-2 underline-offset-4">
+                    {generatedTitlePreview}
+                  </span>
                 </p>
-                <p className="text-[0.78rem] leading-5 text-muted">
-                  {reminderRecipientsLine}
-                </p>
-                <p className="text-[0.86rem] font-semibold leading-5 text-foreground/88">
-                  {generatedTitlePreview}
-                </p>
-                {!canAddMedication && addMedicationBlockedReason ? (
-                  <p className="text-[0.78rem] leading-5 text-muted">
-                    {addMedicationBlockedReason}
-                  </p>
-                ) : null}
               </div>
+            </section>
+          ) : null}
+
+          {!isEditing ? (
+            <section className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-1.5">
+                  <span className="soft-field-label">
+                    {language === "ru" ? "Уведомления" : "Notifications"}
+                  </span>
+                  <p className="text-[0.78rem] leading-5 text-muted">
+                    {language === "ru"
+                      ? "Кому сейчас придут напоминания по этому плану. Позже это можно изменить."
+                      : "Who currently receives reminders for this plan. You can change this later."}
+                  </p>
+                </div>
+                <PlanPushRecipientsField
+                  language={language}
+                  familyMembers={familyMembers}
+                  currentAccountId={currentAccountId}
+                  selectedMemberIds={draft.members}
+                  onSubmit={onSelectRecipients}
+                  buttonLabel={language === "ru" ? "Изменить" : "Change"}
+                />
+              </div>
+              <p className="text-sm leading-6 text-muted">
+                {language === "ru" ? "Уведомления для:" : "Notifications for:"}{" "}
+                <span className="font-semibold text-foreground">
+                  {compactReminderRecipientsLine}
+                </span>
+              </p>
+              {!canAddMedication && addMedicationBlockedReason ? (
+                <p className="text-[0.78rem] leading-5 text-muted">{addMedicationBlockedReason}</p>
+              ) : null}
             </section>
           ) : null}
 
@@ -299,9 +322,7 @@ export function PillboxSetupScreen({
                   id="pillbox-group-title"
                   value={draft.title}
                   onChange={(event) => onTitleChange(event.target.value)}
-                  placeholder={
-                    language === "ru" ? "Например: Для Артема" : "Example: For Artem"
-                  }
+                  placeholder={language === "ru" ? "Например: Для Артема" : "Example: For Artem"}
                   className="soft-input w-full px-4"
                 />
               </label>
@@ -378,6 +399,7 @@ export function PillboxSetupScreen({
           <div className="soft-choice-list mt-4">
             {familyMembers.map((member) => {
               const selected = member.id === draft.targetMemberId;
+              const memberMeta = member.relationshipLabel?.trim() ?? "";
               return (
                 <button
                   key={member.id}
@@ -394,9 +416,11 @@ export function PillboxSetupScreen({
                     <span className="min-w-0 truncate whitespace-nowrap text-sm font-semibold tracking-[-0.02em] text-foreground">
                       {getAccountDisplayLabel(member)}
                     </span>
-                    <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
-                      {getAccountSecondaryLabel(member)}
-                    </span>
+                    {memberMeta ? (
+                      <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
+                        {memberMeta}
+                      </span>
+                    ) : null}
                   </span>
                   <span className="soft-choice-check">{selected ? "✓" : null}</span>
                 </button>

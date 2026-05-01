@@ -1,10 +1,11 @@
 /** Роутинг: admin / client. */
 
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
 import { FAMILY_ACCESS_REFRESH_MS } from "@shared/hooks/useFamilyAccessQueryOptions";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { applySessionToClient, setBearerToken, setRefreshHandler } from "@shared/api/client";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -43,6 +44,7 @@ import { appLog } from "@shared/utils/appLog";
 import { shouldClearSessionForAuthError } from "@shared/api/authSessionErrors";
 import { shouldUseAppEntryWebMode } from "@shared/runtime/publicWebsiteMode";
 import { cleanupDeviceSessionArtifacts } from "@shared/utils/sessionCleanup";
+import { shouldRedirectAfterSessionLoss } from "@client/startup/startupDecisions";
 const ClientLayout = lazy(() =>
   import("@client/layout/ClientLayout").then((module) => ({ default: module.ClientLayout }))
 );
@@ -247,6 +249,32 @@ function AuthSync() {
   return null;
 }
 
+function SessionLossRedirect({ targetPath }: { targetPath: string }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const authToken = useAppStore((s) => s.authToken);
+  const accountId = useAppStore((s) => s.accountId);
+  const hasSession = Boolean(authToken || accountId);
+  const hadSessionRef = useRef(hasSession);
+
+  useEffect(() => {
+    if (
+      shouldRedirectAfterSessionLoss({
+        hadSession: hadSessionRef.current,
+        hasSession,
+        currentPath: location.pathname,
+        targetPath,
+      })
+    ) {
+      navigate(targetPath, { replace: true });
+    }
+
+    hadSessionRef.current = hasSession;
+  }, [hasSession, location.pathname, navigate, targetPath]);
+
+  return null;
+}
+
 export default function App() {
   const role = useAppStore((s) => s.role);
   const language = useAppStore((s) => s.language);
@@ -257,6 +285,7 @@ export default function App() {
   const isNativeRuntime = Capacitor.isNativePlatform();
   const shouldUseAppEntryRoute = isNativeRuntime || shouldUseAppEntryWebMode();
   const isPublicWebsiteMode = !isNativeRuntime && !shouldUseAppEntryWebMode();
+  const signedOutTargetPath = shouldUseAppEntryRoute ? "/auth?mode=login" : "/";
   const isNonCriticalStartupReady = useDeferredNonCriticalStartupReady();
   const hasSession = Boolean(authToken || accountId);
   const shouldMountClientRuntime = isNonCriticalStartupReady && hasSession && role !== "admin";
@@ -354,6 +383,7 @@ export default function App() {
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <AuthSync />
+      <SessionLossRedirect targetPath={signedOutTargetPath} />
       <RevenueCatSync />
       <DisplayNameOnboardingOverlay />
       {role !== "admin" ? <NativePushNavigationSync /> : null}

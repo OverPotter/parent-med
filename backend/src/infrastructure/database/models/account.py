@@ -98,5 +98,7 @@ class AccountModel(Base):
     )
     sessions: Mapped[list] = relationship("AccountSessionModel", back_populates="account")
     push_subscriptions: Mapped[list] = relationship(
-        "PushSubscriptionModel", back_populates="account"
+        "PushSubscriptionModel",
+        back_populates="account",
+        passive_deletes=True,
     )
