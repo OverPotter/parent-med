@@ -92,7 +92,9 @@ async def get_family_invite_preview(
     return await service.get_preview(token)
 
 
-@router.post("/{token}/handoff", response_model=FamilyInviteHandoffCreateResponseDto, status_code=201)
+@router.post(
+    "/{token}/handoff", response_model=FamilyInviteHandoffCreateResponseDto, status_code=201
+)
 async def create_family_invite_handoff(
     token: str,
     service: FamilyInviteService = Depends(get_family_invite_service),

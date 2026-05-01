@@ -104,7 +104,9 @@ class StubAuthService:
     async def accept_family_invite(self, account_id, token) -> AuthResponseDto:  # noqa: ANN001
         return _make_auth_response()
 
-    async def accept_family_invite_handoff(self, account_id, handoff_id) -> AuthResponseDto:  # noqa: ANN001
+    async def accept_family_invite_handoff(
+        self, account_id, handoff_id
+    ) -> AuthResponseDto:  # noqa: ANN001
         return _make_auth_response()
 
 

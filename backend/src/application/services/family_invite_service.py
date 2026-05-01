@@ -193,7 +193,9 @@ class FamilyInviteService:
             family_repo=self._family_repo,
         )
 
-    async def _require_active_invite_entity(self, invite: FamilyInvite) -> tuple[FamilyInvite, object]:
+    async def _require_active_invite_entity(
+        self, invite: FamilyInvite
+    ) -> tuple[FamilyInvite, object]:
         return await resolve_active_family_invite(
             invite,
             account_repo=self._account_repo,

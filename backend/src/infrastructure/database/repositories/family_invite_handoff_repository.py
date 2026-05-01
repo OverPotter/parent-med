@@ -53,7 +53,9 @@ class SqlFamilyInviteHandoffRepository(FamilyInviteHandoffRepository):
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
 
-    async def get_by_handoff_token_hash(self, handoff_token_hash: str) -> FamilyInviteHandoff | None:
+    async def get_by_handoff_token_hash(
+        self, handoff_token_hash: str
+    ) -> FamilyInviteHandoff | None:
         result = await self._session.execute(
             select(FamilyInviteHandoffModel).where(
                 FamilyInviteHandoffModel.handoff_token_hash == handoff_token_hash

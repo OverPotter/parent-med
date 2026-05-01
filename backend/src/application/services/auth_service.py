@@ -193,7 +193,9 @@ class AuthService(BaseAuthService):
             return invite, created_family, family_role, handoff
 
         if dto.invite_handoff_id:
-            handoff, invite, created_family = await self._require_active_handoff(dto.invite_handoff_id)
+            handoff, invite, created_family = await self._require_active_handoff(
+                dto.invite_handoff_id
+            )
             family_role = normalize_family_role(invite.family_role)
             family_name = created_family.name
             return invite, created_family, family_role, handoff
@@ -599,7 +601,9 @@ class AuthService(BaseAuthService):
             raise ValidationError("Приглашение не найдено", code="FAMILY_INVITE_NOT_FOUND")
         return await self._accept_family_invite_entity(account, invite)
 
-    async def accept_family_invite_handoff(self, account_id: UUID, handoff_id: str) -> AuthResponseDto:
+    async def accept_family_invite_handoff(
+        self, account_id: UUID, handoff_id: str
+    ) -> AuthResponseDto:
         account = await self._account_repo.get_by_id(account_id)
         if account is None:
             raise UnauthorizedError()

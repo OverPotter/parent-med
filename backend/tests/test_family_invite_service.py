@@ -58,7 +58,9 @@ class StubFamilyInviteHandoffRepository:
         return next((item for item in self.items if item.id == id), None)
 
     async def get_by_handoff_token_hash(self, handoff_token_hash):  # noqa: ANN001
-        return next((item for item in self.items if item.handoff_token_hash == handoff_token_hash), None)
+        return next(
+            (item for item in self.items if item.handoff_token_hash == handoff_token_hash), None
+        )
 
     async def add(self, entity: FamilyInviteHandoff) -> FamilyInviteHandoff:
         self.items.append(entity)
