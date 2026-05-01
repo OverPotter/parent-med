@@ -6,9 +6,12 @@ import { login, register } from "@shared/api/auth";
 import { applySessionToClient } from "@shared/api/client";
 import {
   acceptFamilyInvite,
+  acceptFamilyInviteHandoff,
   acceptLatestDevFamilyInvite,
+  createFamilyInviteHandoff,
   fetchFamilyInvitePreview,
   fetchLatestDevFamilyInvitePreview,
+  resolveFamilyInviteHandoff,
 } from "@shared/api/familyInvites";
 import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
 import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
@@ -19,23 +22,27 @@ import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks
 import { useI18n } from "@shared/hooks/useI18n";
 import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
 import {
+  appendInviteAuthIntent,
+  buildAuthLoginRoute,
+  buildJoinFamilyRouteFromHandoff,
+  buildJoinFamilyHandoffRoute,
   buildJoinFamilyRoute,
   clearPendingFamilyInviteRoute,
+  getInviteAuthIntentFromRoute,
+  normalizeInviteRoute,
   PENDING_FAMILY_INVITE_POST_INSTALL_KEY,
-  PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY,
+  clearPendingPostInstallAppRoute,
   persistPendingFamilyInviteRoute,
+  persistPendingPostInstallAppRoute,
+  readPendingPostInstallAppRoute,
 } from "@shared/runtime/inviteFlow";
+import {
+  resolveInviteFailureState,
+  type InviteFailureState,
+} from "@shared/runtime/inviteFailureState";
 import { useAppStore } from "@shared/store/useAppStore";
 
 type Mode = "register" | "login";
-type InviteFailureState = {
-  title: string;
-  description: string;
-  inlineMessage: string;
-  blocksAuth: boolean;
-  clearPendingRoute: boolean;
-  transient?: boolean;
-};
 
 type ApiErrorLike = {
   response?: {
@@ -68,129 +75,6 @@ function getApiErrorDetail(error: unknown): string | null {
   return typeof detail === "string" && detail.trim() ? detail : null;
 }
 
-function resolveInviteFailureState(params: {
-  language: "ru" | "en";
-  code: string | null;
-  detail: string | null;
-  kind: "preview" | "action";
-}): InviteFailureState {
-  const fallbackDescription =
-    params.language === "ru"
-      ? "Не удалось проверить приглашение. Попробуйте ещё раз немного позже."
-      : "Could not verify the invite right now. Try again a bit later.";
-  const fallbackInlineMessage =
-    params.detail ||
-    (params.language === "ru"
-      ? "Не удалось продолжить по приглашению."
-      : "Could not continue with this invite.");
-
-  switch (params.code) {
-    case "FAMILY_INVITE_NOT_FOUND":
-      return {
-        title: params.language === "ru" ? "Приглашение не найдено" : "Invite not found",
-        description:
-          params.language === "ru"
-            ? "Эта ссылка больше не работает. Попросите владельца семьи отправить новое приглашение."
-            : "This link no longer works. Ask the family owner to send a new invite.",
-        inlineMessage:
-          params.language === "ru"
-            ? "Эта ссылка больше не работает. Нужна новая ссылка."
-            : "This link no longer works. A new invite link is needed.",
-        blocksAuth: true,
-        clearPendingRoute: true,
-      };
-    case "FAMILY_INVITE_ALREADY_USED":
-      return {
-        title: params.language === "ru" ? "Приглашение уже использовано" : "Invite already used",
-        description:
-          params.language === "ru"
-            ? "По этой ссылке уже присоединились к семье. Попросите отправить новое приглашение."
-            : "This link has already been used to join the family. Ask for a new invite.",
-        inlineMessage:
-          params.language === "ru"
-            ? "Это приглашение уже использовано. Нужна новая ссылка."
-            : "This invite has already been used. A new link is needed.",
-        blocksAuth: true,
-        clearPendingRoute: true,
-      };
-    case "FAMILY_INVITE_EXPIRED":
-      return {
-        title: params.language === "ru" ? "Срок приглашения истёк" : "Invite expired",
-        description:
-          params.language === "ru"
-            ? "Срок действия этой ссылки закончился. Попросите владельца семьи отправить новое приглашение."
-            : "This invite link has expired. Ask the family owner to send a new one.",
-        inlineMessage:
-          params.language === "ru"
-            ? "Срок действия приглашения истёк. Нужна новая ссылка."
-            : "This invite has expired. A new link is needed.",
-        blocksAuth: true,
-        clearPendingRoute: true,
-      };
-    case "FAMILY_INVITE_INVALID":
-    case "DEV_INVITE_DISABLED":
-      return {
-        title: params.language === "ru" ? "Приглашение недоступно" : "Invite unavailable",
-        description:
-          params.language === "ru"
-            ? "Семья по этой ссылке недоступна. Попросите отправить новое приглашение."
-            : "The family behind this link is unavailable. Ask for a new invite.",
-        inlineMessage:
-          params.language === "ru"
-            ? "По этой ссылке сейчас нельзя присоединиться к семье."
-            : "You cannot join the family through this link right now.",
-        blocksAuth: true,
-        clearPendingRoute: true,
-      };
-    case "ALREADY_IN_FAMILY":
-      return {
-        title:
-          params.language === "ru"
-            ? "Аккаунт уже в этой семье"
-            : "This account is already in the family",
-        description:
-          params.language === "ru"
-            ? "Вы уже подключены к этой семье. Можно просто открыть семейный кабинет."
-            : "You are already connected to this family. Open the family workspace directly.",
-        inlineMessage:
-          params.language === "ru"
-            ? "Этот аккаунт уже состоит в нужной семье."
-            : "This account is already in the target family.",
-        blocksAuth: params.kind === "preview",
-        clearPendingRoute: true,
-      };
-    case "CURRENT_FAMILY_NOT_EMPTY":
-      return {
-        title:
-          params.language === "ru"
-            ? "Сначала освободите текущую семью"
-            : "Leave your current family first",
-        description:
-          params.language === "ru"
-            ? "Нельзя перейти в другую семью, пока в вашей текущей семье есть другие участники."
-            : "You cannot move to another family while your current family still has other members.",
-        inlineMessage:
-          params.language === "ru"
-            ? "Сначала нужно освободить текущую семью: в ней ещё есть другие участники."
-            : "Your current family still has other members, so you cannot join another family yet.",
-        blocksAuth: false,
-        clearPendingRoute: false,
-      };
-    default:
-      return {
-        title:
-          params.language === "ru"
-            ? "Не удалось продолжить по приглашению"
-            : "Could not continue with this invite",
-        description: params.detail || fallbackDescription,
-        inlineMessage: fallbackInlineMessage,
-        blocksAuth: params.kind === "preview",
-        clearPendingRoute: false,
-        transient: true,
-      };
-  }
-}
-
 export function JoinFamilyPage() {
   const { language, copy } = useI18n();
   const [searchParams] = useSearchParams();
@@ -204,14 +88,21 @@ export function JoinFamilyPage() {
     !isNativeRuntime && shouldUsePublicWebsiteMode() && !isDevLatestShortcut;
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
   const token = searchParams.get("token")?.trim() ?? "";
+  const handoffId = searchParams.get("hid")?.trim() ?? "";
   const appStoreUrl = getAppStoreUrl();
-  const [mode, setMode] = useState<Mode>("register");
+  const inviteAuthIntent = getInviteAuthIntentFromRoute(
+    `${searchParams.toString() ? `/join-family?${searchParams.toString()}` : "/join-family"}`
+  );
+  const initialMode: Mode = inviteAuthIntent === "login" ? "login" : "register";
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authChoice, setAuthChoice] = useState<Mode | null>(inviteAuthIntent ?? null);
+  const [isAppHandoffPending, setIsAppHandoffPending] = useState(false);
   const accountId = useAppStore((s) => s.accountId);
   const accountEmail = useAppStore((s) => s.accountEmail);
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
@@ -255,6 +146,15 @@ export function JoinFamilyPage() {
           authTitle: "Создать аккаунт или войти",
           authHint:
             "Новый аккаунт можно сразу привязать к семье по этой ссылке. Если аккаунт уже есть, войдите под ним, затем подтвердите присоединение.",
+          chooseFlowTitle: "Как продолжить по приглашению",
+          chooseFlowHint:
+            "Выберите создание нового аккаунта или вход в уже существующий аккаунт PillPath.",
+          chooseRegisterTitle: "У меня ещё нет аккаунта",
+          chooseRegisterDescription:
+            "Создайте новый аккаунт и сразу привяжите его к этой семье.",
+          chooseLoginTitle: "У меня уже есть аккаунт",
+          chooseLoginDescription:
+            "Войдите в существующий аккаунт, затем подтвердите присоединение к семье.",
           requiredFields: "Обязательные поля",
           requiredFieldsHint: "Для входа и регистрации нужен только email и пароль.",
           emailHint: "После входа можно будет отдельно заполнить, как вас показывать в семье.",
@@ -279,6 +179,8 @@ export function JoinFamilyPage() {
           installedApp: "Вернуться после установки",
           installedAppHint:
             "После установки снова откройте эту страницу и нажмите «Вернуться после установки», чтобы продолжить с тем же приглашением.",
+          continueInAppFailed:
+            "Не удалось подготовить переход в приложение. Попробуйте ещё раз.",
           publicRegisterTitle: "Создать аккаунт",
           publicRegisterHint:
             "Новый аккаунт сразу привяжется к семье из этого приглашения. После этого установите приложение и войдите под тем же email.",
@@ -287,6 +189,15 @@ export function JoinFamilyPage() {
           publicRegisterSuccessTitle: "Аккаунт создан",
           publicRegisterSuccessDescription:
             "Теперь установите или откройте PillPath на iPhone и войдите под этим email, чтобы продолжить в семейном кабинете.",
+          publicExistingAccountTitle: "У меня уже есть аккаунт",
+          publicExistingAccountDescription:
+            "Если аккаунт уже есть, не регистрируйтесь повторно. Откройте PillPath, войдите под своим аккаунтом и подтвердите присоединение к семье.",
+          publicExistingAccountOpen: "Открыть приложение и войти",
+          publicExistingAccountInstall:
+            "Если приложения ещё нет, сначала установите его, затем снова откройте PillPath и войдите под существующим аккаунтом.",
+          publicLoginTitle: "Войти в приложение",
+          publicLoginHint:
+            "Войдите под этим email внутри приложения. Аккаунт уже создан и привязан к семье по этому приглашению.",
           invalidInviteHelpTitle: "Нужна новая ссылка",
           invalidInviteHelpDescription:
             "По этой ссылке нельзя создать аккаунт или присоединиться к семье. Попросите владельца семьи отправить новое приглашение.",
@@ -324,6 +235,15 @@ export function JoinFamilyPage() {
           authTitle: "Create an account or sign in",
           authHint:
             "A new account can be linked to the family right from this link. If you already have an account, sign in first and then confirm joining.",
+          chooseFlowTitle: "How do you want to continue?",
+          chooseFlowHint:
+            "Choose whether you need a new PillPath account or want to sign in with an existing one.",
+          chooseRegisterTitle: "I need a new account",
+          chooseRegisterDescription:
+            "Create a new account and link it to this family right away.",
+          chooseLoginTitle: "I already have an account",
+          chooseLoginDescription:
+            "Sign in with your existing account and then confirm joining this family.",
           requiredFields: "Required fields",
           requiredFieldsHint: "Only email and password are required for sign-in and registration.",
           emailHint:
@@ -349,6 +269,8 @@ export function JoinFamilyPage() {
           installedApp: "Return after install",
           installedAppHint:
             "After installation, open this page again and tap “Return after install” to continue with the same invite.",
+          continueInAppFailed:
+            "Could not prepare the app handoff. Please try again.",
           publicRegisterTitle: "Create account",
           publicRegisterHint:
             "A new account created here will be linked to this family invite immediately. Then install or open the iPhone app and sign in with the same email.",
@@ -357,6 +279,15 @@ export function JoinFamilyPage() {
           publicRegisterSuccessTitle: "Account created",
           publicRegisterSuccessDescription:
             "Now install or open PillPath on iPhone and sign in with this email to continue inside the family workspace.",
+          publicExistingAccountTitle: "I already have an account",
+          publicExistingAccountDescription:
+            "If you already have an account, do not register again. Open PillPath, sign in, and confirm joining the family there.",
+          publicExistingAccountOpen: "Open app and sign in",
+          publicExistingAccountInstall:
+            "If the app is not installed yet, install it first, then reopen PillPath and sign in with your existing account.",
+          publicLoginTitle: "Sign in inside the app",
+          publicLoginHint:
+            "Sign in with this email inside the app. This account is already linked to the invited family.",
           invalidInviteHelpTitle: "A new invite link is needed",
           invalidInviteHelpDescription:
             "You cannot create an account or join a family from this link. Ask the family owner to send a new invite.",
@@ -364,17 +295,21 @@ export function JoinFamilyPage() {
   const [publicInviteRegisteredEmail, setPublicInviteRegisteredEmail] = useState<string | null>(
     null
   );
-  const canRegisterFromInvite = Boolean(token) || isDevLatestShortcut;
+  const canRegisterFromInvite = Boolean(token || handoffId) || isDevLatestShortcut;
 
   const {
     data: invitePreview,
     isLoading: isInviteLoading,
     error: inviteError,
   } = useQuery({
-    queryKey: ["family-invite", isDevLatestShortcut ? "dev-latest" : "preview", token],
+    queryKey: ["family-invite", isDevLatestShortcut ? "dev-latest" : handoffId ? "handoff" : "preview", handoffId || token],
     queryFn: () =>
-      isDevLatestShortcut ? fetchLatestDevFamilyInvitePreview() : fetchFamilyInvitePreview(token),
-    enabled: isDevLatestShortcut || Boolean(token),
+      isDevLatestShortcut
+        ? fetchLatestDevFamilyInvitePreview()
+        : handoffId
+          ? resolveFamilyInviteHandoff(handoffId)
+          : fetchFamilyInvitePreview(token),
+    enabled: isDevLatestShortcut || Boolean(token || handoffId),
     retry: false,
   });
 
@@ -383,7 +318,7 @@ export function JoinFamilyPage() {
     invitePreview && currentFamilyId === invitePreview.familyId
   );
   const invitePreviewFailure = useMemo(() => {
-    if (!token && !isDevLatestShortcut) {
+    if (!token && !handoffId && !isDevLatestShortcut) {
       return {
         title:
           language === "ru" ? "Ссылка приглашения неполная" : "The invite link is incomplete",
@@ -404,7 +339,7 @@ export function JoinFamilyPage() {
       detail: getApiErrorDetail(inviteError),
       kind: "preview",
     });
-  }, [inviteError, isDevLatestShortcut, language, token, ui.incompleteInviteLink]);
+  }, [handoffId, inviteError, isDevLatestShortcut, language, token, ui.incompleteInviteLink]);
 
   useEffect(() => {
     if (!isAuthenticated || !isAlreadyInTargetFamily) {
@@ -416,7 +351,7 @@ export function JoinFamilyPage() {
 
   const inviteErrorMessage = invitePreviewFailure?.inlineMessage ?? null;
   const canRenderPublicInviteRegistration = Boolean(
-    token && invitePreview && !invitePreviewFailure && !isDevLatestShortcut
+    (token || handoffId) && invitePreview && !invitePreviewFailure && !isDevLatestShortcut
   );
   const isInvalidPublicInvite = Boolean(
     !publicInviteRegisteredEmail &&
@@ -449,6 +384,7 @@ export function JoinFamilyPage() {
       password: string;
       remember_me: boolean;
       invite_token?: string;
+      invite_handoff_id?: string;
       use_latest_dev_invite?: boolean;
       preferred_language: "ru" | "en";
     }) => register(payload),
@@ -488,7 +424,11 @@ export function JoinFamilyPage() {
 
   const acceptInviteMutation = useMutation({
     mutationFn: () =>
-      isDevLatestShortcut ? acceptLatestDevFamilyInvite() : acceptFamilyInvite(token),
+      isDevLatestShortcut
+        ? acceptLatestDevFamilyInvite()
+        : handoffId
+          ? acceptFamilyInviteHandoff(handoffId)
+          : acceptFamilyInvite(token),
     onSuccess: (data) => {
       applySessionToClient(data);
       clearPendingFamilyInviteRoute();
@@ -520,7 +460,7 @@ export function JoinFamilyPage() {
     event.preventDefault();
     const trimmedEmail = email.trim();
     if (
-      (!token && !isDevLatestShortcut) ||
+      (!token && !handoffId && !isDevLatestShortcut) ||
       !trimmedEmail ||
       (mode === "register" ? password.length < 8 : password.length === 0)
     ) {
@@ -541,22 +481,34 @@ export function JoinFamilyPage() {
       password,
       remember_me: rememberMe,
       invite_token: token || undefined,
+      invite_handoff_id: handoffId || undefined,
       use_latest_dev_invite: isDevLatestShortcut || undefined,
       preferred_language: language,
     });
   };
 
   const isPending =
-    loginMutation.isPending || registerMutation.isPending || acceptInviteMutation.isPending;
+    loginMutation.isPending ||
+    registerMutation.isPending ||
+    acceptInviteMutation.isPending ||
+    isAppHandoffPending;
   const passwordsMismatch =
     canRegisterFromInvite &&
     mode === "register" &&
     passwordConfirm.length > 0 &&
     password !== passwordConfirm;
   const isRegisterMode = canRegisterFromInvite && mode === "register";
-  const joinFamilyRoute = buildJoinFamilyRoute(token);
-  const nativeJoinFamilyUrl = buildNativeAppUrl(joinFamilyRoute);
-  const primaryJoinFamilyHref = appStoreUrl || nativeJoinFamilyUrl;
+  const inviteIdentity = token ? `token:${token}` : handoffId ? `handoff:${handoffId}` : null;
+  const joinFamilyRoute = handoffId
+    ? buildJoinFamilyRouteFromHandoff(handoffId)
+    : buildJoinFamilyRoute(token);
+  const nativeRegisterInviteUrl = buildNativeAppUrl(
+    appendInviteAuthIntent(joinFamilyRoute, "register") ?? joinFamilyRoute
+  );
+  const nativeLoginInviteUrl = buildNativeAppUrl(
+    appendInviteAuthIntent(joinFamilyRoute, "login") ?? joinFamilyRoute
+  );
+  const nativeAuthLoginUrl = buildNativeAppUrl(buildAuthLoginRoute());
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -566,21 +518,20 @@ export function JoinFamilyPage() {
     try {
       const route = isDevLatestShortcut
         ? "/join-family?dev-latest=1"
-        : token
-          ? buildJoinFamilyRoute(token)
+        : handoffId
+          ? buildJoinFamilyRouteFromHandoff(handoffId)
+          : token
+            ? buildJoinFamilyRoute(token)
           : null;
       if (!route) {
         clearPendingFamilyInviteRoute();
         return;
       }
       persistPendingFamilyInviteRoute(route);
-      if (token) {
-        window.localStorage.setItem(PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY, token);
-      }
     } catch {
       // Best effort only: invite preview should still work without storage.
     }
-  }, [isDevLatestShortcut, token]);
+  }, [handoffId, isDevLatestShortcut, token]);
 
   useEffect(() => {
     if (!invitePreviewFailure?.clearPendingRoute) {
@@ -593,10 +544,103 @@ export function JoinFamilyPage() {
   const accountLabel =
     language === "ru" ? (hasSession ? "Ещё" : "Войти") : hasSession ? "More" : "Login";
 
+  const createPublicInviteHandoffRoute = useCallback(
+    async (intent: "login" | "register" = "register"): Promise<string | null> => {
+      if (!token && !handoffId) {
+        return null;
+      }
+
+      if (handoffId) {
+        const route = buildJoinFamilyHandoffRoute(handoffId);
+        return appendInviteAuthIntent(route, intent) ?? route;
+      }
+
+      try {
+        setIsAppHandoffPending(true);
+        const handoff = await createFamilyInviteHandoff(token);
+        setError(null);
+        const route =
+          normalizeInviteRoute(handoff.handoffPath) ??
+          buildJoinFamilyHandoffRoute(handoff.handoffId);
+        return appendInviteAuthIntent(route, intent) ?? route;
+      } catch (err) {
+        const failure = resolveInviteFailureState({
+          language,
+          code: getApiErrorCode(err),
+          detail: getApiErrorDetail(err),
+          kind: "action",
+        });
+        setError(failure.inlineMessage ?? ui.continueInAppFailed);
+        return null;
+      } finally {
+        setIsAppHandoffPending(false);
+      }
+    },
+    [handoffId, language, token, ui.continueInAppFailed]
+  );
+
+  const openNativeAppRoute = useCallback((route: string) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.location.assign(buildNativeAppUrl(route));
+  }, []);
+
+  const continuePublicInstallFlow = useCallback(
+    async (route: string | null) => {
+      if (!isPublicWebsiteMode || !appStoreUrl || typeof window === "undefined" || !route) {
+        return;
+      }
+
+      try {
+        if (inviteIdentity) {
+          window.localStorage.setItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY, inviteIdentity);
+        }
+        persistPendingPostInstallAppRoute(route, window.localStorage);
+      } catch {
+        // Best effort only: explicit fallback action remains available.
+      }
+
+      window.location.assign(appStoreUrl);
+    },
+    [appStoreUrl, inviteIdentity, isPublicWebsiteMode]
+  );
+
+  const resolvePublicAppRoute = useCallback(
+    async (mode: "register" | "login" | "created-account"): Promise<string | null> => {
+      if (mode === "created-account") {
+        return buildAuthLoginRoute();
+      }
+      if (isPublicWebsiteMode && (token || handoffId)) {
+        return createPublicInviteHandoffRoute(mode);
+      }
+      return appendInviteAuthIntent(joinFamilyRoute, mode) ?? joinFamilyRoute;
+    },
+    [createPublicInviteHandoffRoute, handoffId, isPublicWebsiteMode, joinFamilyRoute, token]
+  );
+
+  const startPublicAppStoreFlow = useCallback(
+    async (mode: "register" | "login" | "created-account") => {
+      await continuePublicInstallFlow(await resolvePublicAppRoute(mode));
+    },
+    [continuePublicInstallFlow, resolvePublicAppRoute]
+  );
+
+  const openPublicAppFlow = useCallback(
+    async (mode: "register" | "login" | "created-account") => {
+      const route = await resolvePublicAppRoute(mode);
+      if (!route) {
+        return;
+      }
+      openNativeAppRoute(route);
+    },
+    [openNativeAppRoute, resolvePublicAppRoute]
+  );
+
   useEffect(() => {
     if (
       !isPublicWebsiteMode ||
-      !token ||
+      !inviteIdentity ||
       !appStoreUrl ||
       typeof window === "undefined" ||
       typeof document === "undefined"
@@ -609,21 +653,24 @@ export function JoinFamilyPage() {
         return;
       }
 
-      let savedToken: string | null = null;
+      let savedIdentity: string | null = null;
+      let savedRoute: string | null = null;
       try {
-        savedToken = window.localStorage.getItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY);
+        savedIdentity = window.localStorage.getItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY);
+        savedRoute = readPendingPostInstallAppRoute(window.localStorage);
       } catch {
         return;
       }
 
-      if (savedToken !== token) {
+      if (!savedRoute || savedIdentity !== inviteIdentity) {
         return;
       }
 
       hasAttemptedPostInstallOpenRef.current = true;
       window.localStorage.removeItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY);
+      clearPendingPostInstallAppRoute(window.localStorage);
       window.setTimeout(() => {
-        window.location.assign(nativeJoinFamilyUrl);
+        window.location.assign(buildNativeAppUrl(savedRoute));
       }, 250);
     };
 
@@ -635,21 +682,10 @@ export function JoinFamilyPage() {
       window.removeEventListener("pageshow", tryOpenInstalledApp);
       document.removeEventListener("visibilitychange", tryOpenInstalledApp);
     };
-  }, [appStoreUrl, isPublicWebsiteMode, nativeJoinFamilyUrl, token]);
-
-  const handleAppStoreInviteInstallStart = () => {
-    if (!isPublicWebsiteMode || !appStoreUrl || !token || typeof window === "undefined") {
-      return;
-    }
-
-    try {
-      window.localStorage.setItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY, token);
-    } catch {
-      // Best effort only: explicit fallback button remains available.
-    }
-  };
+  }, [appStoreUrl, inviteIdentity, isPublicWebsiteMode]);
 
   const handleModeChange = (nextMode: Mode) => {
+    setAuthChoice(nextMode);
     setMode(nextMode);
     setEmail("");
     setPassword("");
@@ -744,14 +780,22 @@ export function JoinFamilyPage() {
                 <InfoCard label={ui.family} value={invitePreview?.familyName ?? ui.notSpecified} />
               </div>
               <PublicHandoffActions
-                title={ui.handoffTitle}
-                hint={ui.handoffHint}
+                title={ui.publicLoginTitle}
+                hint={ui.publicLoginHint}
                 primaryLabel={appStoreUrl ? ui.downloadApp : ui.openApp}
                 secondaryLabel={appStoreUrl ? ui.installedApp : null}
                 secondaryHint={appStoreUrl ? ui.installedAppHint : null}
-                primaryHref={primaryJoinFamilyHref}
-                secondaryHref={appStoreUrl ? nativeJoinFamilyUrl : null}
-                onPrimaryClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
+                primaryHref={appStoreUrl || nativeAuthLoginUrl}
+                secondaryHref={appStoreUrl ? nativeAuthLoginUrl : null}
+                onPrimaryAction={
+                  appStoreUrl
+                    ? () => startPublicAppStoreFlow("created-account")
+                    : () => void openPublicAppFlow("created-account")
+                }
+                onSecondaryAction={
+                  appStoreUrl ? () => void openPublicAppFlow("created-account") : undefined
+                }
+                isPending={isAppHandoffPending}
               />
             </>
           ) : isInvalidPublicInvite ? (
@@ -852,11 +896,45 @@ export function JoinFamilyPage() {
                 primaryLabel={appStoreUrl ? ui.downloadApp : ui.openApp}
                 secondaryLabel={appStoreUrl ? ui.installedApp : null}
                 secondaryHint={appStoreUrl ? ui.installedAppHint : null}
-                primaryHref={primaryJoinFamilyHref}
-                secondaryHref={appStoreUrl ? nativeJoinFamilyUrl : null}
-                onPrimaryClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
+                primaryHref={appStoreUrl || nativeRegisterInviteUrl}
+                secondaryHref={appStoreUrl ? nativeRegisterInviteUrl : null}
+                onPrimaryAction={
+                  appStoreUrl
+                    ? () => startPublicAppStoreFlow("register")
+                    : () => void openPublicAppFlow("register")
+                }
+                onSecondaryAction={
+                  appStoreUrl ? () => void openPublicAppFlow("register") : undefined
+                }
+                isPending={isAppHandoffPending}
                 className="pt-2"
               />
+
+              <div className="soft-panel mt-6 rounded-[24px] p-4">
+                <p className="app-card-title">{ui.publicExistingAccountTitle}</p>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {ui.publicExistingAccountDescription}
+                </p>
+                <PublicHandoffActions
+                  title={ui.chooseLoginTitle}
+                  hint={ui.publicExistingAccountInstall}
+                  primaryLabel={appStoreUrl ? ui.downloadApp : ui.publicExistingAccountOpen}
+                  secondaryLabel={appStoreUrl ? ui.publicExistingAccountOpen : null}
+                  secondaryHint={null}
+                  primaryHref={appStoreUrl || nativeLoginInviteUrl}
+                  secondaryHref={appStoreUrl ? nativeLoginInviteUrl : null}
+                  onPrimaryAction={
+                    appStoreUrl
+                      ? () => startPublicAppStoreFlow("login")
+                      : () => void openPublicAppFlow("login")
+                  }
+                  onSecondaryAction={
+                    appStoreUrl ? () => void openPublicAppFlow("login") : undefined
+                  }
+                  isPending={isAppHandoffPending}
+                  className="pt-2"
+                />
+              </div>
             </form>
           ) : null}
         </Surface>
@@ -955,7 +1033,34 @@ export function JoinFamilyPage() {
             {isDevLatestShortcut ? ui.devLatestAuthHint : ui.authHint}
           </p>
 
-          {canRegisterFromInvite ? (
+          {!authChoice && canRegisterFromInvite ? (
+            <div className="mt-6 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-foreground">{ui.chooseFlowTitle}</p>
+                <p className="mt-1 text-sm leading-6 text-muted">{ui.chooseFlowHint}</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => handleModeChange("register")}
+                  className="soft-panel rounded-[24px] p-4 text-left transition-colors hover:border-primary/50"
+                >
+                  <p className="app-card-title">{ui.chooseRegisterTitle}</p>
+                  <p className="mt-2 text-sm leading-6 text-muted">{ui.chooseRegisterDescription}</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleModeChange("login")}
+                  className="soft-panel rounded-[24px] p-4 text-left transition-colors hover:border-primary/50"
+                >
+                  <p className="app-card-title">{ui.chooseLoginTitle}</p>
+                  <p className="mt-2 text-sm leading-6 text-muted">{ui.chooseLoginDescription}</p>
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {canRegisterFromInvite && authChoice ? (
             <div className="soft-panel-muted mt-6 flex rounded-[20px] p-1.5">
               <button
                 type="button"
@@ -978,7 +1083,12 @@ export function JoinFamilyPage() {
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit} onFocusCapture={ensureSubmitVisible} className="mt-5 space-y-4">
+          {(!canRegisterFromInvite || authChoice) && (
+            <form
+              onSubmit={handleSubmit}
+              onFocusCapture={ensureSubmitVisible}
+              className="mt-5 space-y-4"
+            >
             <div className="soft-panel rounded-[24px] p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -1062,7 +1172,8 @@ export function JoinFamilyPage() {
                   ? ui.registerLoading
                   : ui.registerSubmit}
             </button>
-          </form>
+            </form>
+          )}
         </Surface>
       )}
     </div>
@@ -1111,7 +1222,9 @@ function PublicHandoffActions({
   secondaryHint,
   primaryHref,
   secondaryHref,
-  onPrimaryClick,
+  onPrimaryAction,
+  onSecondaryAction,
+  isPending = false,
   className,
 }: {
   title: string;
@@ -1121,7 +1234,9 @@ function PublicHandoffActions({
   secondaryHint?: string | null;
   primaryHref: string;
   secondaryHref?: string | null;
-  onPrimaryClick?: (() => void) | undefined;
+  onPrimaryAction?: (() => void | Promise<void>) | undefined;
+  onSecondaryAction?: (() => void | Promise<void>) | undefined;
+  isPending?: boolean;
   className?: string;
 }) {
   return (
@@ -1131,22 +1246,45 @@ function PublicHandoffActions({
         <p className="text-sm leading-6 text-muted">{hint}</p>
       </div>
       <div className="auth-v3-handoff-stack">
-        <a
-          href={primaryHref}
-          onClick={onPrimaryClick}
-          target={onPrimaryClick ? "_blank" : undefined}
-          rel={onPrimaryClick ? "noreferrer" : undefined}
-          className={`${appBtnPrimaryClass} w-full px-4 text-center no-underline`}
-        >
-          {primaryLabel}
-        </a>
-        {secondaryLabel && secondaryHref ? (
-          <a
-            href={secondaryHref}
-            className={`${appBtnSecondaryClass} w-full px-4 text-center no-underline`}
+        {onPrimaryAction ? (
+          <button
+            type="button"
+            onClick={() => {
+              void onPrimaryAction();
+            }}
+            disabled={isPending}
+            className={`${appBtnPrimaryClass} w-full px-4 text-center no-underline disabled:opacity-50`}
           >
-            {secondaryLabel}
+            {primaryLabel}
+          </button>
+        ) : (
+          <a
+            href={primaryHref}
+            className={`${appBtnPrimaryClass} w-full px-4 text-center no-underline`}
+          >
+            {primaryLabel}
           </a>
+        )}
+        {secondaryLabel && secondaryHref ? (
+          onSecondaryAction ? (
+            <button
+              type="button"
+              onClick={() => {
+                void onSecondaryAction();
+              }}
+              disabled={isPending}
+              className={`${appBtnSecondaryClass} w-full px-4 text-center no-underline disabled:opacity-50`}
+            >
+              {secondaryLabel}
+            </button>
+          ) : (
+            <a
+              href={secondaryHref}
+              className={`${appBtnSecondaryClass} w-full px-4 text-center no-underline`}
+            >
+              {secondaryLabel}
+            </a>
+          )
         ) : null}
       </div>
       {secondaryHint ? <p className="text-sm leading-6 text-muted">{secondaryHint}</p> : null}

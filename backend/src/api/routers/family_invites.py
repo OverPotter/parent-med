@@ -7,6 +7,8 @@ from src.api.utils.auth_response import build_auth_response
 from src.application.dto.auth import AuthenticatedAccount, AuthResponseDto
 from src.application.dto.family_invite import (
     FamilyInviteCreateDto,
+    FamilyInviteHandoffCreateResponseDto,
+    FamilyInviteHandoffResolveResponseDto,
     FamilyInvitePreviewResponseDto,
     FamilyInviteResponseDto,
 )
@@ -38,6 +40,49 @@ async def get_latest_family_invite_preview_for_dev(
     return await service.get_latest_preview_for_dev()
 
 
+@router.get("/handoff/{handoff_id}", response_model=FamilyInviteHandoffResolveResponseDto)
+async def resolve_family_invite_handoff(
+    handoff_id: str,
+    service: FamilyInviteService = Depends(get_family_invite_service),
+) -> FamilyInviteHandoffResolveResponseDto:
+    """Разрешить handoff-сессию обратно в обычный invite-flow."""
+    return await service.resolve_handoff(handoff_id)
+
+
+@router.post("/handoff/{handoff_id}/accept", response_model=AuthResponseDto)
+async def accept_family_invite_handoff(
+    handoff_id: str,
+    response: Response,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    auth_service: BaseAuthService = Depends(get_auth_service),
+) -> AuthResponseDto:
+    """Принять приглашение через handoff-контекст."""
+    auth = await auth_service.accept_family_invite_handoff(current_account.id, handoff_id)
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=False,
+        include_cookies=True,
+    )
+
+
+@router.post("/handoff/{handoff_id}/accept/native", response_model=AuthResponseDto)
+async def accept_family_invite_handoff_native(
+    handoff_id: str,
+    response: Response,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    auth_service: BaseAuthService = Depends(get_auth_service),
+) -> AuthResponseDto:
+    """Native-вариант принятия приглашения через handoff-контекст."""
+    auth = await auth_service.accept_family_invite_handoff(current_account.id, handoff_id)
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=True,
+        include_cookies=False,
+    )
+
+
 @router.get("/{token}", response_model=FamilyInvitePreviewResponseDto)
 async def get_family_invite_preview(
     token: str,
@@ -45,6 +90,17 @@ async def get_family_invite_preview(
 ) -> FamilyInvitePreviewResponseDto:
     """Показать, в какую семью ведёт приглашение."""
     return await service.get_preview(token)
+
+
+@router.post(
+    "/{token}/handoff", response_model=FamilyInviteHandoffCreateResponseDto, status_code=201
+)
+async def create_family_invite_handoff(
+    token: str,
+    service: FamilyInviteService = Depends(get_family_invite_service),
+) -> FamilyInviteHandoffCreateResponseDto:
+    """Создать handoff-сессию для продолжения invite-flow в приложении."""
+    return await service.create_handoff(token)
 
 
 @router.post("/{token}/accept", response_model=AuthResponseDto)

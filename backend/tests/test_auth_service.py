@@ -26,6 +26,7 @@ from src.domain.entities.account_identity import DEFAULT_ACCOUNT_DISPLAY_NAME
 from src.domain.entities.family import Family
 from src.domain.entities.family_access import FamilyAccessPolicy
 from src.domain.entities.family_invite import FamilyInvite
+from src.domain.entities.family_invite_handoff import FamilyInviteHandoff
 
 
 class StubAccountRepository:
@@ -153,6 +154,11 @@ class StubFamilyInviteRepository:
     def __init__(self, invite: FamilyInvite | None) -> None:
         self.invite = invite
 
+    async def get_by_id(self, id):  # noqa: ANN001
+        if self.invite and self.invite.id == id:
+            return self.invite
+        return None
+
     async def get_by_token_hash(self, token_hash):  # noqa: ANN001
         if self.invite and self.invite.token_hash == token_hash:
             return self.invite
@@ -163,6 +169,20 @@ class StubFamilyInviteRepository:
 
     async def update(self, entity: FamilyInvite) -> FamilyInvite:
         self.invite = entity
+        return entity
+
+
+class StubFamilyInviteHandoffRepository:
+    def __init__(self, handoff: FamilyInviteHandoff | None = None) -> None:
+        self.handoff = handoff
+
+    async def get_by_handoff_token_hash(self, handoff_token_hash):  # noqa: ANN001
+        if self.handoff and self.handoff.handoff_token_hash == handoff_token_hash:
+            return self.handoff
+        return None
+
+    async def update(self, entity: FamilyInviteHandoff) -> FamilyInviteHandoff:
+        self.handoff = entity
         return entity
 
 
@@ -236,6 +256,104 @@ async def test_signup_with_invite_joins_existing_family() -> None:
     assert result.account.email == "dad@example.com"
     assert result.account.display_name == DEFAULT_ACCOUNT_DISPLAY_NAME
     assert result.account.needs_profile_completion is True
+
+
+@pytest.mark.asyncio
+async def test_signup_with_invite_reopens_link_after_deleted_account() -> None:
+    family = Family(id=uuid4(), name="Семья Петровых")
+    raw_token = "invite-token"
+    deleted_account = build_account(
+        family_id=family.id,
+        email=None,
+        display_name="Deleted user",
+        family_role="deleted",
+    )
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=family.id,
+        created_by_account_id=uuid4(),
+        token_hash=hash_session_token(raw_token),
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=datetime.now(UTC) - timedelta(minutes=1),
+        accepted_by_account_id=deleted_account.id,
+    )
+    account_repo = StubAccountRepository()
+    account_repo.items[deleted_account.id] = deleted_account
+    family_invite_repo = StubFamilyInviteRepository(invite)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=family_invite_repo,
+    )
+
+    result = await service.signup(
+        RegisterDto(
+            email="dad@example.com",
+            password="password123",
+            remember_me=True,
+            invite_token=raw_token,
+        )
+    )
+
+    assert result.family.id == family.id
+    assert family_invite_repo.invite is not None
+    assert family_invite_repo.invite.accepted_by_account_id == result.account.id
+
+
+@pytest.mark.asyncio
+async def test_signup_with_invite_handoff_joins_existing_family() -> None:
+    family = Family(id=uuid4(), name="Семья Петровых")
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=family.id,
+        created_by_account_id=uuid4(),
+        token_hash=hash_session_token("invite-token"),
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    handoff_id = "handoff-token"
+    handoff = FamilyInviteHandoff(
+        id=uuid4(),
+        handoff_token_hash=hash_session_token(handoff_id),
+        invite_id=invite.id,
+        family_id=family.id,
+        family_name=family.name,
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=1),
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+        consumed_at=None,
+    )
+    account_repo = StubAccountRepository()
+    family_invite_repo = StubFamilyInviteRepository(invite)
+    handoff_repo = StubFamilyInviteHandoffRepository(handoff)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=StubFamilyRepository(family),
+        family_invite_repo=family_invite_repo,
+        handoff_repo=handoff_repo,
+    )
+
+    result = await service.signup(
+        RegisterDto(
+            email="dad@example.com",
+            password="password123",
+            remember_me=True,
+            invite_handoff_id=handoff_id,
+        )
+    )
+
+    assert result.family.id == family.id
+    assert family_invite_repo.invite is not None
+    assert family_invite_repo.invite.accepted_by_account_id == result.account.id
+    assert handoff_repo.handoff is not None
+    assert handoff_repo.handoff.consumed_at is not None
 
 
 @pytest.mark.asyncio
@@ -369,6 +487,116 @@ async def test_accept_family_invite_moves_empty_solo_account_and_clears_old_fami
     assert family_repo.deleted_ids == [old_family.id]
     assert session_repo.deleted_account_ids == [account.id]
     assert result.account.family_role == "member"
+
+
+@pytest.mark.asyncio
+async def test_accept_family_invite_reopens_link_after_deleted_account() -> None:
+    raw_token = "invite-token"
+    old_family = Family(id=uuid4(), name="Solo family", owner_account_id=uuid4())
+    target_family = Family(id=uuid4(), name="Target family", owner_account_id=uuid4())
+    deleted_account = build_account(
+        family_id=target_family.id,
+        email=None,
+        display_name="Deleted user",
+        family_role="deleted",
+    )
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=target_family.id,
+        created_by_account_id=target_family.owner_account_id,
+        token_hash=hash_session_token(raw_token),
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=datetime.now(UTC) - timedelta(minutes=1),
+        accepted_by_account_id=deleted_account.id,
+    )
+    account_repo = StubAccountRepository()
+    session_repo = StubSessionRepository()
+    account = build_account(
+        family_id=old_family.id,
+        email="solo@example.com",
+        display_name="Solo",
+        family_role="admin",
+    )
+    await account_repo.add(account)
+    await account_repo.add(deleted_account)
+    family_repo = StubFamilyRepository(old_family)
+    family_repo.items[target_family.id] = target_family
+    family_invite_repo = StubFamilyInviteRepository(invite)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=family_repo,
+        family_invite_repo=family_invite_repo,
+        child_repo=StubChildRepository(),
+        household_repo=StubHouseholdMedicineRepository(),
+        parent_repo=StubParentRepository(),
+    )
+
+    result = await service.accept_family_invite(account.id, raw_token)
+
+    assert result.family.id == target_family.id
+    assert family_invite_repo.invite is not None
+    assert family_invite_repo.invite.accepted_by_account_id == account.id
+
+
+@pytest.mark.asyncio
+async def test_accept_family_invite_handoff_moves_account_and_consumes_handoff() -> None:
+    target_family = Family(id=uuid4(), name="Target family", owner_account_id=uuid4())
+    old_family = Family(id=uuid4(), name="Solo family", owner_account_id=uuid4())
+    raw_handoff_id = "handoff-token"
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=target_family.id,
+        created_by_account_id=target_family.owner_account_id,
+        token_hash=hash_session_token("invite-token"),
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    handoff = FamilyInviteHandoff(
+        id=uuid4(),
+        handoff_token_hash=hash_session_token(raw_handoff_id),
+        invite_id=invite.id,
+        family_id=target_family.id,
+        family_name=target_family.name,
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=1),
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+        consumed_at=None,
+    )
+    account_repo = StubAccountRepository()
+    session_repo = StubSessionRepository()
+    account = build_account(
+        family_id=old_family.id,
+        email="solo@example.com",
+        display_name="Solo",
+        family_role="admin",
+    )
+    await account_repo.add(account)
+    family_repo = StubFamilyRepository(old_family)
+    family_repo.items[target_family.id] = target_family
+    family_invite_repo = StubFamilyInviteRepository(invite)
+    handoff_repo = StubFamilyInviteHandoffRepository(handoff)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=family_repo,
+        family_invite_repo=family_invite_repo,
+        handoff_repo=handoff_repo,
+        child_repo=StubChildRepository(),
+        household_repo=StubHouseholdMedicineRepository(),
+        parent_repo=StubParentRepository(),
+    )
+
+    result = await service.accept_family_invite_handoff(account.id, raw_handoff_id)
+
+    assert result.family.id == target_family.id
+    assert handoff_repo.handoff is not None
+    assert handoff_repo.handoff.consumed_at is not None
 
 
 @pytest.mark.asyncio

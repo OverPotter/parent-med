@@ -95,6 +95,7 @@ export async function register(payload: {
   password: string;
   remember_me?: boolean;
   invite_token?: string;
+  invite_handoff_id?: string;
   use_latest_dev_invite?: boolean;
   preferred_language?: "ru" | "en";
 }): Promise<AuthSessionResponse> {

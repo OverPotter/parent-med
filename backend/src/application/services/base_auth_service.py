@@ -151,5 +151,11 @@ class BaseAuthService(ABC):
         """Принять приглашение в другую семью для существующего аккаунта."""
 
     @abstractmethod
+    async def accept_family_invite_handoff(
+        self, account_id: UUID, handoff_id: str
+    ) -> AuthResponseDto:
+        """Принять приглашение в другую семью через handoff-контекст."""
+
+    @abstractmethod
     async def accept_latest_family_invite_for_dev(self, account_id: UUID) -> AuthResponseDto:
         """Dev-only: принять последнее активное приглашение без копирования ссылки."""

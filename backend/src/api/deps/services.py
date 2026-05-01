@@ -11,6 +11,7 @@ from src.api.deps.repositories import (
     get_child_repo,
     get_curated_medicine_catalog_repo,
     get_episode_medication_plan_repo,
+    get_family_invite_handoff_repo,
     get_family_invite_repo,
     get_family_repo,
     get_feeding_record_repo,
@@ -77,6 +78,7 @@ def get_auth_service(
     session_repo=Depends(get_account_session_repo),
     family_repo=Depends(get_family_repo),
     family_invite_repo=Depends(get_family_invite_repo),
+    handoff_repo=Depends(get_family_invite_handoff_repo),
     child_repo=Depends(get_child_repo),
     household_repo=Depends(get_household_medicine_repo),
     parent_repo=Depends(get_parent_repo),
@@ -87,6 +89,7 @@ def get_auth_service(
         session_repo=session_repo,
         family_repo=family_repo,
         family_invite_repo=family_invite_repo,
+        handoff_repo=handoff_repo,
         child_repo=child_repo,
         household_repo=household_repo,
         parent_repo=parent_repo,
@@ -108,9 +111,16 @@ def get_family_service(
 
 def get_family_invite_service(
     family_repo=Depends(get_family_repo),
+    account_repo=Depends(get_account_repo),
     invite_repo=Depends(get_family_invite_repo),
+    handoff_repo=Depends(get_family_invite_handoff_repo),
 ) -> FamilyInviteService:
-    return FamilyInviteService(family_repo=family_repo, invite_repo=invite_repo)
+    return FamilyInviteService(
+        family_repo=family_repo,
+        account_repo=account_repo,
+        invite_repo=invite_repo,
+        handoff_repo=handoff_repo,
+    )
 
 
 def get_subscription_access_service(
