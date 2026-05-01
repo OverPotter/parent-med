@@ -18,7 +18,6 @@ from src.domain.repositories.curated_medicine_catalog_repository import (
 from src.domain.repositories.episode_medication_plan_repository import (
     EpisodeMedicationPlanRepository,
 )
-from src.domain.repositories.family_invite_handoff_repository import FamilyInviteHandoffRepository
 from src.domain.repositories.family_invite_repository import FamilyInviteRepository
 from src.domain.repositories.family_repository import FamilyRepository
 from src.domain.repositories.feeding_record_repository import FeedingRecordRepository
@@ -59,9 +58,6 @@ from src.infrastructure.database.repositories.curated_medicine_catalog_repositor
 )
 from src.infrastructure.database.repositories.episode_medication_plan_repository import (
     SqlEpisodeMedicationPlanRepository,
-)
-from src.infrastructure.database.repositories.family_invite_handoff_repository import (
-    SqlFamilyInviteHandoffRepository,
 )
 from src.infrastructure.database.repositories.family_invite_repository import (
     SqlFamilyInviteRepository,
@@ -139,12 +135,6 @@ def get_family_invite_repo(
     session: AsyncSession = Depends(get_db_session),
 ) -> FamilyInviteRepository:
     return SqlFamilyInviteRepository(session)
-
-
-def get_family_invite_handoff_repo(
-    session: AsyncSession = Depends(get_db_session),
-) -> FamilyInviteHandoffRepository:
-    return SqlFamilyInviteHandoffRepository(session)
 
 
 def get_child_repo(session: AsyncSession = Depends(get_db_session)) -> ChildRepository:

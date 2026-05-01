@@ -10,7 +10,6 @@ from src.domain.entities.account import Account
 from src.domain.entities.family import Family
 from src.domain.entities.family_access import build_default_family_access_policy
 from src.domain.entities.family_invite import FamilyInvite
-from src.domain.entities.family_invite_handoff import FamilyInviteHandoff
 
 
 class StubFamilyRepository:
@@ -50,31 +49,6 @@ class StubFamilyInviteRepository:
         return True
 
 
-class StubFamilyInviteHandoffRepository:
-    def __init__(self) -> None:
-        self.items: list[FamilyInviteHandoff] = []
-
-    async def get_by_id(self, id):  # noqa: ANN001
-        return next((item for item in self.items if item.id == id), None)
-
-    async def get_by_handoff_token_hash(self, handoff_token_hash):  # noqa: ANN001
-        return next(
-            (item for item in self.items if item.handoff_token_hash == handoff_token_hash), None
-        )
-
-    async def add(self, entity: FamilyInviteHandoff) -> FamilyInviteHandoff:
-        self.items.append(entity)
-        return entity
-
-    async def update(self, entity: FamilyInviteHandoff) -> FamilyInviteHandoff:
-        self.items = [item for item in self.items if item.id != entity.id]
-        self.items.append(entity)
-        return entity
-
-    async def delete(self, id):  # noqa: ANN001
-        return True
-
-
 class StubAccountRepository:
     def __init__(self) -> None:
         self.items: dict[object, Account] = {}
@@ -98,7 +72,6 @@ async def test_create_and_preview_family_invite() -> None:
         family_repo=StubFamilyRepository(family),
         account_repo=StubAccountRepository(),
         invite_repo=repo,
-        handoff_repo=StubFamilyInviteHandoffRepository(),
     )
 
     created = await service.create_for_account(
@@ -129,7 +102,6 @@ async def test_create_family_invite_generates_fresh_token_each_time() -> None:
         family_repo=StubFamilyRepository(family),
         account_repo=StubAccountRepository(),
         invite_repo=repo,
-        handoff_repo=StubFamilyInviteHandoffRepository(),
     )
 
     first = await service.create_for_account(
@@ -148,72 +120,6 @@ async def test_create_family_invite_generates_fresh_token_each_time() -> None:
     assert len(repo.items) == 2
 
 
-@pytest.mark.asyncio
-async def test_create_and_resolve_family_invite_handoff() -> None:
-    owner_id = uuid4()
-    family = Family(
-        id=uuid4(),
-        name="Семья Петровых",
-        owner_account_id=owner_id,
-        plan_code="plus",
-        subscription_status="active",
-    )
-    invite_repo = StubFamilyInviteRepository()
-    handoff_repo = StubFamilyInviteHandoffRepository()
-    service = FamilyInviteService(
-        family_repo=StubFamilyRepository(family),
-        account_repo=StubAccountRepository(),
-        invite_repo=invite_repo,
-        handoff_repo=handoff_repo,
-    )
-
-    created = await service.create_for_account(
-        family_id=family.id,
-        current_account_id=owner_id,
-        dto=FamilyInviteCreateDto(family_role="member"),
-    )
-    handoff = await service.create_handoff(created.token)
-    resolved = await service.resolve_handoff(handoff.handoff_id)
-
-    assert handoff.handoff_path.startswith("/join-family-handoff?hid=")
-    assert resolved.family_id == family.id
-    assert len(handoff_repo.items) == 1
-    assert handoff_repo.items[0].invite_id == invite_repo.items[0].id
-    assert handoff_repo.items[0].consumed_at is None
-
-
-@pytest.mark.asyncio
-async def test_family_invite_handoff_is_single_use() -> None:
-    owner_id = uuid4()
-    family = Family(
-        id=uuid4(),
-        name="Семья Петровых",
-        owner_account_id=owner_id,
-        plan_code="plus",
-        subscription_status="active",
-    )
-    invite_repo = StubFamilyInviteRepository()
-    handoff_repo = StubFamilyInviteHandoffRepository()
-    service = FamilyInviteService(
-        family_repo=StubFamilyRepository(family),
-        account_repo=StubAccountRepository(),
-        invite_repo=invite_repo,
-        handoff_repo=handoff_repo,
-    )
-
-    created = await service.create_for_account(
-        family_id=family.id,
-        current_account_id=owner_id,
-        dto=FamilyInviteCreateDto(family_role="member"),
-    )
-    handoff = await service.create_handoff(created.token)
-    handoff_repo.items[0].consumed_at = datetime.now(UTC)
-
-    with pytest.raises(ValidationError, match="handoff already used"):
-        await service.resolve_handoff(handoff.handoff_id)
-
-
-@pytest.mark.asyncio
 async def test_preview_reopens_invite_when_accepted_account_was_deleted() -> None:
     owner_id = uuid4()
     accepted_account_id = uuid4()
@@ -252,7 +158,6 @@ async def test_preview_reopens_invite_when_accepted_account_was_deleted() -> Non
         family_repo=StubFamilyRepository(family),
         account_repo=account_repo,
         invite_repo=invite_repo,
-        handoff_repo=StubFamilyInviteHandoffRepository(),
     )
 
     created = await service.create_for_account(
@@ -279,7 +184,6 @@ async def test_create_invite_requires_owner_role() -> None:
         family_repo=StubFamilyRepository(family),
         account_repo=StubAccountRepository(),
         invite_repo=StubFamilyInviteRepository(),
-        handoff_repo=StubFamilyInviteHandoffRepository(),
     )
 
     with pytest.raises(ForbiddenError, match="Только владелец семьи может приглашать"):
@@ -304,7 +208,6 @@ async def test_create_invite_requires_plus_plan() -> None:
         family_repo=StubFamilyRepository(family),
         account_repo=StubAccountRepository(),
         invite_repo=StubFamilyInviteRepository(),
-        handoff_repo=StubFamilyInviteHandoffRepository(),
     )
 
     with pytest.raises(ValidationError, match="только в Plus"):

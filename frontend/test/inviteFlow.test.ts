@@ -4,19 +4,14 @@ import assert from "node:assert/strict";
 import {
   appendInviteAuthIntent,
   buildAuthLoginRoute,
-  buildJoinFamilyHandoffRoute,
-  buildJoinFamilyRouteFromHandoff,
   buildJoinFamilyRoute,
   clearPendingFamilyInviteRoute,
-  clearPendingPostInstallAppRoute,
   getInviteAuthIntentFromRoute,
   getInviteTokenFromRoute,
   isInviteRoute,
   normalizeInviteRoute,
   persistPendingFamilyInviteRoute,
-  persistPendingPostInstallAppRoute,
   readPendingFamilyInviteRoute,
-  readPendingPostInstallAppRoute,
   resolveInviteAwareAuthSuccessPath,
   resolveInviteAwareSignedOutPath,
   shouldOpenNativeRouteWithoutSession,
@@ -30,34 +25,19 @@ test("buildAuthLoginRoute points to native login entry", () => {
   assert.equal(buildAuthLoginRoute(), "/auth?mode=login");
 });
 
-test("buildJoinFamilyHandoffRoute keeps handoff id in the route", () => {
-  assert.equal(buildJoinFamilyHandoffRoute("handoff 123"), "/join-family-handoff?hid=handoff%20123");
-});
-
-test("buildJoinFamilyRouteFromHandoff keeps handoff id in join-family route", () => {
-  assert.equal(buildJoinFamilyRouteFromHandoff("handoff 123"), "/join-family?hid=handoff%20123");
-});
-
 test("isInviteRoute recognizes join-family routes with and without token", () => {
   assert.equal(isInviteRoute("/join-family"), true);
   assert.equal(isInviteRoute("/join-family?token=abc"), true);
-  assert.equal(isInviteRoute("/join-family-handoff?hid=abc"), true);
   assert.equal(isInviteRoute("/auth?mode=login"), false);
 });
 
 test("shouldOpenNativeRouteWithoutSession allows invite routes before auth", () => {
   assert.equal(shouldOpenNativeRouteWithoutSession("/join-family?token=abc"), true);
-  assert.equal(shouldOpenNativeRouteWithoutSession("/join-family?hid=abc"), true);
   assert.equal(shouldOpenNativeRouteWithoutSession("/children"), false);
 });
 
 test("normalizeInviteRoute keeps invite routes and rejects others", () => {
   assert.equal(normalizeInviteRoute("/join-family?token=abc"), "/join-family?token=abc");
-  assert.equal(normalizeInviteRoute("/join-family?hid=abc"), "/join-family?hid=abc");
-  assert.equal(
-    normalizeInviteRoute("/join-family-handoff?hid=abc"),
-    "/join-family-handoff?hid=abc"
-  );
   assert.equal(
     normalizeInviteRoute("https://pillpath.app/join-family?dev-latest=1"),
     "/join-family?dev-latest=1"
@@ -94,11 +74,9 @@ test("pending invite route storage persists full invite route", () => {
 
   persistPendingFamilyInviteRoute("/join-family?token=abc", mockStorage);
   assert.equal(readPendingFamilyInviteRoute(mockStorage), "/join-family?token=abc");
-  persistPendingPostInstallAppRoute("/auth?mode=login", mockStorage);
 
   clearPendingFamilyInviteRoute(mockStorage);
   assert.equal(readPendingFamilyInviteRoute(mockStorage), null);
-  assert.equal(readPendingPostInstallAppRoute(mockStorage), null);
 });
 
 test("pending invite route storage ignores incomplete invite routes", () => {
@@ -115,28 +93,6 @@ test("pending invite route storage ignores incomplete invite routes", () => {
 
   persistPendingFamilyInviteRoute("/join-family", mockStorage);
   assert.equal(readPendingFamilyInviteRoute(mockStorage), null);
-});
-
-test("post-install route storage accepts invite and login routes", () => {
-  const storage = new Map<string, string>();
-  const mockStorage = {
-    getItem: (key: string) => storage.get(key) ?? null,
-    setItem: (key: string, value: string) => {
-      storage.set(key, value);
-    },
-    removeItem: (key: string) => {
-      storage.delete(key);
-    },
-  };
-
-  persistPendingPostInstallAppRoute("/auth?mode=login", mockStorage);
-  assert.equal(readPendingPostInstallAppRoute(mockStorage), "/auth?mode=login");
-
-  persistPendingPostInstallAppRoute("/join-family?hid=abc&intent=login", mockStorage);
-  assert.equal(readPendingPostInstallAppRoute(mockStorage), "/join-family?hid=abc&intent=login");
-
-  clearPendingPostInstallAppRoute(mockStorage);
-  assert.equal(readPendingPostInstallAppRoute(mockStorage), null);
 });
 
 test("resolveInviteAwareSignedOutPath prefers invite route over generic auth", () => {

@@ -21,13 +21,12 @@ from src.application.dto.auth import (
     AuthResponseDto,
     AuthStateResponseDto,
     LoginDto,
+    LoginFamilyInviteDto,
     RefreshDto,
     RegisterDto,
 )
 from src.application.dto.family import FamilyResponseDto
 from src.application.dto.family_invite import (
-    FamilyInviteHandoffCreateResponseDto,
-    FamilyInviteHandoffResolveResponseDto,
     FamilyInvitePreviewResponseDto,
     FamilyInviteResponseDto,
 )
@@ -67,6 +66,11 @@ class StubAuthService:
             raise UnauthorizedError("Неверный email или пароль", code="INVALID_CREDENTIALS")
         return _make_auth_response()
 
+    async def signin_and_accept_family_invite(self, dto: LoginFamilyInviteDto) -> AuthResponseDto:
+        if self.fail_signin:
+            raise UnauthorizedError("Неверный email или пароль", code="INVALID_CREDENTIALS")
+        return _make_auth_response()
+
     async def refresh(self, dto: RefreshDto) -> AuthResponseDto:
         return _make_auth_response()
 
@@ -100,14 +104,6 @@ class StubAuthService:
     async def update_profile(self, account_id, dto):  # noqa: ANN001
         raise NotImplementedError
 
-    async def accept_family_invite(self, account_id, token) -> AuthResponseDto:  # noqa: ANN001
-        return _make_auth_response()
-
-    async def accept_family_invite_handoff(
-        self, account_id, handoff_id
-    ) -> AuthResponseDto:  # noqa: ANN001
-        return _make_auth_response()
-
 
 class StubFamilyInviteService:
     def __init__(self) -> None:
@@ -139,27 +135,6 @@ class StubFamilyInviteService:
             family_name=f"Invite {token}",
             family_role="member",
             expires_at=datetime(2030, 1, 1),
-        )
-
-    async def create_handoff(self, token: str) -> FamilyInviteHandoffCreateResponseDto:
-        return FamilyInviteHandoffCreateResponseDto(
-            handoff_id=f"handoff-{token}",
-            handoff_path=f"/join-family-handoff?hid=handoff-{token}",
-            family_id=uuid4(),
-            family_name="Моя семья",
-            family_role="member",
-            expires_at=datetime(2030, 1, 1),
-            invite_expires_at=datetime(2030, 1, 2),
-        )
-
-    async def resolve_handoff(self, handoff_id: str) -> FamilyInviteHandoffResolveResponseDto:
-        return FamilyInviteHandoffResolveResponseDto(
-            handoff_id=handoff_id,
-            family_id=uuid4(),
-            family_name="Моя семья",
-            family_role="member",
-            expires_at=datetime(2030, 1, 1),
-            invite_expires_at=datetime(2030, 1, 2),
         )
 
 
@@ -270,6 +245,27 @@ def test_native_signin_returns_tokens_in_json() -> None:
     assert "set-cookie" not in response.headers
 
 
+def test_web_signin_and_accept_family_invite_omits_tokens_from_json() -> None:
+    client = _build_test_app(
+        auth_service=StubAuthService(), attempts_repo=StubAuthAttemptRepository()
+    )
+
+    response = client.post(
+        "/api/v1/auth/signin/family-invite",
+        json={
+            "email": "mama@example.com",
+            "password": "password123",
+            "invite_token": "invite-token",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["access_token"] is None
+    assert payload["refresh_token"] is None
+    assert "set-cookie" in response.headers
+
+
 def test_signin_rate_limit_trips_after_repeated_failures() -> None:
     attempts_repo = StubAuthAttemptRepository()
     client = _build_test_app(
@@ -292,20 +288,6 @@ def test_signin_rate_limit_trips_after_repeated_failures() -> None:
     assert limited.json()["code"] == "SIGNIN_IDENTITY_RATE_LIMITED"
 
 
-def test_web_family_invite_accept_omits_tokens() -> None:
-    client = _build_test_app(
-        auth_service=StubAuthService(), attempts_repo=StubAuthAttemptRepository()
-    )
-
-    response = client.post(f"/api/v1/family-invites/{uuid4()}/accept")
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["access_token"] is None
-    assert payload["refresh_token"] is None
-    assert "set-cookie" in response.headers
-
-
 def test_create_family_invite_returns_fresh_token_on_each_request() -> None:
     invite_service = StubFamilyInviteService()
     client = _build_test_app(
@@ -322,66 +304,6 @@ def test_create_family_invite_returns_fresh_token_on_each_request() -> None:
     assert first.json()["token"] != second.json()["token"]
     assert first.json()["invite_path"] != second.json()["invite_path"]
     assert invite_service.create_calls == 2
-
-
-def test_create_family_invite_handoff_returns_app_route() -> None:
-    invite_service = StubFamilyInviteService()
-    client = _build_test_app(
-        auth_service=StubAuthService(),
-        attempts_repo=StubAuthAttemptRepository(),
-        family_invite_service=invite_service,
-    )
-
-    response = client.post("/api/v1/family-invites/invite-token-123/handoff")
-
-    assert response.status_code == 201
-    payload = response.json()
-    assert payload["handoff_id"] == "handoff-invite-token-123"
-    assert payload["handoff_path"] == "/join-family-handoff?hid=handoff-invite-token-123"
-
-
-def test_resolve_family_invite_handoff_returns_invite_token() -> None:
-    invite_service = StubFamilyInviteService()
-    client = _build_test_app(
-        auth_service=StubAuthService(),
-        attempts_repo=StubAuthAttemptRepository(),
-        family_invite_service=invite_service,
-    )
-
-    response = client.get("/api/v1/family-invites/handoff/handoff-123")
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["handoff_id"] == "handoff-123"
-    assert payload["family_role"] == "member"
-
-
-def test_accept_family_invite_handoff_omits_tokens() -> None:
-    client = _build_test_app(
-        auth_service=StubAuthService(), attempts_repo=StubAuthAttemptRepository()
-    )
-
-    response = client.post("/api/v1/family-invites/handoff/handoff-123/accept")
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["access_token"] is None
-    assert payload["refresh_token"] is None
-    assert "set-cookie" in response.headers
-
-
-def test_accept_family_invite_handoff_native_returns_tokens() -> None:
-    client = _build_test_app(
-        auth_service=StubAuthService(), attempts_repo=StubAuthAttemptRepository()
-    )
-
-    response = client.post("/api/v1/family-invites/handoff/handoff-123/accept/native")
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["access_token"] == "access-token"
-    assert payload["refresh_token"] == "refresh-token"
-    assert "set-cookie" not in response.headers
 
 
 def test_delete_me_calls_account_deletion() -> None:
@@ -404,20 +326,6 @@ def test_delete_family_calls_family_deletion() -> None:
     assert response.status_code == 204
     assert len(service.delete_family_calls) == 1
     assert len(service.delete_me_calls) == 0
-
-
-def test_native_family_invite_accept_returns_tokens() -> None:
-    client = _build_test_app(
-        auth_service=StubAuthService(), attempts_repo=StubAuthAttemptRepository()
-    )
-
-    response = client.post(f"/api/v1/family-invites/{uuid4()}/accept/native")
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["access_token"] == "access-token"
-    assert payload["refresh_token"] == "refresh-token"
-    assert "set-cookie" not in response.headers
 
 
 def test_native_logout_passes_refresh_token_from_body() -> None:

@@ -40,10 +40,6 @@ class RegisterDto(BaseModel):
     password: str = Field(..., min_length=8, description="Пароль")
     remember_me: bool = Field(False, description="Оставаться в системе на этом устройстве")
     invite_token: str | None = Field(None, description="Токен приглашения в существующую семью")
-    invite_handoff_id: str | None = Field(
-        None,
-        description="Handoff-сессия приглашения для продолжения invite-flow в приложении",
-    )
     use_latest_dev_invite: bool = Field(
         False,
         description="Dev-only: использовать последнее активное приглашение без токена",
@@ -62,6 +58,16 @@ class LoginDto(BaseModel):
     email: str = Field(..., min_length=3, description="Email аккаунта")
     password: str = Field(..., min_length=1, description="Пароль")
     remember_me: bool = Field(False, description="Оставаться в системе на этом устройстве")
+
+
+class LoginFamilyInviteDto(LoginDto):
+    """Атомарный вход в аккаунт и принятие семейного приглашения."""
+
+    invite_token: str | None = Field(None, description="Токен приглашения в существующую семью")
+    use_latest_dev_invite: bool = Field(
+        False,
+        description="Dev-only: использовать последнее активное приглашение без токена",
+    )
 
 
 class ChangePasswordDto(BaseModel):
