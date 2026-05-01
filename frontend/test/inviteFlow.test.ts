@@ -9,6 +9,7 @@ import {
   normalizeInviteRoute,
   persistPendingFamilyInviteRoute,
   readPendingFamilyInviteRoute,
+  resolveInviteAwareAuthSuccessPath,
   resolveInviteAwareSignedOutPath,
   shouldOpenNativeRouteWithoutSession,
 } from "../src/shared/runtime/inviteFlow.js";
@@ -34,6 +35,7 @@ test("normalizeInviteRoute keeps invite routes and rejects others", () => {
     normalizeInviteRoute("https://pillpath.app/join-family?dev-latest=1"),
     "/join-family?dev-latest=1"
   );
+  assert.equal(normalizeInviteRoute("/join-family"), null);
   assert.equal(normalizeInviteRoute("/auth?mode=login"), null);
 });
 
@@ -61,6 +63,22 @@ test("pending invite route storage persists full invite route", () => {
   assert.equal(readPendingFamilyInviteRoute(mockStorage), null);
 });
 
+test("pending invite route storage ignores incomplete invite routes", () => {
+  const storage = new Map<string, string>();
+  const mockStorage = {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      storage.set(key, value);
+    },
+    removeItem: (key: string) => {
+      storage.delete(key);
+    },
+  };
+
+  persistPendingFamilyInviteRoute("/join-family", mockStorage);
+  assert.equal(readPendingFamilyInviteRoute(mockStorage), null);
+});
+
 test("resolveInviteAwareSignedOutPath prefers invite route over generic auth", () => {
   assert.equal(
     resolveInviteAwareSignedOutPath({
@@ -78,5 +96,34 @@ test("resolveInviteAwareSignedOutPath prefers invite route over generic auth", (
       defaultPath: "/auth?mode=login",
     }),
     "/join-family?token=abc"
+  );
+ 
+  assert.equal(
+    resolveInviteAwareSignedOutPath({
+      currentUrl: "/join-family",
+      pendingInviteRoute: null,
+      defaultPath: "/auth?mode=login",
+    }),
+    "/auth?mode=login"
+  );
+});
+
+test("resolveInviteAwareAuthSuccessPath resumes invite only when auth was explicitly invite-driven", () => {
+  assert.equal(
+    resolveInviteAwareAuthSuccessPath({
+      requestedNext: "invite",
+      pendingInviteRoute: "/join-family?token=abc",
+      defaultPath: "/family",
+    }),
+    "/join-family?token=abc"
+  );
+
+  assert.equal(
+    resolveInviteAwareAuthSuccessPath({
+      requestedNext: null,
+      pendingInviteRoute: "/join-family?token=abc",
+      defaultPath: "/family",
+    }),
+    "/family"
   );
 });

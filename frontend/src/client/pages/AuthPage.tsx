@@ -15,11 +15,15 @@ import { useI18n } from "@shared/hooks/useI18n";
 import type { AppLanguage } from "@shared/i18n";
 import { resolveInvitePublicBaseUrl } from "@shared/config/inviteLinks";
 import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
+import {
+  readPendingFamilyInviteRoute,
+  resolveInviteAwareAuthSuccessPath,
+} from "@shared/runtime/inviteFlow";
 import { saveNativePasswordCredential } from "@shared/security/nativePasswordAutofill";
 import { useAppStore } from "@shared/store/useAppStore";
 import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks";
 import { blurActiveField } from "@shared/utils/focus";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLegalLinks } from "./AuthLegalLinks";
 
 type Mode = "login" | "register";
@@ -248,6 +252,7 @@ const AuthField = memo(function AuthField({
 });
 
 export function AuthPage() {
+  const navigate = useNavigate();
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
   const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
@@ -257,6 +262,7 @@ export function AuthPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedMode = searchParams.get("mode");
   const [mode, setMode] = useState<Mode>(requestedMode === "login" ? "login" : "register");
+  const requestedNext = searchParams.get("next");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -268,6 +274,11 @@ export function AuthPage() {
   const submitButtonRef = useRef<HTMLButtonElement | null>(null);
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
+  const postAuthPath = resolveInviteAwareAuthSuccessPath({
+    requestedNext,
+    pendingInviteRoute: readPendingFamilyInviteRoute(),
+    defaultPath: "/family",
+  });
 
   useEffect(() => {
     setMode(requestedMode === "login" ? "login" : "register");
@@ -278,6 +289,7 @@ export function AuthPage() {
       login(payload),
     onSuccess: (data, variables) => {
       applySessionToClient(data);
+      navigate(postAuthPath, { replace: true });
       void tryStoreCredentials(variables.email, variables.password);
       void saveNativePasswordCredential(variables.email, variables.password).catch(() => {});
       setError(null);
@@ -308,6 +320,7 @@ export function AuthPage() {
     }) => register(payload),
     onSuccess: (data, variables) => {
       applySessionToClient(data);
+      navigate(postAuthPath, { replace: true });
       void tryStoreCredentials(variables.email, variables.password);
       void saveNativePasswordCredential(variables.email, variables.password).catch(() => {});
       setError(null);

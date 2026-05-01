@@ -1,7 +1,5 @@
 export const PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY = "pm_pending_family_invite_token_v1";
 export const PENDING_FAMILY_INVITE_POST_INSTALL_KEY = "pm_pending_family_invite_post_install_v1";
-export const PENDING_FAMILY_INVITE_APP_STORE_REDIRECT_KEY =
-  "pm_pending_family_invite_app_store_redirect_v1";
 export const PENDING_FAMILY_INVITE_ROUTE_STORAGE_KEY = "pm_pending_family_invite_route_v1";
 
 type MinimalStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -47,9 +45,15 @@ export function normalizeInviteRoute(url: string | null | undefined): string | n
   try {
     const parsed = new URL(url, "https://pillpath.local");
     const route = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-    return isInviteRoute(route) ? route : null;
+    if (!isInviteRoute(route)) {
+      return null;
+    }
+    return getInviteTokenFromRawRoute(route) || isDevLatestInviteRoute(route) ? route : null;
   } catch {
-    return isInviteRoute(url) ? url : null;
+    if (!isInviteRoute(url)) {
+      return null;
+    }
+    return getInviteTokenFromRawRoute(url) || isDevLatestInviteRoute(url) ? url : null;
   }
 }
 
@@ -59,12 +63,42 @@ export function getInviteTokenFromRoute(url: string | null | undefined): string 
     return null;
   }
 
+  return getInviteTokenFromRawRoute(route);
+}
+
+function getInviteTokenFromRawRoute(url: string): string | null {
   try {
-    const parsed = new URL(route, "https://pillpath.local");
+    const parsed = new URL(url, "https://pillpath.local");
     return normalizeInviteToken(parsed.searchParams.get("token"));
   } catch {
     return null;
   }
+}
+
+function isDevLatestInviteRoute(url: string): boolean {
+  try {
+    const parsed = new URL(url, "https://pillpath.local");
+    return parsed.pathname === "/join-family" && parsed.searchParams.get("dev-latest") === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function resolveInviteAwareAuthSuccessPath(params: {
+  requestedNext?: string | null | undefined;
+  pendingInviteRoute?: string | null | undefined;
+  defaultPath: string;
+}): string {
+  if (params.requestedNext !== "invite") {
+    return params.defaultPath;
+  }
+
+  const pendingInviteRoute = normalizeInviteRoute(params.pendingInviteRoute);
+  if (pendingInviteRoute) {
+    return pendingInviteRoute;
+  }
+
+  return params.defaultPath;
 }
 
 export function readPendingFamilyInviteRoute(storage?: MinimalStorage | null): string | null {
@@ -100,6 +134,7 @@ export function clearPendingFamilyInviteRoute(storage?: MinimalStorage | null) {
   }
   resolvedStorage.removeItem(PENDING_FAMILY_INVITE_ROUTE_STORAGE_KEY);
   resolvedStorage.removeItem(PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY);
+  resolvedStorage.removeItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY);
 }
 
 export function resolveInviteAwareSignedOutPath(params: {

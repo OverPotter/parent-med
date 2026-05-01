@@ -41,6 +41,7 @@ export function PillboxDetailsScreen({
   familyMembers,
   currentAccountId,
   onToggleRecipient,
+  onOpenRecipientsSheet,
   recipientSelectionPending,
   onRequestDelete,
   onConfirmPlanAction,
@@ -74,6 +75,7 @@ export function PillboxDetailsScreen({
   }>;
   currentAccountId: string | null;
   onToggleRecipient: (memberIds: string[]) => void | Promise<void>;
+  onOpenRecipientsSheet?: () => void | Promise<void>;
   recipientSelectionPending: boolean;
   onRequestDelete: () => void;
   onConfirmPlanAction: () => void;
@@ -164,6 +166,7 @@ export function PillboxDetailsScreen({
                       currentAccountId={currentAccountId}
                       selectedMemberIds={selectedPlan.memberAccountIds}
                       onSubmit={onToggleRecipient}
+                      onOpen={onOpenRecipientsSheet}
                       isPending={recipientSelectionPending}
                     />
                   ) : null}
