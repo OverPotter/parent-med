@@ -19,8 +19,8 @@ from src.application.dto.auth import (
     UpdateLanguageDto,
     UpdateRecoveryCodeDto,
 )
-from src.application.services.subscription_policy import has_billing_ownership_context
 from src.application.services.base_auth_service import BaseAuthService
+from src.application.services.subscription_policy import has_billing_ownership_context
 from src.core.config import settings
 from src.core.exceptions import ForbiddenError, UnauthorizedError, ValidationError
 from src.core.security import (
@@ -46,6 +46,7 @@ from src.domain.repositories.child_repository import ChildRepository
 from src.domain.repositories.household_medicine_repository import HouseholdMedicineRepository
 from src.domain.repositories.parent_repository import ParentRepository
 from src.domain.repositories.pillbox_repository import PillboxRepository
+
 
 class AuthService(BaseAuthService):
     """Регистрация, логин и проверка Bearer-сессии."""
@@ -613,7 +614,9 @@ class AuthService(BaseAuthService):
                 "Нельзя присоединиться к другой семье, пока в вашей семье есть другие участники",
                 code="CURRENT_FAMILY_NOT_EMPTY",
             )
-        if self._child_repo is not None and await self._child_repo.get_by_family_id(account.family_id):
+        if self._child_repo is not None and await self._child_repo.get_by_family_id(
+            account.family_id
+        ):
             raise ValidationError(
                 "Нельзя присоединиться к другой семье, пока в вашей семье есть дети",
                 code="CURRENT_FAMILY_HAS_CHILDREN",
@@ -625,12 +628,16 @@ class AuthService(BaseAuthService):
                 "Нельзя присоединиться к другой семье, пока в вашей семье есть аптечка",
                 code="CURRENT_FAMILY_HAS_MEDICINES",
             )
-        if self._parent_repo is not None and await self._parent_repo.get_by_family_id(account.family_id):
+        if self._parent_repo is not None and await self._parent_repo.get_by_family_id(
+            account.family_id
+        ):
             raise ValidationError(
                 "Нельзя присоединиться к другой семье, пока в вашей семье есть данные родителей",
                 code="CURRENT_FAMILY_HAS_PARENTS",
             )
-        if self._pillbox_repo is not None and await self._pillbox_repo.list_by_family_id(account.family_id):
+        if self._pillbox_repo is not None and await self._pillbox_repo.list_by_family_id(
+            account.family_id
+        ):
             raise ValidationError(
                 "Нельзя присоединиться к другой семье, пока в вашей семье есть планы приёма",
                 code="CURRENT_FAMILY_HAS_PILLBOX",
