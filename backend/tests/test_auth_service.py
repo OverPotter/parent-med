@@ -258,6 +258,53 @@ async def test_accept_latest_family_invite_for_dev_joins_existing_family() -> No
 
     assert result.family.id == target_family.id
     assert result.account.family_id == target_family.id
+    assert family_repo.deleted_ids == [old_family.id]
+
+
+@pytest.mark.asyncio
+async def test_accept_family_invite_moves_empty_solo_account_and_clears_old_family() -> None:
+    raw_token = "invite-token"
+    old_family = Family(id=uuid4(), name="Solo family", owner_account_id=uuid4())
+    target_family = Family(id=uuid4(), name="Target family", owner_account_id=uuid4())
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=target_family.id,
+        created_by_account_id=target_family.owner_account_id,
+        token_hash=hash_session_token(raw_token),
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    account_repo = StubAccountRepository()
+    session_repo = StubSessionRepository()
+    account = build_account(
+        family_id=old_family.id,
+        email="solo@example.com",
+        display_name="Solo",
+        family_role="admin",
+    )
+    await account_repo.add(account)
+    family_repo = StubFamilyRepository(old_family)
+    family_repo.items[target_family.id] = target_family
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=family_repo,
+        family_invite_repo=StubFamilyInviteRepository(invite),
+        child_repo=StubChildRepository(),
+        household_repo=StubHouseholdMedicineRepository(),
+        parent_repo=StubParentRepository(),
+    )
+
+    result = await service.accept_family_invite(account.id, raw_token)
+
+    assert result.family.id == target_family.id
+    assert result.account.family_id == target_family.id
+    assert result.account.family_role == "member"
+    assert family_repo.deleted_ids == [old_family.id]
+    assert session_repo.deleted_account_ids == [account.id]
     assert result.account.family_role == "member"
 
 

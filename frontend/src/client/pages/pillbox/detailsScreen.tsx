@@ -8,6 +8,7 @@ import {
   actionCompactSecondaryClass,
   displayPillboxText,
   EditorShell,
+  formatPillboxReminderRecipientsLine,
   formatPillboxDoseAmount,
   FlowScreenHeader,
   formatMealRule,
@@ -104,7 +105,7 @@ export function PillboxDetailsScreen({
     language,
     selectedPlan.status === "archived" || selectedPlan.status === "completed"
   );
-  const remindersLine = formatReminderRecipientsLine(
+  const remindersLine = formatPillboxReminderRecipientsLine(
     familyMembers
       .filter((member) => selectedPlan.memberAccountIds.includes(member.id))
       .map((member) => getAccountDisplayLabel(member)),
@@ -433,24 +434,4 @@ function formatPlanFactsLine(
         ? `${medicationsCount} лекарства`
         : `${medicationsCount} лекарств`;
   return [isCompleted ? "Завершён" : null, meds].filter(Boolean).join(" · ");
-}
-
-function formatReminderRecipientsLine(labels: string[], language: AppLanguage) {
-  if (language === "en") {
-    if (labels.length === 0) return "Reminders: nobody";
-    if (labels.length <= 2) return `Reminders: ${labels.join(", ")}`;
-    return `Reminders: ${labels.length} ${labels.length === 1 ? "member" : "members"}`;
-  }
-
-  if (labels.length === 0) return "Напоминания: никому";
-  if (labels.length <= 2) return `Напоминания: ${labels.join(", ")}`;
-  const participants =
-    labels.length % 10 === 1 && labels.length % 100 !== 11
-      ? `${labels.length} участник`
-      : labels.length % 10 >= 2 &&
-          labels.length % 10 <= 4 &&
-          (labels.length % 100 < 12 || labels.length % 100 > 14)
-        ? `${labels.length} участника`
-        : `${labels.length} участников`;
-  return `Напоминания: ${participants}`;
 }

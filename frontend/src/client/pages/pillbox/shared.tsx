@@ -655,6 +655,20 @@ export function displayPillboxText(value: string) {
   return value;
 }
 
+export function formatPillboxReminderRecipientsLine(labels: string[], language: AppLanguage) {
+  if (labels.length === 0) {
+    return tPillbox(language, "remindersNobody");
+  }
+  if (labels.length <= 2) {
+    return tPillbox(language, "reminderRecipients", { labels: labels.join(", ") });
+  }
+  const visible = labels.slice(0, 2).join(", ");
+  return tPillbox(language, "reminderRecipientsMore", {
+    visible,
+    remaining: labels.length - 2,
+  });
+}
+
 export function formatPillboxDoseAmount(value: string, language: AppLanguage) {
   const dose = displayPillboxText(value).trim();
   if (!dose) return dose;

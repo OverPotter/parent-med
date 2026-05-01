@@ -12,11 +12,15 @@ import { Surface } from "@shared/components/Surface";
 import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks";
 import { useI18n } from "@shared/hooks/useI18n";
 import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
+import {
+  buildJoinFamilyRoute,
+  PENDING_FAMILY_INVITE_APP_STORE_REDIRECT_KEY,
+  PENDING_FAMILY_INVITE_POST_INSTALL_KEY,
+  PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY,
+} from "@shared/runtime/inviteFlow";
 import { useAppStore } from "@shared/store/useAppStore";
 
 type Mode = "register" | "login";
-const INVITE_TOKEN_STORAGE_KEY = "pm_pending_family_invite_token_v1";
-const INVITE_POST_INSTALL_KEY = "pm_pending_family_invite_post_install_v1";
 
 function roleLabel(role: string, language: "ru" | "en"): string {
   if (role === "admin") {
@@ -87,16 +91,24 @@ export function JoinFamilyPage() {
           registerLoading: "Создаём аккаунт…",
           publicTitle: "Приглашение открывается в приложении",
           publicSubtitle:
-            "Сайт показывает, куда ведёт ссылка. Подключение к семье, вход и регистрация происходят внутри PillPath для iPhone.",
+            "Сайт показывает, куда ведёт ссылка. Если приложения ещё нет, здесь можно сразу создать аккаунт по приглашению, а дальше продолжить в PillPath для iPhone.",
           publicEyebrow: "Приглашение в семью",
-          nextStepTitle: "Что делать дальше",
+          nextStepTitle: "Создать аккаунт по приглашению",
           nextStepDescription:
-            "Откройте PillPath на iPhone, чтобы войти, зарегистрироваться или принять приглашение в семью.",
+            "Если у вас ещё нет аккаунта, создайте его прямо здесь. После регистрации продолжение семейного кабинета будет в приложении для iPhone.",
           downloadApp: "Скачать в App Store",
           openApp: "Открыть приложение",
           installedApp: "Я уже установил приложение",
           installedAppHint:
             "Ссылка-приглашение сохранена в этой странице. После установки вернитесь сюда и нажмите «Я уже установил приложение», чтобы открыть PillPath с этим приглашением.",
+          publicRegisterTitle: "Создать аккаунт",
+          publicRegisterHint:
+            "Новый аккаунт сразу привяжется к семье из этого приглашения. После этого установите приложение и войдите под тем же email.",
+          publicRegisterSubmit: "Создать аккаунт",
+          publicRegisterLoading: "Создаём аккаунт…",
+          publicRegisterSuccessTitle: "Аккаунт создан",
+          publicRegisterSuccessDescription:
+            "Теперь установите или откройте PillPath на iPhone и войдите под этим email, чтобы продолжить в семейном кабинете.",
         }
       : {
           incompleteInviteLink: "The invite link is incomplete. Open the full link from the message.",
@@ -135,17 +147,28 @@ export function JoinFamilyPage() {
           registerLoading: "Creating account…",
           publicTitle: "This invite continues in the app",
           publicSubtitle:
-            "The website shows where the link leads. Joining a family, signing in, and registration happen inside the PillPath iPhone app.",
+            "The website shows where the link leads. If the app is not installed yet, you can create an account from this invite here and continue in the PillPath iPhone app.",
           publicEyebrow: "Family invite",
-          nextStepTitle: "What to do next",
+          nextStepTitle: "Create an account from this invite",
           nextStepDescription:
-            "Open PillPath on iPhone to sign in, create your account, or accept the family invite.",
+            "If you do not have an account yet, create it here first. After that, continue the family flow in the PillPath iPhone app.",
           downloadApp: "Download on the App Store",
           openApp: "Open app",
           installedApp: "I already installed the app",
           installedAppHint:
             "This invite link stays on this page. After installation, come back here and tap “I already installed the app” to open PillPath with the same invite.",
+          publicRegisterTitle: "Create account",
+          publicRegisterHint:
+            "A new account created here will be linked to this family invite immediately. Then install or open the iPhone app and sign in with the same email.",
+          publicRegisterSubmit: "Create account",
+          publicRegisterLoading: "Creating account…",
+          publicRegisterSuccessTitle: "Account created",
+          publicRegisterSuccessDescription:
+            "Now install or open PillPath on iPhone and sign in with this email to continue inside the family workspace.",
         };
+  const [publicInviteRegisteredEmail, setPublicInviteRegisteredEmail] = useState<string | null>(
+    null
+  );
 
   const {
     data: invitePreview,
@@ -172,6 +195,7 @@ export function JoinFamilyPage() {
         ?.detail ?? null
     );
   }, [inviteError, token, ui.incompleteInviteLink]);
+  const canRenderPublicInviteRegistration = Boolean(token && invitePreview && !inviteErrorMessage);
 
   const loginMutation = useMutation({
     mutationFn: (payload: { email: string; password: string; remember_me: boolean }) =>
@@ -200,9 +224,16 @@ export function JoinFamilyPage() {
       preferred_language: "ru" | "en";
     }) => register(payload),
     onSuccess: (data) => {
-      applySessionToClient(data);
       setError(null);
       trackEvent(AnalyticsEvents.AUTH_REGISTER_SUCCESS, { entry: "join_family" });
+      if (isPublicWebsiteMode) {
+        setPublicInviteRegisteredEmail(data.account.email ?? email.trim());
+        setPassword("");
+        setPasswordConfirm("");
+        setIsPasswordVisible(false);
+        return;
+      }
+      applySessionToClient(data);
       queryClient.invalidateQueries({ queryKey: ["families"] });
       navigate("/family", { replace: true });
     },
@@ -269,9 +300,8 @@ export function JoinFamilyPage() {
   const passwordsMismatch =
     mode === "register" && passwordConfirm.length > 0 && password !== passwordConfirm;
   const isRegisterMode = mode === "register";
-  const nativeJoinFamilyUrl = buildNativeAppUrl(
-    token ? `/join-family?token=${encodeURIComponent(token)}` : "/join-family"
-  );
+  const joinFamilyRoute = buildJoinFamilyRoute(token);
+  const nativeJoinFamilyUrl = buildNativeAppUrl(joinFamilyRoute);
   const primaryJoinFamilyHref = appStoreUrl || nativeJoinFamilyUrl;
 
   useEffect(() => {
@@ -280,7 +310,7 @@ export function JoinFamilyPage() {
     }
 
     try {
-      window.localStorage.setItem(INVITE_TOKEN_STORAGE_KEY, token);
+      window.localStorage.setItem(PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY, token);
     } catch {
       // Best effort only: invite preview should still work without storage.
     }
@@ -304,7 +334,7 @@ export function JoinFamilyPage() {
 
       let savedToken: string | null = null;
       try {
-        savedToken = window.localStorage.getItem(INVITE_POST_INSTALL_KEY);
+        savedToken = window.localStorage.getItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY);
       } catch {
         return;
       }
@@ -314,7 +344,7 @@ export function JoinFamilyPage() {
       }
 
       hasAttemptedPostInstallOpenRef.current = true;
-      window.localStorage.removeItem(INVITE_POST_INSTALL_KEY);
+      window.localStorage.removeItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY);
       window.setTimeout(() => {
         window.location.assign(nativeJoinFamilyUrl);
       }, 250);
@@ -335,8 +365,9 @@ export function JoinFamilyPage() {
       return;
     }
 
+    window.sessionStorage.setItem(PENDING_FAMILY_INVITE_APP_STORE_REDIRECT_KEY, token);
     try {
-      window.localStorage.setItem(INVITE_POST_INSTALL_KEY, token);
+      window.localStorage.setItem(PENDING_FAMILY_INVITE_POST_INSTALL_KEY, token);
     } catch {
       // Best effort only: explicit fallback button remains available.
     }
@@ -373,30 +404,135 @@ export function JoinFamilyPage() {
           ) : null}
         </Surface>
 
-        <Surface className="auth-v3-handoff-card p-5 sm:p-6">
-          <p className="app-card-title">{ui.nextStepTitle}</p>
-          <div className="auth-v3-handoff-stack mt-4">
-            <p className="text-sm leading-7 text-muted">{ui.nextStepDescription}</p>
-            <a
-              href={primaryJoinFamilyHref}
-              onClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
-              target={appStoreUrl ? "_blank" : undefined}
-              rel={appStoreUrl ? "noreferrer" : undefined}
-              className="auth-v3-submit auth-v3-handoff-primary text-center"
-            >
-              {appStoreUrl ? ui.downloadApp : ui.openApp}
-            </a>
-            {appStoreUrl ? (
-              <>
-                <a href={nativeJoinFamilyUrl} className="auth-v3-handoff-secondary text-center">
-                  {ui.installedApp}
+        <Surface className="p-5 sm:p-6">
+          <h2 className="app-card-title">
+            {publicInviteRegisteredEmail ? ui.publicRegisterSuccessTitle : ui.publicRegisterTitle}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            {publicInviteRegisteredEmail ? ui.publicRegisterSuccessDescription : ui.publicRegisterHint}
+          </p>
+
+          {publicInviteRegisteredEmail ? (
+            <>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <InfoCard label={copy.auth.fields.email} value={publicInviteRegisteredEmail} />
+                <InfoCard label={ui.family} value={invitePreview?.familyName ?? ui.notSpecified} />
+              </div>
+              <div className="auth-v3-handoff-stack mt-6">
+                <a
+                  href={primaryJoinFamilyHref}
+                  onClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
+                  target={appStoreUrl ? "_blank" : undefined}
+                  rel={appStoreUrl ? "noreferrer" : undefined}
+                  className="auth-v3-submit auth-v3-handoff-primary text-center"
+                >
+                  {appStoreUrl ? ui.downloadApp : ui.openApp}
                 </a>
-                <div className="soft-note-info rounded-2xl px-4 py-3 text-sm leading-6">
-                  {ui.installedAppHint}
-                </div>
-              </>
-            ) : null}
-          </div>
+                {appStoreUrl ? (
+                  <>
+                    <a href={nativeJoinFamilyUrl} className="auth-v3-handoff-secondary text-center">
+                      {ui.installedApp}
+                    </a>
+                    <div className="soft-note-info rounded-2xl px-4 py-3 text-sm leading-6">
+                      {ui.installedAppHint}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            </>
+          ) : canRenderPublicInviteRegistration ? (
+            <form
+              onSubmit={handleSubmit}
+              className="mt-6 space-y-4"
+              method="post"
+              autoComplete="on"
+            >
+              <p className="text-sm leading-7 text-muted">{ui.nextStepDescription}</p>
+              <label className="block">
+                <span className="soft-field-label">{copy.auth.fields.email}</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="soft-input mt-2"
+                  placeholder={copy.auth.fields.emailPlaceholder}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="email"
+                />
+              </label>
+              <label className="block">
+                <span className="soft-field-label">{copy.auth.fields.password}</span>
+                <input
+                  type={isPasswordVisible ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="soft-input mt-2"
+                  placeholder={copy.auth.fields.passwordPlaceholder}
+                  autoComplete="new-password"
+                />
+              </label>
+              <label className="block">
+                <span className="soft-field-label">{copy.auth.fields.passwordConfirm}</span>
+                <input
+                  type={isPasswordVisible ? "text" : "password"}
+                  value={passwordConfirm}
+                  onChange={(event) => setPasswordConfirm(event.target.value)}
+                  className="soft-input mt-2"
+                  placeholder={copy.auth.fields.passwordConfirmPlaceholder}
+                  autoComplete="new-password"
+                />
+              </label>
+
+              {passwordsMismatch ? (
+                <p className="soft-note-warning">{ui.passwordsMismatch}</p>
+              ) : null}
+              {error ? <p className="soft-note-danger">{error}</p> : null}
+
+              <button
+                type="button"
+                onClick={() => setIsPasswordVisible((current) => !current)}
+                className="auth-v3-handoff-secondary"
+              >
+                {isPasswordVisible
+                  ? copy.auth.actions.hidePassword
+                  : copy.auth.actions.showPassword}
+              </button>
+
+              <button
+                type="submit"
+                disabled={
+                  registerMutation.isPending ||
+                  !email.trim() ||
+                  password.length < 8 ||
+                  !passwordConfirm ||
+                  password !== passwordConfirm
+                }
+                className="auth-v3-submit"
+              >
+                {registerMutation.isPending ? ui.publicRegisterLoading : ui.publicRegisterSubmit}
+              </button>
+
+              <div className="auth-v3-handoff-stack pt-2">
+                <a
+                  href={primaryJoinFamilyHref}
+                  onClick={appStoreUrl ? handleAppStoreInviteInstallStart : undefined}
+                  target={appStoreUrl ? "_blank" : undefined}
+                  rel={appStoreUrl ? "noreferrer" : undefined}
+                  className="auth-v3-handoff-secondary text-center"
+                >
+                  {appStoreUrl ? ui.downloadApp : ui.openApp}
+                </a>
+                {appStoreUrl ? (
+                  <a href={nativeJoinFamilyUrl} className="auth-v3-handoff-secondary text-center">
+                    {ui.installedApp}
+                  </a>
+                ) : null}
+              </div>
+            </form>
+          ) : null}
         </Surface>
       </div>
     );

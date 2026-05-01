@@ -112,6 +112,7 @@ tmp/
 temp/
 *.tmp
 *.temp
+backend/scripts/grant_manual_plus_by_email.py
 
 # ========== Data ==========
 backend/data/
