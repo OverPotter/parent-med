@@ -205,6 +205,7 @@ export function AccountPage() {
         <SectionTitle
           title={copy.detailsTitle}
           subtitle={copy.detailsHint}
+          actionInlineOnMobile
           action={
             <button
               type="button"
@@ -235,6 +236,7 @@ export function AccountPage() {
         <SectionTitle
           title={copy.settingsTitle}
           subtitle={copy.settingsHint}
+          actionInlineOnMobile
           action={
             <Link
               to="/settings"

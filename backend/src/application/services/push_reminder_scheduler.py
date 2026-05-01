@@ -138,6 +138,18 @@ def _get_pillbox_target_account_ids(plan: Any) -> list[Any]:
     return list(getattr(plan, "member_account_ids", []) or [])
 
 
+def _resolve_illness_next_allowed_at(
+    plan: Any,
+    last_administration: Any | None,
+) -> datetime:
+    anchor_at = (
+        last_administration.administered_at
+        if last_administration is not None
+        else getattr(plan, "created_at")
+    )
+    return anchor_at + timedelta(minutes=plan.min_interval_minutes)
+
+
 def _format_date(value: date, language: str) -> str:
     if language == "en":
         return value.strftime("%b %d, %Y")
@@ -515,8 +527,6 @@ class PushNotificationScheduler:
                     reverse=True,
                 )
                 last_administration = related[0] if related else None
-                if not last_administration:
-                    continue
 
                 today_count = sum(
                     1
@@ -527,9 +537,7 @@ class PushNotificationScheduler:
                 if plan.max_doses_per_day and today_count >= plan.max_doses_per_day:
                     continue
 
-                next_allowed_at = last_administration.administered_at + timedelta(
-                    minutes=plan.min_interval_minutes
-                )
+                next_allowed_at = _resolve_illness_next_allowed_at(plan, last_administration)
                 next_allowed_local_label = next_allowed_at.astimezone(self._timezone).strftime(
                     "%H:%M"
                 )

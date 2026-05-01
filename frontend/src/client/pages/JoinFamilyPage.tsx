@@ -13,15 +13,18 @@ import {
 import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
 import { AuthPasswordField, RememberMeCard } from "@shared/components/AuthFormControls";
 import { PageIntro } from "@shared/components/PageIntro";
+import { PublicSiteHeader } from "@shared/components/PublicSiteHeader";
 import { Surface } from "@shared/components/Surface";
 import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks";
 import { useI18n } from "@shared/hooks/useI18n";
 import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
 import {
   buildJoinFamilyRoute,
+  clearPendingFamilyInviteRoute,
   PENDING_FAMILY_INVITE_APP_STORE_REDIRECT_KEY,
   PENDING_FAMILY_INVITE_POST_INSTALL_KEY,
   PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY,
+  persistPendingFamilyInviteRoute,
 } from "@shared/runtime/inviteFlow";
 import { useAppStore } from "@shared/store/useAppStore";
 
@@ -64,6 +67,7 @@ export function JoinFamilyPage() {
   const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const hasAttemptedPostInstallOpenRef = useRef(false);
+  const hasSession = Boolean(accountId);
   const ui =
     language === "ru"
       ? {
@@ -232,6 +236,7 @@ export function JoinFamilyPage() {
     if (!isAuthenticated || !isAlreadyInTargetFamily) {
       return;
     }
+    clearPendingFamilyInviteRoute();
     navigate("/family", { replace: true });
   }, [isAlreadyInTargetFamily, isAuthenticated, navigate]);
 
@@ -289,6 +294,7 @@ export function JoinFamilyPage() {
         return;
       }
       applySessionToClient(data);
+      clearPendingFamilyInviteRoute();
       queryClient.invalidateQueries({ queryKey: ["families"] });
       navigate("/family", { replace: true });
     },
@@ -307,6 +313,7 @@ export function JoinFamilyPage() {
       isDevLatestShortcut ? acceptLatestDevFamilyInvite() : acceptFamilyInvite(token),
     onSuccess: (data) => {
       applySessionToClient(data);
+      clearPendingFamilyInviteRoute();
       setError(null);
       trackEvent(AnalyticsEvents.FAMILY_INVITE_ACCEPTED);
       queryClient.invalidateQueries({ queryKey: ["families"] });
@@ -365,16 +372,26 @@ export function JoinFamilyPage() {
   const primaryJoinFamilyHref = appStoreUrl || nativeJoinFamilyUrl;
 
   useEffect(() => {
-    if (!isPublicWebsiteMode || !token || typeof window === "undefined") {
+    if (typeof window === "undefined") {
       return;
     }
 
     try {
-      window.localStorage.setItem(PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY, token);
+      const route = isDevLatestShortcut
+        ? "/join-family?dev-latest=1"
+        : buildJoinFamilyRoute(token);
+      persistPendingFamilyInviteRoute(route);
+      if (token) {
+        window.localStorage.setItem(PENDING_FAMILY_INVITE_TOKEN_STORAGE_KEY, token);
+      }
     } catch {
       // Best effort only: invite preview should still work without storage.
     }
-  }, [isPublicWebsiteMode, token]);
+  }, [isDevLatestShortcut, token]);
+
+  const accountHref = hasSession ? "/more" : "/auth?mode=login";
+  const accountLabel =
+    language === "ru" ? (hasSession ? "Ещё" : "Войти") : hasSession ? "More" : "Login";
 
   useEffect(() => {
     if (
@@ -444,13 +461,15 @@ export function JoinFamilyPage() {
 
   if (isPublicWebsiteMode) {
     return (
-      <div className="min-w-0 space-y-6">
+      <div className="mx-auto w-full max-w-3xl min-w-0 space-y-6 px-3 pb-6 sm:px-0">
+        <PublicSiteHeader accountHref={accountHref} accountLabel={accountLabel} />
         <PageIntro
           title={ui.publicTitle}
           subtitle={ui.publicSubtitle}
           eyebrow={ui.publicEyebrow}
           compactOnMobile
           hideOnMobile
+          className="app-safe-top-standalone"
         />
 
         <Surface className="p-5 sm:p-6">
@@ -605,13 +624,15 @@ export function JoinFamilyPage() {
   }
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className="mx-auto w-full max-w-3xl min-w-0 space-y-6 px-3 pb-6 sm:px-0">
+      <PublicSiteHeader accountHref={accountHref} accountLabel={accountLabel} />
       <PageIntro
         title={ui.pageTitle}
         subtitle={ui.pageSubtitle}
         eyebrow={ui.pageEyebrow}
         compactOnMobile
         hideOnMobile
+        className="app-safe-top-standalone"
       />
 
       <Surface className="p-5 sm:p-6">

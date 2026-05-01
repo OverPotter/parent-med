@@ -58,6 +58,7 @@ import {
   PillboxGroup,
   PillboxPlanActionTarget,
   PillboxPlanListFilter,
+  resolveMedicationExitDraft,
   resetMedicationEditorFields,
   SetupDraft,
   tPillbox,
@@ -96,6 +97,7 @@ export function PillboxPage() {
   const [editorMedicationBaseline, setEditorMedicationBaseline] = useState<MedicationItem | null>(
     null
   );
+  const medicationSaveCommittedRef = useRef(false);
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [savePlanError, setSavePlanError] = useState<string | null>(null);
   const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog, closeUpgradeDialog } =
@@ -349,9 +351,11 @@ export function PillboxPage() {
       resetMedicationEditorFields(setEditorTitle, setEditorDose, setEditorTimes);
       setEditorCoursePreset("custom");
       setEditorMedicationBaseline(null);
+      medicationSaveCommittedRef.current = false;
       return;
     }
 
+    medicationSaveCommittedRef.current = false;
     const medication = draft?.medications.find((item) => item.id === activeMedicationId) ?? null;
     setEditorTitle(medication ? displayPillboxText(medication.title) : "");
     setEditorDose(medication ? displayPillboxText(medication.dose) : "");
@@ -376,40 +380,33 @@ export function PillboxPage() {
       return;
     }
 
-    if (pendingNewMedicationId) {
-      setDraft((current) => {
-        if (!current) return current;
-        const pendingMedication = current.medications.find(
-          (item) => item.id === pendingNewMedicationId
-        );
-        if (!pendingMedication || isMedicationReady(pendingMedication)) {
-          return current;
-        }
-        return {
-          ...current,
-          medications: current.medications.filter((item) => item.id !== pendingNewMedicationId),
-        };
-      });
-      setPendingNewMedicationId(null);
+    if (medicationSaveCommittedRef.current) {
+      medicationSaveCommittedRef.current = false;
       setEditorMedicationBaseline(null);
       return;
     }
 
-    if (!editorMedicationBaseline) {
-      return;
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+      const resolved = resolveMedicationExitDraft({
+        medications: current.medications,
+        pendingNewMedicationId,
+        editorMedicationBaseline,
+        saveCommitted: false,
+      });
+      return {
+        ...current,
+        medications: resolved.medications,
+      };
+    });
+    if (pendingNewMedicationId) {
+      setPendingNewMedicationId(null);
     }
-
-    setDraft((current) =>
-      current
-        ? {
-            ...current,
-            medications: current.medications.map((item) =>
-              item.id === editorMedicationBaseline.id ? editorMedicationBaseline : item
-            ),
-          }
-        : current
-    );
-    setEditorMedicationBaseline(null);
+    if (editorMedicationBaseline) {
+      setEditorMedicationBaseline(null);
+    }
   }, [editorMedicationBaseline, pendingNewMedicationId, screen]);
 
   const openCreate = () => {
@@ -849,6 +846,7 @@ export function PillboxPage() {
   const saveMedication = () => {
     if (!activeMedication || !canSaveMedication) return;
 
+    medicationSaveCommittedRef.current = true;
     const normalizedTimes = editorTimes
       .map((value) => value.trim())
       .filter(Boolean)

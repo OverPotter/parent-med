@@ -30,7 +30,6 @@ export const familyCopy = {
     yourProfileTitle: "Вы",
     currentNoAccessDescription:
       "Сейчас у вас нет доступа к данным семьи. Обратитесь к владельцу семьи или администратору.",
-    yourProfileDescription: "Так вас будут видеть другие участники семьи.",
     otherMembersTitle: "Остальные участники",
     otherMembersDescription: "Профили, роли и доступы остальных участников семьи.",
     allMembersTitle: "Все участники",
@@ -195,7 +194,6 @@ export const familyCopy = {
     yourProfileTitle: "You",
     currentNoAccessDescription:
       "You currently do not have access to family data. Contact the family owner or an admin.",
-    yourProfileDescription: "This is how other family members will see you.",
     otherMembersTitle: "Other members",
     otherMembersDescription: "Profiles, roles, and access settings for the rest of the family.",
     allMembersTitle: "All members",

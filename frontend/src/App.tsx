@@ -45,6 +45,10 @@ import { shouldClearSessionForAuthError } from "@shared/api/authSessionErrors";
 import { shouldUseAppEntryWebMode } from "@shared/runtime/publicWebsiteMode";
 import { cleanupDeviceSessionArtifacts } from "@shared/utils/sessionCleanup";
 import { shouldRedirectAfterSessionLoss } from "@client/startup/startupDecisions";
+import {
+  readPendingFamilyInviteRoute,
+  resolveInviteAwareSignedOutPath,
+} from "@shared/runtime/inviteFlow";
 const ClientLayout = lazy(() =>
   import("@client/layout/ClientLayout").then((module) => ({ default: module.ClientLayout }))
 );
@@ -249,20 +253,26 @@ function AuthSync() {
   return null;
 }
 
-function SessionLossRedirect({ targetPath }: { targetPath: string }) {
+function SessionLossRedirect({ defaultTargetPath }: { defaultTargetPath: string }) {
   const navigate = useNavigate();
   const location = useLocation();
   const authToken = useAppStore((s) => s.authToken);
   const accountId = useAppStore((s) => s.accountId);
   const hasSession = Boolean(authToken || accountId);
   const hadSessionRef = useRef(hasSession);
+  const currentUrl = `${location.pathname}${location.search}${location.hash}`;
+  const targetPath = resolveInviteAwareSignedOutPath({
+    currentUrl,
+    defaultPath: defaultTargetPath,
+    pendingInviteRoute: readPendingFamilyInviteRoute(),
+  });
 
   useEffect(() => {
     if (
       shouldRedirectAfterSessionLoss({
         hadSession: hadSessionRef.current,
         hasSession,
-        currentPath: location.pathname,
+        currentPath: currentUrl,
         targetPath,
       })
     ) {
@@ -270,7 +280,7 @@ function SessionLossRedirect({ targetPath }: { targetPath: string }) {
     }
 
     hadSessionRef.current = hasSession;
-  }, [hasSession, location.pathname, navigate, targetPath]);
+  }, [currentUrl, hasSession, navigate, targetPath]);
 
   return null;
 }
@@ -383,7 +393,7 @@ export default function App() {
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <AuthSync />
-      <SessionLossRedirect targetPath={signedOutTargetPath} />
+      <SessionLossRedirect defaultTargetPath={signedOutTargetPath} />
       <RevenueCatSync />
       <DisplayNameOnboardingOverlay />
       {role !== "admin" ? <NativePushNavigationSync /> : null}
