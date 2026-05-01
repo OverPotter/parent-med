@@ -32,6 +32,10 @@ export function MemberAccessHeaderCard({
 }) {
   const isOwner = familyOwnerAccountId === member.id;
   const profileFacts = [
+    {
+      label: tFamily(language, "displayName"),
+      value: member.displayName || tFamily(language, "noName"),
+    },
     member.relationshipLabel
       ? {
           label: tFamily(language, "relationship"),
@@ -52,9 +56,6 @@ export function MemberAccessHeaderCard({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="app-card-title text-base">
-                {member.displayName || tFamily(language, "noName")}
-              </p>
               <span
                 className={`rounded-full px-2.5 py-1 text-[11px] ${
                   isOwner || member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill"
@@ -63,16 +64,14 @@ export function MemberAccessHeaderCard({
                 {roleLabel(member.familyRole, language, { isOwner })}
               </span>
             </div>
-            {profileFacts.length ? (
-              <div className="grid gap-1.5">
-                {profileFacts.map((fact) => (
-                  <p key={fact.label} className="text-sm text-muted">
-                    <span className="font-semibold text-foreground/90">{fact.label}: </span>
-                    <span className="break-all">{fact.value}</span>
-                  </p>
-                ))}
-              </div>
-            ) : null}
+            <div className="grid gap-1.5">
+              {profileFacts.map((fact) => (
+                <p key={fact.label} className="text-sm text-muted">
+                  <span className="font-semibold text-foreground/90">{fact.label}: </span>
+                  <span className="break-all">{fact.value}</span>
+                </p>
+              ))}
+            </div>
           </div>
           {hasHeaderActions ? (
             <div className="min-w-0 shrink-0 space-y-2 sm:max-w-[18rem]">

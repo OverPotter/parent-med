@@ -228,6 +228,13 @@ export function JoinFamilyPage() {
     invitePreview && currentFamilyId === invitePreview.familyId
   );
 
+  useEffect(() => {
+    if (!isAuthenticated || !isAlreadyInTargetFamily) {
+      return;
+    }
+    navigate("/family", { replace: true });
+  }, [isAlreadyInTargetFamily, isAuthenticated, navigate]);
+
   const inviteErrorMessage = useMemo(() => {
     if (!token && !isDevLatestShortcut) {
       return ui.incompleteInviteLink;

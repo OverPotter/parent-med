@@ -87,7 +87,7 @@ export const familyCopy = {
     confirmDemoteAction: "Да, сделать участником",
     confirmRemoveTitle: "Удалить участника из семьи?",
     confirmRemoveDescription:
-      "Аккаунт участника будет удалён. Чтобы вернуть доступ, его нужно будет зарегистрировать заново или снова пригласить в семью.",
+      "Участник потеряет доступ к этой семье. Его аккаунт сохранится, а для него будет создана новая пустая семья.",
     confirmRemoveAction: "Да, удалить",
     displayName: "Имя в семье",
     displayNamePlaceholder: "Например: Оля",
@@ -96,6 +96,7 @@ export const familyCopy = {
     relationshipHint:
       "Можно написать так, как вас будут понимать в семье: мама, папа, бабушка, дедушка, няня.",
     phone: "Телефон",
+    phonePlaceholder: "+375 ...",
     email: "Email",
     emailPlaceholder: "you@example.com",
     invalidEmail: "Введите корректный email или оставьте поле пустым.",
@@ -253,7 +254,7 @@ export const familyCopy = {
     confirmDemoteAction: "Yes, make member",
     confirmRemoveTitle: "Remove this member from family?",
     confirmRemoveDescription:
-      "This member's account will be deleted. To restore access later, they will need to sign up again or join with a new invite.",
+      "This member will lose access to this family. Their account will stay intact, and a new empty family will be created for them.",
     confirmRemoveAction: "Yes, remove",
     displayName: "Family name",
     displayNamePlaceholder: "Example: Olivia",
@@ -262,6 +263,7 @@ export const familyCopy = {
     relationshipHint:
       "Use the role your family will understand right away: mom, dad, grandma, grandpa, nanny.",
     phone: "Phone",
+    phonePlaceholder: "+1 ...",
     email: "Email",
     emailPlaceholder: "you@example.com",
     invalidEmail: "Enter a valid email or leave the field empty.",

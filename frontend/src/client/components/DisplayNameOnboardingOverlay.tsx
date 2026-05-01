@@ -29,6 +29,7 @@ export function DisplayNameOnboardingOverlay() {
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const [displayName, setDisplayName] = useState("");
   const [relationshipLabel, setRelationshipLabel] = useState("");
+  const [phone, setPhone] = useState("");
   const [familyName, setFamilyName] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
   const [step, setStep] = useState<"display-name" | "recovery-code" | null>(null);
@@ -93,10 +94,12 @@ export function DisplayNameOnboardingOverlay() {
       }
       const trimmedDisplayName = displayName.trim();
       const trimmedRelationshipLabel = relationshipLabel.trim() || null;
+      const trimmedPhone = phone.trim() || null;
       const trimmedFamilyName = familyName.trim();
       const member = await updateFamilyMemberProfile(accountId, {
         display_name: trimmedDisplayName,
         relationship_label: trimmedRelationshipLabel,
+        phone: trimmedPhone,
       });
       const shouldUpdateFamilyName =
         canEditFamilyName &&
@@ -132,6 +135,7 @@ export function DisplayNameOnboardingOverlay() {
       }
       setDisplayName("");
       setRelationshipLabel("");
+      setPhone("");
       setFamilyName(updatedFamily?.name ?? currentFamily?.name ?? currentFamilyName ?? "");
     },
   });
@@ -165,6 +169,7 @@ export function DisplayNameOnboardingOverlay() {
     }
     setDisplayName("");
     setRelationshipLabel("");
+    setPhone("");
     setFamilyName(currentFamily?.name ?? currentFamilyName ?? "");
     if (
       shouldShowRecoveryCodeOnboarding({
@@ -289,6 +294,19 @@ export function DisplayNameOnboardingOverlay() {
                 <p className="mt-2 text-sm leading-6 text-muted">
                   {tFamily(language, "relationshipHint")}
                 </p>
+              </label>
+
+              <label className="block">
+                <span className="soft-field-label">{tFamily(language, "phone")}</span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  className="soft-input mt-2 w-full px-4"
+                  placeholder={tFamily(language, "phonePlaceholder")}
+                  autoComplete="tel"
+                  inputMode="tel"
+                />
               </label>
 
               {canEditFamilyName ? (

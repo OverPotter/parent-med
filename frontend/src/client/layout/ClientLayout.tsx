@@ -35,8 +35,8 @@ export function ClientLayout() {
   const setCurrentFamily = useAppStore((s) => s.setCurrentFamily);
   const isIosShell = useIsIosShell();
   const now = useNow(15_000);
-  const navStaleTime = isIosShell ? 30_000 : 15_000;
-  const navRefetchInterval: number | false = isIosShell ? 60_000 : false;
+  const navStaleTime = isIosShell ? 15_000 : 15_000;
+  const navRefetchInterval: number | false = isIosShell ? 15_000 : false;
   const canSeeChildren = canViewAnyChildren(accountFamilyRole, accountAccessPolicy);
   const canSeePillbox = canViewPillbox(accountFamilyRole, accountAccessPolicy);
   const canSeeCabinet = canViewCabinet(accountFamilyRole, accountAccessPolicy);

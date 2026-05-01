@@ -75,6 +75,7 @@ export function ChildSectionTopBar({
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <HeaderUtilityActions
                 accountLabel={accountLabel}
+                familyLabel={copy.common.family}
                 servicesLabel={copy.clientLayout.nav.more}
                 settingsLabel={copy.common.settings}
                 logoutLabel={copy.common.logoutFromAccount}

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   resolveClientStartRoute,
+  shouldRedirectAfterSessionLoss,
   shouldShowClientBootSplash,
 } from "../src/client/startup/startupDecisions.js";
 
@@ -153,5 +154,37 @@ test("shouldShowClientBootSplash keeps first native launch blocked until shell w
       isFirstNativeLaunch: true,
     }),
     true
+  );
+});
+
+test("shouldRedirectAfterSessionLoss redirects only after a real session drop", () => {
+  assert.equal(
+    shouldRedirectAfterSessionLoss({
+      hadSession: true,
+      hasSession: false,
+      currentPath: "/join-family",
+      targetPath: "/auth?mode=login",
+    }),
+    true
+  );
+
+  assert.equal(
+    shouldRedirectAfterSessionLoss({
+      hadSession: false,
+      hasSession: false,
+      currentPath: "/join-family",
+      targetPath: "/auth?mode=login",
+    }),
+    false
+  );
+
+  assert.equal(
+    shouldRedirectAfterSessionLoss({
+      hadSession: true,
+      hasSession: false,
+      currentPath: "/auth?mode=login",
+      targetPath: "/auth?mode=login",
+    }),
+    false
   );
 });

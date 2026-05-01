@@ -2,7 +2,9 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
+
+DEFAULT_PERSONAL_FAMILY_NAME = "Моя семья"
 
 
 @dataclass
@@ -21,3 +23,11 @@ class Family:
     subscription_provider: str | None = None
     subscription_product_id: str | None = None
     subscription_expires_at: datetime | None = None
+
+
+def build_personal_family(owner_account_id: UUID, *, id: UUID | None = None) -> Family:
+    return Family(
+        id=id or uuid4(),
+        name=DEFAULT_PERSONAL_FAMILY_NAME,
+        owner_account_id=owner_account_id,
+    )

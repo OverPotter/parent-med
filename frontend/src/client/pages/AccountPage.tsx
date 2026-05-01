@@ -51,7 +51,7 @@ const accountCopy = {
     save: "Сохранить",
     saving: "Сохраняем…",
     updateFailed: "Не удалось сохранить профиль.",
-    openSettings: "Открыть настройки",
+    openSettings: "Открыть",
   },
   en: {
     title: "Profile",
@@ -87,7 +87,7 @@ const accountCopy = {
     save: "Save",
     saving: "Saving…",
     updateFailed: "Could not save the profile.",
-    openSettings: "Open settings",
+    openSettings: "Open",
   },
 } as const;
 

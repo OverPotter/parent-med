@@ -53,6 +53,7 @@ class StubAccountRepository:
         return entity
 
     async def delete(self, id):  # noqa: ANN001
+        self.items.pop(id, None)
         return True
 
 
@@ -117,18 +118,35 @@ class StubFamilyRepository:
 
 
 class StubChildRepository:
+    def __init__(self, items: list | None = None) -> None:
+        self.items = items or []
+
     async def get_by_family_id(self, family_id):  # noqa: ANN001
-        return []
+        return list(self.items)
 
 
 class StubHouseholdMedicineRepository:
+    def __init__(self, items: list | None = None) -> None:
+        self.items = items or []
+
     async def get_by_family_id(self, family_id):  # noqa: ANN001
-        return []
+        return list(self.items)
 
 
 class StubParentRepository:
+    def __init__(self, items: list | None = None) -> None:
+        self.items = items or []
+
     async def get_by_family_id(self, family_id):  # noqa: ANN001
-        return []
+        return list(self.items)
+
+
+class StubPillboxRepository:
+    def __init__(self, items: list | None = None) -> None:
+        self.items = items or []
+
+    async def list_by_family_id(self, family_id):  # noqa: ANN001
+        return list(self.items)
 
 
 class StubFamilyInviteRepository:
@@ -354,6 +372,52 @@ async def test_accept_family_invite_moves_empty_solo_account_and_clears_old_fami
 
 
 @pytest.mark.asyncio
+async def test_accept_family_invite_rejects_when_current_family_has_children() -> None:
+    raw_token = "invite-token"
+    old_family = Family(id=uuid4(), name="Моя семья", owner_account_id=uuid4())
+    target_family = Family(id=uuid4(), name="Target family", owner_account_id=uuid4())
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=target_family.id,
+        created_by_account_id=target_family.owner_account_id,
+        token_hash=hash_session_token(raw_token),
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    account_repo = StubAccountRepository()
+    session_repo = StubSessionRepository()
+    account = build_account(
+        family_id=old_family.id,
+        email="solo@example.com",
+        display_name="Solo",
+        family_role="admin",
+    )
+    await account_repo.add(account)
+    family_repo = StubFamilyRepository(old_family)
+    family_repo.items[target_family.id] = target_family
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=family_repo,
+        family_invite_repo=StubFamilyInviteRepository(invite),
+        child_repo=StubChildRepository(items=[object()]),
+        household_repo=StubHouseholdMedicineRepository(),
+        parent_repo=StubParentRepository(),
+        pillbox_repo=StubPillboxRepository(),
+    )
+
+    with pytest.raises(ValidationError) as exc_info:
+        await service.accept_family_invite(account.id, raw_token)
+
+    assert exc_info.value.code == "CURRENT_FAMILY_HAS_CHILDREN"
+    assert family_repo.deleted_ids == []
+    assert session_repo.deleted_account_ids == []
+
+
+@pytest.mark.asyncio
 async def test_leave_family_creates_new_family_for_member() -> None:
     family = Family(id=uuid4(), name="Семья Петровых", owner_account_id=uuid4())
     account_repo = StubAccountRepository()
@@ -396,6 +460,52 @@ async def test_leave_family_creates_new_family_for_member() -> None:
     assert updated_member.access_policy.pillbox_access == "edit"
     assert updated_member.access_policy.cabinet_push_enabled is True
     assert family_repo.added_entities[-1].owner_account_id == member.id
+
+
+@pytest.mark.asyncio
+async def test_accept_family_invite_rejects_when_current_family_has_pillbox_plans() -> None:
+    raw_token = "invite-token"
+    old_family = Family(id=uuid4(), name="Моя семья", owner_account_id=uuid4())
+    target_family = Family(id=uuid4(), name="Target family", owner_account_id=uuid4())
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=target_family.id,
+        created_by_account_id=target_family.owner_account_id,
+        token_hash=hash_session_token(raw_token),
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    account_repo = StubAccountRepository()
+    session_repo = StubSessionRepository()
+    account = build_account(
+        family_id=old_family.id,
+        email="solo@example.com",
+        display_name="Solo",
+        family_role="admin",
+    )
+    await account_repo.add(account)
+    family_repo = StubFamilyRepository(old_family)
+    family_repo.items[target_family.id] = target_family
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=family_repo,
+        family_invite_repo=StubFamilyInviteRepository(invite),
+        child_repo=StubChildRepository(),
+        household_repo=StubHouseholdMedicineRepository(),
+        parent_repo=StubParentRepository(),
+        pillbox_repo=StubPillboxRepository(items=[object()]),
+    )
+
+    with pytest.raises(ValidationError) as exc_info:
+        await service.accept_family_invite(account.id, raw_token)
+
+    assert exc_info.value.code == "CURRENT_FAMILY_HAS_PILLBOX"
+    assert family_repo.deleted_ids == []
+    assert session_repo.deleted_account_ids == []
 
 
 @pytest.mark.asyncio

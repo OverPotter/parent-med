@@ -70,6 +70,10 @@ export function MemberCard({
     isOwner || member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill";
   const avatarInitial = memberLabel.trim().charAt(0).toUpperCase();
   const profileFacts = [
+    {
+      label: tFamily(language, "displayName"),
+      value: memberLabel,
+    },
     member.relationshipLabel
       ? {
           label: tFamily(language, "relationship"),
@@ -149,7 +153,6 @@ export function MemberCard({
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="app-card-title text-base">{memberLabel}</p>
               <span className={`rounded-full px-2.5 py-1 text-[11px] ${roleToneClass}`}>
                 {roleLabel(member.familyRole, language, { isOwner })}
               </span>
@@ -159,16 +162,14 @@ export function MemberCard({
                 </span>
               ) : null}
             </div>
-            {profileFacts.length ? (
-              <div className="mt-2 grid gap-1.5">
-                {profileFacts.map((fact) => (
-                  <p key={fact.label} className="text-sm text-muted">
-                    <span className="font-semibold text-foreground/90">{fact.label}: </span>
-                    <span className="break-all">{fact.value}</span>
-                  </p>
-                ))}
-              </div>
-            ) : null}
+            <div className="mt-2 grid gap-1.5">
+              {profileFacts.map((fact) => (
+                <p key={fact.label} className="text-sm text-muted">
+                  <span className="font-semibold text-foreground/90">{fact.label}: </span>
+                  <span className="break-all">{fact.value}</span>
+                </p>
+              ))}
+            </div>
           </div>
         </div>
 

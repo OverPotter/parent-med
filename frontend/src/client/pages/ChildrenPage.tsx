@@ -65,7 +65,7 @@ export function ChildrenPage() {
     useUpgradeDialogOpenState();
   const isChildrenAuxReady = true;
   const liveStatusQueryOptions = useLiveQueryOptions(isIosShell ? 60000 : 30000);
-  const illnessStatusQueryOptions = useLiveQueryOptions(isIosShell ? 10000 : 5000);
+  const illnessStatusQueryOptions = useLiveQueryOptions(5000);
   const stableIosChildrenQueryOptions = isIosShell
     ? {
         refetchOnMount: false as const,
@@ -127,7 +127,6 @@ export function ChildrenPage() {
       queryFn: () => fetchActiveIllnessEpisodeByChildId(child.id),
       enabled: !!child.id && isChildrenAuxReady,
       ...illnessStatusQueryOptions,
-      ...stableIosChildrenQueryOptions,
     })),
   });
 

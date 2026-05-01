@@ -133,6 +133,7 @@ function ProfileIcon() {
 
 export function ProfileMenu({
   accountLabel,
+  familyLabel,
   servicesLabel,
   settingsLabel,
   logoutLabel,
@@ -141,6 +142,7 @@ export function ProfileMenu({
   iconOnly = false,
 }: {
   accountLabel: string;
+  familyLabel: string;
   servicesLabel: string;
   settingsLabel: string;
   logoutLabel: string;
@@ -262,12 +264,12 @@ export function ProfileMenu({
       {isOpen ? (
         <div className="app-profile-menu__panel" role="menu">
           <Link
-            to="/more"
+            to="/family"
             role="menuitem"
             className="app-profile-menu__item"
-            onClick={handleMenuNavigate("/more")}
+            onClick={handleMenuNavigate("/family")}
           >
-            {servicesLabel}
+            {familyLabel}
           </Link>
           <Link
             to="/settings"
@@ -276,6 +278,14 @@ export function ProfileMenu({
             onClick={handleMenuNavigate("/settings")}
           >
             {settingsLabel}
+          </Link>
+          <Link
+            to="/more"
+            role="menuitem"
+            className="app-profile-menu__item"
+            onClick={handleMenuNavigate("/more")}
+          >
+            {servicesLabel}
           </Link>
           <button
             type="button"
@@ -296,6 +306,7 @@ export function ProfileMenu({
 
 export function HeaderUtilityActions({
   accountLabel,
+  familyLabel,
   servicesLabel,
   settingsLabel,
   logoutLabel,
@@ -309,6 +320,7 @@ export function HeaderUtilityActions({
   onNotificationBellClick = null,
 }: {
   accountLabel: string;
+  familyLabel: string;
   servicesLabel: string;
   settingsLabel: string;
   logoutLabel: string;
@@ -356,6 +368,7 @@ export function HeaderUtilityActions({
       </Link>
       <ProfileMenu
         accountLabel={accountLabel}
+        familyLabel={familyLabel}
         servicesLabel={servicesLabel}
         settingsLabel={settingsLabel}
         logoutLabel={logoutLabel}
@@ -466,6 +479,7 @@ export function Layout({
                       {isAuthenticated ? (
                         <HeaderUtilityActions
                           accountLabel={accountLabel}
+                          familyLabel={copy.common.family}
                           servicesLabel={copy.clientLayout.nav.more}
                           settingsLabel={copy.common.settings}
                           logoutLabel={copy.common.logoutFromAccount}
@@ -530,6 +544,7 @@ export function Layout({
                         <div className="flex min-w-0 items-center gap-2">
                           <HeaderUtilityActions
                             accountLabel={accountLabel}
+                            familyLabel={copy.common.family}
                             servicesLabel={copy.clientLayout.nav.more}
                             settingsLabel={copy.common.settings}
                             logoutLabel={copy.common.logoutFromAccount}

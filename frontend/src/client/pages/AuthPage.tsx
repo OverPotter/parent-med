@@ -716,7 +716,6 @@ export function AuthPage() {
                     spellCheck={false}
                     inputMode="email"
                     icon={<MailIcon />}
-                    hint={isRegisterMode ? copy.auth.page.registerCardCopy : undefined}
                   />
 
                   <div className={joinClasses("grid gap-4", isRegisterMode && "sm:grid-cols-2")}>

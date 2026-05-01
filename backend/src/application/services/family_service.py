@@ -19,7 +19,7 @@ from src.domain.entities.account_identity import (
     normalize_optional_display_name,
     resolve_display_name,
 )
-from src.domain.entities.family import Family
+from src.domain.entities.family import Family, build_personal_family
 from src.domain.entities.family_access import (
     FamilyAccessPolicy,
     deserialize_family_access_policy,
@@ -177,6 +177,9 @@ class FamilyService:
             merged.cabinet_push_enabled = False
         return merged
 
+    async def _create_solo_family_for_member(self, account: Account) -> Family:
+        return await self._repo.add(build_personal_family(account.id))
+
     async def list_all(self) -> list[FamilyResponseDto]:
         entities = await self._repo.list_all()
         return [self._to_response(entity) for entity in entities]
@@ -293,8 +296,17 @@ class FamilyService:
                 code="BILLING_OWNER_TRANSFER_REQUIRED",
             )
 
+        next_family = await self._create_solo_family_for_member(target)
+        await self._account_repo.update(
+            copy_account(
+                target,
+                family_id=next_family.id,
+                family_role="admin",
+                session_version=target.session_version + 1,
+                access_policy=FamilyAccessPolicy(),
+            )
+        )
         await self._session_repo.delete_by_account_id(target.id)
-        await self._account_repo.delete(target.id)
 
     async def update_member_profile_for_account(
         self,

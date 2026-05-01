@@ -19,22 +19,28 @@ from src.domain.entities.family_access import FamilyAccessPolicy
 class StubFamilyRepository:
     def __init__(self, family: Family) -> None:
         self.family = family
+        self.items = {family.id: family}
+        self.added_entities: list[Family] = []
 
     async def list_all(self):  # noqa: ANN001
-        return [self.family]
+        return list(self.items.values())
 
     async def get_by_id(self, id):  # noqa: ANN001
-        return self.family if id == self.family.id else None
+        return self.items.get(id)
 
     async def add(self, entity):  # noqa: ANN001
+        self.added_entities.append(entity)
         self.family = entity
+        self.items[entity.id] = entity
         return entity
 
     async def update(self, entity):  # noqa: ANN001
         self.family = entity
+        self.items[entity.id] = entity
         return entity
 
     async def delete(self, id):  # noqa: ANN001
+        self.items.pop(id, None)
         return True
 
 
@@ -194,7 +200,16 @@ async def test_delete_member_revokes_sessions() -> None:
     )
 
     assert session_repo.deleted_account_ids == [adult.id]
-    assert all(account.id != adult.id for account in account_repo.accounts)
+    updated_adult = next(account for account in account_repo.accounts if account.id == adult.id)
+    assert updated_adult.family_id != family.id
+    assert updated_adult.family_role == "admin"
+    assert updated_adult.access_policy.all_children is True
+    assert updated_adult.access_policy.children_access == "edit"
+    assert updated_adult.access_policy.cabinet_access == "edit"
+    assert updated_adult.access_policy.pillbox_access == "edit"
+    new_family = service._repo.items[updated_adult.family_id]
+    assert new_family.owner_account_id == adult.id
+    assert new_family.name == "Моя семья"
 
 
 @pytest.mark.asyncio
