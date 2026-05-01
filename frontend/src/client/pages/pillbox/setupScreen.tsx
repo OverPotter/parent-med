@@ -3,12 +3,14 @@ import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
 import { getAccountDisplayLabel, getAccountSecondaryLabel } from "@shared/utils/accountLabels";
+import { PlanPushRecipientsField } from "./PlanPushRecipientsField";
 import { buildPillboxPlanTargetLabel } from "./planTarget";
 import {
   actionPrimaryClass,
   actionSecondaryClass,
   displayPillboxText,
   EditorShell,
+  formatPillboxReminderRecipientsLine,
   formatPillboxDoseAmount,
   FlowScreenHeader,
   formatMealRule,
@@ -54,6 +56,8 @@ export function PillboxSetupScreen({
   onRequestDeleteMedication,
   onTitleChange,
   onSelectTargetMember,
+  currentAccountId,
+  onSelectRecipients,
   onSavePlan,
   deleteTarget,
   onConfirmDelete,
@@ -78,6 +82,8 @@ export function PillboxSetupScreen({
   onRequestDeleteMedication: (medicationId: string, medicationName: string) => void;
   onTitleChange: (value: string) => void;
   onSelectTargetMember: (memberId: string) => void;
+  currentAccountId: string | null;
+  onSelectRecipients: (memberIds: string[]) => void | Promise<void>;
   onSavePlan: () => void;
   deleteTarget: PillboxDeleteTarget | null;
   onConfirmDelete: () => void;
@@ -99,6 +105,12 @@ export function PillboxSetupScreen({
     : language === "ru"
       ? "Название появится после выбора участника"
       : "The plan name will appear after you choose a family member";
+  const reminderRecipientsLine = formatPillboxReminderRecipientsLine(
+    familyMembers
+      .filter((member) => draft.members.includes(member.id))
+      .map((member) => getAccountDisplayLabel(member)),
+    language
+  );
 
   return (
     <EditorShell
@@ -138,6 +150,21 @@ export function PillboxSetupScreen({
                 <span className="soft-field-label">
                   {language === "ru" ? "Для кого план" : "Who is this plan for"}
                 </span>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[0.78rem] leading-5 text-muted">
+                    {language === "ru"
+                      ? "Выберите участника, а затем при необходимости настройте, кому придут уведомления."
+                      : "Choose the member first, then adjust who receives reminders if needed."}
+                  </p>
+                  <PlanPushRecipientsField
+                    language={language}
+                    familyMembers={familyMembers}
+                    currentAccountId={currentAccountId}
+                    selectedMemberIds={draft.members}
+                    onSubmit={onSelectRecipients}
+                    buttonLabel={language === "ru" ? "Уведомления" : "Notifications"}
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={() => setTargetSheetOpen(true)}
@@ -156,6 +183,9 @@ export function PillboxSetupScreen({
                   {language === "ru"
                     ? "Выберите, для кого этот план. Получатель уведомлений сохранится автоматически, а позже его можно изменить в самом плане."
                     : "Choose who this plan is for. The reminder recipient will be saved automatically, and you can change it later in the plan."}
+                </p>
+                <p className="text-[0.78rem] leading-5 text-muted">
+                  {reminderRecipientsLine}
                 </p>
                 <p className="text-[0.86rem] font-semibold leading-5 text-foreground/88">
                   {generatedTitlePreview}

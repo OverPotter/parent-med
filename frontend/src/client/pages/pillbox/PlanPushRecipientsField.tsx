@@ -20,6 +20,7 @@ export function PlanPushRecipientsField({
   selectedMemberIds,
   onSubmit,
   isPending = false,
+  buttonLabel,
 }: {
   language: AppLanguage;
   familyMembers: FamilyMemberLike[];
@@ -27,6 +28,7 @@ export function PlanPushRecipientsField({
   selectedMemberIds: string[];
   onSubmit: (memberIds: string[]) => void | Promise<void>;
   isPending?: boolean;
+  buttonLabel?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const eligibleMemberIds = useMemo(
@@ -71,7 +73,7 @@ export function PlanPushRecipientsField({
         disabled={isPending}
         className={`${appPillActionClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
       >
-        {language === "ru" ? "Уведомления" : "Notifications"}
+        {buttonLabel ?? (language === "ru" ? "Уведомления" : "Notifications")}
       </button>
 
       <OverlayDialog

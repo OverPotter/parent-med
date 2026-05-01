@@ -1,4 +1,5 @@
-import type { FormEvent } from "react";
+import { useRef } from "react";
+import type { FocusEvent, FormEvent } from "react";
 import { RowSurface } from "@shared/components/Surface";
 import type { AppLanguage } from "@shared/i18n";
 import { appBtnJournalPrimaryClass, appBtnJournalSecondaryClass } from "../child-illness/shared";
@@ -31,6 +32,56 @@ export function FamilyNameSection({
   onCancel,
   onSubmit,
 }: FamilyNameSectionProps) {
+  const saveButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const ensureEditingFieldVisible = (event: FocusEvent<HTMLFormElement>) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const saveButton = saveButtonRef.current;
+
+    const scrollIntoComfortView = () => {
+      target.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+
+      saveButton?.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+
+      const scrollContainer =
+        target.closest<HTMLElement>('[data-client-scroll-root="true"]') ??
+        target.closest<HTMLElement>("main") ??
+        target.closest<HTMLElement>('[data-fullscreen-overlay-scroll="true"]');
+      if (!scrollContainer) {
+        return;
+      }
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const buttonRect = (saveButton ?? target).getBoundingClientRect();
+      const bottomGap = buttonRect.bottom - containerRect.bottom;
+      if (bottomGap > 0) {
+        scrollContainer.scrollBy({
+          top: bottomGap + 24,
+          behavior: "smooth",
+        });
+      }
+    };
+
+    window.setTimeout(scrollIntoComfortView, 120);
+    window.setTimeout(scrollIntoComfortView, 320);
+  };
+
   return (
     <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
       <div className="grid gap-2">
@@ -57,7 +108,11 @@ export function FamilyNameSection({
         </p>
 
         {isEditing ? (
-          <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-3">
+          <form
+            onSubmit={onSubmit}
+            onFocusCapture={ensureEditingFieldVisible}
+            className="flex flex-wrap items-end gap-3"
+          >
             <label className="min-w-0 flex-1">
               <span className="soft-field-label">{tFamily(language, "newFamilyName")}</span>
               <input
@@ -70,6 +125,7 @@ export function FamilyNameSection({
             </label>
             <div className="flex w-full flex-wrap gap-2 sm:w-auto">
               <button
+                ref={saveButtonRef}
                 type="submit"
                 disabled={
                   isFamilyLoading ||

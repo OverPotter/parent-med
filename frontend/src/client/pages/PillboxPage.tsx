@@ -1053,6 +1053,10 @@ export function PillboxPage() {
               };
             })
           }
+          currentAccountId={accountId}
+          onSelectRecipients={(memberIds) =>
+            setDraft((current) => (current ? { ...current, members: memberIds } : current))
+          }
           onSavePlan={saveGroup}
           deleteTarget={deleteTarget}
           underlaySnapshotKey={setupSnapshotKey}
