@@ -521,7 +521,7 @@ class PushNotificationScheduler:
                             not plan.household_medicine_id
                             and _normalize_medicine_name(entry.custom_medicine_name)
                             == normalized_plan_name
-                )
+                        )
                     ),
                     key=lambda entry: entry.administered_at,
                     reverse=True,
