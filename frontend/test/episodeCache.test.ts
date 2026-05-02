@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { QueryClient } from "@tanstack/react-query";
 import {
+  closeIllnessEpisodeForChild,
   setIllnessEpisodesForChild,
   upsertIllnessEpisodeForChild,
 } from "../src/client/pages/child-illness/episodeCache.js";
@@ -79,4 +80,38 @@ test("upsertIllnessEpisodeForChild replaces stale active cache with closed serve
 
   assert.equal(queryClient.getQueryData(["illness-episode-active", childId]), null);
   assert.deepEqual(queryClient.getQueryData(["illness-episodes", childId]), [closedEpisode]);
+});
+
+test("closeIllnessEpisodeForChild closes only the targeted active episode immediately", () => {
+  const queryClient = new QueryClient();
+  const childId = "child-3";
+  const activeEpisode = makeEpisode({
+    id: "episode-3",
+    childId,
+    status: "active",
+  });
+  const olderClosedEpisode = makeEpisode({
+    id: "episode-4",
+    childId,
+    status: "closed",
+    closedAt: "2026-05-01T08:00:00.000Z",
+  });
+
+  queryClient.setQueryData(["illness-episodes", childId], [activeEpisode, olderClosedEpisode]);
+  queryClient.setQueryData(["illness-episode-active", childId], activeEpisode);
+
+  closeIllnessEpisodeForChild(queryClient, childId, {
+    episodeId: activeEpisode.id,
+    closedAt: "2026-05-01T12:00:00.000Z",
+  });
+
+  assert.equal(queryClient.getQueryData(["illness-episode-active", childId]), null);
+  assert.deepEqual(queryClient.getQueryData(["illness-episodes", childId]), [
+    {
+      ...activeEpisode,
+      status: "closed",
+      closedAt: "2026-05-01T12:00:00.000Z",
+    },
+    olderClosedEpisode,
+  ]);
 });

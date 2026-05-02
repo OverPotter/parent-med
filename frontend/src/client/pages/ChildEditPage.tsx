@@ -29,7 +29,7 @@ type ChildProfileDetails = {
   notes?: string | null;
 };
 
-const appBtnPrimaryClass = "soft-pill-primary app-profile-action app-profile-action--selected";
+const appBtnPrimaryClass = "soft-pill-success app-profile-action app-profile-action--active";
 const appBtnDangerClass = "soft-pill-danger app-profile-action";
 
 export function ChildEditPage() {

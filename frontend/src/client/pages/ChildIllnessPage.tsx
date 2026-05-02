@@ -51,9 +51,9 @@ import {
   ChildIllnessHistoryScreen,
 } from "./child-illness/screens";
 import {
+  closeIllnessEpisodeForChild,
   getActiveEpisodeFromList,
   invalidateIllnessQueriesForChild,
-  setIllnessEpisodesForChild,
   upsertIllnessEpisodeForChild,
 } from "./child-illness/episodeCache";
 import {
@@ -223,18 +223,13 @@ export function ChildIllnessPage() {
   const closeEpisodeMutation = useMutation({
     mutationFn: (episodeId: string) =>
       closeIllnessEpisodeResilient({ childId: childId!, episodeId }),
-    onSuccess: (closedEpisode) => {
+    onSuccess: (closedEpisode, episodeId) => {
       clearIllnessStartHint(childId!);
       requestLiveActivityRefresh();
-      if (closedEpisode) {
-        upsertIllnessEpisodeForChild(queryClient, childId!, closedEpisode);
-      } else {
-        setIllnessEpisodesForChild(queryClient, childId!, (current) =>
-          current.map((item) =>
-            item.status === "active" ? { ...item, status: "closed" as const } : item
-          )
-        );
-      }
+      closeIllnessEpisodeForChild(queryClient, childId!, {
+        episodeId,
+        closedEpisode,
+      });
       invalidateIllnessQueriesForChild(queryClient, childId!);
       navigate("/illnesses/active");
     },

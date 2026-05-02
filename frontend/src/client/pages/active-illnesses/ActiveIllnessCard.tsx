@@ -20,9 +20,8 @@ import { useIllnessLiveWidgetState } from "@client/hooks/useIllnessLiveWidgetSta
 import { formatIllnessDuration } from "../children/shared";
 import { DoseTimeSheet, useDoseLoggingFlow } from "../child-illness/doseLogging";
 import {
+  closeIllnessEpisodeForChild,
   invalidateIllnessQueriesForChild,
-  setIllnessEpisodesForChild,
-  upsertIllnessEpisodeForChild,
 } from "../child-illness/episodeCache";
 import {
   formatDoseStatusLabel,
@@ -140,15 +139,10 @@ export function ActiveIllnessCard({
     mutationFn: () => closeIllnessEpisodeResilient({ childId: child.id, episodeId: episode.id }),
     onSuccess: (closedEpisode) => {
       requestLiveActivityRefresh();
-      if (closedEpisode) {
-        upsertIllnessEpisodeForChild(queryClient, child.id, closedEpisode);
-      } else {
-        setIllnessEpisodesForChild(queryClient, child.id, (current) =>
-          current.map((item) =>
-            item.status === "active" ? { ...item, status: "closed" as const } : item
-          )
-        );
-      }
+      closeIllnessEpisodeForChild(queryClient, child.id, {
+        episodeId: episode.id,
+        closedEpisode,
+      });
       invalidateIllnessQueriesForChild(queryClient, child.id);
     },
   });

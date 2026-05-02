@@ -38,6 +38,31 @@ export function upsertIllnessEpisodeForChild(
   });
 }
 
+export function closeIllnessEpisodeForChild(
+  queryClient: QueryClient,
+  childId: string,
+  params: {
+    episodeId: string;
+    closedEpisode?: IllnessEpisode | null;
+    closedAt?: string | null;
+  }
+) {
+  const closedAt = params.closedEpisode?.closedAt ?? params.closedAt ?? null;
+
+  return setIllnessEpisodesForChild(queryClient, childId, (current) =>
+    current.map((item) =>
+      item.id === params.episodeId
+        ? {
+            ...item,
+            ...(params.closedEpisode ?? {}),
+            status: "closed" as const,
+            closedAt,
+          }
+        : item
+    )
+  );
+}
+
 export function invalidateIllnessQueriesForChild(queryClient: QueryClient, childId: string) {
   queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
   queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });

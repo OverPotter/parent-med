@@ -2,7 +2,9 @@
  * Активные наблюдения: текущие эпизоды по всем детям семьи.
  */
 
+import { useEffect } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { fetchAdministrationEventsByEpisodeId } from "@shared/api/administrationEvents";
 import { fetchChildrenByFamilyId } from "@shared/api/children";
 import { fetchEpisodeMedicationPlansByEpisodeId } from "@shared/api/episodeMedicationPlans";
@@ -30,6 +32,7 @@ export function ActiveIllnessesPage() {
   const pageTitle = language === "ru" ? "Журнал" : "Health";
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountId = useAppStore((s) => s.accountId);
+  const navigate = useNavigate();
   const isIosShell = useIsIosShell();
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
@@ -96,6 +99,14 @@ export function ActiveIllnessesPage() {
       ...liveQueryOptions,
     })),
   });
+
+  useEffect(() => {
+    if (isLoading || isActiveEpisodesLoading || activeChildren.length > 0) {
+      return;
+    }
+
+    navigate("/children", { replace: true });
+  }, [activeChildren.length, isActiveEpisodesLoading, isLoading, navigate]);
 
   if (!currentFamilyId) {
     return (
