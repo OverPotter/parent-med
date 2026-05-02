@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { loginAndAcceptInvite, register } from "@shared/api/auth";
-import { applySessionToClient } from "@shared/api/client";
 import {
   fetchFamilyInvitePreview,
   fetchLatestDevFamilyInvitePreview,
@@ -275,7 +274,7 @@ export function JoinFamilyPage() {
     queryKey: ["family-invite", isDevLatestShortcut ? "dev-latest" : token],
     queryFn: () =>
       isDevLatestShortcut ? fetchLatestDevFamilyInvitePreview() : fetchFamilyInvitePreview(token),
-    enabled: isDevLatestShortcut || Boolean(token),
+    enabled: (isDevLatestShortcut || Boolean(token)) && !successState,
     retry: false,
   });
 
@@ -316,7 +315,6 @@ export function JoinFamilyPage() {
       );
     },
     onSuccess: (data, variables) => {
-      applySessionToClient(data);
       setError(null);
       setSuccessState({
         kind: "login",
@@ -358,7 +356,6 @@ export function JoinFamilyPage() {
       preferred_language: "ru" | "en";
     }) => register(payload),
     onSuccess: (data, variables) => {
-      applySessionToClient(data);
       setError(null);
       setSuccessState({
         kind: "register",
