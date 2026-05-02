@@ -1,5 +1,6 @@
 import { RowSurface } from "@shared/components/Surface";
 import type { AppLanguage } from "@shared/i18n";
+import { formatLocalizedDate } from "@shared/utils/date";
 import { appBtnJournalSecondaryClass } from "../child-illness/shared";
 import { tFamily } from "./copy";
 
@@ -67,8 +68,7 @@ export function FamilyInviteSection({
           </p>
           <p className="mt-2 break-all text-sm text-foreground">{latestInviteUrl}</p>
           <p className="mt-2 text-sm text-muted">
-            {tFamily(language, "validUntil")}{" "}
-            {new Date(inviteExpiresAt).toLocaleString(language === "ru" ? "ru-RU" : "en-US")}.
+            {tFamily(language, "validUntil")} {formatLocalizedDate(inviteExpiresAt, language)}.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {canShareInvite ? (

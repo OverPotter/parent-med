@@ -12,7 +12,6 @@ import {
 import {
   appBtnSecondaryClass,
   illnessCompactInputClass,
-  illnessCompactPrimaryButtonClass,
   illnessCompactSecondaryButtonClass,
   illnessPanelSoftClass,
 } from "./shared";
@@ -31,7 +30,7 @@ import { CabinetMedicinePicker } from "./CabinetMedicinePicker";
 import { ReminderFirstAdministrationSection } from "./ReminderFirstAdministrationSection";
 import { isFutureFirstAdministrationSelection } from "./reminderTiming";
 
-const reminderComposerPrimaryActionClass = `${illnessCompactPrimaryButtonClass} min-h-[2.58rem] px-3.75 text-[0.8rem] shadow-[0_16px_34px_rgba(15,23,42,0.16)] transition hover:-translate-y-[1px] hover:shadow-[0_20px_40px_rgba(15,23,42,0.2)] sm:min-h-[2.68rem] sm:text-[0.82rem]`;
+const reminderComposerPrimaryActionClass = `${illnessCompactSecondaryButtonClass} min-h-[2.58rem] px-3.75 text-[0.8rem] sm:min-h-[2.68rem] sm:text-[0.82rem]`;
 const reminderComposerSecondaryActionClass = `${illnessCompactSecondaryButtonClass} min-h-[2.45rem] px-3.5 text-[0.79rem] sm:min-h-[2.55rem] sm:text-[0.81rem]`;
 const reminderComposerDisabledActionClass = `${reminderComposerSecondaryActionClass} border border-border/75 bg-[color:color-mix(in_srgb,var(--color-surface)_84%,var(--color-background)_16%)] text-foreground/55 shadow-none opacity-70 cursor-not-allowed`;
 

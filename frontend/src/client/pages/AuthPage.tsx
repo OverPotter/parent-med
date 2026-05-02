@@ -22,6 +22,7 @@ import {
 import { saveNativePasswordCredential } from "@shared/security/nativePasswordAutofill";
 import { useAppStore } from "@shared/store/useAppStore";
 import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks";
+import { useMobileFormFocusHandlers } from "@shared/hooks/useMobileFormFocusHandlers";
 import { blurActiveField } from "@shared/utils/focus";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLegalLinks } from "./AuthLegalLinks";
@@ -434,6 +435,10 @@ export function AuthPage() {
     }, 120);
   };
 
+  const formFocusHandlers = useMobileFormFocusHandlers({
+    onFieldFocus: ensureSubmitVisible,
+  });
+
   useEffect(() => {
     if (!isNativeIOS || mode !== "login" || (!email.trim() && !password.trim())) {
       return;
@@ -578,6 +583,7 @@ export function AuthPage() {
         "auth-v3-page min-h-screen text-foreground",
         mode === "login" && "auth-v3-page--login"
       )}
+      onPointerDownCapture={formFocusHandlers.onPointerDownCapture}
     >
       {!isNativeIOS ? <V3BackgroundDoodles className="auth-v3-doodle-layer" dense /> : null}
       {!isNativeIOS ? <div className="auth-v3-orb auth-v3-orb-left" aria-hidden="true" /> : null}
@@ -699,7 +705,7 @@ export function AuthPage() {
 
             <form
               onSubmit={handleSubmit}
-              onFocusCapture={ensureSubmitVisible}
+              {...formFocusHandlers}
               className={joinClasses("mt-5 space-y-4", isNativeIOS && "auth-v3-form--ios")}
               method="post"
               autoComplete="on"

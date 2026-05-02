@@ -2,6 +2,8 @@ import { createPortal } from "react-dom";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { useMobileFormFocusHandlers } from "@shared/hooks/useMobileFormFocusHandlers";
+import { blurActiveField } from "@shared/utils/focus";
 
 type OverlayDialogProps = {
   isOpen: boolean;
@@ -32,6 +34,8 @@ export function OverlayDialog({
   backdropAriaLabel = "Close dialog",
   disableIosBackSwipe = true,
 }: OverlayDialogProps) {
+  const formFocusHandlers = useMobileFormFocusHandlers();
+
   useBodyScrollLock(isOpen);
 
   useEffect(() => {
@@ -66,6 +70,8 @@ export function OverlayDialog({
     <div
       data-ios-local-back-swipe={disableIosBackSwipe ? "true" : undefined}
       data-ios-disable-back-swipe={disableIosBackSwipe ? "true" : undefined}
+      onPointerDownCapture={formFocusHandlers.onPointerDownCapture}
+      onFocusCapture={formFocusHandlers.onFocusCapture}
       className={`fixed inset-0 ${zIndexClassName} ${resolvedContainerClassName}`}
       style={{
         paddingTop:
@@ -82,6 +88,7 @@ export function OverlayDialog({
         type="button"
         aria-label={backdropAriaLabel}
         className={`absolute inset-0 ${resolvedBackdropClassName}`}
+        onPointerDown={() => blurActiveField()}
         onClick={closeDisabled || !closeOnBackdrop ? undefined : onClose}
       />
       {children}

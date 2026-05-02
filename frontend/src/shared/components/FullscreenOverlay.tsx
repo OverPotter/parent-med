@@ -3,6 +3,7 @@ import { useRef } from "react";
 import type { ReactNode } from "react";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { useMobileFormFocusHandlers } from "@shared/hooks/useMobileFormFocusHandlers";
 
 type FullscreenOverlayProps = {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export function FullscreenOverlay({
   closeDisabled = false,
 }: FullscreenOverlayProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const formFocusHandlers = useMobileFormFocusHandlers();
 
   useBodyScrollLock(isOpen);
 
@@ -36,6 +38,7 @@ export function FullscreenOverlay({
   return createPortal(
     <div
       ref={rootRef}
+      onPointerDownCapture={formFocusHandlers.onPointerDownCapture}
       className="fixed inset-0 z-[9999] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
       style={{
         paddingTop: "max(0.75rem, var(--app-safe-top-runtime, env(safe-area-inset-top)))",
@@ -74,6 +77,7 @@ export function FullscreenOverlay({
 
         <div
           data-fullscreen-overlay-scroll="true"
+          onFocusCapture={formFocusHandlers.onFocusCapture}
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-6"
           style={{
             paddingBottom: "calc(0.75rem + var(--app-keyboard-height, 0px) * 0.18)",
