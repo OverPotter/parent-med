@@ -29,7 +29,9 @@ class FamilyInviteService:
     ALLOWED_ROLES = {"member"}
     DEV_INVITE_TOKEN_LENGTH = 8
     DEV_INVITE_ALPHABET = "".join(
-        character for character in string.ascii_uppercase + string.digits if character not in {"0", "O", "1", "I"}
+        character
+        for character in string.ascii_uppercase + string.digits
+        if character not in {"0", "O", "1", "I"}
     )
 
     def __init__(

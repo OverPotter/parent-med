@@ -51,7 +51,11 @@ class StubFamilyInviteRepository:
 
     async def accept_if_active(self, invite_id, account_id, accepted_at):  # noqa: ANN001
         for index, item in enumerate(self.items):
-            if item.id != invite_id or item.accepted_at is not None or item.expires_at <= accepted_at:
+            if (
+                item.id != invite_id
+                or item.accepted_at is not None
+                or item.expires_at <= accepted_at
+            ):
                 continue
             self.items[index] = FamilyInvite(
                 id=item.id,

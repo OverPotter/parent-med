@@ -321,6 +321,8 @@ async def test_signup_with_invite_rejects_if_code_was_consumed_concurrently() ->
         )
 
     assert exc_info.value.code == "FAMILY_INVITE_ALREADY_USED"
+
+
 @pytest.mark.asyncio
 async def test_leave_family_creates_new_family_for_member() -> None:
     family = Family(id=uuid4(), name="Семья Петровых", owner_account_id=uuid4())
