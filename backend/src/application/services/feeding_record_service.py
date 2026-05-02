@@ -254,8 +254,6 @@ class FeedingRecordService:
         )
         if entity.status != "active":
             return self._to_response(entity)
-        if entity.created_by_account_id and entity.created_by_account_id != current_account.id:
-            raise ForbiddenError("Остановить активное кормление может только тот, кто его запустил")
 
         ended_at = dto.ended_at or datetime.now(UTC)
         if ended_at < (entity.started_at or entity.recorded_at):
@@ -311,8 +309,6 @@ class FeedingRecordService:
             current_account,
             entity.child_id,
         )
-        if entity.status == "active" and entity.created_by_account_id != current_account.id:
-            raise ForbiddenError("Удалить активное кормление может только тот, кто его запустил")
         deleted = await self._repo.delete(entity.id)
         if not deleted:
             raise NotFoundError("Запись кормления не найдена", resource="feeding_record")

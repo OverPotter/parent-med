@@ -32,6 +32,9 @@ class IllnessEpisodeModel(Base):
         default=list,
         server_default="{}",
     )
+    created_by_account_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True
+    )
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

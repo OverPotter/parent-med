@@ -202,6 +202,7 @@ interface RawIllnessEpisode {
   medication_mode: string;
   note: string | null;
   member_account_ids: string[] | null;
+  created_by_account_id: string | null;
   closed_at: string | null;
 }
 
@@ -439,7 +440,8 @@ export function toIllnessEpisode(r: RawIllnessEpisode): IllnessEpisode {
     status: r.status,
     medicationMode: r.medication_mode,
     note: r.note ?? null,
-    memberAccountIds: r.member_account_ids ?? [],
+    notificationRecipientAccountIds: r.member_account_ids ?? [],
+    createdByAccountId: r.created_by_account_id ?? null,
     closedAt: r.closed_at ?? null,
   };
 }

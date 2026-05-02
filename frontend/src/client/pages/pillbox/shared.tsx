@@ -300,6 +300,7 @@ export const flowShellClass = "mx-auto w-full max-w-2xl";
 export const flowShellSpacingClass = "space-y-4 sm:space-y-5";
 export const PILLBOX_ON_TIME_WINDOW_MS = 30 * 60_000;
 export const PILLBOX_LATE_WINDOW_MS = 4 * 60 * 60_000;
+export const PILLBOX_EARLY_MARK_GRACE_MS = 60_000;
 
 export function tPillbox(
   language: AppLanguage,
@@ -761,7 +762,10 @@ export function canMarkGroupDose(group: PillboxGroup) {
   }
   const now = Date.now();
   const scheduledAt = new Date(group.nextDoseAt).getTime();
-  return now >= scheduledAt && now <= scheduledAt + PILLBOX_LATE_WINDOW_MS;
+  return (
+    now >= scheduledAt - PILLBOX_EARLY_MARK_GRACE_MS &&
+    now <= scheduledAt + PILLBOX_LATE_WINDOW_MS
+  );
 }
 
 export function isOverdueDose(nextDoseAt: string | null, status: PillboxGroup["status"]) {

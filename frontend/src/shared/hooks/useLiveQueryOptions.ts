@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 
 type LiveQueryOptions = {
   staleTime: number;
@@ -24,7 +26,22 @@ export function useLiveQueryOptions(intervalMs = 15000): LiveQueryOptions {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    let removeAppStateListener: (() => void) | undefined;
+
+    if (Capacitor.isNativePlatform()) {
+      void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+        setIsVisible(isActive);
+      }).then((listener) => {
+        removeAppStateListener = () => {
+          void listener.remove();
+        };
+      });
+    }
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      removeAppStateListener?.();
+    };
   }, []);
 
   return {

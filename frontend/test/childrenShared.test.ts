@@ -15,3 +15,12 @@ test("formatIllnessActiveLabel uses day-based duration for date-only illness sta
   assert.equal(formatIllnessActiveLabel("2026-04-23", now, "ru"), "Наблюдение · 3 дня");
   assert.equal(formatIllnessDuration("2026-04-23", now, "en"), "3 days");
 });
+
+test("formatIllnessActiveLabel does not show minute timer for timestamp illness start on same day", () => {
+  const now = Date.parse("2026-04-23T11:43:00.000Z");
+
+  assert.equal(
+    formatIllnessActiveLabel("2026-04-23T11:42:00.000Z", now, "ru"),
+    "Наблюдение"
+  );
+});

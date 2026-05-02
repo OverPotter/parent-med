@@ -54,6 +54,13 @@ def can_edit_child(account: AuthenticatedAccount | UUID, child_id: UUID) -> bool
     return policy.all_children or child_id in set(policy.child_ids)
 
 
+def can_manage_children_list(account: AuthenticatedAccount | UUID) -> bool:
+    if is_family_admin(account):
+        return True
+    policy = _policy(account)
+    return policy.all_children and policy.children_access == "edit"
+
+
 def can_act_child(account: AuthenticatedAccount | UUID, child_id: UUID) -> bool:
     policy = _policy(account)
     if policy.children_access not in {"act", "edit"}:
@@ -107,8 +114,8 @@ async def get_child_for_account(
 
 
 def ensure_children_admin_access(account: AuthenticatedAccount | UUID) -> None:
-    if not is_family_admin(account):
-        raise ForbiddenError("Только администратор семьи может управлять списком детей")
+    if not can_manage_children_list(account):
+        raise ForbiddenError("Для управления списком детей нужен полный доступ ко всем детям")
 
 
 def filter_child_ids(account: AuthenticatedAccount | UUID, child_ids: list[UUID]) -> list[UUID]:

@@ -53,7 +53,11 @@ function EpisodeReminderRecipientsCard({
     [familyMembers]
   );
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
-    resolveIllnessRecipientSelection(episode.memberAccountIds, eligibleMemberIds, currentAccountId)
+    resolveIllnessRecipientSelection(
+      episode.notificationRecipientAccountIds,
+      eligibleMemberIds,
+      currentAccountId
+    )
   );
   const [isOpen, setIsOpen] = useState(false);
 
@@ -63,12 +67,12 @@ function EpisodeReminderRecipientsCard({
     }
     setSelectedIds(
       resolveIllnessRecipientSelection(
-        episode.memberAccountIds,
+        episode.notificationRecipientAccountIds,
         eligibleMemberIds,
         currentAccountId
       )
     );
-  }, [currentAccountId, eligibleMemberIds, episode.memberAccountIds, isPending]);
+  }, [currentAccountId, eligibleMemberIds, episode.notificationRecipientAccountIds, isPending]);
 
   return (
     <>
@@ -710,11 +714,11 @@ export function ReminderListQuickView(props: {
     () =>
       formatIllnessRecipientsSummary({
         language,
-        selectedIds: episode.memberAccountIds,
+        selectedIds: episode.notificationRecipientAccountIds,
         familyMembers,
         currentAccountId,
       }),
-    [currentAccountId, episode.memberAccountIds, familyMembers, language]
+    [currentAccountId, episode.notificationRecipientAccountIds, familyMembers, language]
   );
   return (
     <div className="min-w-0 space-y-5">

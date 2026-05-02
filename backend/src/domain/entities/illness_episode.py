@@ -19,3 +19,4 @@ class IllnessEpisode:
     closed_at: datetime | None
     deleted_at: datetime | None
     member_account_ids: list[UUID] = field(default_factory=list)
+    created_by_account_id: UUID | None = None

@@ -8,6 +8,7 @@ import {
   hasAnyChildAccess,
   hasChildAccess,
   hasChildEditAccess,
+  normalizeFamilyAccessPolicy,
 } from "@shared/familyAccess/policy";
 
 export function isFamilyAdmin(familyRole: string | null | undefined) {
@@ -47,9 +48,13 @@ export function canActChild(
 
 export function canManageChildrenList(
   familyRole: string | null | undefined,
-  _policy: FamilyAccessPolicy | null | undefined
+  policy: FamilyAccessPolicy | null | undefined
 ) {
-  return isFamilyAdmin(familyRole);
+  if (isFamilyAdmin(familyRole)) {
+    return true;
+  }
+  const normalized = normalizeFamilyAccessPolicy(policy);
+  return normalized.allChildren && normalized.childrenAccess === "edit";
 }
 
 export function canViewCabinet(

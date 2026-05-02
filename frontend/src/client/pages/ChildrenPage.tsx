@@ -22,6 +22,7 @@ import { useIsDesktop } from "@shared/hooks/useIsDesktop";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useIsOffline } from "@shared/hooks/useIsOffline";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
+import { hasLiveActivityAccess } from "@shared/utils/liveActivityAccess";
 import {
   canActChild as canActChildAccess,
   canEditChild as canEditChildAccess,
@@ -31,7 +32,6 @@ import {
 import { useAppStore } from "@shared/store/useAppStore";
 import {
   hasReachedChildLimit,
-  isChildLockedByPlan,
   isDowngradedChildrenState,
 } from "@shared/subscription/childPlanAccess";
 import type { Child } from "@shared/types/api";
@@ -39,7 +39,7 @@ import { getChildrenCopy } from "@client/i18n/children";
 import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
 import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
 import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
-import { ChildCard } from "./children/ChildCard";
+import { ChildrenCardsList } from "./children/ChildrenCardsList";
 import { FeedingRecordDialog } from "./children/FeedingDialogs";
 import { childActionPrimaryClass, childActionSecondaryClass } from "./children/shared";
 
@@ -64,9 +64,10 @@ export function ChildrenPage() {
   const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
     useUpgradeDialogOpenState();
   const isChildrenAuxReady = true;
-  const liveStatusQueryOptions = useLiveQueryOptions(isIosShell ? 60000 : 30000);
+  const liveStatusQueryOptions = useLiveQueryOptions(isIosShell ? 30000 : 15000);
+  const activeCareStatusQueryOptions = useLiveQueryOptions(5000);
   const illnessStatusQueryOptions = useLiveQueryOptions(5000);
-  const stableIosChildrenQueryOptions = isIosShell
+  const stableIosChildrenListQueryOptions = isIosShell
     ? {
         refetchOnMount: false as const,
         refetchOnWindowFocus: false as const,
@@ -91,7 +92,7 @@ export function ChildrenPage() {
     queryFn: () => fetchChildrenByFamilyId(currentFamilyId!),
     enabled: !!currentFamilyId && canSeeChildren,
     ...liveStatusQueryOptions,
-    ...stableIosChildrenQueryOptions,
+    ...stableIosChildrenListQueryOptions,
   });
   const { data: familyAccess } = useQuery({
     queryKey: ["families", "me", "access", currentFamilyId],
@@ -147,8 +148,7 @@ export function ChildrenPage() {
       queryKey: ["sleep-session-active", child.id],
       queryFn: () => fetchActiveSleepSessionByChildId(child.id),
       enabled: !!child.id && child.babyModeEnabled && isChildrenAuxReady,
-      ...liveStatusQueryOptions,
-      ...stableIosChildrenQueryOptions,
+      ...activeCareStatusQueryOptions,
     })),
   });
 
@@ -157,8 +157,7 @@ export function ChildrenPage() {
       queryKey: ["feeding-record-active", child.id],
       queryFn: () => fetchActiveFeedingRecordByChildId(child.id),
       enabled: !!child.id && child.babyModeEnabled && isChildrenAuxReady,
-      ...liveStatusQueryOptions,
-      ...stableIosChildrenQueryOptions,
+      ...activeCareStatusQueryOptions,
     })),
   });
 
@@ -295,6 +294,7 @@ export function ChildrenPage() {
           child={feedingDialog.child}
           copy={copy.childCard}
           language={language}
+          canUseLiveActivities={hasLiveActivityAccess(familyAccess)}
           onClose={() => setFeedingDialog(null)}
         />
       ) : null}
@@ -355,59 +355,45 @@ export function ChildrenPage() {
               </div>
             </Surface>
           ) : null}
-          <ul className="grid gap-4">
-            {children.map((child, index) => {
-              const activeEpisode = activeEpisodeQueries[index]?.data ?? null;
+          <ChildrenCardsList
+            children={children}
+            activeEpisodes={activeEpisodeQueries.map((query) => query.data ?? null)}
+            latestWeights={latestWeightQueries.map((query) => query.data ?? null)}
+            activeSleeps={activeSleepQueries.map((query) => query.data ?? null)}
+            activeFeedings={activeFeedingQueries.map((query) => query.data ?? null)}
+            familyAccess={familyAccess}
+            accountId={accountId}
+            language={language}
+            t={t}
+            canActChild={(childId) =>
+              canActChildAccess(childId, accountFamilyRole, accountAccessPolicy)
+            }
+            canEditChild={(childId) =>
+              canEditChildAccess(childId, accountFamilyRole, accountAccessPolicy)
+            }
+            onAddFeeding={(child) => {
               const canAct = canActChildAccess(child.id, accountFamilyRole, accountAccessPolicy);
-              const canEdit = canEditChildAccess(child.id, accountFamilyRole, accountAccessPolicy);
-              const planLocksChildActions = isChildLockedByPlan(child.id, familyAccess);
-              const isPrimaryFreeChild =
-                isDowngradedChildrenState(familyAccess) &&
-                familyAccess?.freePrimaryChildId === child.id;
-
-              return (
-                <ChildCard
-                  key={child.id}
-                  child={child}
-                  activeEpisodeStartedAt={activeEpisode?.startedAt ?? null}
-                  latestWeightEntry={latestWeightQueries[index]?.data ?? null}
-                  activeSleep={activeSleepQueries[index]?.data ?? null}
-                  activeFeeding={activeFeedingQueries[index]?.data ?? null}
-                  onAddFeeding={() => {
-                    if (!canAct) {
-                      return;
-                    }
-                    if (isDesktop) {
-                      setFeedingDialog({ child });
-                      return;
-                    }
-                    navigate(`/children/${child.id}/feeding/new`);
-                  }}
-                  onStartEpisode={() => {
-                    if (!canEdit) {
-                      return;
-                    }
-                    if (activeEpisode) {
-                      navigate("/illnesses/active");
-                      return;
-                    }
-                    navigate(`/children/${child.id}/illness?mode=create`);
-                  }}
-                  isStartingEpisode={false}
-                  hasActiveEpisode={!!activeEpisode}
-                  canActChild={canAct}
-                  canEditChild={canEdit}
-                  planLocksChildActions={planLocksChildActions}
-                  isPrimaryFreeChild={Boolean(isPrimaryFreeChild)}
-                  onLockedActionAttempt={openUpgradeDialog}
-                  currentAccountId={accountId}
-                  copy={copy}
-                  language={language}
-                  t={t}
-                />
-              );
-            })}
-          </ul>
+              if (!canAct) {
+                return;
+              }
+              if (isDesktop) {
+                setFeedingDialog({ child });
+                return;
+              }
+              navigate(`/children/${child.id}/feeding/new`);
+            }}
+            onStartEpisode={(child, activeEpisode) => {
+              if (activeEpisode) {
+                navigate(`/children/${child.id}/illness`);
+                return;
+              }
+              if (!canEditChildAccess(child.id, accountFamilyRole, accountAccessPolicy)) {
+                return;
+              }
+              navigate(`/children/${child.id}/illness?mode=create`);
+            }}
+            onLockedActionAttempt={openUpgradeDialog}
+          />
 
           <Surface className="soft-panel-muted p-4 sm:hidden">
             <div className="flex items-center justify-between gap-3">

@@ -17,17 +17,20 @@ import {
   childActionSuccessClass,
 } from "./shared";
 import { syncFeedingLiveActivity } from "@shared/utils/liveActivities";
+import { buildScopedLiveActivityPreferences } from "@shared/utils/liveActivityAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 
 export function FeedingRecordDialog({
   child,
   copy,
   language,
+  canUseLiveActivities,
   onClose,
 }: {
   child: Child;
   copy: ReturnType<typeof getChildrenCopy>["childrenPage"]["childCard"];
   language: "ru" | "en";
+  canUseLiveActivities: boolean;
   onClose: () => void;
 }) {
   const currentAccountId = useAppStore((s) => s.accountId);
@@ -81,7 +84,13 @@ export function FeedingRecordDialog({
     onSuccess: (feeding) => {
       queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
-      void syncFeedingLiveActivity(child, feeding, language, undefined, currentAccountId);
+      void syncFeedingLiveActivity(
+        child,
+        feeding,
+        language,
+        buildScopedLiveActivityPreferences("feeding", canUseLiveActivities),
+        currentAccountId
+      );
       onClose();
     },
   });

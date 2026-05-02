@@ -11,7 +11,7 @@ import type {
   IllnessHistorySummary,
 } from "../types/api.js";
 import { toIllnessEpisode } from "../types/transform.js";
-import { clearIllnessStartHint, resolveIllnessStartedAt } from "../utils/illnessStartHints.js";
+import { clearIllnessStartHint } from "../utils/illnessStartHints.js";
 import {
   clearOfflineOverride,
   getOfflineCareActions,
@@ -27,6 +27,7 @@ interface RawIllnessEpisode {
   medication_mode: string;
   note: string | null;
   member_account_ids: string[] | null;
+  created_by_account_id: string | null;
   closed_at: string | null;
 }
 
@@ -148,14 +149,7 @@ export async function fetchIllnessEpisodesByChildId(childId: string): Promise<Il
     const res = await apiClient.get<RawIllnessEpisode[]>("/illness-episodes", {
       params: { child_id: childId },
     });
-    const items = (res.data ?? []).map((item) => {
-      const episode = toIllnessEpisode(item);
-      return {
-        ...episode,
-        startedAt:
-          resolveIllnessStartedAt(childId, episode.id, episode.startedAt) ?? episode.startedAt,
-      };
-    });
+    const items = (res.data ?? []).map((item) => toIllnessEpisode(item));
     if (!offline.hasOverride || !offline.value) {
       return items;
     }
@@ -194,10 +188,7 @@ export async function fetchActiveIllnessEpisodeByChildId(
     return null;
   }
   const episode = toIllnessEpisode(res.data);
-  return {
-    ...episode,
-    startedAt: resolveIllnessStartedAt(childId, episode.id, episode.startedAt) ?? episode.startedAt,
-  };
+  return episode;
 }
 
 export async function fetchIllnessEpisode(id: string): Promise<IllnessEpisode> {
@@ -233,9 +224,12 @@ export async function createIllnessEpisode(body: {
   title?: string | null;
   medication_mode?: string;
   note?: string | null;
-  member_account_ids?: string[];
+  notification_recipient_account_ids?: string[];
 }): Promise<IllnessEpisode> {
-  const res = await apiClient.post<RawIllnessEpisode>("/illness-episodes", body);
+  const res = await apiClient.post<RawIllnessEpisode>("/illness-episodes", {
+    ...body,
+    member_account_ids: body.notification_recipient_account_ids,
+  });
   return toIllnessEpisode(res.data);
 }
 
@@ -247,11 +241,14 @@ export async function updateIllnessEpisode(
     status?: string;
     medication_mode?: string;
     note?: string | null;
-    member_account_ids?: string[];
+    notification_recipient_account_ids?: string[];
     closed_at?: string | null;
   }
 ): Promise<IllnessEpisode> {
-  const res = await apiClient.patch<RawIllnessEpisode>(`/illness-episodes/${id}`, body);
+  const res = await apiClient.patch<RawIllnessEpisode>(`/illness-episodes/${id}`, {
+    ...body,
+    member_account_ids: body.notification_recipient_account_ids,
+  });
   return toIllnessEpisode(res.data);
 }
 

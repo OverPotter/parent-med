@@ -12,6 +12,7 @@ import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
+import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useNow } from "@shared/hooks/useNow";
 import { canEditChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
@@ -47,6 +48,7 @@ export function ChildSleepPage() {
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const queryClient = useQueryClient();
+  const activeStatusQueryOptions = useLiveQueryOptions(5000);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [sleepToDelete, setSleepToDelete] = useState<SleepSession | null>(null);
   const [period, setPeriod] = useState<ChildRecordsPeriod>("week");
@@ -79,6 +81,7 @@ export function ChildSleepPage() {
     queryKey: ["sleep-session-active", childId],
     queryFn: () => fetchActiveSleepSessionByChildId(childId!),
     enabled: !!childId && canViewSleep,
+    ...activeStatusQueryOptions,
   });
   const now = useNow(activeSleep ? 1_000 : 60_000);
 

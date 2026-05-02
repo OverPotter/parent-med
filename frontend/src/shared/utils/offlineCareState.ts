@@ -392,7 +392,8 @@ export function queueOfflineIllnessStart(input: {
     status: "active",
     medicationMode: input.payload.medication_mode,
     note: input.payload.note ?? null,
-    memberAccountIds: input.payload.member_account_ids ?? [],
+    notificationRecipientAccountIds: input.payload.member_account_ids ?? [],
+    createdByAccountId: input.currentAccountId,
     closedAt: null,
   };
 
