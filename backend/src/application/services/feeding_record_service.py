@@ -14,7 +14,7 @@ from src.application.services.access_control import (
     get_child_for_account,
 )
 from src.application.services.child_plan_access import ensure_child_plan_mutation_allowed
-from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
+from src.core.exceptions import NotFoundError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.entities.feeding_record import FeedingRecord
 from src.domain.repositories.child_repository import ChildRepository
