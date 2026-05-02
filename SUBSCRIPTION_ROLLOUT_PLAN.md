@@ -1,35 +1,14 @@
-# Subscription Source Of Truth
+# Subscription And Family Access
 
-This is the current source-of-truth document for subscription, downgrade, billing ownership, and related family-access rules.
+This document describes the current subscription model, downgrade behavior, billing ownership, and related family-access rules.
 
 For high-level project docs, use:
 
 - [docs/APP_ARCHITECTURE.md](./docs/APP_ARCHITECTURE.md)
 - [docs/DATABASE_ARCHITECTURE.md](./docs/DATABASE_ARCHITECTURE.md)
-- [docs/PROJECT_STATUS.md](./docs/PROJECT_STATUS.md)
 
-## Current Status
+## Core Principles
 
-Subscription baseline is already implemented.
-
-Implemented now:
-- backend access layer via `SubscriptionAccessService`
-- frontend access payload via `GET /families/me/access`
-- owner-only invites and owner-only billing
-- `Free` limits for children, pillbox plans, `CSV export`, and `Live Activities`
-- shared paywall / upgrade flow in family, child, pillbox, and settings screens
-- downgrade-safe child model via `free_primary_child_id`
-- downgrade-safe pillbox model via `free_primary_pillbox_plan_id`
-- active illness continuation for non-primary child after downgrade
-- RevenueCat dev/test integration scaffold and provider-sync backend flow
-- local debug billing / force-free tooling for development
-- targeted backend/frontend test coverage for subscription and downgrade flows
-
-## Goal
-
-Introduce `Free` and `Plus` plans without breaking the current family model.
-
-Core principles:
 - subscription is family-scoped
 - only the `owner` may manage billing and invites
 - subscription benefits are applied to the whole `family`

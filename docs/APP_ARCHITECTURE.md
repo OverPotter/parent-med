@@ -163,7 +163,7 @@
 - active sleep/feeding force-stop
 - live activities выключаются
 
-Подробная матрица — в [SUBSCRIPTION_ROLLOUT_PLAN.md](../SUBSCRIPTION_ROLLOUT_PLAN.md).
+Подробные правила — в [SUBSCRIPTION_ROLLOUT_PLAN.md](../SUBSCRIPTION_ROLLOUT_PLAN.md).
 
 ## Техническая карта
 
@@ -189,5 +189,5 @@
 
 - общая навигация по проекту — [README.md](../README.md)
 - схема данных — [DATABASE_ARCHITECTURE.md](./DATABASE_ARCHITECTURE.md)
-- текущее состояние и backlog — [PROJECT_STATUS.md](./PROJECT_STATUS.md)
-- детальная матрица подписки и downgrade — [SUBSCRIPTION_ROLLOUT_PLAN.md](../SUBSCRIPTION_ROLLOUT_PLAN.md)
+- окружение и карта проекта — [PROJECT_MAP.md](./PROJECT_MAP.md)
+- правила подписки и downgrade — [SUBSCRIPTION_ROLLOUT_PLAN.md](../SUBSCRIPTION_ROLLOUT_PLAN.md)
