@@ -398,10 +398,28 @@ export function FamilyPage() {
       {family ? (
         <>
           <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="app-card-title">{tFamily(language, "yourProfileTitle")}</h2>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {currentMember ? (
+            {isMembersLoading ? (
+              <p className="text-sm text-muted">{tFamily(language, "membersLoading")}</p>
+            ) : !currentMember ? (
+              <p className="text-sm text-muted">{tFamily(language, "noMembers")}</p>
+            ) : (
+              <MemberCard
+                key={currentMember.id}
+                member={currentMember}
+                familyOwnerAccountId={family?.ownerAccountId}
+                isCurrent
+                forceEdit={Boolean(shouldOpenCurrentProfileEditor)}
+                canManageAccess={false}
+                canManageRoles={false}
+                canDeleteMember={false}
+                canEditProfile={false}
+                adminsCount={adminsCount}
+                isPending={
+                  updateMemberMutation.isPending ||
+                  updateMemberProfileMutation.isPending ||
+                  deleteMemberMutation.isPending
+                }
+                headerAction={
                   <button
                     type="button"
                     onClick={() => {
@@ -409,63 +427,38 @@ export function FamilyPage() {
                       next.set("edit", "me");
                       setSearchParams(next, { replace: true });
                     }}
-                    className="soft-pill-primary inline-flex min-h-[2.2rem] shrink-0 items-center px-3 text-[0.78rem] font-semibold"
+                    className="soft-pill-primary inline-flex min-h-[2.3rem] shrink-0 items-center px-3 text-[0.78rem] font-semibold"
                   >
                     {tFamily(language, "editProfile")}
                   </button>
-                ) : null}
-              </div>
-            </div>
-            {isMembersLoading ? (
-              <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
-            ) : !currentMember ? (
-              <p className="mt-4 text-sm text-muted">{tFamily(language, "noMembers")}</p>
-            ) : (
-              <div className="mt-4">
-                <MemberCard
-                  key={currentMember.id}
-                  member={currentMember}
-                  familyOwnerAccountId={family?.ownerAccountId}
-                  isCurrent
-                  forceEdit={Boolean(shouldOpenCurrentProfileEditor)}
-                  canManageAccess={false}
-                  canManageRoles={false}
-                  canDeleteMember={false}
-                  canEditProfile={false}
-                  adminsCount={adminsCount}
-                  isPending={
-                    updateMemberMutation.isPending ||
-                    updateMemberProfileMutation.isPending ||
-                    deleteMemberMutation.isPending
+                }
+                onPromote={() => {}}
+                onDemote={() => {}}
+                accessHref={`/family/members/${currentMember.id}/access`}
+                onDelete={() => deleteMemberMutation.mutate(currentMember.id)}
+                onSaveProfile={async (payload) => {
+                  try {
+                    await updateMemberProfileMutation.mutateAsync({
+                      memberAccountId: currentMember.id,
+                      displayName: payload.displayName,
+                      relationshipLabel: payload.relationshipLabel,
+                      phone: payload.phone,
+                    });
+                    return true;
+                  } catch {
+                    return false;
                   }
-                  onPromote={() => {}}
-                  onDemote={() => {}}
-                  accessHref={`/family/members/${currentMember.id}/access`}
-                  onDelete={() => deleteMemberMutation.mutate(currentMember.id)}
-                  onSaveProfile={async (payload) => {
-                    try {
-                      await updateMemberProfileMutation.mutateAsync({
-                        memberAccountId: currentMember.id,
-                        displayName: payload.displayName,
-                        relationshipLabel: payload.relationshipLabel,
-                        phone: payload.phone,
-                      });
-                      return true;
-                    } catch {
-                      return false;
-                    }
-                  }}
-                  onHideForcedEdit={() => {
-                    if (!shouldOpenCurrentProfileEditor) {
-                      return;
-                    }
-                    const next = new URLSearchParams(searchParams);
-                    next.delete("edit");
-                    setSearchParams(next, { replace: true });
-                  }}
-                  language={language}
-                />
-              </div>
+                }}
+                onHideForcedEdit={() => {
+                  if (!shouldOpenCurrentProfileEditor) {
+                    return;
+                  }
+                  const next = new URLSearchParams(searchParams);
+                  next.delete("edit");
+                  setSearchParams(next, { replace: true });
+                }}
+                language={language}
+              />
             )}
           </RowSurface>
 

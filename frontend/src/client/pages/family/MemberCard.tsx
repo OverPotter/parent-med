@@ -30,6 +30,7 @@ export interface MemberCardProps {
     phone?: string | null;
   }) => Promise<boolean>;
   onHideForcedEdit: () => void;
+  headerAction?: React.ReactNode;
 }
 
 export function MemberCard({
@@ -50,6 +51,7 @@ export function MemberCard({
   onDelete,
   onSaveProfile,
   onHideForcedEdit,
+  headerAction = null,
 }: MemberCardProps) {
   const isOwner = familyOwnerAccountId === member.id;
   const canDemote =
@@ -110,7 +112,7 @@ export function MemberCard({
         description={tFamily(language, "confirmPromoteDescription")}
         confirmLabel={tFamily(language, "confirmPromoteAction")}
         cancelLabel={tFamily(language, "cancel")}
-        confirmTone="danger"
+        confirmTone="primary"
         isPending={isPending}
         onCancel={() => setIsPromoteConfirmOpen(false)}
         onConfirm={() => {
@@ -173,15 +175,20 @@ export function MemberCard({
           </div>
         </div>
 
-        {canDelete ? (
-          <button
-            type="button"
-            onClick={() => setIsDeleteConfirmOpen(true)}
-            disabled={isPending}
-            className="soft-pill-danger app-profile-action min-h-[2.3rem] shrink-0 px-3 text-[0.78rem] disabled:opacity-50"
-          >
-            {tFamily(language, "deleteMemberShort")}
-          </button>
+        {headerAction || canDelete ? (
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            {headerAction}
+            {canDelete ? (
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(true)}
+                disabled={isPending}
+                className="soft-pill-danger app-profile-action min-h-[2.3rem] shrink-0 px-3 text-[0.78rem] disabled:opacity-50"
+              >
+                {tFamily(language, "deleteMemberShort")}
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
