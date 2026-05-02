@@ -1,9 +1,9 @@
 """Реализация репозитория приглашений в семью."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import desc, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.family_invite import FamilyInvite
@@ -58,20 +58,6 @@ class SqlFamilyInviteRepository(FamilyInviteRepository):
         row = result.scalars().one_or_none()
         return self._to_entity(row) if row else None
 
-    async def get_latest_active(self) -> FamilyInvite | None:
-        now = datetime.now(UTC)
-        result = await self._session.execute(
-            select(FamilyInviteModel)
-            .where(
-                FamilyInviteModel.accepted_at.is_(None),
-                FamilyInviteModel.expires_at > now,
-            )
-            .order_by(desc(FamilyInviteModel.created_at))
-            .limit(1)
-        )
-        row = result.scalars().one_or_none()
-        return self._to_entity(row) if row else None
-
     async def add(self, entity: FamilyInvite) -> FamilyInvite:
         model = self._to_model(entity)
         self._session.add(model)
@@ -108,3 +94,33 @@ class SqlFamilyInviteRepository(FamilyInviteRepository):
             await self._session.flush()
             return True
         return False
+
+    async def delete_for_family(self, family_id: UUID) -> int:
+        result = await self._session.execute(
+            delete(FamilyInviteModel)
+            .where(
+                FamilyInviteModel.family_id == family_id,
+            )
+            .execution_options(synchronize_session=False)
+        )
+        await self._session.flush()
+        return int(result.rowcount or 0)
+
+    async def accept_if_active(
+        self, invite_id: UUID, account_id: UUID, accepted_at: datetime
+    ) -> bool:
+        result = await self._session.execute(
+            update(FamilyInviteModel)
+            .where(
+                FamilyInviteModel.id == invite_id,
+                FamilyInviteModel.accepted_at.is_(None),
+                FamilyInviteModel.expires_at > accepted_at,
+            )
+            .values(
+                accepted_at=accepted_at,
+                accepted_by_account_id=account_id,
+            )
+            .execution_options(synchronize_session=False)
+        )
+        await self._session.flush()
+        return bool(result.rowcount)

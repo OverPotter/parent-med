@@ -75,10 +75,10 @@ export function TestPaywallDialog({
   const isSubscriptionActive =
     variant === "active" || (variant === "purchase" && ACTIVE_SUBSCRIPTION_STATUSES.has(subscriptionStatus));
   const isOwnerRequired = variant === "owner_required";
-  const plans: Record<PaywallPlanKey, PaywallPlanCopy> = {
-    monthly: copy.monthlyPlan,
-    annual: copy.annualPlan,
-  };
+  const plans: Array<[PaywallPlanKey, PaywallPlanCopy]> = [
+    ["annual", copy.annualPlan],
+    ["monthly", copy.monthlyPlan],
+  ];
   const selectedPlanLegal = selectedPlan === "annual" ? copy.annualLegal : copy.monthlyLegal;
   const handleLegalNavigation = (url: string) => {
     markUpgradeDialogReopenPending();
@@ -263,7 +263,7 @@ export function TestPaywallDialog({
               ) : (
                 <>
                   <div className="mb-5 mt-4 grid grid-cols-2 gap-[12px] text-center">
-                    {(Object.entries(plans) as Array<[PaywallPlanKey, PaywallPlanCopy]>).map(([key, plan]) => {
+                    {plans.map(([key, plan]) => {
                       const selected = selectedPlan === key;
                       return (
                         <button

@@ -7,25 +7,30 @@ import { useMutation } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import { login, register } from "@shared/api/auth";
 import { applySessionToClient } from "@shared/api/client";
+import { fetchFamilyInvitePreview } from "@shared/api/familyInvites";
 import { AnalyticsEvents, normalizeClientError, trackEvent } from "@shared/analytics";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
 import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
 import { useI18n } from "@shared/hooks/useI18n";
-import type { AppLanguage } from "@shared/i18n";
-import { resolveInvitePublicBaseUrl } from "@shared/config/inviteLinks";
+import { resolvePublicSiteBaseUrl } from "@shared/config/inviteLinks";
 import { shouldUsePublicWebsiteMode } from "@shared/runtime/publicWebsiteMode";
-import {
-  readPendingFamilyInviteRoute,
-  resolveInviteAwareAuthSuccessPath,
-} from "@shared/runtime/inviteFlow";
 import { saveNativePasswordCredential } from "@shared/security/nativePasswordAutofill";
 import { useAppStore } from "@shared/store/useAppStore";
 import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks";
 import { useMobileFormFocusHandlers } from "@shared/hooks/useMobileFormFocusHandlers";
+import { getLocalizedAuthError } from "@shared/utils/authErrors";
 import { blurActiveField } from "@shared/utils/focus";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLegalLinks } from "./AuthLegalLinks";
+import { AuthFamilyCodeCard } from "./auth/AuthFamilyCodeCard";
+import {
+  buildVerifiedFamilyCode,
+  resetVerifiedFamilyCode,
+  resolveFamilyCodeSubmitError,
+  resolveFamilyCodeVerifyError,
+  type VerifiedFamilyCode,
+} from "./auth/familyCodeModel";
 
 type Mode = "login" | "register";
 
@@ -128,37 +133,6 @@ function CheckIcon() {
   );
 }
 
-function getLocalizedAuthError(
-  code: string | undefined,
-  detail: string | undefined,
-  language: AppLanguage,
-  fallback: string
-) {
-  if (!detail) {
-    return fallback;
-  }
-
-  if (language === "ru") {
-    return detail;
-  }
-
-  const knownCodes: Record<string, string> = {
-    INVALID_CREDENTIALS: "Invalid email or password.",
-    ACCOUNT_EMAIL_ALREADY_EXISTS: "An account with this email already exists.",
-  };
-  if (code && knownCodes[code]) {
-    return knownCodes[code];
-  }
-
-  const knownMessages: Record<string, string> = {
-    "Неверный email или пароль": "Invalid email or password.",
-    "Аккаунт с таким email уже существует": "An account with this email already exists.",
-    "Укажите корректный email": "Enter a valid email.",
-  };
-
-  return knownMessages[detail] ?? fallback;
-}
-
 function MoonIcon() {
   return (
     <svg
@@ -209,7 +183,7 @@ const AuthField = memo(function AuthField({
   spellCheck,
   inputMode,
 }: {
-  label: string;
+  label?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
@@ -226,7 +200,7 @@ const AuthField = memo(function AuthField({
 }) {
   return (
     <label className="block">
-      <span className="auth-v3-label">{label}</span>
+      {label ? <span className="auth-v3-label">{label}</span> : null}
       <div className="relative">
         <input
           name={name}
@@ -258,12 +232,11 @@ export function AuthPage() {
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
   const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
   const appStoreUrl = getAppStoreUrl();
-  const publicSiteUrl = resolveInvitePublicBaseUrl();
+  const publicSiteUrl = resolvePublicSiteBaseUrl();
   const { copy, language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedMode = searchParams.get("mode");
   const [mode, setMode] = useState<Mode>(requestedMode === "login" ? "login" : "register");
-  const requestedNext = searchParams.get("next");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -271,19 +244,39 @@ export function AuthPage() {
   const [acceptLegal, setAcceptLegal] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [familyCodeOpen, setFamilyCodeOpen] = useState(false);
+  const [familyCodeInput, setFamilyCodeInput] = useState("");
+  const [familyCodeError, setFamilyCodeError] = useState<string | null>(null);
+  const [verifiedFamilyCode, setVerifiedFamilyCode] = useState<VerifiedFamilyCode | null>(null);
   const stageRef = useRef<HTMLElement | null>(null);
   const submitButtonRef = useRef<HTMLButtonElement | null>(null);
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
-  const postAuthPath = resolveInviteAwareAuthSuccessPath({
-    requestedNext,
-    pendingInviteRoute: readPendingFamilyInviteRoute(),
-    defaultPath: "/family",
-  });
+  const postAuthPath = "/family";
 
   useEffect(() => {
     setMode(requestedMode === "login" ? "login" : "register");
   }, [requestedMode]);
+
+  const verifyFamilyCodeMutation = useMutation({
+    mutationFn: async (token: string) => fetchFamilyInvitePreview(token),
+    onSuccess: (preview, token) => {
+      setFamilyCodeError(null);
+      setVerifiedFamilyCode(buildVerifiedFamilyCode(token, preview));
+      blurActiveField();
+    },
+    onError: (err: { response?: { data?: { detail?: string; code?: string } } }) => {
+      setVerifiedFamilyCode(null);
+      setFamilyCodeError(
+        getLocalizedAuthError(
+          err.response?.data?.code,
+          err.response?.data?.detail,
+          language,
+          copy.auth.errors.registerFailed
+        )
+      );
+    },
+  });
 
   const loginMutation = useMutation({
     mutationFn: (payload: { email: string; password: string; remember_me: boolean }) =>
@@ -318,6 +311,7 @@ export function AuthPage() {
       password: string;
       remember_me: boolean;
       preferred_language: "ru" | "en";
+      invite_token?: string;
     }) => register(payload),
     onSuccess: (data, variables) => {
       applySessionToClient(data);
@@ -361,6 +355,18 @@ export function AuthPage() {
       setError(copy.auth.errors.legalConsentRequired);
       return;
     }
+    const familyCodeSubmitError =
+      mode === "register"
+        ? resolveFamilyCodeSubmitError(
+            trimmedFamilyCodeInput,
+            verifiedFamilyCode,
+            copy.auth.errors.familyCodeNeedsVerification
+          )
+        : null;
+    if (familyCodeSubmitError) {
+      setFamilyCodeError(familyCodeSubmitError);
+      return;
+    }
     if (mode === "login") {
       setError(null);
       loginMutation.mutate({ email: trimmedEmail, password, remember_me: rememberMe });
@@ -372,6 +378,7 @@ export function AuthPage() {
       password,
       remember_me: true,
       preferred_language: language,
+      invite_token: verifiedFamilyCode?.token,
     });
   };
 
@@ -389,6 +396,10 @@ export function AuthPage() {
     setRememberMe(true);
     setAcceptLegal(false);
     setIsPasswordVisible(false);
+    setFamilyCodeOpen(false);
+    setFamilyCodeInput("");
+    setFamilyCodeError(null);
+    setVerifiedFamilyCode(null);
   };
 
   const switchMode = (nextMode: Mode) => {
@@ -419,6 +430,22 @@ export function AuthPage() {
         ? copy.auth.actions.registerLoading
         : copy.auth.actions.register;
   const showSecondaryLegalLinks = !isRegisterMode;
+  const trimmedFamilyCodeInput = familyCodeInput.trim();
+
+  const verifyFamilyCode = () => {
+    const verifyError = resolveFamilyCodeVerifyError(
+      trimmedFamilyCodeInput,
+      copy.auth.errors.familyCodeRequiredForPreview
+    );
+    if (verifyError) {
+      setVerifiedFamilyCode(resetVerifiedFamilyCode());
+      setFamilyCodeError(verifyError);
+      return;
+    }
+
+    setFamilyCodeError(null);
+    verifyFamilyCodeMutation.mutate(trimmedFamilyCodeInput);
+  };
 
   const ensureSubmitVisible = () => {
     if (!isNativeIOS || mode !== "login" || typeof window === "undefined") {
@@ -485,9 +512,7 @@ export function AuthPage() {
             fallback: "Back to website",
           };
     const primaryHref = appStoreUrl || nativeAuthUrl;
-    const primaryLabel = appStoreUrl
-      ? publicUi.primaryDownload
-      : publicUi.primaryOpen;
+    const primaryLabel = appStoreUrl ? publicUi.primaryDownload : publicUi.primaryOpen;
 
     return (
       <div className="auth-v3-page min-h-screen text-foreground">
@@ -673,9 +698,11 @@ export function AuthPage() {
               />
             </div>
           ) : null}
-          <div className={joinClasses("auth-v3-hero", isNativeIOS && "auth-v3-hero--ios-hidden")}>
-            <p className="auth-v3-subtitle">{pageDescription}</p>
-          </div>
+          {pageDescription ? (
+            <div className={joinClasses("auth-v3-hero", isNativeIOS && "auth-v3-hero--ios-hidden")}>
+              <p className="auth-v3-subtitle">{pageDescription}</p>
+            </div>
+          ) : null}
 
           <section
             className={joinClasses(
@@ -687,16 +714,6 @@ export function AuthPage() {
             <div className="auth-v3-toggle" role="tablist" aria-label={copy.auth.page.toggleLabel}>
               <button
                 type="button"
-                onClick={() => switchMode("login")}
-                className={joinClasses(
-                  "auth-v3-toggle-button",
-                  mode === "login" && "auth-v3-toggle-button-active"
-                )}
-              >
-                {copy.auth.page.loginTab}
-              </button>
-              <button
-                type="button"
                 onClick={() => switchMode("register")}
                 className={joinClasses(
                   "auth-v3-toggle-button",
@@ -704,6 +721,16 @@ export function AuthPage() {
                 )}
               >
                 {copy.auth.page.registerTab}
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode("login")}
+                className={joinClasses(
+                  "auth-v3-toggle-button",
+                  mode === "login" && "auth-v3-toggle-button-active"
+                )}
+              >
+                {copy.auth.page.loginTab}
               </button>
             </div>
 
@@ -715,70 +742,73 @@ export function AuthPage() {
               autoComplete="on"
             >
               <div className="auth-v3-card">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="auth-v3-section-copy">
-                      {isRegisterMode
-                        ? copy.auth.page.registerCardCopy
-                        : copy.auth.page.loginCardCopy}
-                    </p>
+                {!isRegisterMode ? (
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="auth-v3-section-copy">{copy.auth.page.loginCardCopy}</p>
+                    </div>
                   </div>
-                </div>
+                ) : null}
 
                 <div className="mt-5 space-y-4">
-                  <AuthField
-                    label={copy.auth.fields.email}
-                    value={email}
-                    onChange={setEmail}
-                    placeholder={copy.auth.fields.emailPlaceholder}
-                    type="email"
-                    name="username"
-                    autoComplete="username"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    inputMode="email"
-                    icon={<MailIcon />}
-                  />
-
-                  <div className={joinClasses("grid gap-4", isRegisterMode && "sm:grid-cols-2")}>
-                    <AuthField
-                      label={copy.auth.fields.password}
-                      value={password}
-                      onChange={setPassword}
-                      placeholder={copy.auth.fields.passwordPlaceholder}
-                      type={isPasswordVisible ? "text" : "password"}
-                      name={isRegisterMode ? "new-password" : "current-password"}
-                      autoComplete={isRegisterMode ? "new-password" : "current-password"}
-                      action={
-                        <button
-                          type="button"
-                          className="auth-v3-input-toggle"
-                          onClick={() => setIsPasswordVisible((current) => !current)}
-                          aria-label={
-                            isPasswordVisible
-                              ? copy.auth.actions.hidePassword
-                              : copy.auth.actions.showPassword
-                          }
-                          title={
-                            isPasswordVisible
-                              ? copy.auth.actions.hidePassword
-                              : copy.auth.actions.showPassword
-                          }
-                        >
-                          {isPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
-                        </button>
-                      }
+                  {isRegisterMode ? (
+                    <AuthFamilyCodeCard
+                      language={language}
+                      isOpen={familyCodeOpen}
+                      inputValue={familyCodeInput}
+                      error={familyCodeError}
+                      verifiedFamilyCode={verifiedFamilyCode}
+                      isPending={verifyFamilyCodeMutation.isPending}
+                      toggleTitle={copy.auth.page.familyCodeToggle}
+                      toggleHint={copy.auth.page.familyCodeHint}
+                      placeholder={copy.auth.page.familyCodePlaceholder}
+                      verifyLabel={copy.auth.page.familyCodeVerify}
+                      verifyingLabel={copy.auth.page.familyCodeVerifying}
+                      verifiedTitle={copy.auth.page.familyCodeVerifiedTitle}
+                      changeLabel={copy.auth.page.familyCodeChange}
+                      confirmedLabel={language === "ru" ? "Код подтверждён" : "Code confirmed"}
+                      validUntilLabel={language === "ru" ? "Действует до" : "Valid until"}
+                      onToggle={() => setFamilyCodeOpen((current) => !current)}
+                      onInputChange={(value) => {
+                        setFamilyCodeInput(value);
+                        if (familyCodeError) {
+                          setFamilyCodeError(null);
+                        }
+                      }}
+                      onVerify={verifyFamilyCode}
+                      onResetVerified={() => {
+                        setVerifiedFamilyCode(resetVerifiedFamilyCode());
+                        setFamilyCodeInput("");
+                        setFamilyCodeError(null);
+                      }}
                     />
-                    {isRegisterMode ? (
+                  ) : null}
+
+                  <div className="space-y-4">
+                    <AuthField
+                      label={copy.auth.fields.email}
+                      value={email}
+                      onChange={setEmail}
+                      placeholder={copy.auth.fields.emailPlaceholder}
+                      type="email"
+                      name="username"
+                      autoComplete="username"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      inputMode="email"
+                      icon={<MailIcon />}
+                    />
+
+                    <div className={joinClasses("grid gap-4", isRegisterMode && "sm:grid-cols-2")}>
                       <AuthField
-                        label={copy.auth.fields.passwordConfirm}
-                        value={passwordConfirm}
-                        onChange={setPasswordConfirm}
-                        placeholder={copy.auth.fields.passwordConfirmPlaceholder}
+                        label={copy.auth.fields.password}
+                        value={password}
+                        onChange={setPassword}
+                        placeholder={copy.auth.fields.passwordPlaceholder}
                         type={isPasswordVisible ? "text" : "password"}
-                        name="new-password-confirm"
-                        autoComplete="new-password"
+                        name={isRegisterMode ? "new-password" : "current-password"}
+                        autoComplete={isRegisterMode ? "new-password" : "current-password"}
                         action={
                           <button
                             type="button"
@@ -799,7 +829,37 @@ export function AuthPage() {
                           </button>
                         }
                       />
-                    ) : null}
+                      {isRegisterMode ? (
+                        <AuthField
+                          label={copy.auth.fields.passwordConfirm}
+                          value={passwordConfirm}
+                          onChange={setPasswordConfirm}
+                          placeholder={copy.auth.fields.passwordConfirmPlaceholder}
+                          type={isPasswordVisible ? "text" : "password"}
+                          name="new-password-confirm"
+                          autoComplete="new-password"
+                          action={
+                            <button
+                              type="button"
+                              className="auth-v3-input-toggle"
+                              onClick={() => setIsPasswordVisible((current) => !current)}
+                              aria-label={
+                                isPasswordVisible
+                                  ? copy.auth.actions.hidePassword
+                                  : copy.auth.actions.showPassword
+                              }
+                              title={
+                                isPasswordVisible
+                                  ? copy.auth.actions.hidePassword
+                                  : copy.auth.actions.showPassword
+                              }
+                            >
+                              {isPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
+                            </button>
+                          }
+                        />
+                      ) : null}
+                    </div>
                   </div>
 
                   {!isRegisterMode ? (

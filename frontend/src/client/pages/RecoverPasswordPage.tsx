@@ -6,7 +6,7 @@ import { login, resetPasswordByRecoveryCode } from "@shared/api/auth";
 import { applySessionToClient } from "@shared/api/client";
 import { AuthPasswordField } from "@shared/components/AuthFormControls";
 import { BrandWordmark } from "@shared/components/BrandWordmark";
-import { resolveInvitePublicBaseUrl } from "@shared/config/inviteLinks";
+import { resolvePublicSiteBaseUrl } from "@shared/config/inviteLinks";
 import { IosEdgeBackGesture } from "@shared/components/IosEdgeBackGesture";
 import { LanguageSwitch } from "@shared/components/LanguageSwitch";
 import { V3BackgroundDoodles } from "@shared/components/V3BackgroundDoodles";
@@ -80,7 +80,7 @@ export function RecoverPasswordPage() {
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
   const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
-  const publicSiteUrl = resolveInvitePublicBaseUrl();
+  const publicSiteUrl = resolvePublicSiteBaseUrl();
   const { copy, language } = useI18n();
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);

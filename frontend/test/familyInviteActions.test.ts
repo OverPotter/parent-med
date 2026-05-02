@@ -3,25 +3,24 @@ import assert from "node:assert/strict";
 
 import { runCreateInviteFlow } from "../src/client/pages/family/inviteActions.js";
 
-test("runCreateInviteFlow always shares the freshly created invite url", async () => {
-  const createdInvitePaths: string[] = [];
-  const sharedInviteUrls: string[] = [];
+test("runCreateInviteFlow always shares the freshly created invite code", async () => {
+  const createdInviteTokens: string[] = [];
+  const sharedInviteTokens: string[] = [];
   const copiedStates: boolean[] = [];
   const errors: Array<string | null> = [];
 
   const createInvite = async () => {
-    const invitePath = `/join-family?token=${createdInvitePaths.length + 1}`;
-    createdInvitePaths.push(invitePath);
-    return { invitePath };
+    const token = `CODE${createdInviteTokens.length + 1}`;
+    createdInviteTokens.push(token);
+    return { token };
   };
 
   await runCreateInviteFlow({
     canShareInvite: true,
-    currentOrigin: "https://pillpath.app",
     createInvite,
     markInviteCopied: (value) => copiedStates.push(value),
-    onShareInvite: async (inviteUrl) => {
-      sharedInviteUrls.push(inviteUrl);
+    onShareInvite: async (inviteCode) => {
+      sharedInviteTokens.push(inviteCode);
       return true;
     },
     setError: (value) => errors.push(value),
@@ -30,25 +29,18 @@ test("runCreateInviteFlow always shares the freshly created invite url", async (
 
   await runCreateInviteFlow({
     canShareInvite: true,
-    currentOrigin: "https://pillpath.app",
     createInvite,
     markInviteCopied: (value) => copiedStates.push(value),
-    onShareInvite: async (inviteUrl) => {
-      sharedInviteUrls.push(inviteUrl);
+    onShareInvite: async (inviteCode) => {
+      sharedInviteTokens.push(inviteCode);
       return true;
     },
     setError: (value) => errors.push(value),
     shareFailedMessage: "share failed",
   });
 
-  assert.deepEqual(createdInvitePaths, [
-    "/join-family?token=1",
-    "/join-family?token=2",
-  ]);
-  assert.deepEqual(sharedInviteUrls, [
-    "https://pillpath.app/join-family?token=1",
-    "https://pillpath.app/join-family?token=2",
-  ]);
+  assert.deepEqual(createdInviteTokens, ["CODE1", "CODE2"]);
+  assert.deepEqual(sharedInviteTokens, ["CODE1", "CODE2"]);
   assert.deepEqual(copiedStates, [false, false]);
   assert.deepEqual(errors, []);
 });

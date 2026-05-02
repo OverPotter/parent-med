@@ -162,7 +162,7 @@ test("shouldRedirectAfterSessionLoss redirects only after a real session drop", 
     shouldRedirectAfterSessionLoss({
       hadSession: true,
       hasSession: false,
-      currentPath: "/join-family",
+      currentPath: "/family",
       targetPath: "/auth?mode=login",
     }),
     true
@@ -172,7 +172,7 @@ test("shouldRedirectAfterSessionLoss redirects only after a real session drop", 
     shouldRedirectAfterSessionLoss({
       hadSession: false,
       hasSession: false,
-      currentPath: "/join-family",
+      currentPath: "/family",
       targetPath: "/auth?mode=login",
     }),
     false

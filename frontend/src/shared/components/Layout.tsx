@@ -518,6 +518,9 @@ export function Layout({
                               {effectiveTheme === "light" ? <MoonIcon /> : <SunIcon />}
                             </span>
                           </button>
+                          <Link to="/auth?mode=register" className="app-header-utility-button">
+                            {copy.auth.actions.register}
+                          </Link>
                           <Link to="/auth?mode=login" className="app-header-utility-button">
                             {copy.common.login}
                           </Link>
@@ -560,6 +563,9 @@ export function Layout({
                         </div>
                       ) : (
                         <>
+                          <Link to="/auth?mode=register" className="app-header-utility-button">
+                            {copy.auth.actions.register}
+                          </Link>
                           <Link to="/auth?mode=login" className="app-header-utility-button">
                             {copy.common.login}
                           </Link>

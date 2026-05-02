@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   formatLocalizedDate,
+  formatLocalizedDateTime,
   getCurrentDeviceTimestampIso,
   isFutureDeviceDate,
   toDeviceDateTimeIso,
@@ -50,6 +51,14 @@ test("isFutureDeviceDate compares against the device local day", () => {
 test("formatLocalizedDate hides the time part for invite-style dates", () => {
   assert.equal(formatLocalizedDate("2026-06-01T09:29:12.982125Z", "ru"), "01.06.2026");
   assert.equal(formatLocalizedDate("2026-06-01T09:29:12.982125Z", "en"), "06/01/2026");
+});
+
+test("formatLocalizedDateTime keeps the time part for invite expiry", () => {
+  const localDate = new Date("2026-06-01T09:29:12.982125Z");
+  const hours = String(localDate.getHours()).padStart(2, "0");
+  const minutes = String(localDate.getMinutes()).padStart(2, "0");
+  assert.equal(formatLocalizedDateTime("2026-06-01T09:29:12.982125Z", "ru"), `01.06.2026, ${hours}:${minutes}`);
+  assert.equal(formatLocalizedDateTime("2026-06-01T09:29:12.982125Z", "en"), `06/01/2026, ${hours}:${minutes}`);
 });
 
 test("isFutureFirstAdministrationSelection rejects future time on the same day", () => {

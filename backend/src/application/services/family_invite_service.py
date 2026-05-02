@@ -1,5 +1,7 @@
 """Сервис приглашений в семью."""
 
+import secrets
+import string
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
@@ -23,8 +25,14 @@ from src.domain.repositories.family_repository import FamilyRepository
 class FamilyInviteService:
     """Создание и проверка invite-ссылок для семьи."""
 
-    INVITE_TTL_DAYS = 30
+    INVITE_TTL_HOURS = 3
     ALLOWED_ROLES = {"member"}
+    DEV_INVITE_TOKEN_LENGTH = 8
+    DEV_INVITE_ALPHABET = "".join(
+        character
+        for character in string.ascii_uppercase + string.digits
+        if character not in {"0", "O", "1", "I"}
+    )
 
     def __init__(
         self,
@@ -35,6 +43,14 @@ class FamilyInviteService:
         self._family_repo = family_repo
         self._account_repo = account_repo
         self._invite_repo = invite_repo
+
+    def _generate_invite_token(self) -> str:
+        if settings.is_local_environment:
+            return "".join(
+                secrets.choice(self.DEV_INVITE_ALPHABET)
+                for _ in range(self.DEV_INVITE_TOKEN_LENGTH)
+            )
+        return generate_session_token()
 
     async def create_for_account(
         self,
@@ -56,8 +72,9 @@ class FamilyInviteService:
         if invite_role not in self.ALLOWED_ROLES:
             raise ValidationError("Можно приглашать только участников с ролью member")
 
-        raw_token = generate_session_token()
+        raw_token = self._generate_invite_token()
         now = datetime.now(UTC)
+        await self._invite_repo.delete_for_family(family_id)
         entity = FamilyInvite(
             id=uuid4(),
             family_id=family_id,
@@ -65,7 +82,7 @@ class FamilyInviteService:
             token_hash=hash_session_token(raw_token),
             family_role=invite_role,
             created_at=now,
-            expires_at=now + timedelta(days=self.INVITE_TTL_DAYS),
+            expires_at=now + timedelta(hours=self.INVITE_TTL_HOURS),
             accepted_at=None,
             accepted_by_account_id=None,
         )
@@ -75,7 +92,6 @@ class FamilyInviteService:
             family_id=family.id,
             family_name=family.name,
             family_role=created.family_role,
-            invite_path=f"/join-family?token={raw_token}",
             expires_at=created.expires_at,
         )
 
@@ -87,42 +103,6 @@ class FamilyInviteService:
             family_role=invite.family_role,
             expires_at=invite.expires_at,
         )
-
-    async def get_latest_preview_for_dev(self) -> FamilyInvitePreviewResponseDto:
-        if not settings.is_local_environment:
-            raise NotFoundError("Приглашение не найдено", resource="family_invite")
-        invite = await self._invite_repo.get_latest_active()
-        if not invite:
-            raise NotFoundError("Приглашение не найдено", resource="family_invite")
-        family = await self._family_repo.get_by_id(invite.family_id)
-        if not family:
-            raise NotFoundError("Семья не найдена", resource="family")
-        return FamilyInvitePreviewResponseDto(
-            family_id=family.id,
-            family_name=family.name,
-            family_role=invite.family_role,
-            expires_at=invite.expires_at,
-        )
-
-    async def get_active_invite_for_signup(self, token: str) -> tuple[FamilyInvite, str]:
-        invite, family = await self._require_active_invite(token)
-        return invite, family.name
-
-    async def accept(self, invite: FamilyInvite, account_id: UUID) -> None:
-        if invite.accepted_at is not None:
-            raise ValidationError("Приглашение уже использовано", code="FAMILY_INVITE_ALREADY_USED")
-        updated = FamilyInvite(
-            id=invite.id,
-            family_id=invite.family_id,
-            created_by_account_id=invite.created_by_account_id,
-            token_hash=invite.token_hash,
-            family_role=invite.family_role,
-            created_at=invite.created_at,
-            expires_at=invite.expires_at,
-            accepted_at=datetime.now(UTC),
-            accepted_by_account_id=account_id,
-        )
-        await self._invite_repo.update(updated)
 
     async def _require_active_invite(self, token: str) -> tuple[FamilyInvite, object]:
         invite = await self._invite_repo.get_by_token_hash(hash_session_token(token))

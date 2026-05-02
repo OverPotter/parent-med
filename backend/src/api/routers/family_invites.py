@@ -28,14 +28,6 @@ async def create_family_invite(
     )
 
 
-@router.get("/dev/latest", response_model=FamilyInvitePreviewResponseDto)
-async def get_latest_family_invite_preview_for_dev(
-    service: FamilyInviteService = Depends(get_family_invite_service),
-) -> FamilyInvitePreviewResponseDto:
-    """Dev-only preview последнего активного инвайта без копирования ссылки."""
-    return await service.get_latest_preview_for_dev()
-
-
 @router.get("/{token}", response_model=FamilyInvitePreviewResponseDto)
 async def get_family_invite_preview(
     token: str,

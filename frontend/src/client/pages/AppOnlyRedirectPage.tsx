@@ -56,8 +56,8 @@ export function AppOnlyRedirectPage() {
       : "This screen is available only in the iPhone app";
   const description =
     language === "ru"
-      ? "Сайт остаётся для landing, ссылок-приглашений и юридической информации. Полноценная работа с семейным кабинетом открывается внутри PillPath для iPhone."
-      : "The website remains for landing, invite links, and legal information. Full family workspace usage continues inside the PillPath iPhone app.";
+      ? "Сайт остаётся для знакомства с продуктом и юридической информации. Полноценная работа с семейным кабинетом открывается внутри PillPath для iPhone."
+      : "The website remains for product discovery and legal information. Full family workspace usage continues inside the PillPath iPhone app.";
 
   return (
     <div className="auth-v3-page min-h-screen text-foreground">

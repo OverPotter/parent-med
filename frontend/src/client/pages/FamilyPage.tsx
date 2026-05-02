@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { fetchFamilies, fetchMyFamilyAccess } from "@shared/api/families";
-import { fetchLatestDevFamilyInvitePreview } from "@shared/api/familyInvites";
 import { hasNetworkUnavailableError } from "@shared/api/network";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { ModuleOfflineState } from "@shared/components/ModuleOfflineState";
@@ -11,10 +10,13 @@ import { EmptyState, RowSurface } from "@shared/components/Surface";
 import { useIsOffline } from "@shared/hooks/useIsOffline";
 import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useI18n } from "@shared/hooks/useI18n";
-import { familyAccessQueryOptions } from "@shared/hooks/useFamilyAccessQueryOptions";
+import {
+  FAMILY_ACCESS_REFRESH_MS,
+  familyAccessQueryOptions,
+} from "@shared/hooks/useFamilyAccessQueryOptions";
+import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import { normalizeFamilyAccessPolicy } from "@shared/familyAccess/policy";
-import { buildLatestDevInviteUrl, buildShareableInviteUrl } from "@shared/config/inviteLinks";
 import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
 import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
 import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
@@ -28,24 +30,17 @@ import {
   canManageFamilyMembers,
   isFamilyOwnerAccount,
 } from "./family/memberManagement";
-import {
-  familyInviteShareText,
-  familyTemplateText,
-  otherMembersCountLabel,
-  tFamily,
-} from "./family/copy";
+import { familyInviteShareText, otherMembersCountLabel, tFamily } from "./family/copy";
 import { useFamilyMembersData } from "./family/useFamilyMembersData";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
 
 export function FamilyPage() {
   const { language } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [familyName, setFamilyName] = useState("");
   const [isEditingFamilyName, setIsEditingFamilyName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
-  const [devLatestInviteCopied, setDevLatestInviteCopied] = useState(false);
   const [isInviteSharePending, setIsInviteSharePending] = useState(false);
   const [inviteToast, setInviteToast] = useState<string | null>(null);
   const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
@@ -60,7 +55,7 @@ export function FamilyPage() {
   const setAuthState = useAppStore((s) => s.setAuthState);
   const isIosShell = useIsIosShell();
   const isOffline = useIsOffline();
-  const showDevInviteShortcut = import.meta.env.DEV || import.meta.env.MODE === "mobile-dev";
+  const familiesLiveQueryOptions = useLiveQueryOptions(FAMILY_ACCESS_REFRESH_MS);
   const {
     data: families = [],
     isLoading: isFamilyLoading,
@@ -69,6 +64,7 @@ export function FamilyPage() {
     queryKey: ["families", accountId],
     queryFn: fetchFamilies,
     enabled: Boolean(accountId),
+    ...familiesLiveQueryOptions,
   });
   const { data: familyAccess } = useQuery({
     queryKey: ["families", "me", "access", currentFamilyId],
@@ -150,12 +146,7 @@ export function FamilyPage() {
     hasCurrentMember: Boolean(currentMember),
   });
 
-  const latestInviteUrl = createInviteMutation.data
-    ? buildShareableInviteUrl(createInviteMutation.data.invitePath, window.location.origin)
-    : "";
-  const latestDevInviteUrl = buildLatestDevInviteUrl(
-    typeof window !== "undefined" ? window.location.origin : undefined
-  );
+  const latestInviteCode = createInviteMutation.data?.token ?? "";
   const shouldOpenCurrentProfileEditor =
     searchParams.get("edit") === "profile" || searchParams.get("edit") === "me";
   const canShareInvite = typeof navigator !== "undefined" && typeof navigator.share === "function";
@@ -163,14 +154,6 @@ export function FamilyPage() {
   const canInviteMembers = familyAccess?.canInviteMembers ?? false;
   const inviteLockedReason =
     isFamilyOwner && !canInviteMembers ? tFamily(language, "invitesPlusOnly") : null;
-
-  const inviteShareText = familyInviteShareText(language, familyTitle);
-  const { data: latestDevInvitePreview } = useQuery({
-    queryKey: ["family-invites", "dev", "latest"],
-    queryFn: fetchLatestDevFamilyInvitePreview,
-    enabled: Boolean(accountId && showDevInviteShortcut),
-    retry: false,
-  });
 
   useEffect(() => {
     if (!inviteToast) {
@@ -275,12 +258,12 @@ export function FamilyPage() {
   };
 
   const handleCopyInvite = async () => {
-    if (!latestInviteUrl) {
+    if (!latestInviteCode) {
       setError(tFamily(language, "inviteCopyFailed"));
       return;
     }
     try {
-      await navigator.clipboard.writeText(latestInviteUrl);
+      await navigator.clipboard.writeText(latestInviteCode);
       setInviteCopied(true);
       setInviteToast(tFamily(language, "inviteCopied"));
       setError(null);
@@ -289,9 +272,9 @@ export function FamilyPage() {
     }
   };
 
-  const handleShareInvite = async (inviteUrl: string) => {
-    if (!inviteUrl || !canShareInvite) {
-      if (!inviteUrl) {
+  const handleShareInvite = async (inviteCode: string) => {
+    if (!inviteCode || !canShareInvite) {
+      if (!inviteCode) {
         setError(tFamily(language, "inviteShareFailed"));
       }
       return false;
@@ -301,8 +284,7 @@ export function FamilyPage() {
       setIsInviteSharePending(true);
       await navigator.share({
         title: tFamily(language, "inviteTitle"),
-        text: inviteShareText,
-        url: inviteUrl,
+        text: familyInviteShareText(language, familyTitle, inviteCode),
       });
       setError(null);
       if (shouldUseDirectNativeInvite) {
@@ -328,7 +310,6 @@ export function FamilyPage() {
     try {
       await runCreateInviteFlow({
         canShareInvite,
-        currentOrigin: window.location.origin,
         createInvite: () => createInviteMutation.mutateAsync(),
         markInviteCopied: setInviteCopied,
         onShareInvite: handleShareInvite,
@@ -337,27 +318,6 @@ export function FamilyPage() {
       });
     } catch {
       // Ошибка уже обработана в mutation.onError.
-    }
-  };
-
-  const handleCopyDevInviteUrl = async () => {
-    try {
-      if (!latestDevInviteUrl) {
-        setError(
-          language === "ru"
-            ? "Не удалось собрать dev invite URL."
-            : "Could not build the dev invite URL."
-        );
-        return;
-      }
-      await navigator.clipboard.writeText(latestDevInviteUrl);
-      setDevLatestInviteCopied(true);
-      setInviteToast(tFamily(language, "devLatestInviteCopied"));
-      setError(null);
-    } catch {
-      setError(
-        language === "ru" ? "Не удалось скопировать dev URL." : "Could not copy the dev URL."
-      );
     }
   };
 
@@ -438,10 +398,28 @@ export function FamilyPage() {
       {family ? (
         <>
           <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="app-card-title">{tFamily(language, "yourProfileTitle")}</h2>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {currentMember ? (
+            {isMembersLoading ? (
+              <p className="text-sm text-muted">{tFamily(language, "membersLoading")}</p>
+            ) : !currentMember ? (
+              <p className="text-sm text-muted">{tFamily(language, "noMembers")}</p>
+            ) : (
+              <MemberCard
+                key={currentMember.id}
+                member={currentMember}
+                familyOwnerAccountId={family?.ownerAccountId}
+                isCurrent
+                forceEdit={Boolean(shouldOpenCurrentProfileEditor)}
+                canManageAccess={false}
+                canManageRoles={false}
+                canDeleteMember={false}
+                canEditProfile={false}
+                adminsCount={adminsCount}
+                isPending={
+                  updateMemberMutation.isPending ||
+                  updateMemberProfileMutation.isPending ||
+                  deleteMemberMutation.isPending
+                }
+                headerAction={
                   <button
                     type="button"
                     onClick={() => {
@@ -449,63 +427,38 @@ export function FamilyPage() {
                       next.set("edit", "me");
                       setSearchParams(next, { replace: true });
                     }}
-                    className="soft-pill-primary inline-flex min-h-[2.2rem] shrink-0 items-center px-3 text-[0.78rem] font-semibold"
+                    className="soft-pill-primary inline-flex min-h-[2.3rem] shrink-0 items-center px-3 text-[0.78rem] font-semibold"
                   >
                     {tFamily(language, "editProfile")}
                   </button>
-                ) : null}
-              </div>
-            </div>
-            {isMembersLoading ? (
-              <p className="mt-4 text-sm text-muted">{tFamily(language, "membersLoading")}</p>
-            ) : !currentMember ? (
-              <p className="mt-4 text-sm text-muted">{tFamily(language, "noMembers")}</p>
-            ) : (
-              <div className="mt-4">
-                <MemberCard
-                  key={currentMember.id}
-                  member={currentMember}
-                  familyOwnerAccountId={family?.ownerAccountId}
-                  isCurrent
-                  forceEdit={Boolean(shouldOpenCurrentProfileEditor)}
-                  canManageAccess={false}
-                  canManageRoles={false}
-                  canDeleteMember={false}
-                  canEditProfile={false}
-                  adminsCount={adminsCount}
-                  isPending={
-                    updateMemberMutation.isPending ||
-                    updateMemberProfileMutation.isPending ||
-                    deleteMemberMutation.isPending
+                }
+                onPromote={() => {}}
+                onDemote={() => {}}
+                accessHref={`/family/members/${currentMember.id}/access`}
+                onDelete={() => deleteMemberMutation.mutate(currentMember.id)}
+                onSaveProfile={async (payload) => {
+                  try {
+                    await updateMemberProfileMutation.mutateAsync({
+                      memberAccountId: currentMember.id,
+                      displayName: payload.displayName,
+                      relationshipLabel: payload.relationshipLabel,
+                      phone: payload.phone,
+                    });
+                    return true;
+                  } catch {
+                    return false;
                   }
-                  onPromote={() => {}}
-                  onDemote={() => {}}
-                  accessHref={`/family/members/${currentMember.id}/access`}
-                  onDelete={() => deleteMemberMutation.mutate(currentMember.id)}
-                  onSaveProfile={async (payload) => {
-                    try {
-                      await updateMemberProfileMutation.mutateAsync({
-                        memberAccountId: currentMember.id,
-                        displayName: payload.displayName,
-                        relationshipLabel: payload.relationshipLabel,
-                        phone: payload.phone,
-                      });
-                      return true;
-                    } catch {
-                      return false;
-                    }
-                  }}
-                  onHideForcedEdit={() => {
-                    if (!shouldOpenCurrentProfileEditor) {
-                      return;
-                    }
-                    const next = new URLSearchParams(searchParams);
-                    next.delete("edit");
-                    setSearchParams(next, { replace: true });
-                  }}
-                  language={language}
-                />
-              </div>
+                }}
+                onHideForcedEdit={() => {
+                  if (!shouldOpenCurrentProfileEditor) {
+                    return;
+                  }
+                  const next = new URLSearchParams(searchParams);
+                  next.delete("edit");
+                  setSearchParams(next, { replace: true });
+                }}
+                language={language}
+              />
             )}
           </RowSurface>
 
@@ -543,63 +496,17 @@ export function FamilyPage() {
               inviteLocked={!canInviteMembers}
               inviteLockedReason={inviteLockedReason}
               inviteCopied={inviteCopied}
-              latestInviteUrl={latestInviteUrl}
+              latestInviteCode={latestInviteCode}
               inviteExpiresAt={createInviteMutation.data?.expiresAt}
               onCreateInvite={() => {
                 void handleCreateInvite();
               }}
               onLockedInviteAttempt={openUpgradeDialog}
               onShareInvite={() => {
-                void handleShareInvite(latestInviteUrl);
+                void handleShareInvite(latestInviteCode);
               }}
               onCopyInvite={handleCopyInvite}
             />
-          ) : null}
-
-          {showDevInviteShortcut ? (
-            <RowSurface className="rounded-[26px] px-4 py-4 sm:px-5 sm:py-5">
-              <h2 className="app-card-title">{tFamily(language, "devLatestInviteTitle")}</h2>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                {latestDevInvitePreview
-                  ? familyTemplateText(language, "devLatestInviteHintWithFamily", {
-                      familyName: latestDevInvitePreview.familyName,
-                    })
-                  : tFamily(language, "devLatestInviteHintWithoutFamily")}
-              </p>
-              <div className="mt-4 space-y-3">
-                <div className="soft-panel-muted rounded-[20px] px-4 py-3">
-                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-muted">
-                    {tFamily(language, "devLatestInviteUrlLabel")}
-                  </p>
-                  <p className="mt-2 break-all text-sm leading-6 text-foreground">
-                    {latestDevInviteUrl || tFamily(language, "devLatestInviteUrlEmpty")}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleCopyDevInviteUrl();
-                    }}
-                    className="soft-button-secondary"
-                  >
-                    {devLatestInviteCopied
-                      ? tFamily(language, "devLatestInviteCopied")
-                      : tFamily(language, "devCopyLatestInvite")}
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError(null);
-                    navigate("/join-family?dev-latest=1");
-                  }}
-                  className="soft-button-secondary disabled:opacity-50"
-                >
-                  {tFamily(language, "devJoinLatestInvite")}
-                </button>
-              </div>
-            </RowSurface>
           ) : null}
 
           <FamilyNameSection

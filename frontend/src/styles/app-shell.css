@@ -287,31 +287,6 @@ html.ios-lock-horizontal .landing-main {
   padding-top: 0.08rem;
 }
 
-[data-runtime="native"][data-platform="ios"]
-  .join-family-page
-  .public-site-header--ios
-  .auth-v3-shell,
-[data-runtime="web"][data-ios-shell="true"]
-  .join-family-page
-  .public-site-header--ios
-  .auth-v3-shell {
-  min-height: auto;
-  padding-top: calc(0.55rem + env(safe-area-inset-top));
-  padding-bottom: 0.15rem;
-}
-
-[data-runtime="native"][data-platform="ios"]
-  .join-family-page
-  .public-site-header--ios
-  .auth-v3-stage,
-[data-runtime="web"][data-ios-shell="true"]
-  .join-family-page
-  .public-site-header--ios
-  .auth-v3-stage {
-  width: 100%;
-  padding-bottom: 0;
-}
-
 [data-runtime="native"][data-platform="ios"] .legal-doc-page--paywall .app-mobile-section-intro,
 [data-runtime="web"][data-ios-shell="true"] .legal-doc-page--paywall .app-mobile-section-intro {
   gap: 0.06rem;

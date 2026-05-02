@@ -6,19 +6,17 @@ import {
   normalizeNativeNavigationUrl,
 } from "../src/shared/runtime/nativeNavigation.js";
 
-test("normalizes custom scheme invite links into app routes", () => {
+test("normalizes custom scheme app links into app routes", () => {
   assert.equal(
-    normalizeNativeNavigationUrl("pillpath://localhost/join-family?token=abc#step"),
-    "/join-family?token=abc#step"
+    normalizeNativeNavigationUrl("pillpath://localhost/family?tab=members#section"),
+    "/family?tab=members#section"
   );
 });
 
-test("normalizes universal https invite links into app routes", () => {
+test("normalizes universal https app links into app routes", () => {
   assert.equal(
-    normalizeNativeNavigationUrl(
-      "https://pillpath-production-frontend.up.railway.app/join-family?token=abc"
-    ),
-    "/join-family?token=abc"
+    normalizeNativeNavigationUrl("https://pillpath-production-frontend.up.railway.app/children"),
+    "/children"
   );
 });
 
@@ -36,7 +34,7 @@ test("authenticated launch ignores auth routes that would loop after sign-in", (
 
 test("authenticated launch keeps regular deep links", () => {
   assert.equal(
-    normalizeAuthenticatedLaunchUrl("pillpath://localhost/join-family?token=abc"),
-    "/join-family?token=abc"
+    normalizeAuthenticatedLaunchUrl("pillpath://localhost/family"),
+    "/family"
   );
 });

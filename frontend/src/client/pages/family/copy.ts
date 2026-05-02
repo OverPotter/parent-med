@@ -9,7 +9,7 @@ export const familyCopy = {
     loadFamilyFailed: "Не удалось загрузить семью.",
     loadMembersFailed: "Не удалось загрузить участников.",
     updateFamilyFailed: "Не удалось обновить название семьи.",
-    createInviteFailed: "Не удалось создать ссылку приглашения.",
+    createInviteFailed: "Не удалось создать код приглашения.",
     updateRoleFailed: "Не удалось обновить роль участника.",
     deleteMemberFailed: "Не удалось удалить участника из семьи.",
     leaveFamilyFailed: "Не удалось выйти из семьи.",
@@ -37,28 +37,28 @@ export const familyCopy = {
     openAllMembers: "Все участники",
     noFamilyTitle: "Семья ещё не подключена",
     noFamilyDescription:
-      "Сейчас у вас нет семейного пространства. Попросите владельца семьи прислать приглашение и откройте его на этом устройстве.",
+      "Сейчас у вас нет семейного пространства. Попросите владельца семьи прислать код приглашения и создайте новый аккаунт в приложении.",
     noOtherMembers: "Кроме вас, в семье пока никого нет.",
     peopleShort: "чел.",
     membersLoading: "Загружаем участников…",
     noMembers: "У семьи пока нет подключённых участников.",
-    inviteTitle: "Пригласить близкого",
+    inviteTitle: "Код приглашения",
     inviteDescription:
-      "Отправьте приглашение близкому. Он откроет ссылку, войдёт в свой аккаунт или создаст новый и присоединится к вашей семье.",
+      "Создайте одноразовый код для нового участника. Отправьте его человеку: он откроет приложение, создаст новый аккаунт и введёт этот код при регистрации.",
     ownerOnly: "Приглашения создаёт владелец семьи",
-    creatingInvite: "Создаём приглашение…",
-    createInvite: "Создать приглашение",
+    creatingInvite: "Создаём код…",
+    createInvite: "Создать код",
     invitesPlusOnly: "Приглашения доступны в Plus.",
-    newLink: "Последнее приглашение",
+    newLink: "Текущий код",
     validUntil: "Действует до",
-    inviteCopied: "Ссылка скопирована",
+    inviteCopied: "Код скопирован",
     inviteShareReady: "Открылось меню «Поделиться».",
-    inviteCopyFailed: "Не удалось скопировать ссылку.",
+    inviteCopyFailed: "Не удалось скопировать код.",
     inviteShareFailed: "Не удалось открыть меню «Поделиться».",
     shareInvite: "Поделиться",
-    copyInvite: "Скопировать ссылку",
-    inviteShareTextPrefix: "Присоединяйся к нашей семье в PillPath.",
-    inviteShareTextSuffix: "Открой это приглашение:",
+    copyInvite: "Скопировать код",
+    inviteShareTextPrefix: "Открой PillPath, создай новый аккаунт и введи этот код при регистрации.",
+    inviteShareTextSuffix: "Код семьи:",
     familyOwner: "Владелец семьи",
     admin: "Администратор",
     member: "Участник",
@@ -153,17 +153,6 @@ export const familyCopy = {
     pillboxActNotice: "Участник сможет отметить, что лекарство дали, но не сможет менять сам план.",
     chooseAriaPrefix: "Выбрать",
     memberPickerHint: "Выберите участника, чтобы открыть его профиль и доступы.",
-    devLatestInviteTitle: "Тестовое приглашение",
-    devLatestInviteHintWithFamily:
-      "Здесь можно открыть или скопировать тестовую ссылку для последнего приглашения в семью «{familyName}».",
-    devLatestInviteHintWithoutFamily:
-      "Если приглашение уже было создано на другом симуляторе, здесь появится тестовая ссылка для последнего приглашения.",
-    devJoinLatestInvite: "Открыть последнее приглашение",
-    devLatestInviteUrlLabel: "Тестовая ссылка",
-    devLatestInviteUrlEmpty: "Тестовая ссылка пока недоступна.",
-    devCopyLatestInvite: "Скопировать ссылку",
-    devLatestInviteCopied: "Ссылка скопирована",
-    devJoining: "Подключаем…",
   },
   en: {
     title: "Family",
@@ -173,7 +162,7 @@ export const familyCopy = {
     loadFamilyFailed: "Could not load family.",
     loadMembersFailed: "Could not load members.",
     updateFamilyFailed: "Could not update the family name.",
-    createInviteFailed: "Could not create an invite link.",
+    createInviteFailed: "Could not create a family code.",
     updateRoleFailed: "Could not update the member role.",
     deleteMemberFailed: "Could not remove the member from the family.",
     leaveFamilyFailed: "Could not leave the family.",
@@ -201,28 +190,28 @@ export const familyCopy = {
     openAllMembers: "All members",
     noFamilyTitle: "No family connected yet",
     noFamilyDescription:
-      "You do not have a family workspace yet. Ask the family owner to send you an invite and open it on this device.",
+      "You do not have a family workspace yet. Ask the family owner to send you a family code and create a new account in the app.",
     noOtherMembers: "There is no one else in the family yet.",
     peopleShort: "people",
     membersLoading: "Loading members…",
     noMembers: "No family members are connected yet.",
-    inviteTitle: "Invite a family member",
+    inviteTitle: "Family invite code",
     inviteDescription:
-      "Send an invite to a family member. They can open the link, sign in to their account or create a new one, and join your family.",
+      "Create a one-time code for a new family member. Send it to them: they open the app, create a new account, and enter this code during sign-up.",
     ownerOnly: "Only the family owner can create invites",
-    creatingInvite: "Creating invite…",
-    createInvite: "Create invite",
+    creatingInvite: "Creating code…",
+    createInvite: "Create code",
     invitesPlusOnly: "Invites are available in Plus.",
-    newLink: "Latest invite",
+    newLink: "Current code",
     validUntil: "Valid until",
-    inviteCopied: "Link copied",
+    inviteCopied: "Code copied",
     inviteShareReady: "Share sheet opened.",
-    inviteCopyFailed: "Could not copy the link.",
+    inviteCopyFailed: "Could not copy the code.",
     inviteShareFailed: "Could not open the share sheet.",
     shareInvite: "Share",
-    copyInvite: "Copy link",
-    inviteShareTextPrefix: "Join our family in PillPath.",
-    inviteShareTextSuffix: "Open this invite:",
+    copyInvite: "Copy code",
+    inviteShareTextPrefix: "Open PillPath, create a new account, and enter this code during sign-up.",
+    inviteShareTextSuffix: "Family code:",
     familyOwner: "Family owner",
     admin: "Admin",
     member: "Member",
@@ -320,17 +309,6 @@ export const familyCopy = {
     pillboxActNotice: "This actor can log doses, but cannot create or edit plans.",
     chooseAriaPrefix: "Choose",
     memberPickerHint: "Choose a member to open their profile and access settings.",
-    devLatestInviteTitle: "Test invite",
-    devLatestInviteHintWithFamily:
-      'You can open or copy the test link for the latest invite to "{familyName}" here.',
-    devLatestInviteHintWithoutFamily:
-      "If an invite was already created on another simulator, the latest test link will appear here.",
-    devJoinLatestInvite: "Open latest invite",
-    devLatestInviteUrlLabel: "Test link",
-    devLatestInviteUrlEmpty: "The test link is not available right now.",
-    devCopyLatestInvite: "Copy link",
-    devLatestInviteCopied: "Link copied",
-    devJoining: "Joining…",
   },
 } satisfies Record<AppLanguage, Record<string, string>>;
 
@@ -370,12 +348,16 @@ export function pillboxAccessRoleLabel(
   return tFamily(language, "pillboxObserve");
 }
 
-export function familyInviteShareText(language: AppLanguage, familyTitle: string) {
+export function familyInviteShareText(
+  language: AppLanguage,
+  familyTitle: string,
+  inviteCode: string
+) {
   const prefix = tFamily(language, "inviteShareTextPrefix");
   const suffix = tFamily(language, "inviteShareTextSuffix");
   return language === "ru"
-    ? `${prefix} ${familyTitle}. ${suffix}`
-    : `${prefix} ${familyTitle} ${suffix}`;
+    ? `${prefix} ${familyTitle}. ${suffix} ${inviteCode}`
+    : `${prefix} ${familyTitle}. ${suffix} ${inviteCode}`;
 }
 
 export function otherMembersCountLabel(language: AppLanguage, count: number) {
@@ -383,12 +365,4 @@ export function otherMembersCountLabel(language: AppLanguage, count: number) {
     return `В семье ещё ${count} ${count === 1 ? "участник" : "участника"}.`;
   }
   return `${count} more member${count === 1 ? "" : "s"} in the family.`;
-}
-
-export function familyTemplateText(
-  language: AppLanguage,
-  key: "devLatestInviteHintWithFamily",
-  params: { familyName: string }
-) {
-  return tFamily(language, key).replace("{familyName}", params.familyName);
 }

@@ -16,10 +16,6 @@ import {
 import { appLog } from "@shared/utils/appLog";
 import { useGlobalBootReady } from "@/app/boot/state";
 import { normalizeNativeNavigationUrl } from "@shared/runtime/nativeNavigation";
-import {
-  persistPendingFamilyInviteRoute,
-  shouldOpenNativeRouteWithoutSession,
-} from "@shared/runtime/inviteFlow";
 
 const CONSUMED_LAUNCH_URL_SESSION_KEY = "pm_native_consumed_launch_url_v1";
 const PENDING_NATIVE_URL_SESSION_KEY = "pm_native_pending_url_v1";
@@ -156,15 +152,7 @@ export function NativePushNavigationSync() {
         return;
       }
 
-      persistPendingFamilyInviteRoute(url);
-
       if (!hasSession) {
-        if (shouldOpenNativeRouteWithoutSession(url)) {
-          lastHandledRef.current = { url, at: Date.now() };
-          clearPendingNativeNavigationUrl();
-          navigate(url, { replace: false });
-          return;
-        }
         writePendingNativeNavigationUrl(url);
         return;
       }

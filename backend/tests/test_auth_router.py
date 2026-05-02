@@ -21,7 +21,6 @@ from src.application.dto.auth import (
     AuthResponseDto,
     AuthStateResponseDto,
     LoginDto,
-    LoginFamilyInviteDto,
     RefreshDto,
     RegisterDto,
 )
@@ -62,11 +61,6 @@ class StubAuthService:
         return _make_auth_response()
 
     async def signin(self, dto: LoginDto) -> AuthResponseDto:
-        if self.fail_signin:
-            raise UnauthorizedError("Неверный email или пароль", code="INVALID_CREDENTIALS")
-        return _make_auth_response()
-
-    async def signin_and_accept_family_invite(self, dto: LoginFamilyInviteDto) -> AuthResponseDto:
         if self.fail_signin:
             raise UnauthorizedError("Неверный email или пароль", code="INVALID_CREDENTIALS")
         return _make_auth_response()
@@ -117,15 +111,6 @@ class StubFamilyInviteService:
             family_id=family_id,
             family_name="Моя семья",
             family_role=dto.family_role,
-            invite_path=f"/join-family?token={token}",
-            expires_at=datetime(2030, 1, 1),
-        )
-
-    async def get_latest_preview_for_dev(self) -> FamilyInvitePreviewResponseDto:
-        return FamilyInvitePreviewResponseDto(
-            family_id=uuid4(),
-            family_name="Моя семья",
-            family_role="member",
             expires_at=datetime(2030, 1, 1),
         )
 
@@ -245,27 +230,6 @@ def test_native_signin_returns_tokens_in_json() -> None:
     assert "set-cookie" not in response.headers
 
 
-def test_web_signin_and_accept_family_invite_omits_tokens_from_json() -> None:
-    client = _build_test_app(
-        auth_service=StubAuthService(), attempts_repo=StubAuthAttemptRepository()
-    )
-
-    response = client.post(
-        "/api/v1/auth/signin/family-invite",
-        json={
-            "email": "mama@example.com",
-            "password": "password123",
-            "invite_token": "invite-token",
-        },
-    )
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["access_token"] is None
-    assert payload["refresh_token"] is None
-    assert "set-cookie" in response.headers
-
-
 def test_signin_rate_limit_trips_after_repeated_failures() -> None:
     attempts_repo = StubAuthAttemptRepository()
     client = _build_test_app(
@@ -302,7 +266,6 @@ def test_create_family_invite_returns_fresh_token_on_each_request() -> None:
     assert first.status_code == 201
     assert second.status_code == 201
     assert first.json()["token"] != second.json()["token"]
-    assert first.json()["invite_path"] != second.json()["invite_path"]
     assert invite_service.create_calls == 2
 
 
