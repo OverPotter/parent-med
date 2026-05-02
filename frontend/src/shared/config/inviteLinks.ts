@@ -1,5 +1,4 @@
 const DEFAULT_DEV_INVITE_BASE_URL = "https://192.168.0.160:5173";
-export const DEV_LATEST_FAMILY_INVITE_PATH = "/join-family?dev-latest=1";
 
 function normalizeAbsoluteBaseUrl(rawUrl: string): string {
   const trimmed = rawUrl.trim();
@@ -14,7 +13,7 @@ function normalizeAbsoluteBaseUrl(rawUrl: string): string {
   }
 }
 
-type InviteLinkEnv = Partial<
+type PublicSiteEnv = Partial<
   Record<
     "VITE_API_URL" | "VITE_APP_SITE_URL" | "VITE_MARKETING_SITE_URL" | "VITE_DEV_INVITE_SITE_URL",
     string
@@ -27,14 +26,14 @@ function readEnvValue(
     | "VITE_APP_SITE_URL"
     | "VITE_MARKETING_SITE_URL"
     | "VITE_DEV_INVITE_SITE_URL",
-  envOverrides?: InviteLinkEnv
+  envOverrides?: PublicSiteEnv
 ): string {
   if (envOverrides && typeof envOverrides[key] === "string") {
     return envOverrides[key] ?? "";
   }
   const env = (
     import.meta as ImportMeta & {
-      env?: InviteLinkEnv;
+      env?: PublicSiteEnv;
     }
   ).env;
   return env?.[key] ?? "";
@@ -71,9 +70,9 @@ function isPrivateHost(hostname: string): boolean {
   return secondOctet >= 16 && secondOctet <= 31;
 }
 
-export function resolveInvitePublicBaseUrl(
+export function resolvePublicSiteBaseUrl(
   currentOrigin?: string,
-  envOverrides?: InviteLinkEnv
+  envOverrides?: PublicSiteEnv
 ): string {
   const runtimeOrigin = (currentOrigin ?? "").trim();
   const env = (
@@ -81,7 +80,7 @@ export function resolveInvitePublicBaseUrl(
       env?: {
         DEV?: boolean;
         MODE?: string;
-      } & InviteLinkEnv;
+      } & PublicSiteEnv;
     }
   ).env;
   const isDevMode = Boolean(envOverrides?.DEV ?? env?.DEV ?? env?.MODE === "mobile-dev");
@@ -114,24 +113,4 @@ export function resolveInvitePublicBaseUrl(
   }
 
   return "";
-}
-
-export function buildShareableInviteUrl(
-  invitePath: string,
-  currentOrigin?: string,
-  envOverrides?: InviteLinkEnv
-): string {
-  const normalizedPath = invitePath.startsWith("/") ? invitePath : `/${invitePath}`;
-  const baseUrl = resolveInvitePublicBaseUrl(currentOrigin, envOverrides);
-  if (!baseUrl) {
-    return "";
-  }
-  return `${baseUrl}${normalizedPath}`;
-}
-
-export function buildLatestDevInviteUrl(
-  currentOrigin?: string,
-  envOverrides?: InviteLinkEnv
-): string {
-  return buildShareableInviteUrl(DEV_LATEST_FAMILY_INVITE_PATH, currentOrigin, envOverrides);
 }

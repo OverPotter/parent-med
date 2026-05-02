@@ -95,7 +95,6 @@ export async function register(payload: {
   password: string;
   remember_me?: boolean;
   invite_token?: string;
-  use_latest_dev_invite?: boolean;
   preferred_language?: "ru" | "en";
 }): Promise<AuthSessionResponse> {
   const endpoint = isNativeClientRuntime() ? "/auth/native/signup" : "/auth/signup";
@@ -110,17 +109,6 @@ export async function login(payload: {
 }): Promise<AuthSessionResponse> {
   const endpoint = isNativeClientRuntime() ? "/auth/native/signin" : "/auth/signin";
   const res = await apiClient.post<RawAuthResponse>(endpoint, payload);
-  return toAuthResponse(res.data);
-}
-
-export async function loginAndAcceptInvite(payload: {
-  email: string;
-  password: string;
-  remember_me?: boolean;
-  invite_token?: string;
-  use_latest_dev_invite?: boolean;
-}): Promise<AuthSessionResponse> {
-  const res = await apiClient.post<RawAuthResponse>("/auth/signin/family-invite", payload);
   return toAuthResponse(res.data);
 }
 

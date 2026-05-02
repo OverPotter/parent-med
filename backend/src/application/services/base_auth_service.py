@@ -10,7 +10,6 @@ from src.application.dto.auth import (
     AuthStateResponseDto,
     ChangePasswordDto,
     LoginDto,
-    LoginFamilyInviteDto,
     RecoverPasswordByCodeDto,
     RefreshDto,
     RegisterDto,
@@ -94,10 +93,6 @@ class BaseAuthService(ABC):
     @abstractmethod
     async def signin(self, dto: LoginDto) -> AuthResponseDto:
         """Авторизовать пользователя и выдать токены."""
-
-    @abstractmethod
-    async def signin_and_accept_family_invite(self, dto: LoginFamilyInviteDto) -> AuthResponseDto:
-        """Атомарно авторизовать пользователя и принять семейное приглашение."""
 
     @abstractmethod
     async def refresh(self, dto: RefreshDto) -> AuthResponseDto:

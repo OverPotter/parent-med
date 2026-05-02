@@ -224,6 +224,13 @@ export interface Translations {
       extraProfileFields: string;
       extraProfileCopy: string;
       invitationNote: string;
+      familyCodeToggle: string;
+      familyCodeHint: string;
+      familyCodePlaceholder: string;
+      familyCodeVerify: string;
+      familyCodeVerifying: string;
+      familyCodeVerifiedTitle: string;
+      familyCodeChange: string;
       passwordsMismatch: string;
       legalConsentPrefix: string;
       legalConsentTerms: string;
@@ -262,6 +269,8 @@ export interface Translations {
       registerFailed: string;
       passwordsMismatch: string;
       legalConsentRequired: string;
+      familyCodeRequiredForPreview: string;
+      familyCodeNeedsVerification: string;
     };
   };
   more: {

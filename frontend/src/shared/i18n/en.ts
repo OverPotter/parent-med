@@ -164,7 +164,7 @@ export const en: Translations = {
       eyebrow: "Install on your phone",
       title: "Use PillPath through the iPhone app",
       description:
-        "The main PillPath experience now runs through the iPhone app. The website remains for product discovery, invite links, and legal information.",
+        "The main PillPath experience now runs through the iPhone app. The website remains for product discovery and legal information.",
       iphoneTitle: "iPhone / iPad",
       androidTitle: "Website and links",
       iphoneSteps: [
@@ -174,13 +174,13 @@ export const en: Translations = {
         "Continue using PillPath inside the app.",
       ],
       androidSteps: [
-        "If the app is not installed, public links open on the website.",
-        "The website explains the link and how to continue in the app.",
+        "If the app is not installed, the website explains how to continue in the app.",
+        "Family joining happens through a code inside registration.",
         "The full product experience stays inside the iPhone app.",
       ],
-      ctaTitle: "The recommended path is website entry followed by app handoff.",
+      ctaTitle: "The recommended path is direct app usage on iPhone.",
       ctaDescription:
-        "That keeps invite links, sign-in, and everyday usage inside one clear iPhone flow.",
+        "That keeps family codes, sign-in, and everyday usage inside one clear iPhone flow.",
       login: "Log in",
       closePreview: "Close",
       previewCloseLabel: "Close enlarged preview",
@@ -303,7 +303,7 @@ export const en: Translations = {
         description:
           "One parent creates the account and invites relatives into one shared care picture.",
         mobilePoints: [
-          "One parent sends an invite link",
+          "One parent sends a family code",
           "Everyone sees the same treatment plan and reminders",
           "It is clear who logged a note or marked a dose",
         ],
@@ -312,7 +312,7 @@ export const en: Translations = {
         flowTitle: "How family access works",
         flowSteps: [
           "Mom creates the account",
-          "Sends an invite link",
+          "Sends a family code",
           "Family sees one shared care plan",
         ],
       },
@@ -429,22 +429,27 @@ export const en: Translations = {
       loginDescription:
         "Fast access to child data, the medicine cabinet and shared health records.",
       registerDescription:
-        "Create shared family access to child data, the medicine cabinet and health events.",
+        "Create a new account. If you were invited to a family, you can add the code below.",
       toggleLabel: "Switch authentication mode",
       loginTab: "Log in",
       registerTab: "Register",
       loginCardTitle: "Log in",
       registerCardTitle: "Register",
       loginCardCopy: "Sign in with your email and password to return to the family workspace.",
-      registerCardCopy:
-        "Create an account with your email. You can add your family display name after sign-in.",
+      registerCardCopy: "",
       rememberMe: "Remember me",
       forgotPassword: "Forgot password?",
       extraProfileFields: "Additional profile fields",
       extraProfileCopy:
         "Use this section for family role and phone. Email and family display name are already required for registration and recovery.",
-      invitationNote:
-        "If you were already invited into a family, open the invite link from the message. It will lead you into the right flow automatically.",
+      invitationNote: "",
+      familyCodeToggle: "Have a family code?",
+      familyCodeHint: "Optional",
+      familyCodePlaceholder: "Example: ABC12345",
+      familyCodeVerify: "Verify code",
+      familyCodeVerifying: "Verifying code…",
+      familyCodeVerifiedTitle: "Family invite",
+      familyCodeChange: "Change code",
       passwordsMismatch: "Passwords must match.",
       legalConsentPrefix: "I accept the",
       legalConsentTerms: "Terms of Use",
@@ -484,6 +489,8 @@ export const en: Translations = {
       registerFailed: "Registration failed",
       passwordsMismatch: "Passwords do not match",
       legalConsentRequired: "Please accept the terms and privacy policy.",
+      familyCodeRequiredForPreview: "Enter a family code.",
+      familyCodeNeedsVerification: "Verify the family code first.",
     },
   },
   more: {
@@ -565,7 +572,7 @@ export const en: Translations = {
       eyebrow: "Install on your phone",
       title: "The main experience now runs through the iPhone app",
       description:
-        "The main PillPath experience now runs through the iPhone app. The website stays for product discovery, invite links, and legal information.",
+        "The main PillPath experience now runs through the iPhone app. The website stays for product discovery and legal information.",
       cards: [
         {
           title: "iPhone / iPad",

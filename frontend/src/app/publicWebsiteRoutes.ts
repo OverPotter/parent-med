@@ -1,6 +1,5 @@
 export const PUBLIC_WEBSITE_SHARED_ROUTE_PATHS = [
   "/",
-  "/join-family",
   "/legal",
   "/legal/privacy",
   "/legal/terms",

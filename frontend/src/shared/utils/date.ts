@@ -26,6 +26,20 @@ export function formatLocalizedDate(
   return language === "ru" ? `${day}.${month}.${year}` : `${month}/${day}/${year}`;
 }
 
+export function formatLocalizedDateTime(
+  value: string | null | undefined,
+  language: "ru" | "en" = "ru"
+): string {
+  if (!value) return "";
+  const parsed = parseDateValue(value);
+  if (!parsed) return value;
+
+  const formattedDate = formatLocalizedDate(value, language);
+  const hours = String(parsed.getHours()).padStart(2, "0");
+  const minutes = String(parsed.getMinutes()).padStart(2, "0");
+  return `${formattedDate}, ${hours}:${minutes}`;
+}
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "";
   const parsed = parseDateValue(value);

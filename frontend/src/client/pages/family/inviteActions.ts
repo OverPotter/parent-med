@@ -1,15 +1,12 @@
-import { buildShareableInviteUrl } from "../../../shared/config/inviteLinks.js";
-
 interface InviteResponseLike {
-  invitePath: string;
+  token: string;
 }
 
 interface RunCreateInviteFlowArgs {
   canShareInvite: boolean;
-  currentOrigin?: string;
   createInvite: () => Promise<InviteResponseLike>;
   markInviteCopied: (value: boolean) => void;
-  onShareInvite: (inviteUrl: string) => Promise<boolean>;
+  onShareInvite: (inviteCode: string) => Promise<boolean>;
   setError: (value: string | null) => void;
   shareFailedMessage: string;
 }
@@ -17,7 +14,6 @@ interface RunCreateInviteFlowArgs {
 export async function runCreateInviteFlow({
   canShareInvite,
   createInvite,
-  currentOrigin,
   markInviteCopied,
   onShareInvite,
   setError,
@@ -26,15 +22,15 @@ export async function runCreateInviteFlow({
   const invite = await createInvite();
   markInviteCopied(false);
 
-  const inviteUrl = buildShareableInviteUrl(invite.invitePath, currentOrigin);
-  if (!inviteUrl) {
+  const inviteCode = invite.token.trim();
+  if (!inviteCode) {
     setError(shareFailedMessage);
     return null;
   }
 
   if (canShareInvite) {
-    await onShareInvite(inviteUrl);
+    await onShareInvite(inviteCode);
   }
 
-  return inviteUrl;
+  return inviteCode;
 }

@@ -21,7 +21,6 @@ class FamilyInviteResponseDto(ResponseBase):
     family_id: UUID
     family_name: str
     family_role: str
-    invite_path: str
     expires_at: datetime
 
 

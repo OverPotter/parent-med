@@ -34,8 +34,8 @@ export function SupportPage() {
   const supportEmail = getSupportEmail();
   const supportMailtoUrl = getSupportMailtoUrl();
   const isRussian = language === "ru";
-  const accountHref = hasSession ? "/more" : "/auth?mode=login";
-  const accountLabel = isRussian ? (hasSession ? "Ещё" : "Войти") : hasSession ? "More" : "Login";
+  const accountHref = hasSession ? "/more" : null;
+  const accountLabel = hasSession ? (isRussian ? "Ещё" : "More") : null;
   const copy = isRussian
     ? {
         title: "Поддержка / Контакты",

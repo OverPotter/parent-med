@@ -620,6 +620,120 @@
   color: var(--auth-v3-primary-strong);
 }
 
+.auth-v3-family-code-card {
+  border: 1px solid color-mix(in srgb, var(--auth-v3-card-border) 70%, transparent);
+  border-radius: 1.5rem;
+  background: color-mix(in srgb, white 72%, var(--auth-v3-primary-soft));
+  padding: 0.8rem;
+}
+
+.auth-v3-family-code-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  width: 100%;
+  border: 0;
+  border-radius: 1.15rem;
+  background: transparent;
+  padding: 0.2rem 0.15rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.auth-v3-family-code-toggle::after {
+  content: "▾";
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  color: var(--auth-v3-primary-strong);
+  transition: transform 180ms ease;
+}
+
+.auth-v3-family-code-toggle-open::after {
+  transform: rotate(180deg);
+}
+
+.auth-v3-family-code-toggle-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.auth-v3-family-code-toggle-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--auth-v3-text);
+}
+
+.auth-v3-family-code-toggle-meta {
+  font-size: 0.8rem;
+  color: var(--auth-v3-muted);
+}
+
+.auth-v3-family-code-toggle-verified .auth-v3-family-code-toggle-meta {
+  color: var(--auth-v3-primary-strong);
+  font-weight: 600;
+}
+
+.auth-v3-family-code-preview {
+  border: 1px solid rgba(72, 187, 120, 0.26);
+  border-radius: 1.1rem;
+  background: linear-gradient(180deg, rgba(240, 253, 244, 0.98) 0%, rgba(236, 253, 245, 0.94) 100%);
+  padding: 0.95rem 1rem;
+}
+
+.auth-v3-family-code-preview-header {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.auth-v3-family-code-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  align-self: flex-start;
+  border-radius: 9999px;
+  background: rgba(34, 197, 94, 0.12);
+  padding: 0.28rem 0.62rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #18794e;
+}
+
+.auth-v3-family-code-name {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--auth-v3-text);
+}
+
+.auth-v3-family-code-meta {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.auth-v3-family-code-meta-line {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: #4b6353;
+}
+
+.auth-v3-family-code-meta-line-strong {
+  font-weight: 700;
+  color: var(--auth-v3-text);
+}
+
+.auth-v3-family-code-cta {
+  min-height: 3.3rem;
+}
+
 .auth-v3-summary {
   display: inline-flex;
   align-items: center;

@@ -57,9 +57,8 @@ export function TermsOfUsePage() {
   const showPublicHeader = !hasSession || fromPaywall;
   const privacyUrl = getPrivacyPolicyUrl();
   const supportUrl = getSupportUrl();
-  const accountHref = hasSession ? "/more" : "/auth?mode=login";
-  const accountLabel =
-    language === "ru" ? (hasSession ? "Ещё" : "Войти") : hasSession ? "More" : "Login";
+  const accountHref = hasSession ? "/more" : null;
+  const accountLabel = hasSession ? (language === "ru" ? "Ещё" : "More") : null;
 
   return (
     <div

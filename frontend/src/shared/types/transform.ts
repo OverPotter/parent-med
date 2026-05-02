@@ -244,7 +244,6 @@ interface RawFamilyInvite {
   family_id: string;
   family_name: string;
   family_role: string;
-  invite_path: string;
   expires_at: string;
 }
 
@@ -491,7 +490,6 @@ export function toFamilyInvite(r: RawFamilyInvite): FamilyInvite {
     familyId: r.family_id,
     familyName: r.family_name,
     familyRole: r.family_role,
-    invitePath: r.invite_path,
     expiresAt: r.expires_at,
   };
 }

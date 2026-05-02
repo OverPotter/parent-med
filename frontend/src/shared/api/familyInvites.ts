@@ -10,7 +10,6 @@ export async function createFamilyInvite(payload?: {
     family_id: string;
     family_name: string;
     family_role: string;
-    invite_path: string;
     expires_at: string;
   }>("/family-invites", payload ?? {});
   return toFamilyInvite(res.data);
@@ -23,15 +22,5 @@ export async function fetchFamilyInvitePreview(token: string): Promise<FamilyInv
     family_role: string;
     expires_at: string;
   }>(`/family-invites/${token}`);
-  return toFamilyInvitePreview(res.data);
-}
-
-export async function fetchLatestDevFamilyInvitePreview(): Promise<FamilyInvitePreview> {
-  const res = await apiClient.get<{
-    family_id: string;
-    family_name: string;
-    family_role: string;
-    expires_at: string;
-  }>("/family-invites/dev/latest");
   return toFamilyInvitePreview(res.data);
 }

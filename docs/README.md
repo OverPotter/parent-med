@@ -35,7 +35,7 @@ Module-local notes:
 ## 3. Testing And Release
 
 - [DEV_TESTING.md](./DEV_TESTING.md)
-  - dev invite tooling, RevenueCat sandbox, manual dev scenarios
+  - family-code flow, RevenueCat sandbox, manual dev scenarios
 - [PROD_SMOKE_TEST_CHECKLIST.md](./PROD_SMOKE_TEST_CHECKLIST.md)
   - финальный production smoke checklist перед и после релиза
 - [APP_STORE_REVIEW_NOTES.md](./APP_STORE_REVIEW_NOTES.md)

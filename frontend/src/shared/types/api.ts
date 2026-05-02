@@ -82,7 +82,6 @@ export interface FamilyInvite {
   familyId: string;
   familyName: string;
   familyRole: string;
-  invitePath: string;
   expiresAt: string;
 }
 

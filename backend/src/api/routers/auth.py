@@ -13,7 +13,6 @@ from src.application.dto.auth import (
     AuthStateResponseDto,
     ChangePasswordDto,
     LoginDto,
-    LoginFamilyInviteDto,
     RecoverPasswordByCodeDto,
     RefreshDto,
     RegisterDto,
@@ -78,41 +77,6 @@ async def _run_signin(
         auth,
         include_tokens=include_tokens,
         include_cookies=include_cookies,
-    )
-
-
-async def _run_signin_and_accept_family_invite(
-    *,
-    request: Request,
-    response: Response,
-    dto: LoginFamilyInviteDto,
-    service: BaseAuthService,
-    auth_attempt_repo: AuthAttemptRepository,
-) -> AuthResponseDto:
-    identifier = dto.email.strip().lower()
-    client_ip = _client_ip(request)
-    logger.info(
-        "Auth signin+invite attempt | identifier={} ip={} has_token={} dev_latest={}",
-        identifier,
-        client_ip,
-        bool(dto.invite_token),
-        dto.use_latest_dev_invite,
-    )
-    bucket_keys = build_auth_attempt_bucket_keys(client_ip, identifier)
-    async with auth_attempt_repo.locked(bucket_keys) as locked_repo:
-        throttle = _build_throttle(locked_repo)
-        await throttle.assert_allowed("signin", client_ip, identifier)
-        try:
-            auth = await service.signin_and_accept_family_invite(dto)
-        except UnauthorizedError:
-            await throttle.record_failure("signin", client_ip, identifier)
-            raise
-    logger.info("Вход и принятие приглашения | identifier={}", dto.email)
-    return build_auth_response(
-        response,
-        auth,
-        include_tokens=False,
-        include_cookies=True,
     )
 
 
@@ -219,23 +183,6 @@ async def native_signin(
         include_tokens=True,
         include_cookies=False,
         log_message="Native вход",
-    )
-
-
-@router.post("/signin/family-invite", response_model=AuthResponseDto)
-async def signin_and_accept_family_invite(
-    request: Request,
-    response: Response,
-    dto: LoginFamilyInviteDto,
-    service: BaseAuthService = Depends(get_auth_service),
-    auth_attempt_repo: AuthAttemptRepository = Depends(get_auth_attempt_repo),
-) -> AuthResponseDto:
-    return await _run_signin_and_accept_family_invite(
-        request=request,
-        response=response,
-        dto=dto,
-        service=service,
-        auth_attempt_repo=auth_attempt_repo,
     )
 
 

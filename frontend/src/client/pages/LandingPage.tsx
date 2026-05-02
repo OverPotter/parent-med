@@ -64,9 +64,9 @@ export function LandingPage() {
     return [lastSection, ...FEATURE_SECTION_IDS, firstSection];
   }, []);
   const shouldOpenAuthInApp = searchParams.get(NATIVE_APP_MARKETING_FLAG) === "1";
-  const loginTarget =
-    getSafeNativeMarketingUrl(searchParams.get("appLoginUrl")) ||
-    buildNativeAppUrl("/auth?mode=login");
+  const registerTarget =
+    getSafeNativeMarketingUrl(searchParams.get("appRegisterUrl")) ||
+    buildNativeAppUrl("/auth?mode=register");
 
   const openInApp = (url: string) => {
     if (typeof window === "undefined") {
@@ -76,8 +76,8 @@ export function LandingPage() {
   };
 
   const headerActions = shouldOpenAuthInApp
-    ? [{ label: copy.landing.hero.login, onClick: () => openInApp(loginTarget) }]
-    : [{ label: copy.landing.hero.login, to: "/auth?mode=login" }];
+    ? [{ label: copy.landing.sections.finalCta.primary, onClick: () => openInApp(registerTarget) }]
+    : [{ label: copy.landing.sections.finalCta.primary, to: "/auth?mode=register" }];
 
   const {
     activeIndex: heroSlideIndex,
@@ -508,39 +508,20 @@ export function LandingPage() {
                   </p>
 
                   <div className="landing-hero-cta-wrap mt-4 flex flex-col items-start gap-2.5">
-                    <p className="text-sm text-muted">
-                      {copy.landing.hero.loginPrompt}{" "}
-                      {shouldOpenAuthInApp ? (
-                        <button
-                          type="button"
-                          onClick={() => openInApp(loginTarget)}
-                          className="font-semibold text-[color:var(--color-primary)] underline-offset-4 hover:underline"
-                        >
-                          {copy.landing.hero.login}
-                        </button>
-                      ) : (
-                        <Link
-                          to="/auth?mode=login"
-                          className="font-semibold text-[color:var(--color-primary)] underline-offset-4 hover:underline"
-                        >
-                          {copy.landing.hero.login}
-                        </Link>
-                      )}
-                    </p>
                     {shouldOpenAuthInApp ? (
                       <button
                         type="button"
-                        onClick={() => openInApp(loginTarget)}
+                        onClick={() => openInApp(registerTarget)}
                         className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                       >
-                        {copy.landing.hero.login}
+                        {copy.landing.sections.finalCta.primary}
                       </button>
                     ) : (
                       <Link
-                        to="/auth?mode=login"
+                        to="/auth?mode=register"
                         className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                       >
-                        {copy.landing.hero.login}
+                        {copy.landing.sections.finalCta.primary}
                       </Link>
                     )}
                   </div>
@@ -793,17 +774,17 @@ export function LandingPage() {
                       {shouldOpenAuthInApp ? (
                         <button
                           type="button"
-                          onClick={() => openInApp(loginTarget)}
+                          onClick={() => openInApp(registerTarget)}
                           className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                         >
-                          {copy.landing.hero.login}
+                          {copy.landing.sections.finalCta.primary}
                         </button>
                       ) : (
                         <Link
-                          to="/auth?mode=login"
+                          to="/auth?mode=register"
                           className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                         >
-                          {copy.landing.hero.login}
+                          {copy.landing.sections.finalCta.primary}
                         </Link>
                       )}
                     </div>
@@ -876,17 +857,17 @@ export function LandingPage() {
                   {shouldOpenAuthInApp ? (
                     <button
                       type="button"
-                      onClick={() => openInApp(loginTarget)}
+                      onClick={() => openInApp(registerTarget)}
                       className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                     >
-                      {copy.landing.hero.login}
+                      {copy.landing.sections.finalCta.primary}
                     </button>
                   ) : (
                     <Link
-                      to="/auth?mode=login"
+                      to="/auth?mode=register"
                       className="landing-cta-button rounded-2xl px-5 py-3 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--landing-cta-ring)]"
                     >
-                      {copy.landing.hero.login}
+                      {copy.landing.sections.finalCta.primary}
                     </Link>
                   )}
                 </div>

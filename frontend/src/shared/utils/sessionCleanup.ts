@@ -1,7 +1,6 @@
 import { deletePushSubscription } from "@shared/api/pushNotifications";
 import { useAppStore } from "@shared/store/useAppStore";
 import { clearNativeNavigationSessionState } from "@/app/push/sync";
-import { clearPendingFamilyInviteRoute } from "@shared/runtime/inviteFlow";
 import { stopAllLiveActivities } from "./liveActivities";
 import {
   clearCachedNativePushState,
@@ -25,7 +24,6 @@ export async function cleanupDeviceSessionArtifacts(options?: { includeServerCle
   }
 
   clearNativeNavigationSessionState();
-  clearPendingFamilyInviteRoute();
 
   try {
     if (includeServerCleanup && hasSession) {

@@ -46,10 +46,6 @@ import { shouldClearSessionForAuthError } from "@shared/api/authSessionErrors";
 import { shouldUseAppEntryWebMode } from "@shared/runtime/publicWebsiteMode";
 import { cleanupDeviceSessionArtifacts } from "@shared/utils/sessionCleanup";
 import { shouldRedirectAfterSessionLoss } from "@client/startup/startupDecisions";
-import {
-  readPendingFamilyInviteRoute,
-  resolveInviteAwareSignedOutPath,
-} from "@shared/runtime/inviteFlow";
 const ClientLayout = lazy(() =>
   import("@client/layout/ClientLayout").then((module) => ({ default: module.ClientLayout }))
 );
@@ -93,9 +89,6 @@ const FamilyMemberAccessPage = lazy(() =>
   import("@client/pages/FamilyMemberAccessPage").then((module) => ({
     default: module.FamilyMemberAccessPage,
   }))
-);
-const JoinFamilyPage = lazy(() =>
-  import("@client/pages/JoinFamilyPage").then((module) => ({ default: module.JoinFamilyPage }))
 );
 const RecoverPasswordPage = lazy(() =>
   import("@client/pages/RecoverPasswordPage").then((module) => ({
@@ -187,9 +180,6 @@ function renderPublicWebsiteRoutes() {
   return PUBLIC_WEBSITE_SHARED_ROUTE_PATHS.map((path) => {
     if (path === "/") {
       return <Route key={path} path={path} element={<LandingPage />} />;
-    }
-    if (path === "/join-family") {
-      return <Route key={path} path={path} element={<JoinFamilyPage />} />;
     }
     if (path === "/legal") {
       return <Route key={path} path={path} element={<LegalPage />} />;
@@ -283,11 +273,7 @@ function SessionLossRedirect({ defaultTargetPath }: { defaultTargetPath: string 
   const hasSession = Boolean(authToken || accountId);
   const hadSessionRef = useRef(hasSession);
   const currentUrl = `${location.pathname}${location.search}${location.hash}`;
-  const targetPath = resolveInviteAwareSignedOutPath({
-    currentUrl,
-    defaultPath: defaultTargetPath,
-    pendingInviteRoute: readPendingFamilyInviteRoute(),
-  });
+  const targetPath = defaultTargetPath;
 
   useEffect(() => {
     if (
@@ -317,7 +303,8 @@ export default function App() {
   const isNativeRuntime = Capacitor.isNativePlatform();
   const shouldUseAppEntryRoute = isNativeRuntime || shouldUseAppEntryWebMode();
   const isPublicWebsiteMode = !isNativeRuntime && !shouldUseAppEntryWebMode();
-  const signedOutTargetPath = shouldUseAppEntryRoute ? "/auth?mode=login" : "/";
+  const sessionLossTargetPath = shouldUseAppEntryRoute ? "/auth?mode=login" : "/";
+  const signedOutEntryPath = shouldUseAppEntryRoute ? "/auth?mode=register" : "/";
   const isNonCriticalStartupReady = useDeferredNonCriticalStartupReady();
   const hasSession = Boolean(authToken || accountId);
   const shouldMountClientRuntime = isNonCriticalStartupReady && hasSession && role !== "admin";
@@ -415,7 +402,7 @@ export default function App() {
       <NetworkStatusBanner />
       <IOSLandingGestureGuard />
       <AuthSync />
-      <SessionLossRedirect defaultTargetPath={signedOutTargetPath} />
+      <SessionLossRedirect defaultTargetPath={sessionLossTargetPath} />
       <RevenueCatSync />
       <DisplayNameOnboardingOverlay />
       {role !== "admin" ? <NativePushNavigationSync /> : null}
@@ -429,13 +416,12 @@ export default function App() {
                   path="/"
                   element={
                     shouldUseAppEntryRoute ? (
-                      <Navigate to="/auth?mode=login" replace />
+                      <Navigate to={signedOutEntryPath} replace />
                     ) : (
                       <LandingPage />
                     )
                   }
                 />
-                <Route path="/join-family" element={<JoinFamilyPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/recover-password" element={<RecoverPasswordPage />} />
                 <Route path="/legal" element={<LegalPage />} />
@@ -481,7 +467,6 @@ export default function App() {
                       path="family/members/:memberAccountId/access"
                       element={<FamilyMemberAccessPage />}
                     />
-                    <Route path="join-family" element={<JoinFamilyPage />} />
                     <Route path="children" element={<ChildrenPage />} />
                     <Route path="children/new" element={<ChildCreatePage />} />
                     <Route path="children/:childId/edit" element={<ChildEditPage />} />

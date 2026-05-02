@@ -57,9 +57,8 @@ export function PrivacyPolicyPage() {
   const showPublicHeader = !hasSession || fromPaywall;
   const supportUrl = getSupportUrl();
   const termsUrl = getTermsOfUseUrl();
-  const accountHref = hasSession ? "/more" : "/auth?mode=login";
-  const accountLabel =
-    language === "ru" ? (hasSession ? "Ещё" : "Войти") : hasSession ? "More" : "Login";
+  const accountHref = hasSession ? "/more" : null;
+  const accountLabel = hasSession ? (language === "ru" ? "Ещё" : "More") : null;
 
   return (
     <div
@@ -162,8 +161,8 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             {language === "ru"
-              ? "Данные семьи: название семьи, участники, роли, ссылки-приглашения и связанные действия."
-              : "Family data: family name, members, roles, invite links, and related actions."}
+              ? "Данные семьи: название семьи, участники, роли, коды приглашения и связанные действия."
+              : "Family data: family name, members, roles, invite codes, and related actions."}
           </li>
           <li>
             {language === "ru"
