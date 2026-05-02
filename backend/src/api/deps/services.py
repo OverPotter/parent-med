@@ -18,7 +18,6 @@ from src.api.deps.repositories import (
     get_household_medicine_repo,
     get_illness_comment_repo,
     get_illness_episode_repo,
-    get_parent_repo,
     get_pillbox_repo,
     get_plan_repo,
     get_public_support_request_repo,
