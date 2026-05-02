@@ -395,7 +395,11 @@ export function AuthPage() {
     blurActiveField();
     resetAuthFormState();
     setMode(nextMode);
-    setSearchParams(nextMode === "register" ? { mode: "register" } : { mode: "login" });
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+      nextParams.set("mode", nextMode);
+      return nextParams;
+    });
     setError(null);
     if (isNativeIOS) {
       return;
