@@ -31,7 +31,6 @@ import type {
 } from "@shared/types/api";
 import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
-import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
 import { getPrioritizedMedicationPlanItems } from "@client/utils/medicationPlans";
 import {
   AdministrationQuickView,
@@ -489,23 +488,6 @@ export function EpisodeBlock({
       onSubmit={doseLogging.submitPending}
     />
   );
-
-  useEffect(() => {
-    if (
-      isUpdatingRecipients ||
-      !shouldAutoAssignCurrentRecipient(
-        episode.memberAccountIds,
-        accountId,
-        familyMembers.map((member) => member.id)
-      )
-    ) {
-      return;
-    }
-    if (!accountId) {
-      return;
-    }
-    updateEpisodeRecipients([accountId]);
-  }, [accountId, episode.memberAccountIds, familyMembers, isUpdatingRecipients]);
 
   useEffect(() => {
     if (!quickReminderDetailMode || !reminderPlanId || selectedReminderItem) {

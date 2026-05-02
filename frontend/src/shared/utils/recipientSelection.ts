@@ -1,9 +1,17 @@
+export function getEligibleRecipientSelection(
+  selectedIds: string[] | null | undefined,
+  eligibleAccountIds: string[]
+): string[] {
+  const normalizedSelectedIds = (selectedIds ?? []).filter((id) => eligibleAccountIds.includes(id));
+  return normalizedSelectedIds;
+}
+
 export function resolveRecipientSelection(
   selectedIds: string[] | null | undefined,
   currentAccountId: string | null | undefined,
   eligibleAccountIds: string[]
 ): string[] {
-  const normalizedSelectedIds = (selectedIds ?? []).filter((id) => eligibleAccountIds.includes(id));
+  const normalizedSelectedIds = getEligibleRecipientSelection(selectedIds, eligibleAccountIds);
   if (normalizedSelectedIds.length > 0) {
     return normalizedSelectedIds;
   }

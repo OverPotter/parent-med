@@ -17,6 +17,9 @@ from src.domain.entities.family_access import FamilyAccessPolicy
 from src.infrastructure.database.models.household_medicine_notification_delivery import (
     HouseholdMedicineNotificationDeliveryModel,
 )
+from src.infrastructure.database.models.illness_notification_delivery import (
+    IllnessNotificationDeliveryModel,
+)
 
 
 def build_account(policy: FamilyAccessPolicy) -> Account:
@@ -147,6 +150,23 @@ def test_cabinet_delivery_log_is_scoped_per_account() -> None:
         "account_id",
     )
     assert HouseholdMedicineNotificationDeliveryModel.__table__.c.account_id.nullable is False
+
+
+def test_illness_delivery_log_is_scoped_per_account() -> None:
+    unique_constraints = [
+        constraint
+        for constraint in IllnessNotificationDeliveryModel.__table__.constraints
+        if getattr(constraint, "name", None) == "uq_illness_notification_delivery"
+    ]
+
+    assert len(unique_constraints) == 1
+    assert tuple(unique_constraints[0].columns.keys()) == (
+        "plan_id",
+        "notification_kind",
+        "scheduled_for",
+        "account_id",
+    )
+    assert IllnessNotificationDeliveryModel.__table__.c.account_id.nullable is False
 
 
 def test_illness_push_bodies_keep_child_name_in_body_for_shorter_titles() -> None:

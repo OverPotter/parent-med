@@ -11,10 +11,10 @@ import type {
   WeightEntry,
 } from "@shared/types/api";
 import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
-import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
 import type { MedicationPlanPriorityItem } from "../../utils/medicationPlans";
 import type { MedicationPlanPayload } from "./reminderUtils";
+import { resolveIllnessRecipientSelection } from "./recipientSelection";
 import { AdministrationForm, TemperatureForm, illnessCompactTextareaClass } from "./forms";
 import { tFamily } from "../family/copy";
 import { MedicationPlanComposer, MedicationPlanDetail, MedicationPlanList } from "./reminders";
@@ -53,7 +53,7 @@ function EpisodeReminderRecipientsCard({
     [familyMembers]
   );
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
-    resolveRecipientSelection(episode.memberAccountIds, currentAccountId, eligibleMemberIds)
+    resolveIllnessRecipientSelection(episode.memberAccountIds, eligibleMemberIds, currentAccountId)
   );
   const [isOpen, setIsOpen] = useState(false);
 
@@ -62,7 +62,11 @@ function EpisodeReminderRecipientsCard({
       return;
     }
     setSelectedIds(
-      resolveRecipientSelection(episode.memberAccountIds, currentAccountId, eligibleMemberIds)
+      resolveIllnessRecipientSelection(
+        episode.memberAccountIds,
+        eligibleMemberIds,
+        currentAccountId
+      )
     );
   }, [currentAccountId, eligibleMemberIds, episode.memberAccountIds, isPending]);
 
@@ -126,9 +130,14 @@ function EpisodeReminderRecipientsCard({
                     type="button"
                     onClick={() => {
                       setSelectedIds((current) => {
-                        const nextIds = current.includes(member.id)
+                        const toggledIds = current.includes(member.id)
                           ? current.filter((id) => id !== member.id)
                           : [...current, member.id];
+                        const nextIds = resolveIllnessRecipientSelection(
+                          toggledIds,
+                          eligibleMemberIds,
+                          currentAccountId
+                        );
                         onChangeSelection(nextIds);
                         return nextIds;
                       });
@@ -171,10 +180,10 @@ function formatIllnessRecipientsSummary(params: {
   currentAccountId: string | null;
 }) {
   const eligibleMemberIds = params.familyMembers.map((member) => member.id);
-  const resolvedIds = resolveRecipientSelection(
+  const resolvedIds = resolveIllnessRecipientSelection(
     params.selectedIds,
-    params.currentAccountId,
-    eligibleMemberIds
+    eligibleMemberIds,
+    params.currentAccountId
   );
   const labels = params.familyMembers
     .filter((member) => resolvedIds.includes(member.id))
