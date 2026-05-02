@@ -252,8 +252,8 @@ export function TermsOfUsePage() {
         </p>
         <p>
           {language === "ru"
-            ? "Удаление аккаунта в PillPath не отменяет автоматически подписку Plus. Если этот аккаунт управляет Plus для семьи, сначала отмените продление отдельно в настройках Apple ID / App Store и дождитесь окончания текущего оплаченного периода."
-            : "Deleting a PillPath account does not automatically cancel a Plus subscription. If this account manages Plus for the family, first cancel renewal separately in Apple ID / App Store settings and wait until the current paid period ends."}
+            ? "Удаление аккаунта в PillPath не отменяет автоматически подписку Plus. Если этот аккаунт управляет Plus для семьи, приложение может потребовать сначала отдельно открыть настройки Apple ID / App Store, выключить продление и дождаться окончания текущего оплаченного периода, прежде чем встроенное удаление аккаунта станет доступно."
+            : "Deleting a PillPath account does not automatically cancel a Plus subscription. If this account manages Plus for the family, the app may require you to first open Apple ID / App Store settings separately, turn off renewal, and wait until the current paid period ends before in-app account deletion becomes available."}
         </p>
 
         <h2 className="text-base font-semibold text-main">

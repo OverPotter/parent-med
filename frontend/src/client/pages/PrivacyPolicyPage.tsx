@@ -186,8 +186,8 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             {language === "ru"
-              ? "Диагностические и аналитические данные: базовые события использования приложения и техническая телеметрия. Аналитические cookies и трекинг включаются только после вашего согласия там, где это предусмотрено."
-              : "Diagnostics and analytics data: basic app usage events and technical telemetry. Analytics cookies and tracking are enabled only after your consent where applicable."}
+              ? "Диагностические и аналитические данные: базовые события использования приложения, просмотры экранов, техническая телеметрия сессии и связанные служебные аналитические идентификаторы. На публичном сайте аналитические cookies включаются после вашего согласия там, где это применимо."
+              : "Diagnostics and analytics data: basic app usage events, screen views, session-level technical telemetry, and related service analytics identifiers. On the public website, analytics cookies are enabled after your consent where applicable."}
           </li>
         </ul>
         <p>
@@ -217,8 +217,8 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             {language === "ru"
-              ? "От встроенных сервисов аналитики и инфраструктуры, если это необходимо для работы приложения и разрешено вашими настройками consent."
-              : "From integrated analytics and infrastructure services where needed for app operation and permitted by your consent settings."}
+              ? "От встроенных сервисов аналитики и инфраструктуры, когда они используются в приложении или на публичном сайте."
+              : "From integrated analytics and infrastructure services when they are used in the app or on the public website."}
           </li>
         </ul>
 
@@ -253,8 +253,8 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             {language === "ru"
-              ? "Чтобы анализировать использование продукта и улучшать интерфейс только в рамках разрешённой аналитики и согласия пользователя."
-              : "To analyze product usage and improve the interface only within the scope of permitted analytics and user consent."}
+              ? "Чтобы анализировать использование продукта, диагностировать ошибки и улучшать интерфейс. Для публичного сайта аналитические cookies используются только после согласия там, где это применимо."
+              : "To analyze product usage, diagnose issues, and improve the interface. For the public website, analytics cookies are used only after consent where applicable."}
           </li>
         </ul>
 
@@ -278,8 +278,8 @@ export function PrivacyPolicyPage() {
         </p>
         <p>
           {language === "ru"
-            ? "Если вы даёте согласие на аналитику, приложение может отправлять в сервис аналитики HitKeep события использования, просмотры экранов, технические сведения о сессии и, для авторизованного аккаунта, идентификатор аккаунта и семейную роль. Мы используем эти данные для product-аналитики, диагностики и улучшения интерфейса, а не для рекламы."
-            : "If you consent to analytics, the app may send usage events, screen views, session-level technical data, and, for signed-in users, the account identifier and family role to the HitKeep analytics service. We use this data for product analytics, diagnostics, and interface improvements, not for advertising."}
+            ? "Если в текущей сборке включён сервис аналитики HitKeep, приложение может отправлять события использования, просмотры экранов, технические сведения о сессии и, для авторизованного аккаунта, служебный аналитический идентификатор аккаунта и семейную роль. Для публичного сайта аналитические cookies и связанные веб-события включаются только после согласия там, где это применимо. Эти данные используются для product-аналитики, диагностики и улучшения интерфейса, а не для рекламы."
+            : "If the HitKeep analytics service is enabled in the current build, the app may send usage events, screen views, session-level technical data, and, for signed-in users, a service analytics account identifier and family role. For the public website, analytics cookies and related web events are enabled only after consent where applicable. This data is used for product analytics, diagnostics, and interface improvements, not for advertising."}
         </p>
 
         <h2 className="text-base font-semibold text-main">
@@ -297,8 +297,8 @@ export function PrivacyPolicyPage() {
         </p>
         <p>
           {language === "ru"
-            ? "Удаление аккаунта PillPath не отменяет автоматически подписку Plus в App Store. Если этот аккаунт управляет Plus для семьи, сначала нужно отдельно отключить продление через Apple ID / App Store и дождаться окончания текущего оплаченного периода."
-            : "Deleting a PillPath account does not automatically cancel a Plus subscription in the App Store. If this account manages Plus for the family, renewal must first be turned off separately through Apple ID / the App Store, and the current paid period must be allowed to end."}
+            ? "Удаление аккаунта PillPath не отменяет автоматически подписку Plus в App Store. Если этот аккаунт управляет Plus для семьи, приложение может потребовать сначала отдельно открыть Apple ID / App Store, выключить продление и дождаться окончания текущего оплаченного периода, прежде чем встроенное удаление станет доступно."
+            : "Deleting a PillPath account does not automatically cancel a Plus subscription in the App Store. If this account manages Plus for the family, the app may require you to first open Apple ID / the App Store, turn off renewal, and wait until the current paid period ends before in-app deletion becomes available."}
         </p>
 
         <h2 className="text-base font-semibold text-main">
@@ -312,8 +312,8 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             {language === "ru"
-              ? "Аналитические cookies и аналитика использования включаются только после согласия там, где применимо. Если вы не даёте согласие, соответствующие аналитические события не должны отправляться."
-              : "Analytics cookies and usage analytics are enabled only after consent where applicable. If you do not consent, the corresponding analytics events should not be sent."}
+              ? "На публичном сайте аналитические cookies включаются только после согласия там, где применимо. В приложении часть служебной аналитики и диагностики может использоваться при включённой аналитической инфраструктуре текущей сборки."
+              : "On the public website, analytics cookies are enabled only after consent where applicable. In the app, some service analytics and diagnostics may be used when the current build has analytics infrastructure enabled."}
           </li>
           <li>
             {language === "ru"
