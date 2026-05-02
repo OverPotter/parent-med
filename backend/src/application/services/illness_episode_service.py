@@ -323,12 +323,10 @@ class IllnessEpisodeService:
             raise ValidationError(
                 "У ребёнка уже есть активный эпизод. " "Закройте его перед созданием нового."
             )
-        notification_recipient_account_ids = (
-            await self._resolve_notification_recipient_account_ids(
+        notification_recipient_account_ids = await self._resolve_notification_recipient_account_ids(
             dto.member_account_ids,
             current_account.family_id,
             dto.child_id,
-            )
         )
         entity = IllnessEpisode(
             id=uuid4(),
