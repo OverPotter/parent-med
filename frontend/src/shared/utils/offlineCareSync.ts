@@ -150,7 +150,7 @@ export async function createIllnessEpisodeResilient(input: {
     title?: string | null;
     medication_mode: string;
     note?: string | null;
-    member_account_ids?: string[];
+    notification_recipient_account_ids?: string[];
     temperatures: Array<{ value_celsius: number }>;
     administrations: Array<{
       household_medicine_id?: string | null;
@@ -177,7 +177,7 @@ export async function createIllnessEpisodeResilient(input: {
       title: input.payload.title,
       medication_mode: input.payload.medication_mode,
       note: input.payload.note,
-      member_account_ids: input.payload.member_account_ids,
+      notification_recipient_account_ids: input.payload.notification_recipient_account_ids,
     });
 
     await Promise.all([
@@ -317,7 +317,7 @@ async function flushAction(action: OfflineCareAction): Promise<void> {
       title: action.payload.title,
       medication_mode: action.payload.medication_mode,
       note: action.payload.note,
-      member_account_ids: action.payload.member_account_ids,
+      notification_recipient_account_ids: action.payload.member_account_ids,
     });
 
     await Promise.all([

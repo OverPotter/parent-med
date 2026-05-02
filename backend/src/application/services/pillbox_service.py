@@ -33,6 +33,7 @@ from src.domain.repositories.pillbox_repository import PillboxRepository
 class PillboxService:
     """CRUD и вычислительная логика семейной таблетницы."""
 
+    _EARLY_LOG_GRACE = timedelta(minutes=1)
     _ON_TIME_WINDOW = timedelta(minutes=30)
     _LATE_WINDOW = timedelta(hours=4)
 
@@ -871,7 +872,7 @@ class PillboxService:
             scheduled_for = scheduled_for.replace(tzinfo=UTC)
         if not self._is_valid_scheduled_slot(medication, scheduled_for):
             raise ValidationError("Нельзя отметить приём для несуществующего слота")
-        if scheduled_for > now:
+        if scheduled_for > now + self._EARLY_LOG_GRACE:
             raise ValidationError("Нельзя отметить приём заранее")
         if self._is_candidate_already_taken(plan, medication, scheduled_for):
             raise ValidationError("Этот приём уже отмечен")

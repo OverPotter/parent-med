@@ -31,7 +31,6 @@ import type {
 } from "@shared/types/api";
 import { getCurrentDeviceTimestampIso } from "@shared/utils/date";
 import { requestLiveActivityRefresh } from "@shared/utils/liveActivityRuntimeEvents";
-import { shouldAutoAssignCurrentRecipient } from "@shared/utils/recipientSelection";
 import { getPrioritizedMedicationPlanItems } from "@client/utils/medicationPlans";
 import {
   AdministrationQuickView,
@@ -104,7 +103,7 @@ export function EpisodeBlock({
   const [isReminderEditing, setIsReminderEditing] = useState(false);
   const [editingReminderName, setEditingReminderName] = useState<string | null>(null);
   const [recipientDraftIds, setRecipientDraftIds] = useState<string[]>(
-    () => episode.memberAccountIds
+    () => episode.notificationRecipientAccountIds
   );
   const [commentText, setCommentText] = useState("");
   const [quickComposeSuccessMessage, setQuickComposeSuccessMessage] = useState<string | null>(null);
@@ -317,11 +316,11 @@ export function EpisodeBlock({
   });
 
   const updateEpisodeRecipientsMutation = useMutation({
-    mutationFn: (memberAccountIds: string[]) =>
+    mutationFn: (notificationRecipientAccountIds: string[]) =>
       updateIllnessEpisode(episode.id, {
-        member_account_ids: memberAccountIds,
+        notification_recipient_account_ids: notificationRecipientAccountIds,
       }),
-    onMutate: async (memberAccountIds) => {
+    onMutate: async (notificationRecipientAccountIds) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ["illness-episode-active", childId] }),
         queryClient.cancelQueries({ queryKey: ["illness-episodes", childId] }),
@@ -338,14 +337,15 @@ export function EpisodeBlock({
 
       upsertIllnessEpisodeForChild(queryClient, childId, {
         ...episode,
-        memberAccountIds: [...memberAccountIds],
+        notificationRecipientAccountIds: [...notificationRecipientAccountIds],
       });
 
       return { previousActiveEpisode, previousEpisodes };
     },
     onError: (_error, _memberAccountIds, context) => {
       setRecipientDraftIds(
-        context?.previousActiveEpisode?.memberAccountIds ?? episode.memberAccountIds
+        context?.previousActiveEpisode?.notificationRecipientAccountIds ??
+          episode.notificationRecipientAccountIds
       );
       if (context?.previousActiveEpisode !== undefined) {
         queryClient.setQueryData(
@@ -358,7 +358,7 @@ export function EpisodeBlock({
       }
     },
     onSuccess: (updatedEpisode) => {
-      setRecipientDraftIds(updatedEpisode.memberAccountIds);
+      setRecipientDraftIds(updatedEpisode.notificationRecipientAccountIds);
       upsertIllnessEpisodeForChild(queryClient, childId, updatedEpisode);
       queryClient.invalidateQueries({ queryKey: ["illness-episode-active", childId] });
       queryClient.invalidateQueries({ queryKey: ["illness-episodes", childId] });
@@ -372,11 +372,11 @@ export function EpisodeBlock({
     if (isUpdatingRecipients) {
       return;
     }
-    setRecipientDraftIds(episode.memberAccountIds);
-  }, [episode.memberAccountIds, isUpdatingRecipients]);
+    setRecipientDraftIds(episode.notificationRecipientAccountIds);
+  }, [episode.notificationRecipientAccountIds, isUpdatingRecipients]);
 
   const recipientsEpisode = useMemo<IllnessEpisode>(
-    () => ({ ...episode, memberAccountIds: recipientDraftIds }),
+    () => ({ ...episode, notificationRecipientAccountIds: recipientDraftIds }),
     [episode, recipientDraftIds]
   );
 
@@ -489,23 +489,6 @@ export function EpisodeBlock({
       onSubmit={doseLogging.submitPending}
     />
   );
-
-  useEffect(() => {
-    if (
-      isUpdatingRecipients ||
-      !shouldAutoAssignCurrentRecipient(
-        episode.memberAccountIds,
-        accountId,
-        familyMembers.map((member) => member.id)
-      )
-    ) {
-      return;
-    }
-    if (!accountId) {
-      return;
-    }
-    updateEpisodeRecipients([accountId]);
-  }, [accountId, episode.memberAccountIds, familyMembers, isUpdatingRecipients]);
 
   useEffect(() => {
     if (!quickReminderDetailMode || !reminderPlanId || selectedReminderItem) {

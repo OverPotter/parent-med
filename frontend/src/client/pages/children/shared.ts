@@ -147,32 +147,9 @@ export function formatIllnessDuration(startedAt: string, now: number, language: 
 }
 
 export function formatIllnessActiveLabel(startedAt: string, now: number, language: "ru" | "en") {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(startedAt.trim())) {
-    const duration = formatIllnessDuration(startedAt, now, language);
-    if (duration === (language === "ru" ? "1 день" : "1 day")) {
-      return language === "ru" ? "Наблюдение" : "Observation";
-    }
-    return language === "ru" ? `Наблюдение · ${duration}` : `Observation · ${duration}`;
-  }
-
-  const startedAtMs = Date.parse(startedAt);
-  if (Number.isNaN(startedAtMs)) {
+  const duration = formatIllnessDuration(startedAt, now, language);
+  if (duration === (language === "ru" ? "1 день" : "1 day")) {
     return language === "ru" ? "Наблюдение" : "Observation";
   }
-
-  const totalMinutes = Math.max(0, Math.floor((now - startedAtMs) / 60_000));
-  const totalHours = Math.floor(totalMinutes / 60);
-  const totalDays = Math.floor(totalHours / 24);
-
-  if (totalDays > 0) {
-    const duration = formatIllnessDuration(startedAt, now, language);
-    return language === "ru" ? `Наблюдение · ${duration}` : `Observation · ${duration}`;
-  }
-
-  if (totalHours > 0) {
-    return language === "ru" ? `Наблюдение · ${totalHours} ч` : `Observation · ${totalHours} h`;
-  }
-
-  const minutes = Math.max(1, totalMinutes);
-  return language === "ru" ? `Наблюдение · ${minutes} мин` : `Observation · ${minutes} min`;
+  return language === "ru" ? `Наблюдение · ${duration}` : `Observation · ${duration}`;
 }

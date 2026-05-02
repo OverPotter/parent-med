@@ -13,6 +13,19 @@ function parseDateValue(value: string | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+export function formatLocalizedDate(
+  value: string | null | undefined,
+  language: "ru" | "en" = "ru"
+): string {
+  if (!value) return "";
+  const parsed = parseDateValue(value);
+  if (!parsed) return value;
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const year = String(parsed.getFullYear());
+  return language === "ru" ? `${day}.${month}.${year}` : `${month}/${day}/${year}`;
+}
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "";
   const parsed = parseDateValue(value);

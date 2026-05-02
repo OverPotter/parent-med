@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { loginAndAcceptInvite, register } from "@shared/api/auth";
+import { applySessionToClient } from "@shared/api/client";
 import {
   fetchFamilyInvitePreview,
   fetchLatestDevFamilyInvitePreview,
@@ -12,13 +13,19 @@ import { PageIntro } from "@shared/components/PageIntro";
 import { PublicSiteHeader } from "@shared/components/PublicSiteHeader";
 import { Surface } from "@shared/components/Surface";
 import { buildNativeAppUrl, getAppStoreUrl } from "@shared/config/nativeAppLinks";
+import { useMobileFormFocusHandlers } from "@shared/hooks/useMobileFormFocusHandlers";
 import { useI18n } from "@shared/hooks/useI18n";
-import { buildAuthLoginRoute, getInviteAuthIntentFromRoute } from "@shared/runtime/inviteFlow";
+import {
+  buildAuthLoginRoute,
+  clearPendingFamilyInviteRoute,
+  getInviteAuthIntentFromRoute,
+} from "@shared/runtime/inviteFlow";
 import {
   resolveInviteFailureState,
   type InviteFailureState,
 } from "@shared/runtime/inviteFailureState";
 import { useAppStore } from "@shared/store/useAppStore";
+import { formatLocalizedDate } from "@shared/utils/date";
 import {
   buildJoinFamilyLoginPayload,
   buildJoinFamilyRegisterPayload,
@@ -39,10 +46,6 @@ function roleLabel(role: string, language: "ru" | "en"): string {
     return language === "ru" ? "Администратор семьи" : "Family admin";
   }
   return language === "ru" ? "Участник семьи" : "Family member";
-}
-
-function formatInviteDate(value: string, language: "ru" | "en"): string {
-  return new Date(value).toLocaleString(language === "ru" ? "ru-RU" : "en-US");
 }
 
 function InviteSummaryCard(props: {
@@ -129,20 +132,42 @@ function ChoiceCard(props: {
 function InviteBlockedCard(props: {
   failure: InviteFailureState;
   language: "ru" | "en";
+  hasSession: boolean;
+  openAppUrl: string;
 }) {
+  const primaryLabel = props.language === "ru"
+    ? props.hasSession
+      ? "Перейти в приложение"
+      : "Перейти ко входу"
+    : props.hasSession
+      ? "Go to the app"
+      : "Go to sign in";
+  const primaryHref = props.hasSession ? props.openAppUrl : "/auth?mode=login";
+
   return (
     <Surface className="p-5 sm:p-6">
       <h2 className="app-card-title">{props.failure.title}</h2>
       <p className="mt-2 text-sm leading-6 text-muted">{props.failure.description}</p>
-      {props.failure.transient ? (
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className={`${appBtnSecondaryClass} mt-4 px-4`}
-        >
-          {props.language === "ru" ? "Попробовать снова" : "Try again"}
-        </button>
-      ) : null}
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        {props.hasSession ? (
+          <a href={primaryHref} className={`${appBtnPrimaryClass} inline-flex justify-center px-4`}>
+            {primaryLabel}
+          </a>
+        ) : (
+          <Link to={primaryHref} className={`${appBtnPrimaryClass} inline-flex justify-center px-4`}>
+            {primaryLabel}
+          </Link>
+        )}
+        {props.failure.transient ? (
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className={`${appBtnSecondaryClass} px-4`}
+          >
+            {props.language === "ru" ? "Попробовать снова" : "Try again"}
+          </button>
+        ) : null}
+      </div>
     </Surface>
   );
 }
@@ -168,6 +193,7 @@ export function JoinFamilyPage() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successState, setSuccessState] = useState<SuccessState | null>(null);
+  const formFocusHandlers = useMobileFormFocusHandlers();
 
   const ui =
     language === "ru"
@@ -302,6 +328,12 @@ export function JoinFamilyPage() {
     });
   }, [inviteError, isDevLatestShortcut, language, token, ui.incompleteInviteLink]);
 
+  useEffect(() => {
+    if (successState || invitePreviewFailure?.clearPendingRoute) {
+      clearPendingFamilyInviteRoute();
+    }
+  }, [invitePreviewFailure?.clearPendingRoute, successState]);
+
   const loginAndJoinMutation = useMutation({
     mutationFn: async (payload: { email: string; password: string; remember_me: boolean }) => {
       return loginAndAcceptInvite(
@@ -315,6 +347,7 @@ export function JoinFamilyPage() {
       );
     },
     onSuccess: (data, variables) => {
+      applySessionToClient(data);
       setError(null);
       setSuccessState({
         kind: "login",
@@ -356,6 +389,7 @@ export function JoinFamilyPage() {
       preferred_language: "ru" | "en";
     }) => register(payload),
     onSuccess: (data, variables) => {
+      applySessionToClient(data);
       setError(null);
       setSuccessState({
         kind: "register",
@@ -440,7 +474,10 @@ export function JoinFamilyPage() {
   };
 
   return (
-    <div className="join-family-page mx-auto w-full max-w-3xl min-w-0 space-y-5 px-3 pb-6 sm:space-y-6 sm:px-0">
+    <div
+      className="join-family-page mx-auto w-full max-w-3xl min-w-0 space-y-5 px-3 pb-6 sm:space-y-6 sm:px-0"
+      onPointerDownCapture={formFocusHandlers.onPointerDownCapture}
+    >
       <PublicSiteHeader accountHref={accountHref} accountLabel={accountLabel} />
       <PageIntro
         title={ui.pageTitle}
@@ -462,7 +499,7 @@ export function JoinFamilyPage() {
               subtitle={ui.leadsToSubtitle}
               metadata={[
                 `${ui.inviteRole}: ${roleLabel(invitePreview.familyRole, language)}`,
-                `${ui.validUntil}: ${formatInviteDate(invitePreview.expiresAt, language)}`,
+                `${ui.validUntil}: ${formatLocalizedDate(invitePreview.expiresAt, language)}`,
               ]}
             />
           ) : null}
@@ -470,7 +507,12 @@ export function JoinFamilyPage() {
       ) : null}
 
       {invitePreviewFailure?.blocksAuth ? (
-        <InviteBlockedCard failure={invitePreviewFailure} language={language} />
+        <InviteBlockedCard
+          failure={invitePreviewFailure}
+          language={language}
+          hasSession={hasSession}
+          openAppUrl={openAppUrl}
+        />
       ) : successState ? (
         <Surface className="p-5 sm:p-6">
           <h2 className="app-card-title">
@@ -525,7 +567,13 @@ export function JoinFamilyPage() {
             />
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4" method="post" autoComplete="on">
+          <form
+            onSubmit={handleSubmit}
+            onFocusCapture={formFocusHandlers.onFocusCapture}
+            className="mt-6 space-y-4 pb-[calc(1.25rem+var(--app-keyboard-height,0px)+max(0.75rem,var(--app-safe-bottom-runtime,env(safe-area-inset-bottom))))]"
+            method="post"
+            autoComplete="on"
+          >
             <div>
               <p className="text-sm font-semibold text-foreground">
                 {mode === "login" ? ui.existingAccountTitle : ui.newAccountTitle}

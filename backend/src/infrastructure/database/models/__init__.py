@@ -21,6 +21,9 @@ from src.infrastructure.database.models.household_medicine_notification_delivery
 )
 from src.infrastructure.database.models.illness_episode import IllnessEpisodeModel
 from src.infrastructure.database.models.illness_episode_event import IllnessEpisodeEventModel
+from src.infrastructure.database.models.illness_notification_delivery import (
+    IllnessNotificationDeliveryModel,
+)
 from src.infrastructure.database.models.parent import ParentModel
 from src.infrastructure.database.models.pillbox import (
     PillboxDoseLogModel,
@@ -62,6 +65,7 @@ __all__ = [
     "SubscriptionModel",
     "HouseholdMedicineModel",
     "HouseholdMedicineNotificationDeliveryModel",
+    "IllnessNotificationDeliveryModel",
     "IllnessEpisodeModel",
     "IllnessEpisodeEventModel",
     "TemperatureEntryModel",

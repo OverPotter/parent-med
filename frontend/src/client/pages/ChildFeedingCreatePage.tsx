@@ -19,6 +19,10 @@ import {
 } from "@client/utils/feedingRecordForm";
 import { startFeedingRecordResilient } from "@shared/utils/offlineCareSync";
 import { syncFeedingLiveActivity } from "@shared/utils/liveActivities";
+import {
+  buildScopedLiveActivityPreferences,
+  hasLiveActivityAccess,
+} from "@shared/utils/liveActivityAccess";
 import { canActChild, canViewChild } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import { isChildLockedByPlan } from "@shared/subscription/childPlanAccess";
@@ -55,6 +59,7 @@ export function ChildFeedingCreatePage() {
     enabled: Boolean(currentFamilyId),
     staleTime: 60 * 1000,
   });
+  const canUseLiveActivities = hasLiveActivityAccess(familyAccess);
   const { enableLocalSwipe, localUnderlaySnapshotKey, handleBack } = useChildBackNavigation({
     fallbackHref: childId ? `/children/${childId}` : "/children",
   });
@@ -163,7 +168,13 @@ export function ChildFeedingCreatePage() {
           return items.some((item) => item.id === feeding.id) ? items : [feeding, ...items];
         }
       );
-      void syncFeedingLiveActivity(child!, feeding, language, undefined, accountId);
+      void syncFeedingLiveActivity(
+        child!,
+        feeding,
+        language,
+        buildScopedLiveActivityPreferences("feeding", canUseLiveActivities),
+        accountId
+      );
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["feeding-records", childId] }),
         queryClient.invalidateQueries({ queryKey: ["feeding-record-active", childId] }),

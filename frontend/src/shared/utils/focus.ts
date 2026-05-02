@@ -49,3 +49,49 @@ export function scrollFieldIntoView(
     });
   }, delayMs);
 }
+
+export function blurActiveFieldOnBackdropTap(
+  target: EventTarget | HTMLElement | null | undefined
+): boolean {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const element = target instanceof HTMLElement ? target : null;
+  if (!element) {
+    return false;
+  }
+
+  if (
+    element.closest(
+      [
+        "input",
+        "textarea",
+        "select",
+        "button",
+        "a",
+        "label",
+        "[role='button']",
+        "[role='link']",
+        "[contenteditable='true']",
+        "[data-prevent-keyboard-dismiss='true']",
+      ].join(", ")
+    )
+  ) {
+    return false;
+  }
+
+  const activeElement = document.activeElement;
+  if (!(activeElement instanceof HTMLElement)) {
+    return false;
+  }
+
+  if (
+    activeElement.matches("input, textarea, select, [contenteditable='true'], [role='textbox']")
+  ) {
+    activeElement.blur();
+    return true;
+  }
+
+  return false;
+}

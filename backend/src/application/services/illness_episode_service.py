@@ -69,6 +69,7 @@ class IllnessEpisodeService:
             medication_mode=entity.medication_mode,
             note=entity.note,
             member_account_ids=list(entity.member_account_ids),
+            created_by_account_id=entity.created_by_account_id,
             closed_at=entity.closed_at,
         )
 
@@ -78,7 +79,7 @@ class IllnessEpisodeService:
     def _current_date(self) -> date:
         return self._current_datetime().date()
 
-    async def _resolve_member_account_ids(
+    async def _resolve_notification_recipient_account_ids(
         self,
         requested_member_ids: list[UUID] | None,
         current_family_id: UUID,
@@ -322,7 +323,7 @@ class IllnessEpisodeService:
             raise ValidationError(
                 "У ребёнка уже есть активный эпизод. " "Закройте его перед созданием нового."
             )
-        member_account_ids = await self._resolve_member_account_ids(
+        notification_recipient_account_ids = await self._resolve_notification_recipient_account_ids(
             dto.member_account_ids,
             current_account.family_id,
             dto.child_id,
@@ -335,7 +336,8 @@ class IllnessEpisodeService:
             status="active",
             medication_mode=dto.medication_mode,
             note=dto.note,
-            member_account_ids=member_account_ids,
+            member_account_ids=notification_recipient_account_ids,
+            created_by_account_id=current_account.id,
             closed_at=None,
             deleted_at=None,
         )
@@ -369,8 +371,8 @@ class IllnessEpisodeService:
             dto.medication_mode if "medication_mode" in fields_set else entity.medication_mode
         )
         note = dto.note if "note" in fields_set else entity.note
-        member_account_ids = (
-            await self._resolve_member_account_ids(
+        notification_recipient_account_ids = (
+            await self._resolve_notification_recipient_account_ids(
                 dto.member_account_ids,
                 current_account.family_id,
                 entity.child_id,
@@ -402,7 +404,8 @@ class IllnessEpisodeService:
             status=status,
             medication_mode=medication_mode,
             note=note,
-            member_account_ids=member_account_ids,
+            member_account_ids=notification_recipient_account_ids,
+            created_by_account_id=entity.created_by_account_id,
             closed_at=closed_at,
             deleted_at=entity.deleted_at,
         )

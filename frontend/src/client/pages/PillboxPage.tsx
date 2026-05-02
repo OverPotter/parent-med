@@ -38,6 +38,7 @@ import {
   resolvePillboxSetupUnderlaySnapshotKey,
 } from "./pillbox/navigation";
 import { PillboxAnalyticsScreen } from "./pillbox/analytics";
+import { buildOptimisticMedicationSavePlan } from "./pillbox/medicationSave";
 import { PillboxMedicationScreen } from "./pillbox/medicationScreen";
 import {
   PillboxDetailsScreen,
@@ -81,7 +82,7 @@ export function PillboxPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
-  const pillboxLiveQueryOptions = useLiveQueryOptions(isIosShell ? 10000 : 5000);
+  const pillboxLiveQueryOptions = useLiveQueryOptions(5000);
   const canSeePillbox = canViewPillbox(accountFamilyRole, accountAccessPolicy);
   const canActInPillbox = canActPillbox(accountFamilyRole, accountAccessPolicy);
   const canMutatePillbox = canEditPillbox(accountFamilyRole, accountAccessPolicy);
@@ -869,6 +870,35 @@ export function PillboxPage() {
       dose: editorDose.trim(),
       times: normalizedTimes.length ? normalizedTimes : ["08:30"],
     });
+
+    const isDetailsFastFlow =
+      backSource === "details" &&
+      Boolean(draft?.id) &&
+      Boolean(selectedPlan) &&
+      draft?.id === selectedPlan?.id;
+    if (isDetailsFastFlow && draft?.id && selectedPlan) {
+      const optimisticPlan = buildOptimisticMedicationSavePlan({
+        plan: selectedPlan,
+        medication: activeMedication,
+        title: editorTitle,
+        dose: editorDose,
+        times: normalizedTimes,
+      });
+
+      queryClient.setQueryData(["pillbox-plan", optimisticPlan.id], optimisticPlan);
+      updatePlanMutation.mutate(
+        {
+          planId: optimisticPlan.id,
+          payload: toPlanWriteFromPlan(optimisticPlan),
+        },
+        {
+          onError: () => {
+            queryClient.setQueryData(["pillbox-plan", selectedPlan.id], selectedPlan);
+          },
+        }
+      );
+    }
+
     if (pendingNewMedicationId === activeMedication.id) {
       setPendingNewMedicationId(null);
     }

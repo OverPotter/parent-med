@@ -10,7 +10,6 @@ import {
 } from "@client/utils/feedingRecordForm";
 import {
   illnessCompactInputClass,
-  illnessCompactPrimaryButtonClass,
   illnessCompactSecondaryButtonClass,
 } from "./shared";
 import { shouldRequestDoseTimeConfirmation } from "../../utils/medicationPlans";
@@ -20,6 +19,47 @@ export type DoseLoggingCandidate<T> = {
   nextAllowedAt?: Date | null;
   planName: string;
 };
+
+function formatElapsedSince(date: Date, now: Date, language: "ru" | "en"): string {
+  const diffMs = Math.max(0, now.getTime() - date.getTime());
+  const totalMinutes = Math.max(1, Math.round(diffMs / 60_000));
+
+  if (language === "ru") {
+    if (totalMinutes < 60) {
+      return `${totalMinutes} ${pluralizeRu(totalMinutes, ["минуту", "минуты", "минут"])}`;
+    }
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (minutes === 0) {
+      return `${hours} ${pluralizeRu(hours, ["час", "часа", "часов"])}`;
+    }
+    return `${hours} ${pluralizeRu(hours, ["час", "часа", "часов"])} ${minutes} ${pluralizeRu(minutes, ["минуту", "минуты", "минут"])}`;
+  }
+
+  if (totalMinutes < 60) {
+    return `${totalMinutes} ${totalMinutes === 1 ? "minute" : "minutes"}`;
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (minutes === 0) {
+    return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+  }
+  return `${hours} ${hours === 1 ? "hour" : "hours"} ${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+}
+
+function pluralizeRu(value: number, forms: [string, string, string]) {
+  const mod10 = value % 10;
+  const mod100 = value % 100;
+  if (mod10 === 1 && mod100 !== 11) {
+    return forms[0];
+  }
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return forms[1];
+  }
+  return forms[2];
+}
 
 export function useDoseLoggingFlow<T>(params: {
   language: "ru" | "en";
@@ -56,9 +96,21 @@ export function useDoseLoggingFlow<T>(params: {
   };
 
   const hint =
-    language === "ru"
-      ? `Поставили текущее время по умолчанию. Если лекарство дали раньше, просто поправьте дату и время.${pendingCandidate ? ` ${pendingCandidate.planName}.` : ""}`
-      : `The current time is prefilled. If the medicine was given earlier, just adjust the date and time.${pendingCandidate ? ` ${pendingCandidate.planName}.` : ""}`;
+    pendingCandidate?.nextAllowedAt && pendingCandidate.nextAllowedAt <= now
+      ? language === "ru"
+        ? `С момента напоминания прошло ${formatElapsedSince(
+            pendingCandidate.nextAllowedAt,
+            now,
+            language
+          )}. Если лекарство дали, но забыли отметить это сразу, просто измените время ниже.`
+        : `${formatElapsedSince(
+            pendingCandidate.nextAllowedAt,
+            now,
+            language
+          )} passed since the reminder. If the medicine was given but not logged right away, just adjust the time below.`
+      : language === "ru"
+        ? "Поставили текущее время по умолчанию. Если лекарство дали раньше, просто поправьте дату и время."
+        : "The current time is prefilled. If the medicine was given earlier, just adjust the date and time.";
 
   return {
     close,
@@ -111,15 +163,17 @@ export function DoseTimeSheet({
       onClose={onClose}
       closeDisabled={closeDisabled}
       backLabel={language === "ru" ? "Назад" : "Back"}
-      title={language === "ru" ? "Отметить приём" : "Log dose"}
-      hint={hint}
+      title={language === "ru" ? "Уточните время приёма" : "Confirm dose time"}
       maxWidthClassName="max-w-[34rem]"
     >
       <div className="space-y-4 pb-2">
+        <div className="soft-panel-muted rounded-[22px] px-4 py-3">
+          <p className="text-sm leading-6 text-foreground/80">{hint}</p>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block space-y-1.5">
             <span className="soft-field-label">
-              {language === "ru" ? "Когда давали" : "When was it given"}
+              {language === "ru" ? "Когда дали лекарство" : "When was the medicine given"}
             </span>
             <DateField
               value={pendingDate}
@@ -168,7 +222,7 @@ export function DoseTimeSheet({
             type="button"
             onClick={onSubmit}
             disabled={isPending || hasFuturePendingDoseSelection}
-            className={`${illnessCompactPrimaryButtonClass} w-full`}
+            className={`${illnessCompactSecondaryButtonClass} w-full`}
           >
             {submitLabel}
           </button>

@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import uuid4
 
 import pytest
@@ -76,6 +76,10 @@ class StubFamilyRepository:
 
     async def get_by_id(self, id):  # noqa: ANN001
         return self.family if id == self.family.id else None
+
+    async def update(self, entity: Family) -> Family:
+        self.family = entity
+        return entity
 
 
 class StubChildRepository:
@@ -398,10 +402,70 @@ async def test_child_create_requires_family_admin() -> None:
     )
     account = build_account(
         family_id=family_id,
-        access_policy=FamilyAccessPolicyDto(children_access="edit"),
+        access_policy=FamilyAccessPolicyDto(
+            all_children=False,
+            children_access="edit",
+        ),
     )
 
-    with pytest.raises(ForbiddenError, match="администратор семьи"):
+    with pytest.raises(ForbiddenError, match="полный доступ ко всем детям"):
+        await service.create_for_account(
+            ChildCreateDto(
+                family_id=family_id,
+                name="Новый ребёнок",
+                birth_date=None,
+                baby_mode_enabled=False,
+            ),
+            account,
+        )
+
+
+@pytest.mark.asyncio
+async def test_child_create_allows_member_with_full_edit_access_to_all_children() -> None:
+    family_id = uuid4()
+    service = ChildService(
+        child_repo=StubChildRepository([]),
+        family_repo=StubFamilyRepository(family_id),
+    )
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(
+            all_children=True,
+            children_access="edit",
+        ),
+    )
+
+    result = await service.create_for_account(
+        ChildCreateDto(
+            family_id=family_id,
+            name="Новый ребёнок",
+            birth_date=None,
+            baby_mode_enabled=False,
+        ),
+        account,
+    )
+
+    assert result.name == "Новый ребёнок"
+
+
+@pytest.mark.asyncio
+async def test_child_create_rejects_member_with_partial_child_scope() -> None:
+    family_id = uuid4()
+    child = Child(id=uuid4(), family_id=family_id, name="A", birth_date=None)
+    service = ChildService(
+        child_repo=StubChildRepository([child]),
+        family_repo=StubFamilyRepository(family_id),
+    )
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(
+            all_children=False,
+            child_ids=[child.id],
+            children_access="edit",
+        ),
+    )
+
+    with pytest.raises(ForbiddenError, match="полный доступ ко всем детям"):
         await service.create_for_account(
             ChildCreateDto(
                 family_id=family_id,
@@ -1305,6 +1369,79 @@ async def test_pillbox_log_dose_allows_act_access() -> None:
 
 
 @pytest.mark.asyncio
+async def test_pillbox_log_dose_allows_short_pre_due_grace(monkeypatch: pytest.MonkeyPatch) -> None:
+    family_id = uuid4()
+    plan_id = uuid4()
+    medication_id = uuid4()
+    scheduled_for = datetime(2026, 4, 20, 8, 0, 0, tzinfo=UTC)
+    now = datetime(2026, 4, 19, 8, 0, tzinfo=UTC)
+
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):  # noqa: ANN001
+            current = scheduled_for - timedelta(seconds=30)
+            if tz is None:
+                return current.replace(tzinfo=None)
+            return current.astimezone(tz)
+
+    monkeypatch.setattr("src.application.services.pillbox_service.datetime", FrozenDateTime)
+
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository(
+            [
+                PillboxPlan(
+                    id=plan_id,
+                    family_id=family_id,
+                    title="Курс",
+                    status="active",
+                    member_account_ids=[],
+                    created_by_account_id=uuid4(),
+                    created_at=now,
+                    updated_at=now,
+                    medications=[
+                        PillboxMedication(
+                            id=medication_id,
+                            plan_id=plan_id,
+                            household_medicine_id=None,
+                            custom_medicine_name="Ибупрофен",
+                            dose_amount="5 мл",
+                            meal_rule="after_meal",
+                            repeat_days=[1],
+                            times=[time(11, 0)],
+                            course_mode="continuous",
+                            course_start_date=None,
+                            course_end_date=None,
+                            position=0,
+                            created_at=now,
+                            updated_at=now,
+                        )
+                    ],
+                    dose_logs=[],
+                )
+            ]
+        ),
+        account_repo=StubAccountRepository(family_id),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
+    )
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(pillbox_access="act"),
+    )
+
+    summary = await service.log_dose(
+        plan_id=plan_id,
+        medication_id=medication_id,
+        dto=PillboxDoseLogCreateDto(scheduled_for=scheduled_for, source="manual"),
+        current_account_id=account.id,
+        current_account_display_name=account.display_name,
+        current_account=account,
+    )
+
+    assert summary.id == plan_id
+
+
+@pytest.mark.asyncio
 async def test_pillbox_log_dose_rejects_view_only_access() -> None:
     family_id = uuid4()
     plan_id = uuid4()
@@ -1627,7 +1764,7 @@ async def test_pillbox_log_dose_rejects_non_primary_plan_after_free_downgrade() 
 
 
 @pytest.mark.asyncio
-async def test_sleep_stop_requires_session_initiator() -> None:
+async def test_sleep_stop_allows_member_with_child_edit_access_even_if_started_by_other() -> None:
     family_id = uuid4()
     owner_account = build_account(
         family_id=family_id,
@@ -1657,8 +1794,9 @@ async def test_sleep_stop_requires_session_initiator() -> None:
         child_repo=StubChildRepository([child]),
     )
 
-    with pytest.raises(ForbiddenError, match="только тот, кто его запустил"):
-        await service.stop(session.id, SleepSessionStopDto(), other_account)
+    result = await service.stop(session.id, SleepSessionStopDto(), other_account)
+
+    assert result.status == "completed"
 
 
 @pytest.mark.asyncio
@@ -1692,7 +1830,7 @@ async def test_sleep_start_allows_children_act_access() -> None:
 
 
 @pytest.mark.asyncio
-async def test_sleep_delete_requires_session_initiator_for_active_session() -> None:
+async def test_sleep_delete_allows_member_with_child_edit_access_for_active_session() -> None:
     family_id = uuid4()
     owner_account = build_account(
         family_id=family_id,
@@ -1722,8 +1860,7 @@ async def test_sleep_delete_requires_session_initiator_for_active_session() -> N
         child_repo=StubChildRepository([child]),
     )
 
-    with pytest.raises(ForbiddenError, match="только тот, кто его запустил"):
-        await service.delete(session.id, other_account)
+    await service.delete(session.id, other_account)
 
 
 @pytest.mark.asyncio
@@ -1755,7 +1892,7 @@ async def test_sleep_start_is_blocked_for_non_primary_child_after_downgrade() ->
 
 
 @pytest.mark.asyncio
-async def test_feeding_stop_requires_record_initiator() -> None:
+async def test_feeding_stop_allows_member_with_child_edit_access_even_if_started_by_other() -> None:
     family_id = uuid4()
     owner_account = build_account(
         family_id=family_id,
@@ -1792,8 +1929,9 @@ async def test_feeding_stop_requires_record_initiator() -> None:
         child_repo=StubChildRepository([child]),
     )
 
-    with pytest.raises(ForbiddenError, match="только тот, кто его запустил"):
-        await service.stop(record.id, FeedingRecordStopDto(), other_account)
+    result = await service.stop(record.id, FeedingRecordStopDto(), other_account)
+
+    assert result.status == "completed"
 
 
 @pytest.mark.asyncio
@@ -1920,7 +2058,7 @@ async def test_feeding_stop_uses_device_timestamp_when_provided() -> None:
 
 
 @pytest.mark.asyncio
-async def test_feeding_delete_requires_record_initiator_for_active_record() -> None:
+async def test_feeding_delete_allows_member_with_child_edit_access_for_active_record() -> None:
     family_id = uuid4()
     owner_account = build_account(
         family_id=family_id,
@@ -1957,8 +2095,7 @@ async def test_feeding_delete_requires_record_initiator_for_active_record() -> N
         child_repo=StubChildRepository([child]),
     )
 
-    with pytest.raises(ForbiddenError, match="только тот, кто его запустил"):
-        await service.delete(record.id, other_account)
+    await service.delete(record.id, other_account)
 
 
 @pytest.mark.asyncio

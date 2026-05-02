@@ -78,7 +78,7 @@ export function PillboxHubScreen({
             <button
               type="button"
               onClick={openCreate}
-              className={`${createPlanLocked ? actionSecondaryClass : actionPrimaryClass} min-w-0 px-3.5`}
+              className={`${actionSecondaryClass} min-w-0 px-3.5`}
             >
               <span className="inline-flex items-center gap-2">
                 <span>{tPillbox(language, "createPlan")}</span>

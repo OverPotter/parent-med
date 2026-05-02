@@ -77,7 +77,15 @@ export function EpisodeActivationCard({
             className={illnessCompactInputClass}
           />
         </label>
-        <div className="border-t border-border/60 pt-4 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+        <div className="grid grid-cols-2 gap-2 border-t border-border/60 pt-4">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isPending}
+            className={`${illnessCompactSecondaryButtonClass} min-w-0 justify-center`}
+          >
+            {language === "ru" ? "Назад" : "Back"}
+          </button>
           <button
             type="button"
             onClick={() =>
@@ -93,7 +101,7 @@ export function EpisodeActivationCard({
               })
             }
             disabled={isPending || !startedAt}
-            className={`${illnessCompactPrimaryButtonClass} w-full sm:w-auto`}
+            className={`${illnessCompactSecondaryButtonClass} min-w-0 justify-center`}
           >
             {isPending
               ? language === "ru"
@@ -102,14 +110,6 @@ export function EpisodeActivationCard({
               : language === "ru"
                 ? "Начать наблюдение"
                 : "Start tracking"}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isPending}
-            className={`${illnessCompactSecondaryButtonClass} mt-2 w-full sm:mt-0 sm:w-auto`}
-          >
-            {language === "ru" ? "Назад" : "Back"}
           </button>
         </div>
       </div>

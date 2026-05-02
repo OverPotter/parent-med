@@ -18,7 +18,7 @@ class IllnessEpisodeCreateDto(BaseModel):
     note: str | None = Field(None, description="Общая заметка")
     member_account_ids: list[UUID] = Field(
         default_factory=list,
-        description="Кому приходят push-напоминания по эпизоду",
+        description="ID участников, которые получают уведомления по эпизоду",
     )
 
 
@@ -32,7 +32,7 @@ class IllnessEpisodeUpdateDto(BaseModel):
     note: str | None = Field(None, description="Общая заметка")
     member_account_ids: list[UUID] | None = Field(
         None,
-        description="Кому приходят push-напоминания по эпизоду",
+        description="ID участников, которые получают уведомления по эпизоду",
     )
     closed_at: datetime | None = Field(None, description="Дата закрытия")
 
@@ -47,5 +47,8 @@ class IllnessEpisodeResponseDto(ResponseBase):
     status: str
     medication_mode: str
     note: str | None
-    member_account_ids: list[UUID]
+    member_account_ids: list[UUID] = Field(
+        description="ID участников, которые получают уведомления по эпизоду"
+    )
+    created_by_account_id: UUID | None = None
     closed_at: datetime | None

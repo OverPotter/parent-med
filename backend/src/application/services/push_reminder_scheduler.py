@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
-from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -22,6 +21,9 @@ from src.domain.entities.push_subscription import PushSubscription
 from src.infrastructure.database.models.household_medicine import HouseholdMedicineModel
 from src.infrastructure.database.models.household_medicine_notification_delivery import (
     HouseholdMedicineNotificationDeliveryModel,
+)
+from src.infrastructure.database.models.illness_notification_delivery import (
+    IllnessNotificationDeliveryModel,
 )
 from src.infrastructure.database.models.pillbox import (
     PillboxMedicationModel,
@@ -541,9 +543,6 @@ class PushNotificationScheduler:
                 next_allowed_local_label = next_allowed_at.astimezone(self._timezone).strftime(
                     "%H:%M"
                 )
-                sent_before = False
-                sent_due = False
-                sent_overdue = False
 
                 for account in accounts:
                     subscriptions = await subscription_repo.get_by_account_id(account.id)
@@ -564,10 +563,14 @@ class PushNotificationScheduler:
                     overdue_at = next_allowed_at + timedelta(minutes=OVERDUE_REMINDER_AFTER_MINUTES)
 
                     if reminder_before_minutes > 0:
-                        if (
-                            remind_at <= now < next_allowed_at
-                            and plan.last_before_notification_for_at != next_allowed_at
-                        ):
+                        before_delivered = await self._has_illness_delivery(
+                            session=session,
+                            account_id=account.id,
+                            plan_id=plan.id,
+                            notification_kind="before",
+                            scheduled_for=next_allowed_at,
+                        )
+                        if remind_at <= now < next_allowed_at and not before_delivered:
                             payload = {
                                 "title": (
                                     (f"In {reminder_before_minutes} min: {medicine_name}")
@@ -590,19 +593,29 @@ class PushNotificationScheduler:
                                     "planId": str(plan.id),
                                 },
                             }
-                            sent_before = (
-                                await self._send_to_subscriptions(
-                                    subscriptions=subscriptions,
-                                    subscription_repo=subscription_repo,
-                                    payload=payload,
+                            if await self._send_to_subscriptions(
+                                subscriptions=subscriptions,
+                                subscription_repo=subscription_repo,
+                                payload=payload,
+                            ):
+                                self._record_illness_delivery(
+                                    session=session,
+                                    family_id=child.family_id,
+                                    account_id=account.id,
+                                    plan_id=plan.id,
+                                    notification_kind="before",
+                                    scheduled_for=next_allowed_at,
+                                    now=now,
                                 )
-                                or sent_before
-                            )
 
-                    if (
-                        now >= next_allowed_at
-                        and plan.last_due_notification_for_at != next_allowed_at
-                    ):
+                    due_delivered = await self._has_illness_delivery(
+                        session=session,
+                        account_id=account.id,
+                        plan_id=plan.id,
+                        notification_kind="due",
+                        scheduled_for=next_allowed_at,
+                    )
+                    if now >= next_allowed_at and not due_delivered:
                         payload = {
                             "title": (
                                 f"Time to give: {medicine_name}"
@@ -624,19 +637,29 @@ class PushNotificationScheduler:
                                 "planId": str(plan.id),
                             },
                         }
-                        sent_due = (
-                            await self._send_to_subscriptions(
-                                subscriptions=subscriptions,
-                                subscription_repo=subscription_repo,
-                                payload=payload,
+                        if await self._send_to_subscriptions(
+                            subscriptions=subscriptions,
+                            subscription_repo=subscription_repo,
+                            payload=payload,
+                        ):
+                            self._record_illness_delivery(
+                                session=session,
+                                family_id=child.family_id,
+                                account_id=account.id,
+                                plan_id=plan.id,
+                                notification_kind="due",
+                                scheduled_for=next_allowed_at,
+                                now=now,
                             )
-                            or sent_due
-                        )
 
-                    if (
-                        now >= overdue_at
-                        and plan.last_overdue_notification_for_at != next_allowed_at
-                    ):
+                    overdue_delivered = await self._has_illness_delivery(
+                        session=session,
+                        account_id=account.id,
+                        plan_id=plan.id,
+                        notification_kind="overdue",
+                        scheduled_for=next_allowed_at,
+                    )
+                    if now >= overdue_at and not overdue_delivered:
                         payload = {
                             "title": (
                                 f"Check dose: {medicine_name}"
@@ -658,26 +681,20 @@ class PushNotificationScheduler:
                                 "planId": str(plan.id),
                             },
                         }
-                        sent_overdue = (
-                            await self._send_to_subscriptions(
-                                subscriptions=subscriptions,
-                                subscription_repo=subscription_repo,
-                                payload=payload,
+                        if await self._send_to_subscriptions(
+                            subscriptions=subscriptions,
+                            subscription_repo=subscription_repo,
+                            payload=payload,
+                        ):
+                            self._record_illness_delivery(
+                                session=session,
+                                family_id=child.family_id,
+                                account_id=account.id,
+                                plan_id=plan.id,
+                                notification_kind="overdue",
+                                scheduled_for=next_allowed_at,
+                                now=now,
                             )
-                            or sent_overdue
-                        )
-
-                if sent_before:
-                    updated = replace(plan, last_before_notification_for_at=next_allowed_at)
-                    await plan_repo.update_notification_marks(updated)
-                    plan = updated
-                if sent_due:
-                    updated = replace(plan, last_due_notification_for_at=next_allowed_at)
-                    await plan_repo.update_notification_marks(updated)
-                    plan = updated
-                if sent_overdue:
-                    updated = replace(plan, last_overdue_notification_for_at=next_allowed_at)
-                    await plan_repo.update_notification_marks(updated)
 
             await self._process_pillbox_plan_reminders(
                 session=session,
@@ -813,6 +830,47 @@ class PushNotificationScheduler:
             )
         )
         return result.scalar_one_or_none() is not None
+
+    async def _has_illness_delivery(
+        self,
+        *,
+        session: Any,
+        account_id: Any,
+        plan_id: Any,
+        notification_kind: str,
+        scheduled_for: datetime,
+    ) -> bool:
+        result = await session.execute(
+            select(IllnessNotificationDeliveryModel.id).where(
+                IllnessNotificationDeliveryModel.account_id == account_id,
+                IllnessNotificationDeliveryModel.plan_id == plan_id,
+                IllnessNotificationDeliveryModel.notification_kind == notification_kind,
+                IllnessNotificationDeliveryModel.scheduled_for == scheduled_for,
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    def _record_illness_delivery(
+        self,
+        *,
+        session: Any,
+        family_id: Any,
+        account_id: Any,
+        plan_id: Any,
+        notification_kind: str,
+        scheduled_for: datetime,
+        now: datetime,
+    ) -> None:
+        session.add(
+            IllnessNotificationDeliveryModel(
+                family_id=family_id,
+                account_id=account_id,
+                plan_id=plan_id,
+                notification_kind=notification_kind,
+                scheduled_for=scheduled_for,
+                sent_at=now,
+            )
+        )
 
     def _record_pillbox_delivery(
         self,

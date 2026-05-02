@@ -201,7 +201,8 @@ export interface IllnessEpisode {
   status: string;
   medicationMode: string;
   note: string | null;
-  memberAccountIds: string[];
+  notificationRecipientAccountIds: string[];
+  createdByAccountId: string | null;
   closedAt: string | null;
 }
 

@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
 import { labelForRoute, tWorkspaceIntro } from "@client/i18n/workspaceIntro";
 import { readPendingNativeNavigationUrl } from "@/app/push/sync";
-import { normalizeNativeNavigationUrl } from "@shared/runtime/nativeNavigation";
+import { normalizeAuthenticatedLaunchUrl } from "@shared/runtime/nativeNavigation";
 import { useClientStartRoute } from "@client/hooks/useClientStartRoute";
 import { AnalyticsEvents, trackEvent } from "@shared/analytics";
 import { useI18n } from "@shared/hooks/useI18n";
@@ -31,7 +31,7 @@ export function ClientStartPage() {
           return;
         }
         setNativeLaunchUrl(
-          readPendingNativeNavigationUrl() ?? normalizeNativeNavigationUrl(result?.url)
+          readPendingNativeNavigationUrl() ?? normalizeAuthenticatedLaunchUrl(result?.url)
         );
       })
       .finally(() => {

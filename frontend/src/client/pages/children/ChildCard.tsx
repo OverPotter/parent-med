@@ -4,7 +4,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { RowSurface } from "@shared/components/Surface";
 import { useNow } from "@shared/hooks/useNow";
-import type { Child, FeedingRecord, SleepSession, WeightEntry } from "@shared/types/api";
+import type { Child, FeedingRecord, IllnessEpisode, SleepSession, WeightEntry } from "@shared/types/api";
+import { useIllnessLiveWidgetState } from "@client/hooks/useIllnessLiveWidgetState";
+import { buildScopedLiveActivityPreferences } from "@shared/utils/liveActivityAccess";
 import {
   startSleepSessionResilient,
   stopFeedingRecordResilient,
@@ -12,7 +14,6 @@ import {
 } from "@shared/utils/offlineCareSync";
 import { formatChildAgeLabel, getChildrenCopy } from "@client/i18n/children";
 import {
-  childActionPrimaryClass,
   childActionSecondaryClass,
   childActionSuccessClass,
   commonLoading,
@@ -26,6 +27,7 @@ import { syncFeedingLiveActivity, syncSleepLiveActivity } from "@shared/utils/li
 
 export function ChildCard({
   child,
+  activeEpisode,
   activeEpisodeStartedAt,
   latestWeightEntry,
   activeSleep,
@@ -36,6 +38,7 @@ export function ChildCard({
   hasActiveEpisode,
   canActChild,
   canEditChild,
+  canUseLiveActivities,
   planLocksChildActions,
   isPrimaryFreeChild,
   onLockedActionAttempt,
@@ -45,6 +48,7 @@ export function ChildCard({
   t,
 }: {
   child: Child;
+  activeEpisode: Pick<IllnessEpisode, "id" | "createdByAccountId"> | null;
   activeEpisodeStartedAt: string | null;
   latestWeightEntry: WeightEntry | null;
   activeSleep: SleepSession | null;
@@ -55,6 +59,7 @@ export function ChildCard({
   hasActiveEpisode: boolean;
   canActChild: boolean;
   canEditChild: boolean;
+  canUseLiveActivities: boolean;
   planLocksChildActions: boolean;
   isPrimaryFreeChild: boolean;
   onLockedActionAttempt: () => void;
@@ -63,6 +68,7 @@ export function ChildCard({
   language: "ru" | "en";
   t: (text: string, variables?: Record<string, string | number>) => string;
 }) {
+  const hasLiveObservation = useIllnessLiveWidgetState(activeEpisode, currentAccountId);
   const ageLabel = formatChildAgeLabel(child.birthDate, child.ageLabel, language);
   const latestWeightLabel = latestWeightEntry
     ? formatWeightValue(latestWeightEntry.valueKg, language)
@@ -71,10 +77,6 @@ export function ChildCard({
   const queryClient = useQueryClient();
   const [isStopSleepConfirmOpen, setIsStopSleepConfirmOpen] = useState(false);
   const [isStopFeedingDialogOpen, setIsStopFeedingDialogOpen] = useState(false);
-  const isActiveSleepOwnedByCurrentAccount =
-    !!activeSleep && !!currentAccountId && activeSleep.createdByAccountId === currentAccountId;
-  const isActiveFeedingOwnedByCurrentAccount =
-    !!activeFeeding && !!currentAccountId && activeFeeding.createdByAccountId === currentAccountId;
   const sleepMutation = useMutation({
     mutationFn: async () => {
       if (activeSleep) {
@@ -86,7 +88,13 @@ export function ChildCard({
       queryClient.invalidateQueries({ queryKey: ["sleep-session-active", child.id] });
       queryClient.invalidateQueries({ queryKey: ["sleep-sessions", child.id] });
       setIsStopSleepConfirmOpen(false);
-      void syncSleepLiveActivity(child, nextSleep, language, undefined, currentAccountId);
+      void syncSleepLiveActivity(
+        child,
+        nextSleep,
+        language,
+        buildScopedLiveActivityPreferences("sleep", canUseLiveActivities),
+        currentAccountId
+      );
     },
   });
   const activeSleepElapsedLabel = activeSleep
@@ -107,7 +115,13 @@ export function ChildCard({
       queryClient.invalidateQueries({ queryKey: ["feeding-record-active", child.id] });
       queryClient.invalidateQueries({ queryKey: ["feeding-records", child.id] });
       setIsStopFeedingDialogOpen(false);
-      void syncFeedingLiveActivity(child, null, language, undefined, currentAccountId);
+      void syncFeedingLiveActivity(
+        child,
+        null,
+        language,
+        buildScopedLiveActivityPreferences("feeding", canUseLiveActivities),
+        currentAccountId
+      );
     },
   });
   const activeFeedingStartedAt = activeFeeding?.startedAt ?? activeFeeding?.recordedAt ?? null;
@@ -119,9 +133,9 @@ export function ChildCard({
     latestWeightLabel ? `${copy.childCard.weight} ${latestWeightLabel}` : null,
   ].filter(Boolean) as string[];
   const quickActionClass = childActionSecondaryClass;
-  const activeQuickActionClass = childActionPrimaryClass;
   const activeFeedingActionClass = childActionSuccessClass;
   const activeSleepActionClass = childActionSuccessClass;
+  const hasOpenObservation = hasActiveEpisode;
 
   return (
     <li data-child-card-id={child.id}>
@@ -159,11 +173,16 @@ export function ChildCard({
               <div className="min-w-0 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="app-card-title">{child.name}</h2>
-                  {hasActiveEpisode ? (
+                  {hasOpenObservation ? (
                     <span className="inline-flex shrink-0 items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-danger)_14%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-danger)_74%,var(--color-foreground))]">
                       {activeEpisodeStartedAt
                         ? formatIllnessActiveLabel(activeEpisodeStartedAt, now, language)
                         : copy.childCard.activeObservation}
+                    </span>
+                  ) : null}
+                  {hasOpenObservation && canUseLiveActivities && hasLiveObservation ? (
+                    <span className="inline-flex shrink-0 items-center rounded-full bg-[color:color-mix(in_srgb,var(--color-success)_18%,transparent)] px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.01em] text-[color:color-mix(in_srgb,var(--color-success)_82%,var(--color-foreground))]">
+                      Live On
                     </span>
                   ) : null}
                   {planLocksChildActions ? (
@@ -206,10 +225,8 @@ export function ChildCard({
                 <Link
                   to={`/children/${child.id}/feeding`}
                   data-live-action-target={`feeding:${child.id}`}
-                  className={`${activeFeeding ? activeFeedingActionClass : quickActionClass} ${activeFeeding && !isActiveFeedingOwnedByCurrentAccount ? "pointer-events-none opacity-60" : ""}`}
-                  aria-disabled={
-                    !canActChild || (activeFeeding ? !isActiveFeedingOwnedByCurrentAccount : false)
-                  }
+                  className={`${activeFeeding ? activeFeedingActionClass : quickActionClass}`}
+                  aria-disabled={!canActChild && !activeFeeding}
                   onClick={(event) => {
                     if (planLocksChildActions) {
                       event.preventDefault();
@@ -222,9 +239,6 @@ export function ChildCard({
                     }
                     event.preventDefault();
                     if (activeFeeding) {
-                      if (!isActiveFeedingOwnedByCurrentAccount) {
-                        return;
-                      }
                       setIsStopFeedingDialogOpen(true);
                       return;
                     }
@@ -249,19 +263,12 @@ export function ChildCard({
                       return;
                     }
                     if (activeSleep) {
-                      if (!isActiveSleepOwnedByCurrentAccount) {
-                        return;
-                      }
                       setIsStopSleepConfirmOpen(true);
                       return;
                     }
                     sleepMutation.mutate();
                   }}
-                  disabled={
-                    sleepMutation.isPending ||
-                    (!canActChild && !activeSleep) ||
-                    (!!activeSleep && !isActiveSleepOwnedByCurrentAccount)
-                  }
+                  disabled={sleepMutation.isPending || (!canActChild && !activeSleep)}
                   className={`${activeSleep ? activeSleepActionClass : quickActionClass} disabled:opacity-60`}
                 >
                   {sleepMutation.isPending
@@ -277,29 +284,32 @@ export function ChildCard({
               </div>
             ) : null}
             <div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (planLocksChildActions && !hasActiveEpisode) {
-                    onLockedActionAttempt();
-                    return;
-                  }
-                  onStartEpisode();
-                }}
-                disabled={
-                  isStartingEpisode ||
-                  (!hasActiveEpisode && !canEditChild && !planLocksChildActions)
-                }
-                className={`${hasActiveEpisode ? activeQuickActionClass : quickActionClass} w-full disabled:opacity-50`}
-              >
-                {hasActiveEpisode
-                  ? activeEpisodeStartedAt
-                    ? formatIllnessActiveLabel(activeEpisodeStartedAt, now, language)
-                    : copy.childCard.openObservation
-                  : isStartingEpisode
-                    ? commonLoading(language)
-                    : copy.childCard.startObservation}
-              </button>
+              {hasOpenObservation ? (
+                <div className="grid gap-2">
+                  <button
+                    type="button"
+                    onClick={onStartEpisode}
+                    className={`${quickActionClass} w-full disabled:opacity-50`}
+                  >
+                    {copy.childCard.openObservation}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (planLocksChildActions) {
+                      onLockedActionAttempt();
+                      return;
+                    }
+                    onStartEpisode();
+                  }}
+                  disabled={isStartingEpisode || (!canEditChild && !planLocksChildActions)}
+                  className={`${quickActionClass} w-full disabled:opacity-50`}
+                >
+                  {isStartingEpisode ? commonLoading(language) : copy.childCard.startObservation}
+                </button>
+              )}
             </div>
           </div>
         </div>

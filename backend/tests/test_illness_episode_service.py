@@ -3,6 +3,8 @@ from uuid import uuid4
 
 import pytest
 
+from src.application.dto.auth import AuthenticatedAccount
+from src.application.dto.family_access import FamilyAccessPolicyDto
 from src.application.dto.illness_episode import IllnessEpisodeCreateDto, IllnessEpisodeUpdateDto
 from src.application.services.illness_episode_service import IllnessEpisodeService
 from src.core.exceptions import ForbiddenError, ValidationError
@@ -85,6 +87,17 @@ def make_service(
         account_repo=(StubAccountRepository(account_ids) if account_ids is not None else None),
     )
     return service, repo
+
+
+def build_account(*, family_id):
+    return AuthenticatedAccount(
+        id=uuid4(),
+        email="user@example.com",
+        family_id=family_id,
+        display_name="User",
+        family_role="member",
+        access_policy=FamilyAccessPolicyDto(all_children=True, children_access="edit"),
+    )
 
 
 @pytest.mark.asyncio
@@ -237,6 +250,39 @@ async def test_update_saves_episode_recipients() -> None:
     assert result.member_account_ids == [member_id]
     assert repo.updated is not None
     assert repo.updated.member_account_ids == [member_id]
+
+
+@pytest.mark.asyncio
+async def test_create_stores_creator_account_id() -> None:
+    child = Child(id=uuid4(), family_id=uuid4(), name="Маша", birth_date=date(2021, 1, 1))
+    entity = IllnessEpisode(
+        id=uuid4(),
+        child_id=child.id,
+        started_at=date(2026, 3, 10),
+        title=None,
+        status="closed",
+        medication_mode="manual",
+        note=None,
+        closed_at=datetime(2026, 3, 11, 12, 0, tzinfo=UTC),
+        deleted_at=None,
+    )
+    account = build_account(family_id=child.family_id)
+    service, repo = make_service(entity, child, account_ids=[account.id])
+
+    result = await service.create(
+        dto=IllnessEpisodeCreateDto(
+            child_id=child.id,
+            started_at=date(2026, 4, 2),
+            title="ОРВИ",
+            medication_mode="manual",
+            note=None,
+            member_account_ids=[],
+        ),
+        current_account=account,
+    )
+
+    assert result.created_by_account_id == account.id
+    assert repo.entity.created_by_account_id == account.id
 
 
 @pytest.mark.asyncio

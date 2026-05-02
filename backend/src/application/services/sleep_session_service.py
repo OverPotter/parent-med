@@ -13,7 +13,7 @@ from src.application.services.access_control import (
     get_child_for_account,
 )
 from src.application.services.child_plan_access import ensure_child_plan_mutation_allowed
-from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
+from src.core.exceptions import NotFoundError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.entities.sleep_session import SleepSession
 from src.domain.repositories.child_repository import ChildRepository
@@ -138,8 +138,6 @@ class SleepSessionService:
         )
         if entity.status != "active":
             return self._to_response(entity)
-        if entity.created_by_account_id and entity.created_by_account_id != current_account.id:
-            raise ForbiddenError("Остановить активный сон может только тот, кто его запустил")
 
         ended_at = dto.ended_at or datetime.now(UTC)
         if ended_at < entity.started_at:
@@ -171,8 +169,6 @@ class SleepSessionService:
             current_account,
             entity.child_id,
         )
-        if entity.status == "active" and entity.created_by_account_id != current_account.id:
-            raise ForbiddenError("Удалить активный сон может только тот, кто его запустил")
         deleted = await self._repo.delete(entity.id)
         if not deleted:
             raise NotFoundError("Сессия сна не найдена", resource="sleep_session")

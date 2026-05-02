@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  formatLocalizedDate,
   getCurrentDeviceTimestampIso,
   isFutureDeviceDate,
   toDeviceDateTimeIso,
@@ -44,6 +45,11 @@ test("isFutureDeviceDate compares against the device local day", () => {
   assert.equal(isFutureDeviceDate("2026-04-23", now), false);
   assert.equal(isFutureDeviceDate("2026-04-22", now), false);
   assert.equal(isFutureDeviceDate("bad", now), false);
+});
+
+test("formatLocalizedDate hides the time part for invite-style dates", () => {
+  assert.equal(formatLocalizedDate("2026-06-01T09:29:12.982125Z", "ru"), "01.06.2026");
+  assert.equal(formatLocalizedDate("2026-06-01T09:29:12.982125Z", "en"), "06/01/2026");
 });
 
 test("isFutureFirstAdministrationSelection rejects future time on the same day", () => {

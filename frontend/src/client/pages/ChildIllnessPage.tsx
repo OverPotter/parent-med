@@ -4,8 +4,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import type { Dispatch, SetStateAction } from "react";
-import type { UseMutationResult } from "@tanstack/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchChild } from "@shared/api/children";
 import {
@@ -32,11 +30,10 @@ import {
   syncIllnessLiveActivity,
 } from "@shared/utils/liveActivities";
 import {
-  clearIllnessStartHint,
-  setIllnessStartHint,
-  shouldKeepIllnessTimerHint,
-} from "@shared/utils/illnessStartHints";
-import { getLocalIsoDate, isFutureDeviceDate } from "@shared/utils/date";
+  buildScopedLiveActivityPreferences,
+  hasLiveActivityAccess,
+} from "@shared/utils/liveActivityAccess";
+import { clearIllnessStartHint } from "@shared/utils/illnessStartHints";
 import {
   closeIllnessEpisodeResilient,
   createIllnessEpisodeResilient,
@@ -48,18 +45,15 @@ import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgr
 import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
 import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
 import { formatChildDatePlain } from "@client/utils/childDateFormat";
-import type { FamilyMember, IllnessEpisode, WeightEntry } from "@shared/types/api";
-import { EpisodeActivationCard } from "./child-illness/forms";
 import {
-  HistoryEpisodeCard,
-  HistoryEpisodeInsightsScreen,
-  HistoryInsightsPreview,
-} from "./child-illness/history";
-import { EpisodeBlock } from "./child-illness/EpisodeBlock";
+  ChildIllnessActiveScreen,
+  ChildIllnessCreateScreen,
+  ChildIllnessHistoryScreen,
+} from "./child-illness/screens";
 import {
+  closeIllnessEpisodeForChild,
   getActiveEpisodeFromList,
   invalidateIllnessQueriesForChild,
-  setIllnessEpisodesForChild,
   upsertIllnessEpisodeForChild,
 } from "./child-illness/episodeCache";
 import {
@@ -70,30 +64,6 @@ import {
   resolveChildIllnessGuard,
 } from "./child-illness/navigation";
 import { SummaryCard, formatWeightValue } from "./child-illness/shared";
-
-type CreateIllnessEpisodePayload = {
-  started_at: string;
-  title?: string | null;
-  medication_mode: string;
-  note?: string | null;
-  temperatures: Array<{ value_celsius: number }>;
-  administrations: Array<{
-    household_medicine_id?: string | null;
-    custom_medicine_name?: string | null;
-    amount: string;
-  }>;
-  comments: Array<{ text: string }>;
-  medication_plans: Array<{
-    household_medicine_id?: string | null;
-    custom_medicine_name?: string | null;
-    dose_amount: string;
-    min_interval_minutes: number;
-    max_doses_per_day?: number | null;
-    weight_kg?: number | null;
-    dose_mg_per_kg?: number | null;
-    notes?: string | null;
-  }>;
-};
 
 export function ChildIllnessPage() {
   const { language } = useI18n();
@@ -109,7 +79,7 @@ export function ChildIllnessPage() {
   const queryClient = useQueryClient();
   const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
     useUpgradeDialogOpenState();
-  const liveQueryOptions = useLiveQueryOptions(isIosShell ? 15_000 : 10_000);
+  const liveQueryOptions = useLiveQueryOptions(5_000);
   const [createEpisodeValidationError, setCreateEpisodeValidationError] = useState<string | null>(
     null
   );
@@ -126,6 +96,7 @@ export function ChildIllnessPage() {
     staleTime: 60 * 1000,
   });
   const canManageSubscription = familyAccess?.canManageSubscription ?? false;
+  const canUseIllnessLiveActivities = hasLiveActivityAccess(familyAccess);
   const {
     upgradeToPlus,
     restorePurchases,
@@ -227,7 +198,7 @@ export function ChildIllnessPage() {
       activeEpisodeMedicationPlans,
       null,
       language,
-      undefined,
+      buildScopedLiveActivityPreferences("illness", canUseIllnessLiveActivities),
       accountId
     );
   }, [
@@ -235,6 +206,7 @@ export function ChildIllnessPage() {
     activeEpisode,
     activeEpisodeInsights,
     activeEpisodeMedicationPlans,
+    canUseIllnessLiveActivities,
     child,
     language,
   ]);
@@ -251,18 +223,13 @@ export function ChildIllnessPage() {
   const closeEpisodeMutation = useMutation({
     mutationFn: (episodeId: string) =>
       closeIllnessEpisodeResilient({ childId: childId!, episodeId }),
-    onSuccess: (closedEpisode) => {
+    onSuccess: (closedEpisode, episodeId) => {
       clearIllnessStartHint(childId!);
       requestLiveActivityRefresh();
-      if (closedEpisode) {
-        upsertIllnessEpisodeForChild(queryClient, childId!, closedEpisode);
-      } else {
-        setIllnessEpisodesForChild(queryClient, childId!, (current) =>
-          current.map((item) =>
-            item.status === "active" ? { ...item, status: "closed" as const } : item
-          )
-        );
-      }
+      closeIllnessEpisodeForChild(queryClient, childId!, {
+        episodeId,
+        closedEpisode,
+      });
       invalidateIllnessQueriesForChild(queryClient, childId!);
       navigate("/illnesses/active");
     },
@@ -297,43 +264,24 @@ export function ChildIllnessPage() {
         currentAccountId: accountId,
         payload,
       }),
-    onSuccess: (episode, payload) => {
+    onSuccess: (episode) => {
       setCreateEpisodeValidationError(null);
-      const startedAtHint = new Date().toISOString();
-      const shouldKeepExactStartedAt = shouldKeepIllnessTimerHint(
-        payload.started_at,
-        new Date(startedAtHint)
-      );
-      if (shouldKeepExactStartedAt) {
-        setIllnessStartHint({
-          childId: childId!,
-          episodeId: episode.id,
-          startedAt: startedAtHint,
-        });
-      } else {
-        clearIllnessStartHint(childId!);
-      }
-      const episodeForUi = shouldKeepExactStartedAt
-        ? {
-            ...episode,
-            startedAt: startedAtHint,
-          }
-        : episode;
+      clearIllnessStartHint(childId!);
       if (child) {
         void syncIllnessLiveActivity(
           child,
-          episodeForUi,
+          episode,
           null,
           [],
           null,
           language,
-          undefined,
+          buildScopedLiveActivityPreferences("illness", canUseIllnessLiveActivities),
           accountId
         );
       }
       void trackIllnessEpisodeStarted(episode.id);
       requestLiveActivityRefresh();
-      upsertIllnessEpisodeForChild(queryClient, childId!, episodeForUi);
+      upsertIllnessEpisodeForChild(queryClient, childId!, episode);
       invalidateIllnessQueriesForChild(queryClient, childId!);
       navigate("/illnesses/active");
     },
@@ -622,155 +570,6 @@ function ChildIllnessShellSummary({
           </div>
         )}
       </div>
-    </section>
-  );
-}
-
-function ChildIllnessActiveScreen({
-  activeEpisode,
-  child,
-  currentFamilyId,
-  eligibleIllnessRecipients,
-  initialComposerMode,
-  latestWeight,
-  onClose,
-  quickComposeMode,
-  quickReminderCreateMode,
-  quickReminderDetailMode,
-  quickReminderMode,
-  quickTimelineMode,
-  reminderPlanId,
-  planLocksChildActions,
-  onLockedActionAttempt,
-}: {
-  activeEpisode: IllnessEpisode;
-  child: { id: string; name: string };
-  currentFamilyId: string | null;
-  eligibleIllnessRecipients: FamilyMember[];
-  initialComposerMode: "temperature" | "administration" | "comment";
-  latestWeight: WeightEntry | null;
-  onClose: () => void;
-  quickComposeMode: "temperature" | "administration" | "comment" | null;
-  quickReminderCreateMode: boolean;
-  quickReminderDetailMode: boolean;
-  quickReminderMode: boolean;
-  quickTimelineMode: boolean;
-  reminderPlanId: string | null;
-  planLocksChildActions: boolean;
-  onLockedActionAttempt: () => void;
-}) {
-  return (
-    <section>
-      <EpisodeBlock
-        childName={child.name}
-        childId={child.id}
-        episode={activeEpisode}
-        familyMembers={eligibleIllnessRecipients}
-        onClose={onClose}
-        familyId={currentFamilyId}
-        latestWeight={latestWeight}
-        initialComposerMode={initialComposerMode}
-        quickComposeMode={quickComposeMode}
-        quickTimelineMode={quickTimelineMode}
-        quickReminderMode={quickReminderMode}
-        quickReminderCreateMode={quickReminderCreateMode}
-        quickReminderDetailMode={quickReminderDetailMode}
-        reminderPlanId={reminderPlanId}
-        planLocksChildActions={planLocksChildActions}
-        onLockedActionAttempt={onLockedActionAttempt}
-      />
-    </section>
-  );
-}
-
-function ChildIllnessCreateScreen({
-  createEpisodeMutation,
-  createEpisodeValidationError,
-  language,
-  navigate,
-  setCreateEpisodeValidationError,
-}: {
-  createEpisodeMutation: UseMutationResult<
-    IllnessEpisode,
-    Error,
-    CreateIllnessEpisodePayload,
-    unknown
-  >;
-  createEpisodeValidationError: string | null;
-  language: "ru" | "en";
-  navigate: ReturnType<typeof useNavigate>;
-  setCreateEpisodeValidationError: Dispatch<SetStateAction<string | null>>;
-}) {
-  return (
-    <section className="space-y-3">
-      <EpisodeActivationCard
-        isPending={createEpisodeMutation.isPending}
-        errorMessage={
-          createEpisodeValidationError ??
-          (
-            createEpisodeMutation.error as {
-              response?: { data?: { detail?: string } };
-            }
-          )?.response?.data?.detail ??
-          null
-        }
-        onActivate={(payload) => {
-          if (isFutureDeviceDate(payload.started_at)) {
-            setCreateEpisodeValidationError(
-              language === "ru"
-                ? `Дата начала не может быть позже даты на устройстве (${getLocalIsoDate()}).`
-                : `Start date cannot be later than the device date (${getLocalIsoDate()}).`
-            );
-            return;
-          }
-          setCreateEpisodeValidationError(null);
-          createEpisodeMutation.mutate(payload);
-        }}
-        onCancel={() => navigate("/children")}
-      />
-    </section>
-  );
-}
-
-function ChildIllnessHistoryScreen({
-  childId,
-  historyEpisodeInsightsMode,
-  historyEpisodes,
-  focusedHistoryEpisode,
-  language,
-}: {
-  childId: string;
-  historyEpisodeInsightsMode: boolean;
-  historyEpisodes: IllnessEpisode[];
-  focusedHistoryEpisode: IllnessEpisode | null;
-  language: "ru" | "en";
-}) {
-  return (
-    <section className="space-y-3">
-      {historyEpisodeInsightsMode && focusedHistoryEpisode ? (
-        <HistoryEpisodeInsightsScreen episode={focusedHistoryEpisode} />
-      ) : null}
-
-      {!historyEpisodeInsightsMode && <HistoryInsightsPreview childId={childId} />}
-
-      {!historyEpisodeInsightsMode && historyEpisodes.length > 0 ? (
-        <ul className="grid gap-2.5">
-          {historyEpisodes.map((episode) => (
-            <HistoryEpisodeCard
-              key={episode.id}
-              childId={childId}
-              episode={episode}
-              episodeNumber={
-                historyEpisodes.length - historyEpisodes.findIndex((item) => item.id === episode.id)
-              }
-            />
-          ))}
-        </ul>
-      ) : !historyEpisodeInsightsMode ? (
-        <div className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
-          {language === "ru" ? "История пока пустая." : "History is still empty."}
-        </div>
-      ) : null}
     </section>
   );
 }

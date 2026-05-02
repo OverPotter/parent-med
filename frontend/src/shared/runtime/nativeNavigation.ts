@@ -17,3 +17,21 @@ export function normalizeNativeNavigationUrl(rawUrl: unknown): string | null {
 
   return url.startsWith("/") ? url : null;
 }
+
+export function normalizeAuthenticatedLaunchUrl(rawUrl: unknown): string | null {
+  const normalizedUrl = normalizeNativeNavigationUrl(rawUrl);
+  if (!normalizedUrl) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(normalizedUrl, "https://pillpath.local");
+    if (parsed.pathname === "/auth" || parsed.pathname === "/recover-password") {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  return normalizedUrl;
+}

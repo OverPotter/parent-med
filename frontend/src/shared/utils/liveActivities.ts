@@ -17,6 +17,7 @@ import {
   buildIllnessMedicationLines,
   getIllnessDurationMeta,
 } from "./illnessLiveActivitySummary";
+import { isIllnessLiveWidgetEnabled } from "./illnessLiveWidgetPreference";
 import {
   isNativeLiveActivitiesSupported,
   stopAllNativeLiveActivities,
@@ -46,19 +47,6 @@ function isEnabled(
     return preferences.feedingEnabled;
   }
   return preferences.illnessEnabled;
-}
-
-function canSeeIllnessLiveActivity(
-  episode: Pick<IllnessEpisode, "memberAccountIds">,
-  currentAccountId?: string | null
-) {
-  if (!currentAccountId) {
-    return false;
-  }
-
-  return (
-    episode.memberAccountIds.length === 0 || episode.memberAccountIds.includes(currentAccountId)
-  );
 }
 
 function normalizeLiveActivityStartedAt(value: string | null | undefined): string | null {
@@ -282,7 +270,12 @@ export async function syncIllnessLiveActivity(
   child: Pick<Child, "id" | "name">,
   episode: Pick<
     IllnessEpisode,
-    "id" | "startedAt" | "status" | "title" | "memberAccountIds"
+    | "id"
+    | "startedAt"
+    | "status"
+    | "title"
+    | "notificationRecipientAccountIds"
+    | "createdByAccountId"
   > | null,
   insights: Pick<
     IllnessEpisodeInsights,
@@ -309,7 +302,7 @@ export async function syncIllnessLiveActivity(
     !episode ||
     episode.status !== "active" ||
     !isEnabled("illness", preferences) ||
-    !canSeeIllnessLiveActivity(episode, currentAccountId)
+    !isIllnessLiveWidgetEnabled(episode, currentAccountId)
   ) {
     await safeStopLiveActivity({ kind: "illness", itemId: child.id });
     return;

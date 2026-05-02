@@ -6,7 +6,11 @@ import {
   takePillboxDose,
   updatePillboxPlan,
 } from "@shared/api/pillboxPlans";
-import type { PillboxPlanWrite } from "@shared/api/pillboxPlans.contract";
+import type {
+  PillboxPlan,
+  PillboxPlanSummary,
+  PillboxPlanWrite,
+} from "@shared/api/pillboxPlans.contract";
 import type { AppLanguage } from "@shared/i18n";
 import { tPillbox, type PillboxDeleteTarget, type PillboxPlanActionTarget } from "./shared";
 
@@ -36,12 +40,55 @@ async function refreshPillboxQueries(
   currentFamilyId: string | null,
   planId?: string
 ) {
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-    ...(planId ? [queryClient.invalidateQueries({ queryKey: ["pillbox-plan", planId] })] : []),
-    queryClient.refetchQueries({ queryKey: ["pillbox-plans", currentFamilyId] }),
-    ...(planId ? [queryClient.refetchQueries({ queryKey: ["pillbox-plan", planId] })] : []),
-  ]);
+  void queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
+  if (planId) {
+    void queryClient.invalidateQueries({ queryKey: ["pillbox-plan", planId] });
+  }
+}
+
+function toPlanSummary(
+  plan: PillboxPlan,
+  existingSummary?: PillboxPlanSummary | null
+): PillboxPlanSummary {
+  return {
+    id: plan.id,
+    title: plan.title,
+    status: plan.status,
+    memberAccountIds: plan.memberAccountIds,
+    activeMedicationCount: plan.medications.length,
+    nextDoseAt: existingSummary?.nextDoseAt ?? null,
+    nextDoseLabel: existingSummary?.nextDoseLabel ?? null,
+    nextMedicationId: existingSummary?.nextMedicationId ?? null,
+    nextMedicationTitle: existingSummary?.nextMedicationTitle ?? null,
+    courseSummaryKind: existingSummary?.courseSummaryKind ?? null,
+    courseProgressRatio: existingSummary?.courseProgressRatio ?? null,
+    courseDayLabel: existingSummary?.courseDayLabel ?? null,
+  };
+}
+
+function upsertPlanSummaryInList(
+  current: PillboxPlanSummary[] | undefined,
+  summary: PillboxPlanSummary
+): PillboxPlanSummary[] {
+  const items = current ?? [];
+  const next = items.some((item) => item.id === summary.id)
+    ? items.map((item) => (item.id === summary.id ? { ...item, ...summary } : item))
+    : [summary, ...items];
+  return next;
+}
+
+function removePlanSummaryFromList(
+  current: PillboxPlanSummary[] | undefined,
+  planId: string
+): PillboxPlanSummary[] {
+  return (current ?? []).filter((item) => item.id !== planId);
+}
+
+function findPlanSummary(
+  current: PillboxPlanSummary[] | undefined,
+  planId: string
+): PillboxPlanSummary | null {
+  return (current ?? []).find((item) => item.id === planId) ?? null;
 }
 
 export function usePillboxMutations({
@@ -64,9 +111,14 @@ export function usePillboxMutations({
       }
       return createPillboxPlan(payload);
     },
-    onSuccess: async () => {
+    onSuccess: (plan) => {
       setSavePlanError(null);
-      await queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
+      queryClient.setQueryData<PillboxPlan>(["pillbox-plan", plan.id], plan);
+      queryClient.setQueryData<PillboxPlanSummary[]>(
+        ["pillbox-plans", currentFamilyId, language],
+        (current) => upsertPlanSummaryInList(current, toPlanSummary(plan))
+      );
+      void queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
       goToHub();
     },
     onError: (error) => {
@@ -93,9 +145,15 @@ export function usePillboxMutations({
   const updatePlanMutation = useMutation({
     mutationFn: ({ planId, payload }: { planId: string; payload: PillboxPlanWrite }) =>
       updatePillboxPlan(planId, payload),
-    onSuccess: async (plan) => {
+    onSuccess: (plan) => {
       setSavePlanError(null);
-      await refreshPillboxQueries(queryClient, currentFamilyId, plan.id);
+      queryClient.setQueryData<PillboxPlan>(["pillbox-plan", plan.id], plan);
+      queryClient.setQueryData<PillboxPlanSummary[]>(
+        ["pillbox-plans", currentFamilyId, language],
+        (current) =>
+          upsertPlanSummaryInList(current, toPlanSummary(plan, findPlanSummary(current, plan.id)))
+      );
+      refreshPillboxQueries(queryClient, currentFamilyId, plan.id);
     },
     onError: (error) => {
       if (isAxiosError(error)) {
@@ -113,10 +171,16 @@ export function usePillboxMutations({
   const togglePlanStatusMutation = useMutation({
     mutationFn: ({ planId, payload }: { planId: string; payload: PillboxPlanWrite }) =>
       updatePillboxPlan(planId, payload),
-    onSuccess: async (plan) => {
+    onSuccess: (plan) => {
       setPlanActionError(null);
       setPlanActionTarget(null);
-      await refreshPillboxQueries(queryClient, currentFamilyId, plan.id);
+      queryClient.setQueryData<PillboxPlan>(["pillbox-plan", plan.id], plan);
+      queryClient.setQueryData<PillboxPlanSummary[]>(
+        ["pillbox-plans", currentFamilyId, language],
+        (current) =>
+          upsertPlanSummaryInList(current, toPlanSummary(plan, findPlanSummary(current, plan.id)))
+      );
+      refreshPillboxQueries(queryClient, currentFamilyId, plan.id);
     },
     onError: (error) => {
       if (isAxiosError(error)) {
@@ -133,11 +197,16 @@ export function usePillboxMutations({
 
   const deletePlanMutation = useMutation({
     mutationFn: deletePillboxPlan,
-    onSuccess: async () => {
+    onSuccess: (_result, planId) => {
       setPlanActionError(null);
       setPlanActionTarget(null);
       setDeleteTarget(null);
-      await queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
+      queryClient.setQueryData<PillboxPlanSummary[]>(
+        ["pillbox-plans", currentFamilyId, language],
+        (current) => removePlanSummaryFromList(current, planId)
+      );
+      queryClient.removeQueries({ queryKey: ["pillbox-plan", planId] });
+      void queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
       goToHub();
     },
     onError: (error) => {
@@ -167,8 +236,12 @@ export function usePillboxMutations({
         source: "manual",
         scheduled_for: scheduledFor,
       }),
-    onSuccess: async (_, variables) => {
-      await refreshPillboxQueries(queryClient, currentFamilyId, variables.planId);
+    onSuccess: (summary, variables) => {
+      queryClient.setQueryData<PillboxPlanSummary[]>(
+        ["pillbox-plans", currentFamilyId, language],
+        (current) => upsertPlanSummaryInList(current, summary)
+      );
+      refreshPillboxQueries(queryClient, currentFamilyId, variables.planId);
     },
   });
 
