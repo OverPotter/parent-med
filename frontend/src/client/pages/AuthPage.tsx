@@ -609,8 +609,9 @@ export function AuthPage() {
   return (
     <div
       className={joinClasses(
-        "auth-v3-page min-h-screen text-foreground",
-        mode === "login" && "auth-v3-page--login"
+        "auth-v3-page auth-v3-page--auth min-h-screen text-foreground",
+        mode === "login" && "auth-v3-page--login",
+        mode === "register" && "auth-v3-page--register"
       )}
       onPointerDownCapture={formFocusHandlers.onPointerDownCapture}
     >
@@ -704,12 +705,12 @@ export function AuthPage() {
             </div>
           ) : null}
 
-          <section
-            className={joinClasses(
-              "auth-v3-panel auth-v3-panel-compact soft-page-intro",
-              mode === "login" && "auth-v3-panel-compact-login",
-              isNativeIOS && "auth-v3-panel--ios"
-            )}
+            <section
+              className={joinClasses(
+                "auth-v3-panel auth-v3-panel-compact auth-v3-auth-panel soft-page-intro",
+                mode === "login" && "auth-v3-panel-compact-login",
+                isNativeIOS && "auth-v3-panel--ios"
+              )}
           >
             <div className="auth-v3-toggle" role="tablist" aria-label={copy.auth.page.toggleLabel}>
               <button
@@ -737,11 +738,11 @@ export function AuthPage() {
             <form
               onSubmit={handleSubmit}
               {...formFocusHandlers}
-              className={joinClasses("mt-5 space-y-4", isNativeIOS && "auth-v3-form--ios")}
+              className={joinClasses("auth-v3-auth-form", isNativeIOS && "auth-v3-form--ios")}
               method="post"
               autoComplete="on"
             >
-              <div className="auth-v3-card">
+              <div className="auth-v3-card auth-v3-auth-card">
                 {!isRegisterMode ? (
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -750,7 +751,7 @@ export function AuthPage() {
                   </div>
                 ) : null}
 
-                <div className="mt-5 space-y-4">
+                <div className="auth-v3-auth-fields">
                   {isRegisterMode ? (
                     <AuthFamilyCodeCard
                       language={language}
