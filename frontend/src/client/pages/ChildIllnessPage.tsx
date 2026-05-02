@@ -79,7 +79,7 @@ export function ChildIllnessPage() {
   const queryClient = useQueryClient();
   const { isUpgradeDialogOpen, setIsUpgradeDialogOpen, openUpgradeDialog } =
     useUpgradeDialogOpenState();
-  const liveQueryOptions = useLiveQueryOptions(isIosShell ? 8_000 : 5_000);
+  const liveQueryOptions = useLiveQueryOptions(5_000);
   const [createEpisodeValidationError, setCreateEpisodeValidationError] = useState<string | null>(
     null
   );

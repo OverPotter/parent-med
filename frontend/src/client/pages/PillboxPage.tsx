@@ -82,7 +82,7 @@ export function PillboxPage() {
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
-  const pillboxLiveQueryOptions = useLiveQueryOptions(isIosShell ? 10000 : 5000);
+  const pillboxLiveQueryOptions = useLiveQueryOptions(5000);
   const canSeePillbox = canViewPillbox(accountFamilyRole, accountAccessPolicy);
   const canActInPillbox = canActPillbox(accountFamilyRole, accountAccessPolicy);
   const canMutatePillbox = canEditPillbox(accountFamilyRole, accountAccessPolicy);
