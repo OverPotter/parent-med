@@ -764,6 +764,8 @@ export function AuthPage() {
                 aboutLabel={copy.common.aboutApp}
                 language={language}
                 onNavigate={blurActiveField}
+                onboardingHref="/onboarding"
+                onOnboardingNavigate={openOnboardingPreview}
                 showSecondaryLegalLinks={showSecondaryLegalLinks}
               />
             </div>
@@ -1008,6 +1010,8 @@ export function AuthPage() {
                     aboutExternal
                     language={language}
                     onNavigate={blurActiveField}
+                    onboardingHref="/onboarding"
+                    onOnboardingNavigate={openOnboardingPreview}
                     showSecondaryLegalLinks={showSecondaryLegalLinks}
                   />
                 </div>

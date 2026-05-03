@@ -443,10 +443,6 @@ export default function App() {
                   path="/onboarding"
                   element={<UnauthedOnboardingRoute authPath={signedOutAuthPath} />}
                 />
-                <Route
-                  path="/preview/onboarding-ui"
-                  element={<Navigate to="/onboarding" replace />}
-                />
                 <Route path="/auth" element={<UnauthedAuthRoute />} />
                 <Route path="/recover-password" element={<RecoverPasswordPage />} />
                 <Route path="/legal" element={<LegalPage />} />
