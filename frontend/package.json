@@ -17,8 +17,8 @@
     "build:mobile:web:prod": "tsc -b && vite build --mode mobile-prod",
     "cap:sync:ios": "npx cap sync ios && node scripts/patch-capacitor-config.mjs",
     "cap:open:ios": "npx cap open ios",
-    "start": "vite --config vite.config.ts design/preview --host 0.0.0.0 --port ${PORT:-4173}",
-    "preview": "vite design/preview",
+    "start": "vite preview --config vite.config.ts --host 0.0.0.0 --port ${PORT:-4173}",
+    "preview": "vite preview --config vite.config.ts",
     "format": "npx prettier --write \"src/**/*.{ts,tsx,js,json,css,md}\"",
     "lint": "tsc --noEmit && npx prettier --check \"src/**/*.{ts,tsx,js,json,css,md}\""
   },
