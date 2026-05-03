@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from src.application.services.push_reminder_scheduler import (
+    _account_belongs_to_family,
     _can_receive_illness_push,
     _can_receive_pillbox_push,
     _format_before_body,
@@ -132,6 +133,14 @@ def test_pillbox_target_accounts_use_only_explicit_recipients() -> None:
 
     plan.member_account_ids = [recipient_id]
     assert _get_pillbox_target_account_ids(plan) == [recipient_id]
+
+
+def test_account_belongs_to_family_requires_current_family_match() -> None:
+    account = build_account(FamilyAccessPolicy())
+    family_id = account.family_id
+
+    assert _account_belongs_to_family(account, family_id) is True
+    assert _account_belongs_to_family(account, uuid4()) is False
 
 
 def test_cabinet_delivery_log_is_scoped_per_account() -> None:

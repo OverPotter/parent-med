@@ -59,8 +59,10 @@ export function CabinetPushRecipientsCard({
       return;
     }
     const previousIds = selectedIdsRef.current;
-    const normalizedNextIds = toggleNormalizedRecipientSelection(memberId, previousIds, (nextIds) =>
-      resolveRecipientSelection(nextIds, currentAccountId, eligibleMemberIds)
+    const normalizedNextIds = toggleNormalizedRecipientSelection(
+      memberId,
+      previousIds,
+      (nextIds) => resolveRecipientSelection(nextIds, currentAccountId, eligibleMemberIds)
     );
     await runOptimisticRecipientSelectionUpdate({
       previousIds,

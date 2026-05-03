@@ -24,6 +24,7 @@ import { useNow } from "@shared/hooks/useNow";
 import { canEditChild, canViewCabinet } from "@shared/permissions/familyAccess";
 import { useAppStore } from "@shared/store/useAppStore";
 import type {
+  AdministrationEvent,
   EpisodeMedicationPlan,
   FamilyMember,
   IllnessEpisode,
@@ -48,6 +49,10 @@ import {
   TimelineOverviewPanel,
 } from "./EpisodeOverviewPanels";
 import { createReminderWithOptionalFirstAdministration } from "./reminderCreation";
+import {
+  buildOptimisticAdministrationEvent,
+  upsertAdministrationEvent,
+} from "./administrationOptimistic";
 import { DoseTimeSheet, useDoseLoggingFlow } from "./doseLogging";
 import { upsertIllnessEpisodeForChild } from "./episodeCache";
 import { buildEpisodeTimeline } from "./timeline";
@@ -91,6 +96,7 @@ export function EpisodeBlock({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
+  const accountDisplayName = useAppStore((s) => s.accountDisplayName);
   const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const accountAccessPolicy = useAppStore((s) => s.accountAccessPolicy);
   const liveQueryOptions = useLiveQueryOptions(5_000);
@@ -121,6 +127,32 @@ export function EpisodeBlock({
         : {
             success: language === "ru" ? "Заметка сохранена" : "Note saved",
           };
+  const medicationPlansQueryKey = ["episode-medication-plans", episode.id] as const;
+  const liveActivityMedicationPlansQueryKey = [
+    "episode-medication-plans",
+    episode.id,
+    "live-activity",
+  ] as const;
+
+  const prependMedicationPlanToCache = (createdPlan: EpisodeMedicationPlan) => {
+    const applyPlan = (current: EpisodeMedicationPlan[] | undefined) => {
+      const items = current ?? [];
+      if (items.some((item) => item.id === createdPlan.id)) {
+        return items;
+      }
+      return [createdPlan, ...items];
+    };
+
+    queryClient.setQueryData<EpisodeMedicationPlan[]>(medicationPlansQueryKey, applyPlan);
+    queryClient.setQueryData<EpisodeMedicationPlan[]>(liveActivityMedicationPlansQueryKey, applyPlan);
+  };
+
+  const refreshMedicationPlanQueries = async () => {
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: medicationPlansQueryKey, type: "active" }),
+      queryClient.refetchQueries({ queryKey: liveActivityMedicationPlansQueryKey, type: "active" }),
+    ]);
+  };
 
   const { data: temperatureEntries = [] } = useQuery({
     queryKey: ["temperature-entries", episode.id],
@@ -144,7 +176,7 @@ export function EpisodeBlock({
   });
 
   const { data: medicationPlans = [] } = useQuery({
-    queryKey: ["episode-medication-plans", episode.id],
+    queryKey: medicationPlansQueryKey,
     queryFn: () => fetchEpisodeMedicationPlansByEpisodeId(episode.id),
     enabled: !!episode.id,
     ...liveQueryOptions,
@@ -189,13 +221,49 @@ export function EpisodeBlock({
         amount: payload.amount,
         reason: payload.reason,
       }),
-    onSuccess: () => {
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: ["administration-events", episode.id] });
+      const previousAdministrations = queryClient.getQueryData<AdministrationEvent[]>([
+        "administration-events",
+        episode.id,
+      ]);
+      const administeredAt = payload.administered_at ?? getCurrentDeviceTimestampIso();
+      const optimisticEvent = buildOptimisticAdministrationEvent({
+        episodeId: episode.id,
+        householdMedicineId: payload.household_medicine_id,
+        customMedicineName: payload.custom_medicine_name,
+        administeredAt,
+        administeredByAccountId: accountId,
+        administeredByNameSnapshot: accountDisplayName,
+        amount: payload.amount,
+        reason: payload.reason,
+      });
+      queryClient.setQueryData<AdministrationEvent[]>(
+        ["administration-events", episode.id],
+        (current) => upsertAdministrationEvent(current, optimisticEvent)
+      );
+      return { previousAdministrations, optimisticEventId: optimisticEvent.id };
+    },
+    onSuccess: (createdEvent, _payload, context) => {
+      queryClient.setQueryData<AdministrationEvent[]>(
+        ["administration-events", episode.id],
+        (current) =>
+          upsertAdministrationEvent(current, createdEvent, context?.optimisticEventId ?? null)
+      );
       trackMedicationAdministered("episode_detail");
       queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
       queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
       requestLiveActivityRefresh();
       doseLogging.close();
       if (quickComposeMode) setQuickComposeSuccessMessage(quickComposeMeta.success);
+    },
+    onError: (_error, _payload, context) => {
+      if (context?.previousAdministrations !== undefined) {
+        queryClient.setQueryData(
+          ["administration-events", episode.id],
+          context.previousAdministrations
+        );
+      }
     },
   });
   const doseLogging = useDoseLoggingFlow<EpisodeMedicationPlan>({
@@ -254,17 +322,8 @@ export function EpisodeBlock({
         language
       ),
     onSuccess: async (createdPlan) => {
-      queryClient.setQueryData<EpisodeMedicationPlan[]>(
-        ["episode-medication-plans", episode.id],
-        (current) => {
-          const items = current ?? [];
-          if (items.some((item) => item.id === createdPlan.id)) {
-            return items;
-          }
-          return [createdPlan, ...items];
-        }
-      );
-      await queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      prependMedicationPlanToCache(createdPlan);
+      await refreshMedicationPlanQueries();
       await queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
       await queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
       requestLiveActivityRefresh();
@@ -273,7 +332,7 @@ export function EpisodeBlock({
       }
     },
     onError: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      await refreshMedicationPlanQueries();
       await queryClient.invalidateQueries({ queryKey: ["administration-events", episode.id] });
       await queryClient.invalidateQueries({ queryKey: ["illness-episode-insights", episode.id] });
     },
@@ -282,7 +341,8 @@ export function EpisodeBlock({
   const deletePlanMutation = useMutation({
     mutationFn: deleteEpisodeMedicationPlan,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      queryClient.invalidateQueries({ queryKey: medicationPlansQueryKey });
+      queryClient.invalidateQueries({ queryKey: liveActivityMedicationPlansQueryKey });
       requestLiveActivityRefresh();
     },
   });
@@ -311,7 +371,8 @@ export function EpisodeBlock({
       };
     }) => updateEpisodeMedicationPlan(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["episode-medication-plans", episode.id] });
+      queryClient.invalidateQueries({ queryKey: medicationPlansQueryKey });
+      queryClient.invalidateQueries({ queryKey: liveActivityMedicationPlansQueryKey });
       requestLiveActivityRefresh();
     },
   });

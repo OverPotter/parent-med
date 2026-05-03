@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time
 from uuid import uuid4
 
 import pytest
@@ -12,8 +12,12 @@ from src.application.dto.family_access import FamilyAccessPolicyUpdateDto
 from src.application.services.family_service import FamilyService
 from src.core.exceptions import ForbiddenError, ValidationError
 from src.domain.entities.account import Account
+from src.domain.entities.child import Child
+from src.domain.entities.episode_medication_plan import EpisodeMedicationPlan
 from src.domain.entities.family import Family
 from src.domain.entities.family_access import FamilyAccessPolicy
+from src.domain.entities.illness_episode import IllnessEpisode
+from src.domain.entities.pillbox import PillboxMedication, PillboxPlan
 
 
 class StubFamilyRepository:
@@ -71,6 +75,50 @@ class StubAccountSessionRepository:
     async def delete_by_account_id(self, account_id):  # noqa: ANN001
         self.deleted_account_ids.append(account_id)
         return 1
+
+
+class StubChildRepository:
+    def __init__(self, children: list[Child]) -> None:
+        self.children = children
+
+    async def get_by_family_id(self, family_id):  # noqa: ANN001
+        return [child for child in self.children if child.family_id == family_id]
+
+
+class StubIllnessEpisodeRepository:
+    def __init__(self, episodes: list[IllnessEpisode]) -> None:
+        self.episodes = episodes
+
+    async def get_by_child_id(self, child_id):  # noqa: ANN001
+        return [episode for episode in self.episodes if episode.child_id == child_id]
+
+    async def update(self, entity):  # noqa: ANN001
+        self.episodes = [episode for episode in self.episodes if episode.id != entity.id] + [entity]
+        return entity
+
+
+class StubEpisodeMedicationPlanRepository:
+    def __init__(self, plans: list[EpisodeMedicationPlan]) -> None:
+        self.plans = plans
+
+    async def get_by_episode_id(self, episode_id):  # noqa: ANN001
+        return [plan for plan in self.plans if plan.episode_id == episode_id]
+
+    async def update(self, entity):  # noqa: ANN001
+        self.plans = [plan for plan in self.plans if plan.id != entity.id] + [entity]
+        return entity
+
+
+class StubPillboxRepository:
+    def __init__(self, plans: list[PillboxPlan]) -> None:
+        self.plans = plans
+
+    async def list_by_family_id(self, family_id):  # noqa: ANN001
+        return [plan for plan in self.plans if plan.family_id == family_id]
+
+    async def update(self, entity):  # noqa: ANN001
+        self.plans = [plan for plan in self.plans if plan.id != entity.id] + [entity]
+        return entity
 
 
 @pytest.mark.asyncio
@@ -210,6 +258,157 @@ async def test_delete_member_revokes_sessions() -> None:
     new_family = service._repo.items[updated_adult.family_id]
     assert new_family.owner_account_id == adult.id
     assert new_family.name == "Моя семья"
+
+
+@pytest.mark.asyncio
+async def test_delete_member_removes_member_from_all_recipient_lists() -> None:
+    family = Family(id=uuid4(), name="Моя семья")
+    owner = Account(
+        id=uuid4(),
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="owner",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    removed_member = Account(
+        id=uuid4(),
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="member",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    other_member = Account(
+        id=uuid4(),
+        email="nanny@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Няня",
+        family_role="member",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 10, 0, tzinfo=UTC),
+    )
+    family.owner_account_id = owner.id
+    family.cabinet_member_account_ids = [removed_member.id, other_member.id]
+
+    child = Child(id=uuid4(), family_id=family.id, name="Ребёнок", birth_date=None)
+    episode = IllnessEpisode(
+        id=uuid4(),
+        child_id=child.id,
+        started_at=date(2026, 3, 20),
+        title="ОРВИ",
+        status="active",
+        medication_mode="guided",
+        note=None,
+        closed_at=None,
+        deleted_at=None,
+        member_account_ids=[removed_member.id, other_member.id],
+        created_by_account_id=owner.id,
+    )
+    episode_plan = EpisodeMedicationPlan(
+        id=uuid4(),
+        episode_id=episode.id,
+        household_medicine_id=None,
+        custom_medicine_name="Смекта",
+        dose_amount="1 пакет",
+        min_interval_minutes=360,
+        max_doses_per_day=None,
+        weight_kg=None,
+        dose_mg_per_kg=None,
+        calculated_dose_mg=None,
+        calculated_dose_value=None,
+        calculated_dose_unit=None,
+        dose_calc_mode=None,
+        dose_calc_warning=None,
+        manual_dose_override=False,
+        notes=None,
+        member_account_ids=[removed_member.id, other_member.id],
+        reminders_enabled=True,
+        reminder_before_minutes=15,
+        notify_at_due=True,
+        last_before_notification_for_at=None,
+        last_due_notification_for_at=None,
+        last_overdue_notification_for_at=None,
+        created_at=datetime(2026, 3, 20, 11, 0, tzinfo=UTC),
+    )
+    pillbox_plan = PillboxPlan(
+        id=uuid4(),
+        family_id=family.id,
+        title="Курс",
+        status="active",
+        member_account_ids=[removed_member.id, other_member.id],
+        created_by_account_id=owner.id,
+        created_at=datetime(2026, 3, 20, 12, 0, tzinfo=UTC),
+        updated_at=datetime(2026, 3, 20, 12, 0, tzinfo=UTC),
+        medications=[
+            PillboxMedication(
+                id=uuid4(),
+                plan_id=uuid4(),
+                household_medicine_id=None,
+                custom_medicine_name="Уголь",
+                dose_amount="1 таб",
+                meal_rule="any",
+                repeat_days=[1],
+                times=[time(9, 0)],
+                course_mode="continuous",
+                course_start_date=None,
+                course_end_date=None,
+                position=0,
+                created_at=datetime(2026, 3, 20, 12, 0, tzinfo=UTC),
+                updated_at=datetime(2026, 3, 20, 12, 0, tzinfo=UTC),
+            )
+        ],
+    )
+
+    session_repo = StubAccountSessionRepository()
+    account_repo = StubAccountRepository([owner, removed_member, other_member])
+    family_repo = StubFamilyRepository(family)
+    episode_repo = StubIllnessEpisodeRepository([episode])
+    episode_plan_repo = StubEpisodeMedicationPlanRepository([episode_plan])
+    pillbox_repo = StubPillboxRepository([pillbox_plan])
+    service = FamilyService(
+        family_repo=family_repo,
+        account_repo=account_repo,
+        session_repo=session_repo,
+        child_repo=StubChildRepository([child]),
+        episode_repo=episode_repo,
+        episode_plan_repo=episode_plan_repo,
+        pillbox_repo=pillbox_repo,
+    )
+
+    await service.delete_member_for_account(
+        member_account_id=removed_member.id,
+        current_account_id=owner.id,
+        current_family_id=family.id,
+        current_family_role="owner",
+    )
+
+    assert family_repo.items[family.id].cabinet_member_account_ids == [other_member.id]
+    updated_episode = next(item for item in episode_repo.episodes if item.id == episode.id)
+    assert updated_episode.member_account_ids == [other_member.id]
+    updated_episode_plan = next(
+        item for item in episode_plan_repo.plans if item.id == episode_plan.id
+    )
+    assert updated_episode_plan.member_account_ids == [other_member.id]
+    updated_pillbox_plan = next(item for item in pillbox_repo.plans if item.id == pillbox_plan.id)
+    assert updated_pillbox_plan.member_account_ids == [other_member.id]
 
 
 @pytest.mark.asyncio

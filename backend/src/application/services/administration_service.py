@@ -29,6 +29,8 @@ from src.domain.repositories.illness_episode_repository import IllnessEpisodeRep
 class AdministrationService:
     """Сервис журнала приёмов: проверка Safety Engine и фиксация приёма."""
 
+    DUPLICATE_WINDOW_SECONDS = 30
+
     def __init__(
         self,
         administration_repo: AdministrationEventRepository,
@@ -56,6 +58,43 @@ class AdministrationService:
             unit=entity.unit,
             reason=entity.reason,
         )
+
+    @staticmethod
+    def _normalize_optional_string(value: str | None) -> str | None:
+        normalized = (value or "").strip()
+        return normalized or None
+
+    @classmethod
+    def _normalize_medicine_name(cls, value: str | None) -> str | None:
+        normalized = cls._normalize_optional_string(value)
+        return normalized.casefold() if normalized else None
+
+    @classmethod
+    def _normalize_amount(cls, value: str | None) -> str:
+        return cls._normalize_optional_string(value) or ""
+
+    @classmethod
+    def _is_duplicate_event(
+        cls,
+        existing: AdministrationEvent,
+        *,
+        household_medicine_id: UUID | None,
+        custom_medicine_name: str | None,
+        amount: str,
+        administered_at: datetime,
+    ) -> bool:
+        same_medicine = (
+            existing.household_medicine_id == household_medicine_id
+            if household_medicine_id
+            else cls._normalize_medicine_name(existing.custom_medicine_name)
+            == cls._normalize_medicine_name(custom_medicine_name)
+        )
+        if not same_medicine:
+            return False
+        if cls._normalize_amount(existing.amount) != cls._normalize_amount(amount):
+            return False
+        diff_seconds = abs((existing.administered_at - administered_at).total_seconds())
+        return diff_seconds <= cls.DUPLICATE_WINDOW_SECONDS
 
     async def _require_child_access(
         self,
@@ -142,21 +181,40 @@ class AdministrationService:
             raise ValidationError("Укажи препарат из аптечки или введи название вручную")
 
         household = None
+        custom_medicine_name = self._normalize_optional_string(dto.custom_medicine_name)
         if dto.household_medicine_id:
             household = await self._get_household_for_account(
                 dto.household_medicine_id, current_account
             )
             check_household_medicine_for_administration(household)
         administered_at = dto.administered_at or datetime.now(UTC)
+        normalized_amount = self._normalize_amount(dto.amount)
+        existing_events = await self._repo.get_by_episode_id(dto.episode_id)
+        duplicate_event = next(
+            (
+                event
+                for event in existing_events
+                if self._is_duplicate_event(
+                    event,
+                    household_medicine_id=dto.household_medicine_id,
+                    custom_medicine_name=custom_medicine_name,
+                    amount=normalized_amount,
+                    administered_at=administered_at,
+                )
+            ),
+            None,
+        )
+        if duplicate_event:
+            return self._to_response(duplicate_event)
         entity = AdministrationEvent(
             id=uuid4(),
             episode_id=dto.episode_id,
             household_medicine_id=dto.household_medicine_id,
-            custom_medicine_name=(dto.custom_medicine_name or "").strip() or None,
+            custom_medicine_name=custom_medicine_name,
             administered_at=administered_at,
             administered_by_account_id=administered_by_account_id,
             administered_by_name_snapshot=administered_by_name_snapshot.strip() or None,
-            amount=dto.amount,
+            amount=normalized_amount,
             unit=dto.unit,
             reason=dto.reason,
         )

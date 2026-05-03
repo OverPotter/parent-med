@@ -227,9 +227,28 @@ export function MedicineCabinetPage() {
 
   const updateCabinetRecipientsMutation = useMutation({
     mutationFn: (memberAccountIds: string[]) => updateMyFamilyCabinetRecipients(memberAccountIds),
+    onMutate: async (memberAccountIds) => {
+      const familyQueryKey = ["families", "me", currentFamilyId] as const;
+      await queryClient.cancelQueries({ queryKey: familyQueryKey });
+      const previousFamily = queryClient.getQueryData<typeof family>(familyQueryKey);
+      queryClient.setQueryData(familyQueryKey, (currentFamily: typeof family) =>
+        currentFamily
+          ? {
+              ...currentFamily,
+              cabinetMemberAccountIds: [...memberAccountIds],
+            }
+          : currentFamily
+      );
+      return { previousFamily, familyQueryKey };
+    },
     onSuccess: (updatedFamily) => {
       queryClient.setQueryData(["families", "me", currentFamilyId], updatedFamily);
       queryClient.invalidateQueries({ queryKey: ["families"] });
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousFamily) {
+        queryClient.setQueryData(context.familyQueryKey, context.previousFamily);
+      }
     },
   });
 

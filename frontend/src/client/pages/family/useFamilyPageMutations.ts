@@ -15,6 +15,11 @@ import type {
 } from "@shared/types/api";
 import { invalidateAccessSensitiveQueries } from "./invalidateAccessSensitiveQueries";
 import { tFamily } from "./copy";
+import {
+  applyRemovedMemberRecipientCleanup,
+  getRemovedMemberRecipientCleanupQueryKeys,
+  rollbackRemovedMemberRecipientCleanup,
+} from "./removeMemberRecipientCleanup";
 
 function getApiErrorMessage(error: unknown, fallback: string) {
   if (
@@ -129,14 +134,36 @@ export function useFamilyPageMutations(args: {
 
   const deleteMemberMutation = useMutation({
     mutationFn: (memberAccountId: string) => deleteFamilyMember(memberAccountId),
+    onMutate: async (memberAccountId) => {
+      await Promise.all(
+        getRemovedMemberRecipientCleanupQueryKeys(currentFamilyId).map((queryKey) =>
+          queryClient.cancelQueries({ queryKey })
+        )
+      );
+      const snapshots = applyRemovedMemberRecipientCleanup(
+        queryClient,
+        memberAccountId,
+        currentFamilyId
+      );
+      return { snapshots };
+    },
     onSuccess: () => {
       setError(null);
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] }),
         queryClient.invalidateQueries({ queryKey: ["families", "me", "members", currentFamilyId] }),
+        queryClient.invalidateQueries({ queryKey: ["families", "me", currentFamilyId] }),
+        queryClient.invalidateQueries({ queryKey: ["pillbox-plans"] }),
+        queryClient.invalidateQueries({ queryKey: ["pillbox-plan"] }),
+        queryClient.invalidateQueries({ queryKey: ["illness-episodes"] }),
+        queryClient.invalidateQueries({ queryKey: ["illness-episode-active"] }),
+        queryClient.invalidateQueries({ queryKey: ["episode-medication-plans"] }),
       ]);
     },
-    onError: (error) => {
+    onError: (error, _memberAccountId, context) => {
+      if (context?.snapshots) {
+        rollbackRemovedMemberRecipientCleanup(queryClient, context.snapshots);
+      }
       setError(getApiErrorMessage(error, tFamily(language, "deleteMemberFailed")));
     },
   });
