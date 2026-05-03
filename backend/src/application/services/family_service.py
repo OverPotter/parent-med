@@ -77,25 +77,30 @@ class FamilyService:
         self,
         current_family_id: UUID,
         requested_member_ids: list[UUID] | None,
+        fallback_account_id: UUID | None = None,
     ) -> list[UUID]:
         if requested_member_ids is None:
             return []
         family_accounts = await self._account_repo.list_by_family_id(current_family_id)
-        family_account_ids = {
-            account.id for account in family_accounts if account.family_role != "deleted"
-        }
         normalized_ids = list(dict.fromkeys(requested_member_ids))
-        invalid_ids = [
-            account_id for account_id in normalized_ids if account_id not in family_account_ids
-        ]
-        if invalid_ids:
-            raise ForbiddenError("Нельзя выбрать получателей из другой семьи")
         eligible_account_ids = {
             account.id
             for account in family_accounts
             if account.family_role != "deleted"
             and getattr(account.access_policy, "cabinet_access", "none") != "none"
         }
+        if not normalized_ids:
+            if fallback_account_id and fallback_account_id in eligible_account_ids:
+                return [fallback_account_id]
+            return []
+        family_account_ids = {
+            account.id for account in family_accounts if account.family_role != "deleted"
+        }
+        invalid_ids = [
+            account_id for account_id in normalized_ids if account_id not in family_account_ids
+        ]
+        if invalid_ids:
+            raise ForbiddenError("Нельзя выбрать получателей из другой семьи")
         ineligible_ids = [
             account_id for account_id in normalized_ids if account_id not in eligible_account_ids
         ]
@@ -344,7 +349,12 @@ class FamilyService:
         )
         return self._to_member_response(updated)
 
-    async def update(self, id: UUID, dto: FamilyUpdateDto) -> FamilyResponseDto:
+    async def update(
+        self,
+        id: UUID,
+        dto: FamilyUpdateDto,
+        fallback_cabinet_account_id: UUID | None = None,
+    ) -> FamilyResponseDto:
         entity = await self._repo.get_by_id(id)
         if not entity:
             raise NotFoundError("Семья не найдена", resource="family")
@@ -353,7 +363,11 @@ class FamilyService:
             updated = entity
         else:
             cabinet_member_account_ids = (
-                await self._resolve_cabinet_member_account_ids(id, dto.cabinet_member_account_ids)
+                await self._resolve_cabinet_member_account_ids(
+                    id,
+                    dto.cabinet_member_account_ids,
+                    fallback_cabinet_account_id,
+                )
                 if "cabinet_member_account_ids" in fields_set
                 else list(entity.cabinet_member_account_ids)
             )
@@ -384,7 +398,11 @@ class FamilyService:
             raise ForbiddenError("Нет доступа к чужой семье")
         family = await self._repo.get_by_id(id)
         self._ensure_family_owner(family, current_account_id)
-        return await self.update(id, dto)
+        return await self.update(
+            id,
+            dto,
+            fallback_cabinet_account_id=current_account_id,
+        )
 
     async def delete(self, id: UUID) -> None:
         entity = await self._repo.get_by_id(id)

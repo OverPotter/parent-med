@@ -1,6 +1,7 @@
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { PlusBadge } from "@shared/components/PlusBadge";
 import { EmptyState, RowSurface } from "@shared/components/Surface";
+import { useNow } from "@shared/hooks/useNow";
 import type { AppLanguage } from "@shared/i18n";
 import {
   actionPrimaryClass,
@@ -62,6 +63,7 @@ export function PillboxHubScreen({
   confirmDelete: () => void;
   closeDeleteDialog: () => void;
 }) {
+  const now = useNow(2_000);
   return (
     <div className="min-w-0 space-y-6 sm:space-y-8">
       <div className="app-root-mobile-header sm:hidden">
@@ -158,9 +160,9 @@ export function PillboxHubScreen({
           </li>
         ) : null}
         {visibleGroups.map((group) => {
-          const canMarkNow = canMarkGroupDose(group);
-          const isOverdue = isOverdueDose(group.nextDoseAt, group.status);
-          const isLate = isLateDose(group.nextDoseAt, group.status);
+          const canMarkNow = canMarkGroupDose(group, now);
+          const isOverdue = isOverdueDose(group.nextDoseAt, group.status, now);
+          const isLate = isLateDose(group.nextDoseAt, group.status, now);
           const isHighlighted = group.id === highlightedPlanId;
           const isOperationalPlan = group.status !== "archived" && group.status !== "completed";
           const isFreePrimaryPlan =

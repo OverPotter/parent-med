@@ -1,6 +1,7 @@
 import type { PillboxPlan } from "@shared/api/pillboxPlans.contract";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import type { AppLanguage } from "@shared/i18n";
+import { useNow } from "@shared/hooks/useNow";
 import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { PlanPushRecipientsField } from "./PlanPushRecipientsField";
 import {
@@ -85,12 +86,13 @@ export function PillboxDetailsScreen({
   underlaySnapshotKey?: string;
   enableBackGesture?: boolean;
 }) {
+  const now = useNow(2_000);
   const selectedGroup = allGroups.find((group) => group.id === selectedPlanId) ?? null;
   const selectedGroupOverdue = selectedGroup
-    ? isOverdueDose(selectedGroup.nextDoseAt, selectedGroup.status)
+    ? isOverdueDose(selectedGroup.nextDoseAt, selectedGroup.status, now)
     : false;
   const selectedGroupLate = selectedGroup
-    ? isLateDose(selectedGroup.nextDoseAt, selectedGroup.status)
+    ? isLateDose(selectedGroup.nextDoseAt, selectedGroup.status, now)
     : false;
   const sortedMedications = [...selectedPlan.medications].sort((left, right) => {
     const nextMedicationId = selectedGroup?.nextMedicationId;

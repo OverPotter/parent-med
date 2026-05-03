@@ -7,6 +7,7 @@ import type { EpisodeMedicationPlan } from "@shared/types/api";
 
 export type ReminderCreationPayload = {
   episodeId: string;
+  memberAccountIds?: string[];
   householdMedicineId?: string | null;
   customMedicineName?: string | null;
   doseAmount: string;
@@ -42,6 +43,7 @@ export async function createReminderWithOptionalFirstAdministration(
 
   const createdPlan = await createPlan({
     episode_id: payload.episodeId,
+    member_account_ids: payload.memberAccountIds ?? [],
     household_medicine_id: payload.householdMedicineId,
     custom_medicine_name: payload.customMedicineName,
     dose_amount: payload.doseAmount,

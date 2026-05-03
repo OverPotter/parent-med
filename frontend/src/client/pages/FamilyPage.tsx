@@ -30,9 +30,23 @@ import {
   canManageFamilyMembers,
   isFamilyOwnerAccount,
 } from "./family/memberManagement";
-import { familyInviteShareText, otherMembersCountLabel, tFamily } from "./family/copy";
+import { otherMembersCountLabel, tFamily } from "./family/copy";
 import { useFamilyMembersData } from "./family/useFamilyMembersData";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
+
+function PencilIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="h-[0.8rem] w-[0.8rem] fill-none stroke-current">
+      <path
+        d="M13.9 3.6a1.6 1.6 0 0 1 2.3 0l.2.2a1.6 1.6 0 0 1 0 2.3l-8.1 8.1-3.1.8.8-3.1 7.9-8.3Z"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M12.7 4.8 15.2 7.3" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function FamilyPage() {
   const { language } = useI18n();
@@ -284,7 +298,7 @@ export function FamilyPage() {
       setIsInviteSharePending(true);
       await navigator.share({
         title: tFamily(language, "inviteTitle"),
-        text: familyInviteShareText(language, familyTitle, inviteCode),
+        text: inviteCode,
       });
       setError(null);
       if (shouldUseDirectNativeInvite) {
@@ -427,9 +441,11 @@ export function FamilyPage() {
                       next.set("edit", "me");
                       setSearchParams(next, { replace: true });
                     }}
-                    className="soft-pill-primary inline-flex min-h-[2.3rem] shrink-0 items-center px-3 text-[0.78rem] font-semibold"
+                    aria-label={tFamily(language, "editProfile")}
+                    title={tFamily(language, "editProfile")}
+                    className="soft-pill inline-flex shrink-0 items-center justify-center rounded-full px-3.25 py-[0.44rem] text-[0.8rem]"
                   >
-                    {tFamily(language, "editProfile")}
+                    <PencilIcon />
                   </button>
                 }
                 onPromote={() => {}}
