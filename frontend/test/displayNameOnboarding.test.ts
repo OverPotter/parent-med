@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   getDisplayNameOnboardingSkipKey,
+  getPostRegistrationOfferSeenKey,
   getRecoveryCodeOnboardingSkipKey,
 } from "../src/client/components/displayNameOnboardingKeys.js";
 import {
@@ -29,6 +30,17 @@ test("recovery code onboarding skip key is account-specific", () => {
   assert.notEqual(
     getRecoveryCodeOnboardingSkipKey("account-1"),
     getRecoveryCodeOnboardingSkipKey("account-2")
+  );
+});
+
+test("post-registration offer key is account-specific", () => {
+  assert.equal(
+    getPostRegistrationOfferSeenKey("account-1"),
+    "__pm_post_registration_offer_seen__:account-1"
+  );
+  assert.notEqual(
+    getPostRegistrationOfferSeenKey("account-1"),
+    getPostRegistrationOfferSeenKey("account-2")
   );
 });
 

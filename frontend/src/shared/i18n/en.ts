@@ -499,11 +499,6 @@ export const en: Translations = {
     openLabel: "Open",
     links: [
       {
-        to: "/home",
-        title: "Help",
-        description: "Quick guide to key sections.",
-      },
-      {
         to: "/family",
         title: "Family",
         description: "Members, roles and invites.",
@@ -522,6 +517,11 @@ export const en: Translations = {
         to: "/feedback",
         title: "Feedback",
         description: "Send the team a bug report or suggestion.",
+      },
+      {
+        to: "/home",
+        title: "Help",
+        description: "Quick guide to key sections.",
       },
       {
         to: "/legal",

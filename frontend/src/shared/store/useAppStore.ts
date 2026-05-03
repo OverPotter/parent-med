@@ -72,6 +72,14 @@ function emptyAuthState() {
   };
 }
 
+function clearAccountOnboardingSessionFlags(accountId: string | null) {
+  if (!accountId || typeof window === "undefined") {
+    return;
+  }
+  window.sessionStorage.removeItem(`__pm_display_name_onboarding_skipped__:${accountId}`);
+  window.sessionStorage.removeItem(`__pm_recovery_code_onboarding_skipped__:${accountId}`);
+}
+
 function applyThemeToDocument(theme: Theme): ResolvedTheme {
   const resolvedTheme = resolveTheme(theme);
   const background = resolvedTheme === "dark" ? "#1e1b2e" : "#ebe4ff";
@@ -319,7 +327,10 @@ export const useAppStore = create<AppState>()(
           accountEmail: profile.email !== undefined ? profile.email : state.accountEmail,
         })),
       clearSession: () => {
-        set(emptyAuthState());
+        set((state) => {
+          clearAccountOnboardingSessionFlags(state.accountId);
+          return emptyAuthState();
+        });
         if (isNativeIOSRuntime()) {
           void clearSecureAuthTokens();
         }

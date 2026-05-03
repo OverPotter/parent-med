@@ -501,11 +501,6 @@ export const ru: Translations = {
     openLabel: "Открыть",
     links: [
       {
-        to: "/home",
-        title: "Помощь",
-        description: "Быстрый гид по основным разделам.",
-      },
-      {
         to: "/family",
         title: "Семья",
         description: "Участники, роли и приглашения.",
@@ -524,6 +519,11 @@ export const ru: Translations = {
         to: "/feedback",
         title: "Обратная связь",
         description: "Сообщение команде о проблеме или идее.",
+      },
+      {
+        to: "/home",
+        title: "Помощь",
+        description: "Быстрый гид по основным разделам.",
       },
       {
         to: "/legal",
