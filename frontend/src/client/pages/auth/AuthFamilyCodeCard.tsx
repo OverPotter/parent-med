@@ -37,6 +37,7 @@ interface AuthFamilyCodeCardProps {
   validUntilLabel: string;
   onToggle: () => void;
   onInputChange: (value: string) => void;
+  onInputPaste: (value: string) => void;
   onVerify: () => void;
   onResetVerified: () => void;
 }
@@ -59,6 +60,7 @@ export function AuthFamilyCodeCard({
   validUntilLabel,
   onToggle,
   onInputChange,
+  onInputPaste,
   onVerify,
   onResetVerified,
 }: AuthFamilyCodeCardProps) {
@@ -91,6 +93,14 @@ export function AuthFamilyCodeCard({
                     type="text"
                     value={inputValue}
                     onChange={(event) => onInputChange(event.target.value)}
+                    onPaste={(event) => {
+                      const pastedText = event.clipboardData.getData("text");
+                      if (!pastedText) {
+                        return;
+                      }
+                      event.preventDefault();
+                      onInputPaste(pastedText);
+                    }}
                     className="auth-v3-input w-full"
                     placeholder={placeholder}
                     autoCapitalize="characters"

@@ -1,0 +1,49 @@
+{
+  "slide": 1,
+  "key": "family_overview",
+  "image": "family_overview.png",
+  "status": "locked",
+  "notes": "Locked preview reference for slide 1. Keep as backup while iterating on other slides.",
+  "layout": {
+    "variant": "family-overview",
+    "heroTop": "7.1%",
+    "footerBottom": "2.4%",
+    "skipLeftMargin": "0.5rem",
+    "paginationActiveIndex": 0,
+    "cards": {
+      "top": { "top": "40.6%", "left": "43.9%", "width": "22.5%" },
+      "leftMiddle": { "top": "50.7%", "left": "16%", "width": "20%" },
+      "rightMiddle": { "top": "50.7%", "left": "76%", "width": "18%" },
+      "leftBottom": { "top": "83.1%", "left": "20.4%", "width": "18%" },
+      "rightBottom": { "top": "83.2%", "left": "67%", "width": "18%" }
+    }
+  },
+  "ru": {
+    "title": "Забота о семье —\nв одном месте",
+    "subtitle": "Напоминания, планы приёма, домашняя аптечка и единый актуальный план для всех близких.",
+    "skipLabel": "Пропустить",
+    "nextLabel": "Далее",
+    "paginationLabel": "Слайд 1 из 3",
+    "cards": [
+      { "slot": "top", "title": "Напоминания", "subtitle": "что делать дальше" },
+      { "slot": "leftMiddle", "title": "Планы приёма", "subtitle": "лекарства и витамины" },
+      { "slot": "rightMiddle", "title": "Кто отметил", "subtitle": "видно всей семье" },
+      { "slot": "leftBottom", "title": "Права доступа", "subtitle": "роли и видимость" },
+      { "slot": "rightBottom", "title": "Домашняя аптечка", "subtitle": "остатки и сроки" }
+    ]
+  },
+  "en": {
+    "title": "Family care,\nall in one place",
+    "subtitle": "Reminders, medication plans, a home medicine cabinet, and one up-to-date care view for the whole family.",
+    "skipLabel": "Skip",
+    "nextLabel": "Next",
+    "paginationLabel": "Slide 1 of 3",
+    "cards": [
+      { "slot": "top", "title": "Reminders", "subtitle": "what to do next" },
+      { "slot": "leftMiddle", "title": "Care plans", "subtitle": "medicine and vitamins" },
+      { "slot": "rightMiddle", "title": "Check-ins", "subtitle": "seen by the family" },
+      { "slot": "leftBottom", "title": "Access roles", "subtitle": "roles and visibility" },
+      { "slot": "rightBottom", "title": "Home medicine cabinet", "subtitle": "supplies and expiry" }
+    ]
+  }
+}
