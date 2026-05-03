@@ -30,7 +30,7 @@ import {
   canManageFamilyMembers,
   isFamilyOwnerAccount,
 } from "./family/memberManagement";
-import { familyInviteShareText, otherMembersCountLabel, tFamily } from "./family/copy";
+import { otherMembersCountLabel, tFamily } from "./family/copy";
 import { useFamilyMembersData } from "./family/useFamilyMembersData";
 import { useFamilyPageMutations } from "./family/useFamilyPageMutations";
 
@@ -298,7 +298,7 @@ export function FamilyPage() {
       setIsInviteSharePending(true);
       await navigator.share({
         title: tFamily(language, "inviteTitle"),
-        text: familyInviteShareText(language, familyTitle, inviteCode),
+        text: inviteCode,
       });
       setError(null);
       if (shouldUseDirectNativeInvite) {

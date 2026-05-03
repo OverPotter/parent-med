@@ -1105,9 +1105,10 @@ class PushNotificationScheduler:
             if not accounts:
                 continue
             selected_account_ids = list(family.cabinet_member_account_ids or [])
-            if selected_account_ids:
-                selected_id_set = set(selected_account_ids)
-                accounts = [account for account in accounts if account.id in selected_id_set]
+            if not selected_account_ids:
+                continue
+            selected_id_set = set(selected_account_ids)
+            accounts = [account for account in accounts if account.id in selected_id_set]
             if not accounts:
                 continue
             medicines = await medicine_repo.get_by_family_id(family_id)

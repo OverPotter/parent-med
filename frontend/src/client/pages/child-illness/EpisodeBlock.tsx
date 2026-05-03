@@ -107,7 +107,7 @@ export function EpisodeBlock({
   );
   const [commentText, setCommentText] = useState("");
   const [quickComposeSuccessMessage, setQuickComposeSuccessMessage] = useState<string | null>(null);
-  const now = useNow(5_000);
+  const now = useNow(2_000);
   const composerMode = quickComposeMode ?? initialComposerMode;
   const quickComposeMeta =
     composerMode === "temperature"
@@ -233,6 +233,7 @@ export function EpisodeBlock({
       createReminderWithOptionalFirstAdministration(
         {
           episodeId: episode.id,
+          memberAccountIds: recipientDraftIds,
           householdMedicineId: payload.household_medicine_id,
           customMedicineName: payload.custom_medicine_name,
           doseAmount: payload.dose_amount,
@@ -441,7 +442,7 @@ export function EpisodeBlock({
     : null;
   const updateEpisodeRecipients = (memberIds: string[]) => {
     setRecipientDraftIds(memberIds);
-    updateEpisodeRecipientsMutation.mutate(memberIds);
+    return updateEpisodeRecipientsMutation.mutateAsync(memberIds).then(() => undefined);
   };
 
   const handleTakeDose = (plan: EpisodeMedicationPlan) => {

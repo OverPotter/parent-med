@@ -751,7 +751,7 @@ export function formatMealRule(mealRule: PillboxMealRule, language: AppLanguage)
   return tPillbox(language, "afterMeal");
 }
 
-export function canMarkGroupDose(group: PillboxGroup) {
+export function canMarkGroupDose(group: PillboxGroup, nowMs = Date.now()) {
   if (
     group.status !== "active" ||
     !group.nextMedicationId ||
@@ -760,26 +760,33 @@ export function canMarkGroupDose(group: PillboxGroup) {
   ) {
     return false;
   }
-  const now = Date.now();
   const scheduledAt = new Date(group.nextDoseAt).getTime();
   return (
-    now >= scheduledAt - PILLBOX_EARLY_MARK_GRACE_MS &&
-    now <= scheduledAt + PILLBOX_LATE_WINDOW_MS
+    nowMs >= scheduledAt - PILLBOX_EARLY_MARK_GRACE_MS &&
+    nowMs <= scheduledAt + PILLBOX_LATE_WINDOW_MS
   );
 }
 
-export function isOverdueDose(nextDoseAt: string | null, status: PillboxGroup["status"]) {
+export function isOverdueDose(
+  nextDoseAt: string | null,
+  status: PillboxGroup["status"],
+  nowMs = Date.now()
+) {
   if (status !== "active" || !nextDoseAt) return false;
   const scheduledAt = new Date(nextDoseAt);
   if (Number.isNaN(scheduledAt.getTime())) return false;
-  return Date.now() - scheduledAt.getTime() > PILLBOX_LATE_WINDOW_MS;
+  return nowMs - scheduledAt.getTime() > PILLBOX_LATE_WINDOW_MS;
 }
 
-export function isLateDose(nextDoseAt: string | null, status: PillboxGroup["status"]) {
+export function isLateDose(
+  nextDoseAt: string | null,
+  status: PillboxGroup["status"],
+  nowMs = Date.now()
+) {
   if (status !== "active" || !nextDoseAt) return false;
   const scheduledAt = new Date(nextDoseAt);
   if (Number.isNaN(scheduledAt.getTime())) return false;
-  const diffMs = Date.now() - scheduledAt.getTime();
+  const diffMs = nowMs - scheduledAt.getTime();
   return diffMs > PILLBOX_ON_TIME_WINDOW_MS && diffMs <= PILLBOX_LATE_WINDOW_MS;
 }
 

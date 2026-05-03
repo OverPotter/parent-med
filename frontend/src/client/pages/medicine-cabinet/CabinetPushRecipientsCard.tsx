@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { Family, FamilyMember } from "@shared/types/api";
+import {
+  runOptimisticRecipientSelectionUpdate,
+  toggleNormalizedRecipientSelection,
+} from "@shared/utils/optimisticRecipientSelection";
 import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
 import { tFamily } from "../family/copy";
 import { cabinetActionSecondaryClass, cabinetPanelClass } from "./styles";
@@ -22,9 +26,10 @@ export function CabinetPushRecipientsCard({
   isPending: boolean;
   isOffline?: boolean;
   onNetworkRequired?: () => void;
-  onChangeSelection: (memberIds: string[]) => void;
+  onChangeSelection: (memberIds: string[]) => void | Promise<void>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmittingSelection, setIsSubmittingSelection] = useState(false);
   const eligibleMemberIds = useMemo(
     () => familyMembers.map((member) => member.id),
     [familyMembers]
@@ -32,15 +37,42 @@ export function CabinetPushRecipientsCard({
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
     resolveRecipientSelection(family.cabinetMemberAccountIds, currentAccountId, eligibleMemberIds)
   );
+  const selectedIdsRef = useRef(selectedIds);
 
   useEffect(() => {
-    if (isPending) {
+    selectedIdsRef.current = selectedIds;
+  }, [selectedIds]);
+
+  const isBusy = isPending || isSubmittingSelection;
+
+  useEffect(() => {
+    if (isBusy) {
       return;
     }
     setSelectedIds(
       resolveRecipientSelection(family.cabinetMemberAccountIds, currentAccountId, eligibleMemberIds)
     );
-  }, [currentAccountId, eligibleMemberIds, family.cabinetMemberAccountIds, isPending]);
+  }, [currentAccountId, eligibleMemberIds, family.cabinetMemberAccountIds, isBusy]);
+
+  const handleToggle = async (memberId: string) => {
+    if (isBusy) {
+      return;
+    }
+    const previousIds = selectedIdsRef.current;
+    const normalizedNextIds = toggleNormalizedRecipientSelection(memberId, previousIds, (nextIds) =>
+      resolveRecipientSelection(nextIds, currentAccountId, eligibleMemberIds)
+    );
+    await runOptimisticRecipientSelectionUpdate({
+      previousIds,
+      nextIds: normalizedNextIds,
+      applySelection: (ids) => {
+        setSelectedIds(ids);
+        selectedIdsRef.current = ids;
+      },
+      setSubmitting: setIsSubmittingSelection,
+      submitSelection: onChangeSelection,
+    });
+  };
 
   return (
     <>
@@ -53,7 +85,7 @@ export function CabinetPushRecipientsCard({
           }
           setIsOpen(true);
         }}
-        disabled={isPending}
+        disabled={isBusy}
         aria-disabled={isOffline}
         className={`${cabinetActionSecondaryClass} shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-60 ${isOffline ? "cursor-not-allowed opacity-60" : ""}`}
       >
@@ -97,41 +129,39 @@ export function CabinetPushRecipientsCard({
             <div className="space-y-2">
               {familyMembers.map((member) => {
                 const selected = selectedIds.includes(member.id);
+                const isCurrentAccount = Boolean(currentAccountId && member.id === currentAccountId);
                 const label =
                   member.displayName ||
-                  (currentAccountId && member.id === currentAccountId
+                  (isCurrentAccount
                     ? tFamily(language, "yourProfileTitle")
                     : tFamily(language, "noName"));
-                const meta =
-                  member.relationshipLabel ||
-                  (currentAccountId && member.id === currentAccountId
-                    ? tFamily(language, "thisIsYou")
-                    : tFamily(language, "member"));
+                const meta = member.relationshipLabel || tFamily(language, "member");
                 return (
                   <button
                     key={member.id}
                     type="button"
                     onClick={() => {
-                      setSelectedIds((current) => {
-                        const nextIds = current.includes(member.id)
-                          ? current.filter((id) => id !== member.id)
-                          : [...current, member.id];
-                        onChangeSelection(nextIds);
-                        return nextIds;
-                      });
+                      void handleToggle(member.id);
                     }}
-                    disabled={isPending}
+                    disabled={isBusy}
                     className={[
                       "soft-choice-row w-full",
                       selected ? "soft-choice-row-active" : "",
-                      isPending ? "cursor-not-allowed opacity-60" : "",
+                      isBusy ? "cursor-not-allowed opacity-60" : "",
                     ]
                       .filter(Boolean)
                       .join(" ")}
                   >
                     <span className="grid min-w-0 gap-0.5 text-left">
-                      <span className="min-w-0 truncate text-sm font-semibold tracking-[-0.02em] text-foreground">
-                        {label}
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="min-w-0 truncate text-sm font-semibold tracking-[-0.02em] text-foreground">
+                          {label}
+                        </span>
+                        {isCurrentAccount ? (
+                          <span className="soft-pill inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[0.68rem] font-semibold leading-none text-foreground">
+                            {tFamily(language, "yourProfileTitle")}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
                         {meta}

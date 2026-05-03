@@ -444,9 +444,9 @@ export function MedicineCabinetPage() {
                   isPending={updateCabinetRecipientsMutation.isPending}
                   isOffline={isOffline}
                   onNetworkRequired={handleNetworkRequired}
-                  onChangeSelection={(memberIds) => {
-                    updateCabinetRecipientsMutation.mutate(memberIds);
-                  }}
+                  onChangeSelection={(memberIds) =>
+                    updateCabinetRecipientsMutation.mutateAsync(memberIds).then(() => undefined)
+                  }
                 />
               ) : null}
             </span>
@@ -493,9 +493,9 @@ export function MedicineCabinetPage() {
                 isPending={updateCabinetRecipientsMutation.isPending}
                 isOffline={isOffline}
                 onNetworkRequired={handleNetworkRequired}
-                onChangeSelection={(memberIds) => {
-                  updateCabinetRecipientsMutation.mutate(memberIds);
-                }}
+                onChangeSelection={(memberIds) =>
+                  updateCabinetRecipientsMutation.mutateAsync(memberIds).then(() => undefined)
+                }
               />
             ) : null}
           </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@shared/components/ConfirmDialog";
 import { useI18n } from "@shared/hooks/useI18n";
+import { useNow } from "@shared/hooks/useNow";
 import { useAppStore } from "@shared/store/useAppStore";
 import type { EpisodeMedicationPlan, HouseholdMedicine, WeightEntry } from "@shared/types/api";
 import { formatChildDate, formatChildTime } from "@client/utils/childDateFormat";
@@ -56,6 +57,8 @@ export function MedicationPlanDetail({
   onEditingChange?: (isEditing: boolean, planName: string) => void;
 }) {
   const { language } = useI18n();
+  const now = useNow(2_000);
+  const currentTime = new Date(now);
   const intervalUnit = useAppStore((s) => s.medicationIntervalUnit);
   const { plan, medicine, stats, isUnavailable } = item;
   const [isEditing, setIsEditing] = useState(false);
@@ -80,6 +83,8 @@ export function MedicationPlanDetail({
     language
   );
   const weightHint = buildWeightDoseHint(medicine, plan.weightKg, plan.doseMgPerKg, language);
+  const isBlockedByIntervalNow = Boolean(stats?.nextAllowedAt && stats.nextAllowedAt > currentTime);
+  const isBlockedNow = Boolean(stats?.blockedByDailyLimit || isBlockedByIntervalNow);
   const nextDoseText = isUnavailable
     ? language === "ru"
       ? "Недоступно"
@@ -89,11 +94,11 @@ export function MedicationPlanDetail({
         ? "Лимит на сегодня"
         : "Daily limit reached"
       : stats?.nextAllowedAt
-        ? formatDoseStatusLabel(stats.nextAllowedAt, language, new Date())
+        ? formatDoseStatusLabel(stats.nextAllowedAt, language, currentTime)
         : language === "ru"
           ? "Можно дать"
           : "Available now";
-  const canLogDoseNow = Boolean(onTakeDose) && !isUnavailable && !stats?.isBlocked;
+  const canLogDoseNow = Boolean(onTakeDose) && !isUnavailable && !isBlockedNow;
   const reminderSummaryItems = [
     ...(doseBadge
       ? [
@@ -119,7 +124,7 @@ export function MedicationPlanDetail({
       tone:
         isUnavailable || stats?.blockedByDailyLimit
           ? "bg-rose-500"
-          : stats?.isBlocked
+          : isBlockedByIntervalNow
             ? "bg-sky-500"
             : "bg-emerald-500",
     },
@@ -314,7 +319,7 @@ export function MedicationPlanDetail({
                 ? "bg-rose-500"
                 : stats?.blockedByDailyLimit
                   ? "bg-rose-500"
-                  : stats?.isBlocked
+                  : isBlockedByIntervalNow
                     ? "bg-sky-500"
                     : "bg-emerald-500"
             }`}
@@ -337,13 +342,13 @@ export function MedicationPlanDetail({
                     ? "Лимит приёмов на сегодня уже достигнут."
                     : "Today's dose limit has already been reached."
                   : stats?.nextAllowedAt
-                    ? stats.nextAllowedAt <= new Date()
+                    ? stats.nextAllowedAt <= currentTime
                       ? language === "ru"
                         ? "Можно дать."
                         : "A dose can be logged now."
                       : language === "ru"
-                        ? `${formatDoseStatusLabel(stats.nextAllowedAt, language, new Date())}.`
-                        : `${formatDoseStatusLabel(stats.nextAllowedAt, language, new Date())}.`
+                        ? `${formatDoseStatusLabel(stats.nextAllowedAt, language, currentTime)}.`
+                        : `${formatDoseStatusLabel(stats.nextAllowedAt, language, currentTime)}.`
                     : language === "ru"
                       ? "Можно дать."
                       : "A dose can be logged now."}

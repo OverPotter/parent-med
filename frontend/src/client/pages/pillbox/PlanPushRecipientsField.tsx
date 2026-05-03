@@ -1,8 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
 import type { AppLanguage } from "@shared/i18n";
 import { getAccountDisplayLabel } from "@shared/utils/accountLabels";
 import { resolveRecipientSelection } from "@shared/utils/recipientSelection";
+import {
+  runOptimisticRecipientSelectionUpdate,
+  toggleNormalizedRecipientSelection,
+} from "@shared/utils/optimisticRecipientSelection";
 import { tFamily } from "../family/copy";
 import { appPillActionClass } from "../child-illness/shared";
 import { tPillbox } from "./shared";
@@ -35,6 +39,7 @@ export function PlanPushRecipientsField({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
+  const [isSubmittingSelection, setIsSubmittingSelection] = useState(false);
   const eligibleMemberIds = useMemo(
     () => familyMembers.map((member) => member.id),
     [familyMembers]
@@ -42,6 +47,11 @@ export function PlanPushRecipientsField({
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
     resolveRecipientSelection(selectedMemberIds, currentAccountId, eligibleMemberIds)
   );
+  const selectedIdsRef = useRef(selectedIds);
+
+  useEffect(() => {
+    selectedIdsRef.current = selectedIds;
+  }, [selectedIds]);
 
   useEffect(() => {
     setSelectedIds(
@@ -49,7 +59,7 @@ export function PlanPushRecipientsField({
     );
   }, [currentAccountId, eligibleMemberIds, selectedMemberIds]);
 
-  const isBusy = isPending || isOpening;
+  const isBusy = isPending || isOpening || isSubmittingSelection;
 
   const handleOpen = async () => {
     if (isBusy) {
@@ -64,23 +74,25 @@ export function PlanPushRecipientsField({
     }
   };
 
-  const handleToggle = (memberId: string) => {
+  const handleToggle = async (memberId: string) => {
     if (isBusy) {
       return;
     }
-    setSelectedIds((current) => {
-      const nextIds = current.includes(memberId)
-        ? current.filter((id) => id !== memberId)
-        : [...current, memberId];
-      const normalizedNextIds = resolveRecipientSelection(
-        nextIds,
-        currentAccountId,
-        eligibleMemberIds
-      );
-      void Promise.resolve(onSubmit(normalizedNextIds)).catch(() => {
-        setSelectedIds(current);
-      });
-      return normalizedNextIds;
+    const previousIds = selectedIdsRef.current;
+    const normalizedNextIds = toggleNormalizedRecipientSelection(
+      memberId,
+      previousIds,
+      (nextIds) => resolveRecipientSelection(nextIds, currentAccountId, eligibleMemberIds)
+    );
+    await runOptimisticRecipientSelectionUpdate({
+      previousIds,
+      nextIds: normalizedNextIds,
+      applySelection: (ids) => {
+        setSelectedIds(ids);
+        selectedIdsRef.current = ids;
+      },
+      setSubmitting: setIsSubmittingSelection,
+      submitSelection: onSubmit,
     });
   };
 
@@ -126,16 +138,15 @@ export function PlanPushRecipientsField({
             {familyMembers.map((member) => {
               const selected = selectedIds.includes(member.id);
               const memberLabel = getAccountDisplayLabel(member);
-              const memberMeta =
-                member.relationshipLabel?.trim() ||
-                (currentAccountId && member.id === currentAccountId
-                  ? tFamily(language, "thisIsYou")
-                  : "");
+              const isCurrentAccount = Boolean(currentAccountId && member.id === currentAccountId);
+              const memberMeta = member.relationshipLabel?.trim() || "";
               return (
                 <button
                   key={member.id}
                   type="button"
-                  onClick={() => handleToggle(member.id)}
+                  onClick={() => {
+                    void handleToggle(member.id);
+                  }}
                   disabled={isBusy}
                   className={[
                     "soft-choice-row",
@@ -144,8 +155,15 @@ export function PlanPushRecipientsField({
                   ].join(" ")}
                 >
                   <span className="grid min-w-0 gap-0.5 text-left">
-                    <span className="min-w-0 truncate whitespace-nowrap text-sm font-semibold tracking-[-0.02em] text-foreground">
-                      {memberLabel}
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="min-w-0 truncate whitespace-nowrap text-sm font-semibold tracking-[-0.02em] text-foreground">
+                        {memberLabel}
+                      </span>
+                      {isCurrentAccount ? (
+                        <span className="soft-pill inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[0.68rem] font-semibold leading-none text-foreground">
+                          {tFamily(language, "yourProfileTitle")}
+                        </span>
+                      ) : null}
                     </span>
                     {memberMeta ? (
                       <span className="min-w-0 truncate whitespace-nowrap text-[0.81rem] leading-5 text-muted">
