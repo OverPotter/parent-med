@@ -6,6 +6,7 @@ import { appLog } from "@shared/utils/appLog";
 import App from "./App";
 import "./index.css";
 import "./styles/app-shell.css";
+import "./styles/auth-onboarding.css";
 import "./styles/auth-v3.css";
 import "./styles/dropdown.css";
 import "./styles/header-nav.css";

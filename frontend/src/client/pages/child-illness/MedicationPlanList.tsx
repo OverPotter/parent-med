@@ -1,5 +1,4 @@
 import { useI18n } from "@shared/hooks/useI18n";
-import { useIsIosShell } from "@shared/hooks/useIsIosShell";
 import { useNow } from "@shared/hooks/useNow";
 import type {
   AdministrationEvent,
@@ -34,8 +33,7 @@ export function MedicationPlanList({
   isSubmittingAdministration?: boolean;
 }) {
   const { language } = useI18n();
-  const isIosShell = useIsIosShell();
-  const now = useNow(isIosShell ? 30_000 : 15_000);
+  const now = useNow(2_000);
   const currentTime = new Date(now);
   const prioritizedPlans = administrations
     ? getPrioritizedMedicationPlanItems(plans, administrations, medicines, currentTime)
@@ -49,6 +47,10 @@ export function MedicationPlanList({
   return (
     <div className={illnessListClass}>
       {prioritizedPlans.map(({ plan, medicine, stats, isUnavailable }) => {
+        const isBlockedByIntervalNow = Boolean(
+          stats?.nextAllowedAt && stats.nextAllowedAt > currentTime
+        );
+        const isBlockedNow = Boolean(stats?.blockedByDailyLimit || isBlockedByIntervalNow);
         const planName =
           plan.customMedicineName ??
           medicine?.medicineName ??
@@ -131,9 +133,9 @@ export function MedicationPlanList({
                       event.stopPropagation();
                       onTakeDose(plan);
                     }}
-                    disabled={isSubmittingAdministration || !!stats?.isBlocked || isUnavailable}
+                    disabled={isSubmittingAdministration || isBlockedNow || isUnavailable}
                     className={`transition ${
-                      isUnavailable || stats?.isBlocked
+                      isUnavailable || isBlockedNow
                         ? `${appBtnJournalSecondaryClass} text-muted`
                         : appBtnJournalPrimaryClass
                     }`}

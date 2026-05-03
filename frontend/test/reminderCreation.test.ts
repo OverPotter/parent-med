@@ -4,10 +4,12 @@ import { createReminderWithOptionalFirstAdministration } from "../src/client/pag
 
 test("createReminderWithOptionalFirstAdministration logs first administration when already given", async () => {
   const calls: string[] = [];
+  let createPlanPayload: Record<string, unknown> | null = null;
 
   const createdPlan = await createReminderWithOptionalFirstAdministration(
     {
       episodeId: "episode-1",
+      memberAccountIds: ["account-1"],
       customMedicineName: "Нурофен",
       doseAmount: "5 мл",
       minIntervalMinutes: 180,
@@ -16,8 +18,9 @@ test("createReminderWithOptionalFirstAdministration logs first administration wh
     },
     "ru",
     {
-      createPlan: async () => {
+      createPlan: async (payload) => {
         calls.push("createPlan");
+        createPlanPayload = payload;
         return { id: "plan-1" } as any;
       },
       createAdministration: async () => {
@@ -32,6 +35,7 @@ test("createReminderWithOptionalFirstAdministration logs first administration wh
 
   assert.equal(createdPlan.id, "plan-1");
   assert.deepEqual(calls, ["createPlan", "createAdministration"]);
+  assert.deepEqual(createPlanPayload?.member_account_ids, ["account-1"]);
 });
 
 test("createReminderWithOptionalFirstAdministration rolls back plan when first administration fails", async () => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@shared/store/useAppStore";
 import { appLog } from "@shared/utils/appLog";
 import {
@@ -16,9 +17,12 @@ import {
 } from "@shared/utils/nativeRevenueCat";
 import { syncRevenueCatCustomerSnapshot } from "@shared/utils/revenueCatSync";
 import { isRevenueCatSyncSuppressedForAccount } from "@shared/utils/revenueCatSyncSuppression";
+import { invalidateRevenueCatSubscriptionQueries } from "@client/subscription/revenueCatInvalidation";
 
 export function RevenueCatSync() {
+  const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
+  const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const configuredRef = useRef(false);
   const lastLoggedInAccountRef = useRef<string | null>(null);
   const shouldSyncBackend = isRevenueCatBackendSyncEnabled();
@@ -36,6 +40,9 @@ export function RevenueCatSync() {
     const entitlementCode = getRevenueCatEntitlementCode();
     let cancelled = false;
 
+    const invalidateSubscriptionState = () =>
+      invalidateRevenueCatSubscriptionQueries(queryClient, accountId, currentFamilyId);
+
     const syncCurrentSnapshot = async () => {
       if (!accountId) {
         return;
@@ -51,6 +58,7 @@ export function RevenueCatSync() {
         return;
       }
       await syncRevenueCatCustomerSnapshot(snapshot);
+      await invalidateSubscriptionState();
     };
 
     const bootstrap = async () => {
@@ -80,6 +88,7 @@ export function RevenueCatSync() {
           lastLoggedInAccountRef.current = accountId;
           if (snapshot && !cancelled && shouldSyncBackend) {
             await syncRevenueCatCustomerSnapshot(snapshot);
+            await invalidateSubscriptionState();
           }
           return;
         }
@@ -109,7 +118,7 @@ export function RevenueCatSync() {
       cancelled = true;
       window.removeEventListener("billing:refresh", handleRefresh);
     };
-  }, [accountId, shouldSyncBackend]);
+  }, [accountId, currentFamilyId, queryClient, shouldSyncBackend]);
 
   return null;
 }
