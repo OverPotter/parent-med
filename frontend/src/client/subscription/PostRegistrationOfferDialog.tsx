@@ -288,7 +288,7 @@ export function PostRegistrationOfferDialog({
               </p>
 
               <div className="mt-3 grid grid-cols-2 gap-2.5">
-                <div className="rounded-[22px] bg-[linear-gradient(180deg,#F3F8FF_0%,#EAF2FF_100%)] p-3 shadow-[0_18px_40px_rgba(86,134,255,0.10)]">
+                <div className="rounded-[22px] border border-[rgba(86,134,255,0.22)] bg-[linear-gradient(180deg,#F3F8FF_0%,#EAF2FF_100%)] p-3 shadow-[0_18px_40px_rgba(86,134,255,0.10)]">
                   <div className="flex items-center gap-2 text-[#4677DA]">
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#DCE8FF] text-[#5A8FFF] shadow-[0_6px_16px_rgba(86,134,255,0.10)]">
                       <HeartIcon />
