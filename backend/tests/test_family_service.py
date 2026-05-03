@@ -403,7 +403,9 @@ async def test_delete_member_removes_member_from_all_recipient_lists() -> None:
     assert family_repo.items[family.id].cabinet_member_account_ids == [other_member.id]
     updated_episode = next(item for item in episode_repo.episodes if item.id == episode.id)
     assert updated_episode.member_account_ids == [other_member.id]
-    updated_episode_plan = next(item for item in episode_plan_repo.plans if item.id == episode_plan.id)
+    updated_episode_plan = next(
+        item for item in episode_plan_repo.plans if item.id == episode_plan.id
+    )
     assert updated_episode_plan.member_account_ids == [other_member.id]
     updated_pillbox_plan = next(item for item in pillbox_repo.plans if item.id == pillbox_plan.id)
     assert updated_pillbox_plan.member_account_ids == [other_member.id]
