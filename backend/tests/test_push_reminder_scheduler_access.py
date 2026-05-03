@@ -21,6 +21,7 @@ from src.infrastructure.database.models.household_medicine_notification_delivery
 from src.infrastructure.database.models.illness_notification_delivery import (
     IllnessNotificationDeliveryModel,
 )
+from src.infrastructure.database.models.pillbox import PillboxNotificationDeliveryModel
 
 
 def build_account(policy: FamilyAccessPolicy) -> Account:
@@ -176,6 +177,38 @@ def test_illness_delivery_log_is_scoped_per_account() -> None:
         "account_id",
     )
     assert IllnessNotificationDeliveryModel.__table__.c.account_id.nullable is False
+
+
+def test_pillbox_delivery_log_is_scoped_per_account_and_cascades_with_plan() -> None:
+    unique_constraints = [
+        constraint
+        for constraint in PillboxNotificationDeliveryModel.__table__.constraints
+        if getattr(constraint, "name", None) == "uq_pillbox_notification_delivery"
+    ]
+
+    assert len(unique_constraints) == 1
+    assert tuple(unique_constraints[0].columns.keys()) == (
+        "plan_id",
+        "medication_id",
+        "notification_kind",
+        "scheduled_for",
+        "account_id",
+    )
+    assert PillboxNotificationDeliveryModel.__table__.c.account_id.nullable is False
+
+    plan_fk = next(
+        fk
+        for fk in PillboxNotificationDeliveryModel.__table__.foreign_key_constraints
+        if "plan_id" in fk.columns.keys()
+    )
+    medication_fk = next(
+        fk
+        for fk in PillboxNotificationDeliveryModel.__table__.foreign_key_constraints
+        if "medication_id" in fk.columns.keys()
+    )
+
+    assert plan_fk.ondelete == "CASCADE"
+    assert medication_fk.ondelete == "CASCADE"
 
 
 def test_illness_push_bodies_keep_child_name_in_body_for_shorter_titles() -> None:

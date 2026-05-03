@@ -768,7 +768,6 @@ export function PillboxPage() {
     if (!deleteTarget) return;
 
     if (deleteTarget.kind === "plan") {
-      setDeleteTarget(null);
       deleteGroup();
       return;
     }

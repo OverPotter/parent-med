@@ -29,6 +29,11 @@ interface UsePillboxMutationsOptions {
 
 class PlanLimitReachedError extends Error {}
 
+type DeletePlanMutationContext = {
+  previousPlan?: PillboxPlan;
+  previousLists: Array<[[string, string | null, ...string[]], PillboxPlanSummary[] | undefined]>;
+};
+
 function getPlanErrorMessage(language: AppLanguage) {
   return language === "ru"
     ? "Не удалось обновить статус плана. Попробуйте ещё раз."
@@ -44,6 +49,17 @@ async function refreshPillboxQueries(
   if (planId) {
     void queryClient.invalidateQueries({ queryKey: ["pillbox-plan", planId] });
   }
+}
+
+function updatePillboxPlanLists(
+  queryClient: QueryClient,
+  currentFamilyId: string | null,
+  updater: (current: PillboxPlanSummary[] | undefined) => PillboxPlanSummary[]
+) {
+  queryClient.setQueriesData<PillboxPlanSummary[]>(
+    { queryKey: ["pillbox-plans", currentFamilyId] },
+    (current) => updater(current)
+  );
 }
 
 function toPlanSummary(
@@ -114,9 +130,8 @@ export function usePillboxMutations({
     onSuccess: (plan) => {
       setSavePlanError(null);
       queryClient.setQueryData<PillboxPlan>(["pillbox-plan", plan.id], plan);
-      queryClient.setQueryData<PillboxPlanSummary[]>(
-        ["pillbox-plans", currentFamilyId, language],
-        (current) => upsertPlanSummaryInList(current, toPlanSummary(plan))
+      updatePillboxPlanLists(queryClient, currentFamilyId, (current) =>
+        upsertPlanSummaryInList(current, toPlanSummary(plan))
       );
       void queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
       goToHub();
@@ -148,10 +163,8 @@ export function usePillboxMutations({
     onSuccess: (plan) => {
       setSavePlanError(null);
       queryClient.setQueryData<PillboxPlan>(["pillbox-plan", plan.id], plan);
-      queryClient.setQueryData<PillboxPlanSummary[]>(
-        ["pillbox-plans", currentFamilyId, language],
-        (current) =>
-          upsertPlanSummaryInList(current, toPlanSummary(plan, findPlanSummary(current, plan.id)))
+      updatePillboxPlanLists(queryClient, currentFamilyId, (current) =>
+        upsertPlanSummaryInList(current, toPlanSummary(plan, findPlanSummary(current, plan.id)))
       );
       refreshPillboxQueries(queryClient, currentFamilyId, plan.id);
     },
@@ -175,10 +188,8 @@ export function usePillboxMutations({
       setPlanActionError(null);
       setPlanActionTarget(null);
       queryClient.setQueryData<PillboxPlan>(["pillbox-plan", plan.id], plan);
-      queryClient.setQueryData<PillboxPlanSummary[]>(
-        ["pillbox-plans", currentFamilyId, language],
-        (current) =>
-          upsertPlanSummaryInList(current, toPlanSummary(plan, findPlanSummary(current, plan.id)))
+      updatePillboxPlanLists(queryClient, currentFamilyId, (current) =>
+        upsertPlanSummaryInList(current, toPlanSummary(plan, findPlanSummary(current, plan.id)))
       );
       refreshPillboxQueries(queryClient, currentFamilyId, plan.id);
     },
@@ -197,19 +208,36 @@ export function usePillboxMutations({
 
   const deletePlanMutation = useMutation({
     mutationFn: deletePillboxPlan,
-    onSuccess: (_result, planId) => {
+    onMutate: async (planId): Promise<DeletePlanMutationContext> => {
+      const previousPlan = queryClient.getQueryData<PillboxPlan>(["pillbox-plan", planId]);
+      const previousLists = queryClient.getQueriesData<PillboxPlanSummary[]>({
+        queryKey: ["pillbox-plans", currentFamilyId],
+      }) as DeletePlanMutationContext["previousLists"];
+
       setPlanActionError(null);
       setPlanActionTarget(null);
       setDeleteTarget(null);
-      queryClient.setQueryData<PillboxPlanSummary[]>(
-        ["pillbox-plans", currentFamilyId, language],
-        (current) => removePlanSummaryFromList(current, planId)
+      updatePillboxPlanLists(queryClient, currentFamilyId, (current) =>
+        removePlanSummaryFromList(current, planId)
       );
       queryClient.removeQueries({ queryKey: ["pillbox-plan", planId] });
-      void queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
       goToHub();
+
+      return { previousPlan, previousLists };
     },
-    onError: (error) => {
+    onSuccess: () => {
+      setPlanActionError(null);
+      setPlanActionTarget(null);
+      setDeleteTarget(null);
+      void queryClient.invalidateQueries({ queryKey: ["pillbox-plans", currentFamilyId] });
+    },
+    onError: (error, planId, context) => {
+      if (context?.previousPlan) {
+        queryClient.setQueryData<PillboxPlan>(["pillbox-plan", planId], context.previousPlan);
+      }
+      context?.previousLists.forEach(([queryKey, data]) => {
+        queryClient.setQueryData<PillboxPlanSummary[]>(queryKey, data);
+      });
       if (isAxiosError(error)) {
         const detail =
           typeof error.response?.data === "object" && error.response?.data
@@ -237,9 +265,8 @@ export function usePillboxMutations({
         scheduled_for: scheduledFor,
       }),
     onSuccess: (summary, variables) => {
-      queryClient.setQueryData<PillboxPlanSummary[]>(
-        ["pillbox-plans", currentFamilyId, language],
-        (current) => upsertPlanSummaryInList(current, summary)
+      updatePillboxPlanLists(queryClient, currentFamilyId, (current) =>
+        upsertPlanSummaryInList(current, summary)
       );
       refreshPillboxQueries(queryClient, currentFamilyId, variables.planId);
     },
