@@ -55,7 +55,7 @@ const slidesByLanguage: Record<AppLanguage, AuthOnboardingSlide[]> = {
       cards: [
         { slot: "topLeft", title: "Кормления", subtitle: "сегодня 5 раз" },
         { slot: "topRight", title: "Сон", subtitle: "ночь 8 ч 20 мин" },
-        { slot: "leftMiddle", title: "Заметки", subtitle: "симптомы и наблюдения" },
+        { slot: "leftMiddle", title: "Заметки", subtitle: "симптомы и\nнаблюдения" },
         { slot: "rightMiddle", title: "Температура", subtitle: "37.2 °C" },
         { slot: "leftBottom", title: "Напоминания", subtitle: "что сделать дальше" },
         { slot: "rightBottom", title: "Live Activity", subtitle: "важное\nна экране\nблокировки" },

@@ -23,7 +23,7 @@ export function AuthLegalLinks({
   showSecondaryLegalLinks = true,
 }: AuthLegalLinksProps) {
   const legalLinkLabels = {
-    onboarding: language === "ru" ? "Онбординг" : "Onboarding",
+    onboarding: language === "ru" ? "Обзор" : "Intro",
     support: language === "ru" ? "Поддержка" : "Support",
     privacy: language === "ru" ? "Политика" : "Privacy",
     terms: language === "ru" ? "Условия" : "Terms",

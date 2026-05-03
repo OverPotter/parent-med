@@ -233,7 +233,6 @@ export function AuthPage() {
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
   const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
-  const shouldShowOnboardingTester = import.meta.env.DEV || isNativeRuntime;
   const appStoreUrl = getAppStoreUrl();
   const publicSiteUrl = resolvePublicSiteBaseUrl();
   const { copy, language } = useI18n();
@@ -585,15 +584,6 @@ export function AuthPage() {
                 <BrandWordmark className="auth-v3-header-brand-text" />
               </Link>
               <div className="auth-v3-header-actions">
-                {shouldShowOnboardingTester ? (
-                  <button
-                    type="button"
-                    className="auth-v3-header-control"
-                    onClick={openOnboardingPreview}
-                  >
-                    {language === "ru" ? "Онбординг" : "Onboarding"}
-                  </button>
-                ) : null}
                 <LanguageSwitch
                   className="auth-v3-language-switch app-header-language-switch"
                   triggerClassName="app-header-utility-button"
@@ -709,15 +699,6 @@ export function AuthPage() {
               <BrandWordmark className="auth-v3-header-brand-text" />
             </Link>
             <div className="auth-v3-header-actions">
-              {shouldShowOnboardingTester ? (
-                <button
-                  type="button"
-                  className="auth-v3-header-control"
-                  onClick={openOnboardingPreview}
-                >
-                  {language === "ru" ? "Онбординг" : "Onboarding"}
-                </button>
-              ) : null}
               <LanguageSwitch
                 className="auth-v3-language-switch app-header-language-switch"
                 triggerClassName="app-header-utility-button"
