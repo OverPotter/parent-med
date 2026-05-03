@@ -1,0 +1,56 @@
+{
+  "slide": 3,
+  "key": "family_medication_plan",
+  "image": "family_medication_plan.png",
+  "status": "locked",
+  "notes": "Locked preview reference for slide 3. Synced with latest approved preview positions.",
+  "layout": {
+    "variant": "family-medication-plan",
+    "heroTop": "8.1%",
+    "footerBottom": "2.4%",
+    "skipLeftMargin": "0.5rem",
+    "paginationActiveIndex": 2,
+    "cards": {
+      "top": { "top": "38.5%", "left": "44.2%", "width": "23%" },
+      "leftMiddle": { "top": "48.6%", "left": "16%", "width": "20%" },
+      "leftMiddleEn": { "left": "17.2%" },
+      "rightMiddle": { "top": "48.6%", "left": "76.9%", "width": "18%" },
+      "leftBottom": { "top": "78.2%", "left": "20.1%", "width": "19%" },
+      "leftBottomEn": { "top": "78.6%" },
+      "rightBottom": { "top": "78.7%", "left": "63.2%", "width": "20%" }
+    },
+    "overrides": {
+      "rightBottomTextTransform": "translate(-0.34rem, -0.28rem)",
+      "rightBottomSubtitleWhiteSpace": "nowrap",
+      "leftBottomSubtitleWhiteSpace": "nowrap"
+    }
+  },
+  "ru": {
+    "title": "План приёма\nдля близких",
+    "subtitle": "Создавайте напоминания о таблетках и витаминах для близких — а доступ, видимость и действия можно настроить под каждого.",
+    "skipLabel": "Пропустить",
+    "nextLabel": "Далее",
+    "paginationLabel": "Слайд 3 из 3",
+    "cards": [
+      { "slot": "top", "title": "Напоминания", "subtitle": "пора принять лекарство" },
+      { "slot": "leftMiddle", "title": "План приёма", "subtitle": "витамины и лекарства" },
+      { "slot": "rightMiddle", "title": "Кто отметил", "subtitle": "видно всей семье" },
+      { "slot": "leftBottom", "title": "Настройка доступа", "subtitle": "кто что видит" },
+      { "slot": "rightBottom", "title": "Только отмечать", "subtitle": "без редактирования" }
+    ]
+  },
+  "en": {
+    "title": "Medication plan\nfor loved ones",
+    "subtitle": "Create tablet and vitamin reminders for loved ones, with access and visibility tailored for each person.",
+    "skipLabel": "Skip",
+    "nextLabel": "Next",
+    "paginationLabel": "Slide 3 of 3",
+    "cards": [
+      { "slot": "top", "title": "Reminders", "subtitle": "time to take meds" },
+      { "slot": "leftMiddle", "title": "Care plan", "subtitle": "vitamins and\nmeds" },
+      { "slot": "rightMiddle", "title": "Check-ins", "subtitle": "seen by the family" },
+      { "slot": "leftBottom", "title": "Access setup", "subtitle": "who sees what" },
+      { "slot": "rightBottom", "title": "View only", "subtitle": "no editing needed" }
+    ]
+  }
+}

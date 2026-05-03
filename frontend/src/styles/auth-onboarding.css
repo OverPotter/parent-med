@@ -1,0 +1,440 @@
+.auth-onboarding-page {
+  --auth-onboarding-side-gap: 0;
+  --auth-onboarding-top-gap: max(var(--app-safe-top-runtime, env(safe-area-inset-top)), 0px);
+  --auth-onboarding-bottom-gap: max(var(--app-safe-bottom-runtime, env(safe-area-inset-bottom)), 0px);
+  --auth-onboarding-footer-space: 0;
+  --auth-onboarding-footer-overlay-height: 5.6rem;
+  --auth-onboarding-viewport-height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0;
+  background:
+    radial-gradient(circle at top left, rgb(255 255 255 / 0.7), transparent 24%),
+    radial-gradient(circle at top right, rgb(252 216 226 / 0.82), transparent 22%),
+    linear-gradient(180deg, #fff7fb 0%, #fde8ef 46%, #f7dce6 100%);
+}
+
+.auth-onboarding-shell {
+  min-height: var(--auth-onboarding-viewport-height);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.auth-onboarding-swipe {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.auth-onboarding-track {
+  display: flex;
+  transition: transform 320ms cubic-bezier(0.22, 0.9, 0.24, 1);
+  will-change: transform;
+}
+
+.auth-onboarding-track--dragging {
+  transition: none;
+}
+
+.auth-onboarding-stage {
+  display: flex;
+  justify-content: center;
+  flex: 0 0 auto;
+  height: var(--auth-onboarding-viewport-height);
+}
+
+.auth-onboarding-phone {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.auth-onboarding-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.auth-onboarding-artboard {
+  position: absolute;
+  overflow: hidden;
+}
+
+.auth-onboarding-phone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.1), transparent 10%, transparent 82%, rgb(255 255 255 / 0.08)),
+    radial-gradient(circle at center, transparent 56%, rgb(255 255 255 / 0.05) 100%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.auth-onboarding-phone__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  user-select: none;
+}
+
+.auth-onboarding-copy,
+.auth-onboarding-card,
+.auth-onboarding-footer {
+  position: absolute;
+  z-index: 2;
+}
+
+.auth-onboarding-copy--hero {
+  top: calc(14.822% + var(--auth-onboarding-top-gap) * 0.18);
+  left: clamp(1.25rem, 6vw, 3.5rem);
+  right: clamp(1.25rem, 6vw, 3.5rem);
+  text-align: center;
+}
+
+.auth-onboarding-phone--family-medication-plan .auth-onboarding-copy--hero {
+  top: calc(15.642% + var(--auth-onboarding-top-gap) * 0.16);
+}
+
+.auth-onboarding-copy__title {
+  margin: 0;
+  font-family: "Sora", "Manrope", "Onest", sans-serif;
+  font-size: clamp(1.78rem, 4.3vw, 2.38rem);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.07em;
+  color: #17316a;
+  text-wrap: balance;
+}
+
+.auth-onboarding-copy__line,
+.auth-onboarding-card__line {
+  display: block;
+}
+
+.auth-onboarding-copy__subtitle {
+  margin: 0.72rem auto 0;
+  max-width: 17.4rem;
+  font-size: clamp(0.82rem, 2vw, 1rem);
+  font-weight: 500;
+  line-height: 1.42;
+  color: rgb(34 57 105 / 0.9);
+  text-wrap: balance;
+}
+
+.auth-onboarding-card {
+  display: block;
+}
+
+.auth-onboarding-card__text {
+  position: absolute;
+  left: 0;
+  right: 2.5%;
+  min-height: 2.3rem;
+  padding-top: 0;
+  transform: none;
+  text-align: left;
+  top: -0.18rem;
+}
+
+.auth-onboarding-card__title {
+  margin: 0;
+  font-size: clamp(0.66rem, 1.52vw, 0.84rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+  color: #17316a;
+  white-space: normal;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.auth-onboarding-card__subtitle {
+  margin: 0.22rem 0 0;
+  font-size: clamp(0.55rem, 1.22vw, 0.68rem);
+  font-weight: 500;
+  line-height: 1.18;
+  color: rgb(38 57 102 / 0.84);
+  white-space: normal;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.auth-onboarding-phone--family-overview .auth-onboarding-card--top {
+  top: 42.292%;
+  left: 43.9%;
+  width: 22.5%;
+}
+
+.auth-onboarding-phone--family-overview .auth-onboarding-card--leftMiddle {
+  top: 50.574%;
+  left: 16%;
+  width: 21.5%;
+}
+
+.auth-onboarding-phone--family-overview .auth-onboarding-card--rightMiddle {
+  top: 50.574%;
+  left: 76%;
+  width: 19.5%;
+}
+
+.auth-onboarding-phone--family-overview .auth-onboarding-card--leftMiddle .auth-onboarding-card__title,
+.auth-onboarding-phone--family-overview .auth-onboarding-card--leftMiddle .auth-onboarding-card__subtitle,
+.auth-onboarding-phone--family-overview .auth-onboarding-card--rightMiddle .auth-onboarding-card__title,
+.auth-onboarding-phone--family-overview .auth-onboarding-card--rightMiddle .auth-onboarding-card__subtitle,
+.auth-onboarding-phone--family-overview .auth-onboarding-card--leftBottom .auth-onboarding-card__title,
+.auth-onboarding-phone--family-overview .auth-onboarding-card--leftBottom .auth-onboarding-card__subtitle {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
+}
+
+.auth-onboarding-phone--family-overview .auth-onboarding-card--leftBottom {
+  top: 77.142%;
+  left: 20.4%;
+  width: 20.5%;
+}
+
+.auth-onboarding-phone--family-overview .auth-onboarding-card--rightBottom {
+  top: 77.224%;
+  left: 67%;
+  width: 22%;
+}
+
+.auth-onboarding-phone--baby-care .auth-onboarding-card--topLeft {
+  top: 42.128%;
+  left: 20%;
+  width: 19%;
+}
+
+.auth-onboarding-phone--baby-care .auth-onboarding-card--topRight {
+  top: 42.046%;
+  left: 73.2%;
+  width: 18%;
+}
+
+.auth-onboarding-phone--baby-care .auth-onboarding-card--leftMiddle {
+  top: 62.792%;
+  left: 15.4%;
+  width: 20%;
+}
+
+.auth-onboarding-phone--baby-care.auth-onboarding-phone--en .auth-onboarding-card--leftMiddle {
+  width: 23.5%;
+}
+
+.auth-onboarding-phone--baby-care.auth-onboarding-phone--en .auth-onboarding-card--leftMiddle .auth-onboarding-card__title,
+.auth-onboarding-phone--baby-care.auth-onboarding-phone--en .auth-onboarding-card--leftMiddle .auth-onboarding-card__subtitle {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
+  text-wrap: balance;
+}
+
+.auth-onboarding-phone--baby-care .auth-onboarding-card--rightMiddle {
+  top: 63.202%;
+  left: 78.2%;
+  width: 18%;
+}
+
+.auth-onboarding-phone--baby-care .auth-onboarding-card--leftBottom {
+  top: 75.912%;
+  left: 20%;
+  width: 19%;
+}
+
+.auth-onboarding-phone--baby-care .auth-onboarding-card--rightBottom {
+  top: 75.83%;
+  left: 71%;
+  width: 22%;
+}
+
+.auth-onboarding-phone--family-medication-plan .auth-onboarding-card--top {
+  top: 40.57%;
+  left: 44.2%;
+  width: 23%;
+}
+
+.auth-onboarding-phone--family-medication-plan .auth-onboarding-card--leftMiddle {
+  top: 48.852%;
+  left: 16%;
+  width: 20%;
+}
+
+.auth-onboarding-phone--family-medication-plan.auth-onboarding-phone--en .auth-onboarding-card--leftMiddle {
+  left: 17.2%;
+}
+
+.auth-onboarding-phone--family-medication-plan .auth-onboarding-card--rightMiddle {
+  top: 48.852%;
+  left: 76.9%;
+  width: 18%;
+}
+
+.auth-onboarding-phone--family-medication-plan .auth-onboarding-card--leftBottom {
+  top: 73.124%;
+  left: 20.1%;
+  width: 22%;
+}
+
+.auth-onboarding-phone--family-medication-plan.auth-onboarding-phone--en .auth-onboarding-card--leftBottom {
+  top: 73.452%;
+}
+
+.auth-onboarding-phone--family-medication-plan .auth-onboarding-card--rightBottom {
+  top: 73.534%;
+  left: 63.2%;
+  width: 22%;
+}
+
+.auth-onboarding-phone--family-overview .auth-onboarding-card--rightBottom .auth-onboarding-card__title,
+.auth-onboarding-phone--baby-care .auth-onboarding-card--rightBottom .auth-onboarding-card__subtitle {
+  white-space: pre-line;
+}
+
+.auth-onboarding-card--top .auth-onboarding-card__text,
+.auth-onboarding-card--topLeft .auth-onboarding-card__text,
+.auth-onboarding-card--topRight .auth-onboarding-card__text,
+.auth-onboarding-card--leftMiddle .auth-onboarding-card__text,
+.auth-onboarding-card--rightMiddle .auth-onboarding-card__text,
+.auth-onboarding-card--leftBottom .auth-onboarding-card__text,
+.auth-onboarding-card--rightBottom .auth-onboarding-card__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.auth-onboarding-footer {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  min-height: calc(var(--auth-onboarding-footer-overlay-height) + var(--auth-onboarding-bottom-gap));
+  width: 100%;
+  padding:
+    clamp(0.85rem, 3vw, 1.15rem)
+    0.82rem
+    calc(0.78rem + var(--auth-onboarding-bottom-gap));
+  background: transparent;
+  backdrop-filter: none;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-onboarding-page {
+  --auth-onboarding-viewport-height: 100lvh;
+  height: 100lvh;
+  min-height: 100lvh;
+  overflow: hidden;
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-onboarding-shell,
+[data-runtime="native"][data-platform="ios"] .auth-onboarding-swipe,
+[data-runtime="native"][data-platform="ios"] .auth-onboarding-stage {
+  min-height: var(--auth-onboarding-viewport-height);
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-onboarding-phone,
+[data-runtime="native"][data-platform="ios"] .auth-onboarding-canvas {
+  height: var(--auth-onboarding-viewport-height);
+}
+
+[data-runtime="native"][data-platform="ios"] .auth-onboarding-footer {
+  padding-bottom: calc(0.72rem + var(--auth-onboarding-bottom-gap));
+}
+
+.auth-onboarding-footer__skip {
+  appearance: none;
+  border: 0;
+  justify-self: start;
+  margin-left: 0.1rem;
+  padding: 0;
+  min-height: auto;
+  background: transparent;
+  color: rgb(25 48 102 / 0.72);
+  font-family: "Onest", "Nunito Sans", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.auth-onboarding-footer__next {
+  appearance: none;
+  border: 0;
+  justify-self: end;
+  font-family: "Onest", "Nunito Sans", sans-serif;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 9999px;
+  min-height: 2.5rem;
+  padding: 0 0.92rem;
+  min-width: 6.5rem;
+  background: linear-gradient(135deg, #ff8ba7 0%, #ff7f9a 42%, #ff7593 100%);
+  color: white;
+  font-size: 0.82rem;
+  box-shadow: 0 16px 28px -18px rgb(243 112 145 / 0.62);
+}
+
+.auth-onboarding-pagination {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  align-self: center;
+  padding: 0.34rem 0.58rem;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.34);
+  box-shadow: none;
+}
+
+.auth-onboarding-pagination__dot {
+  appearance: none;
+  border: 0;
+  width: 0.36rem;
+  height: 0.36rem;
+  padding: 0;
+  border-radius: 9999px;
+  background: rgb(27 49 106 / 0.22);
+}
+
+.auth-onboarding-pagination__dot--active {
+  width: 1.05rem;
+  background: #17316a;
+}
+
+@media (max-width: 720px) {
+  .auth-onboarding-page {
+    --auth-onboarding-footer-overlay-height: 5.15rem;
+  }
+
+  .auth-onboarding-copy--hero {
+    left: 8.2%;
+    right: 8.2%;
+  }
+
+  .auth-onboarding-phone {
+    border-radius: 0;
+  }
+
+  .auth-onboarding-footer__next {
+    min-width: 6.1rem;
+  }
+}

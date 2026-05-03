@@ -1,0 +1,60 @@
+{
+  "slide": 2,
+  "key": "baby_care",
+  "image": "baby_care.png",
+  "status": "locked",
+  "notes": "Locked preview reference for slide 2. Keep as backup while iterating on other slides. Synced with latest approved preview positions.",
+  "layout": {
+    "variant": "baby-care",
+    "heroTop": "7.1%",
+    "footerBottom": "2.4%",
+    "skipLeftMargin": "0.5rem",
+    "paginationActiveIndex": 1,
+    "cards": {
+      "topLeft": { "top": "40.4%", "left": "20%", "width": "19%" },
+      "topRight": { "top": "40.3%", "left": "73.2%", "width": "18%" },
+      "leftMiddle": { "top": "65.6%", "left": "15.4%", "width": "20%" },
+      "rightMiddle": { "top": "66.1%", "left": "78.2%", "width": "18%" },
+      "leftBottom": { "top": "81.6%", "left": "20%", "width": "19%" },
+      "rightBottom": { "top": "81.5%", "left": "71%", "width": "20%" }
+    }
+  },
+  "ru": {
+    "title": "Всё о малыше —\nв одном месте",
+    "subtitle": "Режим малыша, кормления, сон, температура, заметки и напоминания — всё собрано в одном приложении.",
+    "skipLabel": "Пропустить",
+    "nextLabel": "Далее",
+    "paginationLabel": "Слайд 2 из 3",
+    "cards": [
+      { "slot": "topLeft", "title": "Кормления", "subtitle": "сегодня 5 раз" },
+      { "slot": "topRight", "title": "Сон", "subtitle": "ночь 8 ч 20 мин" },
+      { "slot": "leftMiddle", "title": "Заметки", "subtitle": "симптомы и наблюдения" },
+      { "slot": "rightMiddle", "title": "Температура", "subtitle": "37.2 °C" },
+      { "slot": "leftBottom", "title": "Напоминания", "subtitle": "что сделать дальше" },
+      {
+        "slot": "rightBottom",
+        "title": "Live Activity",
+        "subtitle": "важное\nна экране\nблокировки"
+      }
+    ]
+  },
+  "en": {
+    "title": "Everything for baby,\nin one place",
+    "subtitle": "Baby routine, feedings, sleep, temperature, notes, and reminders — all in one app.",
+    "skipLabel": "Skip",
+    "nextLabel": "Next",
+    "paginationLabel": "Slide 2 of 3",
+    "cards": [
+      { "slot": "topLeft", "title": "Feedings", "subtitle": "5 times today" },
+      { "slot": "topRight", "title": "Sleep", "subtitle": "8 h 20 min tonight" },
+      { "slot": "leftMiddle", "title": "Notes", "subtitle": "symptoms and observations" },
+      { "slot": "rightMiddle", "title": "Temperature", "subtitle": "37.2 °C" },
+      { "slot": "leftBottom", "title": "Reminders", "subtitle": "what to do next" },
+      {
+        "slot": "rightBottom",
+        "title": "Live Activity",
+        "subtitle": "key updates\non\nlock screen"
+      }
+    ]
+  }
+}

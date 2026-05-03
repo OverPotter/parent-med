@@ -26,9 +26,11 @@ import { AuthLegalLinks } from "./AuthLegalLinks";
 import { AuthFamilyCodeCard } from "./auth/AuthFamilyCodeCard";
 import {
   buildVerifiedFamilyCode,
+  normalizeFamilyCodeInput,
   resetVerifiedFamilyCode,
   resolveFamilyCodeSubmitError,
   resolveFamilyCodeVerifyError,
+  shouldAutoVerifyFamilyCode,
   type VerifiedFamilyCode,
 } from "./auth/familyCodeModel";
 
@@ -231,6 +233,7 @@ export function AuthPage() {
   const isNativeRuntime = Capacitor.isNativePlatform();
   const isNativeIOS = isNativeRuntime && Capacitor.getPlatform() === "ios";
   const isPublicWebsiteMode = !isNativeRuntime && shouldUsePublicWebsiteMode();
+  const shouldShowOnboardingTester = import.meta.env.DEV || isNativeRuntime;
   const appStoreUrl = getAppStoreUrl();
   const publicSiteUrl = resolvePublicSiteBaseUrl();
   const { copy, language } = useI18n();
@@ -250,22 +253,40 @@ export function AuthPage() {
   const [verifiedFamilyCode, setVerifiedFamilyCode] = useState<VerifiedFamilyCode | null>(null);
   const stageRef = useRef<HTMLElement | null>(null);
   const submitButtonRef = useRef<HTMLButtonElement | null>(null);
+  const familyCodeInputRef = useRef("");
+  const requestedFamilyCodeRef = useRef<string | null>(null);
   const effectiveTheme = useAppStore((s) => s.effectiveTheme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
+  const resetAuthOnboardingSeen = useAppStore((s) => s.resetAuthOnboardingSeen);
   const postAuthPath = "/family";
 
   useEffect(() => {
     setMode(requestedMode === "login" ? "login" : "register");
   }, [requestedMode]);
 
+  useEffect(() => {
+    familyCodeInputRef.current = normalizeFamilyCodeInput(familyCodeInput);
+  }, [familyCodeInput]);
+
   const verifyFamilyCodeMutation = useMutation({
     mutationFn: async (token: string) => fetchFamilyInvitePreview(token),
     onSuccess: (preview, token) => {
+      requestedFamilyCodeRef.current = null;
+      if (familyCodeInputRef.current !== token) {
+        return;
+      }
       setFamilyCodeError(null);
       setVerifiedFamilyCode(buildVerifiedFamilyCode(token, preview));
       blurActiveField();
     },
-    onError: (err: { response?: { data?: { detail?: string; code?: string } } }) => {
+    onError: (
+      err: { response?: { data?: { detail?: string; code?: string } } },
+      token
+    ) => {
+      requestedFamilyCodeRef.current = null;
+      if (familyCodeInputRef.current !== token) {
+        return;
+      }
       setVerifiedFamilyCode(null);
       setFamilyCodeError(
         getLocalizedAuthError(
@@ -430,7 +451,19 @@ export function AuthPage() {
         ? copy.auth.actions.registerLoading
         : copy.auth.actions.register;
   const showSecondaryLegalLinks = !isRegisterMode;
-  const trimmedFamilyCodeInput = familyCodeInput.trim();
+  const trimmedFamilyCodeInput = normalizeFamilyCodeInput(familyCodeInput);
+
+  const startFamilyCodeVerification = (token: string) => {
+    if (verifyFamilyCodeMutation.isPending && requestedFamilyCodeRef.current === token) {
+      return;
+    }
+    if (verifiedFamilyCode?.token === token) {
+      return;
+    }
+    requestedFamilyCodeRef.current = token;
+    setFamilyCodeError(null);
+    verifyFamilyCodeMutation.mutate(token);
+  };
 
   const verifyFamilyCode = () => {
     const verifyError = resolveFamilyCodeVerifyError(
@@ -443,8 +476,21 @@ export function AuthPage() {
       return;
     }
 
-    setFamilyCodeError(null);
-    verifyFamilyCodeMutation.mutate(trimmedFamilyCodeInput);
+    startFamilyCodeVerification(trimmedFamilyCodeInput);
+  };
+
+  const updateFamilyCodeInput = (nextValue: string, options?: { source?: "typing" | "paste" }) => {
+    const normalizedValue = normalizeFamilyCodeInput(nextValue);
+    setFamilyCodeInput(normalizedValue);
+    if (familyCodeError) {
+      setFamilyCodeError(null);
+    }
+    if (verifiedFamilyCode && verifiedFamilyCode.token !== normalizedValue) {
+      setVerifiedFamilyCode(resetVerifiedFamilyCode());
+    }
+    if (options?.source === "paste" && shouldAutoVerifyFamilyCode(normalizedValue)) {
+      startFamilyCodeVerification(normalizedValue);
+    }
   };
 
   const ensureSubmitVisible = () => {
@@ -469,6 +515,11 @@ export function AuthPage() {
   const formFocusHandlers = useMobileFormFocusHandlers({
     onFieldFocus: ensureSubmitVisible,
   });
+
+  const openOnboardingPreview = () => {
+    resetAuthOnboardingSeen();
+    navigate("/onboarding");
+  };
 
   useEffect(() => {
     if (!isNativeIOS || mode !== "login" || (!email.trim() && !password.trim())) {
@@ -534,6 +585,15 @@ export function AuthPage() {
                 <BrandWordmark className="auth-v3-header-brand-text" />
               </Link>
               <div className="auth-v3-header-actions">
+                {shouldShowOnboardingTester ? (
+                  <button
+                    type="button"
+                    className="auth-v3-header-control"
+                    onClick={openOnboardingPreview}
+                  >
+                    {language === "ru" ? "Онбординг" : "Onboarding"}
+                  </button>
+                ) : null}
                 <LanguageSwitch
                   className="auth-v3-language-switch app-header-language-switch"
                   triggerClassName="app-header-utility-button"
@@ -649,6 +709,15 @@ export function AuthPage() {
               <BrandWordmark className="auth-v3-header-brand-text" />
             </Link>
             <div className="auth-v3-header-actions">
+              {shouldShowOnboardingTester ? (
+                <button
+                  type="button"
+                  className="auth-v3-header-control"
+                  onClick={openOnboardingPreview}
+                >
+                  {language === "ru" ? "Онбординг" : "Onboarding"}
+                </button>
+              ) : null}
               <LanguageSwitch
                 className="auth-v3-language-switch app-header-language-switch"
                 triggerClassName="app-header-utility-button"
@@ -769,12 +838,8 @@ export function AuthPage() {
                       confirmedLabel={language === "ru" ? "Код подтверждён" : "Code confirmed"}
                       validUntilLabel={language === "ru" ? "Действует до" : "Valid until"}
                       onToggle={() => setFamilyCodeOpen((current) => !current)}
-                      onInputChange={(value) => {
-                        setFamilyCodeInput(value);
-                        if (familyCodeError) {
-                          setFamilyCodeError(null);
-                        }
-                      }}
+                      onInputChange={(value) => updateFamilyCodeInput(value, { source: "typing" })}
+                      onInputPaste={(value) => updateFamilyCodeInput(value, { source: "paste" })}
                       onVerify={verifyFamilyCode}
                       onResetVerified={() => {
                         setVerifiedFamilyCode(resetVerifiedFamilyCode());

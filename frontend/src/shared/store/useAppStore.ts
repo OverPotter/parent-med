@@ -93,6 +93,9 @@ function applyThemeToDocument(theme: Theme): ResolvedTheme {
 interface AppState {
   hydrated: boolean;
   setHydrated: (value: boolean) => void;
+  hasSeenAuthOnboarding: boolean;
+  markAuthOnboardingSeen: () => void;
+  resetAuthOnboardingSeen: () => void;
   hasSeenWorkspaceIntro: boolean;
   markWorkspaceIntroSeen: () => void;
   theme: Theme;
@@ -169,6 +172,9 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       hydrated: false,
       setHydrated: (value) => set({ hydrated: value }),
+      hasSeenAuthOnboarding: false,
+      markAuthOnboardingSeen: () => set({ hasSeenAuthOnboarding: true }),
+      resetAuthOnboardingSeen: () => set({ hasSeenAuthOnboarding: false }),
       hasSeenWorkspaceIntro: false,
       markWorkspaceIntroSeen: () => set({ hasSeenWorkspaceIntro: true }),
       theme: initialTheme,
@@ -332,6 +338,7 @@ export const useAppStore = create<AppState>()(
         language: s.language,
         medicationIntervalUnit: s.medicationIntervalUnit,
         role: s.role,
+        hasSeenAuthOnboarding: s.hasSeenAuthOnboarding,
         hasSeenWorkspaceIntro: s.hasSeenWorkspaceIntro,
         ...(isNativeIOSRuntime() ? {} : { authToken: s.authToken, refreshToken: s.refreshToken }),
         accountId: s.accountId,

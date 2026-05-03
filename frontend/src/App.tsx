@@ -40,6 +40,7 @@ import {
 } from "@/app/mobile/runtime";
 import { DisplayNameOnboardingOverlay } from "@client/components/DisplayNameOnboardingOverlay";
 import { AuthPage } from "@client/pages/AuthPage";
+import { OnboardingPage } from "@client/pages/OnboardingPage";
 import { ChildFeedingCreatePage } from "@client/pages/ChildFeedingCreatePage";
 import { appLog } from "@shared/utils/appLog";
 import { shouldClearSessionForAuthError } from "@shared/api/authSessionErrors";
@@ -293,6 +294,16 @@ function SessionLossRedirect({ defaultTargetPath }: { defaultTargetPath: string 
   return null;
 }
 
+function UnauthedOnboardingRoute({ authPath }: { authPath: string }) {
+  const hasSeenAuthOnboarding = useAppStore((s) => s.hasSeenAuthOnboarding);
+  return hasSeenAuthOnboarding ? <Navigate to={authPath} replace /> : <OnboardingPage />;
+}
+
+function UnauthedAuthRoute() {
+  const hasSeenAuthOnboarding = useAppStore((s) => s.hasSeenAuthOnboarding);
+  return hasSeenAuthOnboarding ? <AuthPage /> : <Navigate to="/onboarding" replace />;
+}
+
 export default function App() {
   const role = useAppStore((s) => s.role);
   const language = useAppStore((s) => s.language);
@@ -300,11 +311,17 @@ export default function App() {
   const accountId = useAppStore((s) => s.accountId);
   const hydrated = useAppStore((s) => s.hydrated);
   const setHydrated = useAppStore((s) => s.setHydrated);
+  const hasSeenAuthOnboarding = useAppStore((s) => s.hasSeenAuthOnboarding);
   const isNativeRuntime = Capacitor.isNativePlatform();
   const shouldUseAppEntryRoute = isNativeRuntime || shouldUseAppEntryWebMode();
   const isPublicWebsiteMode = !isNativeRuntime && !shouldUseAppEntryWebMode();
   const sessionLossTargetPath = shouldUseAppEntryRoute ? "/auth?mode=login" : "/";
-  const signedOutEntryPath = shouldUseAppEntryRoute ? "/auth?mode=register" : "/";
+  const signedOutAuthPath = "/auth?mode=register";
+  const signedOutEntryPath = shouldUseAppEntryRoute
+    ? hasSeenAuthOnboarding
+      ? signedOutAuthPath
+      : "/onboarding"
+    : "/";
   const isNonCriticalStartupReady = useDeferredNonCriticalStartupReady();
   const hasSession = Boolean(authToken || accountId);
   const shouldMountClientRuntime = isNonCriticalStartupReady && hasSession && role !== "admin";
@@ -422,7 +439,15 @@ export default function App() {
                     )
                   }
                 />
-                <Route path="/auth" element={<AuthPage />} />
+                <Route
+                  path="/onboarding"
+                  element={<UnauthedOnboardingRoute authPath={signedOutAuthPath} />}
+                />
+                <Route
+                  path="/preview/onboarding-ui"
+                  element={<Navigate to="/onboarding" replace />}
+                />
+                <Route path="/auth" element={<UnauthedAuthRoute />} />
                 <Route path="/recover-password" element={<RecoverPasswordPage />} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />

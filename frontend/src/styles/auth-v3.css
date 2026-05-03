@@ -261,6 +261,7 @@
   color: var(--auth-v3-muted);
 }
 
+
 .auth-v3-ghost-button {
   color: var(--auth-v3-text);
   text-decoration: none;
