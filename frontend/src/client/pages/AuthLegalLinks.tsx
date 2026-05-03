@@ -7,6 +7,8 @@ type AuthLegalLinksProps = {
   aboutExternal?: boolean;
   language: AppLanguage;
   onNavigate?: () => void;
+  onboardingHref?: string;
+  onOnboardingNavigate?: () => void;
   showSecondaryLegalLinks?: boolean;
 };
 
@@ -16,9 +18,12 @@ export function AuthLegalLinks({
   aboutExternal = false,
   language,
   onNavigate,
+  onboardingHref,
+  onOnboardingNavigate,
   showSecondaryLegalLinks = true,
 }: AuthLegalLinksProps) {
   const legalLinkLabels = {
+    onboarding: language === "ru" ? "Онбординг" : "Onboarding",
     support: language === "ru" ? "Поддержка" : "Support",
     privacy: language === "ru" ? "Политика" : "Privacy",
     terms: language === "ru" ? "Условия" : "Terms",
@@ -46,6 +51,15 @@ export function AuthLegalLinks({
         </Link>
       )}
       <div className="auth-v3-legal-links">
+        {onboardingHref ? (
+          <Link
+            to={onboardingHref}
+            className="auth-v3-legal-link"
+            onClick={onOnboardingNavigate ?? onNavigate}
+          >
+            {legalLinkLabels.onboarding}
+          </Link>
+        ) : null}
         <Link to="/legal/support" className="auth-v3-legal-link" onClick={onNavigate}>
           {legalLinkLabels.support}
         </Link>

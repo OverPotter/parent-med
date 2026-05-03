@@ -11,7 +11,6 @@ import "./styles/auth-v3.css";
 import "./styles/dropdown.css";
 import "./styles/header-nav.css";
 import "./styles/landing.css";
-import "./styles/onboarding-preview.css";
 import "./styles/soft-controls.css";
 import "./styles/soft-surfaces.css";
 import "./styles/visual-system.css";
