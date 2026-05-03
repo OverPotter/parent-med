@@ -155,11 +155,13 @@ export function MemberCard({
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-3.25 py-[0.44rem] text-[0.8rem] ${roleToneClass}`}>
+              <span
+                className={`inline-flex min-h-[2.35rem] items-center rounded-full px-3.5 py-2 text-[0.76rem] font-semibold leading-[1.1] tracking-[-0.02em] sm:min-h-[2.45rem] sm:text-[0.8rem] ${roleToneClass}`}
+              >
                 {roleLabel(member.familyRole, language, { isOwner })}
               </span>
               {isCurrent ? (
-                <span className="soft-pill rounded-full px-3.25 py-[0.44rem] text-[0.8rem]">
+                <span className="soft-pill inline-flex min-h-[2.35rem] items-center rounded-full px-3.5 py-2 text-[0.76rem] font-semibold leading-[1.1] tracking-[-0.02em] sm:min-h-[2.45rem] sm:text-[0.8rem]">
                   {tFamily(language, "thisIsYou")}
                 </span>
               ) : null}

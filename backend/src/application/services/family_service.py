@@ -1,5 +1,6 @@
 """Сервис семей."""
 
+from dataclasses import replace
 from uuid import UUID, uuid4
 
 from src.application.dto.auth import AccountResponseDto
@@ -28,7 +29,13 @@ from src.domain.entities.family_access import (
 from src.domain.entities.family_roles import is_family_admin, normalize_family_role
 from src.domain.repositories.account_repository import AccountRepository
 from src.domain.repositories.account_session_repository import AccountSessionRepository
+from src.domain.repositories.child_repository import ChildRepository
+from src.domain.repositories.episode_medication_plan_repository import (
+    EpisodeMedicationPlanRepository,
+)
 from src.domain.repositories.family_repository import FamilyRepository
+from src.domain.repositories.illness_episode_repository import IllnessEpisodeRepository
+from src.domain.repositories.pillbox_repository import PillboxRepository
 
 
 class FamilyService:
@@ -42,10 +49,18 @@ class FamilyService:
         family_repo: FamilyRepository,
         account_repo: AccountRepository,
         session_repo: AccountSessionRepository,
+        child_repo: ChildRepository | None = None,
+        episode_repo: IllnessEpisodeRepository | None = None,
+        episode_plan_repo: EpisodeMedicationPlanRepository | None = None,
+        pillbox_repo: PillboxRepository | None = None,
     ) -> None:
         self._repo = family_repo
         self._account_repo = account_repo
         self._session_repo = session_repo
+        self._child_repo = child_repo
+        self._episode_repo = episode_repo
+        self._episode_plan_repo = episode_plan_repo
+        self._pillbox_repo = pillbox_repo
 
     def _is_premium_active(self, entity: Family) -> bool:
         return (
@@ -185,6 +200,74 @@ class FamilyService:
     async def _create_solo_family_for_member(self, account: Account) -> Family:
         return await self._repo.add(build_personal_family(account.id))
 
+    async def _cleanup_removed_member_references(
+        self,
+        family: Family | None,
+        member_account_id: UUID,
+    ) -> None:
+        if family is None:
+            return
+        if member_account_id in family.cabinet_member_account_ids:
+            family = await self._repo.update(
+                replace(
+                    family,
+                    cabinet_member_account_ids=[
+                        account_id
+                        for account_id in family.cabinet_member_account_ids
+                        if account_id != member_account_id
+                    ],
+                )
+            )
+        if (
+            self._child_repo is not None
+            and self._episode_repo is not None
+            and self._episode_plan_repo is not None
+        ):
+            children = await self._child_repo.get_by_family_id(family.id)
+            for child in children:
+                episodes = await self._episode_repo.get_by_child_id(child.id)
+                for episode in episodes:
+                    if member_account_id in episode.member_account_ids:
+                        await self._episode_repo.update(
+                            replace(
+                                episode,
+                                member_account_ids=[
+                                    account_id
+                                    for account_id in episode.member_account_ids
+                                    if account_id != member_account_id
+                                ],
+                            )
+                        )
+                    plans = await self._episode_plan_repo.get_by_episode_id(episode.id)
+                    for plan in plans:
+                        if member_account_id not in plan.member_account_ids:
+                            continue
+                        await self._episode_plan_repo.update(
+                            replace(
+                                plan,
+                                member_account_ids=[
+                                    account_id
+                                    for account_id in plan.member_account_ids
+                                    if account_id != member_account_id
+                                ],
+                            )
+                        )
+        if self._pillbox_repo is not None:
+            pillbox_plans = await self._pillbox_repo.list_by_family_id(family.id)
+            for plan in pillbox_plans:
+                if member_account_id not in plan.member_account_ids:
+                    continue
+                await self._pillbox_repo.update(
+                    replace(
+                        plan,
+                        member_account_ids=[
+                            account_id
+                            for account_id in plan.member_account_ids
+                            if account_id != member_account_id
+                        ],
+                    )
+                )
+
     async def list_all(self) -> list[FamilyResponseDto]:
         entities = await self._repo.list_all()
         return [self._to_response(entity) for entity in entities]
@@ -301,6 +384,7 @@ class FamilyService:
                 code="BILLING_OWNER_TRANSFER_REQUIRED",
             )
 
+        await self._cleanup_removed_member_references(family, target.id)
         next_family = await self._create_solo_family_for_member(target)
         await self._account_repo.update(
             copy_account(

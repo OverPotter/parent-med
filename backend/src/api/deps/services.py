@@ -89,11 +89,19 @@ def get_family_service(
     family_repo=Depends(get_family_repo),
     account_repo=Depends(get_account_repo),
     session_repo=Depends(get_account_session_repo),
+    child_repo=Depends(get_child_repo),
+    episode_repo=Depends(get_illness_episode_repo),
+    episode_plan_repo=Depends(get_episode_medication_plan_repo),
+    pillbox_repo=Depends(get_pillbox_repo),
 ) -> FamilyService:
     return FamilyService(
         family_repo=family_repo,
         account_repo=account_repo,
         session_repo=session_repo,
+        child_repo=child_repo,
+        episode_repo=episode_repo,
+        episode_plan_repo=episode_plan_repo,
+        pillbox_repo=pillbox_repo,
     )
 
 

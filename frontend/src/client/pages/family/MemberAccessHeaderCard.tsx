@@ -57,7 +57,7 @@ export function MemberAccessHeaderCard({
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`rounded-full px-2.5 py-1 text-[11px] ${
+                className={`inline-flex min-h-[2.35rem] items-center rounded-full px-3.5 py-2 text-[0.76rem] font-semibold leading-[1.1] tracking-[-0.02em] sm:min-h-[2.45rem] sm:text-[0.8rem] ${
                   isOwner || member.familyRole === "admin" ? "soft-pill-primary" : "soft-pill"
                 }`}
               >

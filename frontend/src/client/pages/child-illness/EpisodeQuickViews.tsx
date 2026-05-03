@@ -91,8 +91,11 @@ function EpisodeReminderRecipientsCard({
       return;
     }
     const previousIds = selectedIdsRef.current;
-    const nextIds = toggleNormalizedRecipientSelection(memberId, previousIds, (toggledIds) =>
-      resolveIllnessRecipientSelection(toggledIds, eligibleMemberIds, currentAccountId)
+    const nextIds = toggleNormalizedRecipientSelection(
+      memberId,
+      previousIds,
+      (toggledIds) =>
+        resolveIllnessRecipientSelection(toggledIds, eligibleMemberIds, currentAccountId)
     );
     await runOptimisticRecipientSelectionUpdate({
       previousIds,

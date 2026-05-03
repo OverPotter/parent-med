@@ -140,6 +140,10 @@ def _get_pillbox_target_account_ids(plan: Any) -> list[Any]:
     return list(getattr(plan, "member_account_ids", []) or [])
 
 
+def _account_belongs_to_family(account: Any, family_id: Any) -> bool:
+    return getattr(account, "family_id", None) == family_id
+
+
 def _resolve_illness_next_allowed_at(
     plan: Any,
     last_administration: Any | None,
@@ -945,6 +949,8 @@ class PushNotificationScheduler:
         for slot in slot_map.values():
             account = await account_repo.get_by_id(slot["account_id"])
             if not account:
+                continue
+            if not _account_belongs_to_family(account, slot["family_id"]):
                 continue
             if not _can_receive_pillbox_push(account):
                 continue

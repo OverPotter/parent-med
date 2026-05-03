@@ -1,10 +1,12 @@
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from uuid import uuid4
 
 import pytest
 
 from src.application.dto.administration_event import AdministrationEventCreateDto
+from src.application.dto.auth import AuthenticatedAccount
 from src.application.services.administration_service import AdministrationService
+from src.application.dto.family_access import FamilyAccessPolicyDto
 from src.domain.entities.child import Child
 from src.domain.entities.household_medicine import HouseholdMedicine
 from src.domain.entities.illness_episode import IllnessEpisode
@@ -26,6 +28,22 @@ class StubAdministrationRepository:
 
     async def delete(self, id):  # noqa: ANN001
         return True
+
+
+def build_account(child: Child) -> AuthenticatedAccount:
+    return AuthenticatedAccount(
+        id=uuid4(),
+        email="test@example.com",
+        family_id=child.family_id,
+        display_name="Мама",
+        family_role="member",
+        preferred_language="ru",
+        access_policy=FamilyAccessPolicyDto(
+            all_children=False,
+            child_ids=[child.id],
+            children_access="edit",
+        ),
+    )
 
 
 class StubHouseholdRepository:
@@ -94,6 +112,7 @@ async def test_create_administration_event_stores_actor_snapshot() -> None:
         episode_repo=StubEpisodeRepository(episode),
         child_repo=StubChildRepository(child),
     )
+    account = build_account(child)
 
     result = await service.create(
         AdministrationEventCreateDto(
@@ -101,10 +120,83 @@ async def test_create_administration_event_stores_actor_snapshot() -> None:
             household_medicine_id=household.id,
             amount="5 мл",
         ),
-        child.family_id,
-        uuid4(),
+        account,
+        account.id,
         "Мама",
     )
 
     assert result.administered_by_name_snapshot == "Мама"
     assert result.administered_by_account_id is not None
+
+
+@pytest.mark.asyncio
+async def test_create_administration_event_returns_existing_duplicate_within_time_window() -> None:
+    child = Child(
+        id=uuid4(),
+        family_id=uuid4(),
+        name="Маша",
+        birth_date=date(2021, 5, 1),
+    )
+    episode = IllnessEpisode(
+        id=uuid4(),
+        child_id=child.id,
+        started_at=date(2026, 3, 20),
+        title="ОРВИ",
+        status="active",
+        medication_mode="manual",
+        note=None,
+        closed_at=None,
+        deleted_at=None,
+    )
+    household = HouseholdMedicine(
+        id=uuid4(),
+        family_id=child.family_id,
+        medicine_name="Уголь",
+        medicine_form="tablet",
+        medicine_category=None,
+        medicine_concentration=None,
+        medicine_description=None,
+        medicine_dosage=None,
+        pediatric_dose_mg_per_kg_min=None,
+        pediatric_dose_mg_per_kg_max=None,
+        pediatric_dose_note=None,
+        expiry_date=date(2026, 10, 1),
+        opened_at=None,
+        opened_shelf_days=None,
+        comment=None,
+    )
+    repo = StubAdministrationRepository()
+    service = AdministrationService(
+        administration_repo=repo,
+        household_repo=StubHouseholdRepository(household),
+        episode_repo=StubEpisodeRepository(episode),
+        child_repo=StubChildRepository(child),
+    )
+    account = build_account(child)
+    base_time = datetime(2026, 5, 3, 10, 0, tzinfo=UTC)
+
+    first = await service.create(
+        AdministrationEventCreateDto(
+            episode_id=episode.id,
+            household_medicine_id=household.id,
+            administered_at=base_time,
+            amount="2 таб",
+        ),
+        account,
+        account.id,
+        "Мама",
+    )
+    second = await service.create(
+        AdministrationEventCreateDto(
+            episode_id=episode.id,
+            household_medicine_id=household.id,
+            administered_at=base_time + timedelta(seconds=5),
+            amount=" 2 таб ",
+        ),
+        account,
+        account.id,
+        "Мама",
+    )
+
+    assert second.id == first.id
+    assert len(repo.items) == 1
