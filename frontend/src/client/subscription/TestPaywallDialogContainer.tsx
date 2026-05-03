@@ -1,9 +1,7 @@
-import { useState } from "react";
 import type { AppLanguage } from "@shared/i18n";
-import { resolveRevenueCatPlanPurchase } from "@shared/utils/revenueCatPlanPurchase";
 import { TestPaywallDialog } from "./TestPaywallDialog";
 import type { PaywallPlanKey } from "./testPaywallCopy";
-import type { RevenueCatPurchaseResult } from "@shared/utils/nativeRevenueCat";
+import { useResolvedPlanUpgrade } from "./useResolvedPlanUpgrade";
 
 type TestPaywallDialogContainerProps = {
   isOpen: boolean;
@@ -42,22 +40,10 @@ export function TestPaywallDialogContainer({
   infoHighlights = null,
   ownerNote = null,
 }: TestPaywallDialogContainerProps) {
-  const [isLocalPurchasePending, setIsLocalPurchasePending] = useState(false);
-
-  const handleUpgrade = async (plan: PaywallPlanKey) => {
-    setIsLocalPurchasePending(true);
-    try {
-      const { selectedPackage } = await resolveRevenueCatPlanPurchase(plan);
-      const result = (await onUpgrade(
-        selectedPackage.identifier
-      )) as RevenueCatPurchaseResult | null;
-      if (result?.outcome === "purchased") {
-        onClose();
-      }
-    } finally {
-      setIsLocalPurchasePending(false);
-    }
-  };
+  const { isLocalPurchasePending, handlePlanUpgrade } = useResolvedPlanUpgrade({
+    onUpgrade,
+    onPurchased: onClose,
+  });
 
   return (
     <TestPaywallDialog
@@ -68,7 +54,7 @@ export function TestPaywallDialogContainer({
       canManageSubscription={canManageSubscription}
       subscriptionStatus={subscriptionStatus}
       onUpgrade={(plan) => {
-        void handleUpgrade(plan);
+        void handlePlanUpgrade(plan as PaywallPlanKey);
       }}
       isPurchasePending={isPending || isLocalPurchasePending}
       onRestorePurchases={() => {

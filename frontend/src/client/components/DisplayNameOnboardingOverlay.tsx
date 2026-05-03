@@ -6,10 +6,13 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { fetchFamilies, updateFamilyMemberProfile, updateMyFamily } from "@shared/api/families";
 import { isRecoveryCodeValid, normalizeRecoveryCode } from "@shared/utils/recoveryCode";
+import { PostRegistrationOfferDialogContainer } from "@client/subscription/PostRegistrationOfferDialogContainer";
+import { usePostRegistrationOfferState } from "@client/subscription/usePostRegistrationOfferState";
 import { tFamily } from "../pages/family/copy";
 import { tSettings } from "../pages/settings/copy";
 import {
   getDisplayNameOnboardingSkipKey,
+  getPostRegistrationOfferSeenKey,
   getRecoveryCodeOnboardingSkipKey,
 } from "./displayNameOnboardingKeys";
 import {
@@ -17,12 +20,15 @@ import {
   shouldShowRecoveryCodeOnboarding,
 } from "./profileOnboarding";
 
+type OnboardingStep = "display-name" | "recovery-code" | null;
+
 export function DisplayNameOnboardingOverlay() {
   const { language } = useI18n();
   const queryClient = useQueryClient();
   const accountId = useAppStore((s) => s.accountId);
   const accountNeedsProfileCompletion = useAppStore((s) => s.accountNeedsProfileCompletion);
   const accountHasRecoveryCode = useAppStore((s) => s.accountHasRecoveryCode);
+  const accountFamilyRole = useAppStore((s) => s.accountFamilyRole);
   const currentFamilyId = useAppStore((s) => s.currentFamilyId);
   const currentFamilyName = useAppStore((s) => s.currentFamilyName);
   const setAccountProfile = useAppStore((s) => s.setAccountProfile);
@@ -32,7 +38,7 @@ export function DisplayNameOnboardingOverlay() {
   const [phone, setPhone] = useState("");
   const [familyName, setFamilyName] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
-  const [step, setStep] = useState<"display-name" | "recovery-code" | null>(null);
+  const [step, setStep] = useState<OnboardingStep>(null);
 
   const { data: families = [] } = useQuery({
     queryKey: ["families", accountId],
@@ -47,10 +53,60 @@ export function DisplayNameOnboardingOverlay() {
   const canEditFamilyName = Boolean(
     accountId && currentFamily && currentFamily.ownerAccountId === accountId
   );
+  const canManageSubscription =
+    accountFamilyRole === "owner" ||
+    Boolean(accountId && currentFamily && currentFamily.ownerAccountId === accountId);
+  const postRegistrationOfferSeenKey = accountId
+    ? getPostRegistrationOfferSeenKey(accountId)
+    : null;
+  const {
+    isOpen: isPostRegistrationOfferOpen,
+    open: openPostRegistrationOffer,
+    closePermanently: closePostRegistrationOfferPermanently,
+    isUpgradePending,
+    upgradeErrorMessage,
+    restoreSuccessMessage,
+    upgradeToPlus,
+    restorePurchases,
+  } = usePostRegistrationOfferState({
+    language,
+    accountId,
+    currentFamilyId,
+    seenKey: postRegistrationOfferSeenKey,
+    canManageSubscription,
+    canShowOffer: canManageSubscription,
+  });
 
   useEffect(() => {
     setFamilyName(currentFamily?.name ?? currentFamilyName ?? "");
   }, [currentFamily?.name, currentFamilyName]);
+
+  const didSkipRecoveryCodeOnboarding = () =>
+    Boolean(
+      typeof window !== "undefined" &&
+        accountId &&
+        window.sessionStorage.getItem(getRecoveryCodeOnboardingSkipKey(accountId)) === "1"
+    );
+
+  const shouldOpenRecoveryStep = () =>
+    shouldShowRecoveryCodeOnboarding({
+      accountId,
+      hasRecoveryCode: accountHasRecoveryCode,
+      didSkipRecoveryCode: didSkipRecoveryCodeOnboarding(),
+    });
+
+  const markRecoveryCodeSkipped = () => {
+    if (typeof window !== "undefined" && accountId) {
+      window.sessionStorage.setItem(getRecoveryCodeOnboardingSkipKey(accountId), "1");
+    }
+  };
+
+  const resetDisplayNameFields = (nextFamilyName?: string | null) => {
+    setDisplayName("");
+    setRelationshipLabel("");
+    setPhone("");
+    setFamilyName(nextFamilyName ?? currentFamily?.name ?? currentFamilyName ?? "");
+  };
 
   useEffect(() => {
     if (!accountId || typeof window === "undefined") {
@@ -119,24 +175,12 @@ export function DisplayNameOnboardingOverlay() {
         queryClient.invalidateQueries({ queryKey: ["family-members", currentFamilyId] }),
         queryClient.invalidateQueries({ queryKey: ["families", "me", "members", currentFamilyId] }),
       ]);
-      if (
-        shouldShowRecoveryCodeOnboarding({
-          accountId,
-          hasRecoveryCode: accountHasRecoveryCode,
-          didSkipRecoveryCode:
-            typeof window !== "undefined" && accountId
-              ? window.sessionStorage.getItem(getRecoveryCodeOnboardingSkipKey(accountId)) === "1"
-              : false,
-        })
-      ) {
+      if (shouldOpenRecoveryStep()) {
         setStep("recovery-code");
       } else {
         setStep(null);
       }
-      setDisplayName("");
-      setRelationshipLabel("");
-      setPhone("");
-      setFamilyName(updatedFamily?.name ?? currentFamily?.name ?? currentFamilyName ?? "");
+      resetDisplayNameFields(updatedFamily?.name);
     },
   });
 
@@ -145,42 +189,28 @@ export function DisplayNameOnboardingOverlay() {
       updateRecoveryCode({ recovery_code: normalizeRecoveryCode(recoveryCode) }),
     onSuccess: () => {
       setAccountProfile({ hasRecoveryCode: true });
-      if (typeof window !== "undefined" && accountId) {
-        window.sessionStorage.setItem(getRecoveryCodeOnboardingSkipKey(accountId), "1");
-      }
+      markRecoveryCodeSkipped();
       setRecoveryCode("");
       setStep(null);
+      openPostRegistrationOffer();
     },
   });
 
   const isOpen = step !== null;
 
   const closeRecoveryStep = () => {
-    if (typeof window !== "undefined" && accountId) {
-      window.sessionStorage.setItem(getRecoveryCodeOnboardingSkipKey(accountId), "1");
-    }
+    markRecoveryCodeSkipped();
     setRecoveryCode("");
     setStep(null);
+    openPostRegistrationOffer();
   };
 
   const closeDisplayStep = () => {
     if (typeof window !== "undefined" && accountId) {
       window.sessionStorage.setItem(getDisplayNameOnboardingSkipKey(accountId), "1");
     }
-    setDisplayName("");
-    setRelationshipLabel("");
-    setPhone("");
-    setFamilyName(currentFamily?.name ?? currentFamilyName ?? "");
-    if (
-      shouldShowRecoveryCodeOnboarding({
-        accountId,
-        hasRecoveryCode: accountHasRecoveryCode,
-        didSkipRecoveryCode:
-          typeof window !== "undefined" && accountId
-            ? window.sessionStorage.getItem(getRecoveryCodeOnboardingSkipKey(accountId)) === "1"
-            : false,
-      })
-    ) {
+    resetDisplayNameFields();
+    if (shouldOpenRecoveryStep()) {
       setStep("recovery-code");
       return;
     }
@@ -188,34 +218,35 @@ export function DisplayNameOnboardingOverlay() {
   };
 
   return (
-    <FullscreenOverlay
-      isOpen={isOpen}
-      onClose={step === "recovery-code" ? closeRecoveryStep : closeDisplayStep}
-      backLabel={language === "ru" ? "Пропустить" : "Skip"}
-      title={
-        step === "recovery-code"
-          ? language === "ru"
-            ? "Добавьте секретную фразу"
-            : "Add a recovery phrase"
-          : language === "ru"
-            ? "Как вас показывать в семье?"
-            : "How should the family see you?"
-      }
-      hint={
-        step === "recovery-code"
-          ? language === "ru"
-            ? "Если забудете пароль, эта фраза поможет быстро вернуть доступ. Позже её можно поменять в настройках."
-            : "If you forget your password, this phrase helps restore access quickly. You can change it later in settings."
-          : language === "ru"
-            ? "Это имя будет видно в семейной ленте, аптечке и отметках о приёмах."
-            : "This name appears in the family timeline, medicine cabinet, and medication logs."
-      }
-      maxWidthClassName="max-w-[28rem]"
-      closeDisabled={saveMutation.isPending || recoveryCodeMutation.isPending}
-    >
-      <div className="soft-panel rounded-[28px] p-5 sm:p-6">
-        {step === "recovery-code" ? (
-          <>
+    <>
+      <FullscreenOverlay
+        isOpen={isOpen}
+        onClose={step === "recovery-code" ? closeRecoveryStep : closeDisplayStep}
+        backLabel={language === "ru" ? "Пропустить" : "Skip"}
+        title={
+          step === "recovery-code"
+            ? language === "ru"
+              ? "Добавьте секретную фразу"
+              : "Add a recovery phrase"
+            : language === "ru"
+              ? "Как вас показывать в семье?"
+              : "How should the family see you?"
+        }
+        hint={
+          step === "recovery-code"
+            ? language === "ru"
+              ? "Если забудете пароль, эта фраза поможет быстро вернуть доступ. Позже её можно поменять в настройках."
+              : "If you forget your password, this phrase helps restore access quickly. You can change it later in settings."
+            : language === "ru"
+              ? "Это имя будет видно в семейной ленте, аптечке и отметках о приёмах."
+              : "This name appears in the family timeline, medicine cabinet, and medication logs."
+        }
+        maxWidthClassName="max-w-[28rem]"
+        closeDisabled={saveMutation.isPending || recoveryCodeMutation.isPending}
+      >
+        <div className="soft-panel rounded-[28px] p-5 sm:p-6">
+          {step === "recovery-code" ? (
+            <>
             <label className="block">
               <span className="soft-field-label">
                 {language === "ru" ? "Секретная фраза" : "Recovery phrase"}
@@ -263,9 +294,9 @@ export function DisplayNameOnboardingOverlay() {
                     : "Save"}
               </button>
             </div>
-          </>
-        ) : (
-          <>
+            </>
+          ) : (
+            <>
             <div className="grid gap-4">
               <label className="block">
                 <span className="soft-field-label">
@@ -368,9 +399,21 @@ export function DisplayNameOnboardingOverlay() {
                     : "Save"}
               </button>
             </div>
-          </>
-        )}
-      </div>
-    </FullscreenOverlay>
+            </>
+          )}
+        </div>
+      </FullscreenOverlay>
+
+      <PostRegistrationOfferDialogContainer
+        isOpen={isPostRegistrationOfferOpen}
+        language={language}
+        isPending={isUpgradePending}
+        errorMessage={upgradeErrorMessage}
+        successMessage={restoreSuccessMessage}
+        onClose={closePostRegistrationOfferPermanently}
+        onUpgrade={upgradeToPlus}
+        onRestorePurchases={restorePurchases}
+      />
+    </>
   );
 }
