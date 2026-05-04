@@ -17,6 +17,7 @@ import {
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
 import { useAppStore } from "@shared/store/useAppStore";
 import { normalizeFamilyAccessPolicy } from "@shared/familyAccess/policy";
+import { localizeGenericFamilyName } from "@shared/utils/genericLabels";
 import { SubscriptionUpgradeDialog } from "@client/subscription/SubscriptionUpgradeDialog";
 import { useSubscriptionUpgradeDialogState } from "@client/subscription/useSubscriptionUpgradeDialogState";
 import { useUpgradeDialogOpenState } from "@client/subscription/useUpgradeDialogOpenState";
@@ -127,8 +128,12 @@ export function FamilyPage() {
     currentMemberPolicy.childIds.length > 0 ||
     currentMemberPolicy.pillboxAccess !== "none" ||
     currentMemberPolicy.cabinetAccess !== "none";
+  const currentFamilyDisplayName =
+    localizeGenericFamilyName(family?.name, language) ||
+    localizeGenericFamilyName(currentFamilyName, language) ||
+    "";
   const familyTitle =
-    family?.name?.trim() || currentFamilyName?.trim() || tFamily(language, "title");
+    currentFamilyDisplayName || tFamily(language, "title");
 
   useEffect(() => {
     if (family) {
@@ -532,7 +537,7 @@ export function FamilyPage() {
           <FamilyNameSection
             language={language}
             familyName={familyName}
-            currentFamilyName={family?.name}
+            currentFamilyName={currentFamilyDisplayName}
             canManageFamily={canManageFamily}
             isEditing={isEditingFamilyName}
             isFamilyLoading={isFamilyLoading}
@@ -540,12 +545,12 @@ export function FamilyPage() {
             onFamilyNameChange={setFamilyName}
             onToggleEditing={() => {
               if (isEditingFamilyName) {
-                setFamilyName(family?.name ?? "");
+                setFamilyName(currentFamilyDisplayName);
               }
               setIsEditingFamilyName((current) => !current);
             }}
             onCancel={() => {
-              setFamilyName(family?.name ?? "");
+              setFamilyName(currentFamilyDisplayName);
               setIsEditingFamilyName(false);
             }}
             onSubmit={handleFamilySubmit}

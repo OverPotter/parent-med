@@ -4,6 +4,10 @@
 
 import { detectPreferredLanguage } from "@shared/i18n";
 import { LEGACY_FULL_FAMILY_ACCESS_POLICY } from "@shared/familyAccess/policy";
+import {
+  localizeGenericAccountDisplayName,
+  localizeGenericFamilyName,
+} from "@shared/utils/genericLabels";
 import type {
   Family,
   Account,
@@ -255,9 +259,10 @@ interface RawFamilyInvitePreview {
 }
 
 export function toFamily(r: RawFamily): Family {
+  const language = detectPreferredLanguage();
   return {
     id: r.id,
-    name: r.name,
+    name: localizeGenericFamilyName(r.name, language),
     cabinetMemberAccountIds: r.cabinet_member_account_ids ?? [],
     ownerAccountId: r.owner_account_id ?? null,
     billingAccountId: r.billing_account_id ?? null,
@@ -295,16 +300,17 @@ function toFamilyAccessPolicy(raw: RawAccount["access_policy"]): FamilyAccessPol
 }
 
 export function toAccount(r: RawAccount): Account {
+  const preferredLanguage = r.preferred_language ?? detectPreferredLanguage();
   return {
     id: r.id,
     email: r.email,
     familyId: r.family_id,
-    displayName: r.display_name,
+    displayName: localizeGenericAccountDisplayName(r.display_name, preferredLanguage),
     needsProfileCompletion: Boolean(r.needs_profile_completion),
     hasRecoveryCode: Boolean(r.has_recovery_code),
     relationshipLabel: r.relationship_label ?? null,
     phone: r.phone ?? null,
-    preferredLanguage: r.preferred_language ?? detectPreferredLanguage(),
+    preferredLanguage,
     familyRole: r.family_role,
     accessPolicy: toFamilyAccessPolicy(r.access_policy),
   };

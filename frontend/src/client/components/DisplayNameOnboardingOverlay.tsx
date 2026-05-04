@@ -6,6 +6,7 @@ import { useI18n } from "@shared/hooks/useI18n";
 import { useAppStore } from "@shared/store/useAppStore";
 import { fetchFamilies, updateFamilyMemberProfile, updateMyFamily } from "@shared/api/families";
 import { isRecoveryCodeValid, normalizeRecoveryCode } from "@shared/utils/recoveryCode";
+import { localizeGenericFamilyName } from "@shared/utils/genericLabels";
 import { PostRegistrationOfferDialogContainer } from "@client/subscription/PostRegistrationOfferDialogContainer";
 import { usePostRegistrationOfferState } from "@client/subscription/usePostRegistrationOfferState";
 import { tFamily } from "../pages/family/copy";
@@ -78,8 +79,8 @@ export function DisplayNameOnboardingOverlay() {
   });
 
   useEffect(() => {
-    setFamilyName(currentFamily?.name ?? currentFamilyName ?? "");
-  }, [currentFamily?.name, currentFamilyName]);
+    setFamilyName(localizeGenericFamilyName(currentFamily?.name ?? currentFamilyName, language));
+  }, [currentFamily?.name, currentFamilyName, language]);
 
   const didSkipRecoveryCodeOnboarding = () =>
     Boolean(
@@ -105,7 +106,9 @@ export function DisplayNameOnboardingOverlay() {
     setDisplayName("");
     setRelationshipLabel("");
     setPhone("");
-    setFamilyName(nextFamilyName ?? currentFamily?.name ?? currentFamilyName ?? "");
+    setFamilyName(
+      localizeGenericFamilyName(nextFamilyName ?? currentFamily?.name ?? currentFamilyName, language)
+    );
   };
 
   useEffect(() => {

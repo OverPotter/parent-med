@@ -14,6 +14,7 @@ import {
 } from "@shared/security/authTokenStorage";
 import { buildClientSessionTokens, isCookieSessionMarker } from "@shared/security/authSession";
 import { appLog } from "@shared/utils/appLog";
+import { localizeGenericFamilyName } from "@shared/utils/genericLabels";
 
 type Theme = "light" | "dark" | "system";
 type ResolvedTheme = "light" | "dark";
@@ -253,7 +254,9 @@ export const useAppStore = create<AppState>()(
             accountFamilyRole: session.account.familyRole,
             accountAccessPolicy: session.account.accessPolicy,
             currentFamilyId: session.family.id,
-            currentFamilyName: session.family.name,
+            currentFamilyName:
+              localizeGenericFamilyName(session.family.name, session.account.preferredLanguage) ||
+              null,
           };
         });
         if (isNativeIOSRuntime()) {
@@ -292,7 +295,8 @@ export const useAppStore = create<AppState>()(
             accountFamilyRole: state.account.familyRole,
             accountAccessPolicy: state.account.accessPolicy,
             currentFamilyId: state.family.id,
-            currentFamilyName: state.family.name,
+            currentFamilyName:
+              localizeGenericFamilyName(state.family.name, state.account.preferredLanguage) || null,
           };
         }),
       setAccountPreferredLanguage: (language) =>
@@ -336,10 +340,10 @@ export const useAppStore = create<AppState>()(
         }
       },
       setCurrentFamily: (family) =>
-        set({
+        set((state) => ({
           currentFamilyId: family?.id ?? null,
-          currentFamilyName: family?.name ?? null,
-        }),
+          currentFamilyName: localizeGenericFamilyName(family?.name, state.language) || null,
+        })),
     }),
     {
       name: "pillpath-app",
