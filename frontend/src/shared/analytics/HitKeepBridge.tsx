@@ -1,57 +1,10 @@
-/** HitKeep: скрипт, page_view, identify. */
+/** HitKeep: first-party events without third-party web tracker script. */
 
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { Capacitor } from "@capacitor/core";
 import { AnalyticsEvents } from "./events";
-import {
-  flushHitKeepQueue,
-  isHitKeepConfigured,
-  trackNativePageView,
-  trackEvent,
-  trackSessionIdentify,
-} from "./hitkeep";
+import { isHitKeepConfigured, trackEvent, trackSessionIdentify } from "./hitkeep";
 import { useAppStore } from "@shared/store/useAppStore";
-
-const SCRIPT_ID = "hitkeep-tracker";
-
-function HitKeepScriptLoader() {
-  useEffect(() => {
-    const url = import.meta.env.VITE_HITKEEP_SCRIPT_URL?.trim();
-    if (!url) {
-      if (import.meta.env.PROD) {
-        console.warn(
-          "[HitKeep] PROD: нет VITE_HITKEEP_SCRIPT_URL — скрипт не грузится (см. frontend/.env, make build-frontend)"
-        );
-      }
-      return;
-    }
-    const host = window.location.hostname;
-    const isNativeRuntime = Capacitor.isNativePlatform();
-    if (isNativeRuntime) {
-      return;
-    }
-    if (!isNativeRuntime && (host === "localhost" || host === "127.0.0.1")) {
-      console.warn(
-        "[HitKeep] localhost: трекер не шлёт события — используйте pillpath.localhost:3000 / :5173"
-      );
-    }
-    if (document.getElementById(SCRIPT_ID)) {
-      flushHitKeepQueue();
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = SCRIPT_ID;
-    script.async = true;
-    // HitKeep: как «Collect DNT» в UI — иначе при navigator.doNotTrack === "1" hk.js ставит пустой window.hk.event
-    script.setAttribute("data-collect-dnt", "true");
-    script.src = url;
-    script.onload = () => flushHitKeepQueue();
-    document.head.appendChild(script);
-  }, []);
-
-  return null;
-}
 
 function HitKeepPageViews() {
   const location = useLocation();
@@ -68,14 +21,6 @@ function HitKeepPageViews() {
       return;
     }
     prevPath.current = path;
-    if (Capacitor.isNativePlatform()) {
-      void trackNativePageView({
-        path,
-        isAuthenticated: Boolean(accountId),
-        role: accountId ? role : "guest",
-      });
-      return;
-    }
     trackEvent(AnalyticsEvents.PAGE_VIEW, {
       path,
       is_authenticated: Boolean(accountId),
@@ -111,7 +56,6 @@ function HitKeepIdentify() {
 export function HitKeepBridge() {
   return (
     <>
-      <HitKeepScriptLoader />
       <HitKeepPageViews />
       <HitKeepIdentify />
     </>

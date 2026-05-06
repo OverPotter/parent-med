@@ -186,8 +186,8 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             {language === "ru"
-              ? "Диагностические и аналитические данные: базовые события использования приложения, просмотры экранов, техническая телеметрия сессии и связанные служебные аналитические идентификаторы. На публичном сайте аналитические cookies включаются после вашего согласия там, где это применимо."
-              : "Diagnostics and analytics data: basic app usage events, screen views, session-level technical telemetry, and related service analytics identifiers. On the public website, analytics cookies are enabled after your consent where applicable."}
+              ? "Диагностические и аналитические данные: базовые события использования приложения или сайта, просмотры страниц и экранов, техническая телеметрия сессии и связанные служебные аналитические идентификаторы. Для этой внутренней product-аналитики мы не используем analytics cookies и не запрашиваем tracking-разрешение ATT."
+              : "Diagnostics and analytics data: basic app or website usage events, page and screen views, session-level technical telemetry, and related service analytics identifiers. We do not use analytics cookies for this internal product analytics and we do not request ATT tracking permission."}
           </li>
         </ul>
         <p>
@@ -253,8 +253,8 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             {language === "ru"
-              ? "Чтобы анализировать использование продукта, диагностировать ошибки и улучшать интерфейс. Для публичного сайта аналитические cookies используются только после согласия там, где это применимо."
-              : "To analyze product usage, diagnose issues, and improve the interface. For the public website, analytics cookies are used only after consent where applicable."}
+              ? "Чтобы анализировать использование продукта, диагностировать ошибки и улучшать интерфейс. Для этого могут использоваться просмотры экранов и служебные события без analytics cookies и без ATT-tracking."
+              : "To analyze product usage, diagnose issues, and improve the interface. This may rely on screen views and service events without analytics cookies and without ATT-based tracking."}
           </li>
         </ul>
 
@@ -263,8 +263,8 @@ export function PrivacyPolicyPage() {
         </h2>
         <p>
           {language === "ru"
-            ? "Мы не продаём персональные данные и не передаём их рекламным брокерам. Данные могут обрабатываться ограниченным кругом подрядчиков, которые помогают нам предоставлять сервис: хостинг и базы данных, push-инфраструктура, аналитика при наличии согласия, а также подписочная и billing-инфраструктура. Мы требуем, чтобы такие подрядчики обеспечивали защиту данных не слабее той, что описана в этой политике."
-            : "We do not sell personal data and we do not share it with data brokers. Data may be processed by a limited set of service providers that help us operate the app: hosting and database infrastructure, push infrastructure, analytics where consent is provided, and subscription or billing infrastructure. We require those providers to protect user data to the same or a comparable standard described in this policy."}
+            ? "Мы не продаём персональные данные и не передаём их рекламным брокерам. Данные могут обрабатываться ограниченным кругом подрядчиков, которые помогают нам предоставлять сервис: хостинг и базы данных, push-инфраструктура, внутренняя product-аналитика, а также подписочная и billing-инфраструктура. Мы требуем, чтобы такие подрядчики обеспечивали защиту данных не слабее той, что описана в этой политике."
+            : "We do not sell personal data and we do not share it with data brokers. Data may be processed by a limited set of service providers that help us operate the service: hosting and database infrastructure, push infrastructure, internal product analytics, and subscription or billing infrastructure. We require those providers to protect user data to the same or a comparable standard described in this policy."}
         </p>
         <p>
           {language === "ru"
@@ -278,8 +278,8 @@ export function PrivacyPolicyPage() {
         </p>
         <p>
           {language === "ru"
-            ? "Если в текущей сборке включён сервис аналитики HitKeep, приложение может отправлять события использования, просмотры экранов, технические сведения о сессии и, для авторизованного аккаунта, служебный аналитический идентификатор аккаунта и семейную роль. Для публичного сайта аналитические cookies и связанные веб-события включаются только после согласия там, где это применимо. Эти данные используются для product-аналитики, диагностики и улучшения интерфейса, а не для рекламы."
-            : "If the HitKeep analytics service is enabled in the current build, the app may send usage events, screen views, session-level technical data, and, for signed-in users, a service analytics account identifier and family role. For the public website, analytics cookies and related web events are enabled only after consent where applicable. This data is used for product analytics, diagnostics, and interface improvements, not for advertising."}
+            ? "Если в текущей сборке включён сервис аналитики HitKeep, приложение или публичный сайт могут отправлять события использования, просмотры страниц или экранов, технические сведения о сессии и, для авторизованного аккаунта, служебный аналитический идентификатор аккаунта и семейную роль. Такая аналитика используется только как first-party internal product analytics, без analytics cookies и без ATT-tracking. Эти данные используются для product-аналитики, диагностики и улучшения интерфейса, а не для рекламы."
+            : "If the HitKeep analytics service is enabled in the current build, the app or public website may send usage events, page or screen views, session-level technical data, and, for signed-in users, a service analytics account identifier and family role. This analytics is used only as first-party internal product analytics, without analytics cookies and without ATT-based tracking. This data is used for product analytics, diagnostics, and interface improvements, not for advertising."}
         </p>
 
         <h2 className="text-base font-semibold text-main">
@@ -292,8 +292,8 @@ export function PrivacyPolicyPage() {
         </p>
         <p>
           {language === "ru"
-            ? "Запросить удаление можно через встроенное удаление аккаунта в приложении или через раздел поддержки. Если закон требует сохранить часть данных, например платёжные, налоговые или anti-fraud записи, мы сохраняем только тот минимум и только на требуемый срок. При удалении push-подписки и analytics-consent ваши соответствующие настройки прекращают применяться к дальнейшему использованию."
-            : "You can request deletion through the in-app account deletion flow or through support. If law requires us to keep limited data, such as payment, tax, or anti-fraud records, we retain only that minimum and only for the required period. When you disable push subscriptions or withdraw analytics consent, those settings stop applying to future use."}
+            ? "Запросить удаление можно через встроенное удаление аккаунта в приложении или через раздел поддержки. Если закон требует сохранить часть данных, например платёжные, налоговые или anti-fraud записи, мы сохраняем только тот минимум и только на требуемый срок. При удалении push-подписки и отзыве analytics-consent на публичном сайте соответствующие настройки прекращают применяться к дальнейшему использованию."
+            : "You can request deletion through the in-app account deletion flow or through support. If law requires us to keep limited data, such as payment, tax, or anti-fraud records, we retain only that minimum and only for the required period. When you disable push subscriptions or withdraw analytics consent on the public website, those settings stop applying to future use."}
         </p>
         <p>
           {language === "ru"
@@ -312,8 +312,8 @@ export function PrivacyPolicyPage() {
           </li>
           <li>
             {language === "ru"
-              ? "На публичном сайте аналитические cookies включаются только после согласия там, где применимо. В приложении часть служебной аналитики и диагностики может использоваться при включённой аналитической инфраструктуре текущей сборки."
-              : "On the public website, analytics cookies are enabled only after consent where applicable. In the app, some service analytics and diagnostics may be used when the current build has analytics infrastructure enabled."}
+              ? "Для внутренней аналитики мы не используем analytics cookies и не применяем ATT-tracking."
+              : "We do not use analytics cookies for internal analytics and we do not apply ATT-based tracking."}
           </li>
           <li>
             {language === "ru"

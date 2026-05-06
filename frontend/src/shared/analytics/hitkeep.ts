@@ -1,12 +1,11 @@
-/** HitKeep: очередь до hk.js, sanitize props. */
+/** HitKeep: first-party transport, sanitize props. */
 
 import { Capacitor } from "@capacitor/core";
 import { hashIdentifierForAnalytics, type AnalyticsHashKind } from "@shared/api/analytics";
 import { AnalyticsEvents } from "./events";
 
-const queue: Array<[string, Record<string, unknown> | undefined]> = [];
-const NATIVE_SESSION_KEY = "hk_native_session_v1";
-const NATIVE_SESSION_TTL_MS = 30 * 60 * 1000;
+const SESSION_KEY = "hk_session_v1";
+const SESSION_TTL_MS = 30 * 60 * 1000;
 
 export function isHitKeepConfigured(): boolean {
   return Boolean(import.meta.env.VITE_HITKEEP_SCRIPT_URL?.trim());
@@ -44,31 +43,8 @@ function sanitizeProps(props?: Record<string, unknown>): Record<string, unknown>
   return Object.keys(out).length ? out : undefined;
 }
 
-let flushTimer: number | null = null;
-
-function scheduleFlush(): void {
-  if (typeof window === "undefined" || flushTimer !== null) {
-    return;
-  }
-  flushTimer = window.setTimeout(() => {
-    flushTimer = null;
-    flushHitKeepQueue();
-  }, 0);
-}
-
 export function flushHitKeepQueue(): void {
-  if (isNativeRuntime()) {
-    return;
-  }
-  while (queue.length > 0 && window.hk?.event) {
-    const [name, props] = queue.shift()!;
-    try {
-      window.hk.event(name, props);
-    } catch {
-      queue.unshift([name, props]);
-      break;
-    }
-  }
+  // No-op: events are posted directly without a client-side queue.
 }
 
 export function trackEvent(name: string, props?: Record<string, unknown>): void {
@@ -79,18 +55,7 @@ export function trackEvent(name: string, props?: Record<string, unknown>): void 
   if (typeof window === "undefined") {
     return;
   }
-  if (isNativeRuntime()) {
-    void postNativeHitKeepEvent(name, payload);
-    return;
-  }
-  if (window.hk?.event) {
-    try {
-      window.hk.event(name, payload);
-    } catch {}
-    return;
-  }
-  queue.push([name, payload]);
-  scheduleFlush();
+  void postHitKeepEvent(name, payload);
 }
 
 function randomUuid(): string {
@@ -106,15 +71,15 @@ function randomUuid(): string {
   );
 }
 
-function getNativeSessionId(): string {
+function getSessionId(): string {
   const now = Date.now();
   try {
-    const raw = window.sessionStorage.getItem(NATIVE_SESSION_KEY);
+    const raw = window.sessionStorage.getItem(SESSION_KEY);
     if (raw) {
       const [sessionId, timestampRaw] = raw.split("|");
       const timestamp = Number.parseInt(timestampRaw ?? "", 10);
-      if (sessionId && Number.isFinite(timestamp) && now - timestamp < NATIVE_SESSION_TTL_MS) {
-        window.sessionStorage.setItem(NATIVE_SESSION_KEY, `${sessionId}|${now}`);
+      if (sessionId && Number.isFinite(timestamp) && now - timestamp < SESSION_TTL_MS) {
+        window.sessionStorage.setItem(SESSION_KEY, `${sessionId}|${now}`);
         return sessionId;
       }
     }
@@ -124,23 +89,20 @@ function getNativeSessionId(): string {
 
   const sessionId = randomUuid();
   try {
-    window.sessionStorage.setItem(NATIVE_SESSION_KEY, `${sessionId}|${now}`);
+    window.sessionStorage.setItem(SESSION_KEY, `${sessionId}|${now}`);
   } catch {
     // Ignore storage failures for transient analytics state.
   }
   return sessionId;
 }
 
-async function postNativeHitKeepEvent(
-  name: string,
-  props?: Record<string, unknown>
-): Promise<void> {
+async function postHitKeepEvent(name: string, props?: Record<string, unknown>): Promise<void> {
   const origin = getHitKeepOrigin();
   if (!origin || typeof window === "undefined") {
     return;
   }
 
-  const sessionId = getNativeSessionId();
+  const sessionId = getSessionId();
   try {
     await fetch(`${origin}/ingest/event`, {
       method: "POST",
@@ -168,7 +130,7 @@ export async function trackNativePageView(args: {
     return;
   }
 
-  const sessionId = getNativeSessionId();
+  const sessionId = getSessionId();
   const viewportWidth = typeof window.innerWidth === "number" ? window.innerWidth : null;
   const viewportHeight = typeof window.innerHeight === "number" ? window.innerHeight : null;
   const screenWidth = typeof window.screen?.width === "number" ? window.screen.width : null;

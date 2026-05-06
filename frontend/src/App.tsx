@@ -1,6 +1,6 @@
 /** Роутинг: admin / client. */
 
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, refreshSession } from "@shared/api/auth";
 import { FAMILY_ACCESS_REFRESH_MS } from "@shared/hooks/useFamilyAccessQueryOptions";
@@ -9,12 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { applySessionToClient, setBearerToken, setRefreshHandler } from "@shared/api/client";
 import { useAppStore } from "@shared/store/useAppStore";
-import { CookieConsentBanner } from "@shared/components/CookieConsentBanner";
 import { NetworkStatusBanner } from "@shared/components/NetworkStatusBanner";
-import {
-  getCookieConsentDecision,
-  type CookieConsentDecision,
-} from "@shared/privacy/cookieConsent";
 import { HitKeepBridge } from "@shared/analytics";
 import { PUBLIC_WEBSITE_SHARED_ROUTE_PATHS } from "@/app/publicWebsiteRoutes";
 import { NativeUnauthedBootReady } from "@/app/boot/NativeUnauthedBootReady";
@@ -325,24 +320,7 @@ export default function App() {
   const isNonCriticalStartupReady = useDeferredNonCriticalStartupReady();
   const hasSession = Boolean(authToken || accountId);
   const shouldMountClientRuntime = isNonCriticalStartupReady && hasSession && role !== "admin";
-  const [cookieConsent, setCookieConsent] = useState<CookieConsentDecision | null>(() =>
-    getCookieConsentDecision()
-  );
-
-  useEffect(() => {
-    const handleConsentChanged = (event: Event) => {
-      const detail = (event as CustomEvent<CookieConsentDecision>).detail;
-      if (detail === "accepted" || detail === "rejected") {
-        setCookieConsent(detail);
-        return;
-      }
-      setCookieConsent(getCookieConsentDecision());
-    };
-
-    window.addEventListener("cookie-consent:changed", handleConsentChanged as EventListener);
-    return () =>
-      window.removeEventListener("cookie-consent:changed", handleConsentChanged as EventListener);
-  }, []);
+  const shouldMountAnalyticsBridge = isNonCriticalStartupReady;
 
   useEffect(() => {
     if (!hydrated || typeof window === "undefined") {
@@ -411,7 +389,7 @@ export default function App() {
       <IOSKeyboardViewportSync />
       <IOSBackSwipeZone />
       <NativeUnauthedBootReady />
-      {isNonCriticalStartupReady ? <HitKeepBridge /> : null}
+      {shouldMountAnalyticsBridge ? <HitKeepBridge /> : null}
       <ThemeSync />
       <RouteScrollReset />
       {!isNativeRuntime && import.meta.env.DEV ? <MobileInteractionDiagnostics /> : null}
@@ -529,7 +507,6 @@ export default function App() {
           </Routes>
         </div>
       </Suspense>
-      {cookieConsent === null ? <CookieConsentBanner /> : null}
     </BrowserRouter>
   );
 }
