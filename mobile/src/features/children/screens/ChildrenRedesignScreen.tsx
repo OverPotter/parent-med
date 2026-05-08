@@ -7,21 +7,26 @@ import {
   Text,
   View,
 } from "react-native";
-import { ChildrenBottomTabBar } from "../components/ChildrenBottomTabBar";
 import { ChildrenChildCard } from "../components/ChildrenChildCard";
 import { buildChildrenScreenContent } from "../model/childrenRedesign";
 import { styles } from "./childrenRedesignStyles";
 import { formatElapsedDuration } from "../utils/formatElapsedDuration";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import {
+  MobileBottomTabBar,
+  MobileBottomTabKey,
+} from "../../../shared/components/MobileBottomTabBar";
 
 type ChildrenRedesignScreenProps = {
   onOpenChildProfile?: (cardId: string) => void;
+  onSelectTab?: (key: MobileBottomTabKey) => void;
 };
 
 const noop = () => {};
 
 export function ChildrenRedesignScreen({
   onOpenChildProfile,
+  onSelectTab,
 }: ChildrenRedesignScreenProps) {
   const { locale } = useMobileI18n();
   const childrenScreenContent = buildChildrenScreenContent(locale);
@@ -139,7 +144,10 @@ export function ChildrenRedesignScreen({
           </Pressable>
         </ScrollView>
 
-        <ChildrenBottomTabBar tabs={childrenScreenContent.tabs} />
+        <MobileBottomTabBar
+          items={childrenScreenContent.tabs}
+          onSelectTab={onSelectTab}
+        />
       </View>
     </View>
   );

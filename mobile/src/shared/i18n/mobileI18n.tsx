@@ -64,6 +64,38 @@ export type TranslationTree = {
       all: string;
     };
   };
+  editProfileScreen: {
+    backToProfile: string;
+    title: string;
+    subtitle: string;
+    changePhoto: string;
+    sections: {
+      main: string;
+      health: string;
+      settings: string;
+    };
+    rows: {
+      childName: string;
+      birthDate: string;
+      allergies: string;
+      notes: string;
+      babyMode: string;
+      liveActivity: string;
+    };
+    descriptions: {
+      allergies: string;
+      notes: string;
+      babyMode: string;
+      liveActivity: string;
+    };
+    values: {
+      birthDate: string;
+    };
+    actions: {
+      save: string;
+      delete: string;
+    };
+  };
 };
 
 const ru: TranslationTree = {
@@ -127,6 +159,38 @@ const ru: TranslationTree = {
       month: "30 дней",
       halfYear: "6 месяцев",
       all: "Всё время",
+    },
+  },
+  editProfileScreen: {
+    backToProfile: "К профилю ребёнка",
+    title: "Редактировать профиль",
+    subtitle: "Основные данные и настройки Эдика.",
+    changePhoto: "Сменить фото",
+    sections: {
+      main: "Основные данные",
+      health: "Здоровье и заметки",
+      settings: "Настройки",
+    },
+    rows: {
+      childName: "Имя ребёнка",
+      birthDate: "Дата рождения",
+      allergies: "Аллергии",
+      notes: "Заметки",
+      babyMode: "Режим малыша",
+      liveActivity: "Live Activity",
+    },
+    descriptions: {
+      allergies: "Орехи, сезонная аллергия",
+      notes: "Важные наблюдения и комментарии",
+      babyMode: "Добавляет сон, кормление и историю дня.",
+      liveActivity: "Показывать события на экране блокировки.",
+    },
+    values: {
+      birthDate: "4 февраля 2022",
+    },
+    actions: {
+      save: "Сохранить изменения",
+      delete: "Удалить ребёнка",
     },
   },
 };
@@ -193,6 +257,38 @@ const en: TranslationTree = {
       month: "30 days",
       halfYear: "6 months",
       all: "All time",
+    },
+  },
+  editProfileScreen: {
+    backToProfile: "Back to child profile",
+    title: "Edit profile",
+    subtitle: "Core details and Edik's settings.",
+    changePhoto: "Change photo",
+    sections: {
+      main: "Core details",
+      health: "Health and notes",
+      settings: "Settings",
+    },
+    rows: {
+      childName: "Child name",
+      birthDate: "Birth date",
+      allergies: "Allergies",
+      notes: "Notes",
+      babyMode: "Baby mode",
+      liveActivity: "Live Activity",
+    },
+    descriptions: {
+      allergies: "Nuts, seasonal allergy",
+      notes: "Important observations and comments",
+      babyMode: "Adds sleep, feeding, and day history.",
+      liveActivity: "Show events on the lock screen.",
+    },
+    values: {
+      birthDate: "4 February 2022",
+    },
+    actions: {
+      save: "Save changes",
+      delete: "Delete child",
     },
   },
 };

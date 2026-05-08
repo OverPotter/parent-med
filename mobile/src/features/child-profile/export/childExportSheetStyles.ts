@@ -23,6 +23,14 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -8 },
     overflow: "hidden",
   },
+  topSwipeZone: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 126,
+    zIndex: 3,
+  },
   content: {
     flex: 1,
     paddingTop: 12,
@@ -62,11 +70,8 @@ export const styles = StyleSheet.create({
     lineHeight: 17,
     fontWeight: "500",
   },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 12,
+  body: {
+    paddingBottom: 4,
   },
   section: {
     marginTop: 12,
@@ -173,7 +178,8 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
   },
   footer: {
-    paddingTop: 12,
+    marginTop: 4,
+    paddingTop: 0,
     flexDirection: "row",
     gap: 10,
   },

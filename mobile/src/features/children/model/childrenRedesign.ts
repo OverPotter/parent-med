@@ -4,6 +4,10 @@ import {
   childrenScreenSpec,
 } from "../../../redesign/screens/children/manifest";
 import { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import {
+  MobileBottomTabItem,
+  MobileBottomTabKey,
+} from "../../../shared/components/MobileBottomTabBar";
 
 type SourceQuickActionSpec = {
   nodeId: string;
@@ -67,12 +71,6 @@ export type ChildCard = {
   quickActions: ChildQuickAction[];
 };
 
-export type BottomTab = {
-  nodeId: string;
-  label: string;
-  active: boolean;
-};
-
 const screenSpec = childrenScreenSpec as SourceChildrenScreenSpec;
 
 const avatarSequence = [
@@ -118,9 +116,8 @@ function buildQuickActionMap(
 
 function mapQuickAction(
   action: SourceQuickActionSpec,
-  locale: MobileLocale,
+  quickActionByTitle: Record<string, Omit<ChildQuickAction, "nodeId">>,
 ): ChildQuickAction {
-  const quickActionByTitle = buildQuickActionMap(locale);
   const mapped = quickActionByTitle[action.title];
 
   if (!mapped) {
@@ -138,8 +135,42 @@ function mapQuickAction(
   };
 }
 
+function mapTabKey(label: string): MobileBottomTabKey {
+  if (label === "Дети" || label === "Children") {
+    return "children";
+  }
+
+  if (label === "Аналитика" || label === "Analytics") {
+    return "analytics";
+  }
+
+  if (label === "Таблетница" || label === "Pillbox") {
+    return "pillbox";
+  }
+
+  if (label === "Аптечка" || label === "Cabinet") {
+    return "cabinet";
+  }
+
+  return "more";
+}
+
 export function buildChildrenScreenContent(locale: MobileLocale) {
   const isRu = locale === "ru";
+  const quickActionByTitle = buildQuickActionMap(locale);
+  const sourceTabs = isRu
+    ? screenSpec.bottomNavigation.tabs
+    : screenSpec.bottomNavigation.tabs.map((tab) => ({
+        ...tab,
+        label:
+          tab.label === "Дети"
+            ? "Children"
+            : tab.label === "Таблетница"
+              ? "Pillbox"
+              : tab.label === "Аптечка"
+                ? "Cabinet"
+                : "More",
+      }));
 
   return {
     backgroundSource: childrenScreenAssets.background,
@@ -156,28 +187,22 @@ export function buildChildrenScreenContent(locale: MobileLocale) {
       liveActivityText: card.info.liveActivityChip.text ?? "",
       avatarSource: avatarSequence[index % avatarSequence.length],
       quickActions: card.quickActions.map((action) =>
-        mapQuickAction(action, locale),
+        mapQuickAction(action, quickActionByTitle),
       ),
     })),
-    tabs: isRu
-      ? screenSpec.bottomNavigation.tabs
-      : screenSpec.bottomNavigation.tabs.map((tab) => ({
-          ...tab,
-          label:
-            tab.label === "Дети"
-              ? "Children"
-              : tab.label === "Таблетница"
-                ? "Pillbox"
-                : tab.label === "Аптечка"
-                  ? "Cabinet"
-                  : "More",
-        })),
+    tabs: sourceTabs.map(
+      (tab): MobileBottomTabItem => ({
+        key: mapTabKey(tab.label),
+        label: tab.label,
+        active: tab.active,
+      }),
+    ),
   } satisfies {
     backgroundSource: ImageSourcePropType;
     headerTitle: string;
     headerSubtitle: string;
     addChildLabel: string;
     cards: ChildCard[];
-    tabs: BottomTab[];
+    tabs: MobileBottomTabItem[];
   };
 }

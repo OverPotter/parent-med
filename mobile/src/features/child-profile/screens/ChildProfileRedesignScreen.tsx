@@ -25,6 +25,8 @@ type ChildProfileRedesignScreenProps = {
   child: ChildCard;
   visible: boolean;
   onBack: () => void;
+  onEditProfile?: () => void;
+  onOpenAnalytics?: () => void;
 };
 
 const noop = () => {};
@@ -33,10 +35,14 @@ export function ChildProfileRedesignScreen({
   child,
   visible,
   onBack,
+  onEditProfile,
+  onOpenAnalytics,
 }: ChildProfileRedesignScreenProps) {
   const { copy, locale } = useMobileI18n();
   const content = buildChildProfileScreenContent(child, locale);
   const [isExportSheetOpen, setIsExportSheetOpen] = useState(false);
+  const handleEditProfile = onEditProfile ?? noop;
+  const handleOpenAnalytics = onOpenAnalytics ?? noop;
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
     enabled: visible && !isExportSheetOpen,
@@ -123,7 +129,7 @@ export function ChildProfileRedesignScreen({
               </View>
 
               <Pressable
-                onPress={noop}
+                onPress={handleEditProfile}
                 style={({ pressed }) => [
                   styles.editButton,
                   pressed ? styles.editButtonPressed : null,
@@ -145,7 +151,18 @@ export function ChildProfileRedesignScreen({
                   style={styles.journalRow}
                 >
                   {row.map((item) => (
-                    <JournalItem key={item.id} item={item} />
+                    <JournalItem
+                      key={item.id}
+                      item={item}
+                      onPress={() => {
+                        if (item.iconVariant === "illnessBadge") {
+                          handleOpenAnalytics();
+                          return;
+                        }
+
+                        noop();
+                      }}
+                    />
                   ))}
                 </View>
               ))}
@@ -201,10 +218,16 @@ function StatsChip({ label, value }: { label: string; value: string }) {
   );
 }
 
-function JournalItem({ item }: { item: ChildProfileJournalItem }) {
+function JournalItem({
+  item,
+  onPress,
+}: {
+  item: ChildProfileJournalItem;
+  onPress: () => void;
+}) {
   return (
     <Pressable
-      onPress={noop}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.journalItem,
         pressed ? styles.journalItemPressed : null,
