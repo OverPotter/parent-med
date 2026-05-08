@@ -13,9 +13,8 @@ export function useBottomSheetSwipeDismiss({
   const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (visible) {
-      translateY.setValue(0);
-    }
+    translateY.stopAnimation();
+    translateY.setValue(0);
   }, [translateY, visible]);
 
   const animateSheetBack = () => {
@@ -34,6 +33,7 @@ export function useBottomSheetSwipeDismiss({
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) {
+        translateY.setValue(0);
         onClose();
       }
     });

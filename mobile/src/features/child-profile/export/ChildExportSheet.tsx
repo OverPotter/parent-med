@@ -1,7 +1,7 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
-import { Animated, Pressable, Text, View } from "react-native";
+import { Animated, Pressable, ScrollView, Text, View } from "react-native";
 import { useBottomSheetSwipeDismiss } from "../../../shared/hooks/useBottomSheetSwipeDismiss";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import {
@@ -51,133 +51,140 @@ export function ChildExportSheet({ visible, onClose }: ChildExportSheetProps) {
     <View style={styles.overlay} pointerEvents="auto">
       <Pressable style={styles.backdrop} onPress={onClose} />
 
-      <Animated.View
-        style={[styles.sheet, { transform: [{ translateY }] }]}
-        {...panHandlers}
-      >
-        <View style={styles.handle} />
-
-        <Text style={styles.eyebrow}>{content.eyebrow}</Text>
-        <Text style={styles.title}>{content.title}</Text>
-        <Text style={styles.subtitle}>{content.subtitle}</Text>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{content.exportWhatLabel}</Text>
-          <View style={styles.grid}>
-            {childExportOptions.map((option) => {
-              const isActive = selectedKind === option.kind;
-
-              return (
-                <Pressable
-                  key={option.kind}
-                  onPress={() => setSelectedKind(option.kind)}
-                  style={({ pressed }) => [
-                    styles.optionCard,
-                    isActive ? styles.optionCardActive : null,
-                    pressed ? styles.optionCardPressed : null,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.optionIconBadge,
-                      getOptionBadgeStyle(option.tint),
-                    ]}
-                  >
-                    <OptionIcon kind={option.kind} />
-                  </View>
-                  <Text style={styles.optionLabel}>
-                    {content.optionLabels[option.kind]}
-                  </Text>
-                </Pressable>
-              );
-            })}
+      <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+        <View style={styles.content}>
+          <View style={styles.headerDragZone} {...panHandlers}>
+            <View style={styles.handle} />
+            <Text style={styles.eyebrow}>{content.eyebrow}</Text>
+            <Text style={styles.title}>{content.title}</Text>
+            <Text style={styles.subtitle}>{content.subtitle}</Text>
           </View>
 
-          <View style={styles.infoCard}>
-            <Ionicons
-              name="information-circle-outline"
-              size={22}
-              color="#6E7B8C"
-            />
-            <Text style={styles.infoText}>
-              {getChildExportDescription(selectedKind, locale)}
-            </Text>
-          </View>
-        </View>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{content.exportWhatLabel}</Text>
+              <View style={styles.grid}>
+                {childExportOptions.map((option) => {
+                  const isActive = selectedKind === option.kind;
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{content.periodLabel}</Text>
-          <View style={styles.grid}>
-            {content.periodOptions.map((period) => {
-              const isActive = selectedPeriod === period.value;
+                  return (
+                    <Pressable
+                      key={option.kind}
+                      onPress={() => setSelectedKind(option.kind)}
+                      style={({ pressed }) => [
+                        styles.optionCard,
+                        isActive ? styles.optionCardActive : null,
+                        pressed ? styles.optionCardPressed : null,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.optionIconBadge,
+                          getOptionBadgeStyle(option.tint),
+                        ]}
+                      >
+                        <OptionIcon kind={option.kind} />
+                      </View>
+                      <Text style={styles.optionLabel}>
+                        {content.optionLabels[option.kind]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
-              return (
-                <Pressable
-                  key={period.value}
-                  onPress={() => setSelectedPeriod(period.value)}
-                  style={({ pressed }) => [
-                    styles.periodCard,
-                    isActive ? styles.periodCardActive : null,
-                    pressed ? styles.optionCardPressed : null,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.periodIconBadge,
-                      isActive ? styles.periodIconBadgeActive : null,
-                    ]}
-                  >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={18}
-                      color={isActive ? "#C66C5E" : "#7C858E"}
-                    />
-                  </View>
-                  <Text style={styles.periodLabel}>{period.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={styles.actionsRow}>
-          <View style={styles.actionButtonShell}>
-            <View
-              style={[
-                styles.actionButton,
-                styles.actionButtonSecondary,
-                styles.actionButtonDisabled,
-              ]}
-            >
-              <Text style={[styles.actionLabel, styles.actionLabelDisabled]}>
-                {content.saveCsv}
-              </Text>
+              <View style={styles.infoCard}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={20}
+                  color="#6E7B8C"
+                />
+                <Text style={styles.infoText}>
+                  {getChildExportDescription(selectedKind, locale)}
+                </Text>
+              </View>
             </View>
-          </View>
 
-          <View style={styles.actionButtonShell}>
-            <View
-              style={[
-                styles.actionButton,
-                styles.actionButtonPrimary,
-                styles.actionButtonDisabled,
-              ]}
-            >
-              <LinearGradient
-                colors={["#FF7A70", "#F8625E"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.actionGradient}
-              />
-              <Text
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{content.periodLabel}</Text>
+              <View style={styles.grid}>
+                {content.periodOptions.map((period) => {
+                  const isActive = selectedPeriod === period.value;
+
+                  return (
+                    <Pressable
+                      key={period.value}
+                      onPress={() => setSelectedPeriod(period.value)}
+                      style={({ pressed }) => [
+                        styles.periodCard,
+                        isActive ? styles.periodCardActive : null,
+                        pressed ? styles.optionCardPressed : null,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.periodIconBadge,
+                          isActive ? styles.periodIconBadgeActive : null,
+                        ]}
+                      >
+                        <Ionicons
+                          name="calendar-outline"
+                          size={16}
+                          color={isActive ? "#C66C5E" : "#7C858E"}
+                        />
+                      </View>
+                      <Text style={styles.periodLabel}>{period.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={styles.footer}>
+            <View style={styles.actionButtonShell}>
+              <View
                 style={[
-                  styles.actionLabel,
-                  styles.actionLabelPrimary,
-                  styles.actionLabelDisabledPrimary,
+                  styles.actionButton,
+                  styles.actionButtonSecondary,
+                  styles.actionButtonDisabled,
                 ]}
               >
-                {content.saveXlsx}
-              </Text>
+                <Text style={[styles.actionLabel, styles.actionLabelDisabled]}>
+                  {content.saveCsv}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.actionButtonShell}>
+              <View
+                style={[
+                  styles.actionButton,
+                  styles.actionButtonPrimary,
+                  styles.actionButtonDisabled,
+                ]}
+              >
+                <LinearGradient
+                  colors={["#FF7A70", "#F8625E"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.actionGradient}
+                />
+                <Text
+                  style={[
+                    styles.actionLabel,
+                    styles.actionLabelPrimary,
+                    styles.actionLabelDisabledPrimary,
+                  ]}
+                >
+                  {content.saveXlsx}
+                </Text>
+              </View>
             </View>
           </View>
         </View>

@@ -1,9 +1,9 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import {
   Animated,
   Image,
+  ImageBackground,
   Pressable,
   ScrollView,
   Text,
@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { ChildCard } from "../../children/model/childrenRedesign";
+import { childrenScreenAssets } from "../../../redesign/screens/children/manifest";
 import {
   buildChildProfileScreenContent,
   ChildProfileJournalItem,
@@ -52,12 +53,13 @@ export function ChildProfileRedesignScreen({
         { transform: [{ translateX }] },
       ]}
     >
-      <LinearGradient
-        colors={["#F6D9CE", "#FFF8EE"]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.gradient}
+      <ImageBackground
+        source={childrenScreenAssets.background}
+        resizeMode="cover"
+        style={styles.background}
+        imageStyle={styles.backgroundImage}
       >
+        <View style={styles.overlay} />
         <View style={styles.root}>
           <View
             style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]}
@@ -179,7 +181,7 @@ export function ChildProfileRedesignScreen({
             </Pressable>
           </ScrollView>
         </View>
-      </LinearGradient>
+      </ImageBackground>
       <ChildExportSheet
         visible={isExportSheetOpen}
         onClose={() => setIsExportSheetOpen(false)}

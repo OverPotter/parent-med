@@ -14,15 +14,22 @@ export const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
+  background: {
+    flex: 1,
+  },
+  backgroundImage: {
+    opacity: 0.98,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,247,240,0.28)",
+  },
   swipeBackEdge: {
     position: "absolute",
     top: 0,
     bottom: 0,
     left: 0,
     zIndex: 20,
-  },
-  gradient: {
-    flex: 1,
   },
   scroll: {
     flex: 1,

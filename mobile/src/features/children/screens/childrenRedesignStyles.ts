@@ -145,9 +145,8 @@ export const styles = StyleSheet.create({
   liveChipText: {
     color: "#4D9A6B",
     fontSize: 11,
-    lineHeight: 12,
-    fontWeight: "800",
-    letterSpacing: -0.2,
+    lineHeight: 13,
+    fontWeight: "600",
   },
   quickActionsGrid: {
     flexDirection: "row",
