@@ -350,6 +350,12 @@ export const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: "600",
   },
+  fieldError: {
+    color: "#C75C52",
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "600",
+  },
   errorNote: {
     borderRadius: 18,
     backgroundColor: "#FFF1EE",

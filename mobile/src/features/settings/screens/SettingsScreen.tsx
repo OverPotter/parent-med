@@ -195,6 +195,9 @@ export function SettingsScreen({
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 120);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 260);
     });
   };
 
@@ -288,6 +291,12 @@ export function SettingsScreen({
     setError(null);
     setSuccess(null);
   };
+
+  const passwordInlineHint =
+    passwordForm.confirmPassword.trim().length > 0 &&
+    passwordForm.newPassword !== passwordForm.confirmPassword
+      ? content.passwordsMismatch
+      : null;
 
   const handleLanguageSelect = async (nextLocale: MobileLocale) => {
     if (isSavingLanguage || nextLocale === session?.account.preferredLanguage) {
@@ -822,6 +831,7 @@ export function SettingsScreen({
                   newPasswordLabel={content.newPasswordLabel}
                   confirmPasswordLabel={content.confirmPasswordLabel}
                   passwordForm={passwordForm}
+                  passwordInlineHint={passwordInlineHint}
                   onChangePasswordField={(field, value) => {
                     setPasswordForm((current) => ({
                       ...current,

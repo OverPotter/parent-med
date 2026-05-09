@@ -638,6 +638,7 @@ export function SecuritySettingsCard({
   newPasswordLabel,
   confirmPasswordLabel,
   passwordForm,
+  passwordInlineHint,
   onChangePasswordField,
   onPasswordFieldFocus,
   onSavePassword,
@@ -666,6 +667,7 @@ export function SecuritySettingsCard({
     newPassword: string;
     confirmPassword: string;
   };
+  passwordInlineHint: string | null;
   onChangePasswordField: (
     field: "currentPassword" | "newPassword" | "confirmPassword",
     value: string,
@@ -752,6 +754,9 @@ export function SecuritySettingsCard({
               ]}
             />
           </View>
+          {passwordInlineHint ? (
+            <Text style={styles.fieldError}>{passwordInlineHint}</Text>
+          ) : null}
           <Pressable
             onPress={onSavePassword}
             style={({ pressed }) => [
