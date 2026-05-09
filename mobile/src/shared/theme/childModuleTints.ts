@@ -48,16 +48,6 @@ const baseTints: Record<ChildModuleTintKey, ChildModuleTint> = {
   },
 };
 
-export function getChildModuleTint(
-  key: ChildModuleTintKey,
-  options?: { active?: boolean },
-): ChildModuleTint {
-  if (key === "sleep" && options?.active) {
-    return {
-      backgroundColor: "#F1FAF4",
-      borderColor: "#B7DEC6",
-    };
-  }
-
+export function getChildModuleTint(key: ChildModuleTintKey): ChildModuleTint {
   return baseTints[key];
 }

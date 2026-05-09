@@ -1,9 +1,15 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  Image,
+  ImageSourcePropType,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export type MobileBottomTabKey =
   | "children"
-  | "analytics"
   | "cabinet"
   | "more"
   | "pillbox";
@@ -20,6 +26,16 @@ type MobileBottomTabBarProps = {
 };
 
 const noop = () => {};
+const tabIconSize = 31;
+
+const tabImageSourceByKey: Partial<
+  Record<MobileBottomTabKey, ImageSourcePropType>
+> = {
+  children: require("../assets/bottom-tabs/parent_child_transparent.png"),
+  pillbox: require("../assets/bottom-tabs/pillpath_icon_transparent.png"),
+  cabinet: require("../assets/bottom-tabs/medical_bag_icon_transparent_FIXED.png"),
+  more: require("../assets/bottom-tabs/chat_bubble_icon_transparent.png"),
+};
 
 export function MobileBottomTabBar({
   items,
@@ -61,38 +77,69 @@ function TabIcon({
   tab: MobileBottomTabKey;
   active: boolean;
 }) {
-  const color = active ? "#F47667" : "#5F7388";
-  const size = 22;
+  const color = active ? "#F47667" : "#6C7C90";
+  const imageSource = tabImageSourceByKey[tab];
+
+  if (imageSource) {
+    return (
+      <Image
+        source={imageSource}
+        style={[
+          styles.iconImage,
+          active ? styles.iconImageActive : styles.iconImageInactive,
+        ]}
+        resizeMode="contain"
+      />
+    );
+  }
 
   if (tab === "children") {
     return (
       <MaterialCommunityIcons
         name="baby-face-outline"
-        size={size}
+        size={tabIconSize}
         color={color}
       />
     );
   }
 
-  if (tab === "analytics") {
-    return <Ionicons name="bar-chart-outline" size={size} color={color} />;
+  if (tab === "more") {
+    return (
+      <MaterialCommunityIcons
+        name="dots-horizontal"
+        size={tabIconSize}
+        color={color}
+      />
+    );
   }
 
   if (tab === "pillbox") {
-    return <MaterialCommunityIcons name="pill" size={size} color={color} />;
+    return (
+      <MaterialCommunityIcons
+        name="pill"
+        size={tabIconSize}
+        color={color}
+      />
+    );
   }
 
   if (tab === "cabinet") {
     return (
       <MaterialCommunityIcons
-        name="briefcase-outline"
-        size={size}
+        name="medical-bag"
+        size={tabIconSize}
         color={color}
       />
     );
   }
 
-  return <Ionicons name="menu" size={size} color={color} />;
+  return (
+    <MaterialCommunityIcons
+      name="help-circle-outline"
+      size={tabIconSize}
+      color={color}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
@@ -107,39 +154,56 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     alignItems: "stretch",
-    borderRadius: 26,
-    borderWidth: 2,
-    borderColor: "#EBCFC4",
-    backgroundColor: "#FFFDF9",
-    padding: 8,
-    gap: 8,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: "#E8D8CF",
+    backgroundColor: "#FFF9F4",
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    gap: 4,
+    shadowColor: "#CFAE9F",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   item: {
     flex: 1,
-    minHeight: 64,
+    minHeight: 60,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
+    gap: 4,
     paddingHorizontal: 4,
+    paddingVertical: 7,
   },
   itemActive: {
-    backgroundColor: "#FBE7E0",
+    backgroundColor: "#FCEBE4",
   },
   itemPressed: {
-    opacity: 0.82,
-    transform: [{ scale: 0.96 }],
+    opacity: 0.88,
+    transform: [{ scale: 0.975 }],
   },
   iconWrap: {
-    height: 20,
+    width: 38,
+    height: 38,
     alignItems: "center",
     justifyContent: "center",
   },
+  iconImage: {
+    width: tabIconSize,
+    height: tabIconSize,
+  },
+  iconImageActive: {
+    opacity: 1,
+  },
+  iconImageInactive: {
+    opacity: 0.72,
+  },
   label: {
-    color: "#5F7388",
-    fontSize: 13,
-    lineHeight: 16,
-    fontWeight: "700",
+    color: "#6C7C90",
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: "500",
   },
   labelActive: {
     color: "#F47667",

@@ -12,36 +12,50 @@ import { buildChildrenScreenContent } from "../model/childrenRedesign";
 import { styles } from "./childrenRedesignStyles";
 import { formatElapsedDuration } from "../utils/formatElapsedDuration";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
-import {
-  MobileBottomTabBar,
-  MobileBottomTabKey,
-} from "../../../shared/components/MobileBottomTabBar";
+import { JournalEntryKind } from "../../journal/model/journalEntryScreen";
 
 type ChildrenRedesignScreenProps = {
   onOpenChildProfile?: (cardId: string) => void;
-  onSelectTab?: (key: MobileBottomTabKey) => void;
+  onOpenJournalEntry?: (cardId: string, kind: JournalEntryKind) => void;
+  activeFeedingStartedAtByCardId?: Record<string, string | null>;
+  onFeedingPress?: (cardId: string) => void;
 };
 
 const noop = () => {};
+type PendingStopAction = {
+  kind: "sleep" | "feeding";
+  cardId: string;
+} | null;
 
 export function ChildrenRedesignScreen({
   onOpenChildProfile,
-  onSelectTab,
+  onOpenJournalEntry,
+  activeFeedingStartedAtByCardId = {},
+  onFeedingPress = noop,
 }: ChildrenRedesignScreenProps) {
   const { locale } = useMobileI18n();
-  const childrenScreenContent = buildChildrenScreenContent(locale);
+  const childrenScreenContent = buildChildrenScreenContent(locale, "children");
   const handleOpenChildProfile = onOpenChildProfile ?? noop;
-  const [collapsedCardIds, setCollapsedCardIds] = useState<string[]>([]);
+  const handleOpenJournalEntry = onOpenJournalEntry ?? noop;
+  const isRu = locale === "ru";
+  const [collapsedCardIds, setCollapsedCardIds] = useState<string[]>(
+    childrenScreenContent.cards.map((card) => card.nodeId),
+  );
   const [activeSleepStartedAtByCardId, setActiveSleepStartedAtByCardId] =
     useState<Record<string, string | null>>({});
   const [now, setNow] = useState(Date.now());
+  const [pendingStopAction, setPendingStopAction] =
+    useState<PendingStopAction>(null);
 
   const hasActiveSleep = Object.values(activeSleepStartedAtByCardId).some(
     Boolean,
   );
+  const hasActiveFeeding = Object.values(activeFeedingStartedAtByCardId).some(
+    Boolean,
+  );
 
   useEffect(() => {
-    if (!hasActiveSleep) {
+    if (!hasActiveSleep && !hasActiveFeeding) {
       return;
     }
 
@@ -52,7 +66,7 @@ export function ChildrenRedesignScreen({
     return () => {
       clearInterval(intervalId);
     };
-  }, [hasActiveSleep]);
+  }, [hasActiveFeeding, hasActiveSleep]);
 
   const handleToggleCollapse = (cardId: string) => {
     setCollapsedCardIds((current) =>
@@ -63,22 +77,49 @@ export function ChildrenRedesignScreen({
   };
 
   const handleSleepPress = (cardId: string) => {
+    if (activeSleepStartedAtByCardId[cardId]) {
+      setPendingStopAction({
+        kind: "sleep",
+        cardId,
+      });
+      return;
+    }
+
     setNow(Date.now());
-    setActiveSleepStartedAtByCardId((current) => {
-      const activeStartedAt = current[cardId];
+    setActiveSleepStartedAtByCardId((current) => ({
+      ...current,
+      [cardId]: new Date().toISOString(),
+    }));
+  };
 
-      if (activeStartedAt) {
-        return {
-          ...current,
-          [cardId]: null,
-        };
-      }
+  const handleFeedingQuickActionPress = (cardId: string) => {
+    if (activeFeedingStartedAtByCardId[cardId]) {
+      setPendingStopAction({
+        kind: "feeding",
+        cardId,
+      });
+      return;
+    }
 
-      return {
+    handleOpenJournalEntry(cardId, "feeding");
+  };
+
+  const handleConfirmStopAction = () => {
+    if (!pendingStopAction) {
+      return;
+    }
+
+    if (pendingStopAction.kind === "sleep") {
+      setNow(Date.now());
+      setActiveSleepStartedAtByCardId((current) => ({
         ...current,
-        [cardId]: new Date().toISOString(),
-      };
-    });
+        [pendingStopAction.cardId]: null,
+      }));
+    } else {
+      onFeedingPress(pendingStopAction.cardId);
+    }
+
+    setPendingStopAction(null);
   };
 
   return (
@@ -122,8 +163,18 @@ export function ChildrenRedesignScreen({
                       )
                     : null
                 }
+                feedingElapsedLabel={
+                  activeFeedingStartedAtByCardId[card.nodeId]
+                    ? formatElapsedDuration(
+                        activeFeedingStartedAtByCardId[card.nodeId] as string,
+                        now,
+                      )
+                    : null
+                }
                 onSleepPress={handleSleepPress}
+                onFeedingPress={handleFeedingQuickActionPress}
                 onOpenProfile={handleOpenChildProfile}
+                onOpenJournalEntry={handleOpenJournalEntry}
               />
             ))}
           </View>
@@ -143,12 +194,53 @@ export function ChildrenRedesignScreen({
             </Text>
           </Pressable>
         </ScrollView>
-
-        <MobileBottomTabBar
-          items={childrenScreenContent.tabs}
-          onSelectTab={onSelectTab}
-        />
       </View>
+
+      {pendingStopAction ? (
+        <View style={styles.confirmOverlay}>
+          <Pressable
+            style={styles.confirmBackdrop}
+            onPress={() => setPendingStopAction(null)}
+          />
+          <View style={styles.confirmCard}>
+            <View style={styles.confirmContent}>
+              <Text style={styles.confirmTitle}>
+                {pendingStopAction.kind === "sleep"
+                  ? isRu
+                    ? "Завершить сон?"
+                    : "Finish sleep?"
+                  : isRu
+                    ? "Завершить кормление?"
+                    : "Finish feeding?"}
+              </Text>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  onPress={() => setPendingStopAction(null)}
+                  style={({ pressed }) => [
+                    styles.confirmButtonSecondary,
+                    pressed ? styles.confirmButtonPressed : null,
+                  ]}
+                >
+                  <Text style={styles.confirmButtonSecondaryText}>
+                    {isRu ? "Нет" : "No"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleConfirmStopAction}
+                  style={({ pressed }) => [
+                    styles.confirmButtonPrimary,
+                    pressed ? styles.confirmButtonPressed : null,
+                  ]}
+                >
+                  <Text style={styles.confirmButtonPrimaryText}>
+                    {isRu ? "Да" : "Yes"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

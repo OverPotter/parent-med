@@ -3,6 +3,7 @@ import { Image, Pressable, Text, View } from "react-native";
 import { ChildCard, ChildQuickAction } from "../model/childrenRedesign";
 import { styles } from "../screens/childrenRedesignStyles";
 import { getChildModuleTint } from "../../../shared/theme/childModuleTints";
+import { JournalEntryKind } from "../../journal/model/journalEntryScreen";
 
 const noop = () => {};
 
@@ -11,8 +12,11 @@ type ChildrenChildCardProps = {
   collapsed: boolean;
   onToggleCollapse: (cardId: string) => void;
   sleepElapsedLabel: string | null;
+  feedingElapsedLabel: string | null;
   onSleepPress?: (cardId: string) => void;
+  onFeedingPress?: (cardId: string) => void;
   onOpenProfile?: (cardId: string) => void;
+  onOpenJournalEntry?: (cardId: string, kind: JournalEntryKind) => void;
 };
 
 export function ChildrenChildCard({
@@ -20,8 +24,11 @@ export function ChildrenChildCard({
   collapsed,
   onToggleCollapse,
   sleepElapsedLabel,
+  feedingElapsedLabel,
   onSleepPress = noop,
+  onFeedingPress = noop,
   onOpenProfile = noop,
+  onOpenJournalEntry = noop,
 }: ChildrenChildCardProps) {
   return (
     <View style={[styles.card, collapsed ? styles.cardCollapsed : null]}>
@@ -40,7 +47,13 @@ export function ChildrenChildCard({
         />
       </Pressable>
 
-      <View style={styles.cardHeroRow}>
+      <Pressable
+        onPress={() => onToggleCollapse(card.nodeId)}
+        style={({ pressed }) => [
+          styles.cardHeroRow,
+          pressed ? styles.cardHeroRowPressed : null,
+        ]}
+      >
         <View style={styles.avatarShell}>
           <Image
             source={card.avatarSource}
@@ -59,7 +72,7 @@ export function ChildrenChildCard({
           ) : null}
           <Text style={styles.childStats}>{card.stats}</Text>
         </View>
-      </View>
+      </Pressable>
 
       {!collapsed ? (
         <View style={styles.quickActionsGrid}>
@@ -68,6 +81,7 @@ export function ChildrenChildCard({
               key={action.nodeId}
               action={action}
               sleepElapsedLabel={sleepElapsedLabel}
+              feedingElapsedLabel={feedingElapsedLabel}
               onPress={() => {
                 if (action.kind === "sleep") {
                   onSleepPress(card.nodeId);
@@ -75,6 +89,10 @@ export function ChildrenChildCard({
                 }
                 if (action.kind === "profile") {
                   onOpenProfile(card.nodeId);
+                  return;
+                }
+                if (action.kind === "feeding") {
+                  onFeedingPress(card.nodeId);
                   return;
                 }
                 noop();
@@ -90,16 +108,29 @@ export function ChildrenChildCard({
 function QuickActionCard({
   action,
   sleepElapsedLabel,
+  feedingElapsedLabel,
   onPress,
 }: {
   action: ChildQuickAction;
   sleepElapsedLabel: string | null;
+  feedingElapsedLabel: string | null;
   onPress: () => void;
 }) {
   const isSleepAction = action.kind === "sleep";
-  const isActive = isSleepAction && Boolean(sleepElapsedLabel);
-  const actionLabel = isActive ? sleepElapsedLabel : action.label;
-  const tint = getQuickActionTint(action.kind, isActive);
+  const isFeedingAction = action.kind === "feeding";
+  const isActive =
+    (isSleepAction && Boolean(sleepElapsedLabel)) ||
+    (isFeedingAction && Boolean(feedingElapsedLabel));
+  const actionLabel = isSleepAction
+    ? isActive && sleepElapsedLabel
+      ? sleepElapsedLabel
+      : action.label
+    : isFeedingAction
+      ? isActive && feedingElapsedLabel
+        ? feedingElapsedLabel
+        : action.label
+      : action.label;
+  const tint = getQuickActionTint(action.kind);
 
   return (
     <Pressable
@@ -140,9 +171,9 @@ function QuickActionCard({
   );
 }
 
-function getQuickActionTint(kind: ChildQuickAction["kind"], isActive: boolean) {
+function getQuickActionTint(kind: ChildQuickAction["kind"]) {
   if (kind === "sleep") {
-    return getChildModuleTint("sleep", { active: isActive });
+    return getChildModuleTint("sleep");
   }
 
   if (kind === "feeding") {

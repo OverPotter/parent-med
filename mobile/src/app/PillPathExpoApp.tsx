@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
 import { AnalyticsScreen } from "../features/analytics/screens/AnalyticsScreen";
 import { AnalyticsBreakdownScreen } from "../features/analytics/screens/AnalyticsBreakdownScreen";
+import { AuthScreen } from "../features/auth/screens/AuthScreen";
 import { ChildProfileEditScreen } from "../features/child-profile-edit/screens/ChildProfileEditScreen";
 import { ChildProfileRedesignScreen } from "../features/child-profile/screens/ChildProfileRedesignScreen";
 import { AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
@@ -16,6 +17,11 @@ import { ChildOverviewScreen } from "../features/overview/screens/ChildOverviewS
 import { buildChildrenScreenContent } from "../features/children/model/childrenRedesign";
 import { ChildrenRedesignScreen } from "../features/children/screens/ChildrenRedesignScreen";
 import { MobileI18nProvider, useMobileI18n } from "../shared/i18n/mobileI18n";
+import {
+  MobileBottomTabBar,
+  MobileBottomTabKey,
+} from "../shared/components/MobileBottomTabBar";
+import { RootModulePlaceholderScreen } from "../shared/components/RootModulePlaceholderScreen";
 
 type ChildProfileDestination = JournalEntryKind | "overview";
 
@@ -30,6 +36,9 @@ export function PillPathExpoApp() {
 function PillPathExpoShell() {
   const { locale } = useMobileI18n();
   const childrenScreenContent = buildChildrenScreenContent(locale);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeRootTab, setActiveRootTab] = useState<MobileBottomTabKey>("children");
+  const rootTabItems = buildChildrenScreenContent(locale, activeRootTab).tabs;
   const [activeScreen, setActiveScreen] = useState<
     | "children"
     | "analytics"
@@ -50,6 +59,8 @@ function PillPathExpoShell() {
     useState<AnalyticsEpisodeCard | null>(null);
   const [selectedJournalKind, setSelectedJournalKind] =
     useState<JournalEntryKind>("feeding");
+  const [activeFeedingStartedAtByCardId, setActiveFeedingStartedAtByCardId] =
+    useState<Record<string, string | null>>({});
 
   const selectedChild =
     childrenScreenContent.cards.find(
@@ -61,9 +72,43 @@ function PillPathExpoShell() {
     setActiveScreen("childProfile");
   }, []);
 
+  const handleOpenRootJournalEntry = useCallback(
+    (cardId: string, kind: JournalEntryKind) => {
+      setSelectedChildId(cardId);
+      setSelectedJournalKind(kind);
+      setActiveScreen("journalEntry");
+    },
+    [],
+  );
+
   const handleCloseChildProfile = useCallback(() => {
     setActiveScreen("children");
   }, []);
+
+  const handleFeedingPress = useCallback((cardId: string) => {
+    setActiveFeedingStartedAtByCardId((current) => {
+      const activeStartedAt = current[cardId];
+
+      if (activeStartedAt) {
+        return {
+          ...current,
+          [cardId]: null,
+        };
+      }
+
+      return {
+        ...current,
+        [cardId]: new Date().toISOString(),
+      };
+    });
+  }, []);
+
+  const handleStartFeedingTimer = useCallback(() => {
+    setActiveFeedingStartedAtByCardId((current) => ({
+      ...current,
+      [selectedChildId]: new Date().toISOString(),
+    }));
+  }, [selectedChildId]);
 
   const handleOpenEditProfile = useCallback(() => {
     setActiveScreen("childProfileEdit");
@@ -121,7 +166,7 @@ function PillPathExpoShell() {
   }, []);
 
   const handleCloseJournalEntry = useCallback(() => {
-    setActiveScreen("childProfile");
+    setActiveScreen("children");
   }, []);
 
   const handleCloseFeedingHistory = useCallback(() => {
@@ -144,12 +189,41 @@ function PillPathExpoShell() {
     setActiveScreen("childProfile");
   }, []);
 
+  const handleSelectRootTab = useCallback((key: MobileBottomTabKey) => {
+    setActiveRootTab(key);
+  }, []);
+
+  const handleAuthenticated = useCallback(() => {
+    setIsAuthenticated(true);
+  }, []);
+
+  if (!isAuthenticated) {
+    return (
+      <View style={styles.root}>
+        <StatusBar style="dark" />
+        <AuthScreen onAuthenticated={handleAuthenticated} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
-      <View style={styles.screenLayer}>
-        <ChildrenRedesignScreen onOpenChildProfile={handleOpenChildProfile} />
-      </View>
+      {activeRootTab === "children" ? (
+        <View style={styles.screenLayer}>
+          <ChildrenRedesignScreen
+            onOpenChildProfile={handleOpenChildProfile}
+            onOpenJournalEntry={handleOpenRootJournalEntry}
+            activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
+            onFeedingPress={handleFeedingPress}
+          />
+        </View>
+      ) : (
+        <View style={styles.screenLayer}>
+          <RootModulePlaceholderScreen tabKey={activeRootTab} />
+        </View>
+      )}
+      <MobileBottomTabBar items={rootTabItems} onSelectTab={handleSelectRootTab} />
       {selectedChild ? (
         <>
           <ChildProfileRedesignScreen
@@ -163,8 +237,7 @@ function PillPathExpoShell() {
               activeScreen === "growthHistory" ||
               activeScreen === "overview" ||
               activeScreen === "sleepHistory" ||
-              activeScreen === "weightHistory" ||
-              activeScreen === "journalEntry"
+              activeScreen === "weightHistory"
             }
             onBack={handleCloseChildProfile}
             onEditProfile={handleOpenEditProfile}
@@ -191,10 +264,11 @@ function PillPathExpoShell() {
             />
           ) : null}
           <JournalEntryScreen
-            child={selectedChild}
             kind={selectedJournalKind}
             visible={activeScreen === "journalEntry"}
             onBack={handleCloseJournalEntry}
+            onSwipeBack={handleCloseJournalEntry}
+            onStartTimer={handleStartFeedingTimer}
           />
           <FeedingHistoryScreen
             child={selectedChild}

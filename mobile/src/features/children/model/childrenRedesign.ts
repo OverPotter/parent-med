@@ -140,8 +140,11 @@ function mapTabKey(label: string): MobileBottomTabKey {
     return "children";
   }
 
-  if (label === "Аналитика" || label === "Analytics") {
-    return "analytics";
+  if (
+    label === "Ещё" ||
+    label === "More"
+  ) {
+    return "more";
   }
 
   if (label === "Таблетница" || label === "Pillbox") {
@@ -155,22 +158,26 @@ function mapTabKey(label: string): MobileBottomTabKey {
   return "more";
 }
 
-export function buildChildrenScreenContent(locale: MobileLocale) {
+export function buildChildrenScreenContent(
+  locale: MobileLocale,
+  activeTabKey: MobileBottomTabKey = "children",
+) {
   const isRu = locale === "ru";
   const quickActionByTitle = buildQuickActionMap(locale);
-  const sourceTabs = isRu
-    ? screenSpec.bottomNavigation.tabs
-    : screenSpec.bottomNavigation.tabs.map((tab) => ({
-        ...tab,
-        label:
-          tab.label === "Дети"
-            ? "Children"
-            : tab.label === "Таблетница"
-              ? "Pillbox"
-              : tab.label === "Аптечка"
-                ? "Cabinet"
-                : "More",
-      }));
+  const sourceTabs = screenSpec.bottomNavigation.tabs.map((tab) => ({
+    ...tab,
+    label: isRu
+      ? tab.label
+      : tab.label === "Дети"
+        ? "Children"
+        : tab.label === "Ещё"
+          ? "More"
+          : tab.label === "Таблетница"
+            ? "Pillbox"
+            : tab.label === "Аптечка"
+              ? "Cabinet"
+              : tab.label,
+  }));
 
   return {
     backgroundSource: childrenScreenAssets.background,
@@ -194,7 +201,7 @@ export function buildChildrenScreenContent(locale: MobileLocale) {
       (tab): MobileBottomTabItem => ({
         key: mapTabKey(tab.label),
         label: tab.label,
-        active: tab.active,
+        active: mapTabKey(tab.label) === activeTabKey,
       }),
     ),
   } satisfies {
