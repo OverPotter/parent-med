@@ -2,8 +2,16 @@ import { useCallback, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
 import { AnalyticsScreen } from "../features/analytics/screens/AnalyticsScreen";
+import { AnalyticsBreakdownScreen } from "../features/analytics/screens/AnalyticsBreakdownScreen";
 import { ChildProfileEditScreen } from "../features/child-profile-edit/screens/ChildProfileEditScreen";
 import { ChildProfileRedesignScreen } from "../features/child-profile/screens/ChildProfileRedesignScreen";
+import { AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
+import { FeedingHistoryScreen } from "../features/feeding/screens/FeedingHistoryScreen";
+import { GrowthHistoryScreen } from "../features/growth/screens/GrowthHistoryScreen";
+import { SleepHistoryScreen } from "../features/sleep/screens/SleepHistoryScreen";
+import { WeightHistoryScreen } from "../features/weight/screens/WeightHistoryScreen";
+import { JournalEntryKind } from "../features/journal/model/journalEntryScreen";
+import { JournalEntryScreen } from "../features/journal/screens/JournalEntryScreen";
 import { buildChildrenScreenContent } from "../features/children/model/childrenRedesign";
 import { ChildrenRedesignScreen } from "../features/children/screens/ChildrenRedesignScreen";
 import { MobileI18nProvider, useMobileI18n } from "../shared/i18n/mobileI18n";
@@ -20,11 +28,24 @@ function PillPathExpoShell() {
   const { locale } = useMobileI18n();
   const childrenScreenContent = buildChildrenScreenContent(locale);
   const [activeScreen, setActiveScreen] = useState<
-    "children" | "analytics" | "childProfile" | "childProfileEdit"
+    | "children"
+    | "analytics"
+    | "analyticsBreakdown"
+    | "childProfile"
+    | "childProfileEdit"
+    | "feedingHistory"
+    | "growthHistory"
+    | "sleepHistory"
+    | "weightHistory"
+    | "journalEntry"
   >("children");
   const [selectedChildId, setSelectedChildId] = useState(
     childrenScreenContent.cards[0]?.nodeId ?? "",
   );
+  const [selectedEpisode, setSelectedEpisode] =
+    useState<AnalyticsEpisodeCard | null>(null);
+  const [selectedJournalKind, setSelectedJournalKind] =
+    useState<JournalEntryKind>("feeding");
 
   const selectedChild =
     childrenScreenContent.cards.find(
@@ -56,6 +77,60 @@ function PillPathExpoShell() {
     setActiveScreen("childProfile");
   }, []);
 
+  const handleOpenAnalyticsEpisode = useCallback((episode: AnalyticsEpisodeCard) => {
+    setSelectedEpisode(episode);
+    setActiveScreen("analyticsBreakdown");
+  }, []);
+
+  const handleCloseAnalyticsEpisode = useCallback(() => {
+    setActiveScreen("analytics");
+  }, []);
+
+  const handleOpenJournalEntry = useCallback((kind: JournalEntryKind) => {
+    if (kind === "feeding") {
+      setActiveScreen("feedingHistory");
+      return;
+    }
+
+    if (kind === "sleep") {
+      setActiveScreen("sleepHistory");
+      return;
+    }
+
+    if (kind === "weight") {
+      setActiveScreen("weightHistory");
+      return;
+    }
+
+    if (kind === "height") {
+      setActiveScreen("growthHistory");
+      return;
+    }
+
+    setSelectedJournalKind(kind);
+    setActiveScreen("journalEntry");
+  }, []);
+
+  const handleCloseJournalEntry = useCallback(() => {
+    setActiveScreen("childProfile");
+  }, []);
+
+  const handleCloseFeedingHistory = useCallback(() => {
+    setActiveScreen("childProfile");
+  }, []);
+
+  const handleCloseSleepHistory = useCallback(() => {
+    setActiveScreen("childProfile");
+  }, []);
+
+  const handleCloseWeightHistory = useCallback(() => {
+    setActiveScreen("childProfile");
+  }, []);
+
+  const handleCloseGrowthHistory = useCallback(() => {
+    setActiveScreen("childProfile");
+  }, []);
+
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
@@ -69,19 +144,68 @@ function PillPathExpoShell() {
             visible={
               activeScreen === "childProfile" ||
               activeScreen === "childProfileEdit" ||
-              activeScreen === "analytics"
+              activeScreen === "analytics" ||
+              activeScreen === "analyticsBreakdown" ||
+              activeScreen === "feedingHistory" ||
+              activeScreen === "growthHistory" ||
+              activeScreen === "sleepHistory" ||
+              activeScreen === "weightHistory" ||
+              activeScreen === "journalEntry"
             }
             onBack={handleCloseChildProfile}
             onEditProfile={handleOpenEditProfile}
             onOpenAnalytics={handleOpenAnalytics}
+            onOpenJournalEntry={handleOpenJournalEntry}
           />
           <ChildProfileEditScreen
             child={selectedChild}
             visible={activeScreen === "childProfileEdit"}
             onBack={handleCloseEditProfile}
           />
-          {activeScreen === "analytics" ? (
-            <AnalyticsScreen onBack={handleCloseAnalytics} />
+          {activeScreen === "analytics" ||
+          activeScreen === "analyticsBreakdown" ? (
+            <AnalyticsScreen
+              visible={activeScreen === "analytics"}
+              onBack={handleCloseAnalytics}
+              onOpenEpisode={handleOpenAnalyticsEpisode}
+            />
+          ) : null}
+          {activeScreen === "analyticsBreakdown" && selectedEpisode ? (
+            <AnalyticsBreakdownScreen
+              episode={selectedEpisode}
+              onBack={handleCloseAnalyticsEpisode}
+            />
+          ) : null}
+          {activeScreen === "journalEntry" ? (
+            <JournalEntryScreen
+              child={selectedChild}
+              kind={selectedJournalKind}
+              onBack={handleCloseJournalEntry}
+            />
+          ) : null}
+          {activeScreen === "feedingHistory" ? (
+            <FeedingHistoryScreen
+              child={selectedChild}
+              onBack={handleCloseFeedingHistory}
+            />
+          ) : null}
+          {activeScreen === "sleepHistory" ? (
+            <SleepHistoryScreen
+              child={selectedChild}
+              onBack={handleCloseSleepHistory}
+            />
+          ) : null}
+          {activeScreen === "weightHistory" ? (
+            <WeightHistoryScreen
+              child={selectedChild}
+              onBack={handleCloseWeightHistory}
+            />
+          ) : null}
+          {activeScreen === "growthHistory" ? (
+            <GrowthHistoryScreen
+              child={selectedChild}
+              onBack={handleCloseGrowthHistory}
+            />
           ) : null}
         </>
       ) : null}

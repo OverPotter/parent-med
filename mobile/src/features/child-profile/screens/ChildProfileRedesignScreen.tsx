@@ -27,6 +27,9 @@ type ChildProfileRedesignScreenProps = {
   onBack: () => void;
   onEditProfile?: () => void;
   onOpenAnalytics?: () => void;
+  onOpenJournalEntry?: (
+    kind: "feeding" | "sleep" | "weight" | "height",
+  ) => void;
 };
 
 const noop = () => {};
@@ -37,12 +40,14 @@ export function ChildProfileRedesignScreen({
   onBack,
   onEditProfile,
   onOpenAnalytics,
+  onOpenJournalEntry,
 }: ChildProfileRedesignScreenProps) {
   const { copy, locale } = useMobileI18n();
   const content = buildChildProfileScreenContent(child, locale);
   const [isExportSheetOpen, setIsExportSheetOpen] = useState(false);
   const handleEditProfile = onEditProfile ?? noop;
   const handleOpenAnalytics = onOpenAnalytics ?? noop;
+  const handleOpenJournalEntry = onOpenJournalEntry ?? noop;
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
     enabled: visible && !isExportSheetOpen,
@@ -157,6 +162,11 @@ export function ChildProfileRedesignScreen({
                       onPress={() => {
                         if (item.iconVariant === "illnessBadge") {
                           handleOpenAnalytics();
+                          return;
+                        }
+
+                        if (item.targetKind) {
+                          handleOpenJournalEntry(item.targetKind);
                           return;
                         }
 

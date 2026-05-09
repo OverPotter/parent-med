@@ -1,20 +1,10 @@
 import { MobileLocale } from "../../../shared/i18n/mobileI18n";
-import {
-  MobileBottomTabItem,
-  MobileBottomTabKey,
-} from "../../../shared/components/MobileBottomTabBar";
 
-export type AnalyticsMetricCard = {
+export type AnalyticsInsightItem = {
   id: string;
-  chip: string;
-  value: string;
-  subtext: string;
-  accent: {
-    cardTint: string;
-    chipBg: string;
-    dot: string;
-    border: string;
-  };
+  icon: "completed" | "activeMonth" | "medicine";
+  title: string;
+  subtitle: string;
 };
 
 export type AnalyticsPeriodOption = {
@@ -25,6 +15,8 @@ export type AnalyticsPeriodOption = {
 
 export type AnalyticsEpisodeCard = {
   id: string;
+  monthLabel: string;
+  dayLabel: string;
   meta: string;
   title: string;
   closedAt: string;
@@ -32,44 +24,31 @@ export type AnalyticsEpisodeCard = {
   actionLabel: string;
 };
 
+export type AnalyticsHighlightCard = {
+  id: string;
+  label: string;
+  value: string;
+  icon: "duration" | "longest" | "observations";
+  accent: {
+    background: string;
+    border: string;
+    iconBackground: string;
+    iconColor: string;
+  };
+};
+
 export type AnalyticsScreenContent = {
   backLabel: string;
   title: string;
   subtitle: string;
-  periodTitle: string;
   periodOptions: AnalyticsPeriodOption[];
-  metrics: AnalyticsMetricCard[];
+  mainSummaryTitle: string;
+  mainSummaryInsights: AnalyticsInsightItem[];
+  highlights: AnalyticsHighlightCard[];
   episodesTitle: string;
-  filterLabel: string;
+  episodesHelper: string;
   episodes: AnalyticsEpisodeCard[];
-  tabs: MobileBottomTabItem[];
 };
-
-function buildTabs(locale: MobileLocale): MobileBottomTabItem[] {
-  const labels: Record<MobileBottomTabKey, string> =
-    locale === "ru"
-      ? {
-          children: "Дети",
-          analytics: "Аналитика",
-          cabinet: "Аптечка",
-          more: "Ещё",
-          pillbox: "Таблетница",
-        }
-      : {
-          children: "Children",
-          analytics: "Analytics",
-          cabinet: "Cabinet",
-          more: "More",
-          pillbox: "Pillbox",
-        };
-
-  return [
-    { key: "children", label: labels.children, active: false },
-    { key: "analytics", label: labels.analytics, active: true },
-    { key: "cabinet", label: labels.cabinet, active: false },
-    { key: "more", label: labels.more, active: false },
-  ];
-}
 
 export function buildAnalyticsScreenContent(
   locale: MobileLocale,
@@ -80,148 +59,129 @@ export function buildAnalyticsScreenContent(
     backLabel: isRu ? "Назад" : "Back",
     title: isRu ? "Аналитика" : "Analytics",
     subtitle: isRu
-      ? "Сводка и завершённые наблюдения по ребёнку."
-      : "Summary and completed observations for the child.",
-    periodTitle: isRu ? "Период сводки" : "Summary period",
+      ? "Короткая сводка по завершённым эпизодам ребёнка."
+      : "Short summary of the child's completed episodes.",
     periodOptions: [
       {
         id: "month",
         label: isRu ? "Месяц" : "Month",
-        helperLabel: isRu
-          ? "Сводка считает завершённые эпизоды за последний месяц."
-          : "The summary counts completed episodes for the last month.",
+        helperLabel: isRu ? "Сводка за последний месяц." : "Summary for the last month.",
       },
       {
         id: "quarter",
         label: isRu ? "3 месяца" : "3 months",
         helperLabel: isRu
-          ? "Сводка считает завершённые эпизоды за последние 3 месяца."
-          : "The summary counts completed episodes for the last 3 months.",
+          ? "Сводка за последние 3 месяца."
+          : "Summary for the last 3 months.",
       },
       {
         id: "halfYear",
         label: isRu ? "6 месяцев" : "6 months",
         helperLabel: isRu
-          ? "Сводка считает завершённые эпизоды за последние 6 месяцев."
-          : "The summary counts completed episodes for the last 6 months.",
+          ? "Сводка за последние 6 месяцев."
+          : "Summary for the last 6 months.",
       },
       {
         id: "year",
         label: isRu ? "Год" : "Year",
-        helperLabel: isRu
-          ? "Сводка считает завершённые эпизоды за последний год."
-          : "The summary counts completed episodes for the last year.",
+        helperLabel: isRu ? "Сводка за последний год." : "Summary for the last year.",
       },
       {
         id: "allTime",
         label: isRu ? "Всё время" : "All time",
-        helperLabel: isRu
-          ? "Сводка считает завершённые эпизоды за всё время."
-          : "The summary counts completed episodes for all time.",
+        helperLabel: isRu ? "Сводка за всё время." : "Summary for all time.",
       },
     ],
-    metrics: [
+    mainSummaryTitle: isRu ? "Главное за период" : "Highlights for the period",
+    mainSummaryInsights: [
       {
-        id: "period",
-        chip: isRu ? "За период" : "In period",
-        value: "9",
-        subtext: isRu ? "эпизодов" : "episodes",
-        accent: {
-          cardTint: "#FFF0EA",
-          chipBg: "#FFE7E2",
-          dot: "#F47667",
-          border: "#F3D7CF",
-        },
-      },
-      {
-        id: "average",
-        chip: isRu ? "Средняя" : "Average",
-        value: "1",
-        subtext: isRu ? "в день" : "a day",
-        accent: {
-          cardTint: "#FFF6E9",
-          chipBg: "#FFF0D8",
-          dot: "#F4A33C",
-          border: "#EFDCC0",
-        },
-      },
-      {
-        id: "medicine",
-        chip: isRu ? "Лекарства" : "Medicine",
-        value: "3",
-        subtext: isRu ? "раза" : "times",
-        accent: {
-          cardTint: "#EEF9F1",
-          chipBg: "#DFF3E4",
-          dot: "#47B96B",
-          border: "#D4EAD9",
-        },
-      },
-      {
-        id: "long",
-        chip: isRu ? "Долгий" : "Longest",
-        value: "1",
-        subtext: isRu ? "эпизод" : "episode",
-        accent: {
-          cardTint: "#FFF8EE",
-          chipBg: "#FFF0DA",
-          dot: "#E7A93D",
-          border: "#EEDFC7",
-        },
+        id: "completed",
+        icon: "completed",
+        title: isRu ? "9 завершённых эпизодов" : "9 completed episodes",
+        subtitle: isRu ? "Вы справились!" : "You handled it.",
       },
       {
         id: "month",
-        chip: isRu ? "Активный" : "Active",
-        value: isRu ? "Май" : "May",
-        subtext: isRu ? "месяц" : "month",
+        icon: "activeMonth",
+        title: isRu ? "Активный месяц — май" : "Most active month — May",
+        subtitle: isRu
+          ? "Больше всего записей в этом месяце."
+          : "Most records were added in this month.",
+      },
+      {
+        id: "medicine",
+        icon: "medicine",
+        title: isRu
+          ? "Лекарства применялись 3 раза"
+          : "Medicine was used 3 times",
+        subtitle: isRu
+          ? "Приёмы фиксировались по назначениям."
+          : "Doses were tracked by schedule.",
+      },
+    ],
+    highlights: [
+      {
+        id: "average",
+        label: isRu ? "Средняя длительность" : "Average duration",
+        value: isRu ? "1 день" : "1 day",
+        icon: "duration",
         accent: {
-          cardTint: "#EEF6FF",
-          chipBg: "#DCEEFF",
-          dot: "#4A9BFF",
-          border: "#D7E6F6",
+          background: "#FFFDFC",
+          border: "#F3C7BD",
+          iconBackground: "#FFE8E1",
+          iconColor: "#FF7E73",
         },
       },
       {
-        id: "total",
-        chip: isRu ? "Всего" : "Total",
-        value: "9",
-        subtext: isRu ? "эпизодов" : "episodes",
+        id: "longest",
+        label: isRu ? "Самый долгий эпизод" : "Longest episode",
+        value: isRu ? "1 эпизод" : "1 episode",
+        icon: "longest",
         accent: {
-          cardTint: "#F5EEFF",
-          chipBg: "#EBDDFF",
-          dot: "#9465F1",
-          border: "#E0D3F3",
+          background: "#FFFDFC",
+          border: "#F1DDAF",
+          iconBackground: "#FFF4DA",
+          iconColor: "#F9B84D",
+        },
+      },
+      {
+        id: "observations",
+        label: isRu ? "Наблюдений за период" : "Observations in period",
+        value: isRu ? "9 эпизодов" : "9 episodes",
+        icon: "observations",
+        accent: {
+          background: "#FFFDFC",
+          border: "#DDC9FA",
+          iconBackground: "#F1EAFE",
+          iconColor: "#9A72F5",
         },
       },
     ],
     episodesTitle: isRu ? "Завершённые эпизоды" : "Completed episodes",
-    filterLabel: isRu ? "Фильтры" : "Filters",
+    episodesHelper: isRu
+      ? "Все завершённые эпизоды за выбранный период."
+      : "All completed episodes for the selected period.",
     episodes: [
       {
         id: "episode-9",
+        monthLabel: isRu ? "Май" : "May",
+        dayLabel: "3",
         meta: isRu ? "Эпизод 9 • 3 мая" : "Episode 9 • May 3",
         title: isRu ? "Без названия" : "Untitled",
-        closedAt: isRu ? "Закрыт 23:20 • 3 мая" : "Closed 23:20 • May 3",
+        closedAt: isRu ? "Закрыт 23:20" : "Closed 23:20",
         description: isRu ? "Без описания" : "No description",
         actionLabel: isRu ? "Разбор" : "Review",
       },
       {
         id: "episode-8",
+        monthLabel: isRu ? "Май" : "May",
+        dayLabel: "3",
         meta: isRu ? "Эпизод 8 • 3 мая" : "Episode 8 • May 3",
         title: isRu ? "Без названия" : "Untitled",
-        closedAt: isRu ? "Закрыт 19:36 • 3 мая" : "Closed 19:36 • May 3",
-        description: isRu ? "Без описания" : "No description",
-        actionLabel: isRu ? "Разбор" : "Review",
-      },
-      {
-        id: "episode-7",
-        meta: isRu ? "Эпизод 7 • 2 мая" : "Episode 7 • May 2",
-        title: isRu ? "Без названия" : "Untitled",
-        closedAt: isRu ? "Закрыт 14:10 • 2 мая" : "Closed 14:10 • May 2",
+        closedAt: isRu ? "Закрыт 19:36" : "Closed 19:36",
         description: isRu ? "Без описания" : "No description",
         actionLabel: isRu ? "Разбор" : "Review",
       },
     ],
-    tabs: buildTabs(locale),
   };
 }

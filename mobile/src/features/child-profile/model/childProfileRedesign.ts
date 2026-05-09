@@ -25,6 +25,7 @@ export type ChildProfileJournalItem = {
     | "weight"
     | "height"
     | "overview";
+  targetKind?: "feeding" | "sleep" | "weight" | "height";
   imageSource?: ImageSourcePropType;
   iconColor?: string;
 };
@@ -83,6 +84,7 @@ function mapJournalIcon(label: string) {
   if (label === "Кормление") {
     return {
       iconVariant: "feeding" as const,
+      targetKind: "feeding" as const,
       imageSource: redesignSharedIcons.feeding,
     };
   }
@@ -90,6 +92,7 @@ function mapJournalIcon(label: string) {
   if (label === "Сон") {
     return {
       iconVariant: "sleep" as const,
+      targetKind: "sleep" as const,
       imageSource: redesignSharedIcons.sleep,
     };
   }
@@ -97,6 +100,7 @@ function mapJournalIcon(label: string) {
   if (label === "Рост") {
     return {
       iconVariant: "height" as const,
+      targetKind: "height" as const,
       imageSource: redesignSharedIcons.height,
     };
   }
@@ -110,6 +114,7 @@ function mapJournalIcon(label: string) {
 
   return {
     iconVariant: "weight" as const,
+    targetKind: "weight" as const,
     iconColor: "#6AA58E",
   };
 }

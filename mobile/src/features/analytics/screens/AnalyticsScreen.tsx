@@ -1,7 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   Animated,
+  Image,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -10,24 +11,30 @@ import {
   View,
 } from "react-native";
 import { childrenScreenAssets } from "../../../redesign/screens/children/manifest";
+import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import {
   AnalyticsEpisodeCard,
-  AnalyticsMetricCard,
+  AnalyticsHighlightCard,
+  AnalyticsInsightItem,
   AnalyticsPeriodOption,
   buildAnalyticsScreenContent,
 } from "../model/analyticsScreen";
 import { styles } from "./analyticsScreenStyles";
 
 type AnalyticsScreenProps = {
+  visible?: boolean;
   onBack?: () => void;
+  onOpenEpisode?: (episode: AnalyticsEpisodeCard) => void;
 };
 
 const noop = () => {};
 
 export function AnalyticsScreen({
+  visible = true,
   onBack = noop,
+  onOpenEpisode = noop,
 }: AnalyticsScreenProps) {
   const { locale } = useMobileI18n();
   const content = buildAnalyticsScreenContent(locale);
@@ -52,10 +59,15 @@ export function AnalyticsScreen({
 
   return (
     <Animated.View
-      style={[styles.overlayLayer, { transform: [{ translateX }] }]}
+      pointerEvents={visible ? "auto" : "none"}
+      style={[
+        styles.overlayLayer,
+        visible ? styles.overlayLayerVisible : styles.overlayLayerHidden,
+        { transform: [{ translateX }] },
+      ]}
     >
       <ImageBackground
-        source={childrenScreenAssets.background}
+        source={redesignBackgrounds.childrenModule}
         resizeMode="cover"
         style={styles.background}
         imageStyle={styles.backgroundImage}
@@ -71,17 +83,17 @@ export function AnalyticsScreen({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.topChrome}>
+            <View style={styles.topBar}>
               <Pressable onPress={onBack} style={styles.backLink}>
                 <Text style={styles.backLinkText}>{"← "}{content.backLabel}</Text>
               </Pressable>
+            </View>
 
-              <Text style={styles.title}>{content.title}</Text>
+            <View style={styles.topChrome}>
               <Text style={styles.subtitle}>{content.subtitle}</Text>
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{content.periodTitle}</Text>
               <Pressable
                 onPress={() => setIsPeriodOpen((current) => !current)}
                 style={[
@@ -91,14 +103,14 @@ export function AnalyticsScreen({
               >
                 <View style={styles.periodLeft}>
                   <View style={styles.periodIconBadge}>
-                    <Ionicons name="calendar-outline" size={18} color="#F47667" />
+                    <Ionicons name="calendar-outline" size={18} color="#FF7E73" />
                   </View>
                   <Text style={styles.periodValue}>{selectedPeriod?.label}</Text>
                 </View>
                 <Ionicons
                   name={isPeriodOpen ? "chevron-up" : "chevron-down"}
                   size={18}
-                  color="#6F7E8D"
+                  color="#6F7C8C"
                 />
               </Pressable>
               {isPeriodOpen ? (
@@ -128,7 +140,7 @@ export function AnalyticsScreen({
                           {option.label}
                         </Text>
                         {isActive ? (
-                          <Ionicons name="checkmark" size={16} color="#F47667" />
+                          <Ionicons name="checkmark" size={16} color="#FF7E73" />
                         ) : null}
                         {index < content.periodOptions.length - 1 ? (
                           <View style={styles.periodDropdownDivider} />
@@ -138,25 +150,74 @@ export function AnalyticsScreen({
                   })}
                 </View>
               ) : null}
-              <Text style={styles.periodHelper}>
-                {selectedPeriod?.helperLabel}
-              </Text>
+              <Text style={styles.periodHelper}>{selectedPeriod?.helperLabel}</Text>
+            </View>
 
-              <View style={styles.metricsGrid}>
-                {content.metrics.map((metric) => (
-                  <MetricCard key={metric.id} metric={metric} />
-                ))}
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryCopy}>
+                <Text style={styles.summaryTitle}>{content.mainSummaryTitle}</Text>
+                <View style={styles.summaryInsights}>
+                  {content.mainSummaryInsights.map((insight) => (
+                    <InsightRow key={insight.id} insight={insight} />
+                  ))}
+                </View>
+              </View>
+              <View style={styles.summaryVisual}>
+                <View style={[styles.decorBadge, styles.decorHeartTop]}>
+                  <Ionicons name="heart" size={18} color="#EBA89A" />
+                </View>
+                <View style={[styles.decorBadge, styles.decorLeafTopLeft]}>
+                  <Ionicons name="leaf-outline" size={16} color="#DFA48F" />
+                </View>
+                <View style={[styles.decorBadge, styles.decorHeartLeft]}>
+                  <Ionicons name="heart" size={14} color="#E6A495" />
+                </View>
+                <View style={[styles.decorBadge, styles.decorLeafRight]}>
+                  <Ionicons name="leaf-outline" size={20} color="#D89D8D" />
+                </View>
+                <View style={[styles.decorBadge, styles.decorLeafLowerRight]}>
+                  <Ionicons name="leaf-outline" size={15} color="#DDA08E" />
+                </View>
+                <View style={[styles.decorBadge, styles.decorHeartBottom]}>
+                  <Ionicons name="heart" size={16} color="#E3A393" />
+                </View>
+                <View style={[styles.decorBadge, styles.decorHeartBottomLeft]}>
+                  <Ionicons name="heart" size={13} color="#E8AE9F" />
+                </View>
+                <Image
+                  source={childrenScreenAssets.avatars.boyBlackHair}
+                  style={styles.summaryAvatar}
+                  resizeMode="contain"
+                />
               </View>
             </View>
 
-            <View style={styles.section}>
-              <View style={styles.episodesHeader}>
-                <Text style={styles.sectionTitle}>{content.episodesTitle}</Text>
-              </View>
+            <View style={styles.highlightsGrid}>
+              {content.highlights.map((highlight, index) => (
+                <View
+                  key={highlight.id}
+                  style={[
+                    styles.highlightCell,
+                    index === content.highlights.length - 1
+                      ? styles.highlightCellFull
+                      : null,
+                  ]}
+                >
+                  <HighlightCard card={highlight} />
+                </View>
+              ))}
+            </View>
 
+            <View style={styles.episodesSection}>
+              <Text style={styles.sectionTitle}>{content.episodesTitle}</Text>
+              <Text style={styles.sectionHelper}>{content.episodesHelper}</Text>
               <View style={styles.episodesList}>
                 {content.episodes.map((episode) => (
-                  <EpisodeCard key={episode.id} episode={episode} />
+                  <EpisodeCard
+                    key={episode.id}
+                    episode={episode}
+                    onOpenEpisode={onOpenEpisode}
+                  />
                 ))}
               </View>
             </View>
@@ -167,45 +228,107 @@ export function AnalyticsScreen({
   );
 }
 
-function MetricCard({ metric }: { metric: AnalyticsMetricCard }) {
-  return (
-    <View
-      style={[
-        styles.metricCard,
-        {
-          backgroundColor: metric.accent.cardTint,
-          borderColor: metric.accent.border,
-        },
-      ]}
-    >
-      <View
-        style={[styles.metricChip, { backgroundColor: metric.accent.chipBg }]}
-      >
-        <View
-          style={[styles.metricChipDot, { backgroundColor: metric.accent.dot }]}
-        />
-        <Text style={styles.metricChipText}>{metric.chip}</Text>
-      </View>
+function InsightRow({ insight }: { insight: AnalyticsInsightItem }) {
+  const config = {
+    completed: {
+      icon: "checkmark-circle-outline" as const,
+      background: "#FFE8E1",
+      color: "#FF7E73",
+    },
+    activeMonth: {
+      icon: "calendar-clear-outline" as const,
+      background: "#EAF4FF",
+      color: "#5EA7F5",
+    },
+    medicine: {
+      icon: "medical-outline" as const,
+      background: "#EAF8EF",
+      color: "#61C58B",
+    },
+  }[insight.icon];
 
-      <View>
-        <Text style={styles.metricValue}>{metric.value}</Text>
-        <Text style={styles.metricSubtext}>{metric.subtext}</Text>
+  return (
+    <View style={styles.insightRow}>
+      <View style={[styles.insightIconWrap, { backgroundColor: config.background }]}>
+        <Ionicons name={config.icon} size={18} color={config.color} />
+      </View>
+      <View style={styles.insightCopy}>
+        <Text style={styles.insightTitle}>{insight.title}</Text>
+        <Text style={styles.insightSubtitle}>{insight.subtitle}</Text>
       </View>
     </View>
   );
 }
 
-function EpisodeCard({ episode }: { episode: AnalyticsEpisodeCard }) {
+function HighlightCard({ card }: { card: AnalyticsHighlightCard }) {
+  const iconName = {
+    duration: "clock-time-four-outline",
+    longest: "star-four-points-outline",
+    observations: "clipboard-text-outline",
+  }[card.icon] as
+    | "clock-time-four-outline"
+    | "star-four-points-outline"
+    | "clipboard-text-outline";
+
+  return (
+    <View
+      style={[
+        styles.highlightCard,
+        {
+          backgroundColor: card.accent.background,
+          borderColor: card.accent.border,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.highlightIconWrap,
+          { backgroundColor: card.accent.iconBackground },
+        ]}
+      >
+        <MaterialCommunityIcons
+          name={iconName}
+          size={18}
+          color={card.accent.iconColor}
+        />
+      </View>
+      <View style={styles.highlightTextBlock}>
+        <Text style={styles.highlightLabel}>{card.label}</Text>
+        <Text style={styles.highlightValue}>{card.value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function EpisodeCard({
+  episode,
+  onOpenEpisode,
+}: {
+  episode: AnalyticsEpisodeCard;
+  onOpenEpisode: (episode: AnalyticsEpisodeCard) => void;
+}) {
   return (
     <View style={styles.episodeCard}>
+      <View style={styles.dateBadge}>
+        <Text style={styles.dateBadgeMonth}>{episode.monthLabel}</Text>
+        <Text style={styles.dateBadgeDay}>{episode.dayLabel}</Text>
+      </View>
+
       <View style={styles.episodeCopy}>
         <Text style={styles.episodeMeta}>{episode.meta}</Text>
         <Text style={styles.episodeTitle}>{episode.title}</Text>
-        <Text style={styles.episodeClosed}>{episode.closedAt}</Text>
-        <Text style={styles.episodeDescription}>{episode.description}</Text>
+        <Text style={styles.episodeSubtitle}>
+          {episode.closedAt} {"•"} {episode.description}
+        </Text>
       </View>
 
-      <Pressable style={styles.episodeAction}>
+      <Pressable
+        onPress={() => onOpenEpisode(episode)}
+        style={({ pressed }) => [
+          styles.episodeAction,
+          pressed ? styles.episodeActionPressed : null,
+        ]}
+      >
         <Text style={styles.episodeActionText}>{episode.actionLabel}</Text>
       </Pressable>
     </View>
