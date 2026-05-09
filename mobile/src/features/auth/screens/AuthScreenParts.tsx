@@ -349,7 +349,6 @@ export function AuthBottomArea({
 
 export function ForgotPasswordSheetContent({
   content,
-  locale,
   panHandlers,
   forgotPasswordState,
   forgotPasswordVisibility,
@@ -369,7 +368,6 @@ export function ForgotPasswordSheetContent({
   onSubmit,
 }: {
   content: AuthScreenContent;
-  locale: "ru" | "en" | "pl" | "de";
   panHandlers: GestureResponderHandlers;
   forgotPasswordState: ForgotPasswordState;
   forgotPasswordVisibility: ForgotPasswordVisibilityState;
@@ -599,9 +597,7 @@ export function ForgotPasswordSheetContent({
           />
           <Text style={styles.primaryButtonLabel}>
             {isForgotPasswordSubmitting
-              ? locale === "ru"
-                ? "Сохраняем…"
-                : "Saving…"
+              ? content.forgotPasswordSubmittingLabel
               : content.forgotPasswordSheetButtonLabel}
           </Text>
         </Pressable>

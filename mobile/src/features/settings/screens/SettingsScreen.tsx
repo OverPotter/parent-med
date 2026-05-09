@@ -24,6 +24,7 @@ import {
   fetchMyFamilySettingsSummary,
   fetchPushConfig,
   fetchPushPreferences,
+  MobileSettingsApiError,
   type MobileFamilyAccessSummary,
   type MobileFamilySettingsSummary,
   type MobilePushConfig,
@@ -106,7 +107,6 @@ const settingsModuleIcons = {
 } as const;
 
 const settingsModuleAccentColors = {
-  master: "#5B7FD7",
   children: "#F47667",
   pillbox: "#8C7AE6",
   cabinet: "#E59A63",
@@ -123,6 +123,40 @@ const emptyPasswordForm: PasswordFormState = {
   newPassword: "",
   confirmPassword: "",
 };
+
+function resolvePasswordSaveError(
+  error: unknown,
+  locale: MobileLocale,
+  fallback: string,
+) {
+  if (!(error instanceof MobileSettingsApiError)) {
+    return fallback;
+  }
+
+  if (locale === "ru" && error.detail) {
+    return error.detail;
+  }
+
+  const knownCodes: Record<string, string> = {
+    INVALID_CURRENT_PASSWORD: "Current password is incorrect.",
+  };
+
+  const knownDetails: Record<string, string> = {
+    "Текущий пароль неверный": "Current password is incorrect.",
+    "Current password is incorrect": "Current password is incorrect.",
+    "Incorrect current password": "Current password is incorrect.",
+  };
+
+  if (error.code && knownCodes[error.code]) {
+    return knownCodes[error.code];
+  }
+
+  if (error.detail && knownDetails[error.detail]) {
+    return knownDetails[error.detail];
+  }
+
+  return error.detail ?? fallback;
+}
 
 function formatSubscriptionExpiresAt(
   locale: MobileLocale,
@@ -183,6 +217,7 @@ export function SettingsScreen({
   const [subscriptionExpanded, setSubscriptionExpanded] = useState(false);
   const [passwordForm, setPasswordForm] =
     useState<PasswordFormState>(emptyPasswordForm);
+  const [passwordSubmitError, setPasswordSubmitError] = useState<string | null>(null);
   const [recoveryCode, setRecoveryCode] = useState("");
   const [hasRecoveryCode, setHasRecoveryCode] = useState(
     Boolean(session?.account.hasRecoveryCode),
@@ -290,13 +325,14 @@ export function SettingsScreen({
   const resetTransientMessages = () => {
     setError(null);
     setSuccess(null);
+    setPasswordSubmitError(null);
   };
 
   const passwordInlineHint =
     passwordForm.confirmPassword.trim().length > 0 &&
     passwordForm.newPassword !== passwordForm.confirmPassword
       ? content.passwordsMismatch
-      : null;
+      : passwordSubmitError;
 
   const handleLanguageSelect = async (nextLocale: MobileLocale) => {
     if (isSavingLanguage || nextLocale === session?.account.preferredLanguage) {
@@ -425,8 +461,10 @@ export function SettingsScreen({
       setPasswordForm(emptyPasswordForm);
       setPasswordExpanded(false);
       setSuccess(content.passwordUpdatedLabel);
-    } catch {
-      setError(content.saveErrorLabel);
+    } catch (error) {
+      setPasswordSubmitError(
+        resolvePasswordSaveError(error, locale, content.saveErrorLabel),
+      );
     } finally {
       setIsSavingPassword(false);
     }
@@ -728,7 +766,6 @@ export function SettingsScreen({
                 childrenAccentColor={settingsModuleAccentColors.children}
                 pillboxAccentColor={settingsModuleAccentColors.pillbox}
                 cabinetAccentColor={settingsModuleAccentColors.cabinet}
-                masterAccentColor={settingsModuleAccentColors.master}
               />
             </SettingsSection>
 

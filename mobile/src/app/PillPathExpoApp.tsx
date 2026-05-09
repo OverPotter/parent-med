@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
-import { AnalyticsScreen } from "../features/analytics/screens/AnalyticsScreen";
-import { AnalyticsBreakdownScreen } from "../features/analytics/screens/AnalyticsBreakdownScreen";
 import {
   logoutMobileSession,
   refreshMobileSession,
@@ -17,22 +15,9 @@ import {
   readStoredAuthSession,
   writeStoredAuthSession,
 } from "../features/auth/session/mobileAuthSessionStorage";
-import { ChildProfileEditScreen } from "../features/child-profile-edit/screens/ChildProfileEditScreen";
-import { ChildProfileRedesignScreen } from "../features/child-profile/screens/ChildProfileRedesignScreen";
 import { AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
-import { FeedingHistoryScreen } from "../features/feeding/screens/FeedingHistoryScreen";
-import { GrowthHistoryScreen } from "../features/growth/screens/GrowthHistoryScreen";
-import { SleepHistoryScreen } from "../features/sleep/screens/SleepHistoryScreen";
-import { WeightHistoryScreen } from "../features/weight/screens/WeightHistoryScreen";
 import { JournalEntryKind } from "../features/journal/model/journalEntryScreen";
-import { JournalEntryScreen } from "../features/journal/screens/JournalEntryScreen";
-import { ChildOverviewScreen } from "../features/overview/screens/ChildOverviewScreen";
 import { buildChildrenScreenContent } from "../features/children/model/childrenRedesign";
-import { ChildrenRedesignScreen } from "../features/children/screens/ChildrenRedesignScreen";
-import { MoreScreen } from "../features/more/screens/MoreScreen";
-import { LegalDocumentScreen } from "../features/legal/screens/LegalDocumentScreen";
-import { SettingsScreen } from "../features/settings/screens/SettingsScreen";
-import { SupportScreen } from "../features/support/screens/SupportScreen";
 import {
   applyPreferredLanguageToSession,
   updatePreferredLanguage,
@@ -46,13 +31,17 @@ import {
   MobileBottomTabBar,
   MobileBottomTabKey,
 } from "../shared/components/MobileBottomTabBar";
-import { RootModulePlaceholderScreen } from "../shared/components/RootModulePlaceholderScreen";
 import {
   MobileThemeProvider,
   useMobileSurfaceTheme,
 } from "../shared/theme/mobileSurfaceTheme";
-
-type ChildProfileDestination = JournalEntryKind | "overview";
+import { OverlayScreens, RootTabContent } from "./PillPathExpoShellContent";
+import {
+  resolveJournalTargetScreen,
+  resolveStoredSessionPreferredLocale,
+  type ChildProfileDestination,
+  type PillPathActiveScreen,
+} from "./pillPathExpoShellModel";
 
 export function PillPathExpoApp() {
   return (
@@ -72,23 +61,7 @@ function PillPathExpoShell() {
   const [isAuthBootstrapping, setIsAuthBootstrapping] = useState(true);
   const [activeRootTab, setActiveRootTab] = useState<MobileBottomTabKey>("children");
   const rootTabItems = buildChildrenScreenContent(locale, activeRootTab).tabs;
-  const [activeScreen, setActiveScreen] = useState<
-    | "children"
-    | "analytics"
-    | "analyticsBreakdown"
-    | "childProfile"
-    | "childProfileEdit"
-    | "feedingHistory"
-    | "growthHistory"
-    | "privacyPolicy"
-    | "overview"
-    | "settings"
-    | "sleepHistory"
-    | "support"
-    | "termsOfUse"
-    | "weightHistory"
-    | "journalEntry"
-  >("children");
+  const [activeScreen, setActiveScreen] = useState<PillPathActiveScreen>("children");
   const [selectedChildId, setSelectedChildId] = useState(
     childrenScreenContent.cards[0]?.nodeId ?? "",
   );
@@ -98,11 +71,6 @@ function PillPathExpoShell() {
     useState<JournalEntryKind>("feeding");
   const [activeFeedingStartedAtByCardId, setActiveFeedingStartedAtByCardId] =
     useState<Record<string, string | null>>({});
-
-  const selectedChild =
-    childrenScreenContent.cards.find(
-      (card) => card.nodeId === selectedChildId,
-    ) ?? childrenScreenContent.cards[0];
 
   const handleOpenChildProfile = useCallback((cardId: string) => {
     setSelectedChildId(cardId);
@@ -173,33 +141,16 @@ function PillPathExpoShell() {
   }, []);
 
   const handleOpenJournalEntry = useCallback((kind: ChildProfileDestination) => {
-    if (kind === "overview") {
-      setActiveScreen("overview");
-      return;
+    if (
+      kind === "feeding" ||
+      kind === "sleep" ||
+      kind === "weight" ||
+      kind === "height"
+    ) {
+      setSelectedJournalKind(kind);
     }
 
-    if (kind === "feeding") {
-      setActiveScreen("feedingHistory");
-      return;
-    }
-
-    if (kind === "sleep") {
-      setActiveScreen("sleepHistory");
-      return;
-    }
-
-    if (kind === "weight") {
-      setActiveScreen("weightHistory");
-      return;
-    }
-
-    if (kind === "height") {
-      setActiveScreen("growthHistory");
-      return;
-    }
-
-    setSelectedJournalKind(kind);
-    setActiveScreen("journalEntry");
+    setActiveScreen(resolveJournalTargetScreen(kind));
   }, []);
 
   const handleCloseJournalEntry = useCallback(() => {
@@ -409,11 +360,10 @@ function PillPathExpoShell() {
         }
 
         const refreshedSession = await refreshMobileSession(storedSession.refreshToken);
-        const preferredLocale =
-          storedSession.account.preferredLanguage === "pl" ||
-          storedSession.account.preferredLanguage === "de"
-            ? storedSession.account.preferredLanguage
-            : refreshedSession.account.preferredLanguage;
+        const preferredLocale = resolveStoredSessionPreferredLocale(
+          storedSession,
+          refreshedSession,
+        );
 
         if (cancelled) {
           return;
@@ -458,127 +408,51 @@ function PillPathExpoShell() {
   return (
     <View style={[styles.root, { backgroundColor: surfaceTheme.appBackgroundColor }]}>
       <StatusBar style={surfaceTheme.statusBarStyle} />
-      {activeRootTab === "children" ? (
-        <View style={styles.screenLayer}>
-          <ChildrenRedesignScreen
-            onOpenChildProfile={handleOpenChildProfile}
-            onOpenJournalEntry={handleOpenRootJournalEntry}
-            activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
-            onFeedingPress={handleFeedingPress}
-          />
-        </View>
-      ) : activeRootTab === "more" && authSession ? (
-        <View style={styles.screenLayer}>
-          <MoreScreen
-            session={authSession}
-            onLogout={handleLogout}
-            onOpenSettings={handleOpenSettings}
-            onOpenSupport={handleOpenSupport}
-            onOpenTerms={handleOpenTermsOfUse}
-            onOpenPrivacy={handleOpenPrivacyPolicy}
-            onUpdateSession={handleUpdateAuthSession}
-          />
-        </View>
-      ) : (
-        <View style={styles.screenLayer}>
-          <RootModulePlaceholderScreen tabKey={activeRootTab} />
-        </View>
-      )}
+      <RootTabContent
+        locale={locale}
+        activeRootTab={activeRootTab}
+        authSession={authSession}
+        activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
+        onOpenChildProfile={handleOpenChildProfile}
+        onOpenRootJournalEntry={handleOpenRootJournalEntry}
+        onFeedingPress={handleFeedingPress}
+        onLogout={handleLogout}
+        onOpenSettings={handleOpenSettings}
+        onOpenSupport={handleOpenSupport}
+        onOpenTermsOfUse={handleOpenTermsOfUse}
+        onOpenPrivacyPolicy={handleOpenPrivacyPolicy}
+        onUpdateAuthSession={handleUpdateAuthSession}
+        screenLayerStyle={styles.screenLayer}
+      />
       <MobileBottomTabBar items={rootTabItems} onSelectTab={handleSelectRootTab} />
-      {selectedChild ? (
-        <>
-          <ChildProfileRedesignScreen
-            child={selectedChild}
-            visible={
-              activeScreen === "childProfile" ||
-              activeScreen === "childProfileEdit" ||
-              activeScreen === "analytics" ||
-              activeScreen === "analyticsBreakdown" ||
-              activeScreen === "feedingHistory" ||
-              activeScreen === "growthHistory" ||
-              activeScreen === "overview" ||
-              activeScreen === "sleepHistory" ||
-              activeScreen === "weightHistory"
-            }
-            onBack={handleCloseChildProfile}
-            onEditProfile={handleOpenEditProfile}
-            onOpenAnalytics={handleOpenAnalytics}
-            onOpenJournalEntry={handleOpenJournalEntry}
-          />
-          <ChildProfileEditScreen
-            child={selectedChild}
-            visible={activeScreen === "childProfileEdit"}
-            onBack={handleCloseEditProfile}
-          />
-          {activeScreen === "analytics" ||
-          activeScreen === "analyticsBreakdown" ? (
-            <AnalyticsScreen
-              visible={activeScreen === "analytics"}
-              onBack={handleCloseAnalytics}
-              onOpenEpisode={handleOpenAnalyticsEpisode}
-            />
-          ) : null}
-          {activeScreen === "analyticsBreakdown" && selectedEpisode ? (
-            <AnalyticsBreakdownScreen
-              episode={selectedEpisode}
-              onBack={handleCloseAnalyticsEpisode}
-            />
-          ) : null}
-          <JournalEntryScreen
-            kind={selectedJournalKind}
-            visible={activeScreen === "journalEntry"}
-            onBack={handleCloseJournalEntry}
-            onSwipeBack={handleCloseJournalEntry}
-            onStartTimer={handleStartFeedingTimer}
-          />
-          <FeedingHistoryScreen
-            child={selectedChild}
-            visible={activeScreen === "feedingHistory"}
-            onBack={handleCloseFeedingHistory}
-          />
-          <SleepHistoryScreen
-            child={selectedChild}
-            visible={activeScreen === "sleepHistory"}
-            onBack={handleCloseSleepHistory}
-          />
-          <WeightHistoryScreen
-            child={selectedChild}
-            visible={activeScreen === "weightHistory"}
-            onBack={handleCloseWeightHistory}
-          />
-          <GrowthHistoryScreen
-            child={selectedChild}
-            visible={activeScreen === "growthHistory"}
-            onBack={handleCloseGrowthHistory}
-          />
-          <ChildOverviewScreen
-            child={selectedChild}
-            visible={activeScreen === "overview"}
-            onBack={handleCloseOverview}
-          />
-        </>
-      ) : null}
-      <LegalDocumentScreen
-        documentKey="privacy"
-        visible={activeScreen === "privacyPolicy"}
-        onBack={handleClosePrivacyPolicy}
-      />
-      <SupportScreen
-        visible={activeScreen === "support"}
-        onBack={handleCloseSupport}
-        session={authSession}
-      />
-      <SettingsScreen
-        visible={activeScreen === "settings"}
-        onBack={handleCloseSettings}
+      <OverlayScreens
+        locale={locale}
+        activeScreen={activeScreen}
+        selectedChildId={selectedChildId}
+        selectedEpisode={selectedEpisode}
+        selectedJournalKind={selectedJournalKind}
+        authSession={authSession}
         onSessionDeleted={handleSessionDeleted}
-        session={authSession}
         onUpdatePreferredLanguage={handleUpdatePreferredLanguage}
-      />
-      <LegalDocumentScreen
-        documentKey="terms"
-        visible={activeScreen === "termsOfUse"}
-        onBack={handleCloseTermsOfUse}
+        onBackChildProfile={handleCloseChildProfile}
+        onEditProfile={handleOpenEditProfile}
+        onOpenAnalytics={handleOpenAnalytics}
+        onOpenJournalEntry={handleOpenJournalEntry}
+        onBackEditProfile={handleCloseEditProfile}
+        onBackAnalytics={handleCloseAnalytics}
+        onOpenEpisode={handleOpenAnalyticsEpisode}
+        onBackAnalyticsEpisode={handleCloseAnalyticsEpisode}
+        onBackJournalEntry={handleCloseJournalEntry}
+        onStartFeedingTimer={handleStartFeedingTimer}
+        onBackFeedingHistory={handleCloseFeedingHistory}
+        onBackSleepHistory={handleCloseSleepHistory}
+        onBackWeightHistory={handleCloseWeightHistory}
+        onBackGrowthHistory={handleCloseGrowthHistory}
+        onBackOverview={handleCloseOverview}
+        onBackPrivacyPolicy={handleClosePrivacyPolicy}
+        onBackSupport={handleCloseSupport}
+        onBackSettings={handleCloseSettings}
+        onBackTermsOfUse={handleCloseTermsOfUse}
       />
     </View>
   );

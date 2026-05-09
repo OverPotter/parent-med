@@ -366,9 +366,7 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
         getAuthErrorMessage(
           error,
           locale,
-          locale === "ru"
-            ? "Не удалось проверить код семьи."
-            : "Could not verify the family code.",
+          content.familyCodeVerifyFailedError,
         ),
       );
       return null;
@@ -434,13 +432,9 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
         getAuthErrorMessage(
           error,
           locale,
-          locale === "ru"
-            ? activeTab === "login"
-              ? "Не удалось войти."
-              : "Не удалось создать аккаунт."
-            : activeTab === "login"
-              ? "Could not sign in."
-              : "Could not create account.",
+          activeTab === "login"
+            ? content.loginFailedError
+            : content.registerFailedError,
         ),
       );
     } finally {
@@ -486,9 +480,7 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
         getAuthErrorMessage(
           error,
           locale,
-          locale === "ru"
-            ? "Не удалось сбросить пароль."
-            : "Could not reset password.",
+          content.resetPasswordFailedError,
         ),
       );
     } finally {
@@ -692,13 +684,9 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
                       />
                       <Text style={styles.primaryButtonLabel}>
                         {isSubmitting
-                          ? locale === "ru"
-                            ? isRegisterMode
-                              ? "Создаём…"
-                              : "Входим…"
-                            : isRegisterMode
-                              ? "Creating…"
-                              : "Signing in…"
+                          ? isRegisterMode
+                            ? content.registerSubmittingLabel
+                            : content.loginSubmittingLabel
                           : isRegisterMode
                             ? content.registerButtonLabel
                             : content.loginButtonLabel}
@@ -755,7 +743,6 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
         {({ panHandlers }) => (
           <ForgotPasswordSheetContent
             content={content}
-            locale={locale}
             panHandlers={panHandlers}
             forgotPasswordState={forgotPasswordState}
             forgotPasswordVisibility={forgotPasswordVisibility}

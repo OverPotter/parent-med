@@ -12,30 +12,66 @@ const placeholderCopy = {
     ru: {
       title: "Таблетки",
       subtitle: "Пока здесь будет спокойная заглушка.",
+      body: "Вкладка уже переключается, а сам модуль пока оставили как чистую заглушку на нашем фоне.",
+    },
+    de: {
+      title: "Tabletten",
+      subtitle: "Hier bleibt vorerst ein ruhiger Platzhalter.",
+      body: "Der Tab funktioniert bereits, das Modul selbst bleibt aber vorerst ein sauberer Platzhalter auf unserem gemeinsamen Hintergrund.",
+    },
+    pl: {
+      title: "Tabletki",
+      subtitle: "Na razie zostaje tu spokojny placeholder.",
+      body: "Zakładka już działa, a sam moduł zostaje na razie czystym placeholderem na naszym wspólnym tle.",
     },
     en: {
       title: "Pillbox",
       subtitle: "A calm placeholder lives here for now.",
+      body: "The tab now switches correctly, while the module itself stays a clean placeholder on our shared background.",
     },
   },
   cabinet: {
     ru: {
       title: "Аптечка",
       subtitle: "Пока собираем экран в общем визуальном языке.",
+      body: "Вкладка уже переключается, а сам модуль пока оставили как чистую заглушку на нашем фоне.",
+    },
+    de: {
+      title: "Medikamentenschrank",
+      subtitle: "Dieser Bildschirm wird gerade in der gemeinsamen Designsprache aufgebaut.",
+      body: "Der Tab funktioniert bereits, das Modul selbst bleibt aber vorerst ein sauberer Platzhalter auf unserem gemeinsamen Hintergrund.",
+    },
+    pl: {
+      title: "Apteczka",
+      subtitle: "Ten ekran budujemy teraz we wspólnym języku wizualnym.",
+      body: "Zakładka już działa, a sam moduł zostaje na razie czystym placeholderem na naszym wspólnym tle.",
     },
     en: {
       title: "Cabinet",
       subtitle: "This screen will be rebuilt in the shared visual language.",
+      body: "The tab now switches correctly, while the module itself stays a clean placeholder on our shared background.",
     },
   },
   more: {
     ru: {
       title: "Ещё",
       subtitle: "Скоро сюда добавим остальные разделы.",
+      body: "Вкладка уже переключается, а сам модуль пока оставили как чистую заглушку на нашем фоне.",
+    },
+    de: {
+      title: "Mehr",
+      subtitle: "Weitere Bereiche kommen bald hierher.",
+      body: "Der Tab funktioniert bereits, das Modul selbst bleibt aber vorerst ein sauberer Platzhalter auf unserem gemeinsamen Hintergrund.",
+    },
+    pl: {
+      title: "Więcej",
+      subtitle: "Wkrótce dodamy tu pozostałe sekcje.",
+      body: "Zakładka już działa, a sam moduł zostaje na razie czystym placeholderem na naszym wspólnym tle.",
     },
     en: {
       title: "More",
       subtitle: "Additional sections will appear here soon.",
+      body: "The tab now switches correctly, while the module itself stays a clean placeholder on our shared background.",
     },
   },
 } as const;
@@ -45,8 +81,10 @@ export function RootModulePlaceholderScreen({
 }: RootModulePlaceholderScreenProps) {
   const { locale } = useMobileI18n();
   const copy = placeholderCopy[tabKey];
-  const title = locale === "ru" ? copy.ru.title : copy.en.title;
-  const subtitle = locale === "ru" ? copy.ru.subtitle : copy.en.subtitle;
+  const activeCopy =
+    locale === "ru" ? copy.ru : locale === "de" ? copy.de : locale === "pl" ? copy.pl : copy.en;
+  const title = activeCopy.title;
+  const subtitle = activeCopy.subtitle;
 
   return (
     <View style={styles.root}>
@@ -67,11 +105,7 @@ export function RootModulePlaceholderScreen({
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{title}</Text>
-          <Text style={styles.cardBody}>
-            {locale === "ru"
-              ? "Вкладка уже переключается, а сам модуль пока оставили как чистую заглушку на нашем фоне."
-              : "The tab now switches correctly, while the module itself stays a clean placeholder on our shared background."}
-          </Text>
+          <Text style={styles.cardBody}>{activeCopy.body}</Text>
         </View>
       </View>
     </View>
