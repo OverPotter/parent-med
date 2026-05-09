@@ -12,9 +12,12 @@ import { SleepHistoryScreen } from "../features/sleep/screens/SleepHistoryScreen
 import { WeightHistoryScreen } from "../features/weight/screens/WeightHistoryScreen";
 import { JournalEntryKind } from "../features/journal/model/journalEntryScreen";
 import { JournalEntryScreen } from "../features/journal/screens/JournalEntryScreen";
+import { ChildOverviewScreen } from "../features/overview/screens/ChildOverviewScreen";
 import { buildChildrenScreenContent } from "../features/children/model/childrenRedesign";
 import { ChildrenRedesignScreen } from "../features/children/screens/ChildrenRedesignScreen";
 import { MobileI18nProvider, useMobileI18n } from "../shared/i18n/mobileI18n";
+
+type ChildProfileDestination = JournalEntryKind | "overview";
 
 export function PillPathExpoApp() {
   return (
@@ -35,6 +38,7 @@ function PillPathExpoShell() {
     | "childProfileEdit"
     | "feedingHistory"
     | "growthHistory"
+    | "overview"
     | "sleepHistory"
     | "weightHistory"
     | "journalEntry"
@@ -86,7 +90,12 @@ function PillPathExpoShell() {
     setActiveScreen("analytics");
   }, []);
 
-  const handleOpenJournalEntry = useCallback((kind: JournalEntryKind) => {
+  const handleOpenJournalEntry = useCallback((kind: ChildProfileDestination) => {
+    if (kind === "overview") {
+      setActiveScreen("overview");
+      return;
+    }
+
     if (kind === "feeding") {
       setActiveScreen("feedingHistory");
       return;
@@ -131,6 +140,10 @@ function PillPathExpoShell() {
     setActiveScreen("childProfile");
   }, []);
 
+  const handleCloseOverview = useCallback(() => {
+    setActiveScreen("childProfile");
+  }, []);
+
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
@@ -148,6 +161,7 @@ function PillPathExpoShell() {
               activeScreen === "analyticsBreakdown" ||
               activeScreen === "feedingHistory" ||
               activeScreen === "growthHistory" ||
+              activeScreen === "overview" ||
               activeScreen === "sleepHistory" ||
               activeScreen === "weightHistory" ||
               activeScreen === "journalEntry"
@@ -176,37 +190,37 @@ function PillPathExpoShell() {
               onBack={handleCloseAnalyticsEpisode}
             />
           ) : null}
-          {activeScreen === "journalEntry" ? (
-            <JournalEntryScreen
-              child={selectedChild}
-              kind={selectedJournalKind}
-              onBack={handleCloseJournalEntry}
-            />
-          ) : null}
-          {activeScreen === "feedingHistory" ? (
-            <FeedingHistoryScreen
-              child={selectedChild}
-              onBack={handleCloseFeedingHistory}
-            />
-          ) : null}
-          {activeScreen === "sleepHistory" ? (
-            <SleepHistoryScreen
-              child={selectedChild}
-              onBack={handleCloseSleepHistory}
-            />
-          ) : null}
-          {activeScreen === "weightHistory" ? (
-            <WeightHistoryScreen
-              child={selectedChild}
-              onBack={handleCloseWeightHistory}
-            />
-          ) : null}
-          {activeScreen === "growthHistory" ? (
-            <GrowthHistoryScreen
-              child={selectedChild}
-              onBack={handleCloseGrowthHistory}
-            />
-          ) : null}
+          <JournalEntryScreen
+            child={selectedChild}
+            kind={selectedJournalKind}
+            visible={activeScreen === "journalEntry"}
+            onBack={handleCloseJournalEntry}
+          />
+          <FeedingHistoryScreen
+            child={selectedChild}
+            visible={activeScreen === "feedingHistory"}
+            onBack={handleCloseFeedingHistory}
+          />
+          <SleepHistoryScreen
+            child={selectedChild}
+            visible={activeScreen === "sleepHistory"}
+            onBack={handleCloseSleepHistory}
+          />
+          <WeightHistoryScreen
+            child={selectedChild}
+            visible={activeScreen === "weightHistory"}
+            onBack={handleCloseWeightHistory}
+          />
+          <GrowthHistoryScreen
+            child={selectedChild}
+            visible={activeScreen === "growthHistory"}
+            onBack={handleCloseGrowthHistory}
+          />
+          <ChildOverviewScreen
+            child={selectedChild}
+            visible={activeScreen === "overview"}
+            onBack={handleCloseOverview}
+          />
         </>
       ) : null}
     </View>

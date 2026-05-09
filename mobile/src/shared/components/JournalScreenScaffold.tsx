@@ -18,6 +18,7 @@ import {
 } from "./SegmentedPillTabs";
 
 type JournalScreenScaffoldProps = {
+  visible?: boolean;
   backLabel: string;
   title: string;
   subtitle: string;
@@ -35,6 +36,7 @@ type JournalScreenScaffoldProps = {
 const noop = () => {};
 
 export function JournalScreenScaffold({
+  visible = true,
   backLabel,
   title,
   subtitle,
@@ -50,13 +52,20 @@ export function JournalScreenScaffold({
 }: JournalScreenScaffoldProps) {
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
-    enabled: true,
+    enabled: visible,
     width,
     onBack,
   });
 
   return (
-    <Animated.View style={[styles.overlayLayer, { transform: [{ translateX }] }]}>
+    <Animated.View
+      pointerEvents={visible ? "auto" : "none"}
+      style={[
+        styles.overlayLayer,
+        visible ? styles.overlayLayerVisible : styles.overlayLayerHidden,
+        { transform: [{ translateX }] },
+      ]}
+    >
       <ImageBackground
         source={redesignBackgrounds.childrenModule}
         resizeMode="cover"
@@ -113,6 +122,12 @@ const styles = StyleSheet.create({
   overlayLayer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 16,
+  },
+  overlayLayerVisible: {
+    opacity: 1,
+  },
+  overlayLayerHidden: {
+    opacity: 0,
   },
   background: {
     ...StyleSheet.absoluteFillObject,

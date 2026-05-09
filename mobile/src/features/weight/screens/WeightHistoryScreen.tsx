@@ -22,6 +22,7 @@ const weightHeroDecor = journalHeroAssets.weight;
 
 type WeightHistoryScreenProps = {
   child: ChildCard;
+  visible?: boolean;
   onBack?: () => void;
 };
 
@@ -29,6 +30,7 @@ const noop = () => {};
 
 export function WeightHistoryScreen({
   child,
+  visible = true,
   onBack = noop,
 }: WeightHistoryScreenProps) {
   const { locale } = useMobileI18n();
@@ -40,6 +42,7 @@ export function WeightHistoryScreen({
 
   return (
     <JournalScreenScaffold
+      visible={visible}
       backLabel={content.backLabel}
       title={content.title}
       subtitle={content.subtitle}

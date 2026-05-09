@@ -1,0 +1,348 @@
+{
+  "project": "PillPath",
+  "screenId": "child_overview_calendar_v2",
+  "screenName": "Обзор ребёнка — Календарь",
+  "version": "1.0",
+  "platform": "iOS",
+  "language": "ru",
+  "description": "Человечный и интуитивный экран календаря для обзора активности ребёнка. Главная идея: пользователь сразу видит месяц, отмеченные дни и записи за выбранную дату.",
+  "artboard": {
+    "device": "iPhone 15 / 16 Pro Max",
+    "sizePt": { "width": 430, "height": 932 },
+    "exportPx": { "width": 1290, "height": 2796 },
+    "safeAreaPt": { "top": 59, "bottom": 34, "left": 0, "right": 0 },
+    "layout": {
+      "horizontalPadding": 16,
+      "contentWidth": 398,
+      "gridColumns": 2,
+      "columnGap": 10,
+      "verticalSpacingScale": [8, 12, 16, 20, 24, 32]
+    }
+  },
+  "designIntent": {
+    "keywords": ["warm", "human", "care dashboard", "simple", "soft", "readable", "intuitive"],
+    "principles": [
+      "Один главный смысл на экране: выбрать день и увидеть записи.",
+      "Календарь — главный фокус, а не второстепенный блок.",
+      "Минимум лишних фильтров и пояснений.",
+      "Сначала обзор месяца, затем детали выбранного дня.",
+      "Цвета мягкие, но семантически различимые.",
+      "Интерфейс должен быть понятен родителю, бабушке, няне."
+    ]
+  },
+  "colorTokens": {
+    "bg/base": "#FFF8F5",
+    "bg/surface": "#FFFDFC",
+    "bg/surfaceSoft": "#FDF4F0",
+    "bg/selectedSoft": "#FCE8E1",
+    "bg/selectedDay": "#FCE7E2",
+    "border/subtle": "#F2DDD6",
+    "border/soft": "#F7E9E3",
+    "text/primary": "#15345B",
+    "text/secondary": "#62728C",
+    "text/muted": "#9AA5B5",
+    "text/accent": "#FF7E6B",
+    "icon/nav": "#6C829D",
+    "brand/coral": "#FF7E6B",
+    "brand/coralSoft": "#FFE6E0",
+    "sleep/blue": "#4AA6F0",
+    "feeding/orange": "#F7A14C",
+    "illness/pink": "#F55F79",
+    "weight/teal": "#39C0A6",
+    "growth/green": "#8CCB2E",
+    "purple/secondary": "#8B74D9",
+    "white": "#FFFFFF",
+    "black": "#000000"
+  },
+  "typography": {
+    "fontPrimary": "SF Pro Display",
+    "fontSecondary": "SF Pro Text",
+    "styles": {
+      "navLink": { "fontFamily": "SF Pro Text", "weight": "Regular", "size": 16, "lineHeight": 20, "color": "{text/accent}" },
+      "titleXL": { "fontFamily": "SF Pro Display", "weight": "Bold", "size": 34, "lineHeight": 40, "letterSpacing": -0.5, "color": "{text/primary}" },
+      "bodyL": { "fontFamily": "SF Pro Text", "weight": "Regular", "size": 16, "lineHeight": 24, "color": "{text/secondary}" },
+      "tabLabel": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 17, "lineHeight": 22, "color": "{text/primary}" },
+      "sectionTitle": { "fontFamily": "SF Pro Display", "weight": "Bold", "size": 26, "lineHeight": 32, "letterSpacing": -0.3, "color": "{text/primary}" },
+      "monthTitle": { "fontFamily": "SF Pro Display", "weight": "Bold", "size": 24, "lineHeight": 30, "color": "{text/primary}" },
+      "legendLabel": { "fontFamily": "SF Pro Text", "weight": "Medium", "size": 14, "lineHeight": 18, "color": "{text/primary}" },
+      "weekdayLabel": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 14, "lineHeight": 18, "color": "{text/secondary}" },
+      "dayNumber": { "fontFamily": "SF Pro Display", "weight": "Semibold", "size": 18, "lineHeight": 22, "color": "{text/primary}" },
+      "dayNumberMuted": { "fontFamily": "SF Pro Display", "weight": "Semibold", "size": 18, "lineHeight": 22, "color": "{text/muted}" },
+      "cardTitle": { "fontFamily": "SF Pro Display", "weight": "Bold", "size": 18, "lineHeight": 24, "color": "{text/primary}" },
+      "eventTime": { "fontFamily": "SF Pro Text", "weight": "Regular", "size": 16, "lineHeight": 20, "color": "{text/primary}" },
+      "eventName": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 18, "lineHeight": 22, "color": "{text/primary}" },
+      "eventDetail": { "fontFamily": "SF Pro Text", "weight": "Regular", "size": 15, "lineHeight": 20, "color": "{text/secondary}" },
+      "buttonLabel": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 16, "lineHeight": 20, "color": "{brand/coral}" },
+      "bottomNavLabel": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 13, "lineHeight": 16, "color": "{icon/nav}" },
+      "bottomNavLabelActive": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 13, "lineHeight": 16, "color": "{brand/coral}" }
+    }
+  },
+  "shapeTokens": {
+    "cardRadius": 22,
+    "innerCardRadius": 18,
+    "tabRadius": 22,
+    "buttonRadius": 20,
+    "chipRadius": 18,
+    "dayCellRadius": 16,
+    "iconCircleRadius": 24,
+    "bottomBarRadius": 26,
+    "borderWidth": 1,
+    "shadow": { "x": 0, "y": 6, "blur": 18, "spread": 0, "color": "rgba(67,34,21,0.05)" }
+  },
+  "iconSystem": {
+    "style": "rounded minimal outline or soft filled icons",
+    "strokeWidth": 2,
+    "baseSize": 22,
+    "iconCircle": { "size": 48, "radius": 24 },
+    "icons": {
+      "sleep": { "symbol": "moon with stars", "fill": "{sleep/blue}", "circleBg": "#ECE6FF" },
+      "feeding": { "symbol": "baby bottle", "fill": "{feeding/orange}", "circleBg": "#FFF0DE" },
+      "illness": { "symbol": "thermometer", "fill": "{illness/pink}", "circleBg": "#FFE5EA" },
+      "weight": { "symbol": "scale or health metric", "fill": "{weight/teal}", "circleBg": "#E4FAF5" },
+      "growth": { "symbol": "height / growth", "fill": "{growth/green}", "circleBg": "#EEF9DD" },
+      "childrenTab": { "symbol": "baby face", "fill": "{brand/coral}", "circleBg": "{brand/coralSoft}" },
+      "pillsTab": { "symbol": "pill", "fill": "{icon/nav}" },
+      "cabinetTab": { "symbol": "medical bag", "fill": "{icon/nav}" },
+      "moreTab": { "symbol": "menu", "fill": "{icon/nav}" },
+      "chat": { "symbol": "message bubble", "stroke": "{icon/nav}" },
+      "profile": { "symbol": "user outline", "stroke": "{icon/nav}" }
+    }
+  },
+  "copy": {
+    "backLink": "← К профилю ребёнка",
+    "screenTitle": "Обзор · Эдик",
+    "screenSubtitle": "Выберите день и сразу посмотрите, что происходило с ребёнком.",
+    "tabs": ["Лента", "Календарь", "Графики"],
+    "month": "Май 2026 г.",
+    "period": "7 дней",
+    "selectedDayHeader": "Записи за 3 мая",
+    "selectedDayHint": "Нажмите на день, чтобы сменить выбор.",
+    "addEntry": "+ Добавить запись",
+    "bottomNav": ["Дети", "Таблетки", "Аптечка", "Ещё"],
+    "monthStats": [
+      { "label": "Активные дни", "value": "8" },
+      { "label": "Чаще всего", "value": "Кормление" },
+      { "label": "Последняя запись", "value": "3 мая" }
+    ]
+  },
+  "components": {
+    "topBar": {
+      "frame": { "x": 16, "y": 72, "w": 398, "h": 28 },
+      "backLink": { "text": "{copy.backLink}", "style": "navLink", "alignment": "left" },
+      "statusBarIncluded": true
+    },
+    "header": {
+      "frame": { "x": 16, "y": 116, "w": 398, "h": 126 },
+      "title": { "text": "{copy.screenTitle}", "style": "titleXL" },
+      "subtitle": { "text": "{copy.screenSubtitle}", "style": "bodyL", "marginTop": 12, "maxWidth": 290 },
+      "actions": {
+        "position": "top-right",
+        "buttons": [
+          { "name": "chat", "size": 48, "radius": 24, "borderColor": "{border/subtle}", "background": "{bg/surface}" },
+          { "name": "profile", "size": 48, "radius": 24, "borderColor": "{border/subtle}", "background": "{bg/surface}" }
+        ],
+        "gap": 12
+      }
+    },
+    "segmentedTabs": {
+      "frame": { "x": 16, "y": 262, "w": 398, "h": 56 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 28,
+      "items": [
+        { "label": "Лента", "active": false },
+        { "label": "Календарь", "active": true },
+        { "label": "Графики", "active": false }
+      ],
+      "activePill": { "background": "{bg/selectedSoft}", "radius": 22 }
+    },
+    "calendarCard": {
+      "frame": { "x": 16, "y": 336, "w": 398, "h": 466 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 22,
+      "padding": 18,
+      "headerRow": {
+        "monthTitle": { "text": "{copy.month}", "style": "monthTitle" },
+        "periodDropdown": {
+          "text": "{copy.period}",
+          "size": { "w": 108, "h": 44 },
+          "background": "{bg/surface}",
+          "borderColor": "{border/subtle}",
+          "radius": 22,
+          "textStyle": "tabLabel",
+          "icon": "chevron-down"
+        },
+        "navButtons": [
+          { "type": "left", "size": 40, "radius": 14, "borderColor": "{border/subtle}", "background": "{bg/surface}" },
+          { "type": "right", "size": 40, "radius": 14, "borderColor": "{border/subtle}", "background": "{bg/surface}" }
+        ]
+      },
+      "legend": {
+        "marginTop": 18,
+        "items": [
+          { "label": "Сон", "dotColor": "{sleep/blue}" },
+          { "label": "Кормление", "dotColor": "{feeding/orange}" },
+          { "label": "Болезни", "dotColor": "{illness/pink}" },
+          { "label": "Вес", "dotColor": "{weight/teal}" },
+          { "label": "Рост", "dotColor": "{growth/green}" }
+        ],
+        "dotSize": 12,
+        "gap": 24
+      },
+      "weekdays": {
+        "marginTop": 22,
+        "labels": ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"],
+        "style": "weekdayLabel"
+      },
+      "grid": {
+        "marginTop": 16,
+        "columns": 7,
+        "rows": 5,
+        "cellSize": { "w": 48, "h": 64 },
+        "columnGap": 7,
+        "rowGap": 8,
+        "defaultCell": {
+          "background": "{bg/surface}",
+          "borderColor": "{border/soft}",
+          "radius": 16
+        },
+        "mutedCell": {
+          "background": "transparent",
+          "borderColor": "transparent",
+          "dayNumberStyle": "dayNumberMuted"
+        },
+        "selectedCell": {
+          "background": "{bg/selectedDay}",
+          "borderColor": "{border/subtle}",
+          "dayNumberColor": "{brand/coral}"
+        },
+        "eventDot": { "size": 10, "spacing": 6, "position": "bottom-center" },
+        "days": [
+          { "day": 27, "muted": true },
+          { "day": 28, "muted": true },
+          { "day": 29, "muted": true },
+          { "day": 30, "muted": true },
+          { "day": 1, "dots": ["sleep/blue", "feeding/orange", "growth/green"] },
+          { "day": 2, "dots": ["purple/secondary", "feeding/orange"] },
+          { "day": 3, "selected": true, "dots": ["illness/pink", "purple/secondary", "feeding/orange"] },
+          { "day": 4, "dots": ["growth/green"] },
+          { "day": 5, "dots": ["feeding/orange", "purple/secondary"] },
+          { "day": 6, "dots": [] },
+          { "day": 7, "dots": ["growth/green"] },
+          { "day": 8, "dots": ["feeding/orange"] },
+          { "day": 9, "dots": ["purple/secondary"] },
+          { "day": 10, "dots": [] },
+          { "day": 11, "dots": ["growth/green"] },
+          { "day": 12, "dots": ["illness/pink"] },
+          { "day": 13, "dots": ["purple/secondary"] },
+          { "day": 14, "dots": [] },
+          { "day": 15, "dots": ["growth/green"] },
+          { "day": 16, "dots": ["feeding/orange", "growth/green"] },
+          { "day": 17, "dots": ["growth/green"] },
+          { "day": 18, "dots": ["purple/secondary"] },
+          { "day": 19, "dots": ["feeding/orange"] },
+          { "day": 20, "dots": [] },
+          { "day": 21, "dots": ["illness/pink"] },
+          { "day": 22, "dots": ["purple/secondary", "growth/green"] },
+          { "day": 23, "dots": ["feeding/orange"] },
+          { "day": 24, "dots": [] },
+          { "day": 25, "dots": ["growth/green"] },
+          { "day": 26, "dots": ["purple/secondary"] },
+          { "day": 27, "dots": [] },
+          { "day": 28, "dots": ["feeding/orange", "growth/green"] },
+          { "day": 29, "dots": [] },
+          { "day": 30, "dots": ["purple/secondary"] },
+          { "day": 31, "dots": [] }
+        ]
+      }
+    },
+    "monthStatsCard": {
+      "frame": { "x": 16, "y": 818, "w": 398, "h": 86 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 22,
+      "padding": 14,
+      "layout": "3 equal columns",
+      "items": [
+        { "iconCircleBg": "#FFE8E5", "icon": "calendar", "label": "Активные дни", "value": "8" },
+        { "iconCircleBg": "#FFF0DE", "icon": "star", "label": "Чаще всего", "value": "Кормление" },
+        { "iconCircleBg": "#F0E9FF", "icon": "clock", "label": "Последняя запись", "value": "3 мая" }
+      ]
+    },
+    "selectedDayCard": {
+      "frame": { "x": 16, "y": 920, "w": 398, "h": 220 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 22,
+      "padding": 16,
+      "header": {
+        "leftTitle": { "text": "{copy.selectedDayHeader}", "style": "cardTitle" },
+        "rightHint": { "text": "{copy.selectedDayHint}", "style": "eventDetail", "alignment": "right" }
+      },
+      "list": {
+        "rowHeight": 58,
+        "dividerColor": "{border/soft}",
+        "items": [
+          { "type": "illness", "time": "09:20", "title": "Болезнь", "subtitle": "Температура и наблюдение" },
+          { "type": "feeding", "time": "12:10", "title": "Кормление", "subtitle": "Грудь · 12 мин" },
+          { "type": "sleep", "time": "15:40", "title": "Сон", "subtitle": "1 ч 30 мин" }
+        ],
+        "chevron": { "show": true, "color": "{icon/nav}" }
+      },
+      "addButton": {
+        "text": "{copy.addEntry}",
+        "size": { "w": 166, "h": 44 },
+        "radius": 22,
+        "borderColor": "{brand/coral}",
+        "background": "{bg/surface}",
+        "textStyle": "buttonLabel",
+        "position": "top-right inside card"
+      }
+    },
+    "bottomNavigation": {
+      "frame": { "x": 16, "y": 1184, "w": 398, "h": 86 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 26,
+      "shadow": "{shapeTokens.shadow}",
+      "items": [
+        { "label": "Дети", "icon": "childrenTab", "active": true, "activeBg": "{brand/coralSoft}" },
+        { "label": "Таблетки", "icon": "pillsTab", "active": false },
+        { "label": "Аптечка", "icon": "cabinetTab", "active": false },
+        { "label": "Ещё", "icon": "moreTab", "active": false }
+      ]
+    }
+  },
+  "interactionRules": {
+    "primaryAction": "Нажатие на день в календаре открывает записи за этот день ниже.",
+    "calendarBehavior": [
+      "Выбранный день подсвечивается мягким персиковым фоном.",
+      "Если в дне есть события, под датой показываются цветные точки.",
+      "Количество точек может быть от 0 до 3–4, в зависимости от типов событий.",
+      "Серые числа верхней строки обозначают дни предыдущего месяца."
+    ],
+    "tabs": [
+      "Лента — список событий по времени.",
+      "Календарь — обзор активности по дням.",
+      "Графики — агрегированные визуализации."
+    ],
+    "monthNavigation": [
+      "Стрелки листают месяц.",
+      "Период '7 дней' можно заменить на 14 дней, 30 дней, месяц."
+    ],
+    "selectedDayCard": [
+      "Каждая строка ведёт в деталь записи.",
+      "Кнопка 'Добавить запись' добавляет новую запись в выбранный день."
+    ]
+  },
+  "spacing": {
+    "topBarToHeader": 16,
+    "headerToTabs": 20,
+    "tabsToCalendarCard": 18,
+    "calendarCardToMonthStats": 16,
+    "monthStatsToSelectedDayCard": 16,
+    "selectedDayCardToBottomNav": 18
+  },
+  "aiDesignerPrompt": "Create a mobile iOS screen in Russian for PillPath, a family child-health app. Screen type: Child Overview > Calendar. Make it warm, soft, human, and intuitive. Use a creamy pastel background (#FFF8F5), white cards, subtle peach borders, dark navy typography, and coral accents. Layout: back link '← К профилю ребёнка', large title 'Обзор · Эдик', subtitle 'Выберите день и сразу посмотрите, что происходило с ребёнком.', two circular action buttons on the top right, segmented tabs with 'Календарь' active, a large month calendar card with legend and color dots, monthly quick stats, then a selected day record list with add button, and a floating bottom navigation. The calendar must be the main focus. It should feel simple, friendly, readable, and calm, like a care dashboard for parents."
+}

@@ -22,6 +22,7 @@ import { styles } from "./journalEntryScreenStyles";
 type JournalEntryScreenProps = {
   child: ChildCard;
   kind: JournalEntryKind;
+  visible?: boolean;
   onBack?: () => void;
 };
 
@@ -30,20 +31,26 @@ const noop = () => {};
 export function JournalEntryScreen({
   child,
   kind,
+  visible = true,
   onBack = noop,
 }: JournalEntryScreenProps) {
   const { locale } = useMobileI18n();
   const content = buildJournalEntryScreenContent(kind, child.name, locale);
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
-    enabled: true,
+    enabled: visible,
     width,
     onBack,
   });
 
   return (
     <Animated.View
-      style={[styles.overlayLayer, { transform: [{ translateX }] }]}
+      pointerEvents={visible ? "auto" : "none"}
+      style={[
+        styles.overlayLayer,
+        visible ? styles.overlayLayerVisible : styles.overlayLayerHidden,
+        { transform: [{ translateX }] },
+      ]}
     >
       <ImageBackground
         source={redesignBackgrounds.childrenModule}

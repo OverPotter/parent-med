@@ -22,6 +22,7 @@ const growthHeroDecor = journalHeroAssets.growth;
 
 type GrowthHistoryScreenProps = {
   child: ChildCard;
+  visible?: boolean;
   onBack?: () => void;
 };
 
@@ -29,6 +30,7 @@ const noop = () => {};
 
 export function GrowthHistoryScreen({
   child,
+  visible = true,
   onBack = noop,
 }: GrowthHistoryScreenProps) {
   const { locale } = useMobileI18n();
@@ -40,6 +42,7 @@ export function GrowthHistoryScreen({
 
   return (
     <JournalScreenScaffold
+      visible={visible}
       backLabel={content.backLabel}
       title={content.title}
       subtitle={content.subtitle}

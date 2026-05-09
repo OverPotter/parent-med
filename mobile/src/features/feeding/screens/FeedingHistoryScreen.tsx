@@ -21,6 +21,7 @@ const feedingHeroDecor = journalHeroAssets.feeding;
 
 type FeedingHistoryScreenProps = {
   child: ChildCard;
+  visible?: boolean;
   onBack?: () => void;
 };
 
@@ -28,6 +29,7 @@ const noop = () => {};
 
 export function FeedingHistoryScreen({
   child,
+  visible = true,
   onBack = noop,
 }: FeedingHistoryScreenProps) {
   const { locale } = useMobileI18n();
@@ -39,6 +41,7 @@ export function FeedingHistoryScreen({
 
   return (
     <JournalScreenScaffold
+      visible={visible}
       backLabel={content.backLabel}
       title={content.title}
       subtitle={content.subtitle}

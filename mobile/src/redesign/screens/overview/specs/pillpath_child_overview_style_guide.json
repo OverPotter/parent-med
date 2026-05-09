@@ -1,0 +1,505 @@
+{
+  "project": "PillPath",
+  "screen": "Child Overview",
+  "styleGuideName": "PillPath Overview Child — Style Guide 01",
+  "version": "1.0",
+  "language": "ru",
+  "description": "Визуальный язык и токены для экрана обзора ребёнка в мягком тёплом стиле PillPath.",
+  "canvas": {
+    "artboard": {
+      "widthPt": 430,
+      "heightPt": 932
+    },
+    "export": {
+      "widthPx": 1290,
+      "heightPx": 2796,
+      "scale": 3
+    },
+    "safeArea": {
+      "topPt": 59,
+      "bottomPt": 34
+    },
+    "layout": {
+      "sideMarginPt": 16,
+      "contentWidthPt": 398,
+      "verticalRhythmPt": [
+        8,
+        12,
+        16,
+        20,
+        24,
+        32
+      ],
+      "gridColumns": 2,
+      "columnGapPt": 10,
+      "sectionGapPt": 18
+    }
+  },
+  "colors": {
+    "background": "#FFF8F5",
+    "surface": "#FFFDFC",
+    "surfaceAccent": "#FBEFEA",
+    "stroke": "#F2DDD6",
+    "textPrimary": "#1F2A44",
+    "textSecondary": "#6F7C91",
+    "accentCoral": "#FF7E6B",
+    "accentCoralSoft": "#FFE6E0",
+    "sleepPurple": "#8C6DDA",
+    "feedingOrange": "#F6A24D",
+    "illnessPink": "#F58E97",
+    "weightGreen": "#8BCB73",
+    "notesYellow": "#F2C85B",
+    "heightGreen": "#79C884",
+    "blueSoft": "#DDEEFF",
+    "white": "#FFFFFF"
+  },
+  "gradients": {
+    "screenBackground": {
+      "type": "linear",
+      "angle": 180,
+      "stops": [
+        {
+          "color": "#FFF4EF",
+          "position": 0
+        },
+        {
+          "color": "#FFF8F5",
+          "position": 45
+        },
+        {
+          "color": "#FFFDFC",
+          "position": 100
+        }
+      ]
+    },
+    "selectedTab": {
+      "type": "linear",
+      "angle": 90,
+      "stops": [
+        {
+          "color": "#FFE7DF",
+          "position": 0
+        },
+        {
+          "color": "#FBDDD3",
+          "position": 100
+        }
+      ]
+    },
+    "primaryCoralButton": {
+      "type": "linear",
+      "angle": 90,
+      "stops": [
+        {
+          "color": "#FF7E6B",
+          "position": 0
+        },
+        {
+          "color": "#FF6F61",
+          "position": 100
+        }
+      ]
+    }
+  },
+  "typography": {
+    "fontFamilyPrimary": "SF Pro Display",
+    "fontFamilySecondary": "SF Pro Text",
+    "styles": {
+      "h1": {
+        "fontFamily": "SF Pro Display",
+        "fontWeight": "Bold",
+        "fontSizePt": 34,
+        "lineHeightPt": 40,
+        "letterSpacingPt": -0.6,
+        "color": "#1F2A44"
+      },
+      "h2": {
+        "fontFamily": "SF Pro Display",
+        "fontWeight": "Semibold",
+        "fontSizePt": 24,
+        "lineHeightPt": 30,
+        "letterSpacingPt": -0.3,
+        "color": "#1F2A44"
+      },
+      "sectionTitle": {
+        "fontFamily": "SF Pro Display",
+        "fontWeight": "Semibold",
+        "fontSizePt": 20,
+        "lineHeightPt": 24,
+        "letterSpacingPt": -0.2,
+        "color": "#1F2A44"
+      },
+      "cardTitle": {
+        "fontFamily": "SF Pro Text",
+        "fontWeight": "Semibold",
+        "fontSizePt": 17,
+        "lineHeightPt": 22,
+        "color": "#1F2A44"
+      },
+      "body": {
+        "fontFamily": "SF Pro Text",
+        "fontWeight": "Regular",
+        "fontSizePt": 15,
+        "lineHeightPt": 20,
+        "color": "#6F7C91"
+      },
+      "caption": {
+        "fontFamily": "SF Pro Text",
+        "fontWeight": "Medium",
+        "fontSizePt": 13,
+        "lineHeightPt": 18,
+        "color": "#6F7C91"
+      },
+      "chipLabel": {
+        "fontFamily": "SF Pro Text",
+        "fontWeight": "Semibold",
+        "fontSizePt": 15,
+        "lineHeightPt": 20,
+        "color": "#1F2A44"
+      },
+      "bottomNavLabel": {
+        "fontFamily": "SF Pro Text",
+        "fontWeight": "Semibold",
+        "fontSizePt": 13,
+        "lineHeightPt": 16,
+        "color": "#6F7C91"
+      },
+      "bottomNavLabelActive": {
+        "fontFamily": "SF Pro Text",
+        "fontWeight": "Semibold",
+        "fontSizePt": 13,
+        "lineHeightPt": 16,
+        "color": "#FF7E6B"
+      }
+    }
+  },
+  "shape": {
+    "cardRadiusPt": 22,
+    "chipRadiusPt": 18,
+    "buttonRadiusPt": 20,
+    "iconCircleSizePt": 36,
+    "iconCircleRadiusPt": 18,
+    "bottomNavRadiusPt": 26,
+    "borderWidthPt": 1,
+    "shadow": {
+      "x": 0,
+      "y": 6,
+      "blur": 18,
+      "spread": 0,
+      "color": "rgba(67, 34, 21, 0.05)"
+    }
+  },
+  "icons": {
+    "style": "rounded minimal",
+    "strokeWidthPt": 2,
+    "iconSizePt": {
+      "small": 18,
+      "default": 20,
+      "large": 22
+    },
+    "backgroundCircleSizePt": 36,
+    "items": {
+      "sleep": {
+        "label": "Сон",
+        "symbol": "moon with small stars",
+        "color": "#8C6DDA",
+        "background": "#EFE9FF"
+      },
+      "feeding": {
+        "label": "Кормление",
+        "symbol": "baby bottle",
+        "color": "#F6A24D",
+        "background": "#FFF1E4"
+      },
+      "illness": {
+        "label": "Болезни",
+        "symbol": "thermometer",
+        "color": "#F58E97",
+        "background": "#FFE8EA"
+      },
+      "weightHeight": {
+        "label": "Вес/Рост",
+        "symbol": "scale or height ruler",
+        "color": "#8BCB73",
+        "background": "#E9F7E5"
+      },
+      "notes": {
+        "label": "Наблюдения",
+        "symbol": "clipboard",
+        "color": "#F2C85B",
+        "background": "#FFF6D8"
+      },
+      "bottomChildren": {
+        "label": "Дети",
+        "symbol": "baby face",
+        "color": "#FF7E6B",
+        "background": "#FFE6E0"
+      },
+      "bottomPills": {
+        "label": "Таблетки",
+        "symbol": "pill",
+        "color": "#587088"
+      },
+      "bottomMedicineCabinet": {
+        "label": "Аптечка",
+        "symbol": "medical bag",
+        "color": "#587088"
+      },
+      "bottomMore": {
+        "label": "Ещё",
+        "symbol": "menu",
+        "color": "#587088"
+      }
+    }
+  },
+  "characterIllustration": {
+    "style": "soft 3D avatar",
+    "type": "child avatar",
+    "shape": "rounded blob background",
+    "blobColor": "#FBEFEA",
+    "details": [
+      "крупные глаза",
+      "минимальная детализация",
+      "нежные тени",
+      "тёплая подложка-blob",
+      "без фотореализма",
+      "без лишних деталей"
+    ],
+    "decorations": {
+      "smallHeartColor": "#F0A090",
+      "smallLeafColor": "#E9A28F",
+      "opacity": 0.8
+    }
+  },
+  "components": {
+    "topBar": {
+      "heightPt": 44,
+      "backLink": {
+        "text": "← К профилю ребёнка",
+        "fontStyle": "body",
+        "color": "#FF7E6B"
+      },
+      "actions": {
+        "buttonSizePt": 44,
+        "radiusPt": 22,
+        "stroke": "#F2DDD6",
+        "background": "#FFFDFC",
+        "icons": [
+          "message",
+          "profile"
+        ]
+      }
+    },
+    "heroHeader": {
+      "title": "Обзор · Эдик",
+      "subtitle": "Быстро поймите, что происходило с ребёнком за выбранный период.",
+      "titleStyle": "h1",
+      "subtitleStyle": "body",
+      "spacingTitleToSubtitlePt": 8
+    },
+    "summaryCard": {
+      "title": "Главное за 7 дней",
+      "radiusPt": 22,
+      "background": "#FFFDFC",
+      "stroke": "#F2DDD6",
+      "paddingPt": 20,
+      "periodSelector": {
+        "text": "7 дней",
+        "heightPt": 36,
+        "paddingHorizontalPt": 16,
+        "radiusPt": 18,
+        "stroke": "#F2DDD6",
+        "background": "#FFFDFC"
+      },
+      "contentPattern": "left vertical insight list + right child avatar",
+      "insights": [
+        {
+          "icon": "illness",
+          "title": "Болезни — 2 эпизода",
+          "subtitle": "температура и наблюдение"
+        },
+        {
+          "icon": "feeding",
+          "title": "Кормление — 1 запись",
+          "subtitle": "грудь"
+        },
+        {
+          "icon": "sleep",
+          "title": "Сон — пока нет данных",
+          "subtitle": "добавьте, чтобы следить"
+        },
+        {
+          "icon": "weightHeight",
+          "title": "Рост и вес — без новых записей",
+          "subtitle": "данные не добавляли"
+        }
+      ]
+    },
+    "quickCards": {
+      "layout": "3 columns",
+      "gapPt": 8,
+      "cardHeightPt": 78,
+      "radiusPt": 18,
+      "background": "#FFFDFC",
+      "stroke": "#F2DDD6",
+      "items": [
+        {
+          "label": "Последняя запись",
+          "value": "Кормление",
+          "caption": "сегодня 12:55",
+          "icon": "feeding"
+        },
+        {
+          "label": "Что требует внимания",
+          "value": "Болезни",
+          "caption": "2 записи",
+          "icon": "illness"
+        },
+        {
+          "label": "Наблюдения",
+          "value": "Без заметок",
+          "caption": "добавьте позже",
+          "icon": "notes"
+        }
+      ]
+    },
+    "tabs": {
+      "heightPt": 44,
+      "radiusPt": 22,
+      "background": "#FFFDFC",
+      "stroke": "#F2DDD6",
+      "activeBackground": "#FFE6E0",
+      "activeColor": "#FF7E6B",
+      "inactiveColor": "#1F2A44",
+      "items": [
+        "Лента",
+        "Календарь",
+        "Графики"
+      ]
+    },
+    "filters": {
+      "heightPt": 34,
+      "gapPt": 8,
+      "radiusPt": 17,
+      "stroke": "#F2DDD6",
+      "background": "#FFFDFC",
+      "activeStroke": "#FF7E6B",
+      "activeBackground": "#FFF1EE",
+      "items": [
+        {
+          "label": "7 дней",
+          "type": "dropdown"
+        },
+        {
+          "label": "Все",
+          "active": true
+        },
+        {
+          "label": "Сон",
+          "dotColor": "#8C6DDA"
+        },
+        {
+          "label": "Кормление",
+          "dotColor": "#F6A24D"
+        },
+        {
+          "label": "Болезни",
+          "dotColor": "#F58E97"
+        },
+        {
+          "label": "Вес",
+          "dotColor": "#8BCB73"
+        },
+        {
+          "label": "Рост",
+          "dotColor": "#79C884"
+        }
+      ]
+    },
+    "eventsList": {
+      "sectionTitle": "События",
+      "dateAccentColor": "#FF7E6B",
+      "cardRadiusPt": 18,
+      "rowHeightPt": 64,
+      "rowPaddingPt": 14,
+      "timelineLineColor": "#F2DDD6",
+      "items": [
+        {
+          "date": "Сегодня",
+          "rows": [
+            {
+              "time": "12:55",
+              "type": "Кормление",
+              "detail": "грудь",
+              "icon": "feeding"
+            },
+            {
+              "time": "12:56",
+              "type": "Сон",
+              "detail": "0 мин",
+              "icon": "sleep"
+            }
+          ]
+        },
+        {
+          "date": "3 мая",
+          "rows": [
+            {
+              "time": "09:20",
+              "type": "Болезнь",
+              "detail": "температура и наблюдение",
+              "icon": "illness"
+            }
+          ]
+        }
+      ]
+    },
+    "bottomNavigation": {
+      "heightPt": 82,
+      "radiusPt": 26,
+      "background": "#FFFDFC",
+      "stroke": "#F2DDD6",
+      "shadow": "0 6 18 rgba(67,34,21,0.05)",
+      "activeItemBackground": "#FFE6E0",
+      "items": [
+        {
+          "label": "Дети",
+          "icon": "bottomChildren",
+          "active": true
+        },
+        {
+          "label": "Таблетки",
+          "icon": "bottomPills"
+        },
+        {
+          "label": "Аптечка",
+          "icon": "bottomMedicineCabinet"
+        },
+        {
+          "label": "Ещё",
+          "icon": "bottomMore"
+        }
+      ]
+    }
+  },
+  "spacingReference": {
+    "screenPaddingHorizontalPt": 16,
+    "headerTopFromSafeAreaPt": 16,
+    "headerToSummaryCardPt": 24,
+    "summaryCardToQuickCardsPt": 14,
+    "quickCardsToTabsPt": 14,
+    "tabsToFiltersPt": 12,
+    "filtersToEventsTitlePt": 18,
+    "eventsTitleToListPt": 8,
+    "bottomNavFloatingMarginPt": 16
+  },
+  "designPrinciples": [
+    "Спокойно и заботливо",
+    "Один главный акцент на экране",
+    "Вторичные действия через чипы и карточки",
+    "Воздух и мягкая иерархия",
+    "Без визуальной перегрузки",
+    "Информация должна читаться как care dashboard, а не как техническая таблица"
+  ],
+  "aiDesignerPrompt": "Create an iPhone child health overview screen for PillPath in Russian. Use a warm pastel peach/cream background, soft white cards, coral accents, dark navy typography, rounded minimal icons in pastel circles, and a soft 3D child avatar. The screen should feel like a calm care dashboard, not a technical data table. Main structure: top back link and action buttons, large title 'Обзор · Эдик', subtitle, large summary card 'Главное за 7 дней' with key insights on the left and child avatar on the right, three quick insight cards, segmented tabs 'Лента / Календарь / Графики', filter chips, event timeline, and floating bottom navigation. Use generous spacing, rounded corners, 1pt peach borders, subtle shadow, and clear hierarchy."
+}

@@ -5,6 +5,12 @@ export const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 16,
   },
+  overlayLayerVisible: {
+    opacity: 1,
+  },
+  overlayLayerHidden: {
+    opacity: 0,
+  },
   background: {
     ...StyleSheet.absoluteFillObject,
   },

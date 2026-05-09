@@ -23,6 +23,7 @@ const sleepUiIcon = redesignSharedIcons.sleep;
 
 type SleepHistoryScreenProps = {
   child: ChildCard;
+  visible?: boolean;
   onBack?: () => void;
 };
 
@@ -30,6 +31,7 @@ const noop = () => {};
 
 export function SleepHistoryScreen({
   child,
+  visible = true,
   onBack = noop,
 }: SleepHistoryScreenProps) {
   const { locale } = useMobileI18n();
@@ -41,6 +43,7 @@ export function SleepHistoryScreen({
 
   return (
     <JournalScreenScaffold
+      visible={visible}
       backLabel={content.backLabel}
       title={content.title}
       subtitle={content.subtitle}

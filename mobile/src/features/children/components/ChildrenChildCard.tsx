@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image, Pressable, Text, View } from "react-native";
 import { ChildCard, ChildQuickAction } from "../model/childrenRedesign";
 import { styles } from "../screens/childrenRedesignStyles";
+import { getChildModuleTint } from "../../../shared/theme/childModuleTints";
 
 const noop = () => {};
 
@@ -98,13 +99,17 @@ function QuickActionCard({
   const isSleepAction = action.kind === "sleep";
   const isActive = isSleepAction && Boolean(sleepElapsedLabel);
   const actionLabel = isActive ? sleepElapsedLabel : action.label;
+  const tint = getQuickActionTint(action.kind, isActive);
 
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.quickActionCard,
-        isActive ? styles.quickActionCardActive : null,
+        {
+          backgroundColor: tint.backgroundColor,
+          borderColor: tint.borderColor,
+        },
         pressed ? styles.quickActionCardPressed : null,
       ]}
     >
@@ -133,4 +138,20 @@ function QuickActionCard({
       </View>
     </Pressable>
   );
+}
+
+function getQuickActionTint(kind: ChildQuickAction["kind"], isActive: boolean) {
+  if (kind === "sleep") {
+    return getChildModuleTint("sleep", { active: isActive });
+  }
+
+  if (kind === "feeding") {
+    return getChildModuleTint("feeding");
+  }
+
+  if (kind === "observation") {
+    return getChildModuleTint("observation");
+  }
+
+  return getChildModuleTint("profile");
 }

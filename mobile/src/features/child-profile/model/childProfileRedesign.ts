@@ -25,7 +25,7 @@ export type ChildProfileJournalItem = {
     | "weight"
     | "height"
     | "overview";
-  targetKind?: "feeding" | "sleep" | "weight" | "height";
+  targetKind?: "feeding" | "sleep" | "weight" | "height" | "overview";
   imageSource?: ImageSourcePropType;
   iconColor?: string;
 };
@@ -108,6 +108,7 @@ function mapJournalIcon(label: string) {
   if (label === "Обзор") {
     return {
       iconVariant: "overview" as const,
+      targetKind: "overview" as const,
       imageSource: redesignSharedIcons.overview,
     };
   }

@@ -20,6 +20,7 @@ import { ChildExportSheet } from "../export/ChildExportSheet";
 import { styles } from "./childProfileRedesignStyles";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
+import { getChildModuleTint } from "../../../shared/theme/childModuleTints";
 
 type ChildProfileRedesignScreenProps = {
   child: ChildCard;
@@ -28,7 +29,7 @@ type ChildProfileRedesignScreenProps = {
   onEditProfile?: () => void;
   onOpenAnalytics?: () => void;
   onOpenJournalEntry?: (
-    kind: "feeding" | "sleep" | "weight" | "height",
+    kind: "feeding" | "sleep" | "weight" | "height" | "overview",
   ) => void;
 };
 
@@ -235,11 +236,17 @@ function JournalItem({
   item: ChildProfileJournalItem;
   onPress: () => void;
 }) {
+  const tint = getJournalItemTint(item.iconVariant);
+
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.journalItem,
+        {
+          backgroundColor: tint.backgroundColor,
+          borderColor: tint.borderColor,
+        },
         pressed ? styles.journalItemPressed : null,
       ]}
     >
@@ -274,4 +281,28 @@ function JournalIcon({ item }: { item: ChildProfileJournalItem }) {
   }
 
   return <Feather name="clipboard" size={32} color="#D881A5" />;
+}
+
+function getJournalItemTint(iconVariant: ChildProfileJournalItem["iconVariant"]) {
+  if (iconVariant === "sleep") {
+    return getChildModuleTint("sleep");
+  }
+
+  if (iconVariant === "feeding") {
+    return getChildModuleTint("feeding");
+  }
+
+  if (iconVariant === "illnessBadge") {
+    return getChildModuleTint("illness");
+  }
+
+  if (iconVariant === "overview") {
+    return getChildModuleTint("overview");
+  }
+
+  if (iconVariant === "height") {
+    return getChildModuleTint("height");
+  }
+
+  return getChildModuleTint("weight");
 }

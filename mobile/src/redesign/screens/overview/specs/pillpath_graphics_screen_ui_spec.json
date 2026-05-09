@@ -1,0 +1,307 @@
+{
+  "project": "PillPath",
+  "screenId": "child_overview_graphics_v1",
+  "screenName": "Обзор ребёнка — Графики",
+  "platform": "iOS",
+  "version": "1.0",
+  "language": "ru",
+  "description": "Спокойный, понятный и человечный экран графиков для обзора ребёнка. Экран помогает быстро понять картину за период через короткие KPI, bar chart, donut chart и пустые состояния.",
+  "artboard": {
+    "device": "iPhone 15 / 16 Pro Max",
+    "sizePt": { "width": 430, "height": 932 },
+    "exportPx": { "width": 1290, "height": 2796 },
+    "safeAreaPt": { "top": 59, "bottom": 34, "left": 0, "right": 0 },
+    "layout": {
+      "horizontalPadding": 16,
+      "contentWidth": 398,
+      "verticalSpacing": [8, 12, 16, 20, 24, 32],
+      "sectionGap": 18
+    }
+  },
+  "designIntent": {
+    "keywords": ["warm", "human", "intuitive", "soft", "readable", "care dashboard"],
+    "principles": [
+      "Графики должны быть простыми и моментально считываться.",
+      "Сначала краткая сводка, затем визуализация, затем пустые состояния.",
+      "Даже когда данных мало, экран не должен выглядеть пустым или сломанным.",
+      "Подходит для родителей, бабушки, няни — без сложной аналитики и перегрузки."
+    ]
+  },
+  "colorTokens": {
+    "bg/base": "#FFF8F5",
+    "bg/surface": "#FFFDFC",
+    "bg/surfaceSoft": "#FDF4F0",
+    "bg/activeSoft": "#FCE8E1",
+    "border/subtle": "#F2DDD6",
+    "border/soft": "#F7E9E3",
+    "text/primary": "#15345B",
+    "text/secondary": "#62728C",
+    "text/muted": "#9AA5B5",
+    "text/accent": "#FF7E6B",
+    "icon/nav": "#6C829D",
+    "brand/coral": "#FF7E6B",
+    "brand/coralSoft": "#FFE6E0",
+    "feeding/orange": "#F7A14C",
+    "feeding/orangeSoft": "#FFF0DE",
+    "illness/pink": "#F58E97",
+    "illness/pinkSoft": "#FFE8EA",
+    "sleep/purple": "#8B74D9",
+    "sleep/purpleSoft": "#ECE6FF",
+    "weight/teal": "#39C0A6",
+    "weight/tealSoft": "#E4FAF5",
+    "growth/green": "#8CCB2E",
+    "growth/greenSoft": "#EEF9DD",
+    "chart/grid": "#F4E6DF",
+    "chart/donutBase": "#F3EFEC",
+    "white": "#FFFFFF"
+  },
+  "typography": {
+    "fontPrimary": "SF Pro Display",
+    "fontSecondary": "SF Pro Text",
+    "styles": {
+      "navLink": { "fontFamily": "SF Pro Text", "weight": "Regular", "size": 16, "lineHeight": 20, "color": "{text/accent}" },
+      "titleXL": { "fontFamily": "SF Pro Display", "weight": "Bold", "size": 34, "lineHeight": 40, "letterSpacing": -0.5, "color": "{text/primary}" },
+      "bodyL": { "fontFamily": "SF Pro Text", "weight": "Regular", "size": 16, "lineHeight": 24, "color": "{text/secondary}" },
+      "tabLabel": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 17, "lineHeight": 22, "color": "{text/primary}" },
+      "sectionTitle": { "fontFamily": "SF Pro Display", "weight": "Bold", "size": 26, "lineHeight": 32, "letterSpacing": -0.3, "color": "{text/primary}" },
+      "cardTitle": { "fontFamily": "SF Pro Display", "weight": "Bold", "size": 18, "lineHeight": 24, "color": "{text/primary}" },
+      "metricTitle": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 16, "lineHeight": 20, "color": "{text/primary}" },
+      "metricValue": { "fontFamily": "SF Pro Display", "weight": "Bold", "size": 17, "lineHeight": 22, "color": "{text/primary}" },
+      "caption": { "fontFamily": "SF Pro Text", "weight": "Regular", "size": 15, "lineHeight": 20, "color": "{text/secondary}" },
+      "chartLabel": { "fontFamily": "SF Pro Text", "weight": "Medium", "size": 14, "lineHeight": 18, "color": "{text/primary}" },
+      "axisLabel": { "fontFamily": "SF Pro Text", "weight": "Medium", "size": 14, "lineHeight": 18, "color": "{text/secondary}" },
+      "emptyStateTitle": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 17, "lineHeight": 22, "color": "{text/primary}" },
+      "emptyStateBody": { "fontFamily": "SF Pro Text", "weight": "Regular", "size": 15, "lineHeight": 20, "color": "{text/secondary}" },
+      "bottomNavLabel": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 13, "lineHeight": 16, "color": "{icon/nav}" },
+      "bottomNavLabelActive": { "fontFamily": "SF Pro Text", "weight": "Semibold", "size": 13, "lineHeight": 16, "color": "{brand/coral}" }
+    }
+  },
+  "shapeTokens": {
+    "cardRadius": 22,
+    "innerCardRadius": 18,
+    "tabRadius": 22,
+    "buttonRadius": 20,
+    "miniCardRadius": 18,
+    "iconCircleSize": 64,
+    "iconCircleRadius": 32,
+    "bottomBarRadius": 26,
+    "borderWidth": 1,
+    "shadow": { "x": 0, "y": 6, "blur": 18, "spread": 0, "color": "rgba(67,34,21,0.05)" }
+  },
+  "iconSystem": {
+    "style": "rounded minimal icons",
+    "strokeWidth": 2,
+    "icons": {
+      "feeding": { "symbol": "baby bottle", "color": "{feeding/orange}", "bg": "{feeding/orangeSoft}" },
+      "illness": { "symbol": "thermometer", "color": "{illness/pink}", "bg": "{illness/pinkSoft}" },
+      "sleep": { "symbol": "moon with stars", "color": "{sleep/purple}", "bg": "{sleep/purpleSoft}" },
+      "weight": { "symbol": "weight or scale", "color": "{weight/teal}", "bg": "{weight/tealSoft}" },
+      "growth": { "symbol": "ruler / growth", "color": "{growth/green}", "bg": "{growth/greenSoft}" },
+      "childrenTab": { "symbol": "baby face", "color": "{brand/coral}", "bg": "{brand/coralSoft}" },
+      "pillsTab": { "symbol": "pill", "color": "{icon/nav}" },
+      "cabinetTab": { "symbol": "medical bag", "color": "{icon/nav}" },
+      "moreTab": { "symbol": "menu", "color": "{icon/nav}" },
+      "chat": { "symbol": "message bubble", "color": "{icon/nav}" },
+      "profile": { "symbol": "user outline", "color": "{icon/nav}" }
+    }
+  },
+  "copy": {
+    "backLink": "← К профилю ребёнка",
+    "screenTitle": "Обзор · Эдик",
+    "screenSubtitle": "Простые графики помогают быстро понять, что происходило с ребёнком.",
+    "tabs": ["Лента", "Календарь", "Графики"],
+    "period": "7 дней",
+    "summaryTitle": "Что видно за 7 дней",
+    "barChartTitle": "Кормление по дням",
+    "barChartSubtitle": "Сколько записей было в каждый день.",
+    "barChartTotal": "Всего 3 записи",
+    "donutTitle": "События по типам",
+    "donutCenter": "Всего\n3 записи",
+    "emptyTitle": "Что пока без данных",
+    "bottomNav": ["Дети", "Таблетки", "Аптечка", "Ещё"]
+  },
+  "components": {
+    "topBar": {
+      "frame": { "x": 16, "y": 72, "w": 398, "h": 28 },
+      "backLink": { "text": "{copy.backLink}", "style": "navLink" }
+    },
+    "header": {
+      "frame": { "x": 16, "y": 116, "w": 398, "h": 126 },
+      "title": { "text": "{copy.screenTitle}", "style": "titleXL" },
+      "subtitle": { "text": "{copy.screenSubtitle}", "style": "bodyL", "marginTop": 12, "maxWidth": 320 },
+      "actions": {
+        "buttons": [
+          { "name": "chat", "size": 48, "radius": 24, "borderColor": "{border/subtle}", "background": "{bg/surface}" },
+          { "name": "profile", "size": 48, "radius": 24, "borderColor": "{border/subtle}", "background": "{bg/surface}" }
+        ],
+        "gap": 12,
+        "position": "top-right"
+      }
+    },
+    "segmentedTabs": {
+      "frame": { "x": 16, "y": 262, "w": 398, "h": 56 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 28,
+      "items": [
+        { "label": "Лента", "active": false },
+        { "label": "Календарь", "active": false },
+        { "label": "Графики", "active": true }
+      ],
+      "activePill": { "background": "{bg/activeSoft}", "radius": 22, "textColor": "{brand/coral}" }
+    },
+    "summaryCard": {
+      "frame": { "x": 16, "y": 336, "w": 398, "h": 176 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 22,
+      "padding": 16,
+      "title": { "text": "{copy.summaryTitle}", "style": "sectionTitle" },
+      "periodDropdown": {
+        "text": "{copy.period}",
+        "size": { "w": 108, "h": 44 },
+        "radius": 22,
+        "borderColor": "{border/subtle}",
+        "background": "{bg/surface}",
+        "position": "top-right"
+      },
+      "metricCards": {
+        "layout": "4 columns",
+        "gap": 12,
+        "itemSize": { "w": 80, "h": 116 },
+        "items": [
+          { "icon": "feeding", "title": "Кормление", "value": "0,5/день" },
+          { "icon": "illness", "title": "Болезни", "value": "2 эпизода" },
+          { "icon": "sleep", "title": "Сон", "value": "нет данных" },
+          { "icon": "weight", "title": "Рост и вес", "value": "без новых\nзаписей" }
+        ]
+      }
+    },
+    "barChartCard": {
+      "frame": { "x": 16, "y": 530, "w": 398, "h": 272 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 22,
+      "padding": 16,
+      "title": { "text": "{copy.barChartTitle}", "style": "sectionTitle" },
+      "subtitle": { "text": "{copy.barChartSubtitle}", "style": "caption", "marginTop": 4 },
+      "topRightMeta": { "text": "{copy.barChartTotal}", "style": "metricTitle", "accentPart": "3 записи" },
+      "chart": {
+        "type": "bar",
+        "height": 150,
+        "gridLinesY": [0, 1, 2],
+        "gridColor": "{chart/grid}",
+        "axisColor": "{border/subtle}",
+        "labelStyle": "axisLabel",
+        "yLabels": ["0", "1", "2"],
+        "xLabels": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
+        "bars": [
+          { "x": "Пн", "value": 1, "color": "{feeding/orange}", "radius": 8 },
+          { "x": "Вт", "value": 0, "color": "{feeding/orange}", "radius": 8 },
+          { "x": "Ср", "value": 1, "color": "{feeding/orange}", "radius": 8 },
+          { "x": "Чт", "value": 0, "color": "{feeding/orange}", "radius": 8 },
+          { "x": "Пт", "value": 2, "color": "{feeding/orange}", "radius": 8 },
+          { "x": "Сб", "value": 0, "color": "{feeding/orange}", "radius": 8 },
+          { "x": "Вс", "value": 0, "color": "{feeding/orange}", "radius": 8 }
+        ]
+      }
+    },
+    "donutChartCard": {
+      "frame": { "x": 16, "y": 820, "w": 398, "h": 246 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 22,
+      "padding": 16,
+      "title": { "text": "{copy.donutTitle}", "style": "sectionTitle" },
+      "chart": {
+        "type": "donut",
+        "size": 164,
+        "thickness": 26,
+        "baseColor": "{chart/donutBase}",
+        "centerText": "{copy.donutCenter}",
+        "segments": [
+          { "label": "Кормление", "value": 1, "color": "{feeding/orange}" },
+          { "label": "Болезни", "value": 2, "color": "{illness/pink}" },
+          { "label": "Сон", "value": 0, "color": "{sleep/purple}" },
+          { "label": "Вес", "value": 0, "color": "{weight/teal}" },
+          { "label": "Рост", "value": 0, "color": "{growth/green}" }
+        ]
+      },
+      "legendList": {
+        "position": "right",
+        "rowHeight": 34,
+        "items": [
+          { "dotColor": "{feeding/orange}", "icon": "feeding", "label": "Кормление", "value": "1" },
+          { "dotColor": "{illness/pink}", "icon": "illness", "label": "Болезни", "value": "2" },
+          { "dotColor": "{sleep/purple}", "icon": "sleep", "label": "Сон", "value": "0" },
+          { "dotColor": "{weight/teal}", "icon": "weight", "label": "Вес", "value": "0" },
+          { "dotColor": "{growth/green}", "icon": "growth", "label": "Рост", "value": "0" }
+        ]
+      }
+    },
+    "emptyStatesCard": {
+      "frame": { "x": 16, "y": 1084, "w": 398, "h": 170 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 22,
+      "padding": 16,
+      "title": { "text": "{copy.emptyTitle}", "style": "sectionTitle" },
+      "rows": [
+        {
+          "icon": "sleep",
+          "title": "Сон",
+          "body": "Добавьте первую запись, чтобы увидеть график",
+          "chevron": true
+        },
+        {
+          "icon": "growth",
+          "title": "Рост и вес",
+          "body": "Когда появятся записи, здесь будет динамика",
+          "chevron": true
+        }
+      ]
+    },
+    "bottomNavigation": {
+      "frame": { "x": 16, "y": 1272, "w": 398, "h": 86 },
+      "background": "{bg/surface}",
+      "borderColor": "{border/subtle}",
+      "radius": 26,
+      "shadow": "{shapeTokens.shadow}",
+      "items": [
+        { "label": "Дети", "icon": "childrenTab", "active": true, "activeBg": "{brand/coralSoft}" },
+        { "label": "Таблетки", "icon": "pillsTab", "active": false },
+        { "label": "Аптечка", "icon": "cabinetTab", "active": false },
+        { "label": "Ещё", "icon": "moreTab", "active": false }
+      ]
+    }
+  },
+  "interactionRules": {
+    "tabs": [
+      "Лента — история событий по времени.",
+      "Календарь — события по дням.",
+      "Графики — короткая аналитика и тенденции."
+    ],
+    "periodDropdown": [
+      "Переключает диапазон: 7 дней / 14 дней / 30 дней / месяц."
+    ],
+    "charts": [
+      "При касании карточки метрики можно углубиться в детальный экран категории.",
+      "Если данных недостаточно, вместо сложного графика показывается мягкое пустое состояние.",
+      "Цвета графиков должны совпадать с семантикой категорий по всему продукту."
+    ],
+    "emptyStates": [
+      "Строка ведёт в экран добавления соответствующей записи.",
+      "Пустые состояния объясняют, как сделать график полезным."
+    ]
+  },
+  "spacing": {
+    "topBarToHeader": 16,
+    "headerToTabs": 20,
+    "tabsToSummary": 18,
+    "summaryToBarChart": 18,
+    "barChartToDonut": 18,
+    "donutToEmpty": 18,
+    "emptyToBottomNav": 18
+  },
+  "aiDesignerPrompt": "Create a mobile iOS screen in Russian for PillPath, a family child-health app. Screen type: Child Overview > Graphics. Make it warm, soft, and easy to read. Use a creamy pastel background (#FFF8F5), white cards, subtle peach borders, dark navy typography, and coral active accents. Layout: back link '← К профилю ребёнка', title 'Обзор · Эдик', subtitle 'Простые графики помогают быстро понять, что происходило с ребёнком.', top-right circular chat and profile buttons, segmented tabs with 'Графики' active, a summary card 'Что видно за 7 дней' with four mini KPI cards, a bar chart card 'Кормление по дням' showing 3 feedings over the week, a donut chart card 'События по типам' with legend, an empty-states card 'Что пока без данных' for Sleep and Growth/Weight, and a floating bottom navigation. The UI should feel humane, intuitive, and like a calm care dashboard for parents rather than a complex analytics tool."
+}
