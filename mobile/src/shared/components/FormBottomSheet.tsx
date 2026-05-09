@@ -118,6 +118,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheetContent: {
-    flex: 1,
+    width: "100%",
   },
 });

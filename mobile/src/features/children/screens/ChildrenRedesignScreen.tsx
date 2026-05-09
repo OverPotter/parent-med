@@ -13,6 +13,7 @@ import { styles } from "./childrenRedesignStyles";
 import { formatElapsedDuration } from "../utils/formatElapsedDuration";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { JournalEntryKind } from "../../journal/model/journalEntryScreen";
+import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 
 type ChildrenRedesignScreenProps = {
   onOpenChildProfile?: (cardId: string) => void;
@@ -34,6 +35,7 @@ export function ChildrenRedesignScreen({
   onFeedingPress = noop,
 }: ChildrenRedesignScreenProps) {
   const { locale } = useMobileI18n();
+  const surfaceTheme = useMobileSurfaceTheme();
   const childrenScreenContent = buildChildrenScreenContent(locale, "children");
   const handleOpenChildProfile = onOpenChildProfile ?? noop;
   const handleOpenJournalEntry = onOpenJournalEntry ?? noop;
@@ -123,14 +125,19 @@ export function ChildrenRedesignScreen({
   };
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: surfaceTheme.appBackgroundColor }]}>
       <ImageBackground
         source={childrenScreenContent.backgroundSource}
         resizeMode="cover"
         style={styles.background}
         imageStyle={styles.backgroundImage}
       >
-        <View style={styles.overlay} />
+        <View
+          style={[
+            styles.overlay,
+            { backgroundColor: surfaceTheme.backgroundOverlayColor },
+          ]}
+        />
       </ImageBackground>
 
       <View style={styles.screen}>

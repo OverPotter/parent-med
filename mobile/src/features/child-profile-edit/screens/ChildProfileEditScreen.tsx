@@ -17,6 +17,7 @@ import { childrenScreenAssets } from "../../../redesign/screens/children/manifes
 import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import { ChildCard } from "../../children/model/childrenRedesign";
 import { buildChildProfileEditContent } from "../model/childProfileEdit";
 import { styles } from "./childProfileEditStyles";
@@ -105,6 +106,7 @@ export function ChildProfileEditScreen({
   onBack,
 }: ChildProfileEditScreenProps) {
   const { locale, copy } = useMobileI18n();
+  const surfaceTheme = useMobileSurfaceTheme();
   const content = buildChildProfileEditContent(child, locale, copy);
   const defaultBirthDate = content.sections.main.rows[1]?.value ?? "";
   const defaultAllergies = content.sections.health.rows[0]?.description ?? "";
@@ -171,7 +173,12 @@ export function ChildProfileEditScreen({
         style={styles.background}
         imageStyle={styles.backgroundImage}
       >
-        <View style={styles.overlay} />
+        <View
+          style={[
+            styles.overlay,
+            { backgroundColor: surfaceTheme.backgroundOverlaySoftColor },
+          ]}
+        />
         <View style={styles.root}>
           <View
             style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]}

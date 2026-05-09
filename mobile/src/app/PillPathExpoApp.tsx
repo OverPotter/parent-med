@@ -1,9 +1,22 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
 import { AnalyticsScreen } from "../features/analytics/screens/AnalyticsScreen";
 import { AnalyticsBreakdownScreen } from "../features/analytics/screens/AnalyticsBreakdownScreen";
+import {
+  logoutMobileSession,
+  refreshMobileSession,
+  toBackendPreferredLanguage,
+  updateMyFamilyMemberProfile,
+  updateMyFamilyName,
+  type MobileAuthSession,
+} from "../features/auth/api/authApi";
 import { AuthScreen } from "../features/auth/screens/AuthScreen";
+import {
+  clearStoredAuthSession,
+  readStoredAuthSession,
+  writeStoredAuthSession,
+} from "../features/auth/session/mobileAuthSessionStorage";
 import { ChildProfileEditScreen } from "../features/child-profile-edit/screens/ChildProfileEditScreen";
 import { ChildProfileRedesignScreen } from "../features/child-profile/screens/ChildProfileRedesignScreen";
 import { AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
@@ -16,27 +29,47 @@ import { JournalEntryScreen } from "../features/journal/screens/JournalEntryScre
 import { ChildOverviewScreen } from "../features/overview/screens/ChildOverviewScreen";
 import { buildChildrenScreenContent } from "../features/children/model/childrenRedesign";
 import { ChildrenRedesignScreen } from "../features/children/screens/ChildrenRedesignScreen";
-import { MobileI18nProvider, useMobileI18n } from "../shared/i18n/mobileI18n";
+import { MoreScreen } from "../features/more/screens/MoreScreen";
+import { LegalDocumentScreen } from "../features/legal/screens/LegalDocumentScreen";
+import { SettingsScreen } from "../features/settings/screens/SettingsScreen";
+import { SupportScreen } from "../features/support/screens/SupportScreen";
+import {
+  applyPreferredLanguageToSession,
+  updatePreferredLanguage,
+} from "../features/settings/api/settingsApi";
+import {
+  MobileI18nProvider,
+  useMobileI18n,
+  type MobileLocale,
+} from "../shared/i18n/mobileI18n";
 import {
   MobileBottomTabBar,
   MobileBottomTabKey,
 } from "../shared/components/MobileBottomTabBar";
 import { RootModulePlaceholderScreen } from "../shared/components/RootModulePlaceholderScreen";
+import {
+  MobileThemeProvider,
+  useMobileSurfaceTheme,
+} from "../shared/theme/mobileSurfaceTheme";
 
 type ChildProfileDestination = JournalEntryKind | "overview";
 
 export function PillPathExpoApp() {
   return (
-    <MobileI18nProvider>
-      <PillPathExpoShell />
-    </MobileI18nProvider>
+    <MobileThemeProvider>
+      <MobileI18nProvider>
+        <PillPathExpoShell />
+      </MobileI18nProvider>
+    </MobileThemeProvider>
   );
 }
 
 function PillPathExpoShell() {
-  const { locale } = useMobileI18n();
+  const surfaceTheme = useMobileSurfaceTheme();
+  const { locale, setLocale } = useMobileI18n();
   const childrenScreenContent = buildChildrenScreenContent(locale);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authSession, setAuthSession] = useState<MobileAuthSession | null>(null);
+  const [isAuthBootstrapping, setIsAuthBootstrapping] = useState(true);
   const [activeRootTab, setActiveRootTab] = useState<MobileBottomTabKey>("children");
   const rootTabItems = buildChildrenScreenContent(locale, activeRootTab).tabs;
   const [activeScreen, setActiveScreen] = useState<
@@ -47,8 +80,12 @@ function PillPathExpoShell() {
     | "childProfileEdit"
     | "feedingHistory"
     | "growthHistory"
+    | "privacyPolicy"
     | "overview"
+    | "settings"
     | "sleepHistory"
+    | "support"
+    | "termsOfUse"
     | "weightHistory"
     | "journalEntry"
   >("children");
@@ -189,26 +226,238 @@ function PillPathExpoShell() {
     setActiveScreen("childProfile");
   }, []);
 
+  const handleOpenPrivacyPolicy = useCallback(() => {
+    setActiveScreen("privacyPolicy");
+  }, []);
+
+  const handleOpenSupport = useCallback(() => {
+    setActiveScreen("support");
+  }, []);
+
+  const handleOpenSettings = useCallback(() => {
+    setActiveScreen("settings");
+  }, []);
+
+  const handleCloseSettings = useCallback(() => {
+    setActiveScreen("children");
+  }, []);
+
+  const handleCloseSupport = useCallback(() => {
+    setActiveScreen("children");
+  }, []);
+
+  const handleClosePrivacyPolicy = useCallback(() => {
+    setActiveScreen("children");
+  }, []);
+
+  const handleOpenTermsOfUse = useCallback(() => {
+    setActiveScreen("termsOfUse");
+  }, []);
+
+  const handleCloseTermsOfUse = useCallback(() => {
+    setActiveScreen("children");
+  }, []);
+
   const handleSelectRootTab = useCallback((key: MobileBottomTabKey) => {
     setActiveRootTab(key);
   }, []);
 
-  const handleAuthenticated = useCallback(() => {
-    setIsAuthenticated(true);
+  const applyAuthenticatedSession = useCallback(
+    async (session: MobileAuthSession) => {
+      setAuthSession(session);
+      setLocale(session.account.preferredLanguage);
+      await writeStoredAuthSession(session);
+    },
+    [setLocale],
+  );
+
+  const handleAuthenticated = useCallback(
+    async (session: MobileAuthSession) => {
+      await applyAuthenticatedSession(session);
+    },
+    [applyAuthenticatedSession],
+  );
+
+  const handleLogout = useCallback(async () => {
+    if (authSession) {
+      try {
+        await logoutMobileSession({
+          accessToken: authSession.accessToken,
+          refreshToken: authSession.refreshToken,
+        });
+      } catch {
+        // Local clear is authoritative for the mobile client.
+      }
+    }
+
+    await clearStoredAuthSession();
+    setAuthSession(null);
+  }, [authSession]);
+
+  const handleSessionDeleted = useCallback(async () => {
+    await clearStoredAuthSession();
+    setAuthSession(null);
   }, []);
 
-  if (!isAuthenticated) {
+  const handleUpdateAuthSession = useCallback(
+    async (patch: {
+      familyName?: string;
+      displayName?: string;
+      relationshipLabel?: string | null;
+      phone?: string | null;
+    }) => {
+      if (!authSession) {
+        return;
+      }
+
+      const trimmedFamilyName = patch.familyName?.trim();
+      const trimmedDisplayName = patch.displayName?.trim();
+      const nextRelationshipLabel =
+        patch.relationshipLabel === undefined
+          ? undefined
+          : (patch.relationshipLabel || "").trim() || null;
+      const nextPhone =
+        patch.phone === undefined ? undefined : (patch.phone || "").trim() || null;
+
+      let nextSession: MobileAuthSession = authSession;
+
+      const isFamilyOwner =
+        authSession.family.ownerAccountId != null &&
+        authSession.family.ownerAccountId === authSession.account.id;
+
+      if (isFamilyOwner && trimmedFamilyName && trimmedFamilyName !== authSession.family.name) {
+        const updatedFamily = await updateMyFamilyName({
+          accessToken: authSession.accessToken,
+          name: trimmedFamilyName,
+        });
+
+        nextSession = {
+          ...nextSession,
+          family: {
+            ...nextSession.family,
+            name: updatedFamily.name,
+          },
+        };
+      }
+
+      if (
+        trimmedDisplayName !== undefined ||
+        nextRelationshipLabel !== undefined ||
+        nextPhone !== undefined
+      ) {
+        const updatedProfile = await updateMyFamilyMemberProfile({
+          accessToken: authSession.accessToken,
+          memberAccountId: authSession.account.id,
+          displayName: trimmedDisplayName ?? authSession.account.displayName,
+          relationshipLabel:
+            nextRelationshipLabel ?? authSession.account.relationshipLabel,
+          phone: nextPhone ?? authSession.account.phone,
+        });
+
+        nextSession = {
+          ...nextSession,
+          account: {
+            ...nextSession.account,
+            displayName: updatedProfile.displayName,
+            relationshipLabel: updatedProfile.relationshipLabel,
+            phone: updatedProfile.phone,
+          },
+        };
+      }
+
+      setAuthSession(nextSession);
+      await writeStoredAuthSession(nextSession);
+    },
+    [authSession],
+  );
+
+  const handleUpdatePreferredLanguage = useCallback(
+    async (preferredLanguage: MobileLocale) => {
+      if (!authSession) {
+        return;
+      }
+
+      await updatePreferredLanguage({
+        accessToken: authSession.accessToken,
+        preferredLanguage: toBackendPreferredLanguage(preferredLanguage),
+      });
+
+      const nextSession = applyPreferredLanguageToSession(
+        authSession,
+        preferredLanguage,
+      );
+
+      setLocale(preferredLanguage);
+      setAuthSession(nextSession);
+      await writeStoredAuthSession(nextSession);
+    },
+    [authSession, setLocale],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function bootstrapAuthSession() {
+      try {
+        const storedSession = await readStoredAuthSession();
+
+        if (!storedSession?.refreshToken) {
+          if (!cancelled) {
+            setAuthSession(null);
+          }
+          return;
+        }
+
+        const refreshedSession = await refreshMobileSession(storedSession.refreshToken);
+        const preferredLocale =
+          storedSession.account.preferredLanguage === "pl" ||
+          storedSession.account.preferredLanguage === "de"
+            ? storedSession.account.preferredLanguage
+            : refreshedSession.account.preferredLanguage;
+
+        if (cancelled) {
+          return;
+        }
+
+        await applyAuthenticatedSession(
+          applyPreferredLanguageToSession(refreshedSession, preferredLocale),
+        );
+      } catch {
+        await clearStoredAuthSession();
+
+        if (!cancelled) {
+          setAuthSession(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsAuthBootstrapping(false);
+        }
+      }
+    }
+
+    void bootstrapAuthSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyAuthenticatedSession]);
+
+  if (isAuthBootstrapping) {
+    return <View style={styles.root} />;
+  }
+
+  if (!authSession) {
     return (
-      <View style={styles.root}>
-        <StatusBar style="dark" />
+      <View style={[styles.root, { backgroundColor: surfaceTheme.appBackgroundColor }]}>
+        <StatusBar style={surfaceTheme.statusBarStyle} />
         <AuthScreen onAuthenticated={handleAuthenticated} />
       </View>
     );
   }
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="dark" />
+    <View style={[styles.root, { backgroundColor: surfaceTheme.appBackgroundColor }]}>
+      <StatusBar style={surfaceTheme.statusBarStyle} />
       {activeRootTab === "children" ? (
         <View style={styles.screenLayer}>
           <ChildrenRedesignScreen
@@ -216,6 +465,18 @@ function PillPathExpoShell() {
             onOpenJournalEntry={handleOpenRootJournalEntry}
             activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
             onFeedingPress={handleFeedingPress}
+          />
+        </View>
+      ) : activeRootTab === "more" && authSession ? (
+        <View style={styles.screenLayer}>
+          <MoreScreen
+            session={authSession}
+            onLogout={handleLogout}
+            onOpenSettings={handleOpenSettings}
+            onOpenSupport={handleOpenSupport}
+            onOpenTerms={handleOpenTermsOfUse}
+            onOpenPrivacy={handleOpenPrivacyPolicy}
+            onUpdateSession={handleUpdateAuthSession}
           />
         </View>
       ) : (
@@ -297,6 +558,28 @@ function PillPathExpoShell() {
           />
         </>
       ) : null}
+      <LegalDocumentScreen
+        documentKey="privacy"
+        visible={activeScreen === "privacyPolicy"}
+        onBack={handleClosePrivacyPolicy}
+      />
+      <SupportScreen
+        visible={activeScreen === "support"}
+        onBack={handleCloseSupport}
+        session={authSession}
+      />
+      <SettingsScreen
+        visible={activeScreen === "settings"}
+        onBack={handleCloseSettings}
+        onSessionDeleted={handleSessionDeleted}
+        session={authSession}
+        onUpdatePreferredLanguage={handleUpdatePreferredLanguage}
+      />
+      <LegalDocumentScreen
+        documentKey="terms"
+        visible={activeScreen === "termsOfUse"}
+        onBack={handleCloseTermsOfUse}
+      />
     </View>
   );
 }

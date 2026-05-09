@@ -86,10 +86,12 @@ export function useBottomSheetSwipeDismiss({
 
   const sheetPanResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponderCapture: (_, gestureState) =>
+        gestureState.dy > 16 &&
+        Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 1.2,
       onMoveShouldSetPanResponder: (_, gestureState) =>
-        gestureState.dy > 22 &&
-        Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 1.35,
+        gestureState.dy > 18 &&
+        Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 1.2,
       onPanResponderMove: (_, gestureState) => {
         handlePanMove(gestureState.dy, 0.92);
       },

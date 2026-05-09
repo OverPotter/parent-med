@@ -21,6 +21,7 @@ import { styles } from "./childProfileRedesignStyles";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { getChildModuleTint } from "../../../shared/theme/childModuleTints";
+import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 
 type ChildProfileRedesignScreenProps = {
   child: ChildCard;
@@ -44,6 +45,7 @@ export function ChildProfileRedesignScreen({
   onOpenJournalEntry,
 }: ChildProfileRedesignScreenProps) {
   const { copy, locale } = useMobileI18n();
+  const surfaceTheme = useMobileSurfaceTheme();
   const content = buildChildProfileScreenContent(child, locale);
   const [isExportSheetOpen, setIsExportSheetOpen] = useState(false);
   const handleEditProfile = onEditProfile ?? noop;
@@ -71,7 +73,12 @@ export function ChildProfileRedesignScreen({
         style={styles.background}
         imageStyle={styles.backgroundImage}
       >
-        <View style={styles.overlay} />
+        <View
+          style={[
+            styles.overlay,
+            { backgroundColor: surfaceTheme.backgroundOverlaySoftColor },
+          ]}
+        />
         <View style={styles.root}>
           <View
             style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]}

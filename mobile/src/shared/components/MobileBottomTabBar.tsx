@@ -26,7 +26,7 @@ type MobileBottomTabBarProps = {
 };
 
 const noop = () => {};
-const tabIconSize = 31;
+const tabIconSize = 38;
 
 const tabImageSourceByKey: Partial<
   Record<MobileBottomTabKey, ImageSourcePropType>
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   item: {
     flex: 1,
-    minHeight: 60,
+    minHeight: 64,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
@@ -184,8 +184,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.975 }],
   },
   iconWrap: {
-    width: 38,
-    height: 38,
+    width: 46,
+    height: 46,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
   },
   label: {
     color: "#6C7C90",
-    fontSize: 11,
-    lineHeight: 13,
+    fontSize: 12,
+    lineHeight: 14,
     fontWeight: "500",
   },
   labelActive: {

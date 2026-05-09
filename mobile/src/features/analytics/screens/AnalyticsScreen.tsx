@@ -14,6 +14,7 @@ import { childrenScreenAssets } from "../../../redesign/screens/children/manifes
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import {
   AnalyticsEpisodeCard,
   AnalyticsHighlightCard,
@@ -37,6 +38,7 @@ export function AnalyticsScreen({
   onOpenEpisode = noop,
 }: AnalyticsScreenProps) {
   const { locale } = useMobileI18n();
+  const surfaceTheme = useMobileSurfaceTheme();
   const content = buildAnalyticsScreenContent(locale);
   const [selectedPeriodId, setSelectedPeriodId] =
     useState<AnalyticsPeriodOption["id"]>("halfYear");
@@ -72,7 +74,12 @@ export function AnalyticsScreen({
         style={styles.background}
         imageStyle={styles.backgroundImage}
       >
-        <View style={styles.overlay} />
+        <View
+          style={[
+            styles.overlay,
+            { backgroundColor: surfaceTheme.backgroundOverlayColor },
+          ]}
+        />
         <View style={styles.root}>
           <View
             style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]}

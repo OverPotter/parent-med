@@ -15,6 +15,7 @@ import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
 import { redesignSharedIcons } from "../../../redesign/shared/icons";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { MobileLocale, useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import {
   buildChildOverviewScreenContent,
   ChildOverviewCalendarDay,
@@ -40,6 +41,7 @@ export function ChildOverviewScreen({
   onBack = noop,
 }: ChildOverviewScreenProps) {
   const { locale } = useMobileI18n();
+  const surfaceTheme = useMobileSurfaceTheme();
   const content = buildChildOverviewScreenContent(child, locale);
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
@@ -89,7 +91,12 @@ export function ChildOverviewScreen({
         style={styles.background}
         imageStyle={styles.backgroundImage}
       >
-        <View style={styles.overlay} />
+        <View
+          style={[
+            styles.overlay,
+            { backgroundColor: surfaceTheme.backgroundOverlayColor },
+          ]}
+        />
         <View style={styles.root}>
           <View
             style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]}

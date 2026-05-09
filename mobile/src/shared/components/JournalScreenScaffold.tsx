@@ -12,6 +12,7 @@ import {
 import { redesignBackgrounds } from "../../redesign/shared/backgrounds";
 import { useEdgeSwipeBack } from "../hooks/useEdgeSwipeBack";
 import { journalTypography } from "../theme/journalTypography";
+import { useMobileSurfaceTheme } from "../theme/mobileSurfaceTheme";
 import {
   type SegmentedPillTabItem,
   SegmentedPillTabs,
@@ -51,6 +52,7 @@ export function JournalScreenScaffold({
   children,
 }: JournalScreenScaffoldProps) {
   const { width } = useWindowDimensions();
+  const surfaceTheme = useMobileSurfaceTheme();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
     enabled: visible,
     width,
@@ -72,7 +74,12 @@ export function JournalScreenScaffold({
         style={styles.background}
         imageStyle={styles.backgroundImage}
       >
-        <View style={styles.overlay} />
+        <View
+          style={[
+            styles.overlay,
+            { backgroundColor: surfaceTheme.backgroundOverlayColor },
+          ]}
+        />
         <View style={styles.root}>
           <View
             style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]}
