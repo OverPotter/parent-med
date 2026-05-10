@@ -32,10 +32,8 @@ import {
   clamp,
   findFirstVisibleError,
   getAuthErrorMessage,
-  getFieldStyleId,
   normalizeFormValue,
   resolveKeyboardOffset,
-  type AuthValidationErrors,
   type FieldTouchedState,
   type ForgotPasswordFieldId,
   type ForgotPasswordState,
@@ -56,11 +54,9 @@ import {
 } from "../model/recoveryCode";
 import {
   AuthBottomArea,
-  AuthInputField,
-  AuthTabs,
-  FamilyCodeCard,
   ForgotPasswordSheetContent,
 } from "./AuthScreenParts";
+import { AuthFormCard } from "./AuthFormCard";
 import { styles } from "./authScreenStyles";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 
@@ -114,21 +110,6 @@ const initialForgotPasswordVisibilityState: ForgotPasswordVisibilityState = {
   newPassword: false,
   passwordConfirm: false,
 };
-
-function resolveFieldStyle(fieldId: AuthFieldId, fieldsLength: number) {
-  const styleId = getFieldStyleId(fieldId, fieldsLength);
-
-  if (styleId === "single") {
-    return styles.fieldSingle;
-  }
-  if (styleId === "top") {
-    return styles.fieldTop;
-  }
-  if (styleId === "bottom") {
-    return styles.fieldBottom;
-  }
-  return styles.fieldMiddle;
-}
 
 export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
   const { locale } = useMobileI18n();
@@ -590,123 +571,55 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
                   {isRegisterMode ? content.registerHeadline : content.loginHeadline}
                 </Text>
 
-                <View style={styles.sheet}>
-                  <View style={styles.formGroup}>
-                    <AuthTabs
-                      tabs={content.tabs}
-                      activeTab={activeTab}
-                      segmentWidth={segmentWidth}
-                      indicatorX={indicatorX}
-                      tabsPanHandlers={tabsPanResponder.panHandlers}
-                      onLayout={(event) => setTabsWidth(event.nativeEvent.layout.width)}
-                      onSelectTab={handleSelectTab}
-                    />
-
-                    {fields.map((field) => {
-                      const value = formState[field.id as keyof FormState];
-                      const error =
-                        submitted || touchedFields[field.id]
-                          ? errors[field.id]
-                          : undefined;
-
-                      return (
-                        <AuthInputField
-                          key={field.id}
-                          field={field}
-                          value={value}
-                          error={error}
-                          fieldStyle={resolveFieldStyle(field.id, fields.length)}
-                          passwordVisibility={passwordVisibility}
-                          onChangeText={(next) =>
-                            handleChangeField(field.id as keyof FormState, next)
-                          }
-                          onFocus={() => handleFieldFocus(field.id)}
-                          onBlur={() => {
-                            focusedFieldRef.current = null;
-                            setTouchedFields((current) => ({
-                              ...current,
-                              [field.id]: true,
-                            }));
-                          }}
-                          onTogglePasswordVisibility={(fieldId) =>
-                            setPasswordVisibility((current) => ({
-                              ...current,
-                              [fieldId]: !current[fieldId as keyof PasswordVisibilityState],
-                            }))
-                          }
-                          fieldRef={handleFieldRef(field.id)}
-                          onLayout={handleFieldLayout(field.id)}
-                        />
-                      );
-                    })}
-
-                    {visibleFormError ? (
-                      <View style={styles.formErrorSlot}>
-                        <Text style={styles.fieldError}>{visibleFormError}</Text>
-                      </View>
-                    ) : null}
-
-                    {isRegisterMode ? (
-                      <FamilyCodeCard
-                        content={content}
-                        familyCodeOpen={familyCodeOpen}
-                        familyCodeValue={formState.familyCode}
-                        verifiedFamilyCode={verifiedFamilyCode}
-                        familyCodeError={familyCodeError}
-                        onToggleOpen={() => setFamilyCodeOpen((current) => !current)}
-                        onChangeFamilyCode={(next) => handleChangeField("familyCode", next)}
-                        onFocusFamilyCode={() => handleFieldFocus("familyCode")}
-                        onBlurFamilyCode={() => {
-                          focusedFieldRef.current = null;
-                        }}
-                        onResetVerifiedFamilyCode={() => {
-                          setVerifiedFamilyCode(null);
-                          setFamilyCodeError(null);
-                        }}
-                        fieldRef={handleFieldRef("familyCode")}
-                        onLayout={handleFieldLayout("familyCode")}
-                      />
-                    ) : null}
-
-                    <Pressable
-                      onPress={handleSubmit}
-                      style={({ pressed }) => [
-                        styles.primaryButton,
-                        !isFormValid || isSubmitting ? styles.primaryButtonDisabled : null,
-                        pressed ? styles.primaryButtonPressed : null,
-                      ]}
-                    >
-                      <LinearGradient
-                        colors={["#FF8274", "#F87566", "#F2685A"]}
-                        start={{ x: 0, y: 0.5 }}
-                        end={{ x: 1, y: 0.5 }}
-                        style={styles.primaryButtonGradient}
-                      />
-                      <Text style={styles.primaryButtonLabel}>
-                        {isSubmitting
-                          ? isRegisterMode
-                            ? content.registerSubmittingLabel
-                            : content.loginSubmittingLabel
-                          : isRegisterMode
-                            ? content.registerButtonLabel
-                            : content.loginButtonLabel}
-                      </Text>
-                    </Pressable>
-
-                    {!isRegisterMode ? (
-                      <View style={styles.authOptionsRow}>
-                        <Pressable
-                          style={styles.forgotPasswordButton}
-                          onPress={openForgotPassword}
-                        >
-                          <Text style={styles.forgotPasswordText}>
-                            {content.forgotPasswordLabel}
-                          </Text>
-                        </Pressable>
-                      </View>
-                    ) : null}
-                  </View>
-                </View>
+                <AuthFormCard
+                  content={content}
+                  activeTab={activeTab}
+                  segmentWidth={segmentWidth}
+                  indicatorX={indicatorX}
+                  tabsPanHandlers={tabsPanResponder.panHandlers}
+                  formState={formState}
+                  fields={fields}
+                  errors={errors}
+                  submitted={submitted}
+                  touchedFields={touchedFields}
+                  visibleFormError={visibleFormError}
+                  passwordVisibility={passwordVisibility}
+                  familyCodeOpen={familyCodeOpen}
+                  verifiedFamilyCode={verifiedFamilyCode}
+                  familyCodeError={familyCodeError}
+                  isRegisterMode={isRegisterMode}
+                  isFormValid={isFormValid}
+                  isSubmitting={isSubmitting}
+                  onTabsLayout={(event) => setTabsWidth(event.nativeEvent.layout.width)}
+                  onSelectTab={handleSelectTab}
+                  onChangeField={handleChangeField}
+                  onFieldFocus={handleFieldFocus}
+                  onFieldBlur={(fieldId) => {
+                    focusedFieldRef.current = null;
+                    setTouchedFields((current) => ({
+                      ...current,
+                      [fieldId]: true,
+                    }));
+                  }}
+                  onFamilyCodeBlur={() => {
+                    focusedFieldRef.current = null;
+                  }}
+                  onTogglePasswordVisibility={(fieldId) =>
+                    setPasswordVisibility((current) => ({
+                      ...current,
+                      [fieldId]: !current[fieldId as keyof PasswordVisibilityState],
+                    }))
+                  }
+                  onToggleFamilyCodeOpen={() => setFamilyCodeOpen((current) => !current)}
+                  onResetVerifiedFamilyCode={() => {
+                    setVerifiedFamilyCode(null);
+                    setFamilyCodeError(null);
+                  }}
+                  onSubmit={handleSubmit}
+                  onOpenForgotPassword={openForgotPassword}
+                  getFieldRef={handleFieldRef}
+                  getFieldLayout={handleFieldLayout}
+                />
 
                 <AuthBottomArea
                   showLegal={!(isRegisterMode && familyCodeOpen && !verifiedFamilyCode)}
