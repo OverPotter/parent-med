@@ -223,6 +223,9 @@ export const styles = StyleSheet.create({
   notesPressed: {
     opacity: 0.9,
   },
+  disabledCard: {
+    opacity: 0.6,
+  },
   notesTitle: {
     color: "#243142",
     fontSize: 12,

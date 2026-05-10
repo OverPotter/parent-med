@@ -20,6 +20,38 @@ export function formatGraphicsUnitValue(
     return `${item.value} ${item.value === 1 ? "запись" : item.value < 5 ? "записи" : "записей"}`;
   }
 
+  if (locale === "pl") {
+    if (item.unit === "episodes") {
+      return `${item.value} ${item.value === 1 ? "epizod" : "epizody"}`;
+    }
+
+    if (item.unit === "sleeps") {
+      return `${item.value} ${item.value === 1 ? "sen" : "sny"}`;
+    }
+
+    if (item.unit === "measurements") {
+      return `${item.value} ${item.value === 1 ? "pomiar" : "pomiary"}`;
+    }
+
+    return `${item.value} ${item.value === 1 ? "wpis" : "wpisy"}`;
+  }
+
+  if (locale === "de") {
+    if (item.unit === "episodes") {
+      return `${item.value} ${item.value === 1 ? "Episode" : "Episoden"}`;
+    }
+
+    if (item.unit === "sleeps") {
+      return `${item.value} ${item.value === 1 ? "Schlaf" : "Schlafphasen"}`;
+    }
+
+    if (item.unit === "measurements") {
+      return `${item.value} ${item.value === 1 ? "Messung" : "Messungen"}`;
+    }
+
+    return `${item.value} ${item.value === 1 ? "Eintrag" : "Einträge"}`;
+  }
+
   if (item.unit === "episodes") {
     return `${item.value} ${item.value === 1 ? "episode" : "episodes"}`;
   }
@@ -53,6 +85,38 @@ export function buildGraphicsCategoryHint(
     }
 
     return "По этой категории уже видно повторяющийся ритм.";
+  }
+
+  if (locale === "pl") {
+    if (item.highlighted) {
+      return "To była najczęściej zapisywana kategoria.";
+    }
+
+    if (item.unit === "episodes") {
+      return "Choroby pojawiały się rzadziej niż codzienne wpisy.";
+    }
+
+    if (item.unit === "measurements") {
+      return "Pomiarów jest jeszcze mało, więc trend dopiero się rysuje.";
+    }
+
+    return "W tej kategorii już widać powtarzalny rytm.";
+  }
+
+  if (locale === "de") {
+    if (item.highlighted) {
+      return "Diese Kategorie wurde am häufigsten erfasst.";
+    }
+
+    if (item.unit === "episodes") {
+      return "Krankheiten traten seltener auf als tägliche Einträge.";
+    }
+
+    if (item.unit === "measurements") {
+      return "Es gibt noch wenige Messungen, der Trend zeigt sich gerade erst.";
+    }
+
+    return "In dieser Kategorie ist bereits ein wiederkehrender Rhythmus zu sehen.";
   }
 
   if (item.highlighted) {
@@ -92,6 +156,38 @@ export function buildGraphicsCategoryFootnote(
     return "Для более уверенной тенденции нужно ещё несколько записей.";
   }
 
+  if (locale === "pl") {
+    if (label.includes("karm")) {
+      return "Największa aktywność przypadła na środek okresu.";
+    }
+
+    if (label.includes("sen")) {
+      return "Sen nie był zapisywany codziennie, ale bez długich przerw.";
+    }
+
+    if (label.includes("chor")) {
+      return "Ostatni epizod przypadł bliżej końca okresu.";
+    }
+
+    return "Jeszcze kilka wpisów pozwoli lepiej zobaczyć trend.";
+  }
+
+  if (locale === "de") {
+    if (label.includes("fütt") || label.includes("feed")) {
+      return "Die höchste Aktivität lag ungefähr in der Mitte des Zeitraums.";
+    }
+
+    if (label.includes("schlaf") || label.includes("sleep")) {
+      return "Schlaf wurde nicht täglich erfasst, aber ohne lange Lücken.";
+    }
+
+    if (label.includes("krank") || label.includes("ill")) {
+      return "Die letzte Episode lag näher am Ende des Zeitraums.";
+    }
+
+    return "Ein paar weitere Einträge machen den Trend verlässlicher.";
+  }
+
   if (label.includes("feed")) {
     return "The busiest point came around the middle of the period.";
   }
@@ -129,15 +225,15 @@ export function getGraphicsTrendSamples(
     return [0, 0, 0.18, 0, 0.22, 0, 0.16];
   }
 
-  if (normalized.includes("feed")) {
+  if (normalized.includes("feed") || normalized.includes("karm")) {
     return [0.2, 0.6, 0.9, 0.5, 0.8, 0.35, 0.55];
   }
 
-  if (normalized.includes("sleep")) {
+  if (normalized.includes("sleep") || normalized.includes("sen")) {
     return [0.15, 0.5, 0.25, 0.7, 0.2, 0.6, 0.3];
   }
 
-  if (normalized.includes("ill")) {
+  if (normalized.includes("ill") || normalized.includes("chor")) {
     return [0, 0.2, 0, 0, 0.55, 0, 0.45];
   }
 
@@ -145,7 +241,13 @@ export function getGraphicsTrendSamples(
 }
 
 export function buildSelectedDayTitle(day: number, locale: string) {
-  return locale === "ru" ? `Записи за ${day} мая` : `Entries for May ${day}`;
+  return locale === "ru"
+    ? `Записи за ${day} мая`
+    : locale === "pl"
+      ? `Wpisy z ${day} maja`
+      : locale === "de"
+        ? `Einträge vom ${day}. Mai`
+      : `Entries for May ${day}`;
 }
 
 export function getGraphicsIconToken(

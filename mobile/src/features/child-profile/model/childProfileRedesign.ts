@@ -125,6 +125,8 @@ export function buildChildProfileScreenContent(
   locale: MobileLocale,
 ): ChildProfileScreenContent {
   const isRu = locale === "ru";
+  const isDe = locale === "de";
+  const isPl = locale === "pl";
   const topBar = getBlock<{ items: Array<{ text: string }> }>("topBar");
   const profileCard = getBlock<{
     sections: Array<Record<string, unknown>>;
@@ -193,6 +195,10 @@ export function buildChildProfileScreenContent(
   return {
     backLabel: isRu
       ? (topBar.items[0]?.text ?? "← К детям")
+      : isDe
+        ? "← Zu den Kindern"
+      : isPl
+        ? "← Do dzieci"
       : "← Back to children",
     childName: child.name,
     ageValue,
@@ -200,25 +206,79 @@ export function buildChildProfileScreenContent(
     heightValue,
     allergiesValue,
     avatarSource: child.avatarSource,
-    statusPills: statusPillsSection?.items.map((item) => item.text.value) ?? [],
+    statusPills:
+      statusPillsSection?.items.map((item) => {
+        if (isRu) {
+          return item.text.value;
+        }
+
+        if (isDe) {
+          if (item.text.value === "мама") return "Mama";
+          if (item.text.value === "аллергия") return "Allergie";
+        }
+
+        if (isPl) {
+          if (item.text.value === "мама") return "mama";
+          if (item.text.value === "аллергия") return "alergia";
+        }
+
+        return item.text.value;
+      }) ?? [],
     editProfileLabel: isRu
       ? (primaryButtonSection?.label.text ?? "Редактировать профиль")
+      : isDe
+        ? "Profil bearbeiten"
+      : isPl
+        ? "Edytuj profil"
       : "Edit profile",
-    journalTitle: isRu ? journalTitle.text : "Journal",
+    journalTitle: isRu ? journalTitle.text : isDe ? "Journal" : isPl ? "Dziennik" : "Journal",
     journalRows: journalGrid.rows.map((row) =>
       row.items.map((item) => ({
         id: String(item.id ?? ""),
-        label: String(item.label ?? ""),
+        label:
+          isDe
+            ? String(item.label ?? "") === "Болезни"
+              ? "Krankheiten"
+              : String(item.label ?? "") === "Кормление"
+                ? "Fütterung"
+                : String(item.label ?? "") === "Сон"
+                  ? "Schlaf"
+                  : String(item.label ?? "") === "Рост"
+                    ? "Größe"
+                    : String(item.label ?? "") === "Обзор"
+                      ? "Übersicht"
+                      : String(item.label ?? "")
+            : isPl
+            ? String(item.label ?? "") === "Болезни"
+              ? "Choroby"
+              : String(item.label ?? "") === "Кормление"
+                ? "Karmienie"
+                : String(item.label ?? "") === "Сон"
+                  ? "Sen"
+                  : String(item.label ?? "") === "Рост"
+                    ? "Wzrost"
+                    : String(item.label ?? "") === "Обзор"
+                      ? "Przegląd"
+                      : String(item.label ?? "")
+            : String(item.label ?? ""),
         ...mapJournalIcon(String(item.label ?? "")),
       })),
     ),
-    notesTitle: isRu ? notesBlock.title.text : "Notes",
+    notesTitle: isRu ? notesBlock.title.text : isDe ? "Notizen" : isPl ? "Notatki" : "Notes",
     notesBody: isRu
       ? notesBlock.body.text
+      : isDe
+        ? "Hier können Sie wichtige Beobachtungen festhalten: Reaktionen auf Medikamente, Stimmung, Schlaf oder Fragen an den Arzt."
+      : isPl
+        ? "Tutaj możesz zapisać ważne obserwacje: reakcję na leki, nastrój, sen lub pytania do lekarza."
       : "Use this space for important observations: reaction to medicines, mood, sleep, or questions for a doctor.",
-    exportTitle: isRu ? exportCard.title.text : "Export history",
+    exportTitle: isRu ? exportCard.title.text : isDe ? "Verlauf exportieren" : isPl ? "Eksport historii" : "Export history",
     exportCaption: isRu
       ? exportCard.caption.text
+      : isDe
+        ? "CSV / Tabelle für Arzt oder Familie"
+      : isPl
+        ? "CSV / arkusz dla lekarza lub rodziny"
       : "CSV / spreadsheet for doctor or family",
   };
 }

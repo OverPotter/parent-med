@@ -31,33 +31,39 @@ export function buildJournalEntryScreenContent(
   locale: MobileLocale,
 ): JournalEntryScreenContent {
   const isRu = locale === "ru";
+  const isDe = locale === "de";
+  const isPl = locale === "pl";
 
   const common = {
-    backLabel: isRu ? "К детям" : "Back to children",
-    notesTitle: isRu ? "Заметка" : "Note",
-    primaryActionLabel: isRu ? "Сохранить запись" : "Save entry",
+    backLabel: isRu ? "К детям" : isDe ? "Zu den Kindern" : isPl ? "Do dzieci" : "Back to children",
+    notesTitle: isRu ? "Заметка" : isDe ? "Notiz" : isPl ? "Notatka" : "Note",
+    primaryActionLabel: isRu ? "Сохранить запись" : isDe ? "Eintrag speichern" : isPl ? "Zapisz wpis" : "Save entry",
   };
 
   if (kind === "feeding") {
     return {
       ...common,
-      title: isRu ? "Кормление" : "Feeding",
-      subtitle: isRu ? "Запись кормления." : "Feeding entry.",
-      sectionTitle: isRu ? "Что записать" : "What to record",
+      title: isRu ? "Кормление" : isDe ? "Fütterung" : isPl ? "Karmienie" : "Feeding",
+      subtitle: isRu ? "Запись кормления." : isDe ? "Fütterungseintrag." : isPl ? "Wpis karmienia." : "Feeding entry.",
+      sectionTitle: isRu ? "Что записать" : isDe ? "Was speichern" : isPl ? "Co zapisać" : "What to record",
       rows: [],
       feedingOptions: [
         {
           id: "breast",
-          label: isRu ? "Грудь" : "Breast",
+          label: isRu ? "Грудь" : isDe ? "Brust" : isPl ? "Pierś" : "Breast",
         },
         {
           id: "formula",
           label: isRu ? "Смесь" : "Formula",
         },
       ],
-      notesTitle: isRu ? "Заметка к кормлению" : "Feeding note",
+      notesTitle: isRu ? "Заметка к кормлению" : isDe ? "Notiz zur Fütterung" : isPl ? "Notatka do karmienia" : "Feeding note",
       notesBody: isRu
         ? "Можно быстро запустить таймер или сохранить запись задним числом."
+        : isDe
+          ? "Sie können schnell einen Timer starten oder den Eintrag nachträglich speichern."
+        : isPl
+          ? "Możesz szybko uruchomić timer albo zapisać wpis z wcześniejszą godziną."
         : "You can quickly start a timer or save the feeding backdated.",
       primaryActionLabel: common.primaryActionLabel,
     };
@@ -66,31 +72,39 @@ export function buildJournalEntryScreenContent(
   if (kind === "sleep") {
     return {
       ...common,
-      title: isRu ? "Сон" : "Sleep",
+      title: isRu ? "Сон" : isDe ? "Schlaf" : isPl ? "Sen" : "Sleep",
       subtitle: isRu
         ? "Запись сна с теми же карточками и логикой."
+        : isDe
+          ? "Schlafeintrag mit derselben Kartenlogik und Struktur."
+        : isPl
+          ? "Wpis snu z tym samym układem kart i logiką."
         : "Sleep entry using the same card and layout logic.",
-      sectionTitle: isRu ? "Детали сна" : "Sleep details",
+      sectionTitle: isRu ? "Детали сна" : isDe ? "Schlafdetails" : isPl ? "Szczegóły snu" : "Sleep details",
       rows: [
         {
           id: "start",
-          label: isRu ? "Начало" : "Start",
+          label: isRu ? "Начало" : isDe ? "Beginn" : isPl ? "Początek" : "Start",
           value: "13:10",
         },
         {
           id: "end",
-          label: isRu ? "Окончание" : "End",
+          label: isRu ? "Окончание" : isDe ? "Ende" : isPl ? "Koniec" : "End",
           value: "14:25",
         },
         {
           id: "duration",
-          label: isRu ? "Длительность" : "Duration",
-          value: isRu ? "1 ч 15 мин" : "1 h 15 min",
+          label: isRu ? "Длительность" : isDe ? "Dauer" : isPl ? "Czas trwania" : "Duration",
+          value: isRu ? "1 ч 15 мин" : isPl ? "1 godz. 15 min" : "1 h 15 min",
         },
       ],
-      notesTitle: isRu ? "Заметка ко сну" : "Sleep note",
+      notesTitle: isRu ? "Заметка ко сну" : isDe ? "Notiz zum Schlaf" : isPl ? "Notatka do snu" : "Sleep note",
       notesBody: isRu
         ? "Уснул быстро, проснулся спокойно."
+        : isDe
+          ? "Ist schnell eingeschlafen und ruhig aufgewacht."
+        : isPl
+          ? "Zasnął szybko i obudził się spokojnie."
         : "Fell asleep quickly and woke up calmly.",
       primaryActionLabel: common.primaryActionLabel,
     };
@@ -99,32 +113,40 @@ export function buildJournalEntryScreenContent(
   if (kind === "weight") {
     return {
       ...common,
-      title: isRu ? "Вес" : "Weight",
+      title: isRu ? "Вес" : isDe ? "Gewicht" : isPl ? "Waga" : "Weight",
       subtitle: isRu
         ? "Тот же экран записи, но для измерений роста и веса."
+        : isDe
+          ? "Dasselbe Eingabemuster, aber für Größen- und Gewichtsmessungen."
+        : isPl
+          ? "Ten sam ekran wpisu, ale dla pomiarów wzrostu i wagi."
         : "The same entry screen pattern for growth measurements.",
-      sectionTitle: isRu ? "Детали измерения" : "Measurement details",
+      sectionTitle: isRu ? "Детали измерения" : isDe ? "Messdetails" : isPl ? "Szczegóły pomiaru" : "Measurement details",
       rows: [
         {
           id: "value",
-          label: isRu ? "Вес" : "Weight",
+          label: isRu ? "Вес" : isDe ? "Gewicht" : isPl ? "Waga" : "Weight",
           value: "13.4 кг",
         },
         {
           id: "date",
-          label: isRu ? "Дата" : "Date",
-          value: isRu ? "9 мая" : "May 9",
+          label: isRu ? "Дата" : isDe ? "Datum" : isPl ? "Data" : "Date",
+          value: isRu ? "9 мая" : isDe ? "9. Mai" : isPl ? "9 maja" : "May 9",
         },
         {
           id: "delta",
-          label: isRu ? "Изменение" : "Change",
+          label: isRu ? "Изменение" : isDe ? "Änderung" : isPl ? "Zmiana" : "Change",
           value: isRu ? "+0.2 кг" : "+0.2 kg",
-          helper: isRu ? "с прошлого измерения" : "since previous measurement",
+          helper: isRu ? "с прошлого измерения" : isDe ? "seit der letzten Messung" : isPl ? "od poprzedniego pomiaru" : "since previous measurement",
         },
       ],
-      notesTitle: isRu ? "Заметка к весу" : "Weight note",
+      notesTitle: isRu ? "Заметка к весу" : isDe ? "Notiz zum Gewicht" : isPl ? "Notatka do wagi" : "Weight note",
       notesBody: isRu
         ? "Измерение после завтрака, ребёнок спокоен."
+        : isDe
+          ? "Messung nach dem Frühstück, das Kind war ruhig."
+        : isPl
+          ? "Pomiar po śniadaniu, dziecko było spokojne."
         : "Measured after breakfast, child was calm.",
       primaryActionLabel: common.primaryActionLabel,
     };
@@ -132,32 +154,40 @@ export function buildJournalEntryScreenContent(
 
   return {
     ...common,
-    title: isRu ? "Рост" : "Height",
+    title: isRu ? "Рост" : isDe ? "Größe" : isPl ? "Wzrost" : "Height",
     subtitle: isRu
       ? "Тот же экран записи, но для измерений роста и веса."
+      : isDe
+        ? "Dasselbe Eingabemuster, aber für Größen- und Gewichtsmessungen."
+      : isPl
+        ? "Ten sam ekran wpisu, ale dla pomiarów wzrostu i wagi."
       : "The same entry screen pattern for growth measurements.",
-    sectionTitle: isRu ? "Детали измерения" : "Measurement details",
+    sectionTitle: isRu ? "Детали измерения" : isDe ? "Messdetails" : isPl ? "Szczegóły pomiaru" : "Measurement details",
     rows: [
       {
         id: "value",
-        label: isRu ? "Рост" : "Height",
+        label: isRu ? "Рост" : isDe ? "Größe" : isPl ? "Wzrost" : "Height",
         value: "92 см",
       },
       {
         id: "date",
-        label: isRu ? "Дата" : "Date",
-        value: isRu ? "9 мая" : "May 9",
+        label: isRu ? "Дата" : isDe ? "Datum" : isPl ? "Data" : "Date",
+        value: isRu ? "9 мая" : isDe ? "9. Mai" : isPl ? "9 maja" : "May 9",
       },
       {
         id: "delta",
-        label: isRu ? "Изменение" : "Change",
+        label: isRu ? "Изменение" : isDe ? "Änderung" : isPl ? "Zmiana" : "Change",
         value: isRu ? "+1 см" : "+1 cm",
-        helper: isRu ? "с прошлого измерения" : "since previous measurement",
+        helper: isRu ? "с прошлого измерения" : isDe ? "seit der letzten Messung" : isPl ? "od poprzedniego pomiaru" : "since previous measurement",
       },
     ],
-    notesTitle: isRu ? "Заметка к росту" : "Height note",
+    notesTitle: isRu ? "Заметка к росту" : isDe ? "Notiz zur Größe" : isPl ? "Notatka do wzrostu" : "Height note",
     notesBody: isRu
       ? "Измерение днём, стоял ровно у стены."
+      : isDe
+        ? "Messung tagsüber, stand gerade an der Wand."
+      : isPl
+        ? "Pomiar w ciągu dnia, stał prosto przy ścianie."
       : "Measured during the day while standing straight.",
     primaryActionLabel: common.primaryActionLabel,
   };

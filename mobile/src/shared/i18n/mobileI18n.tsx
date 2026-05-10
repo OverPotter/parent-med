@@ -293,9 +293,200 @@ const en: TranslationTree = {
   },
 };
 
-const pl: TranslationTree = en;
+const pl: TranslationTree = {
+  tabs: {
+    children: "Dzieci",
+    pillbox: "Pudełko leków",
+    cabinet: "Apteczka",
+    more: "Więcej",
+  },
+  children: {
+    header: {
+      title: "Dzieci",
+      subtitle: "Profile dzieci i szybki dostęp do wpisów.",
+      addChild: "Dodaj dziecko",
+    },
+    actions: {
+      sleep: "Sen",
+      feeding: "Karmienie",
+      observation: "Obserwuj",
+      profile: "Profil",
+    },
+  },
+  childProfile: {
+    backToChildren: "← Do dzieci",
+    journalTitle: "Dziennik",
+    notesTitle: "Notatki",
+    notesBody:
+      "Tutaj możesz zapisać ważne obserwacje: reakcję na leki, nastrój, sen lub pytania do lekarza.",
+    exportTitle: "Eksport historii",
+    exportCaption: "CSV / arkusz dla lekarza lub rodziny",
+    editProfile: "Edytuj profil",
+    stats: {
+      age: "Wiek",
+      weight: "Waga",
+      height: "Wzrost",
+      allergies: "Alergie",
+    },
+  },
+  exportSheet: {
+    eyebrow: "EKSPORT",
+    title: "Udostępnij dane dziecka",
+    subtitle: "Wybierz, jakie dane są potrzebne i za jaki okres.",
+    exportWhat: "Co eksportować",
+    period: "Okres",
+    saveCsv: "Zapisz CSV",
+    saveXlsx: "Zapisz XLSX",
+    options: {
+      summary: "Podsumowanie",
+      illness: "Choroby",
+      care: "Opieka",
+      allFiles: "Wszystkie pliki",
+    },
+    descriptions: {
+      summary: "Wzrost, waga, sen, karmienia i ogólne wskaźniki za wybrany okres.",
+      illness: "Temperatura, leki, komentarze i epizody choroby.",
+      care: "Osobne tabele ze snem, karmieniami, wagą i wzrostem.",
+      allFiles: "Podsumowanie, choroby i opieka w jednym archiwum.",
+    },
+    periods: {
+      twoWeeks: "2 tygodnie",
+      month: "30 dni",
+      halfYear: "6 miesięcy",
+      all: "Cały okres",
+    },
+  },
+  editProfileScreen: {
+    backToProfile: "Do profilu dziecka",
+    title: "Edytuj profil",
+    subtitle: "Podstawowe dane i ustawienia Edika.",
+    changePhoto: "Zmień zdjęcie",
+    sections: {
+      main: "Dane podstawowe",
+      health: "Zdrowie i notatki",
+      settings: "Ustawienia",
+    },
+    rows: {
+      childName: "Imię dziecka",
+      birthDate: "Data urodzenia",
+      allergies: "Alergie",
+      notes: "Notatki",
+      babyMode: "Tryb malucha",
+      liveActivity: "Live Activity",
+    },
+    descriptions: {
+      allergies: "Orzechy, alergia sezonowa",
+      notes: "Ważne obserwacje i komentarze",
+      babyMode: "Dodaje sen, karmienie i historię dnia.",
+      liveActivity: "Pokazuj wydarzenia na ekranie blokady.",
+    },
+    values: {
+      birthDate: "4 lutego 2022",
+    },
+    actions: {
+      save: "Zapisz zmiany",
+      delete: "Usuń dziecko",
+    },
+  },
+};
 
-const de: TranslationTree = en;
+const de: TranslationTree = {
+  tabs: {
+    children: "Kinder",
+    pillbox: "Pillenbox",
+    cabinet: "Hausapotheke",
+    more: "Mehr",
+  },
+  children: {
+    header: {
+      title: "Kinder",
+      subtitle: "Kinderprofile und schneller Zugriff auf Einträge.",
+      addChild: "Kind hinzufügen",
+    },
+    actions: {
+      sleep: "Schlaf",
+      feeding: "Fütterung",
+      observation: "Beobachten",
+      profile: "Profil",
+    },
+  },
+  childProfile: {
+    backToChildren: "← Zu den Kindern",
+    journalTitle: "Journal",
+    notesTitle: "Notizen",
+    notesBody:
+      "Hier können Sie wichtige Beobachtungen festhalten: Reaktionen auf Medikamente, Stimmung, Schlaf oder Fragen an den Arzt.",
+    exportTitle: "Verlauf exportieren",
+    exportCaption: "CSV / Tabelle für Arzt oder Familie",
+    editProfile: "Profil bearbeiten",
+    stats: {
+      age: "Alter",
+      weight: "Gewicht",
+      height: "Größe",
+      allergies: "Allergien",
+    },
+  },
+  exportSheet: {
+    eyebrow: "EXPORT",
+    title: "Kinderdaten teilen",
+    subtitle: "Wählen Sie aus, welche Daten und für welchen Zeitraum benötigt werden.",
+    exportWhat: "Was exportieren",
+    period: "Zeitraum",
+    saveCsv: "CSV speichern",
+    saveXlsx: "XLSX speichern",
+    options: {
+      summary: "Übersicht",
+      illness: "Krankheiten",
+      care: "Pflege",
+      allFiles: "Alle Dateien",
+    },
+    descriptions: {
+      summary:
+        "Wachstum, Gewicht, Schlaf, Fütterungen und wichtige Kennzahlen für den Zeitraum.",
+      illness: "Temperatur, Medikamente, Kommentare und Krankheitsepisoden.",
+      care: "Getrennte Tabellen für Schlaf, Fütterungen, Gewicht und Größe.",
+      allFiles: "Übersicht, Krankheiten und Pflege in einem Archiv.",
+    },
+    periods: {
+      twoWeeks: "2 Wochen",
+      month: "30 Tage",
+      halfYear: "6 Monate",
+      all: "Gesamter Zeitraum",
+    },
+  },
+  editProfileScreen: {
+    backToProfile: "Zum Kinderprofil",
+    title: "Profil bearbeiten",
+    subtitle: "Wichtige Daten und Einstellungen von Edik.",
+    changePhoto: "Foto ändern",
+    sections: {
+      main: "Grunddaten",
+      health: "Gesundheit und Notizen",
+      settings: "Einstellungen",
+    },
+    rows: {
+      childName: "Name des Kindes",
+      birthDate: "Geburtsdatum",
+      allergies: "Allergien",
+      notes: "Notizen",
+      babyMode: "Babymodus",
+      liveActivity: "Live Activity",
+    },
+    descriptions: {
+      allergies: "Nüsse, saisonale Allergie",
+      notes: "Wichtige Beobachtungen und Kommentare",
+      babyMode: "Fügt Schlaf, Fütterung und Tagesverlauf hinzu.",
+      liveActivity: "Ereignisse auf dem Sperrbildschirm anzeigen.",
+    },
+    values: {
+      birthDate: "4. Februar 2022",
+    },
+    actions: {
+      save: "Änderungen speichern",
+      delete: "Kind löschen",
+    },
+  },
+};
 
 const translations: Record<MobileLocale, TranslationTree> = {
   ru,

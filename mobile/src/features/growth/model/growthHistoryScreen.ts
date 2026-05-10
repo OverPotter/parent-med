@@ -96,21 +96,43 @@ export function buildGrowthHistoryScreenContent(
   locale: MobileLocale,
 ): GrowthHistoryScreenContent {
   const isRu = locale === "ru";
+  const isDe = locale === "de";
+  const isPl = locale === "pl";
   const periods = spec.layout_blueprint.segmented_control.labels;
   const activePeriod = spec.layout_blueprint.segmented_control.active_label;
 
   return {
-    backLabel: isRu ? "К профилю ребёнка" : "Back to child profile",
-    title: isRu ? spec.layout_blueprint.heading.title : "Growth • Edik",
+    backLabel: isRu ? "К профилю ребёнка" : isDe ? "Zum Kinderprofil" : isPl ? "Do profilu dziecka" : "Back to child profile",
+    title: isRu ? spec.layout_blueprint.heading.title : isDe ? "Größe • Edik" : isPl ? "Wzrost • Edik" : "Growth • Edik",
     subtitle: isRu
       ? spec.layout_blueprint.heading.subtitle
+      : isDe
+        ? "Optionale Messungen mit einer einfachen Ansicht der letzten Werte und Trends."
+      : isPl
+        ? "Opcjonalne pomiary dziecka z prostym widokiem ostatnich wartości i trendu."
       : "Optional child measurements with a simple view of recent values and trend.",
     periods: periods.map((label) => ({
       id: label,
       label:
         isRu
           ? label
-          : label === "24 часа"
+          : isDe
+            ? label === "24 часа"
+              ? "24 Std."
+              : label === "7 дней"
+                ? "7 Tage"
+                : label === "30 дней"
+                  ? "30 Tage"
+                  : "Gesamter Zeitraum"
+            : isPl
+            ? label === "24 часа"
+              ? "24 godz."
+              : label === "7 дней"
+                ? "7 dni"
+                : label === "30 дней"
+                  ? "30 dni"
+                  : "Cały okres"
+            : label === "24 часа"
             ? "24 hours"
             : label === "7 дней"
               ? "7 days"
@@ -121,10 +143,18 @@ export function buildGrowthHistoryScreenContent(
     })),
     heroTitle: isRu
       ? "Как рос Эдик"
-      : "How Edik's growth changed",
+      : isDe
+        ? "Wie sich Ediks Größe verändert hat"
+      : isPl
+        ? "Jak zmieniał się wzrost Edika"
+        : "How Edik's growth changed",
     heroSubtitle: isRu
       ? spec.layout_blueprint.hero_summary_card.subtitle
-      : "for the last 30 days",
+      : isDe
+        ? "in den letzten 30 Tagen"
+      : isPl
+        ? "w ciągu ostatnich 30 dni"
+        : "for the last 30 days",
     metrics: spec.layout_blueprint.hero_summary_card.metrics.map((metric) => ({
       id: `${metric.icon}-${metric.label}`,
       icon: metric.icon,
@@ -133,7 +163,19 @@ export function buildGrowthHistoryScreenContent(
       label:
         isRu
           ? metric.label
-          : metric.label === "Текущий рост"
+          : isDe
+            ? metric.label === "Текущий рост"
+              ? "Aktuelle Größe"
+              : metric.label === "С прошлого"
+                ? "Seit dem letzten"
+                : "Letzte Messung"
+            : isPl
+            ? metric.label === "Текущий рост"
+              ? "Aktualny wzrost"
+              : metric.label === "С прошлого"
+                ? "Od poprzedniego"
+                : "Ostatni pomiar"
+            : metric.label === "Текущий рост"
             ? "Current height"
             : metric.label === "С прошлого"
               ? "From previous"
@@ -141,17 +183,33 @@ export function buildGrowthHistoryScreenContent(
     })),
     ctaLabel: isRu
       ? spec.layout_blueprint.hero_summary_card.primary_cta.text
-      : "Add measurement",
+      : isDe
+        ? "Messung hinzufügen"
+      : isPl
+        ? "Dodaj pomiar"
+        : "Add measurement",
     historyTitle: isRu
       ? spec.layout_blueprint.history_section.title
-      : "Measurement history",
+      : isDe
+        ? "Messverlauf"
+      : isPl
+        ? "Historia pomiarów"
+        : "Measurement history",
     timeline: spec.layout_blueprint.timeline_history_list.items.map((item) => ({
       id: `${item.date}-${item.value}`,
       date: item.date,
       value: item.value,
       meta: isRu
         ? item.meta
-        : item.meta
+        : isDe
+          ? item.meta
+              .replace("Сохранено вручную", "Manuell gespeichert")
+              .replace("Измерение добавлено", "Messung hinzugefügt")
+          : isPl
+          ? item.meta
+              .replace("Сохранено вручную", "Zapisano ręcznie")
+              .replace("Измерение добавлено", "Dodano pomiar")
+          : item.meta
             .replace("Сохранено вручную", "Saved manually")
             .replace("Измерение добавлено", "Measurement added"),
     })),

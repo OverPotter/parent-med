@@ -17,26 +17,44 @@ import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import type { MobileAuthSession } from "../../auth/api/authApi";
 import {
-  changePassword,
-  deleteMyAccount,
-  deleteMyFamily,
-  fetchMyFamilyAccessSummary,
-  fetchMyFamilySettingsSummary,
-  fetchPushConfig,
-  fetchPushPreferences,
-  MobileSettingsApiError,
   type MobileFamilyAccessSummary,
   type MobileFamilySettingsSummary,
   type MobilePushConfig,
   type MobilePushPreferences,
   updatePushPreferences,
-  updateRecoveryCode,
 } from "../api/settingsApi";
+import {
+  executeSettingsDeletion,
+  patchSettingsPushPreferences,
+  saveMedicationIntervalUnitPreference,
+  saveSettingsPreferredLanguage,
+  saveSettingsPassword,
+  saveSettingsRecoveryCode,
+} from "../model/settingsScreenActions";
 import {
   buildSettingsScreenContent,
   mapSubscriptionPlanLabel,
   mapSubscriptionStatusLabel,
 } from "../model/settingsScreen";
+import {
+  buildCabinetReminderPatch,
+  buildOptimisticMasterPushPreferences,
+  getPasswordInlineHint,
+  loadSettingsBundle,
+  validatePasswordForm,
+} from "../model/settingsScreenLogic";
+import {
+  defaultFamilyAccess,
+  defaultFamilySummary,
+  defaultPushConfig,
+  defaultPushPreferences,
+  emptyPasswordForm,
+  formatSubscriptionExpiresAt,
+  getSelectedCabinetDays,
+  isPushMasterEnabled,
+  resolvePasswordSaveError,
+  type PasswordFormState,
+} from "../model/settingsScreenHelpers";
 import { resolveSettingsOwnershipPolicy } from "../model/settingsOwnershipPolicy";
 import { openSystemSubscriptionManagement } from "../model/settingsSubscriptionActions";
 import { settingsScreenAssets } from "../assets";
@@ -51,6 +69,10 @@ import {
   SubscriptionManagementCard,
 } from "./SettingsScreenParts";
 import { styles } from "./settingsScreenStyles";
+import {
+  readStoredSettingsPreferences,
+  type MedicationIntervalUnit,
+} from "../session/mobileSettingsPreferencesStorage";
 
 type SettingsScreenProps = {
   visible: boolean;
@@ -60,50 +82,13 @@ type SettingsScreenProps = {
   onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
 };
 
-const defaultPushPreferences: MobilePushPreferences = {
-  childrenEnabled: true,
-  beforeReminderMinutes: 10,
-  pillboxEnabled: true,
-  pillboxBeforeReminderMinutes: 10,
-  cabinetNotify10Days: false,
-  cabinetNotify7Days: true,
-  cabinetNotify3Days: false,
-  liveActivitySleepEnabled: false,
-  liveActivityFeedingEnabled: false,
-  liveActivityIllnessEnabled: false,
-};
-
-const defaultFamilySummary: MobileFamilySettingsSummary = {
-  id: "",
-  name: "",
-  ownerAccountId: null,
-  planCode: "free",
-  subscriptionStatus: "inactive",
-  subscriptionExpiresAt: null,
-  premiumActive: false,
-};
-
-const defaultFamilyAccess: MobileFamilyAccessSummary = {
-  planCode: "free",
-  subscriptionStatus: "inactive",
-  premiumActive: false,
-  canManageSubscription: false,
-  canUseLiveActivities: false,
-  currentChildrenCount: 0,
-  currentAdultsCount: 0,
-  currentPillboxPlanCount: 0,
-};
-
-const defaultPushConfig: MobilePushConfig = {
-  enabled: true,
-};
-
 const settingsModuleIcons = {
   language: settingsScreenAssets.language,
   notifications: settingsScreenAssets.notifications,
   children: require("../../../shared/assets/bottom-tabs/parent_child_transparent.png"),
   pillbox: require("../../../shared/assets/bottom-tabs/pillpath_icon_transparent.png"),
   cabinet: require("../../../shared/assets/bottom-tabs/medical_bag_icon_transparent_FIXED.png"),
+  medicationPlans: settingsScreenAssets.medicationInterval,
 } as const;
 
 const settingsModuleAccentColors = {
@@ -111,72 +96,6 @@ const settingsModuleAccentColors = {
   pillbox: "#8C7AE6",
   cabinet: "#E59A63",
 } as const;
-
-type PasswordFormState = {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-};
-
-const emptyPasswordForm: PasswordFormState = {
-  currentPassword: "",
-  newPassword: "",
-  confirmPassword: "",
-};
-
-function resolvePasswordSaveError(
-  error: unknown,
-  locale: MobileLocale,
-  fallback: string,
-) {
-  if (!(error instanceof MobileSettingsApiError)) {
-    return fallback;
-  }
-
-  if (locale === "ru" && error.detail) {
-    return error.detail;
-  }
-
-  const knownCodes: Record<string, string> = {
-    INVALID_CURRENT_PASSWORD: "Current password is incorrect.",
-  };
-
-  const knownDetails: Record<string, string> = {
-    "Текущий пароль неверный": "Current password is incorrect.",
-    "Current password is incorrect": "Current password is incorrect.",
-    "Incorrect current password": "Current password is incorrect.",
-  };
-
-  if (error.code && knownCodes[error.code]) {
-    return knownCodes[error.code];
-  }
-
-  if (error.detail && knownDetails[error.detail]) {
-    return knownDetails[error.detail];
-  }
-
-  return error.detail ?? fallback;
-}
-
-function formatSubscriptionExpiresAt(
-  locale: MobileLocale,
-  value: string | null,
-) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
 
 export function SettingsScreen({
   visible,
@@ -215,6 +134,9 @@ export function SettingsScreen({
   const [recoveryCodeExpanded, setRecoveryCodeExpanded] = useState(false);
   const [languageExpanded, setLanguageExpanded] = useState(false);
   const [subscriptionExpanded, setSubscriptionExpanded] = useState(false);
+  const [medicationIntervalExpanded, setMedicationIntervalExpanded] = useState(false);
+  const [medicationIntervalUnit, setMedicationIntervalUnit] =
+    useState<MedicationIntervalUnit>("hours");
   const [passwordForm, setPasswordForm] =
     useState<PasswordFormState>(emptyPasswordForm);
   const [passwordSubmitError, setPasswordSubmitError] = useState<string | null>(null);
@@ -241,6 +163,23 @@ export function SettingsScreen({
   }, [session?.account.hasRecoveryCode]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadLocalPreferences() {
+      const storedPreferences = await readStoredSettingsPreferences();
+      if (!cancelled) {
+        setMedicationIntervalUnit(storedPreferences.medicationIntervalUnit);
+      }
+    }
+
+    void loadLocalPreferences();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (passwordExpanded) {
       scrollSettingsToBottom();
     }
@@ -259,13 +198,12 @@ export function SettingsScreen({
       setError(null);
 
       try {
-        const [nextPushPreferences, nextPushConfig, nextFamilySummary, nextFamilyAccess] =
-          await Promise.all([
-            fetchPushPreferences({ accessToken: activeSession.accessToken }),
-            fetchPushConfig({ accessToken: activeSession.accessToken }),
-            fetchMyFamilySettingsSummary({ accessToken: activeSession.accessToken }),
-            fetchMyFamilyAccessSummary({ accessToken: activeSession.accessToken }),
-          ]);
+        const {
+          pushPreferences: nextPushPreferences,
+          pushConfig: nextPushConfig,
+          familySummary: nextFamilySummary,
+          familyAccess: nextFamilyAccess,
+        } = await loadSettingsBundle(activeSession);
 
         if (cancelled) {
           return;
@@ -299,28 +237,16 @@ export function SettingsScreen({
     familySummary,
     familyAccess,
   });
-  const pushMasterEnabled =
-    pushPreferences.childrenEnabled ||
-    pushPreferences.pillboxEnabled ||
-    pushPreferences.cabinetNotify10Days ||
-    pushPreferences.cabinetNotify7Days ||
-    pushPreferences.cabinetNotify3Days;
+  const pushMasterEnabled = isPushMasterEnabled(pushPreferences);
 
-  const selectedCabinetDays = useMemo(() => {
-    if (pushPreferences.cabinetNotify10Days) {
-      return 10;
-    }
-
-    if (pushPreferences.cabinetNotify7Days) {
-      return 7;
-    }
-
-    return 3;
-  }, [
-    pushPreferences.cabinetNotify10Days,
-    pushPreferences.cabinetNotify3Days,
-    pushPreferences.cabinetNotify7Days,
-  ]);
+  const selectedCabinetDays = useMemo(
+    () => getSelectedCabinetDays(pushPreferences),
+    [
+      pushPreferences.cabinetNotify10Days,
+      pushPreferences.cabinetNotify3Days,
+      pushPreferences.cabinetNotify7Days,
+    ],
+  );
 
   const resetTransientMessages = () => {
     setError(null);
@@ -328,27 +254,59 @@ export function SettingsScreen({
     setPasswordSubmitError(null);
   };
 
-  const passwordInlineHint =
-    passwordForm.confirmPassword.trim().length > 0 &&
-    passwordForm.newPassword !== passwordForm.confirmPassword
-      ? content.passwordsMismatch
-      : passwordSubmitError;
+  const passwordInlineHint = getPasswordInlineHint(
+    passwordForm,
+    content.passwordsMismatch,
+    passwordSubmitError,
+  );
 
   const handleLanguageSelect = async (nextLocale: MobileLocale) => {
-    if (isSavingLanguage || nextLocale === session?.account.preferredLanguage) {
+    const result = await saveSettingsPreferredLanguage({
+      isSavingLanguage,
+      nextLocale,
+      currentLocale: session?.account.preferredLanguage,
+      onUpdatePreferredLanguage,
+      saveErrorLabel: content.saveErrorLabel,
+    });
+
+    if (result.blocked) {
       return;
     }
 
     setIsSavingLanguage(true);
     resetTransientMessages();
 
-    try {
-      await onUpdatePreferredLanguage(nextLocale);
+    if (result.success) {
       setLanguageExpanded(false);
-    } catch {
-      setError(content.saveErrorLabel);
-    } finally {
       setIsSavingLanguage(false);
+      return;
+    }
+
+    setError(result.submitError ?? content.saveErrorLabel);
+    setIsSavingLanguage(false);
+  };
+
+  const handleMedicationIntervalUnitSelect = async (
+    nextUnit: MedicationIntervalUnit,
+  ) => {
+    const result = await saveMedicationIntervalUnitPreference({
+      nextUnit,
+      currentUnit: medicationIntervalUnit,
+      saveErrorLabel: content.saveErrorLabel,
+    });
+
+    if (result.blocked) {
+      setMedicationIntervalExpanded(false);
+      return;
+    }
+
+    setMedicationIntervalUnit(nextUnit);
+    setMedicationIntervalExpanded(false);
+    setError(null);
+    setSuccess(null);
+
+    if (result.submitError) {
+      setError(result.submitError);
     }
   };
 
@@ -356,53 +314,45 @@ export function SettingsScreen({
     patch: Partial<MobilePushPreferences>,
     optimistic?: MobilePushPreferences,
   ) => {
-    if (!session || isSavingPush) {
-      return;
-    }
-
     const previous = pushPreferences;
     const nextOptimistic = optimistic ?? {
       ...pushPreferences,
       ...patch,
     };
 
+    const result = await patchSettingsPushPreferences({
+      session,
+      isSavingPush,
+      patch,
+      previous,
+      optimistic: nextOptimistic,
+      saveErrorLabel: content.saveErrorLabel,
+    });
+
+    if (result.blocked) {
+      return;
+    }
+
     setPushPreferences(nextOptimistic);
     setIsSavingPush(true);
     resetTransientMessages();
 
-    try {
-      const nextPreferences = await updatePushPreferences({
-        accessToken: session.accessToken,
-        childrenEnabled: patch.childrenEnabled,
-        beforeReminderMinutes: patch.beforeReminderMinutes,
-        pillboxEnabled: patch.pillboxEnabled,
-        pillboxBeforeReminderMinutes: patch.pillboxBeforeReminderMinutes,
-        cabinetNotify10Days: patch.cabinetNotify10Days,
-        cabinetNotify7Days: patch.cabinetNotify7Days,
-        cabinetNotify3Days: patch.cabinetNotify3Days,
-        liveActivitySleepEnabled: patch.liveActivitySleepEnabled,
-        liveActivityFeedingEnabled: patch.liveActivityFeedingEnabled,
-        liveActivityIllnessEnabled: patch.liveActivityIllnessEnabled,
-      });
-
-      setPushPreferences(nextPreferences);
-    } catch {
-      setPushPreferences(previous);
-      setError(content.saveErrorLabel);
-    } finally {
+    if (result.nextPreferences) {
+      setPushPreferences(result.nextPreferences);
       setIsSavingPush(false);
+      return;
     }
+
+    setPushPreferences(result.revertPreferences ?? previous);
+    setError(result.submitError ?? content.saveErrorLabel);
+    setIsSavingPush(false);
   };
 
   const handleMasterPushToggle = async (enabled: boolean) => {
-    const optimistic = {
-      ...pushPreferences,
-      childrenEnabled: enabled,
-      pillboxEnabled: enabled,
-      cabinetNotify10Days: false,
-      cabinetNotify7Days: enabled,
-      cabinetNotify3Days: false,
-    };
+    const optimistic = buildOptimisticMasterPushPreferences(
+      pushPreferences,
+      enabled,
+    );
 
     await patchPushPreferences(
       {
@@ -417,86 +367,73 @@ export function SettingsScreen({
   };
 
   const handleCabinetReminderDaysSelect = async (days: 10 | 7 | 3) => {
-    await patchPushPreferences({
-      cabinetNotify10Days: days === 10,
-      cabinetNotify7Days: days === 7,
-      cabinetNotify3Days: days === 3,
-    });
+    await patchPushPreferences(buildCabinetReminderPatch(days));
   };
 
   const handleSavePassword = async () => {
-    if (!session || isSavingPassword) {
+    const result = await saveSettingsPassword({
+      session,
+      isSavingPassword,
+      passwordForm,
+      locale,
+      content,
+    });
+
+    if (result.blocked) {
       return;
     }
 
-    if (!passwordForm.currentPassword.trim()) {
-      setError(content.passwordRequired);
-      return;
-    }
-
-    if (!passwordForm.newPassword.trim() || !passwordForm.confirmPassword.trim()) {
-      setError(content.passwordRequired);
-      return;
-    }
-
-    if (passwordForm.newPassword.trim().length < 8) {
-      setError(content.passwordTooShort);
-      return;
-    }
-
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setError(content.passwordsMismatch);
+    if (result.validationError) {
+      setError(result.validationError);
       return;
     }
 
     setIsSavingPassword(true);
     resetTransientMessages();
 
-    try {
-      await changePassword({
-        accessToken: session.accessToken,
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
-      });
-      setPasswordForm(emptyPasswordForm);
+    if (result.nextPasswordForm) {
+      setPasswordForm(result.nextPasswordForm);
       setPasswordExpanded(false);
-      setSuccess(content.passwordUpdatedLabel);
-    } catch (error) {
-      setPasswordSubmitError(
-        resolvePasswordSaveError(error, locale, content.saveErrorLabel),
-      );
-    } finally {
+      setSuccess(result.successMessage ?? null);
       setIsSavingPassword(false);
-    }
-  };
-
-  const handleSaveRecoveryCode = async () => {
-    if (!session || isSavingRecoveryCode) {
       return;
     }
 
-    if (recoveryCode.trim().length < 8) {
-      setError(content.recoveryCodeTooShort);
+    setPasswordSubmitError(result.submitError ?? content.saveErrorLabel);
+    setIsSavingPassword(false);
+  };
+
+  const handleSaveRecoveryCode = async () => {
+    const result = await saveSettingsRecoveryCode({
+      session,
+      isSavingRecoveryCode,
+      recoveryCode,
+      content,
+    });
+
+    if (result.blocked) {
+      return;
+    }
+
+    if (result.validationError) {
+      setError(result.validationError);
       return;
     }
 
     setIsSavingRecoveryCode(true);
     resetTransientMessages();
 
-    try {
-      await updateRecoveryCode({
-        accessToken: session.accessToken,
-        recoveryCode: recoveryCode.trim(),
-      });
-      setRecoveryCode("");
+    if (typeof result.nextRecoveryCode === "string") {
+      setRecoveryCode(result.nextRecoveryCode);
       setRecoveryCodeExpanded(false);
-      setHasRecoveryCode(true);
-      setSuccess(content.recoveryCodeUpdatedLabel);
-    } catch {
-      setError(content.saveErrorLabel);
-    } finally {
+      setHasRecoveryCode(Boolean(result.hasRecoveryCode));
+      setSuccess(result.successMessage ?? null);
       setIsSavingRecoveryCode(false);
+      return;
     }
+
+    setError(result.submitError ?? content.saveErrorLabel);
+    setIsSavingRecoveryCode(false);
   };
 
   const confirmDelete = () => {
@@ -534,20 +471,14 @@ export function SettingsScreen({
   };
 
   const handleDelete = async () => {
-    if (!session) {
-      return;
-    }
-
     setIsDeleting(true);
     resetTransientMessages();
 
     try {
-      if (ownershipPolicy.usesFamilyDeleteEndpoint) {
-        await deleteMyFamily({ accessToken: session.accessToken });
-      } else {
-        await deleteMyAccount({ accessToken: session.accessToken });
-      }
-
+      await executeSettingsDeletion({
+        session,
+        usesFamilyDeleteEndpoint: ownershipPolicy.usesFamilyDeleteEndpoint,
+      });
       await onSessionDeleted();
     } catch {
       setError(content.saveErrorLabel);
@@ -686,6 +617,34 @@ export function SettingsScreen({
                     void handleLanguageSelect(value as MobileLocale);
                   }}
                   disabled={isSavingLanguage}
+                />
+                <View style={styles.rowDivider} />
+                <ExpandableChoiceRow
+                  icon={
+                    <Image
+                      source={settingsModuleIcons.medicationPlans}
+                      style={[
+                        styles.moduleRowIconImage,
+                        styles.moduleRowIconImageLarge,
+                      ]}
+                      resizeMode="contain"
+                    />
+                  }
+                  iconStyle={[styles.rowLeadPlain, styles.rowLeadPlainLarge]}
+                  title={content.medicationPlansTitle}
+                  hint={content.medicationPlansHint}
+                  choices={content.medicationIntervalChoices}
+                  selectedKey={medicationIntervalUnit}
+                  expanded={medicationIntervalExpanded}
+                  onToggle={() => {
+                    setMedicationIntervalExpanded((current) => !current);
+                    resetTransientMessages();
+                  }}
+                  onSelect={(value) => {
+                    void handleMedicationIntervalUnitSelect(
+                      value as MedicationIntervalUnit,
+                    );
+                  }}
                 />
               </View>
             </SettingsSection>

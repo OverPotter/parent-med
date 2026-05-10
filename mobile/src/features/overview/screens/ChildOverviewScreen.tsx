@@ -418,9 +418,10 @@ export function ChildOverviewScreen({
                     </Text>
                     <View style={styles.calendarNavButtons}>
                       <Pressable
-                        onPress={noop}
+                        disabled
                         style={({ pressed }) => [
                           styles.calendarNavButton,
+                          styles.calendarNavButtonDisabled,
                           { borderColor: content.theme.colors.stroke },
                           pressed ? styles.tabPressed : null,
                         ]}
@@ -432,9 +433,10 @@ export function ChildOverviewScreen({
                         />
                       </Pressable>
                       <Pressable
-                        onPress={noop}
+                        disabled
                         style={({ pressed }) => [
                           styles.calendarNavButton,
+                          styles.calendarNavButtonDisabled,
                           { borderColor: content.theme.colors.stroke },
                           pressed ? styles.tabPressed : null,
                         ]}
@@ -488,9 +490,7 @@ export function ChildOverviewScreen({
                           {buildSelectedDayTitle(selectedCalendarDay.day, locale)}
                         </Text>
                         <Text style={styles.calendarSummaryHint}>
-                          {locale === "ru"
-                            ? "Повторный тап по дню вернёт месячную сводку."
-                            : "Tap the selected day again to return to month summary."}
+                          {content.selectedDayToggleHint}
                         </Text>
                       </View>
                       <View style={styles.calendarSummaryList}>
@@ -500,9 +500,7 @@ export function ChildOverviewScreen({
                           ))
                         ) : (
                           <Text style={styles.calendarSummaryEmpty}>
-                            {locale === "ru"
-                              ? "На выбранный день записей пока нет."
-                              : "No entries for the selected day yet."}
+                            {content.selectedDayEmptyLabel}
                           </Text>
                         )}
                       </View>
@@ -511,12 +509,10 @@ export function ChildOverviewScreen({
                     <>
                       <View style={styles.calendarSummaryHeader}>
                         <Text style={styles.calendarSummaryTitle}>
-                          {locale === "ru" ? "Итоги за месяц" : "Month summary"}
+                          {content.calendarMonthSummaryTitle}
                         </Text>
                         <Text style={styles.calendarSummaryHint}>
-                          {locale === "ru"
-                            ? "Тапните день в календаре, чтобы увидеть записи за него."
-                            : "Tap a day in the calendar to see entries for it."}
+                          {content.calendarMonthSummaryHint}
                         </Text>
                       </View>
                       <View style={styles.calendarSummaryStats}>
@@ -604,12 +600,10 @@ export function ChildOverviewScreen({
                   ]}
                 >
                   <Text style={styles.graphicsSectionTitle}>
-                    {locale === "ru" ? "По категориям" : "By category"}
+                    {content.graphicsCategoryTitle}
                   </Text>
                   <Text style={styles.graphicsCardSubtitle}>
-                    {locale === "ru"
-                      ? "Что видно по каждому модулю за выбранный период."
-                      : "What each module shows during the selected period."}
+                    {content.graphicsCategorySubtitle}
                   </Text>
                   <View style={styles.graphicsCategoryGrid}>
                     {content.graphicsBarData.map((item) => (

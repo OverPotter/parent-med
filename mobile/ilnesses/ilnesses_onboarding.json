@@ -1,0 +1,1004 @@
+{
+  "screen_name": "StartObservationOnboarding",
+  "app": "PillPath",
+  "language": "ru",
+  "platform": "iOS",
+  "purpose": "Экран запуска нового наблюдения болезни для выбранного ребёнка.",
+  "context": {
+    "module": "Журнал",
+    "flow": "Пользователь выбирает ребёнка и начинает новое наблюдение болезни. После запуска наблюдения ребёнок появляется на главном экране Журнала в виде активной карточки.",
+    "entry_points": [
+      "Экран профиля ребёнка → кнопка Начать наблюдение",
+      "Экран Дети → карточка ребёнка → Начать наблюдение",
+      "Экран Журнал → если у ребёнка нет активного наблюдения",
+      "Экран Обзор ребёнка → Начать наблюдение"
+    ],
+    "after_success": {
+      "action": "create_active_observation",
+      "navigate_to": "JournalActiveObservationList",
+      "result": "На экране Журнал появляется карточка ребёнка с активным наблюдением."
+    }
+  },
+  "design_goal": {
+    "main_goal": "Сделать экран начала болезни спокойным, быстрым и не перегруженным.",
+    "ux_principle": "Пользователь не обязан сразу заполнять много данных. Достаточно выбрать дату начала и, при желании, коротко написать, что случилось.",
+    "important": [
+      "Экран должен соответствовать новому тёплому стилю PillPath.",
+      "Не использовать старый фиолетовый фон.",
+      "Не превращать экран в медицинскую анкету.",
+      "Главный CTA — Начать наблюдение.",
+      "Поля температуры, лекарств и напоминаний не добавлять на этот экран — они будут внутри активного наблюдения.",
+      "Экран должен выглядеть спокойно, чтобы не усиливать тревогу родителя."
+    ]
+  },
+  "target_device": {
+    "design_width": 393,
+    "design_height": 852,
+    "export_width": 1290,
+    "export_height": 2796,
+    "safe_area": {
+      "top": 54,
+      "bottom": 34,
+      "left": 0,
+      "right": 0
+    }
+  },
+  "visual_style": {
+    "mood": [
+      "calm",
+      "warm",
+      "family healthcare",
+      "soft premium",
+      "friendly",
+      "not clinical",
+      "not childish toy",
+      "trustworthy"
+    ],
+    "keywords": [
+      "warm cream background",
+      "soft peach accents",
+      "rounded cards",
+      "large readable typography",
+      "friendly child avatar",
+      "pastel medical UI",
+      "light shadows",
+      "coral CTA"
+    ],
+    "avoid": [
+      "purple old background",
+      "black hard borders",
+      "cold hospital blue",
+      "too many fields",
+      "too much medical seriousness",
+      "tiny text",
+      "cropped text",
+      "English UI text",
+      "aggressive red danger styling"
+    ]
+  },
+  "tokens": {
+    "colors": {
+      "background": {
+        "top": "#FFF4EC",
+        "middle": "#FFFAF6",
+        "bottom": "#FFFDF9"
+      },
+      "text": {
+        "primary": "#1E2A3A",
+        "secondary": "#667386",
+        "muted": "#9AA3AF",
+        "on_primary": "#FFFFFF"
+      },
+      "accent": {
+        "coral": "#F56F68",
+        "coral_dark": "#E95D56",
+        "coral_light": "#FFE4DD",
+        "peach": "#FFF1E9",
+        "peach_dark": "#F4B49E"
+      },
+      "card": {
+        "background": "#FFFCF8",
+        "background_soft": "#FFF8F3",
+        "border": "#EED8CE",
+        "border_light": "#F3E3DB",
+        "shadow": "rgba(58, 35, 24, 0.06)"
+      },
+      "input": {
+        "background": "#FFFBF8",
+        "border": "#EAD9D0",
+        "border_focus": "#F56F68",
+        "placeholder": "#9AA3AF"
+      },
+      "hint": {
+        "background": "#FFF1E9",
+        "icon_background": "#FFD8CB",
+        "icon": "#F56F68"
+      },
+      "chip": {
+        "background": "#FFECE4",
+        "text": "#9A5D50",
+        "selected_background": "#F56F68",
+        "selected_text": "#FFFFFF"
+      },
+      "button": {
+        "primary_background": "#F56F68",
+        "primary_background_pressed": "#E95D56",
+        "primary_text": "#FFFFFF",
+        "secondary_background": "transparent",
+        "secondary_border": "#F56F68",
+        "secondary_text": "#F56F68"
+      },
+      "tabbar": {
+        "background": "rgba(255, 252, 248, 0.94)",
+        "border": "#EED8CE",
+        "active_background": "#FFE9E2",
+        "active_text": "#F56F68",
+        "inactive_text": "#6E7A8A"
+      }
+    },
+    "typography": {
+      "font_family": "SF Pro Display / SF Pro Text",
+      "fallback": "Inter, Plus Jakarta Sans, system-ui",
+      "back_button": {
+        "font_size": 17,
+        "line_height": 22,
+        "font_weight": 700,
+        "color": "#F56F68"
+      },
+      "title": {
+        "font_size": 34,
+        "line_height": 40,
+        "font_weight": 800,
+        "letter_spacing": -0.8,
+        "color": "#1E2A3A"
+      },
+      "title_child_name": {
+        "font_size": 34,
+        "line_height": 40,
+        "font_weight": 800,
+        "letter_spacing": -0.8,
+        "color": "#F56F68"
+      },
+      "subtitle": {
+        "font_size": 17,
+        "line_height": 27,
+        "font_weight": 500,
+        "color": "#667386"
+      },
+      "hint_title": {
+        "font_size": 16,
+        "line_height": 21,
+        "font_weight": 800,
+        "color": "#1E2A3A"
+      },
+      "hint_body": {
+        "font_size": 14,
+        "line_height": 20,
+        "font_weight": 500,
+        "color": "#667386"
+      },
+      "section_label": {
+        "font_size": 17,
+        "line_height": 22,
+        "font_weight": 800,
+        "color": "#1E2A3A"
+      },
+      "input_text": {
+        "font_size": 18,
+        "line_height": 24,
+        "font_weight": 600,
+        "color": "#1E2A3A"
+      },
+      "placeholder": {
+        "font_size": 17,
+        "line_height": 24,
+        "font_weight": 500,
+        "color": "#9AA3AF"
+      },
+      "counter": {
+        "font_size": 14,
+        "line_height": 18,
+        "font_weight": 600,
+        "color": "#9AA3AF"
+      },
+      "chip": {
+        "font_size": 13,
+        "line_height": 18,
+        "font_weight": 700
+      },
+      "button": {
+        "font_size": 17,
+        "line_height": 22,
+        "font_weight": 800
+      },
+      "tab_label": {
+        "font_size": 13,
+        "line_height": 17,
+        "font_weight": 700
+      }
+    },
+    "radii": {
+      "app_icon": 16,
+      "circle_button": 999,
+      "hero_avatar": 999,
+      "hint_card": 20,
+      "form_card": 28,
+      "input": 22,
+      "textarea": 24,
+      "chip": 999,
+      "button": 999,
+      "tabbar": 26,
+      "tab_active": 20
+    },
+    "spacing": {
+      "screen_padding_x": 24,
+      "top_padding": 72,
+      "header_top_gap": 28,
+      "title_to_subtitle": 12,
+      "subtitle_to_hint": 28,
+      "hint_to_form": 24,
+      "form_padding": 20,
+      "field_gap": 22,
+      "label_to_field": 12,
+      "button_gap": 10,
+      "bottom_tabbar_margin": 16
+    },
+    "shadows": {
+      "card": {
+        "x": 0,
+        "y": 8,
+        "blur": 24,
+        "spread": 0,
+        "color": "rgba(58, 35, 24, 0.06)"
+      },
+      "button": {
+        "x": 0,
+        "y": 8,
+        "blur": 20,
+        "spread": 0,
+        "color": "rgba(245, 111, 104, 0.22)"
+      },
+      "tabbar": {
+        "x": 0,
+        "y": -8,
+        "blur": 30,
+        "spread": 0,
+        "color": "rgba(58, 35, 24, 0.08)"
+      }
+    }
+  },
+  "screen_layout": {
+    "root": {
+      "type": "scroll_view",
+      "background": {
+        "type": "linear_gradient",
+        "direction": "top_to_bottom",
+        "colors": [
+          "#FFF4EC",
+          "#FFFAF6",
+          "#FFFDF9"
+        ]
+      },
+      "padding": {
+        "left": 24,
+        "right": 24,
+        "top": 72,
+        "bottom": 124
+      }
+    },
+    "top_bar": {
+      "type": "horizontal",
+      "height": 52,
+      "align_items": "center",
+      "justify_content": "space_between",
+      "left": {
+        "component": "back_button",
+        "text": "Назад",
+        "icon": "arrow_left"
+      },
+      "right": {
+        "type": "horizontal",
+        "gap": 12,
+        "items": [
+          {
+            "component": "circle_icon_button",
+            "icon": "message"
+          },
+          {
+            "component": "circle_icon_button",
+            "icon": "profile"
+          }
+        ]
+      }
+    },
+    "hero": {
+      "type": "horizontal",
+      "margin_top": 28,
+      "align_items": "flex_start",
+      "left": {
+        "type": "vertical",
+        "width": 230,
+        "title": {
+          "text": "Новое наблюдение · Эдик",
+          "highlight_word": "Эдик"
+        },
+        "subtitle": {
+          "text": "Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи."
+        }
+      },
+      "right": {
+        "component": "child_avatar",
+        "size": 132,
+        "position": {
+          "x": "right",
+          "y": 36
+        }
+      }
+    },
+    "hint_card": {
+      "type": "horizontal",
+      "margin_top": 28,
+      "height": 76,
+      "width": 232,
+      "background": "#FFF1E9",
+      "border_radius": 20,
+      "padding": {
+        "left": 14,
+        "right": 16,
+        "top": 12,
+        "bottom": 12
+      },
+      "icon": {
+        "name": "shield_check",
+        "container_size": 44
+      },
+      "text": {
+        "title": "Мы рядом с вами",
+        "body": "Следите за состоянием ребёнка и получайте полезные подсказки."
+      }
+    },
+    "form_card": {
+      "type": "card",
+      "margin_top": 24,
+      "background": "#FFFCF8",
+      "border": {
+        "width": 1,
+        "color": "#EED8CE"
+      },
+      "border_radius": 28,
+      "padding": 20,
+      "shadow": "card",
+      "children": [
+        "date_field_group",
+        "reason_field_group",
+        "suggestions_block",
+        "buttons_row"
+      ]
+    },
+    "bottom_tabbar": {
+      "position": "fixed_bottom",
+      "left": 16,
+      "right": 16,
+      "bottom": 14,
+      "height": 86
+    }
+  },
+  "components": {
+    "back_button": {
+      "height": 48,
+      "layout": "horizontal",
+      "align_items": "center",
+      "gap": 8,
+      "icon": {
+        "name": "arrow_left",
+        "size": 22,
+        "stroke_width": 2,
+        "color": "#F56F68"
+      },
+      "text": {
+        "value": "Назад",
+        "style": "back_button"
+      },
+      "states": {
+        "default": {
+          "opacity": 1
+        },
+        "pressed": {
+          "opacity": 0.65,
+          "scale": 0.98
+        }
+      }
+    },
+    "circle_icon_button": {
+      "size": 48,
+      "border_radius": 999,
+      "background": "rgba(255, 252, 248, 0.8)",
+      "border": {
+        "width": 1,
+        "color": "#EED8CE"
+      },
+      "icon": {
+        "size": 22,
+        "stroke_width": 2,
+        "color": "#1E2A3A"
+      },
+      "states": {
+        "default": {
+          "opacity": 1,
+          "scale": 1
+        },
+        "pressed": {
+          "opacity": 0.78,
+          "scale": 0.96
+        }
+      }
+    },
+    "child_avatar": {
+      "size": 132,
+      "border_radius": 999,
+      "background": "#FFF1E9",
+      "image": {
+        "description": "Friendly 3D child avatar, boy with dark hair and yellow shirt, soft lighting, same style as the children screen.",
+        "fit": "cover"
+      },
+      "decor": {
+        "type": "soft_blob",
+        "color": "#FFEDE6",
+        "opacity": 0.9
+      }
+    },
+    "hint_card": {
+      "background": "#FFF1E9",
+      "border_radius": 20,
+      "icon_container": {
+        "size": 44,
+        "border_radius": 999,
+        "background": "#FFD8CB"
+      },
+      "icon": {
+        "name": "shield_check",
+        "size": 22,
+        "color": "#F56F68"
+      }
+    },
+    "date_field_group": {
+      "type": "field_group",
+      "margin_bottom": 24,
+      "label_row": {
+        "icon_container": {
+          "size": 34,
+          "background": "#FFEDE6",
+          "border_radius": 999
+        },
+        "icon": {
+          "name": "calendar",
+          "size": 18,
+          "color": "#F56F68"
+        },
+        "label": {
+          "text": "Дата начала",
+          "style": "section_label"
+        }
+      },
+      "field": {
+        "type": "date_picker_field",
+        "height": 58,
+        "margin_top": 12,
+        "background": "#FFFBF8",
+        "border": {
+          "width": 1,
+          "color": "#EAD9D0"
+        },
+        "border_radius": 22,
+        "padding_x": 18,
+        "layout": "horizontal",
+        "justify_content": "space_between",
+        "left": {
+          "icon": {
+            "name": "calendar",
+            "size": 20,
+            "color": "#7D6A61"
+          },
+          "text": {
+            "value": "10 мая 2026 г.",
+            "style": "input_text"
+          }
+        },
+        "right": {
+          "icon": {
+            "name": "chevron_down",
+            "size": 20,
+            "color": "#7D6A61"
+          }
+        }
+      }
+    },
+    "reason_field_group": {
+      "type": "field_group",
+      "margin_bottom": 22,
+      "label_row": {
+        "icon_container": {
+          "size": 34,
+          "background": "#FFEDE6",
+          "border_radius": 999
+        },
+        "icon": {
+          "name": "message_square",
+          "size": 18,
+          "color": "#F56F68"
+        },
+        "label": {
+          "text": "Что случилось?",
+          "style": "section_label"
+        }
+      },
+      "field": {
+        "type": "textarea",
+        "height": 84,
+        "margin_top": 12,
+        "background": "#FFFBF8",
+        "border": {
+          "width": 1,
+          "color": "#EAD9D0"
+        },
+        "border_radius": 24,
+        "padding": {
+          "left": 18,
+          "right": 18,
+          "top": 18,
+          "bottom": 18
+        },
+        "placeholder": {
+          "text": "Например: температура и кашель",
+          "style": "placeholder"
+        },
+        "counter": {
+          "text": "0/120",
+          "position": "bottom_right",
+          "style": "counter"
+        }
+      }
+    },
+    "suggestions_block": {
+      "type": "card",
+      "height": 72,
+      "margin_bottom": 24,
+      "background": "#FFF1E9",
+      "border_radius": 20,
+      "padding": {
+        "left": 14,
+        "right": 14,
+        "top": 12,
+        "bottom": 12
+      },
+      "layout": "horizontal",
+      "icon": {
+        "container_size": 40,
+        "container_bg": "#FFE0A8",
+        "name": "lightbulb",
+        "size": 21,
+        "color": "#E99A2E"
+      },
+      "content": {
+        "title": {
+          "text": "Примеры",
+          "style": "hint_title"
+        },
+        "chips": {
+          "type": "horizontal_scroll",
+          "margin_top": 8,
+          "gap": 8,
+          "items": [
+            "Температура",
+            "Кашель",
+            "Насморк",
+            "Боль в горле",
+            "Сыпь"
+          ]
+        }
+      }
+    },
+    "suggestion_chip": {
+      "height": 30,
+      "padding_x": 14,
+      "border_radius": 999,
+      "background": "#FFECE4",
+      "text_color": "#9A5D50",
+      "font_size": 13,
+      "font_weight": 700,
+      "states": {
+        "default": {
+          "background": "#FFECE4",
+          "text_color": "#9A5D50"
+        },
+        "selected": {
+          "background": "#F56F68",
+          "text_color": "#FFFFFF"
+        },
+        "pressed": {
+          "scale": 0.96
+        }
+      }
+    },
+    "buttons_row": {
+      "type": "horizontal",
+      "height": 58,
+      "gap": 10,
+      "items": [
+        {
+          "component": "secondary_button",
+          "text": "Назад",
+          "width": "46%"
+        },
+        {
+          "component": "primary_button",
+          "text": "Начать наблюдение",
+          "width": "54%"
+        }
+      ]
+    },
+    "secondary_button": {
+      "height": 58,
+      "border_radius": 999,
+      "background": "transparent",
+      "border": {
+        "width": 1.5,
+        "color": "#F56F68"
+      },
+      "text": {
+        "style": "button",
+        "color": "#F56F68"
+      },
+      "states": {
+        "default": {
+          "background": "transparent"
+        },
+        "pressed": {
+          "background": "#FFE4DD",
+          "scale": 0.98
+        }
+      }
+    },
+    "primary_button": {
+      "height": 58,
+      "border_radius": 999,
+      "background": "#F56F68",
+      "text": {
+        "style": "button",
+        "color": "#FFFFFF"
+      },
+      "shadow": "button",
+      "states": {
+        "default": {
+          "background": "#F56F68",
+          "opacity": 1
+        },
+        "pressed": {
+          "background": "#E95D56",
+          "scale": 0.98
+        },
+        "disabled": {
+          "background": "#F3C7C2",
+          "opacity": 0.75
+        }
+      }
+    },
+    "bottom_tabbar": {
+      "height": 86,
+      "border_radius": 26,
+      "background": "rgba(255, 252, 248, 0.94)",
+      "blur": 18,
+      "border": {
+        "width": 1,
+        "color": "#EED8CE"
+      },
+      "shadow": "tabbar",
+      "padding": {
+        "left": 8,
+        "right": 8,
+        "top": 8,
+        "bottom": 8
+      },
+      "items": [
+        {
+          "id": "journal",
+          "label": "Журнал",
+          "icon": "list_document",
+          "active": true
+        },
+        {
+          "id": "children",
+          "label": "Дети",
+          "icon": "user"
+        },
+        {
+          "id": "pillbox",
+          "label": "Таблетница",
+          "icon": "clock"
+        },
+        {
+          "id": "cabinet",
+          "label": "Аптечка",
+          "icon": "first_aid_kit"
+        }
+      ],
+      "tab_item": {
+        "width": "25%",
+        "height": 70,
+        "border_radius": 20,
+        "layout": "vertical_center",
+        "gap": 5,
+        "icon_size": 24,
+        "active": {
+          "background": "#FFE9E2",
+          "icon_color": "#F56F68",
+          "label_color": "#F56F68"
+        },
+        "inactive": {
+          "background": "transparent",
+          "icon_color": "#6E7A8A",
+          "label_color": "#6E7A8A"
+        }
+      }
+    }
+  },
+  "icons": {
+    "style": {
+      "type": "rounded line icons",
+      "stroke_width": 2,
+      "stroke_cap": "round",
+      "stroke_join": "round",
+      "library_suggestion": "Lucide / SF Symbols style"
+    },
+    "mapping": {
+      "arrow_left": "ArrowLeft",
+      "message": "MessageCircle",
+      "profile": "UserRound",
+      "calendar": "CalendarDays",
+      "message_square": "MessageSquareText",
+      "lightbulb": "Lightbulb",
+      "shield_check": "ShieldCheck",
+      "chevron_down": "ChevronDown",
+      "list_document": "ListTodo",
+      "user": "UserRound",
+      "clock": "Clock3",
+      "first_aid_kit": "BriefcaseMedical"
+    }
+  },
+  "content": {
+    "back": "Назад",
+    "title": "Новое наблюдение · Эдик",
+    "subtitle": "Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи.",
+    "hint": {
+      "title": "Мы рядом с вами",
+      "body": "Следите за состоянием ребёнка и получайте полезные подсказки."
+    },
+    "fields": {
+      "date": {
+        "label": "Дата начала",
+        "value": "10 мая 2026 г."
+      },
+      "reason": {
+        "label": "Что случилось?",
+        "placeholder": "Например: температура и кашель",
+        "max_length": 120
+      }
+    },
+    "suggestions": {
+      "label": "Примеры",
+      "items": [
+        "Температура",
+        "Кашель",
+        "Насморк",
+        "Боль в горле",
+        "Сыпь"
+      ]
+    },
+    "buttons": {
+      "secondary": "Назад",
+      "primary": "Начать наблюдение"
+    }
+  },
+  "interaction_logic": {
+    "on_screen_open": [
+      "Получить child_id выбранного ребёнка.",
+      "Подставить имя ребёнка в заголовок.",
+      "Дата начала по умолчанию = сегодняшняя дата.",
+      "Поле 'Что случилось?' пустое.",
+      "Кнопка 'Начать наблюдение' активна даже без заполнения поля 'Что случилось?'."
+    ],
+    "back_button": {
+      "tap": "navigate_back",
+      "note": "Если пользователь ничего не вводил, вернуться сразу. Если ввёл текст или изменил дату — показать confirmation sheet."
+    },
+    "date_field": {
+      "tap": {
+        "action": "open_date_picker_bottom_sheet",
+        "sheet_title": "Дата начала",
+        "default_value": "today",
+        "allowed_range": {
+          "from": "child_birth_date",
+          "to": "today"
+        },
+        "on_select": "update_start_date"
+      }
+    },
+    "reason_textarea": {
+      "tap": "focus_keyboard",
+      "max_length": 120,
+      "counter_behavior": "Показывать количество символов в правом нижнем углу.",
+      "validation": {
+        "required": false,
+        "empty_allowed": true
+      }
+    },
+    "suggestion_chips": {
+      "tap_chip": {
+        "action": "toggle_chip",
+        "selected_state": "chip becomes coral with white text",
+        "behavior": [
+          "Если поле пустое, вставить текст чипа.",
+          "Если в поле уже есть текст, добавить через запятую.",
+          "Если чип уже выбран, удалить его текст из поля."
+        ]
+      }
+    },
+    "secondary_button": {
+      "tap": "navigate_back"
+    },
+    "primary_button": {
+      "tap": {
+        "action": "create_observation",
+        "payload": {
+          "child_id": "{child_id}",
+          "start_date": "{selected_date}",
+          "reason": "{textarea_value}",
+          "status": "active"
+        },
+        "success": [
+          "Создать active_observation.",
+          "Показать короткий toast: Наблюдение начато.",
+          "Перейти на JournalActiveObservationList.",
+          "Прокрутить к карточке ребёнка, для которого создано наблюдение."
+        ],
+        "error": [
+          "Показать сообщение: Не удалось начать наблюдение.",
+          "Оставить пользователя на текущем экране."
+        ]
+      }
+    },
+    "circle_message_button": {
+      "tap": "open_support_or_family_chat"
+    },
+    "circle_profile_button": {
+      "tap": "open_profile_or_more_screen"
+    },
+    "bottom_tabbar": {
+      "journal": "navigate_to_journal",
+      "children": "navigate_to_children",
+      "pillbox": "navigate_to_pillbox",
+      "cabinet": "navigate_to_medicine_cabinet"
+    }
+  },
+  "states": {
+    "default": {
+      "description": "Дата заполнена сегодняшним днём, поле причины пустое, кнопка активна."
+    },
+    "with_reason": {
+      "description": "Пользователь ввёл причину или выбрал чипы.",
+      "example": "Температура, кашель"
+    },
+    "date_picker_open": {
+      "description": "Снизу открывается bottom sheet выбора даты.",
+      "sheet": {
+        "height": 360,
+        "background": "#FFFCF8",
+        "border_radius_top": 28,
+        "title": "Дата начала",
+        "primary_button": "Готово",
+        "secondary_button": "Отмена"
+      }
+    },
+    "keyboard_open": {
+      "description": "При фокусе на поле 'Что случилось?' экран поднимается так, чтобы кнопка 'Начать наблюдение' оставалась видимой.",
+      "behavior": "Scroll to focused textarea."
+    },
+    "loading": {
+      "description": "После нажатия 'Начать наблюдение' кнопка показывает loader.",
+      "primary_button_text": "Создаём..."
+    },
+    "error": {
+      "description": "Ошибка создания наблюдения.",
+      "toast": "Не удалось начать наблюдение. Попробуйте ещё раз."
+    },
+    "unsaved_changes_confirm": {
+      "description": "Если пользователь изменил дату или ввёл текст и нажал назад.",
+      "sheet": {
+        "title": "Выйти без сохранения?",
+        "description": "Наблюдение ещё не начато.",
+        "primary_button": "Выйти",
+        "secondary_button": "Остаться"
+      }
+    }
+  },
+  "responsive_rules": {
+    "small_iphone": {
+      "hero": "Аватар можно уменьшить до 108 pt или опустить ниже заголовка.",
+      "buttons": "Кнопки можно оставить в один ряд, если текст помещается. Если нет — сделать вертикально.",
+      "suggestion_chips": "Горизонтальный скролл обязателен."
+    },
+    "large_iphone": {
+      "hero": "Аватар справа от текста, как в макете.",
+      "form": "Форма начинается примерно после первой трети экрана."
+    },
+    "dynamic_type": {
+      "large_text": [
+        "Hero becomes vertical.",
+        "Buttons become vertical.",
+        "Textarea height increases.",
+        "Tabbar labels remain readable."
+      ]
+    }
+  },
+  "accessibility": {
+    "minimum_tap_target": 44,
+    "voiceover": {
+      "back_button": "Назад",
+      "message_button": "Сообщения",
+      "profile_button": "Профиль",
+      "date_field": "Дата начала наблюдения, 10 мая 2026 года",
+      "reason_field": "Что случилось, необязательное поле",
+      "suggestion_chip": "Добавить пример: {chip_text}",
+      "primary_button": "Начать наблюдение для Эдик",
+      "secondary_button": "Назад"
+    },
+    "contrast": {
+      "primary_text": "Use #1E2A3A on light background.",
+      "secondary_text": "Use no lighter than #667386.",
+      "primary_button_text": "White on #F56F68."
+    }
+  },
+  "data_model": {
+    "input": {
+      "child_id": "child_edik",
+      "child_name": "Эдик",
+      "child_avatar": "boy_dark_hair_yellow_shirt"
+    },
+    "form_state": {
+      "start_date": "2026-05-10",
+      "reason": "",
+      "selected_suggestions": []
+    },
+    "submit_payload": {
+      "child_id": "child_edik",
+      "start_date": "2026-05-10",
+      "reason": "Температура, кашель",
+      "status": "active",
+      "created_at": "now"
+    }
+  },
+  "copy_rules": {
+    "title_template": "Новое наблюдение · {child_name}",
+    "subtitle_short": "Сначала просто начните наблюдение. Температуру, лекарства и напоминания можно добавить уже внутри записи.",
+    "subtitle_alternative": "Запустите наблюдение сейчас, а детали добавите позже.",
+    "reason_placeholder": "Например: температура и кашель",
+    "do_not_use": [
+      "Начать болезнь",
+      "Создать болезнь",
+      "Диагноз",
+      "Симптоматика",
+      "Пациент"
+    ],
+    "preferred_terms": [
+      "наблюдение",
+      "ребёнок",
+      "что случилось",
+      "запись",
+      "подсказки"
+    ]
+  },
+  "ai_generation_prompt": {
+    "prompt": "Create a high-fidelity iPhone app screen in Russian for PillPath. Screen: Start new child health observation. Warm cream to soft peach gradient background, modern family healthcare style, soft rounded cards, dark navy typography, coral primary accent. Top bar: back button on the left, message and profile round buttons on the right. Hero title: 'Новое наблюдение · Эдик', with 'Эдик' in coral. Subtitle explains that temperature, medicines and reminders can be added later. Add friendly 3D child avatar on the right. Add small warm hint card: 'Мы рядом с вами'. Main rounded form card includes Date start field, 'Что случилось?' textarea with placeholder, example chips: Температура, Кашель, Насморк, Боль в горле, Сыпь. Bottom buttons: outlined 'Назад' and coral filled 'Начать наблюдение'. Fixed bottom tab bar with Journal active, Children, Pillbox, Medicine cabinet. No old purple style, no harsh black borders, no English text.",
+    "negative_prompt": "Do not use old purple background. Do not use black outlines. Do not make it clinical or hospital-like. Do not overload with many fields. Do not crop text. Do not use English UI labels. Do not show long feed or timeline on this screen."
+  }
+}

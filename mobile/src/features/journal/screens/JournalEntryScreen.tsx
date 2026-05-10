@@ -28,6 +28,7 @@ import {
 import { styles } from "./journalEntryScreenStyles";
 
 type PickerField = "date" | "time" | null;
+type JournalUiLocale = "ru" | "de" | "pl" | "en";
 
 type JournalEntryScreenProps = {
   kind: JournalEntryKind;
@@ -39,7 +40,7 @@ type JournalEntryScreenProps = {
 
 const noop = () => {};
 
-function getMonths(locale: "ru" | "en") {
+function getMonths(locale: JournalUiLocale) {
   return locale === "ru"
     ? [
         "янв",
@@ -55,7 +56,37 @@ function getMonths(locale: "ru" | "en") {
         "ноя",
         "дек",
       ]
-    : [
+    : locale === "de"
+      ? [
+          "Jan",
+          "Feb",
+          "Mär",
+          "Apr",
+          "Mai",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Okt",
+          "Nov",
+          "Dez",
+        ]
+      : locale === "pl"
+        ? [
+            "sty",
+            "lut",
+            "mar",
+            "kwi",
+            "maj",
+            "cze",
+            "lip",
+            "sie",
+            "wrz",
+            "paź",
+            "lis",
+            "gru",
+          ]
+        : [
         "Jan",
         "Feb",
         "Mar",
@@ -71,12 +102,16 @@ function getMonths(locale: "ru" | "en") {
       ];
 }
 
-function formatBackdatedDate(date: Date, locale: "ru" | "en") {
+function formatBackdatedDate(date: Date, locale: JournalUiLocale) {
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = date.getFullYear();
 
-  return locale === "ru" ? `${day}.${month}.${year}` : `${month}/${day}/${year}`;
+  if (locale === "ru" || locale === "de" || locale === "pl") {
+    return `${day}.${month}.${year}`;
+  }
+
+  return `${month}/${day}/${year}`;
 }
 
 function formatBackdatedTime(date: Date) {
@@ -94,6 +129,8 @@ export function JournalEntryScreen({
 }: JournalEntryScreenProps) {
   const { locale } = useMobileI18n();
   const isRu = locale === "ru";
+  const isDe = locale === "de";
+  const isPl = locale === "pl";
   const content = buildJournalEntryScreenContent(kind, locale);
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
@@ -131,11 +168,12 @@ export function JournalEntryScreen({
     setActivePickerField(null);
   }, [visible, kind]);
 
-  const months = getMonths(isRu ? "ru" : "en");
+  const uiLocale: JournalUiLocale = isRu ? "ru" : isDe ? "de" : isPl ? "pl" : "en";
+  const months = getMonths(uiLocale);
   const years = Array.from({ length: 6 }, (_, index) => 2026 - index);
   const hours = Array.from({ length: 24 }, (_, index) => index);
   const minutes = Array.from({ length: 12 }, (_, index) => index * 5);
-  const backdatedDateValue = formatBackdatedDate(backdatedAt, isRu ? "ru" : "en");
+  const backdatedDateValue = formatBackdatedDate(backdatedAt, uiLocale);
   const backdatedTimeValue = formatBackdatedTime(backdatedAt);
 
   const feedingPrimaryActionLabel = useMemo(() => {
@@ -144,7 +182,7 @@ export function JournalEntryScreen({
     }
 
     if (feedingTiming === "now") {
-      return isRu ? "Запустить таймер" : "Start timer";
+      return isRu ? "Запустить таймер" : isDe ? "Timer starten" : isPl ? "Uruchom timer" : "Start timer";
     }
 
     return content.primaryActionLabel;
@@ -172,10 +210,18 @@ export function JournalEntryScreen({
     activePickerField === "date"
       ? isRu
         ? "Выберите дату"
+        : isDe
+          ? "Datum wählen"
+          : isPl
+            ? "Wybierz datę"
         : "Choose date"
       : activePickerField === "time"
         ? isRu
           ? "Выберите время"
+          : isDe
+            ? "Uhrzeit wählen"
+            : isPl
+              ? "Wybierz godzinę"
           : "Choose time"
         : "";
 
@@ -248,7 +294,7 @@ export function JournalEntryScreen({
 
               {kind === "feeding" && content.feedingOptions ? (
               <FeedingJournalEntryForm
-                isRu={isRu}
+                locale={uiLocale}
                 feedingOptions={content.feedingOptions}
                 feedingType={feedingType}
                 feedingTiming={feedingTiming}
@@ -331,7 +377,7 @@ export function JournalEntryScreen({
                     ]}
                   >
                     <Text style={styles.pickerCloseButtonText}>
-                      {isRu ? "Готово" : "Done"}
+                      {isRu ? "Готово" : isDe ? "Fertig" : isPl ? "Gotowe" : "Done"}
                     </Text>
                   </Pressable>
                 </View>
@@ -341,7 +387,7 @@ export function JournalEntryScreen({
                       <Text style={styles.datePickerPreviewText}>
                         {formatBackdatedDate(
                           new Date(pickerYear, pickerMonthIndex, pickerDay),
-                          isRu ? "ru" : "en",
+                          uiLocale,
                         )}
                       </Text>
                     </View>

@@ -2,6 +2,27 @@ import { ImageSourcePropType } from "react-native";
 import { ChildCard } from "../../children/model/childrenRedesign";
 import { overviewScreenSpecs } from "../../../redesign/screens/overview/specs";
 import { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import {
+  getOverviewCopy,
+  translateOverviewBottomNavLabel,
+  translateOverviewDetail,
+  translateOverviewEventDate,
+  translateOverviewEventType,
+  translateOverviewFilter,
+  translateOverviewInsightSubtitle,
+  translateOverviewInsightTitle,
+  translateOverviewMonth,
+  translateOverviewSelectedDayHeader,
+  translateOverviewSelectedDayHint,
+  translateOverviewTab,
+} from "./childOverviewCopy";
+import {
+  getOverviewTabKind,
+  mapOverviewCalendarDotKey,
+  mapOverviewSelectedDayEntries,
+  overviewIconTokens,
+  replaceOverviewDemoName,
+} from "./childOverviewHelpers";
 
 const overviewSpec = overviewScreenSpecs.childOverview;
 const overviewCalendarSpec = overviewScreenSpecs.childOverviewCalendar;
@@ -255,12 +276,18 @@ export type ChildOverviewScreenContent = {
   calendarStats: ChildOverviewCalendarStat[];
   selectedDayHeader: string;
   selectedDayHint: string;
+  selectedDayToggleHint: string;
+  selectedDayEmptyLabel: string;
   selectedDayEntries: ChildOverviewEventRow[];
   graphicsBarTitle: string;
   graphicsBarSubtitle: string;
   graphicsBarTotalLabel: string;
   graphicsBarPeakLabel: string;
   graphicsBarData: ChildOverviewBarDatum[];
+  graphicsCategoryTitle: string;
+  graphicsCategorySubtitle: string;
+  calendarMonthSummaryTitle: string;
+  calendarMonthSummaryHint: string;
   bottomNav: ChildOverviewBottomNavItem[];
   theme: ChildOverviewTheme;
   spacing: OverviewStyleGuide["spacingReference"] & {
@@ -325,317 +352,45 @@ const calendarSpec = overviewCalendarSpec as {
     };
   };
 };
-const iconTokens = {
-  sleep: {
-    key: "sleep",
-    label: "Сон",
-    symbol: "moon with small stars",
-    color: "#8C6DDA",
-    background: "#EFE9FF",
-  },
-  feeding: {
-    key: "feeding",
-    label: "Кормление",
-    symbol: "baby bottle",
-    color: "#F6A24D",
-    background: "#FFF1E4",
-  },
-  illness: {
-    key: "illness",
-    label: "Болезни",
-    symbol: "thermometer",
-    color: "#F58E97",
-    background: "#FFE8EA",
-  },
-  weightHeight: {
-    key: "weightHeight",
-    label: "Вес/Рост",
-    symbol: "scale or height ruler",
-    color: "#8BCB73",
-    background: "#E9F7E5",
-  },
-  notes: {
-    key: "notes",
-    label: "Наблюдения",
-    symbol: "clipboard",
-    color: "#F2C85B",
-    background: "#FFF6D8",
-  },
-  bottomChildren: {
-    key: "bottomChildren",
-    label: "Дети",
-    symbol: "baby face",
-    color: "#FF7E6B",
-    background: "#FFE6E0",
-  },
-  bottomPills: {
-    key: "bottomPills",
-    label: "Таблетки",
-    symbol: "pill",
-    color: "#587088",
-    background: "#EEF3F8",
-  },
-  bottomMedicineCabinet: {
-    key: "bottomMedicineCabinet",
-    label: "Аптечка",
-    symbol: "medical bag",
-    color: "#587088",
-    background: "#EEF3F8",
-  },
-  bottomMore: {
-    key: "bottomMore",
-    label: "Ещё",
-    symbol: "menu",
-    color: "#587088",
-    background: "#EEF3F8",
-  },
-} satisfies Record<OverviewIconKey, ChildOverviewIconToken>;
-
-function replaceEdik(text: string, childName: string) {
-  return text.replace(/Эдик/g, childName).replace(/Edik/g, childName);
-}
-
-function stripBackArrow(text: string) {
-  return text.replace(/^←\s*/, "");
-}
-
-function translateTab(label: string) {
-  if (label === "Лента") {
-    return "Feed";
-  }
-
-  if (label === "Календарь") {
-    return "Calendar";
-  }
-
-  return "Charts";
-}
-
-function getOverviewTabKind(label: string): ChildOverviewTab["kind"] {
-  if (label === "Лента") {
-    return "feed";
-  }
-
-  if (label === "Календарь") {
-    return "calendar";
-  }
-
-  return "charts";
-}
-
-function translateFilter(label: string) {
-  if (label === "7 дней") {
-    return "7 days";
-  }
-
-  if (label === "Все") {
-    return "All";
-  }
-
-  if (label === "Сон") {
-    return "Sleep";
-  }
-
-  if (label === "Кормление") {
-    return "Feeding";
-  }
-
-  if (label === "Болезни") {
-    return "Illness";
-  }
-
-  if (label === "Вес") {
-    return "Weight";
-  }
-
-  return "Height";
-}
-
-function translateEventDate(label: string) {
-  if (label === "Сегодня") {
-    return "Today";
-  }
-
-  return "May 3";
-}
-
-function translateEventType(label: string) {
-  if (label === "Кормление") {
-    return "Feeding";
-  }
-
-  if (label === "Сон") {
-    return "Sleep";
-  }
-
-  return "Illness";
-}
-
-function translateDetail(label: string) {
-  if (label === "грудь") {
-    return "breast";
-  }
-
-  if (label === "0 мин") {
-    return "0 min";
-  }
-
-  return "temperature and observation";
-}
-
-function translateBottomNavLabel(label: string) {
-  if (label === "Дети") {
-    return "Children";
-  }
-
-  if (label === "Таблетки") {
-    return "Pills";
-  }
-
-  if (label === "Аптечка") {
-    return "Cabinet";
-  }
-
-  return "More";
-}
-
-function translateMonth(label: string) {
-  return label === "Май 2026 г." ? "May 2026" : label;
-}
-
-function translateSelectedDayHeader(label: string) {
-  return label === "Записи за 3 мая" ? "Entries for May 3" : label;
-}
-
-function translateSelectedDayHint(label: string) {
-  return label === "Нажмите на день, чтобы сменить выбор."
-    ? "Tap a day to change the selection."
-    : label;
-}
-
-function mapCalendarDotKey(dot: string): ChildOverviewCalendarDotKey {
-  if (dot === "sleep/blue") {
-    return "sleep";
-  }
-
-  if (dot === "feeding/orange") {
-    return "feeding";
-  }
-
-  if (dot === "illness/pink") {
-    return "illness";
-  }
-
-  if (dot === "weight/teal") {
-    return "weight";
-  }
-
-  if (dot === "growth/green") {
-    return "growth";
-  }
-
-  return "secondary";
-}
-
-function mapSelectedDayEntries(locale: MobileLocale) {
-  const isRu = locale === "ru";
-
-  return calendarSpec.components.selectedDayCard.list.items.map((item, index) => ({
-    id: `${item.type}-${item.time}-${index}`,
-    time: item.time,
-    type: isRu
-      ? item.title
-      : item.title === "Болезнь"
-        ? "Illness"
-        : item.title === "Кормление"
-          ? "Feeding"
-          : "Sleep",
-    detail: isRu
-      ? item.subtitle
-      : item.subtitle
-          .replace("Температура и наблюдение", "Temperature and observation")
-          .replace("Грудь", "Breast")
-          .replace("мин", "min")
-          .replace("ч", "h"),
-    icon:
-      item.type === "illness"
-        ? iconTokens.illness
-        : item.type === "feeding"
-          ? iconTokens.feeding
-          : iconTokens.sleep,
-  }));
-}
-
-function translateInsightTitle(label: string) {
-  if (label === "Болезни — 2 эпизода") {
-    return "Illnesses — 2 episodes";
-  }
-
-  if (label === "Кормление — 1 запись") {
-    return "Feeding — 1 record";
-  }
-
-  if (label === "Сон — пока нет данных") {
-    return "Sleep — no data yet";
-  }
-
-  return "Height and weight — no new records";
-}
-
-function translateInsightSubtitle(label: string) {
-  if (label === "температура и наблюдение") {
-    return "temperature and observation";
-  }
-
-  if (label === "грудь") {
-    return "breast";
-  }
-
-  if (label === "добавьте, чтобы следить") {
-    return "add records to track it";
-  }
-
-  return "nothing new was added";
-}
-
 export function buildChildOverviewScreenContent(
   child: ChildCard,
   locale: MobileLocale,
 ): ChildOverviewScreenContent {
   const isRu = locale === "ru";
+  const copy = getOverviewCopy(locale);
   const { components, colors, gradients, characterIllustration } = spec;
   const demoBarData = [
     {
       icon: "feeding" as const,
-      label: isRu ? "Кормление" : "Feeding",
+      label: copy.eventTypes.feeding,
       value: 4,
       unit: "entries" as const,
       color: "#F7A14C",
     },
     {
       icon: "illness" as const,
-      label: isRu ? "Болезни" : "Illness",
+      label: copy.filters.illness,
       value: 2,
       unit: "episodes" as const,
       color: "#F58E97",
     },
     {
       icon: "sleep" as const,
-      label: isRu ? "Сон" : "Sleep",
+      label: copy.filters.sleep,
       value: 3,
       unit: "sleeps" as const,
       color: "#8B74D9",
     },
     {
       icon: "weight" as const,
-      label: isRu ? "Вес" : "Weight",
+      label: copy.filters.weight,
       value: 1,
       unit: "measurements" as const,
       color: "#39C0A6",
     },
     {
       icon: "growth" as const,
-      label: isRu ? "Рост" : "Growth",
+      label: copy.filters.height,
       value: 1,
       unit: "measurements" as const,
       color: "#8CCB2E",
@@ -648,86 +403,86 @@ export function buildChildOverviewScreenContent(
   );
 
   return {
-    backLabel: isRu
-      ? stripBackArrow(components.topBar.backLink.text)
-      : "Back to child profile",
+    backLabel: copy.backLabel,
     title: isRu
-      ? replaceEdik(components.heroHeader.title, child.name)
-      : `${child.name} overview`,
+      ? replaceOverviewDemoName(components.heroHeader.title, child.name)
+      : `${child.name} ${copy.titleSuffix}`,
     subtitle: isRu
       ? components.heroHeader.subtitle
-      : "Quickly understand what happened with your child during the selected period.",
+      : copy.subtitle,
     avatarSource: child.avatarSource,
     periodOptions: [
       {
         id: "week",
-        label: isRu ? "7 дней" : "7 days",
-        helperLabel: isRu ? "Сводка за последние 7 дней." : "Summary for the last 7 days.",
+        label: copy.periodLabels.week,
+        helperLabel: copy.periodHelpers.week,
       },
       {
         id: "twoWeeks",
-        label: isRu ? "14 дней" : "14 days",
-        helperLabel: isRu ? "Сводка за последние 14 дней." : "Summary for the last 14 days.",
+        label: copy.periodLabels.twoWeeks,
+        helperLabel: copy.periodHelpers.twoWeeks,
       },
       {
         id: "month",
-        label: isRu ? "30 дней" : "30 days",
-        helperLabel: isRu ? "Сводка за последние 30 дней." : "Summary for the last 30 days.",
+        label: copy.periodLabels.month,
+        helperLabel: copy.periodHelpers.month,
       },
       {
         id: "customRange",
-        label: isRu ? "Свой период" : "Custom range",
-        helperLabel: isRu
-          ? "Выберите диапазон дат вручную."
-          : "Choose a custom date range.",
+        label: copy.periodLabels.customRange,
+        helperLabel: copy.periodHelpers.customRange,
       },
     ],
-    summaryTitle: isRu
-      ? components.summaryCard.title
-      : "Highlights for 7 days",
+    summaryTitle: copy.summaryTitle,
     summaryInsights: components.summaryCard.insights.map((item) => ({
       id: `${item.icon}-${item.title}`,
-      title: isRu ? item.title : translateInsightTitle(item.title),
-      subtitle: isRu ? item.subtitle : translateInsightSubtitle(item.subtitle),
-      icon: iconTokens[item.icon],
+      title: isRu ? item.title : translateOverviewInsightTitle(item.title, locale),
+      subtitle: isRu ? item.subtitle : translateOverviewInsightSubtitle(item.subtitle, locale),
+      icon: overviewIconTokens[item.icon],
     })),
     tabs: components.tabs.items.map((item, index) => ({
       id: item,
       kind: getOverviewTabKind(item),
-      label: isRu ? item : translateTab(item),
+      label: isRu ? item : translateOverviewTab(item, locale),
       active: index === 0,
     })),
     filters: components.filters.items
       .filter((item) => item.type !== "dropdown")
       .map((item) => ({
         id: `${item.type ?? "chip"}-${item.label}`,
-        label: isRu ? item.label : translateFilter(item.label),
+        label: isRu ? item.label : translateOverviewFilter(item.label, locale),
         active: Boolean(item.active),
         kind: "chip" as const,
         dotColor: item.dotColor,
       })),
-    eventsTitle: isRu ? components.eventsList.sectionTitle : "Events",
+    eventsTitle: copy.eventsTitle,
     events: components.eventsList.items.map((section) => ({
       id: section.date,
-      date: isRu ? section.date : translateEventDate(section.date),
+      date: isRu ? section.date : translateOverviewEventDate(section.date, locale),
       rows: section.rows.map((row) => ({
         id: `${section.date}-${row.time}-${row.type}`,
         time: row.time,
-        type: isRu ? row.type : translateEventType(row.type),
-        detail: isRu ? row.detail : translateDetail(row.detail),
-        icon: iconTokens[row.icon],
+        type: isRu ? row.type : translateOverviewEventType(row.type, locale),
+        detail: isRu ? row.detail : translateOverviewDetail(row.detail, locale),
+        icon: overviewIconTokens[row.icon],
       })),
     })),
     calendarMonthLabel: isRu
       ? calendarSpec.copy.month
-      : translateMonth(calendarSpec.copy.month),
-    calendarWeekdays: calendarSpec.components.calendarCard.weekdays.labels,
+      : translateOverviewMonth(calendarSpec.copy.month, locale),
+    calendarWeekdays: isRu
+      ? calendarSpec.components.calendarCard.weekdays.labels
+      : locale === "pl"
+        ? ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"]
+        : locale === "de"
+          ? ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+          : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     calendarDays: calendarSpec.components.calendarCard.grid.days.map((day, index) => ({
       id: `calendar-day-${index}-${day.day}`,
       day: day.day,
       muted: Boolean(day.muted),
       selected: Boolean(day.selected),
-      dots: (day.dots ?? []).map(mapCalendarDotKey),
+      dots: (day.dots ?? []).map(mapOverviewCalendarDotKey),
     })),
     calendarStats: calendarSpec.components.monthStatsCard.items.map((item, index) => ({
       id: `${item.icon}-${index}`,
@@ -735,36 +490,32 @@ export function buildChildOverviewScreenContent(
       label: isRu
         ? item.label
         : item.label === "Активные дни"
-          ? "Active days"
+          ? copy.calendarStats.activeDays
           : item.label === "Чаще всего"
-            ? "Most often"
-            : "Latest entry",
+            ? copy.calendarStats.mostOften
+            : copy.calendarStats.latestEntry,
       value: isRu
         ? item.value
         : item.value === "Кормление"
-          ? "Feeding"
+          ? copy.eventTypes.feeding
           : item.value === "3 мая"
-            ? "May 3"
+            ? copy.dates.may3
             : item.value,
       iconCircleBg: item.iconCircleBg,
     })),
     selectedDayHeader: isRu
       ? calendarSpec.copy.selectedDayHeader
-      : translateSelectedDayHeader(calendarSpec.copy.selectedDayHeader),
+      : translateOverviewSelectedDayHeader(calendarSpec.copy.selectedDayHeader, locale),
     selectedDayHint: isRu
       ? calendarSpec.copy.selectedDayHint
-      : translateSelectedDayHint(calendarSpec.copy.selectedDayHint),
-    selectedDayEntries: mapSelectedDayEntries(locale),
-    graphicsBarTitle: isRu ? "Что отмечали чаще" : "What was logged most often",
-    graphicsBarSubtitle: isRu
-      ? "Чем длиннее полоса, тем чаще эта категория встречалась за период."
-      : "The longer the bar, the more often this category appeared in the selected period.",
-    graphicsBarTotalLabel: isRu
-      ? `Всего событий: ${demoBarTotal}`
-      : `Total events: ${demoBarTotal}`,
-    graphicsBarPeakLabel: isRu
-      ? `Лидер периода: ${demoBarPeak.label} · ${demoBarPeak.value}`
-      : `Top category: ${demoBarPeak.label} · ${demoBarPeak.value}`,
+      : translateOverviewSelectedDayHint(calendarSpec.copy.selectedDayHint, locale),
+    selectedDayToggleHint: copy.selectedDayToggleHint,
+    selectedDayEmptyLabel: copy.selectedDayEmptyLabel,
+    selectedDayEntries: mapOverviewSelectedDayEntries(locale, calendarSpec),
+    graphicsBarTitle: copy.graphics.title,
+    graphicsBarSubtitle: copy.graphics.subtitle,
+    graphicsBarTotalLabel: `${copy.graphics.totalPrefix}: ${demoBarTotal}`,
+    graphicsBarPeakLabel: `${copy.graphics.peakPrefix}: ${demoBarPeak.label} · ${demoBarPeak.value}`,
     graphicsBarData: demoBarData.map((item, index) => ({
       id: `${item.label}-${index}`,
       icon: item.icon,
@@ -774,10 +525,14 @@ export function buildChildOverviewScreenContent(
       color: item.color,
       highlighted: item.value === demoBarPeak.value && item.value > 0,
     })),
+    graphicsCategoryTitle: copy.graphics.categoryTitle,
+    graphicsCategorySubtitle: copy.graphics.categorySubtitle,
+    calendarMonthSummaryTitle: copy.calendarMonthSummaryTitle,
+    calendarMonthSummaryHint: copy.calendarMonthSummaryHint,
     bottomNav: components.bottomNavigation.items.map((item) => ({
       id: item.icon,
-      label: isRu ? item.label : translateBottomNavLabel(item.label),
-      icon: iconTokens[item.icon],
+      label: isRu ? item.label : translateOverviewBottomNavLabel(item.label, locale),
+      icon: overviewIconTokens[item.icon],
       active: Boolean(item.active),
     })),
     theme: {

@@ -164,9 +164,15 @@ export function ChildProfileRedesignScreen({
                   style={styles.journalRow}
                 >
                   {row.map((item) => (
+                    (() => {
+                      const canPress =
+                        item.iconVariant === "illnessBadge" || Boolean(item.targetKind);
+
+                      return (
                     <JournalItem
                       key={item.id}
                       item={item}
+                      disabled={!canPress}
                       onPress={() => {
                         if (item.iconVariant === "illnessBadge") {
                           handleOpenAnalytics();
@@ -175,21 +181,21 @@ export function ChildProfileRedesignScreen({
 
                         if (item.targetKind) {
                           handleOpenJournalEntry(item.targetKind);
-                          return;
                         }
-
-                        noop();
                       }}
                     />
+                      );
+                    })()
                   ))}
                 </View>
               ))}
             </View>
 
             <Pressable
-              onPress={noop}
+              disabled
               style={({ pressed }) => [
                 styles.notesBlock,
+                styles.disabledCard,
                 pressed ? styles.notesPressed : null,
               ]}
             >
@@ -239,14 +245,17 @@ function StatsChip({ label, value }: { label: string; value: string }) {
 function JournalItem({
   item,
   onPress,
+  disabled = false,
 }: {
   item: ChildProfileJournalItem;
   onPress: () => void;
+  disabled?: boolean;
 }) {
   const tint = getJournalItemTint(item.iconVariant);
 
   return (
     <Pressable
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.journalItem,
@@ -254,6 +263,7 @@ function JournalItem({
           backgroundColor: tint.backgroundColor,
           borderColor: tint.borderColor,
         },
+        disabled ? styles.disabledCard : null,
         pressed ? styles.journalItemPressed : null,
       ]}
     >

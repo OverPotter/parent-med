@@ -61,7 +61,7 @@ export function LegalDocumentScreen({
             <View style={styles.topBar}>
               <Pressable onPress={onBack} style={styles.backLink}>
                 <Text style={styles.backLinkText}>
-                  {locale === "ru" ? "← Назад" : "← Back"}
+                  {locale === "ru" ? "← Назад" : locale === "pl" ? "← Wstecz" : "← Back"}
                 </Text>
               </Pressable>
             </View>

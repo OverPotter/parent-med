@@ -137,6 +137,10 @@ export const styles = StyleSheet.create({
     borderRadius: 0,
     backgroundColor: "transparent",
   },
+  rowLeadPlainLarge: {
+    width: 58,
+    height: 58,
+  },
   rowLeadNeutral: {
     backgroundColor: "#F1E7E1",
   },
@@ -146,6 +150,10 @@ export const styles = StyleSheet.create({
   moduleRowIconImage: {
     width: 42,
     height: 42,
+  },
+  moduleRowIconImageLarge: {
+    width: 58,
+    height: 58,
   },
   rowCopy: {
     flex: 1,

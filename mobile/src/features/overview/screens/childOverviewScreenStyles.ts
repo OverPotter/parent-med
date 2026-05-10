@@ -369,6 +369,9 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#FFFDFC",
   },
+  calendarNavButtonDisabled: {
+    opacity: 0.45,
+  },
   calendarWeekdaysRow: {
     flexDirection: "row",
     justifyContent: "space-between",

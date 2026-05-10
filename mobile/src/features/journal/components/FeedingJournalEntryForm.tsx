@@ -8,7 +8,7 @@ export type FeedingTiming = "now" | "backdated";
 export type BreastSide = "left" | "right" | "both";
 
 type FeedingJournalEntryFormProps = {
-  isRu: boolean;
+  locale: "ru" | "de" | "pl" | "en";
   feedingOptions: JournalEntryOption[];
   feedingType: FeedingType;
   feedingTiming: FeedingTiming;
@@ -43,7 +43,7 @@ const feedingTimingOptions: Array<{
 ];
 
 export function FeedingJournalEntryForm({
-  isRu,
+  locale,
   feedingOptions,
   feedingType,
   feedingTiming,
@@ -61,11 +61,45 @@ export function FeedingJournalEntryForm({
   onOpenTimePicker,
   onInputFocus,
 }: FeedingJournalEntryFormProps) {
+  const isRu = locale === "ru";
+  const isDe = locale === "de";
+  const isPl = locale === "pl";
+
+  const breastLabel = (option: (typeof breastSideOptions)[number]) =>
+    isRu
+      ? option.labelRu
+      : isDe
+        ? option.id === "left"
+          ? "Links"
+          : option.id === "right"
+            ? "Rechts"
+            : "Beide"
+        : isPl
+          ? option.id === "left"
+            ? "Lewa"
+            : option.id === "right"
+              ? "Prawa"
+              : "Obie"
+          : option.labelEn;
+
+  const timingLabel = (option: (typeof feedingTimingOptions)[number]) =>
+    isRu
+      ? option.labelRu
+      : isDe
+        ? option.id === "now"
+          ? "Jetzt"
+          : "Nachtragen"
+        : isPl
+          ? option.id === "now"
+            ? "Teraz"
+            : "Zaległy wpis"
+          : option.labelEn;
+
   return (
     <>
       <View style={styles.formCard}>
         <Text style={styles.sectionTitle}>
-          {isRu ? "Что записать" : "What to record"}
+          {isRu ? "Что записать" : isDe ? "Was speichern" : isPl ? "Co zapisać" : "What to record"}
         </Text>
         <View style={styles.optionRow}>
           {feedingOptions.map((option) => (
@@ -95,7 +129,7 @@ export function FeedingJournalEntryForm({
         <>
           <View style={styles.formCard}>
             <Text style={styles.sectionTitle}>
-              {isRu ? "Какая грудь" : "Which side"}
+              {isRu ? "Какая грудь" : isDe ? "Welche Seite" : isPl ? "Która pierś" : "Which side"}
             </Text>
             <View style={styles.optionRow}>
               {breastSideOptions.map((option) => (
@@ -115,7 +149,7 @@ export function FeedingJournalEntryForm({
                       breastSide === option.id ? styles.optionChipTextActive : null,
                     ]}
                   >
-                    {isRu ? option.labelRu : option.labelEn}
+                    {breastLabel(option)}
                   </Text>
                 </Pressable>
               ))}
@@ -124,7 +158,7 @@ export function FeedingJournalEntryForm({
 
           <View style={styles.formCard}>
             <Text style={styles.sectionTitle}>
-              {isRu ? "Когда записать" : "When to save it"}
+              {isRu ? "Когда записать" : isDe ? "Wann speichern" : isPl ? "Kiedy zapisać" : "When to save it"}
             </Text>
             <View style={styles.optionRow}>
               {feedingTimingOptions.map((option) => (
@@ -145,7 +179,7 @@ export function FeedingJournalEntryForm({
                         : null,
                     ]}
                   >
-                    {isRu ? option.labelRu : option.labelEn}
+                    {timingLabel(option)}
                   </Text>
                 </Pressable>
               ))}
@@ -155,7 +189,7 @@ export function FeedingJournalEntryForm({
           {feedingTiming === "backdated" ? (
             <View style={styles.formCard}>
               <Text style={styles.sectionTitle}>
-                {isRu ? "Когда было кормление" : "When it happened"}
+                {isRu ? "Когда было кормление" : isDe ? "Wann war die Fütterung" : isPl ? "Kiedy było karmienie" : "When it happened"}
               </Text>
               <View style={styles.rowsList}>
                 <Pressable
@@ -166,7 +200,7 @@ export function FeedingJournalEntryForm({
                   ]}
                 >
                   <View style={styles.row}>
-                    <Text style={styles.rowLabel}>{isRu ? "Время" : "Time"}</Text>
+                    <Text style={styles.rowLabel}>{isRu ? "Время" : isDe ? "Uhrzeit" : isPl ? "Godzina" : "Time"}</Text>
                     <View style={styles.rowValueWrap}>
                       <Text style={styles.rowValue}>{backdatedTimeValue}</Text>
                       <Feather name="chevron-right" size={14} color="#A4AEB9" />
@@ -176,7 +210,7 @@ export function FeedingJournalEntryForm({
                 <View style={styles.rowDivider} />
                 <View style={styles.inputRow}>
                   <Text style={styles.rowLabel}>
-                    {isRu ? "Длительность" : "Duration"}
+                    {isRu ? "Длительность" : isDe ? "Dauer" : isPl ? "Czas trwania" : "Duration"}
                   </Text>
                   <View style={styles.inputShell}>
                     <TextInput
@@ -194,7 +228,7 @@ export function FeedingJournalEntryForm({
                       placeholder="12"
                       placeholderTextColor="#B1A7A2"
                     />
-                    <Text style={styles.inputSuffix}>{isRu ? "мин" : "min"}</Text>
+                    <Text style={styles.inputSuffix}>{isRu ? "мин" : isDe ? "Min" : "min"}</Text>
                   </View>
                 </View>
               </View>
@@ -208,6 +242,10 @@ export function FeedingJournalEntryForm({
                 <Text style={styles.secondaryPickerLinkText}>
                   {isRu
                     ? `Другая дата: ${backdatedDateValue}`
+                    : isDe
+                      ? `Anderes Datum: ${backdatedDateValue}`
+                      : isPl
+                        ? `Inna data: ${backdatedDateValue}`
                     : `Other date: ${backdatedDateValue}`}
                 </Text>
               </Pressable>
@@ -218,11 +256,11 @@ export function FeedingJournalEntryForm({
         <>
           <View style={styles.formCard}>
             <Text style={styles.sectionTitle}>
-              {isRu ? "Сколько смеси" : "Formula amount"}
+              {isRu ? "Сколько смеси" : isDe ? "Menge der Nahrung" : isPl ? "Ile mieszanki" : "Formula amount"}
             </Text>
             <View style={styles.sectionDivider} />
             <View style={styles.inputRow}>
-              <Text style={styles.rowLabel}>{isRu ? "Объём" : "Amount"}</Text>
+              <Text style={styles.rowLabel}>{isRu ? "Объём" : isDe ? "Menge" : isPl ? "Ilość" : "Amount"}</Text>
               <View style={styles.inputShell}>
                 <TextInput
                   value={formulaAmount}
@@ -237,14 +275,14 @@ export function FeedingJournalEntryForm({
                   placeholder="180"
                   placeholderTextColor="#B1A7A2"
                 />
-                <Text style={styles.inputSuffix}>{isRu ? "мл" : "ml"}</Text>
+                <Text style={styles.inputSuffix}>ml</Text>
               </View>
             </View>
           </View>
 
           <View style={styles.formCard}>
             <Text style={styles.sectionTitle}>
-              {isRu ? "Когда записать" : "When to save it"}
+              {isRu ? "Когда записать" : isDe ? "Wann speichern" : isPl ? "Kiedy zapisać" : "When to save it"}
             </Text>
             <View style={styles.optionRow}>
               {feedingTimingOptions.map((option) => (
@@ -265,7 +303,7 @@ export function FeedingJournalEntryForm({
                         : null,
                     ]}
                   >
-                    {isRu ? option.labelRu : option.labelEn}
+                    {timingLabel(option)}
                   </Text>
                 </Pressable>
               ))}
@@ -275,7 +313,7 @@ export function FeedingJournalEntryForm({
           {feedingTiming === "backdated" ? (
             <View style={styles.formCard}>
               <Text style={styles.sectionTitle}>
-                {isRu ? "Когда было кормление" : "When it happened"}
+                {isRu ? "Когда было кормление" : isDe ? "Wann war die Fütterung" : isPl ? "Kiedy było karmienie" : "When it happened"}
               </Text>
               <View style={styles.rowsList}>
                 <Pressable
@@ -286,7 +324,7 @@ export function FeedingJournalEntryForm({
                   ]}
                 >
                   <View style={styles.row}>
-                    <Text style={styles.rowLabel}>{isRu ? "Время" : "Time"}</Text>
+                    <Text style={styles.rowLabel}>{isRu ? "Время" : isDe ? "Uhrzeit" : isPl ? "Godzina" : "Time"}</Text>
                     <View style={styles.rowValueWrap}>
                       <Text style={styles.rowValue}>{backdatedTimeValue}</Text>
                       <Feather name="chevron-right" size={14} color="#A4AEB9" />
@@ -304,6 +342,10 @@ export function FeedingJournalEntryForm({
                 <Text style={styles.secondaryPickerLinkText}>
                   {isRu
                     ? `Другая дата: ${backdatedDateValue}`
+                    : isDe
+                      ? `Anderes Datum: ${backdatedDateValue}`
+                      : isPl
+                        ? `Inna data: ${backdatedDateValue}`
                     : `Other date: ${backdatedDateValue}`}
                 </Text>
               </Pressable>

@@ -80,9 +80,10 @@ export function GrowthHistoryScreen({
             ))}
           </View>
           <Pressable
-            onPress={noop}
+            disabled
             style={({ pressed }) => [
               styles.ctaButton,
+              styles.ctaButtonDisabled,
               pressed ? styles.ctaButtonPressed : null,
             ]}
           >
@@ -162,7 +163,6 @@ function TimelineRow({
         <View style={styles.timelineLine} />
       </View>
       <SwipeToDeleteRow
-        onPress={noop}
         onDelete={onDelete}
         deleteColor="#A7A2E8"
         deletePressedColor="#9690DE"

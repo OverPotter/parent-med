@@ -8,7 +8,10 @@ import {
   View,
 } from "react-native";
 import { ChildrenChildCard } from "../components/ChildrenChildCard";
-import { buildChildrenScreenContent } from "../model/childrenRedesign";
+import {
+  buildChildrenScreenContent,
+  buildChildrenStopActionCopy,
+} from "../model/childrenRedesign";
 import { styles } from "./childrenRedesignStyles";
 import { formatElapsedDuration } from "../utils/formatElapsedDuration";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
@@ -39,7 +42,6 @@ export function ChildrenRedesignScreen({
   const childrenScreenContent = buildChildrenScreenContent(locale, "children");
   const handleOpenChildProfile = onOpenChildProfile ?? noop;
   const handleOpenJournalEntry = onOpenJournalEntry ?? noop;
-  const isRu = locale === "ru";
   const [collapsedCardIds, setCollapsedCardIds] = useState<string[]>(
     childrenScreenContent.cards.map((card) => card.nodeId),
   );
@@ -48,6 +50,9 @@ export function ChildrenRedesignScreen({
   const [now, setNow] = useState(Date.now());
   const [pendingStopAction, setPendingStopAction] =
     useState<PendingStopAction>(null);
+  const stopActionCopy = pendingStopAction
+    ? buildChildrenStopActionCopy(locale, pendingStopAction.kind)
+    : null;
 
   const hasActiveSleep = Object.values(activeSleepStartedAtByCardId).some(
     Boolean,
@@ -212,13 +217,7 @@ export function ChildrenRedesignScreen({
           <View style={styles.confirmCard}>
             <View style={styles.confirmContent}>
               <Text style={styles.confirmTitle}>
-                {pendingStopAction.kind === "sleep"
-                  ? isRu
-                    ? "Завершить сон?"
-                    : "Finish sleep?"
-                  : isRu
-                    ? "Завершить кормление?"
-                    : "Finish feeding?"}
+                {stopActionCopy?.title}
               </Text>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -229,7 +228,7 @@ export function ChildrenRedesignScreen({
                   ]}
                 >
                   <Text style={styles.confirmButtonSecondaryText}>
-                    {isRu ? "Нет" : "No"}
+                    {stopActionCopy?.cancelLabel}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -240,7 +239,7 @@ export function ChildrenRedesignScreen({
                   ]}
                 >
                   <Text style={styles.confirmButtonPrimaryText}>
-                    {isRu ? "Да" : "Yes"}
+                    {stopActionCopy?.confirmLabel}
                   </Text>
                 </Pressable>
               </View>

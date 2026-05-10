@@ -54,6 +54,8 @@ export type ChildQuickActionKind =
   | "observation"
   | "profile";
 
+export type ChildrenStopActionKind = "sleep" | "feeding";
+
 export type ChildQuickAction = {
   nodeId: string;
   kind: ChildQuickActionKind;
@@ -71,6 +73,12 @@ export type ChildCard = {
   quickActions: ChildQuickAction[];
 };
 
+export type ChildrenStopActionCopy = {
+  title: string;
+  cancelLabel: string;
+  confirmLabel: string;
+};
+
 const screenSpec = childrenScreenSpec as SourceChildrenScreenSpec;
 
 const avatarSequence = [
@@ -84,31 +92,33 @@ function buildQuickActionMap(
   locale: MobileLocale,
 ): Record<string, Omit<ChildQuickAction, "nodeId">> {
   const isRu = locale === "ru";
+  const isDe = locale === "de";
+  const isPl = locale === "pl";
 
   return {
     Сон: {
       kind: "sleep" as const,
-      label: isRu ? "Сон" : "Sleep",
+      label: isRu ? "Сон" : isDe ? "Schlaf" : isPl ? "Sen" : "Sleep",
       imageSource: childrenScreenAssets.icons.sleep,
     },
     Кормление: {
       kind: "feeding" as const,
-      label: isRu ? "Кормление" : "Feeding",
+      label: isRu ? "Кормление" : isDe ? "Fütterung" : isPl ? "Karmienie" : "Feeding",
       imageSource: childrenScreenAssets.icons.feeding,
     },
     Наблюдение: {
       kind: "observation" as const,
-      label: isRu ? "Наблюдать" : "Observe",
+      label: isRu ? "Наблюдать" : isDe ? "Beobachten" : isPl ? "Obserwuj" : "Observe",
       imageSource: childrenScreenAssets.icons.observation,
     },
     Наблюдать: {
       kind: "observation" as const,
-      label: isRu ? "Наблюдать" : "Observe",
+      label: isRu ? "Наблюдать" : isDe ? "Beobachten" : isPl ? "Obserwuj" : "Observe",
       imageSource: childrenScreenAssets.icons.observation,
     },
     Профиль: {
       kind: "profile" as const,
-      label: isRu ? "Профиль" : "Profile",
+      label: isRu ? "Профиль" : isDe ? "Profil" : isPl ? "Profil" : "Profile",
       imageSource: childrenScreenAssets.icons.profile,
     },
   };
@@ -136,22 +146,24 @@ function mapQuickAction(
 }
 
 function mapTabKey(label: string): MobileBottomTabKey {
-  if (label === "Дети" || label === "Children") {
+  if (label === "Дети" || label === "Children" || label === "Dzieci" || label === "Kinder") {
     return "children";
   }
 
   if (
     label === "Ещё" ||
-    label === "More"
+    label === "More" ||
+    label === "Mehr" ||
+    label === "Więcej"
   ) {
     return "more";
   }
 
-  if (label === "Таблетница" || label === "Pillbox") {
+  if (label === "Таблетница" || label === "Pillbox" || label === "Pudełko leków" || label === "Pillenbox") {
     return "pillbox";
   }
 
-  if (label === "Аптечка" || label === "Cabinet") {
+  if (label === "Аптечка" || label === "Cabinet" || label === "Apteczka" || label === "Hausapotheke") {
     return "cabinet";
   }
 
@@ -163,11 +175,33 @@ export function buildChildrenScreenContent(
   activeTabKey: MobileBottomTabKey = "children",
 ) {
   const isRu = locale === "ru";
+  const isDe = locale === "de";
+  const isPl = locale === "pl";
   const quickActionByTitle = buildQuickActionMap(locale);
   const sourceTabs = screenSpec.bottomNavigation.tabs.map((tab) => ({
     ...tab,
     label: isRu
       ? tab.label
+      : isDe
+        ? tab.label === "Дети"
+          ? "Kinder"
+          : tab.label === "Ещё"
+            ? "Mehr"
+            : tab.label === "Таблетница"
+              ? "Pillenbox"
+              : tab.label === "Аптечка"
+                ? "Hausapotheke"
+                : tab.label
+      : isPl
+        ? tab.label === "Дети"
+          ? "Dzieci"
+          : tab.label === "Ещё"
+            ? "Więcej"
+            : tab.label === "Таблетница"
+              ? "Pudełko leków"
+              : tab.label === "Аптечка"
+                ? "Apteczka"
+                : tab.label
       : tab.label === "Дети"
         ? "Children"
         : tab.label === "Ещё"
@@ -181,11 +215,15 @@ export function buildChildrenScreenContent(
 
   return {
     backgroundSource: childrenScreenAssets.background,
-    headerTitle: isRu ? screenSpec.header.title.text : "Children",
+    headerTitle: isRu ? screenSpec.header.title.text : isDe ? "Kinder" : isPl ? "Dzieci" : "Children",
     headerSubtitle: isRu
       ? screenSpec.header.subtitle.text
+      : isDe
+        ? "Kinderprofile und schneller Zugriff auf Einträge."
+      : isPl
+        ? "Profile dzieci i szybki dostęp do wpisów."
       : "Children profiles and quick access to records.",
-    addChildLabel: isRu ? screenSpec.addChildCta.label : "Add child",
+    addChildLabel: isRu ? screenSpec.addChildCta.label : isDe ? "Kind hinzufügen" : isPl ? "Dodaj dziecko" : "Add child",
     cards: screenSpec.childrenCards.map((card, index) => ({
       nodeId: card.nodeId,
       name: card.info.nameText,
@@ -211,5 +249,50 @@ export function buildChildrenScreenContent(
     addChildLabel: string;
     cards: ChildCard[];
     tabs: MobileBottomTabItem[];
+  };
+}
+
+export function buildChildrenStopActionCopy(
+  locale: MobileLocale,
+  kind: ChildrenStopActionKind,
+): ChildrenStopActionCopy {
+  const cancelLabel =
+    locale === "ru"
+      ? "Нет"
+      : locale === "pl"
+        ? "Nie"
+        : locale === "de"
+          ? "Nein"
+          : "No";
+  const confirmLabel =
+    locale === "ru"
+      ? "Да"
+      : locale === "pl"
+        ? "Tak"
+        : locale === "de"
+          ? "Ja"
+          : "Yes";
+
+  const title =
+    kind === "sleep"
+      ? locale === "ru"
+        ? "Завершить сон?"
+        : locale === "pl"
+          ? "Zakończyć sen?"
+          : locale === "de"
+            ? "Schlaf beenden?"
+            : "Finish sleep?"
+      : locale === "ru"
+        ? "Завершить кормление?"
+        : locale === "pl"
+          ? "Zakończyć karmienie?"
+          : locale === "de"
+            ? "Füttern beenden?"
+            : "Finish feeding?";
+
+  return {
+    title,
+    cancelLabel,
+    confirmLabel,
   };
 }

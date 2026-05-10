@@ -54,58 +54,76 @@ export function buildAnalyticsScreenContent(
   locale: MobileLocale,
 ): AnalyticsScreenContent {
   const isRu = locale === "ru";
+  const isDe = locale === "de";
+  const isPl = locale === "pl";
 
   return {
-    backLabel: isRu ? "Назад" : "Back",
-    title: isRu ? "Аналитика" : "Analytics",
+    backLabel: isRu ? "Назад" : isDe ? "Zurück" : isPl ? "Wstecz" : "Back",
+    title: isRu ? "Аналитика" : isDe ? "Analytik" : isPl ? "Analityka" : "Analytics",
     subtitle: isRu
       ? "Короткая сводка по завершённым эпизодам ребёнка."
+      : isDe
+        ? "Kurze Übersicht über die abgeschlossenen Episoden des Kindes."
+      : isPl
+        ? "Krótki przegląd zakończonych epizodów dziecka."
       : "Short summary of the child's completed episodes.",
     periodOptions: [
       {
         id: "month",
-        label: isRu ? "Месяц" : "Month",
-        helperLabel: isRu ? "Сводка за последний месяц." : "Summary for the last month.",
+        label: isRu ? "Месяц" : isDe ? "Monat" : isPl ? "Miesiąc" : "Month",
+        helperLabel: isRu ? "Сводка за последний месяц." : isDe ? "Übersicht für den letzten Monat." : isPl ? "Podsumowanie za ostatni miesiąc." : "Summary for the last month.",
       },
       {
         id: "quarter",
-        label: isRu ? "3 месяца" : "3 months",
+        label: isRu ? "3 месяца" : isDe ? "3 Monate" : isPl ? "3 miesiące" : "3 months",
         helperLabel: isRu
           ? "Сводка за последние 3 месяца."
+          : isDe
+            ? "Übersicht für die letzten 3 Monate."
+          : isPl
+            ? "Podsumowanie za ostatnie 3 miesiące."
           : "Summary for the last 3 months.",
       },
       {
         id: "halfYear",
-        label: isRu ? "6 месяцев" : "6 months",
+        label: isRu ? "6 месяцев" : isDe ? "6 Monate" : isPl ? "6 miesięcy" : "6 months",
         helperLabel: isRu
           ? "Сводка за последние 6 месяцев."
+          : isDe
+            ? "Übersicht für die letzten 6 Monate."
+          : isPl
+            ? "Podsumowanie za ostatnie 6 miesięcy."
           : "Summary for the last 6 months.",
       },
       {
         id: "year",
-        label: isRu ? "Год" : "Year",
-        helperLabel: isRu ? "Сводка за последний год." : "Summary for the last year.",
+        label: isRu ? "Год" : isDe ? "Jahr" : isPl ? "Rok" : "Year",
+        helperLabel: isRu ? "Сводка за последний год." : isDe ? "Übersicht für das letzte Jahr." : isPl ? "Podsumowanie za ostatni rok." : "Summary for the last year.",
       },
       {
         id: "allTime",
-        label: isRu ? "Всё время" : "All time",
-        helperLabel: isRu ? "Сводка за всё время." : "Summary for all time.",
+        label: isRu ? "Всё время" : isDe ? "Gesamter Zeitraum" : isPl ? "Cały okres" : "All time",
+        helperLabel: isRu ? "Сводка за всё время." : isDe ? "Übersicht für den gesamten Zeitraum." : isPl ? "Podsumowanie za cały okres." : "Summary for all time.",
       },
     ],
-    mainSummaryTitle: isRu ? "Главное за период" : "Highlights for the period",
+    mainSummaryTitle: isRu ? "Главное за период" : isDe ? "Wichtigstes im Zeitraum" : isPl ? "Najważniejsze w tym okresie" : "Highlights for the period",
     mainSummaryInsights: [
       {
         id: "completed",
         icon: "completed",
-        title: isRu ? "9 завершённых эпизодов" : "9 completed episodes",
-        subtitle: isRu ? "Вы справились!" : "You handled it.",
+        title: isRu ? "9 завершённых эпизодов" : isDe ? "9 abgeschlossene Episoden" : isPl ? "9 zakończonych epizodów" : "9 completed episodes",
+        subtitle: isRu ? "Вы справились!" : isDe ? "Gut geschafft." : isPl ? "Daliście radę." : "You handled it.",
       },
       {
         id: "month",
         icon: "activeMonth",
-        title: isRu ? "Активный месяц — май" : "Most active month — May",
+        title: isRu ? "Активный месяц — май" : isDe ? "Aktivster Monat — Mai" : isPl ? "Najaktywniejszy miesiąc — maj" : "Most active month — May",
         subtitle: isRu
           ? "Больше всего записей в этом месяце."
+          : isDe
+            ? "In diesem Monat wurden die meisten Einträge hinzugefügt."
+          : isPl
+            ? "Najwięcej wpisów dodano w tym miesiącu."
           : "Most records were added in this month.",
       },
       {
@@ -113,17 +131,25 @@ export function buildAnalyticsScreenContent(
         icon: "medicine",
         title: isRu
           ? "Лекарства применялись 3 раза"
-          : "Medicine was used 3 times",
+          : isDe
+            ? "Medikamente wurden 3 Mal verwendet"
+          : isPl
+            ? "Leki podano 3 razy"
+            : "Medicine was used 3 times",
         subtitle: isRu
           ? "Приёмы фиксировались по назначениям."
+          : isDe
+            ? "Einnahmen wurden nach Plan erfasst."
+          : isPl
+            ? "Dawki były zapisywane zgodnie z planem."
           : "Doses were tracked by schedule.",
       },
     ],
     highlights: [
       {
         id: "average",
-        label: isRu ? "Средняя длительность" : "Average duration",
-        value: isRu ? "1 день" : "1 day",
+        label: isRu ? "Средняя длительность" : isDe ? "Durchschnittliche Dauer" : isPl ? "Średni czas trwania" : "Average duration",
+        value: isRu ? "1 день" : isDe ? "1 Tag" : isPl ? "1 dzień" : "1 day",
         icon: "duration",
         accent: {
           background: "#FFFDFC",
@@ -134,8 +160,8 @@ export function buildAnalyticsScreenContent(
       },
       {
         id: "longest",
-        label: isRu ? "Самый долгий эпизод" : "Longest episode",
-        value: isRu ? "1 эпизод" : "1 episode",
+        label: isRu ? "Самый долгий эпизод" : isDe ? "Längste Episode" : isPl ? "Najdłuższy epizod" : "Longest episode",
+        value: isRu ? "1 эпизод" : isDe ? "1 Episode" : isPl ? "1 epizod" : "1 episode",
         icon: "longest",
         accent: {
           background: "#FFFDFC",
@@ -146,8 +172,8 @@ export function buildAnalyticsScreenContent(
       },
       {
         id: "observations",
-        label: isRu ? "Наблюдений за период" : "Observations in period",
-        value: isRu ? "9 эпизодов" : "9 episodes",
+        label: isRu ? "Наблюдений за период" : isDe ? "Beobachtungen im Zeitraum" : isPl ? "Obserwacje w okresie" : "Observations in period",
+        value: isRu ? "9 эпизодов" : isDe ? "9 Episoden" : isPl ? "9 epizodów" : "9 episodes",
         icon: "observations",
         accent: {
           background: "#FFFDFC",
@@ -157,30 +183,34 @@ export function buildAnalyticsScreenContent(
         },
       },
     ],
-    episodesTitle: isRu ? "Завершённые эпизоды" : "Completed episodes",
+    episodesTitle: isRu ? "Завершённые эпизоды" : isDe ? "Abgeschlossene Episoden" : isPl ? "Zakończone epizody" : "Completed episodes",
     episodesHelper: isRu
       ? "Все завершённые эпизоды за выбранный период."
+      : isDe
+        ? "Alle abgeschlossenen Episoden im gewählten Zeitraum."
+      : isPl
+        ? "Wszystkie zakończone epizody w wybranym okresie."
       : "All completed episodes for the selected period.",
     episodes: [
       {
         id: "episode-9",
-        monthLabel: isRu ? "Май" : "May",
+        monthLabel: isRu ? "Май" : isDe ? "Mai" : isPl ? "Maj" : "May",
         dayLabel: "3",
-        meta: isRu ? "Эпизод 9 • 3 мая" : "Episode 9 • May 3",
-        title: isRu ? "Без названия" : "Untitled",
-        closedAt: isRu ? "Закрыт 23:20" : "Closed 23:20",
-        description: isRu ? "Без описания" : "No description",
-        actionLabel: isRu ? "Разбор" : "Review",
+        meta: isRu ? "Эпизод 9 • 3 мая" : isDe ? "Episode 9 • 3. Mai" : isPl ? "Epizod 9 • 3 maja" : "Episode 9 • May 3",
+        title: isRu ? "Без названия" : isDe ? "Ohne Titel" : isPl ? "Bez nazwy" : "Untitled",
+        closedAt: isRu ? "Закрыт 23:20" : isDe ? "Geschlossen 23:20" : isPl ? "Zamknięto 23:20" : "Closed 23:20",
+        description: isRu ? "Без описания" : isDe ? "Keine Beschreibung" : isPl ? "Brak opisu" : "No description",
+        actionLabel: isRu ? "Разбор" : isDe ? "Details" : isPl ? "Przegląd" : "Review",
       },
       {
         id: "episode-8",
-        monthLabel: isRu ? "Май" : "May",
+        monthLabel: isRu ? "Май" : isDe ? "Mai" : isPl ? "Maj" : "May",
         dayLabel: "3",
-        meta: isRu ? "Эпизод 8 • 3 мая" : "Episode 8 • May 3",
-        title: isRu ? "Без названия" : "Untitled",
-        closedAt: isRu ? "Закрыт 19:36" : "Closed 19:36",
-        description: isRu ? "Без описания" : "No description",
-        actionLabel: isRu ? "Разбор" : "Review",
+        meta: isRu ? "Эпизод 8 • 3 мая" : isDe ? "Episode 8 • 3. Mai" : isPl ? "Epizod 8 • 3 maja" : "Episode 8 • May 3",
+        title: isRu ? "Без названия" : isDe ? "Ohne Titel" : isPl ? "Bez nazwy" : "Untitled",
+        closedAt: isRu ? "Закрыт 19:36" : isDe ? "Geschlossen 19:36" : isPl ? "Zamknięto 19:36" : "Closed 19:36",
+        description: isRu ? "Без описания" : isDe ? "Keine Beschreibung" : isPl ? "Brak opisu" : "No description",
+        actionLabel: isRu ? "Разбор" : isDe ? "Details" : isPl ? "Przegląd" : "Review",
       },
     ],
   };

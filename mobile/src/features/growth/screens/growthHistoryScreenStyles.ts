@@ -138,6 +138,9 @@ export const styles = StyleSheet.create({
     opacity: 0.9,
     transform: [{ scale: 0.985 }],
   },
+  ctaButtonDisabled: {
+    opacity: 0.55,
+  },
   ctaIconWrap: {
     width: 28,
     height: 28,

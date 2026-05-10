@@ -66,7 +66,11 @@ export function buildChildProfileEditContent(
     subtitle:
       locale === "ru"
         ? `Основные данные и настройки ${child.name}.`
-        : `Core details and ${child.name}'s settings.`,
+        : locale === "pl"
+          ? `Podstawowe dane i ustawienia ${child.name}.`
+          : locale === "de"
+            ? `Grunddaten und Einstellungen von ${child.name}.`
+          : `Core details and ${child.name}'s settings.`,
     childName: child.name,
     childMeta: `${ageValue} • ${birthDate}`,
     changePhotoLabel: copy.editProfileScreen.changePhoto,

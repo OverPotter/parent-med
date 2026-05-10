@@ -226,6 +226,9 @@ export const styles = StyleSheet.create({
     opacity: 0.92,
     transform: [{ scale: 0.99 }],
   },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
   saveGradient: {
     ...StyleSheet.absoluteFillObject,
   },
