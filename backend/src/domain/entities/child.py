@@ -20,4 +20,6 @@ class Child:
     doctor_phone: str | None = None
     allergies: str | None = None
     notes: str | None = None
+    avatar_key: str | None = None
+    gender: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))

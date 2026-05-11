@@ -11,6 +11,7 @@ export type PillPathActiveScreen =
   | "analytics"
   | "analyticsBreakdown"
   | "childProfile"
+  | "childCreate"
   | "childProfileEdit"
   | "feedingHistory"
   | "growthHistory"

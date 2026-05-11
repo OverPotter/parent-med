@@ -80,7 +80,9 @@ export function ChildrenChildCard({
               <Text style={styles.liveChipText}>{card.liveActivityText}</Text>
             </View>
           ) : null}
-          <Text style={styles.childStats}>{card.stats}</Text>
+          {card.stats ? (
+            <Text style={styles.childStats}>{card.stats}</Text>
+          ) : null}
         </View>
       </Pressable>
 

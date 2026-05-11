@@ -14,7 +14,15 @@ import {
   writeStoredAuthSession,
 } from "../features/auth/session/mobileAuthSessionStorage";
 import { type AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
-import { buildChildrenScreenContent } from "../features/children/model/childrenRedesign";
+import {
+  createMobileChild,
+  fetchMobileChildren,
+} from "../features/children/api/childrenApi";
+import { createMobileHeightEntry } from "../features/growth/api/heightEntriesApi";
+import {
+  buildChildrenCardsFromApi,
+  buildChildrenScreenContent,
+} from "../features/children/model/childrenRedesign";
 import {
   createMobileIllnessObservation,
   type IllnessQuickActionKind,
@@ -25,6 +33,7 @@ import {
   applyPreferredLanguageToSession,
   updatePreferredLanguage,
 } from "../features/settings/api/settingsApi";
+import { createMobileWeightEntry } from "../features/weight/api/weightEntriesApi";
 import { useMobileI18n, type MobileLocale } from "../shared/i18n/mobileI18n";
 import { type MobileBottomTabKey } from "../shared/components/MobileBottomTabBar";
 import { OverlayScreens, RootTabContent } from "./PillPathExpoShellContent";
@@ -537,7 +546,11 @@ function useAuthSessionController({
 
 export function usePillPathExpoShellState() {
   const { locale, setLocale } = useMobileI18n();
-  const childrenScreenContent = buildChildrenScreenContent(locale);
+  const childrenScreenContent = useMemo(
+    () => buildChildrenScreenContent(locale),
+    [locale],
+  );
+  const fallbackChildrenCards = childrenScreenContent.cards;
   const [authSession, setAuthSession] = useState<MobileAuthSession | null>(
     null,
   );
@@ -555,12 +568,85 @@ export function usePillPathExpoShellState() {
     useState<JournalEntryKind>("feeding");
   const [selectedIllnessActionKind, setSelectedIllnessActionKind] =
     useState<IllnessQuickActionKind>("temperature");
+  const [childrenCards, setChildrenCards] = useState(fallbackChildrenCards);
   const [activeFeedingStartedAtByCardId, setActiveFeedingStartedAtByCardId] =
     useState<Record<string, string | null>>({});
   const [
     activeIllnessObservationsByChildId,
     setActiveIllnessObservationsByChildId,
   ] = useState<Record<string, MobileIllnessObservation | undefined>>({});
+
+  const loadChildren = useCallback(
+    async (session: MobileAuthSession, options?: { ignoreErrors?: boolean }) => {
+      try {
+        const nextChildren = await fetchMobileChildren(session);
+
+        if (nextChildren.length === 0) {
+          setChildrenCards([]);
+          return [];
+        }
+
+        setChildrenCards(buildChildrenCardsFromApi(nextChildren, locale));
+        return nextChildren;
+      } catch (error) {
+        if (!options?.ignoreErrors) {
+          setChildrenCards([]);
+          throw error;
+        }
+        return null;
+      }
+    },
+    [locale],
+  );
+
+  useEffect(() => {
+    if (!authSession?.account.familyId) {
+      setChildrenCards(fallbackChildrenCards);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function syncChildren() {
+      try {
+        const nextChildren = await fetchMobileChildren(authSession);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (nextChildren.length === 0) {
+          setChildrenCards([]);
+          return;
+        }
+
+        setChildrenCards(buildChildrenCardsFromApi(nextChildren, locale));
+      } catch {
+        if (!cancelled) {
+          setChildrenCards([]);
+        }
+      }
+    }
+
+    void syncChildren();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authSession, fallbackChildrenCards, locale]);
+
+  useEffect(() => {
+    if (childrenCards.length === 0) {
+      setSelectedChildId("");
+      return;
+    }
+
+    setSelectedChildId((current) =>
+      childrenCards.some((card) => card.nodeId === current)
+        ? current
+        : childrenCards[0]?.nodeId ?? "",
+    );
+  }, [childrenCards]);
 
   const rootTabItems = useMemo(
     () => buildChildrenScreenContent(locale, activeRootTab).tabs,
@@ -641,15 +727,77 @@ export function usePillPathExpoShellState() {
     setActiveRootTab(key);
   }, []);
 
+  const handleOpenChildCreate = useCallback(() => {
+    setActiveScreen("childCreate");
+  }, []);
+
+  const handleCloseChildCreate = useCallback(() => {
+    setActiveScreen("children");
+  }, []);
+
+  const handleSubmitChildCreate = useCallback(
+    async (payload: {
+      name: string;
+      birthDate: string | null;
+      avatarKey: string | null;
+      gender: string | null;
+      babyModeEnabled: boolean;
+      weightKg: number | null;
+      heightCm: number | null;
+      allergies: string | null;
+      notes: string | null;
+    }) => {
+      if (!authSession) {
+        return;
+      }
+
+      const created = await createMobileChild(authSession, {
+        name: payload.name,
+        birthDate: payload.birthDate,
+        avatarKey: payload.avatarKey,
+        gender: payload.gender,
+        babyModeEnabled: payload.babyModeEnabled,
+        allergies: payload.allergies,
+        notes: payload.notes,
+      });
+
+      if (payload.weightKg && payload.weightKg > 0) {
+        await createMobileWeightEntry(authSession, {
+          childId: created.id,
+          valueKg: payload.weightKg,
+        });
+      }
+
+      if (payload.heightCm && payload.heightCm > 0) {
+        await createMobileHeightEntry(authSession, {
+          childId: created.id,
+          valueCm: payload.heightCm,
+        });
+      }
+
+      const nextChildren = await loadChildren(authSession, { ignoreErrors: true });
+      setSelectedChildId(created.id);
+
+      if (!nextChildren || nextChildren.length === 0) {
+        setChildrenCards(buildChildrenCardsFromApi([created], locale));
+      }
+
+      setActiveScreen("children");
+    },
+    [authSession, loadChildren, locale],
+  );
+
   const rootTabContentProps: RootTabContentProps = {
     locale,
     activeRootTab,
     authSession,
+    childrenCards,
     activeFeedingStartedAtByCardId,
     activeObservationByCardId: Object.fromEntries(
       Object.entries(activeIllnessObservationsByChildId).map(([key, value]) => [key, Boolean(value)]),
     ),
     onOpenChildProfile: handleOpenChildProfile,
+    onOpenChildCreate: handleOpenChildCreate,
     onOpenRootJournalEntry: handleOpenRootJournalEntry,
     onOpenObservation: handleOpenObservation,
     onFeedingPress: handleFeedingPress,
@@ -672,6 +820,7 @@ export function usePillPathExpoShellState() {
     ? {
         locale,
         activeScreen,
+        childrenCards,
         selectedChildId,
         selectedEpisode,
         selectedJournalKind,
@@ -679,6 +828,9 @@ export function usePillPathExpoShellState() {
         observationsByChildId: activeIllnessObservationsByChildId,
         authSession,
         childFlow: {
+          onOpenChildCreate: handleOpenChildCreate,
+          onBackChildCreate: handleCloseChildCreate,
+          onSubmitChildCreate: handleSubmitChildCreate,
           onBackChildProfile: handleCloseChildProfile,
           onEditProfile: handleOpenEditProfile,
           onOpenAnalytics: handleOpenAnalytics,

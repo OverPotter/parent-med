@@ -11,6 +11,7 @@ import { ChildrenChildCard } from "../components/ChildrenChildCard";
 import {
   buildChildrenScreenContent,
   buildChildrenStopActionCopy,
+  type ChildCard,
 } from "../model/childrenRedesign";
 import { styles } from "./childrenRedesignStyles";
 import { formatElapsedDuration } from "../utils/formatElapsedDuration";
@@ -19,6 +20,8 @@ import { JournalEntryKind } from "../../journal/model/journalEntryScreen";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 
 type ChildrenRedesignScreenProps = {
+  cards?: ChildCard[];
+  onOpenChildCreate?: () => void;
   onOpenChildProfile?: (cardId: string) => void;
   onOpenJournalEntry?: (cardId: string, kind: JournalEntryKind) => void;
   onOpenObservation?: (cardId: string) => void;
@@ -34,6 +37,8 @@ type PendingStopAction = {
 } | null;
 
 export function ChildrenRedesignScreen({
+  cards,
+  onOpenChildCreate,
   onOpenChildProfile,
   onOpenJournalEntry,
   onOpenObservation,
@@ -44,11 +49,12 @@ export function ChildrenRedesignScreen({
   const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
   const childrenScreenContent = buildChildrenScreenContent(locale, "children");
+  const cardsToRender = cards ?? childrenScreenContent.cards;
   const handleOpenChildProfile = onOpenChildProfile ?? noop;
   const handleOpenJournalEntry = onOpenJournalEntry ?? noop;
   const handleOpenObservation = onOpenObservation ?? noop;
   const [collapsedCardIds, setCollapsedCardIds] = useState<string[]>(
-    childrenScreenContent.cards.map((card) => card.nodeId),
+    cardsToRender.map((card) => card.nodeId),
   );
   const [activeSleepStartedAtByCardId, setActiveSleepStartedAtByCardId] =
     useState<Record<string, string | null>>({});
@@ -65,6 +71,10 @@ export function ChildrenRedesignScreen({
   const hasActiveFeeding = Object.values(activeFeedingStartedAtByCardId).some(
     Boolean,
   );
+
+  useEffect(() => {
+    setCollapsedCardIds(cardsToRender.map((card) => card.nodeId));
+  }, [cardsToRender]);
 
   useEffect(() => {
     if (!hasActiveSleep && !hasActiveFeeding) {
@@ -166,7 +176,7 @@ export function ChildrenRedesignScreen({
           </View>
 
           <View style={styles.cardsStack}>
-            {childrenScreenContent.cards.map((card) => (
+            {cardsToRender.map((card) => (
               <ChildrenChildCard
                 key={card.nodeId}
                 card={card}
@@ -199,7 +209,7 @@ export function ChildrenRedesignScreen({
           </View>
 
           <Pressable
-            onPress={() => {}}
+            onPress={onOpenChildCreate ?? noop}
             style={({ pressed }) => [
               styles.addChildCta,
               pressed ? styles.addChildCtaPressed : null,

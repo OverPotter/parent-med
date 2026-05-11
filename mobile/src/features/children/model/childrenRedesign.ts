@@ -1,4 +1,5 @@
 import { ImageSourcePropType } from "react-native";
+import type { MobileChildSummary } from "../api/childrenApi";
 import {
   childrenScreenAssets,
   childrenScreenSpec,
@@ -54,6 +55,14 @@ export type ChildQuickActionKind =
   | "observation"
   | "profile";
 
+export type ChildAvatarGender = "boy" | "girl";
+export type ChildAvatarPresetKey =
+  | "boy_black_hair"
+  | "boy_red_hair"
+  | "boy"
+  | "girl_blonde"
+  | "girl";
+
 export type ChildrenStopActionKind = "sleep" | "feeding";
 
 export type ChildQuickAction = {
@@ -101,6 +110,49 @@ const avatarSequence = [
   childrenScreenAssets.avatars.boyRedHair,
   childrenScreenAssets.avatars.child1,
 ] as const;
+
+export const childAvatarPresets: Array<{
+  key: ChildAvatarPresetKey;
+  gender: ChildAvatarGender;
+  source: ImageSourcePropType;
+}> = [
+  {
+    key: "boy_black_hair",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.boyBlackHair,
+  },
+  {
+    key: "boy_red_hair",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.boyRedHair,
+  },
+  {
+    key: "boy",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.boy,
+  },
+  {
+    key: "girl_blonde",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.girlBlonde,
+  },
+  {
+    key: "girl",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.girl,
+  },
+];
+
+const avatarByKey: Record<string, ImageSourcePropType> = {
+  boy_black_hair: childrenScreenAssets.avatars.boyBlackHair,
+  boy_red_hair: childrenScreenAssets.avatars.boyRedHair,
+  girl_blonde: childrenScreenAssets.avatars.girlBlonde,
+  boy: childrenScreenAssets.avatars.boy,
+  girl: childrenScreenAssets.avatars.girl,
+  child1: childrenScreenAssets.avatars.child1,
+  child2: childrenScreenAssets.avatars.child2,
+  child3: childrenScreenAssets.avatars.child3,
+};
 
 function buildQuickActionMap(
   locale: MobileLocale,
@@ -157,6 +209,66 @@ function mapQuickAction(
     nodeId: action.nodeId,
     ...mapped,
   };
+}
+
+function resolveAvatarSource(avatarKey: string | null, index: number) {
+  if (avatarKey && avatarByKey[avatarKey]) {
+    return avatarByKey[avatarKey];
+  }
+
+  return avatarSequence[index % avatarSequence.length];
+}
+
+function resolveAvatarSourceWithGender(
+  avatarKey: string | null,
+  gender: string | null,
+  index: number,
+) {
+  if (avatarKey && avatarByKey[avatarKey]) {
+    return avatarByKey[avatarKey];
+  }
+
+  if (gender === "boy") {
+    return childrenScreenAssets.avatars.boyBlackHair;
+  }
+
+  if (gender === "girl") {
+    return childrenScreenAssets.avatars.girlBlonde;
+  }
+
+  return resolveAvatarSource(avatarKey, index);
+}
+
+export function getChildAvatarSourceByKey(avatarKey: string | null) {
+  return avatarKey ? avatarByKey[avatarKey] ?? null : null;
+}
+
+export function getChildAvatarGenderByKey(
+  avatarKey: ChildAvatarPresetKey | null,
+): ChildAvatarGender | null {
+  if (!avatarKey) {
+    return null;
+  }
+
+  return childAvatarPresets.find((item) => item.key === avatarKey)?.gender ?? null;
+}
+
+function buildCardStatsLabel(
+  child: Pick<MobileChildSummary, "ageLabel" | "babyModeEnabled">,
+  locale: MobileLocale,
+) {
+  if (child.ageLabel) {
+    return child.ageLabel;
+  }
+
+  if (child.babyModeEnabled) {
+    if (locale === "ru") return "Режим малыша";
+    if (locale === "de") return "Baby-Modus";
+    if (locale === "pl") return "Tryb niemowlęcia";
+    return "Baby mode";
+  }
+
+  return "";
 }
 
 function mapTabKey(label: string): MobileBottomTabKey {
@@ -264,6 +376,36 @@ export function buildChildrenScreenContent(
     cards: ChildCard[];
     tabs: MobileBottomTabItem[];
   };
+}
+
+export function buildChildrenCardsFromApi(
+  children: MobileChildSummary[],
+  locale: MobileLocale,
+): ChildCard[] {
+  const quickActionByTitle = buildQuickActionMap(locale);
+  const fallbackQuickActions = screenSpec.childrenCards[0]?.quickActions ?? [];
+
+  return children.map((child, index) => ({
+    nodeId: child.id,
+    name: child.name,
+    stats: buildCardStatsLabel(child, locale),
+    liveActivityVisible: false,
+    liveActivityText: "",
+    avatarSource: resolveAvatarSourceWithGender(
+      child.avatarKey,
+      child.gender,
+      index,
+    ),
+    quickActions: fallbackQuickActions.map((action) =>
+      mapQuickAction(
+        {
+          ...action,
+          nodeId: `${child.id}:${action.nodeId}`,
+        },
+        quickActionByTitle,
+      ),
+    ),
+  }));
 }
 
 export function buildChildrenStopActionCopy(

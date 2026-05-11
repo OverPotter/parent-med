@@ -30,6 +30,8 @@ class ChildModel(Base):
     doctor_phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     allergies: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    avatar_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    gender: Mapped[str | None] = mapped_column(String(16), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

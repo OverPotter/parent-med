@@ -83,6 +83,8 @@ interface RawChild {
   birth_date: string | null;
   age_label: string | null;
   baby_mode_enabled: boolean;
+  avatar_key?: string | null;
+  gender?: string | null;
   institution_name: string | null;
   institution_phone: string | null;
   doctor_name: string | null;
@@ -337,6 +339,8 @@ export function toChild(r: RawChild): Child {
     birthDate: r.birth_date ?? null,
     ageLabel: r.age_label ?? null,
     babyModeEnabled: r.baby_mode_enabled ?? false,
+    avatarKey: r.avatar_key ?? null,
+    gender: r.gender ?? null,
     institutionName: r.institution_name ?? null,
     institutionPhone: r.institution_phone ?? null,
     doctorName: r.doctor_name ?? null,

@@ -2,9 +2,10 @@ import { View } from "react-native";
 import { AnalyticsBreakdownScreen } from "../features/analytics/screens/AnalyticsBreakdownScreen";
 import { AnalyticsScreen } from "../features/analytics/screens/AnalyticsScreen";
 import type { MobileAuthSession } from "../features/auth/api/authApi";
+import { ChildCreateScreen } from "../features/children/screens/ChildCreateScreen";
 import { ChildProfileEditScreen } from "../features/child-profile-edit/screens/ChildProfileEditScreen";
 import { ChildProfileRedesignScreen } from "../features/child-profile/screens/ChildProfileRedesignScreen";
-import { buildChildrenScreenContent } from "../features/children/model/childrenRedesign";
+import type { ChildCard } from "../features/children/model/childrenRedesign";
 import { ChildrenRedesignScreen } from "../features/children/screens/ChildrenRedesignScreen";
 import { FeedingHistoryScreen } from "../features/feeding/screens/FeedingHistoryScreen";
 import { GrowthHistoryScreen } from "../features/growth/screens/GrowthHistoryScreen";
@@ -40,9 +41,11 @@ type RootTabContentProps = {
   locale: MobileLocale;
   activeRootTab: MobileBottomTabKey;
   authSession: MobileAuthSession | null;
+  childrenCards: ChildCard[];
   activeFeedingStartedAtByCardId: Record<string, string | null>;
   activeObservationByCardId: Record<string, boolean>;
   onOpenChildProfile: (cardId: string) => void;
+  onOpenChildCreate: () => void;
   onOpenRootJournalEntry: (cardId: string, kind: JournalEntryKind) => void;
   onOpenObservation: (cardId: string) => void;
   onFeedingPress: (cardId: string) => void;
@@ -100,8 +103,10 @@ function MoreTabScreen({
 }
 
 function ChildrenTabScreen({
+  childrenCards,
   activeFeedingStartedAtByCardId,
   activeObservationByCardId,
+  onOpenChildCreate,
   onOpenChildProfile,
   onOpenRootJournalEntry,
   onOpenObservation,
@@ -109,8 +114,10 @@ function ChildrenTabScreen({
   screenLayerStyle,
 }: Pick<
   RootTabContentProps,
+  | "childrenCards"
   | "activeFeedingStartedAtByCardId"
   | "activeObservationByCardId"
+  | "onOpenChildCreate"
   | "onOpenChildProfile"
   | "onOpenRootJournalEntry"
   | "onOpenObservation"
@@ -120,6 +127,8 @@ function ChildrenTabScreen({
   return (
     <View style={screenLayerStyle}>
       <ChildrenRedesignScreen
+        cards={childrenCards}
+        onOpenChildCreate={onOpenChildCreate}
         onOpenChildProfile={onOpenChildProfile}
         onOpenJournalEntry={onOpenRootJournalEntry}
         onOpenObservation={onOpenObservation}
@@ -135,8 +144,10 @@ export function RootTabContent({
   locale,
   activeRootTab,
   authSession,
+  childrenCards,
   activeFeedingStartedAtByCardId,
   activeObservationByCardId,
+  onOpenChildCreate,
   onOpenChildProfile,
   onOpenRootJournalEntry,
   onOpenObservation,
@@ -167,8 +178,10 @@ export function RootTabContent({
   if (activeRootTab === "children") {
     return (
       <ChildrenTabScreen
+        childrenCards={childrenCards}
         activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
         activeObservationByCardId={activeObservationByCardId}
+        onOpenChildCreate={onOpenChildCreate}
         onOpenChildProfile={onOpenChildProfile}
         onOpenRootJournalEntry={onOpenRootJournalEntry}
         onOpenObservation={onOpenObservation}
@@ -192,6 +205,7 @@ export function RootTabContent({
 type OverlayScreensProps = {
   locale: MobileLocale;
   activeScreen: PillPathActiveScreen;
+  childrenCards: ChildCard[];
   selectedChildId: string;
   selectedEpisode: AnalyticsEpisodeCard | null;
   selectedJournalKind: JournalEntryKind;
@@ -199,6 +213,18 @@ type OverlayScreensProps = {
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
   authSession: MobileAuthSession;
   childFlow: {
+    onOpenChildCreate: () => void;
+    onBackChildCreate: () => void;
+    onSubmitChildCreate: (payload: {
+      name: string;
+      birthDate: string | null;
+      avatarKey: string | null;
+      babyModeEnabled: boolean;
+      weightKg: number | null;
+      heightCm: number | null;
+      allergies: string | null;
+      notes: string | null;
+    }) => Promise<void>;
     onBackChildProfile: () => void;
     onEditProfile: () => void;
     onOpenAnalytics: () => void;
@@ -242,7 +268,7 @@ type SelectedChildOverlayProps = {
   activeScreen: PillPathActiveScreen;
   childFlow: OverlayScreensProps["childFlow"];
   illnessFlow: OverlayScreensProps["illnessFlow"];
-  selectedChild: NonNullable<ReturnType<typeof buildChildrenScreenContent>["cards"][number]>;
+  selectedChild: ChildCard;
   selectedEpisode: AnalyticsEpisodeCard | null;
   selectedJournalKind: JournalEntryKind;
 };
@@ -327,7 +353,7 @@ function SelectedChildOverlays({
 
 type IllnessOverlayProps = {
   activeScreen: PillPathActiveScreen;
-  childrenCards: ReturnType<typeof buildChildrenScreenContent>["cards"];
+  childrenCards: ChildCard[];
   focusedChildId: string;
   selectedIllnessActionKind: IllnessQuickActionKind;
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
@@ -415,6 +441,7 @@ function UtilityOverlays({
 export function OverlayScreens({
   locale,
   activeScreen,
+  childrenCards,
   selectedChildId,
   selectedEpisode,
   selectedJournalKind,
@@ -425,13 +452,17 @@ export function OverlayScreens({
   illnessFlow,
   utilityFlow,
 }: OverlayScreensProps) {
-  const childrenScreenContent = buildChildrenScreenContent(locale);
   const selectedChild =
-    childrenScreenContent.cards.find((card) => card.nodeId === selectedChildId) ??
-    childrenScreenContent.cards[0];
+    childrenCards.find((card) => card.nodeId === selectedChildId) ??
+    childrenCards[0];
 
   return (
     <>
+      <ChildCreateScreen
+        visible={activeScreen === "childCreate"}
+        onBack={childFlow.onBackChildCreate}
+        onSubmit={childFlow.onSubmitChildCreate}
+      />
       {selectedChild ? (
         <SelectedChildOverlays
           activeScreen={activeScreen}
@@ -444,7 +475,7 @@ export function OverlayScreens({
       ) : null}
         <IllnessOverlays
           activeScreen={activeScreen}
-          childrenCards={childrenScreenContent.cards}
+          childrenCards={childrenCards}
           focusedChildId={selectedChildId}
           selectedIllnessActionKind={selectedIllnessActionKind}
           observationsByChildId={observationsByChildId}

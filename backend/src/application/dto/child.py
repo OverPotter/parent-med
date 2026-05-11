@@ -21,6 +21,8 @@ class ChildCreateDto(BaseModel):
     doctor_phone: str | None = Field(None, description="Телефон врача")
     allergies: str | None = Field(None, description="Аллергии")
     notes: str | None = Field(None, description="Заметки")
+    avatar_key: str | None = Field(None, description="Ключ preset-иконки ребёнка")
+    gender: str | None = Field(None, description="Пол ребёнка")
 
 
 class ChildUpdateDto(BaseModel):
@@ -35,6 +37,8 @@ class ChildUpdateDto(BaseModel):
     doctor_phone: str | None = Field(None, description="Телефон врача")
     allergies: str | None = Field(None, description="Аллергии")
     notes: str | None = Field(None, description="Заметки")
+    avatar_key: str | None = Field(None, description="Ключ preset-иконки ребёнка")
+    gender: str | None = Field(None, description="Пол ребёнка")
 
 
 class ChildResponseDto(ResponseBase):
@@ -52,3 +56,5 @@ class ChildResponseDto(ResponseBase):
     doctor_phone: str | None = None
     allergies: str | None = None
     notes: str | None = None
+    avatar_key: str | None = None
+    gender: str | None = None
