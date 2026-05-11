@@ -16,7 +16,6 @@ import {
 import { type AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
 import { buildChildrenScreenContent } from "../features/children/model/childrenRedesign";
 import {
-  appendMockIllnessEntry,
   createMobileIllnessObservation,
   type IllnessQuickActionKind,
   type MobileIllnessObservation,
@@ -202,11 +201,17 @@ function useIllnessFlowController({
   locale,
   selectedChildId,
   setActiveScreen,
+  setActiveRootTab,
+  setSelectedChildId,
+  setSelectedIllnessActionKind,
   setActiveIllnessObservationsByChildId,
 }: {
   locale: MobileLocale;
   selectedChildId: string;
   setActiveScreen: Dispatch<SetStateAction<PillPathActiveScreen>>;
+  setActiveRootTab: Dispatch<SetStateAction<MobileBottomTabKey>>;
+  setSelectedChildId: Dispatch<SetStateAction<string>>;
+  setSelectedIllnessActionKind: Dispatch<SetStateAction<IllnessQuickActionKind>>;
   setActiveIllnessObservationsByChildId: Dispatch<
     SetStateAction<Record<string, MobileIllnessObservation | undefined>>
   >;
@@ -217,6 +222,10 @@ function useIllnessFlowController({
 
   const handleCloseIllnessJournal = useCallback(() => {
     setActiveScreen("children");
+  }, [setActiveScreen]);
+
+  const handleCloseIllnessActionPlaceholder = useCallback(() => {
+    setActiveScreen("illnessJournal");
   }, [setActiveScreen]);
 
   const handleStartIllnessObservation = useCallback(
@@ -237,20 +246,11 @@ function useIllnessFlowController({
 
   const handleAddIllnessEntry = useCallback(
     (childId: string, kind: IllnessQuickActionKind) => {
-      setActiveIllnessObservationsByChildId((current) => {
-        const observation = current[childId];
-
-        if (!observation) {
-          return current;
-        }
-
-        return {
-          ...current,
-          [childId]: appendMockIllnessEntry(observation, kind, locale),
-        };
-      });
+      setSelectedChildId(childId);
+      setSelectedIllnessActionKind(kind);
+      setActiveScreen("illnessActionPlaceholder");
     },
-    [locale, setActiveIllnessObservationsByChildId],
+    [setActiveScreen, setSelectedChildId, setSelectedIllnessActionKind],
   );
 
   const handleFinishIllnessObservation = useCallback((childId: string) => {
@@ -260,11 +260,22 @@ function useIllnessFlowController({
     }));
   }, [setActiveIllnessObservationsByChildId]);
 
+  const handleSelectTab = useCallback((key: MobileBottomTabKey) => {
+    if (key === "journal") {
+      return;
+    }
+
+    setActiveRootTab(key);
+    setActiveScreen("children");
+  }, [setActiveRootTab, setActiveScreen]);
+
   return {
     handleAddIllnessEntry,
+    handleCloseIllnessActionPlaceholder,
     handleCloseIllnessJournal,
     handleCloseIllnessOnboarding,
     handleFinishIllnessObservation,
+    handleSelectTab,
     handleStartIllnessObservation,
   };
 }
@@ -542,6 +553,8 @@ export function usePillPathExpoShellState() {
     useState<AnalyticsEpisodeCard | null>(null);
   const [selectedJournalKind, setSelectedJournalKind] =
     useState<JournalEntryKind>("feeding");
+  const [selectedIllnessActionKind, setSelectedIllnessActionKind] =
+    useState<IllnessQuickActionKind>("temperature");
   const [activeFeedingStartedAtByCardId, setActiveFeedingStartedAtByCardId] =
     useState<Record<string, string | null>>({});
   const [
@@ -596,14 +609,19 @@ export function usePillPathExpoShellState() {
   });
   const {
     handleAddIllnessEntry,
+    handleCloseIllnessActionPlaceholder,
     handleCloseIllnessJournal,
     handleCloseIllnessOnboarding,
     handleFinishIllnessObservation,
+    handleSelectTab,
     handleStartIllnessObservation,
   } = useIllnessFlowController({
     locale,
     selectedChildId,
     setActiveScreen,
+    setActiveRootTab,
+    setSelectedChildId,
+    setSelectedIllnessActionKind,
     setActiveIllnessObservationsByChildId,
   });
   const {
@@ -628,6 +646,9 @@ export function usePillPathExpoShellState() {
     activeRootTab,
     authSession,
     activeFeedingStartedAtByCardId,
+    activeObservationByCardId: Object.fromEntries(
+      Object.entries(activeIllnessObservationsByChildId).map(([key, value]) => [key, Boolean(value)]),
+    ),
     onOpenChildProfile: handleOpenChildProfile,
     onOpenRootJournalEntry: handleOpenRootJournalEntry,
     onOpenObservation: handleOpenObservation,
@@ -654,6 +675,7 @@ export function usePillPathExpoShellState() {
         selectedChildId,
         selectedEpisode,
         selectedJournalKind,
+        selectedIllnessActionKind,
         observationsByChildId: activeIllnessObservationsByChildId,
         authSession,
         childFlow: {
@@ -676,9 +698,12 @@ export function usePillPathExpoShellState() {
         illnessFlow: {
           onStartIllnessObservation: handleStartIllnessObservation,
           onAddIllnessEntry: handleAddIllnessEntry,
+          selectedIllnessActionKind,
+          onBackIllnessActionPlaceholder: handleCloseIllnessActionPlaceholder,
           onFinishIllnessObservation: handleFinishIllnessObservation,
           onBackIllnessJournal: handleCloseIllnessJournal,
           onBackIllnessOnboarding: handleCloseIllnessOnboarding,
+          onSelectTab: handleSelectTab,
         },
         utilityFlow: {
           onSessionDeleted: handleSessionDeleted,

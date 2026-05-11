@@ -23,6 +23,7 @@ type ChildrenRedesignScreenProps = {
   onOpenJournalEntry?: (cardId: string, kind: JournalEntryKind) => void;
   onOpenObservation?: (cardId: string) => void;
   activeFeedingStartedAtByCardId?: Record<string, string | null>;
+  activeObservationByCardId?: Record<string, boolean>;
   onFeedingPress?: (cardId: string) => void;
 };
 
@@ -37,6 +38,7 @@ export function ChildrenRedesignScreen({
   onOpenJournalEntry,
   onOpenObservation,
   activeFeedingStartedAtByCardId = {},
+  activeObservationByCardId = {},
   onFeedingPress = noop,
 }: ChildrenRedesignScreenProps) {
   const { locale } = useMobileI18n();
@@ -191,6 +193,7 @@ export function ChildrenRedesignScreen({
                 onOpenObservation={handleOpenObservation}
                 onOpenProfile={handleOpenChildProfile}
                 onOpenJournalEntry={handleOpenJournalEntry}
+                hasActiveObservation={Boolean(activeObservationByCardId[card.nodeId])}
               />
             ))}
           </View>

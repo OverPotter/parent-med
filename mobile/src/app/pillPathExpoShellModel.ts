@@ -23,7 +23,8 @@ export type PillPathActiveScreen =
   | "weightHistory"
   | "journalEntry"
   | "illnessOnboarding"
-  | "illnessJournal";
+  | "illnessJournal"
+  | "illnessActionPlaceholder";
 
 const CHILD_PROFILE_VISIBLE_SCREENS: PillPathActiveScreen[] = [
   "childProfile",

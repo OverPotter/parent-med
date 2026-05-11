@@ -73,6 +73,20 @@ export type ChildCard = {
   quickActions: ChildQuickAction[];
 };
 
+export function getObservationActionLabel(locale: MobileLocale, hasActiveObservation: boolean) {
+  if (hasActiveObservation) {
+    if (locale === "ru") return "Журнал";
+    if (locale === "de") return "Journal";
+    if (locale === "pl") return "Dziennik";
+    return "Journal";
+  }
+
+  if (locale === "ru") return "Наблюдать";
+  if (locale === "de") return "Beobachten";
+  if (locale === "pl") return "Obserwuj";
+  return "Observe";
+}
+
 export type ChildrenStopActionCopy = {
   title: string;
   cancelLabel: string;

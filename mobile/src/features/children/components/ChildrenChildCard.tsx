@@ -1,9 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image, Pressable, Text, View } from "react-native";
-import { ChildCard, ChildQuickAction } from "../model/childrenRedesign";
+import {
+  ChildCard,
+  ChildQuickAction,
+  getObservationActionLabel,
+} from "../model/childrenRedesign";
 import { styles } from "../screens/childrenRedesignStyles";
 import { getChildModuleTint } from "../../../shared/theme/childModuleTints";
 import { JournalEntryKind } from "../../journal/model/journalEntryScreen";
+import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 
 const noop = () => {};
 
@@ -18,6 +23,7 @@ type ChildrenChildCardProps = {
   onOpenObservation?: (cardId: string) => void;
   onOpenProfile?: (cardId: string) => void;
   onOpenJournalEntry?: (cardId: string, kind: JournalEntryKind) => void;
+  hasActiveObservation?: boolean;
 };
 
 export function ChildrenChildCard({
@@ -31,7 +37,9 @@ export function ChildrenChildCard({
   onOpenObservation = noop,
   onOpenProfile = noop,
   onOpenJournalEntry = noop,
+  hasActiveObservation = false,
 }: ChildrenChildCardProps) {
+  const { locale } = useMobileI18n();
   return (
     <View style={[styles.card, collapsed ? styles.cardCollapsed : null]}>
       <Pressable
@@ -82,6 +90,11 @@ export function ChildrenChildCard({
             <QuickActionCard
               key={action.nodeId}
               action={action}
+              observationActionLabel={
+                action.kind === "observation"
+                  ? getObservationActionLabel(locale, hasActiveObservation)
+                  : undefined
+              }
               sleepElapsedLabel={sleepElapsedLabel}
               feedingElapsedLabel={feedingElapsedLabel}
               onPress={() => {
@@ -113,11 +126,13 @@ export function ChildrenChildCard({
 
 function QuickActionCard({
   action,
+  observationActionLabel,
   sleepElapsedLabel,
   feedingElapsedLabel,
   onPress,
 }: {
   action: ChildQuickAction;
+  observationActionLabel?: string;
   sleepElapsedLabel: string | null;
   feedingElapsedLabel: string | null;
   onPress: () => void;
@@ -135,7 +150,9 @@ function QuickActionCard({
       ? isActive && feedingElapsedLabel
         ? feedingElapsedLabel
         : action.label
-      : action.label;
+      : action.kind === "observation" && observationActionLabel
+        ? observationActionLabel
+        : action.label;
   const tint = getQuickActionTint(action.kind);
 
   return (

@@ -1,12 +1,26 @@
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { type ComponentProps, useMemo, useState } from "react";
-import { Animated, Image, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
-import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
+import { Feather } from "@expo/vector-icons";
+import { useMemo, useState } from "react";
+import { Animated, Image, ImageBackground, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  MobileBottomTabBar,
+  type MobileBottomTabItem,
+  type MobileBottomTabKey,
+} from "../../../shared/components/MobileBottomTabBar";
+import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import { ChildCard } from "../../children/model/childrenRedesign";
-import { illnessAssets } from "../assets";
-import { buildIllnessJournalContent, getObservationEntryCount } from "../model/illnessJournal";
+import {
+  getIllnessSummaryChipAppearance,
+} from "../model/illnessJournalAppearance";
+import {
+  buildIllnessJournalContent,
+  getObservationChildStatsLabel,
+  getObservationEntryCount,
+} from "../model/illnessJournal";
 import { IllnessQuickActionKind, MobileIllnessObservation } from "../model/illnessObservation";
+import { groupIllnessEntriesByDay } from "../model/illnessJournalTimeline";
+import { EntryRow, QuickActionButton, SummaryChip } from "./IllnessJournalParts";
 import { styles } from "./illnessJournalStyles";
 import { formatIllnessDateLabel } from "../model/illnessOnboarding";
 
@@ -15,32 +29,53 @@ type IllnessJournalScreenProps = {
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
   focusedChildId: string;
   visible: boolean;
-  onBack: () => void;
   onAddEntry: (childId: string, kind: IllnessQuickActionKind) => void;
   onFinishObservation: (childId: string) => void;
   onOpenChildren: () => void;
+  onSelectTab: (key: MobileBottomTabKey) => void;
 };
+
+function buildJournalTabItems(locale: ReturnType<typeof useMobileI18n>["locale"]): MobileBottomTabItem[] {
+  return [
+    {
+      key: "journal",
+      label: locale === "ru" ? "Журнал" : locale === "de" ? "Journal" : locale === "pl" ? "Dziennik" : "Journal",
+      active: true,
+    },
+    {
+      key: "children",
+      label: locale === "ru" ? "Дети" : locale === "de" ? "Kinder" : locale === "pl" ? "Dzieci" : "Children",
+      active: false,
+    },
+    {
+      key: "pillbox",
+      label: locale === "ru" ? "Таблетница" : locale === "de" ? "Pillenbox" : locale === "pl" ? "Pudełko leków" : "Pillbox",
+      active: false,
+    },
+    {
+      key: "cabinet",
+      label: locale === "ru" ? "Аптечка" : locale === "de" ? "Hausapotheke" : locale === "pl" ? "Apteczka" : "Cabinet",
+      active: false,
+    },
+  ];
+}
 
 export function IllnessJournalScreen({
   children,
   observationsByChildId,
   focusedChildId,
   visible,
-  onBack,
   onAddEntry,
   onFinishObservation,
   onOpenChildren,
+  onSelectTab,
 }: IllnessJournalScreenProps) {
   const { locale } = useMobileI18n();
+  const surfaceTheme = useMobileSurfaceTheme();
   const content = buildIllnessJournalContent(locale);
-  const { width } = useWindowDimensions();
-  const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
-    enabled: visible,
-    width,
-    onBack,
-  });
   const [expandedChildId, setExpandedChildId] = useState<string>("");
   const [pendingFinishChildId, setPendingFinishChildId] = useState<string | null>(null);
+  const tabItems = useMemo(() => buildJournalTabItems(locale), [locale]);
 
   const activeCards = useMemo(() => {
     const mapped = children
@@ -63,19 +98,29 @@ export function IllnessJournalScreen({
       style={[
         styles.overlayLayer,
         visible ? styles.overlayLayerVisible : styles.overlayLayerHidden,
-        { transform: [{ translateX }] },
       ]}
     >
-      <View style={styles.background}>
-        <View style={styles.root}>
-          <View style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]} {...panHandlers} />
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            <View style={styles.topBar}>
-              <Pressable onPress={onBack} style={styles.backLink}>
-                <Text style={styles.backLinkText}>{"← "}{content.backLabel}</Text>
-              </Pressable>
-            </View>
+      <ImageBackground
+        source={redesignBackgrounds.childrenModule}
+        resizeMode="cover"
+        style={styles.background}
+        imageStyle={styles.backgroundImage}
+      >
+        <View
+          style={[
+            styles.backgroundOverlay,
+            { backgroundColor: surfaceTheme.backgroundOverlayColor },
+          ]}
+        />
+      </ImageBackground>
 
+      <View style={styles.screen}>
+        <View style={styles.root}>
+          <ScrollView
+            style={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
             <Text style={styles.title}>{content.title}</Text>
             <Text style={styles.subtitle}>{content.subtitle}</Text>
 
@@ -90,65 +135,54 @@ export function IllnessJournalScreen({
             ) : null}
 
             {activeCards.map(({ child, observation }) => {
-              const latestTemperature = observation!.entries.find((entry) => entry.kind === "temperature");
-              const latestMedicine = observation!.entries.find((entry) => entry.kind === "medicine");
-              const latestReminder = observation!.entries.find((entry) => entry.kind === "reminder");
               const isExpanded = expandedChildId === child.nodeId;
 
               return (
                 <View key={child.nodeId} style={styles.card}>
                   <View style={styles.cardHeader}>
-                    <View style={styles.avatarWrap}>
-                      <Image source={child.avatarSource} style={styles.avatar as never} resizeMode="contain" />
-                    </View>
-                    <View style={styles.cardHeaderCopy}>
-                      <View style={styles.nameRow}>
-                        <View style={styles.statusDot} />
-                        <Text style={styles.childName}>{child.name}</Text>
-                        <View style={styles.illnessBadge}>
-                          <Text style={styles.illnessBadgeText}>{content.illnessBadge}</Text>
-                        </View>
+                    <View style={styles.cardMainRow}>
+                      <View style={styles.avatarWrap}>
+                        <Image source={child.avatarSource} style={styles.avatar as never} resizeMode="contain" />
                       </View>
-                      <Text style={styles.childStats}>{child.stats}</Text>
-                      <Text style={styles.observationSince}>
-                        {content.observationSince(
-                          formatIllnessDateLabel(observation!.startedAt, locale),
-                        )}
-                      </Text>
+                      <View style={styles.cardHeaderCopy}>
+                        <View style={styles.headerTopRow}>
+                          <View style={styles.nameRow}>
+                            <View style={styles.statusDot} />
+                            <Text style={styles.childName}>{child.name}</Text>
+                          </View>
+                          <Pressable
+                            style={styles.finishButton}
+                            onPress={() => setPendingFinishChildId(child.nodeId)}
+                          >
+                            <Text style={styles.finishButtonText}>{content.finishLabel}</Text>
+                          </Pressable>
+                        </View>
+                        <Text style={styles.childStats}>
+                          {getObservationChildStatsLabel(child.stats)}
+                        </Text>
+                        <Text style={styles.observationSince}>
+                          {content.observationSince(
+                            formatIllnessDateLabel(observation!.startedAt, locale),
+                          )}
+                        </Text>
+                      </View>
                     </View>
-                    <Pressable
-                      style={styles.finishButton}
-                      onPress={() => setPendingFinishChildId(child.nodeId)}
-                    >
-                      <Text style={styles.finishButtonText}>{content.finishLabel}</Text>
-                    </Pressable>
                   </View>
 
                   <View style={styles.chipsRow}>
-                    <SummaryChip
-                      icon="thermometer"
-                      text={latestTemperature?.title ?? content.summaryChipFallbacks.temperature}
-                      backgroundColor="#FFF9F8"
-                      borderColor="#F1DAD4"
-                      iconBackground="#FFD6D8"
-                      iconColor="#F56F68"
-                    />
-                    <SummaryChip
-                      icon="pill"
-                      text={latestMedicine?.title ?? content.summaryChipFallbacks.medicine}
-                      backgroundColor="#FFF9F2"
-                      borderColor="#F1DAD0"
-                      iconBackground="#FFE0B9"
-                      iconColor="#F59B45"
-                    />
-                    <SummaryChip
-                      icon="bell-outline"
-                      text={latestReminder?.title ?? content.summaryChipFallbacks.reminder}
-                      backgroundColor="#FFFAFF"
-                      borderColor="#E8DDF5"
-                      iconBackground="#E8DDFF"
-                      iconColor="#8B5CF6"
-                    />
+                    {(["temperature", "medicine", "reminder"] as const).map((kind) => {
+                      const appearance = getIllnessSummaryChipAppearance(kind);
+
+                      return (
+                        <SummaryChip
+                          key={kind}
+                          icon={appearance.icon}
+                          text={content.summaryChipLabels[kind]}
+                          backgroundColor={appearance.backgroundColor}
+                          borderColor={appearance.borderColor}
+                        />
+                      );
+                    })}
                   </View>
 
                   <View style={styles.quickActionsGrid}>
@@ -199,10 +233,19 @@ export function IllnessJournalScreen({
 
                   {isExpanded ? (
                     <View style={styles.entriesWrap}>
-                      {observation!.entries.map((entry) => (
-                        <View key={entry.id} style={styles.entryRow}>
-                          <Text style={styles.entryTitle}>{entry.title}</Text>
-                          <Text style={styles.entrySubtitle}>{entry.subtitle}</Text>
+                      {groupIllnessEntriesByDay(observation!.entries, locale).map((section) => (
+                        <View key={section.key} style={styles.entrySection}>
+                          <Text style={styles.entrySectionTitle}>{section.label}</Text>
+                          <View style={styles.entrySectionRows}>
+                            {section.entries.map((entry, index) => (
+                              <EntryRow
+                                key={entry.id}
+                                entry={entry}
+                                isLast={index === section.entries.length - 1}
+                                locale={locale}
+                              />
+                            ))}
+                          </View>
                         </View>
                       ))}
                     </View>
@@ -237,79 +280,10 @@ export function IllnessJournalScreen({
           </View>
         </View>
       ) : null}
+
+      <View style={styles.bottomBarLayer}>
+        <MobileBottomTabBar items={tabItems} onSelectTab={onSelectTab} />
+      </View>
     </Animated.View>
-  );
-}
-
-function SummaryChip({
-  icon,
-  text,
-  backgroundColor,
-  borderColor,
-  iconBackground,
-  iconColor,
-}: {
-  icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
-  text: string;
-  backgroundColor: string;
-  borderColor: string;
-  iconBackground: string;
-  iconColor: string;
-}) {
-  return (
-    <View style={[styles.chip, { backgroundColor, borderColor }]}>
-      <View style={[styles.chipIconWrap, { backgroundColor: iconBackground }]}>
-        <MaterialCommunityIcons name={icon} size={17} color={iconColor} />
-      </View>
-      <Text style={styles.chipText} numberOfLines={1}>{text}</Text>
-    </View>
-  );
-}
-
-function QuickActionButton({
-  kind,
-  label,
-  onPress,
-}: {
-  kind: IllnessQuickActionKind;
-  label: string;
-  onPress: () => void;
-}) {
-  const palette =
-    kind === "temperature"
-      ? {
-          background: "#FFF0F0",
-          border: "#F5C7C8",
-          iconBg: "#FFD6D8",
-          asset: illnessAssets.journal.quickTemperature,
-        }
-      : kind === "medicine"
-        ? {
-            background: "#FFF4E6",
-            border: "#F2D4AF",
-            iconBg: "#FFE0B9",
-            asset: illnessAssets.journal.quickMedicine,
-          }
-        : kind === "note"
-          ? {
-              background: "#EFFAF3",
-              border: "#C8E4D1",
-              iconBg: "#D8F1E1",
-              asset: illnessAssets.journal.quickNote,
-            }
-          : {
-              background: "#F5F0FF",
-              border: "#D9C9F6",
-              iconBg: "#E8DDFF",
-              asset: illnessAssets.journal.quickReminder,
-            };
-
-  return (
-    <Pressable style={[styles.quickActionButton, { backgroundColor: palette.background, borderColor: palette.border }]} onPress={onPress}>
-      <View style={[styles.quickActionIconWrap, { backgroundColor: palette.iconBg }]}>
-        <Image source={palette.asset} style={styles.quickActionIconImage} resizeMode="contain" />
-      </View>
-      <Text style={styles.quickActionLabel}>{label}</Text>
-    </Pressable>
   );
 }

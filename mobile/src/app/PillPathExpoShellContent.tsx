@@ -8,6 +8,7 @@ import { buildChildrenScreenContent } from "../features/children/model/childrenR
 import { ChildrenRedesignScreen } from "../features/children/screens/ChildrenRedesignScreen";
 import { FeedingHistoryScreen } from "../features/feeding/screens/FeedingHistoryScreen";
 import { GrowthHistoryScreen } from "../features/growth/screens/GrowthHistoryScreen";
+import { IllnessActionPlaceholderScreen } from "../features/illness/screens/IllnessActionPlaceholderScreen";
 import { IllnessJournalScreen } from "../features/illness/screens/IllnessJournalScreen";
 import { IllnessOnboardingScreen } from "../features/illness/screens/IllnessOnboardingScreen";
 import type {
@@ -40,6 +41,7 @@ type RootTabContentProps = {
   activeRootTab: MobileBottomTabKey;
   authSession: MobileAuthSession | null;
   activeFeedingStartedAtByCardId: Record<string, string | null>;
+  activeObservationByCardId: Record<string, boolean>;
   onOpenChildProfile: (cardId: string) => void;
   onOpenRootJournalEntry: (cardId: string, kind: JournalEntryKind) => void;
   onOpenObservation: (cardId: string) => void;
@@ -99,6 +101,7 @@ function MoreTabScreen({
 
 function ChildrenTabScreen({
   activeFeedingStartedAtByCardId,
+  activeObservationByCardId,
   onOpenChildProfile,
   onOpenRootJournalEntry,
   onOpenObservation,
@@ -107,6 +110,7 @@ function ChildrenTabScreen({
 }: Pick<
   RootTabContentProps,
   | "activeFeedingStartedAtByCardId"
+  | "activeObservationByCardId"
   | "onOpenChildProfile"
   | "onOpenRootJournalEntry"
   | "onOpenObservation"
@@ -120,6 +124,7 @@ function ChildrenTabScreen({
         onOpenJournalEntry={onOpenRootJournalEntry}
         onOpenObservation={onOpenObservation}
         activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
+        activeObservationByCardId={activeObservationByCardId}
         onFeedingPress={onFeedingPress}
       />
     </View>
@@ -131,6 +136,7 @@ export function RootTabContent({
   activeRootTab,
   authSession,
   activeFeedingStartedAtByCardId,
+  activeObservationByCardId,
   onOpenChildProfile,
   onOpenRootJournalEntry,
   onOpenObservation,
@@ -162,6 +168,7 @@ export function RootTabContent({
     return (
       <ChildrenTabScreen
         activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
+        activeObservationByCardId={activeObservationByCardId}
         onOpenChildProfile={onOpenChildProfile}
         onOpenRootJournalEntry={onOpenRootJournalEntry}
         onOpenObservation={onOpenObservation}
@@ -169,6 +176,10 @@ export function RootTabContent({
         screenLayerStyle={screenLayerStyle}
       />
     );
+  }
+
+  if (activeRootTab === "journal") {
+    return <View style={screenLayerStyle} />;
   }
 
   return (
@@ -184,6 +195,7 @@ type OverlayScreensProps = {
   selectedChildId: string;
   selectedEpisode: AnalyticsEpisodeCard | null;
   selectedJournalKind: JournalEntryKind;
+  selectedIllnessActionKind: IllnessQuickActionKind;
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
   authSession: MobileAuthSession;
   childFlow: {
@@ -210,8 +222,11 @@ type OverlayScreensProps = {
     }) => void;
     onAddIllnessEntry: (childId: string, kind: IllnessQuickActionKind) => void;
     onFinishIllnessObservation: (childId: string) => void;
+    selectedIllnessActionKind: IllnessQuickActionKind;
     onBackIllnessJournal: () => void;
+    onBackIllnessActionPlaceholder: () => void;
     onBackIllnessOnboarding: () => void;
+    onSelectTab: (key: MobileBottomTabKey) => void;
   };
   utilityFlow: {
     onSessionDeleted: () => Promise<void>;
@@ -314,6 +329,7 @@ type IllnessOverlayProps = {
   activeScreen: PillPathActiveScreen;
   childrenCards: ReturnType<typeof buildChildrenScreenContent>["cards"];
   focusedChildId: string;
+  selectedIllnessActionKind: IllnessQuickActionKind;
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
   illnessFlow: OverlayScreensProps["illnessFlow"];
 };
@@ -322,20 +338,38 @@ function IllnessOverlays({
   activeScreen,
   childrenCards,
   focusedChildId,
+  selectedIllnessActionKind,
   observationsByChildId,
   illnessFlow,
 }: IllnessOverlayProps) {
+  const focusedChild =
+    childrenCards.find((child) => child.nodeId === focusedChildId) ??
+    childrenCards[0];
+
   return (
-    <IllnessJournalScreen
-      children={childrenCards}
-      observationsByChildId={observationsByChildId}
-      focusedChildId={focusedChildId}
-      visible={activeScreen === "illnessJournal"}
-      onBack={illnessFlow.onBackIllnessJournal}
-      onAddEntry={illnessFlow.onAddIllnessEntry}
-      onFinishObservation={illnessFlow.onFinishIllnessObservation}
-      onOpenChildren={illnessFlow.onBackIllnessJournal}
-    />
+    <>
+      <IllnessJournalScreen
+        children={childrenCards}
+        observationsByChildId={observationsByChildId}
+        focusedChildId={focusedChildId}
+        visible={
+          activeScreen === "illnessJournal" ||
+          activeScreen === "illnessActionPlaceholder"
+        }
+        onAddEntry={illnessFlow.onAddIllnessEntry}
+        onFinishObservation={illnessFlow.onFinishIllnessObservation}
+        onOpenChildren={illnessFlow.onBackIllnessJournal}
+        onSelectTab={illnessFlow.onSelectTab}
+      />
+      {focusedChild ? (
+        <IllnessActionPlaceholderScreen
+          child={focusedChild}
+          kind={selectedIllnessActionKind}
+          visible={activeScreen === "illnessActionPlaceholder"}
+          onBack={illnessFlow.onBackIllnessActionPlaceholder}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -384,6 +418,7 @@ export function OverlayScreens({
   selectedChildId,
   selectedEpisode,
   selectedJournalKind,
+  selectedIllnessActionKind,
   observationsByChildId,
   authSession,
   childFlow,
@@ -407,13 +442,14 @@ export function OverlayScreens({
           selectedJournalKind={selectedJournalKind}
         />
       ) : null}
-      <IllnessOverlays
-        activeScreen={activeScreen}
-        childrenCards={childrenScreenContent.cards}
-        focusedChildId={selectedChildId}
-        observationsByChildId={observationsByChildId}
-        illnessFlow={illnessFlow}
-      />
+        <IllnessOverlays
+          activeScreen={activeScreen}
+          childrenCards={childrenScreenContent.cards}
+          focusedChildId={selectedChildId}
+          selectedIllnessActionKind={selectedIllnessActionKind}
+          observationsByChildId={observationsByChildId}
+          illnessFlow={illnessFlow}
+        />
       <UtilityOverlays
         activeScreen={activeScreen}
         authSession={authSession}

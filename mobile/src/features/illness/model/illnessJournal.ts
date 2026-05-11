@@ -17,14 +17,13 @@ export type IllnessJournalContent = {
   finishCancelLabel: string;
   feedLabel: (count: number) => string;
   observationSince: (dateLabel: string) => string;
-  illnessBadge: string;
   quickActionLabels: {
     temperature: string;
     medicine: string;
     note: string;
     reminder: string;
   };
-  summaryChipFallbacks: {
+  summaryChipLabels: {
     temperature: string;
     medicine: string;
     reminder: string;
@@ -83,21 +82,29 @@ export function buildIllnessJournalContent(locale: MobileLocale): IllnessJournal
           : isDe
             ? `Beobachtung seit ${dateLabel}`
             : `Observation since ${dateLabel}`,
-    illnessBadge: isRu ? "Болеет" : isPl ? "Choruje" : isDe ? "Krank" : "Ill",
     quickActionLabels: {
       temperature: isRu ? "+ Температура" : isPl ? "+ Temperatura" : isDe ? "+ Temperatur" : "+ Temperature",
       medicine: isRu ? "+ Приём" : isPl ? "+ Podanie" : isDe ? "+ Einnahme" : "+ Dose",
       note: isRu ? "+ Заметка" : isPl ? "+ Notatka" : isDe ? "+ Notiz" : "+ Note",
       reminder: isRu ? "+ Напоминание" : isPl ? "+ Przypomnienie" : isDe ? "+ Erinnerung" : "+ Reminder",
     },
-    summaryChipFallbacks: {
-      temperature: isRu ? "Нет температуры" : isPl ? "Brak temperatury" : isDe ? "Keine Temperatur" : "No temperature",
-      medicine: isRu ? "Нет приёмов" : isPl ? "Brak podań" : isDe ? "Keine Einnahmen" : "No doses",
-      reminder: isRu ? "Нет напоминаний" : isPl ? "Brak przypomnień" : isDe ? "Keine Erinnerungen" : "No reminders",
+    summaryChipLabels: {
+      temperature: isRu ? "Темп." : isPl ? "Temp." : isDe ? "Temp." : "Temp.",
+      medicine: isRu ? "Приём" : isPl ? "Podanie" : isDe ? "Einnahme" : "Dose",
+      reminder: isRu ? "Напом." : isPl ? "Przyp." : isDe ? "Erinn." : "Remind.",
     },
   };
 }
 
 export function getObservationEntryCount(observation: MobileIllnessObservation) {
   return observation.entries.length;
+}
+
+export function getObservationChildStatsLabel(statsText: string) {
+  const parts = statsText
+    .split("•")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return parts[0] ?? statsText.trim();
 }

@@ -4,7 +4,7 @@ import { useMobileI18n } from "../i18n/mobileI18n";
 import { MobileBottomTabKey } from "./MobileBottomTabBar";
 
 type RootModulePlaceholderScreenProps = {
-  tabKey: Exclude<MobileBottomTabKey, "children">;
+  tabKey: Exclude<MobileBottomTabKey, "children" | "journal">;
 };
 
 const placeholderCopy = {

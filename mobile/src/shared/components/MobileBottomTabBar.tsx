@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 export type MobileBottomTabKey =
+  | "journal"
   | "children"
   | "cabinet"
   | "more"
@@ -31,6 +32,7 @@ const tabIconSize = 38;
 const tabImageSourceByKey: Partial<
   Record<MobileBottomTabKey, ImageSourcePropType>
 > = {
+  journal: require("../../redesign/shared/icons/book_icon_transparent_high_quality.png"),
   children: require("../assets/bottom-tabs/parent_child_transparent.png"),
   pillbox: require("../assets/bottom-tabs/pillpath_icon_transparent.png"),
   cabinet: require("../assets/bottom-tabs/medical_bag_icon_transparent_FIXED.png"),
@@ -97,6 +99,16 @@ function TabIcon({
     return (
       <MaterialCommunityIcons
         name="baby-face-outline"
+        size={tabIconSize}
+        color={color}
+      />
+    );
+  }
+
+  if (tab === "journal") {
+    return (
+      <MaterialCommunityIcons
+        name="book-open-page-variant-outline"
         size={tabIconSize}
         color={color}
       />
