@@ -1,26 +1,32 @@
 import type { MobileAuthSession } from "../../auth/api/authApi";
 
-type RawHeightEntryResponse = {
+type RawSleepSessionResponse = {
   id: string;
   child_id: string;
-  value_cm: number;
-  measured_at: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_minutes: number | null;
+  status: string;
+  created_by_account_id: string | null;
 };
 
-export type MobileHeightEntry = {
+export type MobileSleepSession = {
   id: string;
   childId: string;
-  valueCm: number;
-  measuredAt: string;
+  startedAt: string;
+  endedAt: string | null;
+  durationMinutes: number | null;
+  status: string;
+  createdByAccountId: string | null;
 };
 
-export class MobileHeightEntriesApiError extends Error {
+export class MobileSleepSessionsApiError extends Error {
   code?: string;
   detail?: string;
 
   constructor(message: string, options?: { code?: string; detail?: string }) {
     super(message);
-    this.name = "MobileHeightEntriesApiError";
+    this.name = "MobileSleepSessionsApiError";
     this.code = options?.code;
     this.detail = options?.detail;
   }
@@ -86,7 +92,7 @@ async function requestAuthedJson<T>(
 
   if (!response.ok) {
     const { code, detail } = parseErrorPayload(payload);
-    throw new MobileHeightEntriesApiError(detail ?? "Request failed", {
+    throw new MobileSleepSessionsApiError(detail ?? "Request failed", {
       code,
       detail,
     });
@@ -95,50 +101,64 @@ async function requestAuthedJson<T>(
   return payload as T;
 }
 
-function toMobileHeightEntry(raw: RawHeightEntryResponse): MobileHeightEntry {
+function toMobileSleepSession(raw: RawSleepSessionResponse): MobileSleepSession {
   return {
     id: raw.id,
     childId: raw.child_id,
-    valueCm: raw.value_cm,
-    measuredAt: raw.measured_at,
+    startedAt: raw.started_at,
+    endedAt: raw.ended_at ?? null,
+    durationMinutes: raw.duration_minutes ?? null,
+    status: raw.status,
+    createdByAccountId: raw.created_by_account_id ?? null,
   };
 }
 
-export async function fetchLatestMobileHeightEntry(
+export async function fetchActiveMobileSleepSession(
   session: Pick<MobileAuthSession, "accessToken">,
   childId: string,
-): Promise<MobileHeightEntry | null> {
-  const response = await requestAuthedJson<RawHeightEntryResponse | null>(
-    `/height-entries/child/${encodeURIComponent(childId)}/latest`,
-    {
-      method: "GET",
-    },
+): Promise<MobileSleepSession | null> {
+  const response = await requestAuthedJson<RawSleepSessionResponse | null>(
+    `/sleep-sessions/child/${encodeURIComponent(childId)}/active`,
+    { method: "GET" },
     session.accessToken,
   );
 
-  return response ? toMobileHeightEntry(response) : null;
+  return response ? toMobileSleepSession(response) : null;
 }
 
-export async function createMobileHeightEntry(
+export async function startMobileSleepSession(
   session: Pick<MobileAuthSession, "accessToken">,
-  payload: {
-    childId: string;
-    valueCm: number;
-    measuredAt?: string | null;
-  },
-) {
-  const response = await requestAuthedJson<RawHeightEntryResponse>(
-    "/height-entries",
+  input: { childId: string; startedAt?: string | null },
+): Promise<MobileSleepSession> {
+  const response = await requestAuthedJson<RawSleepSessionResponse>(
+    "/sleep-sessions",
     {
       method: "POST",
       body: JSON.stringify({
-        child_id: payload.childId,
-        value_cm: payload.valueCm,
-        measured_at: payload.measuredAt ?? null,
+        child_id: input.childId,
+        started_at: input.startedAt ?? null,
       }),
     },
     session.accessToken,
   );
 
-  return toMobileHeightEntry(response);
+  return toMobileSleepSession(response);
+}
+
+export async function stopMobileSleepSession(
+  session: Pick<MobileAuthSession, "accessToken">,
+  input: { sessionId: string; endedAt?: string | null },
+): Promise<MobileSleepSession> {
+  const response = await requestAuthedJson<RawSleepSessionResponse>(
+    `/sleep-sessions/${encodeURIComponent(input.sessionId)}/stop`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        ended_at: input.endedAt ?? null,
+      }),
+    },
+    session.accessToken,
+  );
+
+  return toMobileSleepSession(response);
 }

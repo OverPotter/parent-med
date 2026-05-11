@@ -13,8 +13,14 @@ import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import { ChildCard } from "../../children/model/childrenRedesign";
+import {
+  childAvatarPresets,
+  getChildAvatarGenderByKey,
+  getChildAvatarSourceByKey,
+  type ChildAvatarPresetKey,
+} from "../../children/model/childrenRedesign";
 import { buildChildProfileEditContent } from "../model/childProfileEdit";
-import { avatarOptions } from "../model/childProfileEditHelpers";
+import { formatBirthDateFromIso } from "../model/childProfileEditHelpers";
 import {
   AvatarPickerSheet,
   BirthDatePickerSheet,
@@ -31,12 +37,24 @@ type ChildProfileEditScreenProps = {
   child: ChildCard;
   visible: boolean;
   onBack: () => void;
+  onSave?: (payload: {
+    name: string;
+    birthDate: string | null;
+    avatarKey: ChildAvatarPresetKey | null;
+    gender: string | null;
+    babyModeEnabled: boolean;
+    allergies: string | null;
+    notes: string | null;
+  }) => void | Promise<void>;
+  onDelete?: (() => void | Promise<void>) | null;
 };
 
 export function ChildProfileEditScreen({
   child,
   visible,
   onBack,
+  onSave,
+  onDelete,
 }: ChildProfileEditScreenProps) {
   const { locale, copy } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
@@ -44,11 +62,16 @@ export function ChildProfileEditScreen({
   const defaultBirthDate = content.sections.main.rows[1]?.value ?? "";
   const defaultAllergies = content.sections.health.rows[0]?.description ?? "";
   const defaultNotes = content.sections.health.rows[1]?.description ?? "";
-  const [selectedAvatarSource, setSelectedAvatarSource] = useState(
-    content.avatarSource,
+  const [selectedAvatarKey, setSelectedAvatarKey] = useState<ChildAvatarPresetKey | null>(
+    (child.child.avatarKey as ChildAvatarPresetKey | null) ?? null,
   );
+  const lockedAvatarGender =
+    (child.child.gender as "boy" | "girl" | null) ??
+    getChildAvatarGenderByKey(child.child.avatarKey as ChildAvatarPresetKey | null) ??
+    getChildAvatarGenderByKey(selectedAvatarKey) ??
+    "boy";
   const [editableName, setEditableName] = useState(content.childName);
-  const [editableBirthDate, setEditableBirthDate] = useState(defaultBirthDate);
+  const [editableBirthDate, setEditableBirthDate] = useState(child.child.birthDate);
   const [editableAllergies, setEditableAllergies] = useState(defaultAllergies);
   const [editableNotes, setEditableNotes] = useState(defaultNotes);
   const [editingField, setEditingField] = useState<"childName" | null>(null);
@@ -70,26 +93,34 @@ export function ChildProfileEditScreen({
   const [babyModeEnabled, setBabyModeEnabled] = useState(
     content.sections.settings.rows[0]?.enabled ?? true,
   );
-  const [liveActivityEnabled, setLiveActivityEnabled] = useState(
-    content.sections.settings.rows[1]?.enabled ?? true,
-  );
+  const defaultBabyModeEnabled = content.sections.settings.rows[0]?.enabled ?? true;
 
   useEffect(() => {
-    setSelectedAvatarSource(content.avatarSource);
+    setSelectedAvatarKey((child.child.avatarKey as ChildAvatarPresetKey | null) ?? null);
     setEditableName(content.childName);
-    setEditableBirthDate(defaultBirthDate);
+    setEditableBirthDate(child.child.birthDate);
     setEditableAllergies(defaultAllergies);
     setEditableNotes(defaultNotes);
     setEditingField(null);
     setTextEditorField(null);
+    setBabyModeEnabled(defaultBabyModeEnabled);
   }, [
-    content.avatarSource,
     content.childName,
+    child.child.avatarKey,
+    child.child.birthDate,
+    defaultBabyModeEnabled,
     defaultAllergies,
     defaultNotes,
-    defaultBirthDate,
     visible,
   ]);
+
+  const avatarOptions = childAvatarPresets.filter(
+    (item) => item.gender === lockedAvatarGender,
+  );
+  const heroAvatarSource =
+    getChildAvatarSourceByKey(selectedAvatarKey) ?? child.avatarSource;
+  const editableBirthDateLabel =
+    formatBirthDateFromIso(editableBirthDate, locale) || defaultBirthDate;
 
   return (
     <Animated.View
@@ -134,17 +165,19 @@ export function ChildProfileEditScreen({
             </View>
 
             <ChildProfileEditHeroCard
-              avatarSource={selectedAvatarSource}
+              avatarSource={heroAvatarSource}
               childName={editableName}
-              childMeta={content.childMeta.replace(defaultBirthDate, editableBirthDate)}
+              childMeta={content.childMeta.replace(defaultBirthDate, editableBirthDateLabel)}
               changePhotoLabel={content.changePhotoLabel}
-              onPressChangePhoto={() => setIsAvatarSheetOpen(true)}
+              onPressChangePhoto={() => {
+                setIsAvatarSheetOpen(true);
+              }}
             />
 
             <ChildProfileMainSection
               content={content}
               editableName={editableName}
-              editableBirthDate={editableBirthDate}
+              editableBirthDate={editableBirthDateLabel}
               editingField={editingField}
               onStartEditingName={() => setEditingField("childName")}
               onChangeName={setEditableName}
@@ -162,14 +195,27 @@ export function ChildProfileEditScreen({
             <ChildProfileTogglesSection
               content={content}
               babyModeEnabled={babyModeEnabled}
-              liveActivityEnabled={liveActivityEnabled}
               onToggleBabyMode={setBabyModeEnabled}
-              onToggleLiveActivity={setLiveActivityEnabled}
             />
 
             <ChildProfileEditActions
               saveLabel={content.actions.save}
               deleteLabel={content.actions.delete}
+              onPressSave={() =>
+                onSave?.({
+                  name: editableName.trim(),
+                  birthDate: editableBirthDate,
+                  avatarKey: selectedAvatarKey,
+                  gender:
+                    selectedAvatarKey != null
+                      ? lockedAvatarGender
+                      : child.child.gender,
+                  babyModeEnabled,
+                  allergies: editableAllergies.trim() || null,
+                  notes: editableNotes.trim() || null,
+                })
+              }
+              onPressDelete={onDelete ?? null}
             />
           </ScrollView>
         </View>
@@ -178,16 +224,17 @@ export function ChildProfileEditScreen({
         visible={isAvatarSheetOpen}
         locale={locale}
         onClose={() => setIsAvatarSheetOpen(false)}
-        selectedAvatarSource={selectedAvatarSource}
-        onSelect={(avatarSource) => {
-          setSelectedAvatarSource(avatarSource);
+        options={avatarOptions}
+        selectedAvatarKey={selectedAvatarKey}
+        onSelect={(avatarKey) => {
+          setSelectedAvatarKey(avatarKey);
           setIsAvatarSheetOpen(false);
         }}
       />
       <BirthDatePickerSheet
         visible={isDateSheetOpen}
         locale={locale}
-        initialValue={editableBirthDate}
+        initialValue={editableBirthDateLabel}
         onClose={() => setIsDateSheetOpen(false)}
         onApply={(value) => {
           setEditableBirthDate(value);

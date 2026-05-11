@@ -183,7 +183,7 @@ const styles = {
     paddingBottom: 120,
     gap: 18,
   },
-  backLink: { alignSelf: "flex-start", paddingVertical: 4 },
+  backLink: { alignSelf: "flex-start" as const, paddingVertical: 4 },
   backLinkText: { color: "#3E4B5C", fontSize: 16, lineHeight: 20, fontWeight: "600" as const },
   header: { gap: 8, paddingHorizontal: 2 },
   title: {

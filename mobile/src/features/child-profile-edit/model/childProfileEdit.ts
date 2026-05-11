@@ -1,6 +1,7 @@
 import { ImageSourcePropType } from "react-native";
 import { MobileLocale, TranslationTree } from "../../../shared/i18n/mobileI18n";
 import { ChildCard } from "../../children/model/childrenRedesign";
+import { formatBirthDateFromIso } from "./childProfileEditHelpers";
 
 export type ChildProfileEditContent = {
   backLabel: string;
@@ -57,8 +58,14 @@ export function buildChildProfileEditContent(
   locale: MobileLocale,
   copy: TranslationTree,
 ): ChildProfileEditContent {
-  const ageValue = getAgeValue(child.stats);
-  const birthDate = copy.editProfileScreen.values.birthDate;
+  const ageValue = child.child.ageLabel ?? getAgeValue(child.stats);
+  const birthDate =
+    formatBirthDateFromIso(child.child.birthDate, locale) ||
+    copy.editProfileScreen.values.birthDate;
+  const allergiesDescription =
+    child.child.allergies?.trim() || copy.editProfileScreen.descriptions.allergies;
+  const notesDescription =
+    child.child.notes?.trim() || copy.editProfileScreen.descriptions.notes;
 
   return {
     backLabel: copy.editProfileScreen.backToProfile,
@@ -97,12 +104,12 @@ export function buildChildProfileEditContent(
           {
             id: "allergies",
             label: copy.editProfileScreen.rows.allergies,
-            description: copy.editProfileScreen.descriptions.allergies,
+            description: allergiesDescription,
           },
           {
             id: "notes",
             label: copy.editProfileScreen.rows.notes,
-            description: copy.editProfileScreen.descriptions.notes,
+            description: notesDescription,
           },
         ],
       },
@@ -113,13 +120,7 @@ export function buildChildProfileEditContent(
             id: "babyMode",
             label: copy.editProfileScreen.rows.babyMode,
             description: copy.editProfileScreen.descriptions.babyMode,
-            enabled: true,
-          },
-          {
-            id: "liveActivity",
-            label: copy.editProfileScreen.rows.liveActivity,
-            description: copy.editProfileScreen.descriptions.liveActivity,
-            enabled: true,
+            enabled: child.child.babyModeEnabled,
           },
         ],
       },

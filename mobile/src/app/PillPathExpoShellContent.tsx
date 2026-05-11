@@ -42,12 +42,14 @@ type RootTabContentProps = {
   activeRootTab: MobileBottomTabKey;
   authSession: MobileAuthSession | null;
   childrenCards: ChildCard[];
+  activeSleepStartedAtByCardId: Record<string, string | null>;
   activeFeedingStartedAtByCardId: Record<string, string | null>;
   activeObservationByCardId: Record<string, boolean>;
   onOpenChildProfile: (cardId: string) => void;
   onOpenChildCreate: () => void;
   onOpenRootJournalEntry: (cardId: string, kind: JournalEntryKind) => void;
   onOpenObservation: (cardId: string) => void;
+  onSleepPress: (cardId: string) => void;
   onFeedingPress: (cardId: string) => void;
   onLogout: () => Promise<void>;
   onOpenSettings: () => void;
@@ -104,23 +106,27 @@ function MoreTabScreen({
 
 function ChildrenTabScreen({
   childrenCards,
+  activeSleepStartedAtByCardId,
   activeFeedingStartedAtByCardId,
   activeObservationByCardId,
   onOpenChildCreate,
   onOpenChildProfile,
   onOpenRootJournalEntry,
   onOpenObservation,
+  onSleepPress,
   onFeedingPress,
   screenLayerStyle,
 }: Pick<
   RootTabContentProps,
   | "childrenCards"
+  | "activeSleepStartedAtByCardId"
   | "activeFeedingStartedAtByCardId"
   | "activeObservationByCardId"
   | "onOpenChildCreate"
   | "onOpenChildProfile"
   | "onOpenRootJournalEntry"
   | "onOpenObservation"
+  | "onSleepPress"
   | "onFeedingPress"
   | "screenLayerStyle"
 >) {
@@ -132,8 +138,10 @@ function ChildrenTabScreen({
         onOpenChildProfile={onOpenChildProfile}
         onOpenJournalEntry={onOpenRootJournalEntry}
         onOpenObservation={onOpenObservation}
+        activeSleepStartedAtByCardId={activeSleepStartedAtByCardId}
         activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
         activeObservationByCardId={activeObservationByCardId}
+        onSleepPress={onSleepPress}
         onFeedingPress={onFeedingPress}
       />
     </View>
@@ -145,12 +153,14 @@ export function RootTabContent({
   activeRootTab,
   authSession,
   childrenCards,
+  activeSleepStartedAtByCardId,
   activeFeedingStartedAtByCardId,
   activeObservationByCardId,
   onOpenChildCreate,
   onOpenChildProfile,
   onOpenRootJournalEntry,
   onOpenObservation,
+  onSleepPress,
   onFeedingPress,
   onLogout,
   onOpenSettings,
@@ -179,12 +189,14 @@ export function RootTabContent({
     return (
       <ChildrenTabScreen
         childrenCards={childrenCards}
+        activeSleepStartedAtByCardId={activeSleepStartedAtByCardId}
         activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
         activeObservationByCardId={activeObservationByCardId}
         onOpenChildCreate={onOpenChildCreate}
         onOpenChildProfile={onOpenChildProfile}
         onOpenRootJournalEntry={onOpenRootJournalEntry}
         onOpenObservation={onOpenObservation}
+        onSleepPress={onSleepPress}
         onFeedingPress={onFeedingPress}
         screenLayerStyle={screenLayerStyle}
       />
@@ -219,6 +231,7 @@ type OverlayScreensProps = {
       name: string;
       birthDate: string | null;
       avatarKey: string | null;
+      gender: string | null;
       babyModeEnabled: boolean;
       weightKg: number | null;
       heightCm: number | null;
@@ -230,6 +243,16 @@ type OverlayScreensProps = {
     onOpenAnalytics: () => void;
     onOpenJournalEntry: (kind: ChildProfileDestination) => void;
     onBackEditProfile: () => void;
+    onSubmitEditProfile: (payload: {
+      name: string;
+      birthDate: string | null;
+      avatarKey: string | null;
+      gender: string | null;
+      babyModeEnabled: boolean;
+      allergies: string | null;
+      notes: string | null;
+    }) => void | Promise<void>;
+    onDeleteChild: () => void | Promise<void>;
     onBackAnalytics: () => void;
     onOpenEpisode: (episode: AnalyticsEpisodeCard) => void;
     onBackAnalyticsEpisode: () => void;
@@ -295,6 +318,8 @@ function SelectedChildOverlays({
         child={selectedChild}
         visible={activeScreen === "childProfileEdit"}
         onBack={childFlow.onBackEditProfile}
+        onSave={childFlow.onSubmitEditProfile}
+        onDelete={childFlow.onDeleteChild}
       />
       {activeScreen === "analytics" || activeScreen === "analyticsBreakdown" ? (
         <AnalyticsScreen

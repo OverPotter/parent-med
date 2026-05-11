@@ -2,6 +2,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  Image,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,

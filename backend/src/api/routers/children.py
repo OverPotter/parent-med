@@ -7,11 +7,22 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Response
 
-from src.api.deps import get_child_export_service, get_child_service, get_current_account
+from src.api.deps import (
+    get_child_export_service,
+    get_child_service,
+    get_child_summary_service,
+    get_current_account,
+)
 from src.application.dto.auth import AuthenticatedAccount
-from src.application.dto.child import ChildCreateDto, ChildResponseDto, ChildUpdateDto
+from src.application.dto.child import (
+    ChildCreateDto,
+    ChildResponseDto,
+    ChildSummaryResponseDto,
+    ChildUpdateDto,
+)
 from src.application.services.child_export_service import ChildExportService
 from src.application.services.child_service import ChildService
+from src.application.services.child_summary_service import ChildSummaryService
 
 router = APIRouter(prefix="/children", tags=["children"])
 
@@ -31,6 +42,16 @@ async def list_children_for_management(
 ) -> list[ChildResponseDto]:
     """Полный список детей в семье для admin-настроек."""
     return await service.get_by_family_id_for_management(family_id, account)
+
+
+@router.get("/summary", response_model=list[ChildSummaryResponseDto])
+async def list_children_summary(
+    family_id: UUID,
+    account: AuthenticatedAccount = Depends(get_current_account),
+    service: ChildSummaryService = Depends(get_child_summary_service),
+) -> list[ChildSummaryResponseDto]:
+    """Сводка по детям для children-карточек."""
+    return await service.list_for_family_for_account(family_id, account)
 
 
 @router.get("/{child_id}", response_model=ChildResponseDto)

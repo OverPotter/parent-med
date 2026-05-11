@@ -7,6 +7,13 @@ type RawWeightEntryResponse = {
   measured_at: string;
 };
 
+export type MobileWeightEntry = {
+  id: string;
+  childId: string;
+  valueKg: number;
+  measuredAt: string;
+};
+
 export class MobileWeightEntriesApiError extends Error {
   code?: string;
   detail?: string;
@@ -88,6 +95,30 @@ async function requestAuthedJson<T>(
   return payload as T;
 }
 
+function toMobileWeightEntry(raw: RawWeightEntryResponse): MobileWeightEntry {
+  return {
+    id: raw.id,
+    childId: raw.child_id,
+    valueKg: raw.value_kg,
+    measuredAt: raw.measured_at,
+  };
+}
+
+export async function fetchLatestMobileWeightEntry(
+  session: Pick<MobileAuthSession, "accessToken">,
+  childId: string,
+): Promise<MobileWeightEntry | null> {
+  const response = await requestAuthedJson<RawWeightEntryResponse | null>(
+    `/weight-entries/child/${encodeURIComponent(childId)}/latest`,
+    {
+      method: "GET",
+    },
+    session.accessToken,
+  );
+
+  return response ? toMobileWeightEntry(response) : null;
+}
+
 export async function createMobileWeightEntry(
   session: Pick<MobileAuthSession, "accessToken">,
   payload: {
@@ -96,7 +127,7 @@ export async function createMobileWeightEntry(
     measuredAt?: string | null;
   },
 ) {
-  return requestAuthedJson<RawWeightEntryResponse>(
+  const response = await requestAuthedJson<RawWeightEntryResponse>(
     "/weight-entries",
     {
       method: "POST",
@@ -108,4 +139,6 @@ export async function createMobileWeightEntry(
     },
     session.accessToken,
   );
+
+  return toMobileWeightEntry(response);
 }

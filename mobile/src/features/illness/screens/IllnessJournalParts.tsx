@@ -125,7 +125,7 @@ function JournalIcon({
 
 function resolveJournalAssetIconStyle(
   context: "chip" | "quickAction" | "entry",
-  variant?: IllnessJournalIconDescriptor["variant"],
+  variant?: "temperatureChip" | "temperatureQuick" | "temperatureEntry",
 ) {
   if (context === "chip") {
     return variant === "temperatureChip"

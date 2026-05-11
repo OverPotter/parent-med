@@ -17,6 +17,18 @@ type RawChildResponse = {
   notes: string | null;
 };
 
+type RawChildActiveSessionSummary = {
+  id: string;
+  started_at: string;
+};
+
+type RawChildSummaryResponse = RawChildResponse & {
+  latest_weight_kg?: number | null;
+  latest_height_cm?: number | null;
+  active_sleep_session?: RawChildActiveSessionSummary | null;
+  active_feeding_record?: RawChildActiveSessionSummary | null;
+};
+
 export type MobileChildSummary = {
   id: string;
   familyId: string;
@@ -26,6 +38,22 @@ export type MobileChildSummary = {
   babyModeEnabled: boolean;
   avatarKey: string | null;
   gender: string | null;
+  allergies: string | null;
+  notes: string | null;
+};
+
+export type MobileChildModuleSummary = {
+  child: MobileChildSummary;
+  latestWeightKg: number | null;
+  latestHeightCm: number | null;
+  activeSleepSession: {
+    id: string;
+    startedAt: string;
+  } | null;
+  activeFeedingRecord: {
+    id: string;
+    startedAt: string;
+  } | null;
 };
 
 export type CreateMobileChildInput = {
@@ -34,6 +62,16 @@ export type CreateMobileChildInput = {
   avatarKey: string | null;
   gender: string | null;
   babyModeEnabled?: boolean;
+  allergies?: string | null;
+  notes?: string | null;
+};
+
+export type UpdateMobileChildInput = {
+  name?: string | null;
+  birthDate?: string | null;
+  avatarKey?: string | null;
+  gender?: string | null;
+  babyModeEnabled?: boolean | null;
   allergies?: string | null;
   notes?: string | null;
 };
@@ -129,6 +167,30 @@ function toMobileChildSummary(raw: RawChildResponse): MobileChildSummary {
     babyModeEnabled: Boolean(raw.baby_mode_enabled),
     avatarKey: raw.avatar_key ?? null,
     gender: raw.gender ?? null,
+    allergies: raw.allergies ?? null,
+    notes: raw.notes ?? null,
+  };
+}
+
+function toMobileChildModuleSummary(
+  raw: RawChildSummaryResponse,
+): MobileChildModuleSummary {
+  return {
+    child: toMobileChildSummary(raw),
+    latestWeightKg: raw.latest_weight_kg ?? null,
+    latestHeightCm: raw.latest_height_cm ?? null,
+    activeSleepSession: raw.active_sleep_session
+      ? {
+          id: raw.active_sleep_session.id,
+          startedAt: raw.active_sleep_session.started_at,
+        }
+      : null,
+    activeFeedingRecord: raw.active_feeding_record
+      ? {
+          id: raw.active_feeding_record.id,
+          startedAt: raw.active_feeding_record.started_at,
+        }
+      : null,
   };
 }
 
@@ -142,6 +204,18 @@ export async function fetchMobileChildren(
   );
 
   return response.map(toMobileChildSummary);
+}
+
+export async function fetchMobileChildrenSummary(
+  session: Pick<MobileAuthSession, "accessToken" | "account">,
+): Promise<MobileChildModuleSummary[]> {
+  const response = await requestAuthedJson<RawChildSummaryResponse[]>(
+    `/children/summary?family_id=${encodeURIComponent(session.account.familyId)}`,
+    { method: "GET" },
+    session.accessToken,
+  );
+
+  return response.map(toMobileChildModuleSummary);
 }
 
 export async function createMobileChild(
@@ -167,4 +241,65 @@ export async function createMobileChild(
   );
 
   return toMobileChildSummary(response);
+}
+
+export async function updateMobileChild(
+  session: Pick<MobileAuthSession, "accessToken">,
+  childId: string,
+  input: UpdateMobileChildInput,
+): Promise<MobileChildSummary> {
+  const body: Record<string, unknown> = {};
+
+  if ("name" in input) {
+    body.name = input.name?.trim() || null;
+  }
+
+  if ("birthDate" in input) {
+    body.birth_date = input.birthDate;
+  }
+
+  if ("babyModeEnabled" in input) {
+    body.baby_mode_enabled =
+      typeof input.babyModeEnabled === "boolean" ? input.babyModeEnabled : null;
+  }
+
+  if ("allergies" in input) {
+    body.allergies = input.allergies;
+  }
+
+  if ("notes" in input) {
+    body.notes = input.notes;
+  }
+
+  if ("avatarKey" in input) {
+    body.avatar_key = input.avatarKey;
+  }
+
+  if ("gender" in input) {
+    body.gender = input.gender;
+  }
+
+  const response = await requestAuthedJson<RawChildResponse>(
+    `/children/${encodeURIComponent(childId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    },
+    session.accessToken,
+  );
+
+  return toMobileChildSummary(response);
+}
+
+export async function deleteMobileChild(
+  session: Pick<MobileAuthSession, "accessToken">,
+  childId: string,
+): Promise<void> {
+  await requestAuthedJson<null>(
+    `/children/${encodeURIComponent(childId)}`,
+    {
+      method: "DELETE",
+    },
+    session.accessToken,
+  );
 }

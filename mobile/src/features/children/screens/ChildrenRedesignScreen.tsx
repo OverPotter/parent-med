@@ -25,9 +25,11 @@ type ChildrenRedesignScreenProps = {
   onOpenChildProfile?: (cardId: string) => void;
   onOpenJournalEntry?: (cardId: string, kind: JournalEntryKind) => void;
   onOpenObservation?: (cardId: string) => void;
+  activeSleepStartedAtByCardId?: Record<string, string | null>;
   activeFeedingStartedAtByCardId?: Record<string, string | null>;
   activeObservationByCardId?: Record<string, boolean>;
   onFeedingPress?: (cardId: string) => void;
+  onSleepPress?: (cardId: string) => void;
 };
 
 const noop = () => {};
@@ -42,9 +44,11 @@ export function ChildrenRedesignScreen({
   onOpenChildProfile,
   onOpenJournalEntry,
   onOpenObservation,
+  activeSleepStartedAtByCardId = {},
   activeFeedingStartedAtByCardId = {},
   activeObservationByCardId = {},
   onFeedingPress = noop,
+  onSleepPress = noop,
 }: ChildrenRedesignScreenProps) {
   const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
@@ -56,8 +60,6 @@ export function ChildrenRedesignScreen({
   const [collapsedCardIds, setCollapsedCardIds] = useState<string[]>(
     cardsToRender.map((card) => card.nodeId),
   );
-  const [activeSleepStartedAtByCardId, setActiveSleepStartedAtByCardId] =
-    useState<Record<string, string | null>>({});
   const [now, setNow] = useState(Date.now());
   const [pendingStopAction, setPendingStopAction] =
     useState<PendingStopAction>(null);
@@ -65,9 +67,7 @@ export function ChildrenRedesignScreen({
     ? buildChildrenStopActionCopy(locale, pendingStopAction.kind)
     : null;
 
-  const hasActiveSleep = Object.values(activeSleepStartedAtByCardId).some(
-    Boolean,
-  );
+  const hasActiveSleep = Object.values(activeSleepStartedAtByCardId).some(Boolean);
   const hasActiveFeeding = Object.values(activeFeedingStartedAtByCardId).some(
     Boolean,
   );
@@ -108,10 +108,7 @@ export function ChildrenRedesignScreen({
     }
 
     setNow(Date.now());
-    setActiveSleepStartedAtByCardId((current) => ({
-      ...current,
-      [cardId]: new Date().toISOString(),
-    }));
+    onSleepPress(cardId);
   };
 
   const handleFeedingQuickActionPress = (cardId: string) => {
@@ -133,10 +130,7 @@ export function ChildrenRedesignScreen({
 
     if (pendingStopAction.kind === "sleep") {
       setNow(Date.now());
-      setActiveSleepStartedAtByCardId((current) => ({
-        ...current,
-        [pendingStopAction.cardId]: null,
-      }));
+      onSleepPress(pendingStopAction.cardId);
     } else {
       onFeedingPress(pendingStopAction.cardId);
     }
