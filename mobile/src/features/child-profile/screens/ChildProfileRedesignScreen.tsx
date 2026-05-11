@@ -106,7 +106,18 @@ export function ChildProfileRedesignScreen({
                 </View>
 
                 <View style={styles.summary}>
-                  <Text style={styles.childName}>{content.childName}</Text>
+                  <View style={styles.nameRow}>
+                    <Text style={styles.childName}>{content.childName}</Text>
+                    <Pressable
+                      onPress={handleEditProfile}
+                      style={({ pressed }) => [
+                        styles.editButton,
+                        pressed ? styles.editButtonPressed : null,
+                      ]}
+                    >
+                      <Feather name="edit-2" size={16} color="#E0846D" />
+                    </Pressable>
+                  </View>
 
                   <View style={styles.statsRow}>
                     <StatsChip
@@ -117,42 +128,24 @@ export function ChildProfileRedesignScreen({
                       label={copy.childProfile.stats.weight}
                       value={content.weightValue}
                     />
-                  </View>
-
-                  <View style={styles.statsRow}>
                     <StatsChip
                       label={copy.childProfile.stats.height}
                       value={content.heightValue}
                     />
-                    <StatsChip
-                      label={copy.childProfile.stats.allergies}
-                      value={content.allergiesValue}
-                    />
                   </View>
+
+                  {content.statusPills.length > 0 ? (
+                    <View style={styles.statusPillsRow}>
+                      {content.statusPills.map((pill) => (
+                        <View key={pill} style={styles.statusPill}>
+                          <View style={styles.statusPillDot} />
+                          <Text style={styles.statusPillText}>{pill}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
                 </View>
               </View>
-
-              <View style={styles.statusPillsRow}>
-                {content.statusPills.map((pill) => (
-                  <View key={pill} style={styles.statusPill}>
-                    <View style={styles.statusPillDot} />
-                    <Text style={styles.statusPillText}>{pill}</Text>
-                  </View>
-                ))}
-              </View>
-
-              <Pressable
-                onPress={handleEditProfile}
-                style={({ pressed }) => [
-                  styles.editButton,
-                  pressed ? styles.editButtonPressed : null,
-                ]}
-              >
-                <Feather name="edit-2" size={14} color="#E0846D" />
-                <Text style={styles.editButtonText}>
-                  {content.editProfileLabel}
-                </Text>
-              </Pressable>
             </View>
 
             <Text style={styles.sectionTitle}>{content.journalTitle}</Text>
@@ -191,17 +184,19 @@ export function ChildProfileRedesignScreen({
               ))}
             </View>
 
-            <Pressable
-              disabled
-              style={({ pressed }) => [
-                styles.notesBlock,
-                styles.disabledCard,
-                pressed ? styles.notesPressed : null,
-              ]}
-            >
-              <Text style={styles.notesTitle}>{content.notesTitle}</Text>
+            <View style={[styles.notesBlock, styles.disabledCard]}>
+              <View style={styles.infoRow}>
+                <Text style={styles.notesTitle}>{copy.childProfile.stats.allergies}</Text>
+                <Text style={styles.infoOptional}>{content.allergiesOptionalLabel}</Text>
+              </View>
+              <Text style={styles.notesBody}>{content.allergiesValue}</Text>
+              <View style={styles.infoDivider} />
+              <View style={styles.infoRow}>
+                <Text style={styles.notesTitle}>{content.notesTitle}</Text>
+                <Text style={styles.infoOptional}>{content.notesOptionalLabel}</Text>
+              </View>
               <Text style={styles.notesBody}>{content.notesBody}</Text>
-            </Pressable>
+            </View>
 
             <Pressable
               onPress={() => setIsExportSheetOpen(true)}

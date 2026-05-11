@@ -80,13 +80,11 @@ export type TranslationTree = {
       allergies: string;
       notes: string;
       babyMode: string;
-      liveActivity: string;
     };
     descriptions: {
       allergies: string;
       notes: string;
       babyMode: string;
-      liveActivity: string;
     };
     values: {
       birthDate: string;
@@ -177,13 +175,11 @@ const ru: TranslationTree = {
       allergies: "Аллергии",
       notes: "Заметки",
       babyMode: "Режим малыша",
-      liveActivity: "Live Activity",
     },
     descriptions: {
       allergies: "Орехи, сезонная аллергия",
       notes: "Важные наблюдения и комментарии",
       babyMode: "Добавляет сон, кормление и историю дня.",
-      liveActivity: "Показывать события на экране блокировки.",
     },
     values: {
       birthDate: "4 февраля 2022",
@@ -275,13 +271,11 @@ const en: TranslationTree = {
       allergies: "Allergies",
       notes: "Notes",
       babyMode: "Baby mode",
-      liveActivity: "Live Activity",
     },
     descriptions: {
       allergies: "Nuts, seasonal allergy",
       notes: "Important observations and comments",
       babyMode: "Adds sleep, feeding, and day history.",
-      liveActivity: "Show events on the lock screen.",
     },
     values: {
       birthDate: "4 February 2022",
@@ -372,13 +366,11 @@ const pl: TranslationTree = {
       allergies: "Alergie",
       notes: "Notatki",
       babyMode: "Tryb malucha",
-      liveActivity: "Live Activity",
     },
     descriptions: {
       allergies: "Orzechy, alergia sezonowa",
       notes: "Ważne obserwacje i komentarze",
       babyMode: "Dodaje sen, karmienie i historię dnia.",
-      liveActivity: "Pokazuj wydarzenia na ekranie blokady.",
     },
     values: {
       birthDate: "4 lutego 2022",
@@ -470,13 +462,11 @@ const de: TranslationTree = {
       allergies: "Allergien",
       notes: "Notizen",
       babyMode: "Babymodus",
-      liveActivity: "Live Activity",
     },
     descriptions: {
       allergies: "Nüsse, saisonale Allergie",
       notes: "Wichtige Beobachtungen und Kommentare",
       babyMode: "Fügt Schlaf, Fütterung und Tagesverlauf hinzu.",
-      liveActivity: "Ereignisse auf dem Sperrbildschirm anzeigen.",
     },
     values: {
       birthDate: "4. Februar 2022",

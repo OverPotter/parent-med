@@ -88,11 +88,18 @@ export const styles = StyleSheet.create({
     flex: 1,
     gap: 7,
   },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
   childName: {
     color: "#243142",
     fontSize: 30,
     lineHeight: 34,
     fontWeight: "700",
+    flex: 1,
   },
   statsRow: {
     flexDirection: "row",
@@ -101,24 +108,30 @@ export const styles = StyleSheet.create({
   statsChip: {
     minWidth: 0,
     flex: 1,
-    gap: 3,
+    gap: 2,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    borderWidth: 0,
+    backgroundColor: "transparent",
   },
   statsLabel: {
     color: "#6A7889",
-    fontSize: 12,
-    lineHeight: 14,
+    fontSize: 11,
+    lineHeight: 13,
     fontWeight: "600",
   },
   statsValue: {
     color: "#243142",
     fontSize: 13,
     lineHeight: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   statusPillsRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
+    justifyContent: "flex-end",
     gap: 10,
+    marginTop: 2,
   },
   statusPill: {
     flexDirection: "row",
@@ -144,12 +157,11 @@ export const styles = StyleSheet.create({
     fontWeight: "600",
   },
   editButton: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    minHeight: 38,
-    paddingHorizontal: 14,
+    justifyContent: "center",
+    width: 38,
+    height: 38,
+    flexShrink: 0,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: "#E9CBBE",
@@ -158,12 +170,6 @@ export const styles = StyleSheet.create({
   editButtonPressed: {
     opacity: 0.88,
     transform: [{ scale: 0.98 }],
-  },
-  editButtonText: {
-    color: "#3E4B5C",
-    fontSize: 13,
-    lineHeight: 16,
-    fontWeight: "600",
   },
   sectionTitle: {
     marginTop: 4,
@@ -225,6 +231,23 @@ export const styles = StyleSheet.create({
   },
   disabledCard: {
     opacity: 0.6,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  infoOptional: {
+    color: "#9AA7B3",
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: "600",
+  },
+  infoDivider: {
+    height: 1,
+    backgroundColor: "#F0DDD4",
+    marginVertical: 2,
   },
   notesTitle: {
     color: "#243142",

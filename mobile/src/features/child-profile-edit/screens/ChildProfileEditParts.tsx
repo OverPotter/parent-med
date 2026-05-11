@@ -16,12 +16,21 @@ import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type { ChildProfileEditContent } from "../model/childProfileEdit";
 import {
   avatarOptions,
+  birthDatePartsToIso,
   formatBirthDate,
   getEditProfileSheetCopy,
+  isCompactAvatarPresetKey,
   getMonths,
   parseBirthDate,
+  type ChildAvatarPresetKey,
 } from "../model/childProfileEditHelpers";
 import { styles } from "./childProfileEditStyles";
+
+function resolveAvatarOptionImageStyle(key: ChildAvatarPresetKey) {
+  return isCompactAvatarPresetKey(key)
+    ? [styles.avatarOptionImage, styles.avatarOptionImageCompact]
+    : styles.avatarOptionImage;
+}
 
 export function ChildProfileEditHeroCard({
   avatarSource,
@@ -181,54 +190,28 @@ export function ChildProfileHealthSection({
 export function ChildProfileTogglesSection({
   content,
   babyModeEnabled,
-  liveActivityEnabled,
   onToggleBabyMode,
-  onToggleLiveActivity,
 }: {
   content: ChildProfileEditContent;
   babyModeEnabled: boolean;
-  liveActivityEnabled: boolean;
   onToggleBabyMode: (value: boolean) => void;
-  onToggleLiveActivity: (value: boolean) => void;
 }) {
   return (
     <View style={styles.sectionWrap}>
       <Text style={styles.sectionTitle}>{content.sections.settings.title}</Text>
       <View style={styles.cardList}>
-        <View>
-          <View style={[styles.listRow, styles.listRowMultiline]}>
-            <View style={styles.rowTextWrap}>
-              <Text style={styles.rowLabel}>{content.sections.settings.rows[0]?.label}</Text>
-              <Text style={styles.rowDescription}>
-                {content.sections.settings.rows[0]?.description}
-              </Text>
-            </View>
-
-            <View style={styles.settingToggleWrap}>
-              <Switch
-                value={babyModeEnabled}
-                onValueChange={onToggleBabyMode}
-                trackColor={{ false: "#E7DDD7", true: "#46C06F" }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor="#E7DDD7"
-              />
-            </View>
-          </View>
-          <View style={styles.rowDivider} />
-        </View>
-
         <View style={[styles.listRow, styles.listRowMultiline]}>
           <View style={styles.rowTextWrap}>
-            <Text style={styles.rowLabel}>{content.sections.settings.rows[1]?.label}</Text>
+            <Text style={styles.rowLabel}>{content.sections.settings.rows[0]?.label}</Text>
             <Text style={styles.rowDescription}>
-              {content.sections.settings.rows[1]?.description}
+              {content.sections.settings.rows[0]?.description}
             </Text>
           </View>
 
           <View style={styles.settingToggleWrap}>
             <Switch
-              value={liveActivityEnabled}
-              onValueChange={onToggleLiveActivity}
+              value={babyModeEnabled}
+              onValueChange={onToggleBabyMode}
               trackColor={{ false: "#E7DDD7", true: "#46C06F" }}
               thumbColor="#FFFFFF"
               ios_backgroundColor="#E7DDD7"
@@ -293,15 +276,17 @@ type AvatarPickerSheetProps = {
   visible: boolean;
   locale: MobileLocale;
   onClose: () => void;
-  selectedAvatarSource: (typeof avatarOptions)[number];
-  onSelect: (avatarSource: (typeof avatarOptions)[number]) => void;
+  options: typeof avatarOptions;
+  selectedAvatarKey: ChildAvatarPresetKey | null;
+  onSelect: (avatarKey: ChildAvatarPresetKey) => void;
 };
 
 export function AvatarPickerSheet({
   visible,
   locale,
   onClose,
-  selectedAvatarSource,
+  options,
+  selectedAvatarKey,
   onSelect,
 }: AvatarPickerSheetProps) {
   const sheetCopy = getEditProfileSheetCopy(locale);
@@ -322,14 +307,18 @@ export function AvatarPickerSheet({
             <Text style={styles.sheetSubtitle}>{sheetCopy.avatarSubtitle}</Text>
           </View>
 
-          <View style={styles.avatarOptionsGrid}>
-            {avatarOptions.map((avatarSource, index) => {
-              const isSelected = selectedAvatarSource === avatarSource;
+          <ScrollView
+            style={styles.avatarGridScroll}
+            contentContainerStyle={styles.avatarOptionsGrid}
+            showsVerticalScrollIndicator={false}
+          >
+            {options.map((avatarOption) => {
+              const isSelected = selectedAvatarKey === avatarOption.key;
 
               return (
                 <Pressable
-                  key={`avatar-${index}`}
-                  onPress={() => requestClose(() => onSelect(avatarSource))}
+                  key={avatarOption.key}
+                  onPress={() => requestClose(() => onSelect(avatarOption.key))}
                   style={({ pressed }) => [
                     styles.avatarOption,
                     isSelected ? styles.avatarOptionSelected : null,
@@ -337,14 +326,14 @@ export function AvatarPickerSheet({
                   ]}
                 >
                   <Image
-                    source={avatarSource}
-                    style={styles.avatarOptionImage}
-                    resizeMode="cover"
+                    source={avatarOption.source}
+                    style={resolveAvatarOptionImageStyle(avatarOption.key)}
+                    resizeMode="contain"
                   />
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
         </>
       )}
     </FormBottomSheet>
@@ -477,7 +466,13 @@ export function BirthDatePickerSheet({
           <Pressable
             onPress={() =>
               requestClose(() =>
-                onApply(formatBirthDate(selectedDay, selectedMonthIndex, selectedYear, locale)),
+                onApply(
+                  birthDatePartsToIso(
+                    selectedDay,
+                    selectedMonthIndex,
+                    selectedYear,
+                  ),
+                ),
               )
             }
             style={({ pressed }) => [

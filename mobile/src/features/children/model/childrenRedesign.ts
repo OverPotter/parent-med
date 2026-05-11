@@ -20,11 +20,6 @@ type SourceChildCardSpec = {
   info: {
     nameText: string;
     statsText: string;
-    lastRecordText: string;
-    liveActivityChip: {
-      visible: boolean;
-      text?: string;
-    };
   };
   quickActions: SourceQuickActionSpec[];
 };
@@ -60,8 +55,33 @@ export type ChildAvatarPresetKey =
   | "boy_black_hair"
   | "boy_red_hair"
   | "boy"
+  | "boy_glasses"
+  | "boy_curls_dark"
+  | "boy_curls_light"
+  | "boy_spiky_dark"
   | "girl_blonde"
-  | "girl";
+  | "girl"
+  | "girl_pigtails"
+  | "girl_braid_glasses"
+  | "girl_headband"
+  | "girl_red_curls"
+  | "girl_dark_bob"
+  | "girl_dark_curls_bow"
+  | "girl_brown_clip"
+  | "girl_dark_bob_flower"
+  | "baby_boy"
+  | "baby_boy_curls"
+  | "baby_boy_blonde_blue"
+  | "baby_boy_dark_side"
+  | "baby_boy_blonde_short"
+  | "baby_boy_brown_curls"
+  | "baby_girl_curls"
+  | "baby_girl_blonde_pigtails"
+  | "baby_girl_blonde_pigtails_alt"
+  | "baby_girl_dark_sideclip"
+  | "baby_girl_dark_puff_buns"
+  | "baby_girl_curls_bow"
+  | "baby_girl_red_bob_flower";
 
 export type ChildrenStopActionKind = "sleep" | "feeding";
 
@@ -72,12 +92,25 @@ export type ChildQuickAction = {
   imageSource: ImageSourcePropType;
 };
 
+export type ChildCardChild = {
+  id: string;
+  name: string;
+  ageLabel: string | null;
+  weightValue: string;
+  heightValue: string;
+  birthDate: string | null;
+  babyModeEnabled: boolean;
+  avatarKey: string | null;
+  gender: string | null;
+  allergies: string | null;
+  notes: string | null;
+};
+
 export type ChildCard = {
   nodeId: string;
   name: string;
   stats: string;
-  liveActivityVisible: boolean;
-  liveActivityText: string;
+  child: ChildCardChild;
   avatarSource: ImageSourcePropType;
   quickActions: ChildQuickAction[];
 };
@@ -132,6 +165,26 @@ export const childAvatarPresets: Array<{
     source: childrenScreenAssets.avatars.boy,
   },
   {
+    key: "boy_glasses",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.boyGlasses,
+  },
+  {
+    key: "boy_curls_dark",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.boyCurlsDark,
+  },
+  {
+    key: "boy_curls_light",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.boyCurlsLight,
+  },
+  {
+    key: "boy_spiky_dark",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.child3,
+  },
+  {
     key: "girl_blonde",
     gender: "girl",
     source: childrenScreenAssets.avatars.girlBlonde,
@@ -141,14 +194,144 @@ export const childAvatarPresets: Array<{
     gender: "girl",
     source: childrenScreenAssets.avatars.girl,
   },
+  {
+    key: "girl_pigtails",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.girlPigtails,
+  },
+  {
+    key: "girl_braid_glasses",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.girlBraidGlasses,
+  },
+  {
+    key: "girl_headband",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.girlHeadband,
+  },
+  {
+    key: "girl_red_curls",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.girlRedCurls,
+  },
+  {
+    key: "girl_dark_bob",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.girlDarkBob,
+  },
+  {
+    key: "girl_dark_curls_bow",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.girlDarkCurlsBow,
+  },
+  {
+    key: "girl_brown_clip",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.child1,
+  },
+  {
+    key: "girl_dark_bob_flower",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.child2,
+  },
+  {
+    key: "baby_boy",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.babyBoy,
+  },
+  {
+    key: "baby_boy_curls",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.babyBoyCurls,
+  },
+  {
+    key: "baby_boy_blonde_blue",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.babyBoyBlondeBlue,
+  },
+  {
+    key: "baby_boy_dark_side",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.babyBoyDarkSide,
+  },
+  {
+    key: "baby_boy_blonde_short",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.babyBoyBlondeShort,
+  },
+  {
+    key: "baby_boy_brown_curls",
+    gender: "boy",
+    source: childrenScreenAssets.avatars.babyBoyBrownCurls,
+  },
+  {
+    key: "baby_girl_curls",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.babyGirlCurls,
+  },
+  {
+    key: "baby_girl_blonde_pigtails",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.babyGirlBlondePigtails,
+  },
+  {
+    key: "baby_girl_blonde_pigtails_alt",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.babyGirlBlondePigtailsAlt,
+  },
+  {
+    key: "baby_girl_dark_sideclip",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.babyGirlDarkSideclip,
+  },
+  {
+    key: "baby_girl_dark_puff_buns",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.babyGirlDarkPuffBuns,
+  },
+  {
+    key: "baby_girl_curls_bow",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.babyGirlCurlsBow,
+  },
+  {
+    key: "baby_girl_red_bob_flower",
+    gender: "girl",
+    source: childrenScreenAssets.avatars.babyGirlRedBobFlower,
+  },
 ];
 
 const avatarByKey: Record<string, ImageSourcePropType> = {
   boy_black_hair: childrenScreenAssets.avatars.boyBlackHair,
   boy_red_hair: childrenScreenAssets.avatars.boyRedHair,
+  boy_glasses: childrenScreenAssets.avatars.boyGlasses,
+  boy_curls_dark: childrenScreenAssets.avatars.boyCurlsDark,
+  boy_curls_light: childrenScreenAssets.avatars.boyCurlsLight,
+  boy_spiky_dark: childrenScreenAssets.avatars.child3,
   girl_blonde: childrenScreenAssets.avatars.girlBlonde,
   boy: childrenScreenAssets.avatars.boy,
   girl: childrenScreenAssets.avatars.girl,
+  girl_pigtails: childrenScreenAssets.avatars.girlPigtails,
+  girl_braid_glasses: childrenScreenAssets.avatars.girlBraidGlasses,
+  girl_headband: childrenScreenAssets.avatars.girlHeadband,
+  girl_red_curls: childrenScreenAssets.avatars.girlRedCurls,
+  girl_dark_bob: childrenScreenAssets.avatars.girlDarkBob,
+  girl_dark_curls_bow: childrenScreenAssets.avatars.girlDarkCurlsBow,
+  girl_brown_clip: childrenScreenAssets.avatars.child1,
+  girl_dark_bob_flower: childrenScreenAssets.avatars.child2,
+  baby_boy: childrenScreenAssets.avatars.babyBoy,
+  baby_boy_curls: childrenScreenAssets.avatars.babyBoyCurls,
+  baby_boy_blonde_blue: childrenScreenAssets.avatars.babyBoyBlondeBlue,
+  baby_boy_dark_side: childrenScreenAssets.avatars.babyBoyDarkSide,
+  baby_boy_blonde_short: childrenScreenAssets.avatars.babyBoyBlondeShort,
+  baby_boy_brown_curls: childrenScreenAssets.avatars.babyBoyBrownCurls,
+  baby_girl_curls: childrenScreenAssets.avatars.babyGirlCurls,
+  baby_girl_blonde_pigtails: childrenScreenAssets.avatars.babyGirlBlondePigtails,
+  baby_girl_blonde_pigtails_alt: childrenScreenAssets.avatars.babyGirlBlondePigtailsAlt,
+  baby_girl_dark_sideclip: childrenScreenAssets.avatars.babyGirlDarkSideclip,
+  baby_girl_dark_puff_buns: childrenScreenAssets.avatars.babyGirlDarkPuffBuns,
+  baby_girl_curls_bow: childrenScreenAssets.avatars.babyGirlCurlsBow,
+  baby_girl_red_bob_flower: childrenScreenAssets.avatars.babyGirlRedBobFlower,
   child1: childrenScreenAssets.avatars.child1,
   child2: childrenScreenAssets.avatars.child2,
   child3: childrenScreenAssets.avatars.child3,
@@ -253,12 +436,23 @@ export function getChildAvatarGenderByKey(
   return childAvatarPresets.find((item) => item.key === avatarKey)?.gender ?? null;
 }
 
+export function isCompactAvatarPresetKey(key: ChildAvatarPresetKey) {
+  return key === "girl_dark_bob";
+}
+
 function buildCardStatsLabel(
   child: Pick<MobileChildSummary, "ageLabel" | "babyModeEnabled">,
+  latestMetrics: { weightValue: string; heightValue: string },
   locale: MobileLocale,
 ) {
-  if (child.ageLabel) {
-    return child.ageLabel;
+  const parts = [
+    child.ageLabel,
+    latestMetrics.weightValue || null,
+    latestMetrics.heightValue || null,
+  ].filter(Boolean);
+
+  if (parts.length > 0) {
+    return parts.join(" • ");
   }
 
   if (child.babyModeEnabled) {
@@ -269,6 +463,26 @@ function buildCardStatsLabel(
   }
 
   return "";
+}
+
+function formatWeightValue(valueKg: number | null | undefined, locale: MobileLocale) {
+  if (typeof valueKg !== "number") {
+    return "";
+  }
+
+  const formatted =
+    locale === "ru" || locale === "de" || locale === "pl"
+      ? valueKg.toFixed(1).replace(".", ",")
+      : valueKg.toFixed(1);
+  return `${formatted} ${locale === "ru" ? "кг" : "kg"}`;
+}
+
+function formatHeightValue(valueCm: number | null | undefined, locale: MobileLocale) {
+  if (typeof valueCm !== "number") {
+    return "";
+  }
+
+  return `${Math.round(valueCm)} ${locale === "ru" ? "см" : "cm"}`;
 }
 
 function mapTabKey(label: string): MobileBottomTabKey {
@@ -354,8 +568,19 @@ export function buildChildrenScreenContent(
       nodeId: card.nodeId,
       name: card.info.nameText,
       stats: card.info.statsText,
-      liveActivityVisible: card.info.liveActivityChip.visible,
-      liveActivityText: card.info.liveActivityChip.text ?? "",
+      child: {
+        id: card.nodeId,
+        name: card.info.nameText,
+        ageLabel: null,
+        weightValue: "",
+        heightValue: "",
+        birthDate: null,
+        babyModeEnabled: false,
+        avatarKey: null,
+        gender: null,
+        allergies: null,
+        notes: null,
+      },
       avatarSource: avatarSequence[index % avatarSequence.length],
       quickActions: card.quickActions.map((action) =>
         mapQuickAction(action, quickActionByTitle),
@@ -381,31 +606,68 @@ export function buildChildrenScreenContent(
 export function buildChildrenCardsFromApi(
   children: MobileChildSummary[],
   locale: MobileLocale,
+  latestEntriesByChildId?: Record<
+    string,
+    { weightKg?: number | null; heightCm?: number | null } | undefined
+  >,
 ): ChildCard[] {
   const quickActionByTitle = buildQuickActionMap(locale);
   const fallbackQuickActions = screenSpec.childrenCards[0]?.quickActions ?? [];
+  const buildApiQuickActions = (childId: string, babyModeEnabled: boolean) =>
+    fallbackQuickActions
+      .filter((action) => {
+        const mapped = quickActionByTitle[action.title];
 
-  return children.map((child, index) => ({
-    nodeId: child.id,
-    name: child.name,
-    stats: buildCardStatsLabel(child, locale),
-    liveActivityVisible: false,
-    liveActivityText: "",
-    avatarSource: resolveAvatarSourceWithGender(
-      child.avatarKey,
-      child.gender,
-      index,
-    ),
-    quickActions: fallbackQuickActions.map((action) =>
-      mapQuickAction(
-        {
-          ...action,
-          nodeId: `${child.id}:${action.nodeId}`,
-        },
-        quickActionByTitle,
+        if (!mapped) {
+          return true;
+        }
+
+        if (!babyModeEnabled) {
+          return mapped.kind !== "sleep" && mapped.kind !== "feeding";
+        }
+
+        return true;
+      })
+      .map((action) =>
+        mapQuickAction(
+          {
+            ...action,
+            nodeId: `${childId}:${action.nodeId}`,
+          },
+          quickActionByTitle,
+        ),
+      );
+
+  return children.map((child, index) => {
+    const latestMetrics = latestEntriesByChildId?.[child.id];
+    const weightValue = formatWeightValue(latestMetrics?.weightKg, locale);
+    const heightValue = formatHeightValue(latestMetrics?.heightCm, locale);
+
+    return {
+      nodeId: child.id,
+      name: child.name,
+      stats: buildCardStatsLabel(child, { weightValue, heightValue }, locale),
+      child: {
+        id: child.id,
+        name: child.name,
+        ageLabel: child.ageLabel,
+        weightValue,
+        heightValue,
+        birthDate: child.birthDate,
+        babyModeEnabled: child.babyModeEnabled,
+        avatarKey: child.avatarKey,
+        gender: child.gender,
+        allergies: child.allergies,
+        notes: child.notes,
+      },
+      avatarSource: resolveAvatarSourceWithGender(
+        child.avatarKey,
+        child.gender,
+        index,
       ),
-    ),
-  }));
+      quickActions: buildApiQuickActions(child.id, child.babyModeEnabled),
+    };
+  });
 }
 
 export function buildChildrenStopActionCopy(

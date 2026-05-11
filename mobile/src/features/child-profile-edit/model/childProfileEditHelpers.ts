@@ -1,16 +1,17 @@
-import { childrenScreenAssets } from "../../../redesign/screens/children/manifest";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import {
+  childAvatarPresets,
+  getChildAvatarSourceByKey,
+  isCompactAvatarPresetKey,
+  type ChildAvatarGender,
+  type ChildAvatarPresetKey,
+} from "../../children/model/childrenRedesign";
 
-export const avatarOptions = [
-  childrenScreenAssets.avatars.boyBlackHair,
-  childrenScreenAssets.avatars.boyRedHair,
-  childrenScreenAssets.avatars.girlBlonde,
-  childrenScreenAssets.avatars.boy,
-  childrenScreenAssets.avatars.girl,
-  childrenScreenAssets.avatars.child1,
-  childrenScreenAssets.avatars.child2,
-  childrenScreenAssets.avatars.child3,
-] as const;
+export type { ChildAvatarPresetKey } from "../../children/model/childrenRedesign";
+export type { ChildAvatarGender } from "../../children/model/childrenRedesign";
+export { isCompactAvatarPresetKey } from "../../children/model/childrenRedesign";
+
+export const avatarOptions = childAvatarPresets;
 
 const ruMonths = [
   "января",
@@ -155,4 +156,42 @@ export function formatBirthDate(
 ) {
   const months = getMonths(locale);
   return `${day} ${months[monthIndex] ?? months[0]} ${year}`;
+}
+
+export function formatBirthDateFromIso(
+  value: string | null,
+  locale: MobileLocale,
+) {
+  if (!value) {
+    return "";
+  }
+
+  const next = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(next.getTime())) {
+    return "";
+  }
+
+  return formatBirthDate(
+    next.getDate(),
+    next.getMonth(),
+    next.getFullYear(),
+    locale,
+  );
+}
+
+export function birthDatePartsToIso(
+  day: number,
+  monthIndex: number,
+  year: number,
+) {
+  const month = String(monthIndex + 1).padStart(2, "0");
+  return `${year}-${month}-${String(day).padStart(2, "0")}`;
+}
+
+export function getAvatarKeyBySource(
+  avatarSource: ReturnType<typeof getChildAvatarSourceByKey>,
+): ChildAvatarPresetKey | null {
+  const matched = avatarOptions.find((item) => item.source === avatarSource);
+  return matched?.key ?? null;
 }

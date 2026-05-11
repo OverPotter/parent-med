@@ -272,8 +272,8 @@ export const styles = StyleSheet.create({
     backgroundColor: "#FFFCF8",
     paddingTop: 14,
     paddingHorizontal: 18,
-    paddingBottom: 38,
-    minHeight: 420,
+    paddingBottom: 18,
+    minHeight: 456,
     shadowColor: "#B98E7E",
     shadowOpacity: 0.16,
     shadowRadius: 20,
@@ -329,13 +329,57 @@ export const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: "500",
   },
+  sheetGenderSwitch: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  genderSwitchOption: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  genderSwitchOptionBoy: {
+    borderColor: "#CFE0F4",
+    backgroundColor: "#F3F8FE",
+  },
+  genderSwitchOptionBoyActive: {
+    borderColor: "#76AEEA",
+    backgroundColor: "#DDEEFF",
+  },
+  genderSwitchOptionGirl: {
+    borderColor: "#F0D5E1",
+    backgroundColor: "#FFF3F8",
+  },
+  genderSwitchOptionGirlActive: {
+    borderColor: "#EC9BBE",
+    backgroundColor: "#FFE3EF",
+  },
+  genderSwitchText: {
+    color: "#6F7178",
+    fontSize: 14,
+    lineHeight: 17,
+    fontWeight: "700",
+  },
+  genderSwitchTextActive: {
+    color: "#23364A",
+  },
+  genderChipPressed: {
+    opacity: 0.9,
+  },
   avatarOptionsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
   },
+  avatarGridScroll: {
+    maxHeight: 316,
+  },
   avatarOption: {
-    width: "22.7%",
+    width: "30.8%",
     aspectRatio: 1,
     borderRadius: 22,
     borderWidth: 1,
@@ -356,6 +400,10 @@ export const styles = StyleSheet.create({
   avatarOptionImage: {
     width: "84%",
     height: "84%",
+  },
+  avatarOptionImageCompact: {
+    width: "78%",
+    height: "78%",
   },
   datePickerPreview: {
     marginBottom: 14,

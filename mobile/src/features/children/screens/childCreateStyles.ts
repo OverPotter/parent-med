@@ -279,6 +279,10 @@ export const styles = StyleSheet.create({
     width: 78,
     height: 78,
   },
+  avatarOptionImageCompact: {
+    width: 72,
+    height: 72,
+  },
   primaryButton: {
     minHeight: 60,
     borderRadius: 22,
@@ -309,10 +313,11 @@ export const styles = StyleSheet.create({
   avatarSheetCard: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: 14,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     backgroundColor: "#FFF8F1",
+    minHeight: 456,
   },
   sheetDragZone: {
     alignItems: "center",
@@ -335,5 +340,8 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
+  },
+  avatarGridScroll: {
+    maxHeight: 316,
   },
 });

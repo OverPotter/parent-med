@@ -1,4 +1,5 @@
 import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { AuthScreen } from "../features/auth/screens/AuthScreen";
 import { MobileBottomTabBar } from "../shared/components/MobileBottomTabBar";
@@ -8,6 +9,7 @@ import {
   useMobileSurfaceTheme,
 } from "../shared/theme/mobileSurfaceTheme";
 import { OverlayScreens, RootTabContent } from "./PillPathExpoShellContent";
+import { preloadMobileUiAssets } from "./mobileUiAssetPreload";
 import { usePillPathExpoShellState } from "./usePillPathExpoShellState";
 
 export function PillPathExpoApp() {
@@ -22,6 +24,7 @@ export function PillPathExpoApp() {
 
 function PillPathExpoShell() {
   const surfaceTheme = useMobileSurfaceTheme();
+  const [areUiAssetsReady, setAreUiAssetsReady] = useState(false);
   const {
     authSession,
     isAuthBootstrapping,
@@ -31,6 +34,22 @@ function PillPathExpoShell() {
     rootTabContentProps,
     overlayScreensProps,
   } = usePillPathExpoShellState();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void preloadMobileUiAssets()
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) {
+          setAreUiAssetsReady(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (isAuthBootstrapping) {
     return <View style={styles.root} />;
@@ -48,6 +67,10 @@ function PillPathExpoShell() {
         <AuthScreen onAuthenticated={handleAuthenticated} />
       </View>
     );
+  }
+
+  if (!areUiAssetsReady) {
+    return <View style={styles.root} />;
   }
 
   return (

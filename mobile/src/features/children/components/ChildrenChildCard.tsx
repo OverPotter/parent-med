@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { Image, Pressable, Text, View } from "react-native";
 import {
   ChildCard,
@@ -73,13 +73,29 @@ export function ChildrenChildCard({
         </View>
 
         <View style={styles.cardInfo}>
-          <Text style={styles.childName}>{card.name}</Text>
-          {card.liveActivityVisible ? (
-            <View style={styles.liveChip}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveChipText}>{card.liveActivityText}</Text>
-            </View>
-          ) : null}
+          <View style={styles.childNameRow}>
+            <Text style={styles.childName}>{card.name}</Text>
+            {card.child.gender ? (
+              <View
+                style={[
+                  styles.genderTip,
+                  card.child.gender === "boy"
+                    ? styles.genderTipBoy
+                    : styles.genderTipGirl,
+                ]}
+              >
+                {card.child.gender === "boy" ? (
+                  <Ionicons
+                    name="car-sport-outline"
+                    size={12}
+                    color="#4E7DB0"
+                  />
+                ) : (
+                  <Feather name="heart" size={11} color="#C56A95" />
+                )}
+              </View>
+            ) : null}
+          </View>
           {card.stats ? (
             <Text style={styles.childStats}>{card.stats}</Text>
           ) : null}

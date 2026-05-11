@@ -1,11 +1,18 @@
-import { Image, Pressable, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 import {
   type ChildAvatarGender,
   type ChildAvatarPresetKey,
   getChildAvatarSourceByKey,
+  isCompactAvatarPresetKey,
 } from "../model/childrenRedesign";
 import { styles } from "./childCreateStyles";
+
+function resolveAvatarOptionImageStyle(key: ChildAvatarPresetKey) {
+  return isCompactAvatarPresetKey(key)
+    ? [styles.avatarOptionImage, styles.avatarOptionImageCompact]
+    : styles.avatarOptionImage;
+}
 
 export function ChildAvatarPickerSheet({
   visible,
@@ -88,7 +95,11 @@ export function ChildAvatarPickerSheet({
             </Pressable>
           </View>
 
-          <View style={styles.avatarSheetGrid}>
+          <ScrollView
+            style={styles.avatarGridScroll}
+            contentContainerStyle={styles.avatarSheetGrid}
+            showsVerticalScrollIndicator={false}
+          >
             {options.map((avatar) => (
               <Pressable
                 key={avatar.key}
@@ -102,13 +113,13 @@ export function ChildAvatarPickerSheet({
                 {avatar.source ? (
                   <Image
                     source={avatar.source}
-                    style={styles.avatarOptionImage}
+                    style={resolveAvatarOptionImageStyle(avatar.key)}
                     resizeMode="contain"
                   />
                 ) : null}
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
         </>
       )}
     </FormBottomSheet>

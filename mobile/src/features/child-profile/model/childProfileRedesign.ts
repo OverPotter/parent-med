@@ -1,18 +1,12 @@
 import { ImageSourcePropType } from "react-native";
 import { redesignSharedIcons } from "../../../redesign/shared/icons";
 import { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import { ChildCard } from "../../children/model/childrenRedesign";
 
 const childProfileSpec = require("../../../redesign/screens/child-profile/child_profile.json");
 
 type SourceChildProfileSpec = {
   blocks: Array<Record<string, unknown>>;
-};
-
-type SelectedChild = {
-  nodeId: string;
-  name: string;
-  stats: string;
-  avatarSource: ImageSourcePropType;
 };
 
 export type ChildProfileJournalItem = {
@@ -44,6 +38,8 @@ export type ChildProfileScreenContent = {
   journalRows: ChildProfileJournalItem[][];
   notesTitle: string;
   notesBody: string;
+  notesOptionalLabel: string;
+  allergiesOptionalLabel: string;
   exportTitle: string;
   exportCaption: string;
 };
@@ -71,6 +67,43 @@ function parseStats(statsText: string) {
     weightValue: parts[1] ?? "—",
     heightValue: parts[2] ?? "—",
   };
+}
+
+function getEmptyValue(locale: MobileLocale) {
+  if (locale === "ru") return "Не указано";
+  if (locale === "de") return "Nicht angegeben";
+  if (locale === "pl") return "Nie podano";
+  return "Not specified";
+}
+
+function formatCompactAge(birthDate: string | null, fallbackAgeLabel: string | null) {
+  if (birthDate) {
+    const bornAt = new Date(`${birthDate}T00:00:00`);
+
+    if (!Number.isNaN(bornAt.getTime())) {
+      const now = new Date();
+      const months =
+        (now.getFullYear() - bornAt.getFullYear()) * 12 +
+        (now.getMonth() - bornAt.getMonth()) -
+        (now.getDate() < bornAt.getDate() ? 1 : 0);
+
+      if (months >= 0) {
+        const years = months / 12;
+        const rounded = Math.round(years * 10) / 10;
+        return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+      }
+    }
+  }
+
+  if (fallbackAgeLabel) {
+    const match = fallbackAgeLabel.match(/(\d+(?:[.,]\d+)?)/);
+
+    if (match) {
+      return match[1].replace(",", ".");
+    }
+  }
+
+  return "—";
 }
 
 function mapJournalIcon(label: string) {
@@ -121,7 +154,7 @@ function mapJournalIcon(label: string) {
 }
 
 export function buildChildProfileScreenContent(
-  child: SelectedChild,
+  child: ChildCard,
   locale: MobileLocale,
 ): ChildProfileScreenContent {
   const isRu = locale === "ru";
@@ -162,35 +195,29 @@ export function buildChildProfileScreenContent(
       }
     | undefined;
 
-  const summarySection = profileCard.sections.find(
-    (section) => section.type === "profileTopRow",
-  ) as
-    | {
-        items: Array<Record<string, unknown>>;
-      }
-    | undefined;
+  const { ageValue: parsedAgeValue } = parseStats(child.stats);
+  const ageValue = formatCompactAge(
+    child.child.birthDate,
+    child.child.ageLabel ?? parsedAgeValue,
+  );
+  const weightValue = child.child.weightValue || "—";
+  const heightValue = child.child.heightValue || "—";
+  const emptyValue = getEmptyValue(locale);
+  const allergiesValue = child.child.allergies?.trim() || emptyValue;
+  const notesValue = child.child.notes?.trim() || emptyValue;
+  const statusPills: string[] = [];
 
-  const summaryBlock = summarySection?.items.find(
-    (item) => item.type === "summary",
-  ) as
-    | {
-        items: Array<Record<string, unknown>>;
-      }
-    | undefined;
-
-  const allergyStatsRow = summaryBlock?.items.find(
-    (item) => item.type === "statsRow" && item.id === "GPN9Y",
-  ) as
-    | {
-        items: Array<{ label: string; value: string }>;
-      }
-    | undefined;
-
-  const allergiesValue =
-    allergyStatsRow?.items.find((item) => item.label === "Аллергии")?.value ??
-    "—";
-
-  const { ageValue, weightValue, heightValue } = parseStats(child.stats);
+  if (child.child.babyModeEnabled) {
+    statusPills.push(
+      isRu
+        ? "режим малыша"
+        : isDe
+          ? "Baby-Modus"
+          : isPl
+            ? "tryb niemowlęcia"
+            : "baby mode",
+    );
+  }
 
   return {
     backLabel: isRu
@@ -206,24 +233,7 @@ export function buildChildProfileScreenContent(
     heightValue,
     allergiesValue,
     avatarSource: child.avatarSource,
-    statusPills:
-      statusPillsSection?.items.map((item) => {
-        if (isRu) {
-          return item.text.value;
-        }
-
-        if (isDe) {
-          if (item.text.value === "мама") return "Mama";
-          if (item.text.value === "аллергия") return "Allergie";
-        }
-
-        if (isPl) {
-          if (item.text.value === "мама") return "mama";
-          if (item.text.value === "аллергия") return "alergia";
-        }
-
-        return item.text.value;
-      }) ?? [],
+    statusPills,
     editProfileLabel: isRu
       ? (primaryButtonSection?.label.text ?? "Редактировать профиль")
       : isDe
@@ -265,13 +275,9 @@ export function buildChildProfileScreenContent(
       })),
     ),
     notesTitle: isRu ? notesBlock.title.text : isDe ? "Notizen" : isPl ? "Notatki" : "Notes",
-    notesBody: isRu
-      ? notesBlock.body.text
-      : isDe
-        ? "Hier können Sie wichtige Beobachtungen festhalten: Reaktionen auf Medikamente, Stimmung, Schlaf oder Fragen an den Arzt."
-      : isPl
-        ? "Tutaj możesz zapisać ważne obserwacje: reakcję na leki, nastrój, sen lub pytania do lekarza."
-      : "Use this space for important observations: reaction to medicines, mood, sleep, or questions for a doctor.",
+    notesBody: notesValue,
+    notesOptionalLabel: isRu ? "Необязательно" : isDe ? "Optional" : isPl ? "Opcjonalnie" : "Optional",
+    allergiesOptionalLabel: isRu ? "Необязательно" : isDe ? "Optional" : isPl ? "Opcjonalnie" : "Optional",
     exportTitle: isRu ? exportCard.title.text : isDe ? "Verlauf exportieren" : isPl ? "Eksport historii" : "Export history",
     exportCaption: isRu
       ? exportCard.caption.text
