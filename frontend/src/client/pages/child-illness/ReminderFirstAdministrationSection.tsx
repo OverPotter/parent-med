@@ -1,7 +1,7 @@
 import { DateField } from "@shared/components/DateField";
 import { finalizeTimeInput, normalizeTimeInput } from "@client/utils/feedingRecordForm";
 import { getLocalIsoDate } from "@shared/utils/date";
-import { appBtnSecondaryClass, illnessPanelSoftClass } from "./shared";
+import { appBtnSecondaryClass, illnessFlatInsetCardClass, illnessFlatPanelClass } from "./shared";
 import { reminderModeButtonClass } from "./reminderUtils";
 
 const firstDoseActionButtonClass =
@@ -27,7 +27,7 @@ export function ReminderFirstAdministrationSection({
   onTimeChange: (value: string) => void;
 }) {
   return (
-    <section className={`${illnessPanelSoftClass} rounded-[28px] p-4 sm:p-5`}>
+    <section className={`${illnessFlatPanelClass} p-4 sm:p-5`}>
       <div className="space-y-3">
         <div className="space-y-1">
           <p className="soft-field-label">
@@ -108,7 +108,9 @@ export function ReminderFirstAdministrationSection({
         )}
 
         {hasFutureFirstDoseSelection ? (
-          <p className="soft-note-danger rounded-2xl px-3 py-2.5 text-xs leading-5">
+          <p
+            className={`${illnessFlatInsetCardClass} rounded-2xl px-3 py-2.5 text-xs leading-5 text-foreground`}
+          >
             {language === "ru"
               ? "Нельзя указать время приёма в будущем. Выберите текущее время или раньше."
               : "You cannot set the administration time in the future. Choose the current time or earlier."}

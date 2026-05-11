@@ -79,7 +79,7 @@ export const styles = StyleSheet.create({
   },
   formCard: {
     borderRadius: 28,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#EBCFC4",
     backgroundColor: "#FFFDF9",
     padding: 18,
@@ -234,7 +234,7 @@ export const styles = StyleSheet.create({
   },
   notesCard: {
     borderRadius: 24,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#EBCFC4",
     backgroundColor: "#FFF8F1",
     padding: 16,

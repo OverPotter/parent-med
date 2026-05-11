@@ -8,6 +8,12 @@ import { buildChildrenScreenContent } from "../features/children/model/childrenR
 import { ChildrenRedesignScreen } from "../features/children/screens/ChildrenRedesignScreen";
 import { FeedingHistoryScreen } from "../features/feeding/screens/FeedingHistoryScreen";
 import { GrowthHistoryScreen } from "../features/growth/screens/GrowthHistoryScreen";
+import { IllnessJournalScreen } from "../features/illness/screens/IllnessJournalScreen";
+import { IllnessOnboardingScreen } from "../features/illness/screens/IllnessOnboardingScreen";
+import type {
+  IllnessQuickActionKind,
+  MobileIllnessObservation,
+} from "../features/illness/model/illnessObservation";
 import type { JournalEntryKind } from "../features/journal/model/journalEntryScreen";
 import { JournalEntryScreen } from "../features/journal/screens/JournalEntryScreen";
 import { LegalDocumentScreen } from "../features/legal/screens/LegalDocumentScreen";
@@ -36,6 +42,7 @@ type RootTabContentProps = {
   activeFeedingStartedAtByCardId: Record<string, string | null>;
   onOpenChildProfile: (cardId: string) => void;
   onOpenRootJournalEntry: (cardId: string, kind: JournalEntryKind) => void;
+  onOpenObservation: (cardId: string) => void;
   onFeedingPress: (cardId: string) => void;
   onLogout: () => Promise<void>;
   onOpenSettings: () => void;
@@ -51,6 +58,74 @@ type RootTabContentProps = {
   screenLayerStyle: object;
 };
 
+function MoreTabScreen({
+  authSession,
+  onLogout,
+  onOpenSettings,
+  onOpenSupport,
+  onOpenTermsOfUse,
+  onOpenPrivacyPolicy,
+  onUpdateAuthSession,
+  screenLayerStyle,
+}: Pick<
+  RootTabContentProps,
+  | "authSession"
+  | "onLogout"
+  | "onOpenSettings"
+  | "onOpenSupport"
+  | "onOpenTermsOfUse"
+  | "onOpenPrivacyPolicy"
+  | "onUpdateAuthSession"
+  | "screenLayerStyle"
+>) {
+  if (!authSession) {
+    return null;
+  }
+
+  return (
+    <View style={screenLayerStyle}>
+      <MoreScreen
+        session={authSession}
+        onLogout={onLogout}
+        onOpenSettings={onOpenSettings}
+        onOpenSupport={onOpenSupport}
+        onOpenTerms={onOpenTermsOfUse}
+        onOpenPrivacy={onOpenPrivacyPolicy}
+        onUpdateSession={onUpdateAuthSession}
+      />
+    </View>
+  );
+}
+
+function ChildrenTabScreen({
+  activeFeedingStartedAtByCardId,
+  onOpenChildProfile,
+  onOpenRootJournalEntry,
+  onOpenObservation,
+  onFeedingPress,
+  screenLayerStyle,
+}: Pick<
+  RootTabContentProps,
+  | "activeFeedingStartedAtByCardId"
+  | "onOpenChildProfile"
+  | "onOpenRootJournalEntry"
+  | "onOpenObservation"
+  | "onFeedingPress"
+  | "screenLayerStyle"
+>) {
+  return (
+    <View style={screenLayerStyle}>
+      <ChildrenRedesignScreen
+        onOpenChildProfile={onOpenChildProfile}
+        onOpenJournalEntry={onOpenRootJournalEntry}
+        onOpenObservation={onOpenObservation}
+        activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
+        onFeedingPress={onFeedingPress}
+      />
+    </View>
+  );
+}
+
 export function RootTabContent({
   locale,
   activeRootTab,
@@ -58,6 +133,7 @@ export function RootTabContent({
   activeFeedingStartedAtByCardId,
   onOpenChildProfile,
   onOpenRootJournalEntry,
+  onOpenObservation,
   onFeedingPress,
   onLogout,
   onOpenSettings,
@@ -69,30 +145,29 @@ export function RootTabContent({
 }: RootTabContentProps) {
   if (shouldRenderMoreTab(activeRootTab, authSession) && authSession) {
     return (
-      <View style={screenLayerStyle}>
-        <MoreScreen
-          session={authSession}
-          onLogout={onLogout}
-          onOpenSettings={onOpenSettings}
-          onOpenSupport={onOpenSupport}
-          onOpenTerms={onOpenTermsOfUse}
-          onOpenPrivacy={onOpenPrivacyPolicy}
-          onUpdateSession={onUpdateAuthSession}
-        />
-      </View>
+      <MoreTabScreen
+        authSession={authSession}
+        onLogout={onLogout}
+        onOpenSettings={onOpenSettings}
+        onOpenSupport={onOpenSupport}
+        onOpenTermsOfUse={onOpenTermsOfUse}
+        onOpenPrivacyPolicy={onOpenPrivacyPolicy}
+        onUpdateAuthSession={onUpdateAuthSession}
+        screenLayerStyle={screenLayerStyle}
+      />
     );
   }
 
   if (activeRootTab === "children") {
     return (
-      <View style={screenLayerStyle}>
-        <ChildrenRedesignScreen
-          onOpenChildProfile={onOpenChildProfile}
-          onOpenJournalEntry={onOpenRootJournalEntry}
-          activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
-          onFeedingPress={onFeedingPress}
-        />
-      </View>
+      <ChildrenTabScreen
+        activeFeedingStartedAtByCardId={activeFeedingStartedAtByCardId}
+        onOpenChildProfile={onOpenChildProfile}
+        onOpenRootJournalEntry={onOpenRootJournalEntry}
+        onOpenObservation={onOpenObservation}
+        onFeedingPress={onFeedingPress}
+        screenLayerStyle={screenLayerStyle}
+      />
     );
   }
 
@@ -109,29 +184,199 @@ type OverlayScreensProps = {
   selectedChildId: string;
   selectedEpisode: AnalyticsEpisodeCard | null;
   selectedJournalKind: JournalEntryKind;
+  observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
   authSession: MobileAuthSession;
-  onSessionDeleted: () => Promise<void>;
-  onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
-  onBackChildProfile: () => void;
-  onEditProfile: () => void;
-  onOpenAnalytics: () => void;
-  onOpenJournalEntry: (kind: ChildProfileDestination) => void;
-  onBackEditProfile: () => void;
-  onBackAnalytics: () => void;
-  onOpenEpisode: (episode: AnalyticsEpisodeCard) => void;
-  onBackAnalyticsEpisode: () => void;
-  onBackJournalEntry: () => void;
-  onStartFeedingTimer: () => void;
-  onBackFeedingHistory: () => void;
-  onBackSleepHistory: () => void;
-  onBackWeightHistory: () => void;
-  onBackGrowthHistory: () => void;
-  onBackOverview: () => void;
-  onBackPrivacyPolicy: () => void;
-  onBackSupport: () => void;
-  onBackSettings: () => void;
-  onBackTermsOfUse: () => void;
+  childFlow: {
+    onBackChildProfile: () => void;
+    onEditProfile: () => void;
+    onOpenAnalytics: () => void;
+    onOpenJournalEntry: (kind: ChildProfileDestination) => void;
+    onBackEditProfile: () => void;
+    onBackAnalytics: () => void;
+    onOpenEpisode: (episode: AnalyticsEpisodeCard) => void;
+    onBackAnalyticsEpisode: () => void;
+    onBackJournalEntry: () => void;
+    onStartFeedingTimer: () => void;
+    onBackFeedingHistory: () => void;
+    onBackSleepHistory: () => void;
+    onBackWeightHistory: () => void;
+    onBackGrowthHistory: () => void;
+    onBackOverview: () => void;
+  };
+  illnessFlow: {
+    onStartIllnessObservation: (payload: {
+      startedAt: string;
+      reason: string;
+    }) => void;
+    onAddIllnessEntry: (childId: string, kind: IllnessQuickActionKind) => void;
+    onFinishIllnessObservation: (childId: string) => void;
+    onBackIllnessJournal: () => void;
+    onBackIllnessOnboarding: () => void;
+  };
+  utilityFlow: {
+    onSessionDeleted: () => Promise<void>;
+    onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
+    onBackPrivacyPolicy: () => void;
+    onBackSupport: () => void;
+    onBackSettings: () => void;
+    onBackTermsOfUse: () => void;
+  };
 };
+
+type SelectedChildOverlayProps = {
+  activeScreen: PillPathActiveScreen;
+  childFlow: OverlayScreensProps["childFlow"];
+  illnessFlow: OverlayScreensProps["illnessFlow"];
+  selectedChild: NonNullable<ReturnType<typeof buildChildrenScreenContent>["cards"][number]>;
+  selectedEpisode: AnalyticsEpisodeCard | null;
+  selectedJournalKind: JournalEntryKind;
+};
+
+function SelectedChildOverlays({
+  activeScreen,
+  childFlow,
+  illnessFlow,
+  selectedChild,
+  selectedEpisode,
+  selectedJournalKind,
+}: SelectedChildOverlayProps) {
+  return (
+    <>
+      <ChildProfileRedesignScreen
+        child={selectedChild}
+        visible={isChildProfileVisibleScreen(activeScreen)}
+        onBack={childFlow.onBackChildProfile}
+        onEditProfile={childFlow.onEditProfile}
+        onOpenAnalytics={childFlow.onOpenAnalytics}
+        onOpenJournalEntry={childFlow.onOpenJournalEntry}
+      />
+      <ChildProfileEditScreen
+        child={selectedChild}
+        visible={activeScreen === "childProfileEdit"}
+        onBack={childFlow.onBackEditProfile}
+      />
+      {activeScreen === "analytics" || activeScreen === "analyticsBreakdown" ? (
+        <AnalyticsScreen
+          visible={activeScreen === "analytics"}
+          onBack={childFlow.onBackAnalytics}
+          onOpenEpisode={childFlow.onOpenEpisode}
+        />
+      ) : null}
+      {selectedEpisode && shouldShowAnalyticsBreakdown(activeScreen, selectedEpisode) ? (
+        <AnalyticsBreakdownScreen
+          episode={selectedEpisode}
+          onBack={childFlow.onBackAnalyticsEpisode}
+        />
+      ) : null}
+      <JournalEntryScreen
+        kind={selectedJournalKind}
+        visible={activeScreen === "journalEntry"}
+        onBack={childFlow.onBackJournalEntry}
+        onSwipeBack={childFlow.onBackJournalEntry}
+        onStartTimer={childFlow.onStartFeedingTimer}
+      />
+      <FeedingHistoryScreen
+        child={selectedChild}
+        visible={activeScreen === "feedingHistory"}
+        onBack={childFlow.onBackFeedingHistory}
+      />
+      <SleepHistoryScreen
+        child={selectedChild}
+        visible={activeScreen === "sleepHistory"}
+        onBack={childFlow.onBackSleepHistory}
+      />
+      <WeightHistoryScreen
+        child={selectedChild}
+        visible={activeScreen === "weightHistory"}
+        onBack={childFlow.onBackWeightHistory}
+      />
+      <GrowthHistoryScreen
+        child={selectedChild}
+        visible={activeScreen === "growthHistory"}
+        onBack={childFlow.onBackGrowthHistory}
+      />
+      <ChildOverviewScreen
+        child={selectedChild}
+        visible={activeScreen === "overview"}
+        onBack={childFlow.onBackOverview}
+      />
+      <IllnessOnboardingScreen
+        child={selectedChild}
+        visible={activeScreen === "illnessOnboarding"}
+        onBack={illnessFlow.onBackIllnessOnboarding}
+        onStartObservation={illnessFlow.onStartIllnessObservation}
+      />
+    </>
+  );
+}
+
+type IllnessOverlayProps = {
+  activeScreen: PillPathActiveScreen;
+  childrenCards: ReturnType<typeof buildChildrenScreenContent>["cards"];
+  focusedChildId: string;
+  observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
+  illnessFlow: OverlayScreensProps["illnessFlow"];
+};
+
+function IllnessOverlays({
+  activeScreen,
+  childrenCards,
+  focusedChildId,
+  observationsByChildId,
+  illnessFlow,
+}: IllnessOverlayProps) {
+  return (
+    <IllnessJournalScreen
+      children={childrenCards}
+      observationsByChildId={observationsByChildId}
+      focusedChildId={focusedChildId}
+      visible={activeScreen === "illnessJournal"}
+      onBack={illnessFlow.onBackIllnessJournal}
+      onAddEntry={illnessFlow.onAddIllnessEntry}
+      onFinishObservation={illnessFlow.onFinishIllnessObservation}
+      onOpenChildren={illnessFlow.onBackIllnessJournal}
+    />
+  );
+}
+
+type UtilityOverlayProps = {
+  activeScreen: PillPathActiveScreen;
+  authSession: MobileAuthSession;
+  utilityFlow: OverlayScreensProps["utilityFlow"];
+};
+
+function UtilityOverlays({
+  activeScreen,
+  authSession,
+  utilityFlow,
+}: UtilityOverlayProps) {
+  return (
+    <>
+      <LegalDocumentScreen
+        documentKey="privacy"
+        visible={activeScreen === "privacyPolicy"}
+        onBack={utilityFlow.onBackPrivacyPolicy}
+      />
+      <SupportScreen
+        visible={activeScreen === "support"}
+        onBack={utilityFlow.onBackSupport}
+        session={authSession}
+      />
+      <SettingsScreen
+        visible={activeScreen === "settings"}
+        onBack={utilityFlow.onBackSettings}
+        onSessionDeleted={utilityFlow.onSessionDeleted}
+        session={authSession}
+        onUpdatePreferredLanguage={utilityFlow.onUpdatePreferredLanguage}
+      />
+      <LegalDocumentScreen
+        documentKey="terms"
+        visible={activeScreen === "termsOfUse"}
+        onBack={utilityFlow.onBackTermsOfUse}
+      />
+    </>
+  );
+}
 
 export function OverlayScreens({
   locale,
@@ -139,28 +384,11 @@ export function OverlayScreens({
   selectedChildId,
   selectedEpisode,
   selectedJournalKind,
+  observationsByChildId,
   authSession,
-  onSessionDeleted,
-  onUpdatePreferredLanguage,
-  onBackChildProfile,
-  onEditProfile,
-  onOpenAnalytics,
-  onOpenJournalEntry,
-  onBackEditProfile,
-  onBackAnalytics,
-  onOpenEpisode,
-  onBackAnalyticsEpisode,
-  onBackJournalEntry,
-  onStartFeedingTimer,
-  onBackFeedingHistory,
-  onBackSleepHistory,
-  onBackWeightHistory,
-  onBackGrowthHistory,
-  onBackOverview,
-  onBackPrivacyPolicy,
-  onBackSupport,
-  onBackSettings,
-  onBackTermsOfUse,
+  childFlow,
+  illnessFlow,
+  utilityFlow,
 }: OverlayScreensProps) {
   const childrenScreenContent = buildChildrenScreenContent(locale);
   const selectedChild =
@@ -170,88 +398,26 @@ export function OverlayScreens({
   return (
     <>
       {selectedChild ? (
-        <>
-          <ChildProfileRedesignScreen
-            child={selectedChild}
-            visible={isChildProfileVisibleScreen(activeScreen)}
-            onBack={onBackChildProfile}
-            onEditProfile={onEditProfile}
-            onOpenAnalytics={onOpenAnalytics}
-            onOpenJournalEntry={onOpenJournalEntry}
-          />
-          <ChildProfileEditScreen
-            child={selectedChild}
-            visible={activeScreen === "childProfileEdit"}
-            onBack={onBackEditProfile}
-          />
-          {activeScreen === "analytics" || activeScreen === "analyticsBreakdown" ? (
-            <AnalyticsScreen
-              visible={activeScreen === "analytics"}
-              onBack={onBackAnalytics}
-              onOpenEpisode={onOpenEpisode}
-            />
-          ) : null}
-          {selectedEpisode && shouldShowAnalyticsBreakdown(activeScreen, selectedEpisode) ? (
-            <AnalyticsBreakdownScreen
-              episode={selectedEpisode}
-              onBack={onBackAnalyticsEpisode}
-            />
-          ) : null}
-          <JournalEntryScreen
-            kind={selectedJournalKind}
-            visible={activeScreen === "journalEntry"}
-            onBack={onBackJournalEntry}
-            onSwipeBack={onBackJournalEntry}
-            onStartTimer={onStartFeedingTimer}
-          />
-          <FeedingHistoryScreen
-            child={selectedChild}
-            visible={activeScreen === "feedingHistory"}
-            onBack={onBackFeedingHistory}
-          />
-          <SleepHistoryScreen
-            child={selectedChild}
-            visible={activeScreen === "sleepHistory"}
-            onBack={onBackSleepHistory}
-          />
-          <WeightHistoryScreen
-            child={selectedChild}
-            visible={activeScreen === "weightHistory"}
-            onBack={onBackWeightHistory}
-          />
-          <GrowthHistoryScreen
-            child={selectedChild}
-            visible={activeScreen === "growthHistory"}
-            onBack={onBackGrowthHistory}
-          />
-          <ChildOverviewScreen
-            child={selectedChild}
-            visible={activeScreen === "overview"}
-            onBack={onBackOverview}
-          />
-        </>
+        <SelectedChildOverlays
+          activeScreen={activeScreen}
+          childFlow={childFlow}
+          illnessFlow={illnessFlow}
+          selectedChild={selectedChild}
+          selectedEpisode={selectedEpisode}
+          selectedJournalKind={selectedJournalKind}
+        />
       ) : null}
-      <LegalDocumentScreen
-        documentKey="privacy"
-        visible={activeScreen === "privacyPolicy"}
-        onBack={onBackPrivacyPolicy}
+      <IllnessOverlays
+        activeScreen={activeScreen}
+        childrenCards={childrenScreenContent.cards}
+        focusedChildId={selectedChildId}
+        observationsByChildId={observationsByChildId}
+        illnessFlow={illnessFlow}
       />
-      <SupportScreen
-        visible={activeScreen === "support"}
-        onBack={onBackSupport}
-        session={authSession}
-      />
-      <SettingsScreen
-        visible={activeScreen === "settings"}
-        onBack={onBackSettings}
-        onSessionDeleted={onSessionDeleted}
-        session={authSession}
-        onUpdatePreferredLanguage={onUpdatePreferredLanguage}
-      />
-      <LegalDocumentScreen
-        documentKey="terms"
-        visible={activeScreen === "termsOfUse"}
-        onBack={onBackTermsOfUse}
+      <UtilityOverlays
+        activeScreen={activeScreen}
+        authSession={authSession}
+        utilityFlow={utilityFlow}
       />
     </>
   );

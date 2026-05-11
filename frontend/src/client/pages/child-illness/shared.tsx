@@ -2,33 +2,40 @@ import type { ReactNode } from "react";
 import { formatChildDateRange } from "@client/utils/childDateFormat";
 
 export const appBtnFilledClass =
-  "soft-pill-primary app-profile-action app-profile-action--selected";
-export const appBtnSecondaryClass = "soft-pill app-profile-action";
+  "illness-action-shell soft-pill-primary app-profile-action app-profile-action--selected";
+export const appBtnSecondaryClass = "illness-action-shell soft-pill app-profile-action";
 export const appPillActionClass =
-  "soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]";
-export const appBtnDangerClass = "soft-pill-danger app-profile-action";
+  "illness-action-shell soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] sm:min-h-[2.6rem] sm:text-[0.82rem]";
+export const appBtnDangerClass = "illness-action-shell soft-pill-danger app-profile-action";
 export const illnessPanelClass =
-  "rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]";
-export const illnessPanelSoftClass =
-  "rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_42%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_62%,var(--color-background)_38%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_48%,transparent)]";
+  "illness-panel-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]";
 export const illnessListClass =
-  "overflow-hidden rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]";
+  "illness-panel-shell overflow-hidden rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]";
 export const illnessListRowClass =
   "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[color:color-mix(in_srgb,var(--color-border)_34%,transparent)] px-3 py-3 last:border-b-0 sm:px-4";
 export const appBtnJournalPrimaryClass =
-  "soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] shadow-[0_14px_28px_rgba(15,23,42,0.12)] transition hover:-translate-y-[1px] hover:shadow-[0_18px_34px_rgba(15,23,42,0.16)] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-45 disabled:shadow-none sm:min-h-[2.6rem] sm:text-[0.82rem]";
+  "illness-action-shell soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] shadow-[0_14px_28px_rgba(15,23,42,0.12)] transition hover:-translate-y-[1px] hover:shadow-[0_18px_34px_rgba(15,23,42,0.16)] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-45 disabled:shadow-none sm:min-h-[2.6rem] sm:text-[0.82rem]";
 export const appBtnJournalSecondaryClass =
-  "soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]";
+  "illness-action-shell soft-pill app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]";
 export const appBtnJournalDangerClass =
-  "soft-pill-danger app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]";
+  "illness-action-shell soft-pill-danger app-profile-action min-h-[2.5rem] px-3.25 text-[0.8rem] tracking-[-0.025em] disabled:opacity-50 sm:min-h-[2.6rem] sm:text-[0.82rem]";
 export const illnessCompactInputClass =
   "soft-input min-h-[2.82rem] w-full px-4 py-0 text-left text-[16px] leading-[1.15] placeholder:text-left sm:min-h-[2.92rem]";
 export const illnessCompactPrimaryButtonClass = `${appBtnJournalPrimaryClass} illness-primary-action`;
 export const illnessCompactSecondaryButtonClass = appBtnJournalSecondaryClass;
+export const illnessFlatSurfaceClass =
+  "border border-[color:color-mix(in_srgb,var(--color-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_94%,var(--color-background)_6%)] shadow-none backdrop-blur-none";
+export const illnessFlatSurfaceCompactClass =
+  "border border-[color:color-mix(in_srgb,var(--color-border)_70%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_92%,var(--color-background)_8%)] shadow-none";
+export const illnessFlatPanelClass = `rounded-[28px] ${illnessFlatSurfaceClass}`;
+export const illnessFlatCardClass = `rounded-[24px] ${illnessFlatSurfaceClass}`;
+export const illnessFlatMetricClass = `rounded-[16px] ${illnessFlatSurfaceCompactClass}`;
+export const illnessFlatBadgeClass = `rounded-full ${illnessFlatSurfaceCompactClass}`;
+export const illnessFlatInsetCardClass = `rounded-[22px] ${illnessFlatSurfaceClass}`;
 
 export function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="soft-panel-muted rounded-[22px] px-4 py-3">
+    <div className={`${illnessFlatInsetCardClass} px-4 py-3`}>
       <p className="text-xs tracking-[0.08em] text-muted">{label}</p>
       <p className="mt-2 text-base font-semibold tracking-[-0.02em] text-foreground">{value}</p>
     </div>
@@ -94,7 +101,9 @@ export function SectionTitle({
 
 export function EpisodeMetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="inline-flex min-h-[3.15rem] min-w-0 items-start gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-2 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]">
+    <div
+      className={`${illnessFlatMetricClass} inline-flex min-h-[3.15rem] min-w-0 items-start gap-1.5 px-2.5 py-2`}
+    >
       <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-500" aria-hidden="true" />
       <span className="min-w-0 flex-1">
         <span className="block break-words text-[0.68rem] font-extrabold leading-4 tracking-[-0.02em] text-foreground">

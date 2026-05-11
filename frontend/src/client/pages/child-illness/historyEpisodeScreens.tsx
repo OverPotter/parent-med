@@ -10,8 +10,10 @@ import {
   EpisodeMetricCard,
   appPillActionClass,
   formatEpisodePeriod,
-  illnessListClass,
-  illnessPanelSoftClass,
+  illnessFlatBadgeClass,
+  illnessFlatCardClass,
+  illnessFlatInsetCardClass,
+  illnessFlatPanelClass,
 } from "./shared";
 
 function formatTemperatureValue(value: number) {
@@ -30,7 +32,7 @@ export function HistoryEpisodeCard({
   const { language } = useI18n();
   const historyEpisodeActionClass = appPillActionClass;
   return (
-    <li className="soft-panel overflow-hidden rounded-[24px] px-3 py-3 transition-colors sm:px-4">
+    <li className={historyCardClass}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-xs tracking-[0.08em] text-muted">
@@ -80,7 +82,7 @@ export function HistoryEpisodeInsightsScreen({ episode }: { episode: IllnessEpis
   return (
     <div className="space-y-4">
       {isLoading || !insights ? (
-        <div className="soft-panel-muted rounded-[28px] px-5 py-8 text-sm text-muted">
+        <div className={historyLoadingClass}>
           {language === "ru" ? "Готовим разбор…" : "Preparing insights…"}
         </div>
       ) : (
@@ -165,7 +167,7 @@ function EpisodeInsightsPreview({
               <p className="text-[0.72rem] tracking-[0.05em] text-muted sm:text-xs">
                 {language === "ru" ? "Разбор эпизода" : "Episode insights"}
               </p>
-              <span className="soft-pill rounded-full px-3 py-1 text-[0.72rem] sm:text-xs">
+              <span className={insightBadgeClass}>
                 {formatEpisodePeriod(episode.startedAt, episode.closedAt, language)}
               </span>
             </div>
@@ -179,7 +181,7 @@ function EpisodeInsightsPreview({
             </p>
           </div>
           {insights.peakTemperatureAt && (
-            <span className="soft-pill rounded-full px-3 py-1 text-[0.72rem] sm:text-xs">
+            <span className={insightBadgeClass}>
               {language === "ru" ? "Пик" : "Peak"}{" "}
               {formatChildDateTime(insights.peakTemperatureAt, language)}
             </span>
@@ -208,7 +210,7 @@ function EpisodeInsightsPreview({
             {temperatures.length > 0 ? (
               <EpisodeTemperatureTrend items={temperatures} language={language} />
             ) : (
-              <div className="soft-empty rounded-[20px] px-4 py-6 text-[0.9rem] text-muted sm:text-sm">
+              <div className={insightEmptyClass}>
                 {language === "ru"
                   ? "Для этого эпизода ещё нет замеров температуры."
                   : "There are no temperature readings for this episode yet."}
@@ -221,7 +223,7 @@ function EpisodeInsightsPreview({
           <h4 className="app-card-title">
             {language === "ru" ? "Ключевые детали" : "Key details"}
           </h4>
-          <div className={illnessListClass}>
+          <div className={insightListClass}>
             <EpisodeFactRow
               label={language === "ru" ? "Препараты" : "Medicines"}
               value={
@@ -318,7 +320,7 @@ function EpisodeTemperatureTrend({
 
   return (
     <div className="space-y-3">
-      <div className={`${illnessPanelSoftClass} rounded-[22px] px-3 py-3 sm:px-4`}>
+      <div className={trendPanelClass}>
         <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full overflow-visible sm:h-36">
           <path
             d={`M ${leftPad} ${height - bottomPad} H ${width - rightPad}`}
@@ -383,6 +385,14 @@ function EpisodeTemperatureTrend({
   );
 }
 
+const insightBadgeClass = `${illnessFlatBadgeClass} inline-flex px-3 py-1 text-[0.72rem] sm:text-xs`;
+
+const insightEmptyClass = `${illnessFlatInsetCardClass} rounded-[20px] px-4 py-6 text-[0.9rem] text-muted sm:text-sm`;
+
+const insightListClass = `${illnessFlatCardClass} overflow-hidden`;
+
+const trendPanelClass = `${illnessFlatInsetCardClass} px-3 py-3 sm:px-4`;
+
 function formatDurationValue(days: number, language: "ru" | "en") {
   if (language === "ru") {
     if (days === 1) return "1 день";
@@ -391,3 +401,7 @@ function formatDurationValue(days: number, language: "ru" | "en") {
   }
   return days === 1 ? "1 day" : `${days} days`;
 }
+
+const historyCardClass = `${illnessFlatCardClass} overflow-hidden px-3 py-3 transition-colors sm:px-4`;
+
+const historyLoadingClass = `${illnessFlatPanelClass} px-5 py-8 text-sm text-muted`;

@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   container: {
     minHeight: 58,
     borderRadius: 22,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#F1D9CF",
     backgroundColor: "#FFFDFC",
     padding: 6,

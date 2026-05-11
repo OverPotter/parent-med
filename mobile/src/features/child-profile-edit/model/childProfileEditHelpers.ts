@@ -75,8 +75,8 @@ const enMonths = [
 export function getEditProfileSheetCopy(locale: MobileLocale) {
   if (locale === "ru") {
     return {
-      avatarTitle: "Сменить фото",
-      avatarSubtitle: "Выберите аватар для профиля.",
+      avatarTitle: "Сменить иконку",
+      avatarSubtitle: "Выберите иконку для профиля.",
       dateTitle: "Дата рождения",
       dateSubtitle: "Выберите день, месяц и год.",
       textEditorSubtitle: "Обновите текст для профиля.",
@@ -86,8 +86,8 @@ export function getEditProfileSheetCopy(locale: MobileLocale) {
 
   if (locale === "pl") {
     return {
-      avatarTitle: "Zmień zdjęcie",
-      avatarSubtitle: "Wybierz awatar profilu.",
+      avatarTitle: "Zmień ikonę",
+      avatarSubtitle: "Wybierz ikonę profilu.",
       dateTitle: "Data urodzenia",
       dateSubtitle: "Wybierz dzień, miesiąc i rok.",
       textEditorSubtitle: "Zaktualizuj tekst w profilu.",
@@ -97,8 +97,8 @@ export function getEditProfileSheetCopy(locale: MobileLocale) {
 
   if (locale === "de") {
     return {
-      avatarTitle: "Foto ändern",
-      avatarSubtitle: "Wählen Sie einen Avatar für das Profil.",
+      avatarTitle: "Icon ändern",
+      avatarSubtitle: "Wählen Sie ein Symbol für das Profil.",
       dateTitle: "Geburtsdatum",
       dateSubtitle: "Wählen Sie Tag, Monat und Jahr.",
       textEditorSubtitle: "Aktualisieren Sie den Profiltext.",
@@ -107,8 +107,8 @@ export function getEditProfileSheetCopy(locale: MobileLocale) {
   }
 
   return {
-    avatarTitle: "Change photo",
-    avatarSubtitle: "Choose an avatar for the profile.",
+    avatarTitle: "Change icon",
+    avatarSubtitle: "Choose an icon for the profile.",
     dateTitle: "Birth date",
     dateSubtitle: "Choose day, month, and year.",
     textEditorSubtitle: "Update the profile text.",

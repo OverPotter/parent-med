@@ -15,6 +15,7 @@ type ChildrenChildCardProps = {
   feedingElapsedLabel: string | null;
   onSleepPress?: (cardId: string) => void;
   onFeedingPress?: (cardId: string) => void;
+  onOpenObservation?: (cardId: string) => void;
   onOpenProfile?: (cardId: string) => void;
   onOpenJournalEntry?: (cardId: string, kind: JournalEntryKind) => void;
 };
@@ -27,6 +28,7 @@ export function ChildrenChildCard({
   feedingElapsedLabel,
   onSleepPress = noop,
   onFeedingPress = noop,
+  onOpenObservation = noop,
   onOpenProfile = noop,
   onOpenJournalEntry = noop,
 }: ChildrenChildCardProps) {
@@ -93,6 +95,10 @@ export function ChildrenChildCard({
                 }
                 if (action.kind === "feeding") {
                   onFeedingPress(card.nodeId);
+                  return;
+                }
+                if (action.kind === "observation") {
+                  onOpenObservation(card.nodeId);
                   return;
                 }
                 noop();

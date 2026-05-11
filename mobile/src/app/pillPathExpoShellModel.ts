@@ -4,7 +4,7 @@ import type { AnalyticsEpisodeCard } from "../features/analytics/model/analytics
 import type { MobileLocale } from "../shared/i18n/mobileI18n";
 import type { MobileBottomTabKey } from "../shared/components/MobileBottomTabBar";
 
-export type ChildProfileDestination = JournalEntryKind | "overview";
+export type ChildProfileDestination = JournalEntryKind | "overview" | "illness";
 
 export type PillPathActiveScreen =
   | "children"
@@ -21,7 +21,9 @@ export type PillPathActiveScreen =
   | "support"
   | "termsOfUse"
   | "weightHistory"
-  | "journalEntry";
+  | "journalEntry"
+  | "illnessOnboarding"
+  | "illnessJournal";
 
 const CHILD_PROFILE_VISIBLE_SCREENS: PillPathActiveScreen[] = [
   "childProfile",
@@ -49,6 +51,8 @@ export function resolveJournalTargetScreen(
       return "weightHistory";
     case "height":
       return "growthHistory";
+    case "illness":
+      return "illnessJournal";
     default:
       return "journalEntry";
   }

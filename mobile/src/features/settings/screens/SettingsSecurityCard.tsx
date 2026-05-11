@@ -170,7 +170,7 @@ export function SecuritySettingsCard({
                 color: surfaceTheme.textPrimaryColor,
                 backgroundColor: surfaceTheme.inputBackgroundColor,
                 borderColor: surfaceTheme.inputBorderColor,
-                borderWidth: 1.5,
+                borderWidth: 1,
                 borderRadius: 20,
               },
             ]}

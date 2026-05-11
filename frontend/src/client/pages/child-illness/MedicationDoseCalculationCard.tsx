@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { illnessCompactInputClass } from "./shared";
+import {
+  appBtnSecondaryClass,
+  illnessCompactInputClass,
+  illnessFlatInsetCardClass,
+} from "./shared";
 
 function InlineHint({ text }: { text: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,7 +29,7 @@ function InlineHint({ text }: { text: string }) {
           event.preventDefault();
           showTouchHint();
         }}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border/70 bg-surface-muted/70 px-0 text-[11px] font-semibold leading-none text-muted transition hover:border-border hover:bg-surface-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border/70 bg-surface-muted/70 px-0 text-[11px] font-semibold leading-none text-muted transition hover:border-border hover:bg-surface-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/15"
       >
         i
       </button>
@@ -74,7 +78,7 @@ export function MedicationDoseCalculationCard({
   }
 
   return (
-    <div className="soft-note-info min-w-0 overflow-hidden rounded-[22px] px-4 py-3">
+    <div className={`${illnessFlatInsetCardClass} min-w-0 overflow-hidden px-4 py-3`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-[0.8rem] font-semibold tracking-[-0.02em] text-foreground">
@@ -84,7 +88,7 @@ export function MedicationDoseCalculationCard({
         <button
           type="button"
           onClick={onToggle}
-          className="soft-pill app-profile-action min-h-[2.2rem] shrink-0 self-start px-3 text-[0.76rem] whitespace-nowrap"
+          className={`${appBtnSecondaryClass} min-h-[2.2rem] shrink-0 self-start px-3 text-[0.76rem] whitespace-nowrap`}
         >
           {isOpen
             ? language === "ru"

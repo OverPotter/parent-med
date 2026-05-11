@@ -163,7 +163,7 @@ const styles = {
   },
   card: {
     borderRadius: 28,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#EFDDD2",
     backgroundColor: "#FFF8F1",
     padding: 20,

@@ -4,7 +4,7 @@ import { journalTypography } from "../../../shared/theme/journalTypography";
 export const styles = StyleSheet.create({
   heroCard: {
     borderRadius: 28,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#F1D9CF",
     backgroundColor: "#F6F2FF",
     padding: 16,
@@ -60,7 +60,7 @@ export const styles = StyleSheet.create({
   metricsPanel: {
     borderRadius: 24,
     backgroundColor: "#FFFDFC",
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#F1D9CF",
     paddingVertical: 12,
     paddingHorizontal: 8,
@@ -89,7 +89,7 @@ export const styles = StyleSheet.create({
     right: 0,
     top: 16,
     bottom: 16,
-    width: 1.5,
+    width: 1,
     backgroundColor: "#F3E6DE",
   },
   metricValueRow: {
@@ -142,7 +142,7 @@ export const styles = StyleSheet.create({
   timeCard: {
     minHeight: 96,
     borderRadius: 22,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#F6E7E0",
     backgroundColor: "#FFFDFC",
     padding: 12,
@@ -184,7 +184,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     minHeight: 96,
     borderRadius: 22,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#F6E7E0",
     backgroundColor: "#FFFDFC",
     padding: 12,

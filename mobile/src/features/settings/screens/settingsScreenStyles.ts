@@ -92,7 +92,7 @@ export const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 28,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#EBCFC4",
     backgroundColor: "rgba(255,253,249,0.93)",
     overflow: "hidden",
@@ -115,7 +115,7 @@ export const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   rowDivider: {
-    height: 1.5,
+    height: 1,
     backgroundColor: "#F0DDD4",
     marginHorizontal: 16,
   },
@@ -225,7 +225,7 @@ export const styles = StyleSheet.create({
   },
   inputGroup: {
     borderRadius: 20,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#E7D7CF",
     backgroundColor: "#FFF8F4",
     overflow: "hidden",
@@ -241,7 +241,7 @@ export const styles = StyleSheet.create({
   },
   inputStandalone: {
     borderRadius: 20,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#E7D7CF",
   },
   inputTop: {
@@ -416,7 +416,7 @@ export const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 14,
     borderRadius: 20,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#EED8CF",
     backgroundColor: "#FFF8F4",
     overflow: "hidden",

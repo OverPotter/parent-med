@@ -36,6 +36,7 @@ describe("pillPathExpoShellModel", () => {
     expect(resolveJournalTargetScreen("sleep")).toBe("sleepHistory");
     expect(resolveJournalTargetScreen("weight")).toBe("weightHistory");
     expect(resolveJournalTargetScreen("height")).toBe("growthHistory");
+    expect(resolveJournalTargetScreen("illness")).toBe("illnessJournal");
   });
 
   it("keeps pl/de locale from stored session during bootstrap", () => {

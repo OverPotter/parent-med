@@ -24,6 +24,31 @@
     0 5px 10px -10px rgb(var(--color-shadow) / 0.1);
 }
 
+.children-action-shell {
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+
+.children-action-shell.app-profile-action:focus-visible {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 30%, transparent) !important;
+}
+
+.illness-panel-shell {
+  border-width: 1px !important;
+  background: color-mix(in srgb, var(--color-surface) 94%, var(--color-background) 6%) !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.illness-action-shell {
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+
+.illness-action-shell.app-profile-action:focus-visible {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 30%, transparent) !important;
+}
+
 .pillbox-next-medication-outline {
   border-color: color-mix(in srgb, var(--color-success) 40%, var(--color-border)) !important;
   box-shadow:

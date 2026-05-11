@@ -9,6 +9,7 @@ import {
   toApiDateTime,
 } from "@client/utils/feedingRecordForm";
 import {
+  illnessFlatInsetCardClass,
   illnessCompactInputClass,
   illnessCompactSecondaryButtonClass,
 } from "./shared";
@@ -167,7 +168,7 @@ export function DoseTimeSheet({
       maxWidthClassName="max-w-[34rem]"
     >
       <div className="space-y-4 pb-2">
-        <div className="soft-panel-muted rounded-[22px] px-4 py-3">
+        <div className={`${illnessFlatInsetCardClass} px-4 py-3`}>
           <p className="text-sm leading-6 text-foreground/80">{hint}</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -202,7 +203,9 @@ export function DoseTimeSheet({
         </div>
 
         {hasFuturePendingDoseSelection ? (
-          <p className="soft-note-danger mt-3 rounded-2xl px-3 py-2.5 text-xs leading-5">
+          <p
+            className={`${illnessFlatInsetCardClass} mt-3 rounded-2xl px-3 py-2.5 text-xs leading-5 text-foreground`}
+          >
             {language === "ru"
               ? "Нельзя указать время приёма в будущем. Выберите текущее время или раньше."
               : "You cannot set the administration time in the future. Choose the current time or earlier."}

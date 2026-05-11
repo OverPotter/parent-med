@@ -71,7 +71,7 @@ export const styles = StyleSheet.create({
   selectorCard: {
     minHeight: 84,
     borderRadius: 24,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#EED6CB",
     backgroundColor: "#FFFDFC",
     paddingHorizontal: 16,
@@ -115,7 +115,7 @@ export const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: 16,
     borderRadius: 999,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#D9C7FC",
     backgroundColor: "#F1EAFE",
     alignItems: "center",
@@ -130,7 +130,7 @@ export const styles = StyleSheet.create({
   },
   summaryCard: {
     borderRadius: 28,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#EED6CB",
     backgroundColor: "#FFFDFC",
     padding: 20,
@@ -166,7 +166,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     minHeight: 106,
     borderRadius: 22,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#EED6CB",
     backgroundColor: "#FFFDFC",
     padding: 16,
@@ -187,7 +187,7 @@ export const styles = StyleSheet.create({
   },
   progressCard: {
     borderRadius: 28,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#DDC9FA",
     padding: 20,
     marginBottom: 18,
@@ -245,7 +245,7 @@ export const styles = StyleSheet.create({
   temperatureCard: {
     minHeight: 172,
     borderRadius: 28,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#EFC9BC",
     borderStyle: "dashed",
     backgroundColor: "rgba(255,253,252,0.72)",

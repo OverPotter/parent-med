@@ -165,7 +165,7 @@ const ru: TranslationTree = {
     backToProfile: "К профилю ребёнка",
     title: "Редактировать профиль",
     subtitle: "Основные данные и настройки Эдика.",
-    changePhoto: "Сменить фото",
+    changePhoto: "Сменить иконку",
     sections: {
       main: "Основные данные",
       health: "Здоровье и заметки",
@@ -263,7 +263,7 @@ const en: TranslationTree = {
     backToProfile: "Back to child profile",
     title: "Edit profile",
     subtitle: "Core details and Edik's settings.",
-    changePhoto: "Change photo",
+    changePhoto: "Change icon",
     sections: {
       main: "Core details",
       health: "Health and notes",
@@ -360,7 +360,7 @@ const pl: TranslationTree = {
     backToProfile: "Do profilu dziecka",
     title: "Edytuj profil",
     subtitle: "Podstawowe dane i ustawienia Edika.",
-    changePhoto: "Zmień zdjęcie",
+    changePhoto: "Zmień ikonę",
     sections: {
       main: "Dane podstawowe",
       health: "Zdrowie i notatki",
@@ -458,7 +458,7 @@ const de: TranslationTree = {
     backToProfile: "Zum Kinderprofil",
     title: "Profil bearbeiten",
     subtitle: "Wichtige Daten und Einstellungen von Edik.",
-    changePhoto: "Foto ändern",
+    changePhoto: "Icon ändern",
     sections: {
       main: "Grunddaten",
       health: "Gesundheit und Notizen",

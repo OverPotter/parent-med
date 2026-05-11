@@ -10,6 +10,7 @@ import {
   HistoryInsightsPreview,
 } from "./history";
 import { EpisodeBlock } from "./EpisodeBlock";
+import { illnessFlatPanelClass } from "./shared";
 
 export type CreateIllnessEpisodePayload = {
   started_at: string;
@@ -177,7 +178,7 @@ export function ChildIllnessHistoryScreen({
           ))}
         </ul>
       ) : !historyEpisodeInsightsMode ? (
-        <div className="soft-empty rounded-[28px] px-5 py-8 text-sm text-muted">
+        <div className={`${illnessFlatPanelClass} px-5 py-8 text-sm text-muted`}>
           {language === "ru" ? "История пока пустая." : "History is still empty."}
         </div>
       ) : null}

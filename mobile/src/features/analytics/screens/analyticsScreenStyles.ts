@@ -71,7 +71,7 @@ export const styles = StyleSheet.create({
   periodField: {
     minHeight: 64,
     borderRadius: 22,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#EED6CB",
     backgroundColor: "#FFFDFC",
     paddingHorizontal: 18,
@@ -115,7 +115,7 @@ export const styles = StyleSheet.create({
   periodDropdown: {
     marginTop: 8,
     borderRadius: 22,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#EED6CB",
     backgroundColor: "#FFFDFC",
     overflow: "hidden",
@@ -153,7 +153,7 @@ export const styles = StyleSheet.create({
   summaryCard: {
     minHeight: 240,
     borderRadius: 32,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#EED6CB",
     backgroundColor: "#FFF8F3",
     padding: 22,
@@ -295,7 +295,7 @@ export const styles = StyleSheet.create({
   highlightCard: {
     minHeight: 136,
     borderRadius: 24,
-    borderWidth: 1.5,
+    borderWidth: 1,
     padding: 14,
     gap: 12,
     shadowColor: "#D7AFA0",
@@ -350,7 +350,7 @@ export const styles = StyleSheet.create({
   },
   episodeCard: {
     borderRadius: 24,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#EED6CB",
     backgroundColor: "#FFFDFC",
     padding: 16,
@@ -409,7 +409,7 @@ export const styles = StyleSheet.create({
     minWidth: 82,
     paddingHorizontal: 14,
     borderRadius: 21,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#E6BFAF",
     backgroundColor: "#FFFDFC",
     alignItems: "center",

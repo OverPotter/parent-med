@@ -21,6 +21,7 @@ import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme"
 type ChildrenRedesignScreenProps = {
   onOpenChildProfile?: (cardId: string) => void;
   onOpenJournalEntry?: (cardId: string, kind: JournalEntryKind) => void;
+  onOpenObservation?: (cardId: string) => void;
   activeFeedingStartedAtByCardId?: Record<string, string | null>;
   onFeedingPress?: (cardId: string) => void;
 };
@@ -34,6 +35,7 @@ type PendingStopAction = {
 export function ChildrenRedesignScreen({
   onOpenChildProfile,
   onOpenJournalEntry,
+  onOpenObservation,
   activeFeedingStartedAtByCardId = {},
   onFeedingPress = noop,
 }: ChildrenRedesignScreenProps) {
@@ -42,6 +44,7 @@ export function ChildrenRedesignScreen({
   const childrenScreenContent = buildChildrenScreenContent(locale, "children");
   const handleOpenChildProfile = onOpenChildProfile ?? noop;
   const handleOpenJournalEntry = onOpenJournalEntry ?? noop;
+  const handleOpenObservation = onOpenObservation ?? noop;
   const [collapsedCardIds, setCollapsedCardIds] = useState<string[]>(
     childrenScreenContent.cards.map((card) => card.nodeId),
   );
@@ -185,6 +188,7 @@ export function ChildrenRedesignScreen({
                 }
                 onSleepPress={handleSleepPress}
                 onFeedingPress={handleFeedingQuickActionPress}
+                onOpenObservation={handleOpenObservation}
                 onOpenProfile={handleOpenChildProfile}
                 onOpenJournalEntry={handleOpenJournalEntry}
               />

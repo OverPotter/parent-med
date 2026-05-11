@@ -759,7 +759,7 @@ export const styles = StyleSheet.create({
   },
   eventLine: {
     flex: 1,
-    width: 1.5,
+    width: 1,
     backgroundColor: "#F2DDD6",
     marginTop: 6,
     marginBottom: -2,
@@ -772,6 +772,7 @@ export const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 18,
     borderWidth: 1,
+    borderColor: "#F2DDD6",
     paddingHorizontal: 13,
     paddingVertical: 11,
     backgroundColor: "#FFFDFC",

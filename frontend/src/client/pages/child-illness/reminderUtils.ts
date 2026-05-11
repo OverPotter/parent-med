@@ -1,4 +1,5 @@
 import type { HouseholdMedicine } from "../../../shared/types/api.js";
+import { appBtnFilledClass } from "./shared";
 
 export type MedicationPlanPayload = {
   householdMedicineId: string | null;
@@ -132,6 +133,6 @@ export function canSubmitMedicationPlanComposer(params: {
 
 export function reminderModeButtonClass(isActive: boolean, secondaryClass: string) {
   return isActive
-    ? "soft-pill-primary app-profile-action app-profile-action--selected min-h-[2.65rem] px-3.5 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.75rem] sm:text-[0.84rem]"
+    ? `${appBtnFilledClass} min-h-[2.65rem] px-3.5 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.75rem] sm:text-[0.84rem]`
     : `${secondaryClass} min-h-[2.65rem] px-3.5 text-[0.82rem] tracking-[-0.025em] sm:min-h-[2.75rem] sm:text-[0.84rem]`;
 }
