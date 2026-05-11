@@ -1,25 +1,21 @@
-import { Feather } from "@expo/vector-icons";
-import {
-  Animated,
-  Image,
-  ImageBackground,
-  Pressable,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
-import { childrenScreenAssets } from "../../../redesign/screens/children/manifest";
+import { Ionicons } from "@expo/vector-icons";
+import { Animated, Image, ImageBackground, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
 import { redesignSharedIcons } from "../../../redesign/shared/icons";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
+import type { MobileAuthSession } from "../../auth/api/authApi";
+import type { ChildCard } from "../../children/model/childrenRedesign";
+import { illnessAssets } from "../../illness/assets";
 import { AnalyticsEpisodeCard } from "../model/analyticsScreen";
 import { buildAnalyticsBreakdownContent } from "../model/analyticsBreakdownScreen";
 import { styles } from "./analyticsBreakdownScreenStyles";
+import { useAnalyticsBreakdownState } from "./useAnalyticsBreakdownState";
 
 type AnalyticsBreakdownScreenProps = {
+  child: ChildCard;
+  authSession: Pick<MobileAuthSession, "accessToken">;
   episode: AnalyticsEpisodeCard;
   onBack?: () => void;
 };
@@ -27,17 +23,26 @@ type AnalyticsBreakdownScreenProps = {
 const noop = () => {};
 
 export function AnalyticsBreakdownScreen({
+  child,
+  authSession,
   episode,
   onBack = noop,
 }: AnalyticsBreakdownScreenProps) {
   const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
-  const content = buildAnalyticsBreakdownContent(episode, locale);
+  const { insights } = useAnalyticsBreakdownState({
+    authSession,
+    episodeId: episode.id,
+  });
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
     enabled: true,
     width,
     onBack,
+  });
+  const content = buildAnalyticsBreakdownContent(episode, locale, {
+    child,
+    insights,
   });
 
   return (
@@ -77,56 +82,62 @@ export function AnalyticsBreakdownScreen({
               <Text style={styles.subtitle}>{content.subtitle}</Text>
             </View>
 
-            <View style={styles.selectorCard}>
-              <View style={styles.selectorAvatarWrap}>
-                <Image
-                  source={childrenScreenAssets.avatars.boyBlackHair}
-                  style={styles.selectorAvatar}
-                  resizeMode="cover"
-                />
-              </View>
-              <View style={styles.selectorCopy}>
-                <Text style={styles.selectorName}>{content.childName}</Text>
-                <Text style={styles.selectorDate}>{content.childDate}</Text>
-              </View>
-              <Feather name="chevron-down" size={20} color="#6F7C8C" />
-            </View>
-
-            <View style={styles.episodeChip}>
-              <Text style={styles.episodeChipText}>{content.episodeChipLabel}</Text>
-            </View>
-
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>{content.summaryTitle}</Text>
+              <View style={styles.selectorCardCompact}>
+                <View style={styles.selectorAvatarWrap}>
+                  <Image
+                    source={child.avatarSource}
+                    style={styles.selectorAvatar}
+                    resizeMode="cover"
+                  />
+                </View>
+                <View style={styles.selectorCopy}>
+                  <View style={styles.selectorTopRow}>
+                    <Text style={styles.selectorName}>{content.childName}</Text>
+                    <View style={styles.episodeChip}>
+                      <Text style={styles.episodeChipText}>
+                        {content.episodeChipLabel}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.selectorDate}>{content.childDate}</Text>
+                </View>
+              </View>
+              <View style={styles.summaryTipsWrap}>
+                {content.summaryTips.map((item) => (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.progressTip,
+                      styles.summaryTip,
+                      {
+                        backgroundColor: item.accent.background,
+                        borderColor: item.accent.border,
+                      },
+                    ]}
+                  >
+                    <View style={styles.progressTipContent}>
+                      <View
+                        style={[
+                          styles.progressTipIconWrap,
+                          { backgroundColor: item.accent.iconBackground },
+                        ]}
+                      >
+                        <ProgressIcon
+                          icon={item.icon}
+                          color={item.accent.iconColor}
+                        />
+                      </View>
+                      <Text style={styles.progressTipText}>{item.text}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
               <View style={styles.summaryLines}>
                 {content.summaryLines.map((line) => (
                   <Text key={line} style={styles.summaryLine}>
                     {line}
                   </Text>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.infoCardsRow}>
-              {content.infoCards.map((card) => (
-                <View key={card.id} style={styles.infoCard}>
-                  <Text style={styles.infoLabel}>{card.label}</Text>
-                  <Text style={styles.infoValue}>{card.value}</Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={styles.progressCard}>
-              <Text style={styles.progressTitle}>{content.progressTitle}</Text>
-              <View style={styles.progressRow}>
-                {content.progressItems.map((item, index) => (
-                  <View key={item.id} style={styles.progressColumn}>
-                    <Text style={styles.progressValue}>{item.value}</Text>
-                    <Text style={styles.progressLabel}>{item.label}</Text>
-                    {index < content.progressItems.length - 1 ? (
-                      <View style={styles.progressDivider} />
-                    ) : null}
-                  </View>
                 ))}
               </View>
             </View>
@@ -140,7 +151,6 @@ export function AnalyticsBreakdownScreen({
                   </Text>
                 </View>
                 <View style={styles.temperatureArtWrap}>
-                  <View style={styles.temperatureArtGlow} />
                   <Image
                     source={redesignSharedIcons.illnessBadge}
                     style={styles.temperatureArt}
@@ -154,4 +164,32 @@ export function AnalyticsBreakdownScreen({
       </ImageBackground>
     </Animated.View>
   );
+}
+
+function ProgressIcon({
+  icon,
+  color,
+}: {
+  icon: "duration" | "medicine" | "temperature" | "mode";
+  color: string;
+}) {
+  if (icon === "duration") {
+    return <Ionicons name="time-outline" size={16} color={color} />;
+  }
+
+  if (icon === "medicine") {
+    return (
+      <Image
+        source={illnessAssets.journal.quickMedicine}
+        style={styles.progressTipMedicineAssetIcon}
+        resizeMode="contain"
+      />
+    );
+  }
+
+  if (icon === "temperature") {
+    return <Ionicons name="thermometer-outline" size={16} color={color} />;
+  }
+
+  return <Ionicons name="notifications-outline" size={20} color={color} />;
 }

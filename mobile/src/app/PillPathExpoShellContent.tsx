@@ -289,6 +289,7 @@ type OverlayScreensProps = {
 
 type SelectedChildOverlayProps = {
   activeScreen: PillPathActiveScreen;
+  authSession: OverlayScreensProps["authSession"];
   childFlow: OverlayScreensProps["childFlow"];
   illnessFlow: OverlayScreensProps["illnessFlow"];
   selectedChild: ChildCard;
@@ -298,6 +299,7 @@ type SelectedChildOverlayProps = {
 
 function SelectedChildOverlays({
   activeScreen,
+  authSession,
   childFlow,
   illnessFlow,
   selectedChild,
@@ -323,13 +325,20 @@ function SelectedChildOverlays({
       />
       {activeScreen === "analytics" || activeScreen === "analyticsBreakdown" ? (
         <AnalyticsScreen
-          visible={activeScreen === "analytics"}
+          child={selectedChild}
+          authSession={authSession}
+          visible={
+            activeScreen === "analytics" ||
+            activeScreen === "analyticsBreakdown"
+          }
           onBack={childFlow.onBackAnalytics}
           onOpenEpisode={childFlow.onOpenEpisode}
         />
       ) : null}
       {selectedEpisode && shouldShowAnalyticsBreakdown(activeScreen, selectedEpisode) ? (
         <AnalyticsBreakdownScreen
+          child={selectedChild}
+          authSession={authSession}
           episode={selectedEpisode}
           onBack={childFlow.onBackAnalyticsEpisode}
         />
@@ -491,6 +500,7 @@ export function OverlayScreens({
       {selectedChild ? (
         <SelectedChildOverlays
           activeScreen={activeScreen}
+          authSession={authSession}
           childFlow={childFlow}
           illnessFlow={illnessFlow}
           selectedChild={selectedChild}

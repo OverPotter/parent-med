@@ -1,16 +1,18 @@
 import { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import type { ChildCard } from "../../children/model/childrenRedesign";
+import type { MobileIllnessEpisodeInsights } from "../../illness/api/illnessAnalyticsApi";
 import { AnalyticsEpisodeCard } from "./analyticsScreen";
 
-export type AnalyticsBreakdownInfoCard = {
+export type AnalyticsBreakdownSummaryTip = {
   id: string;
-  label: string;
-  value: string;
-};
-
-export type AnalyticsBreakdownProgressItem = {
-  id: string;
-  value: string;
-  label: string;
+  text: string;
+  icon: "duration" | "medicine" | "temperature" | "mode";
+  accent: {
+    background: string;
+    border: string;
+    iconBackground: string;
+    iconColor: string;
+  };
 };
 
 export type AnalyticsBreakdownContent = {
@@ -20,11 +22,8 @@ export type AnalyticsBreakdownContent = {
   childName: string;
   childDate: string;
   episodeChipLabel: string;
-  summaryTitle: string;
   summaryLines: string[];
-  infoCards: AnalyticsBreakdownInfoCard[];
-  progressTitle: string;
-  progressItems: AnalyticsBreakdownProgressItem[];
+  summaryTips: AnalyticsBreakdownSummaryTip[];
   temperatureTitle: string;
   temperatureEmptyState: string;
 };
@@ -32,11 +31,36 @@ export type AnalyticsBreakdownContent = {
 export function buildAnalyticsBreakdownContent(
   episode: AnalyticsEpisodeCard,
   locale: MobileLocale,
+  options?: {
+    child?: ChildCard;
+    insights?: MobileIllnessEpisodeInsights | null;
+  },
 ): AnalyticsBreakdownContent {
   const isRu = locale === "ru";
   const isDe = locale === "de";
   const isPl = locale === "pl";
-
+  const child = options?.child;
+  const insights = options?.insights ?? null;
+  const childDate = episode.startedAt
+    ? new Date(episode.startedAt)
+    : episode.closedAtIso
+      ? new Date(episode.closedAtIso)
+      : null;
+  const childDateLabel = childDate && !Number.isNaN(childDate.getTime())
+    ? childDate.toLocaleDateString(
+        locale === "ru" ? "ru-RU" : locale === "de" ? "de-DE" : locale === "pl" ? "pl-PL" : "en-US",
+        { day: "numeric", month: "long" },
+      )
+    : "—";
+  const peakLine = insights?.peakTemperatureCelsius != null
+    ? isRu
+      ? `Пик температуры: ${insights.peakTemperatureCelsius.toFixed(1)}°C.`
+      : isDe
+        ? `Temperaturspitze: ${insights.peakTemperatureCelsius.toFixed(1)}°C.`
+        : isPl
+          ? `Szczyt temperatury: ${insights.peakTemperatureCelsius.toFixed(1)}°C.`
+          : `Peak temperature: ${insights.peakTemperatureCelsius.toFixed(1)}°C.`
+    : null;
   return {
     backLabel: isRu ? "Назад" : isDe ? "Zurück" : isPl ? "Wstecz" : "Back",
     title: isRu ? "Разбор эпизода" : isDe ? "Episodendetails" : isPl ? "Szczegóły epizodu" : "Episode breakdown",
@@ -47,64 +71,99 @@ export function buildAnalyticsBreakdownContent(
       : isPl
         ? "Szczegółowe podsumowanie konkretnego epizodu."
       : "Detailed summary for a specific episode.",
-    childName: isRu ? "Эдик" : "Edik",
-    childDate: isRu ? "3 мая" : isDe ? "3. Mai" : isPl ? "3 maja" : "May 3",
+    childName: child?.name ?? "—",
+    childDate: childDateLabel,
     episodeChipLabel: episode.meta.split("•")[0]?.trim() ?? episode.meta,
-    summaryTitle: isRu ? "Кратко об эпизоде" : isDe ? "Kurz zur Episode" : isPl ? "Krótko o epizodzie" : "Episode summary",
-    summaryLines: [
-      isRu ? "Эпизод длился 1 день." : isDe ? "Die Episode dauerte 1 Tag." : isPl ? "Epizod trwał 1 dzień." : "The episode lasted 1 day.",
-      isRu
-        ? "Замеров температуры не было."
-        : isDe
-          ? "Es gab keine Temperaturmessungen."
-        : isPl
-          ? "Nie było pomiarów temperatury."
-        : "There were no temperature readings.",
-      isRu
-        ? "Приёмы велись с напоминаниями."
-        : isDe
-          ? "Einnahmen wurden mit Erinnerungen erfasst."
-        : isPl
-          ? "Dawki były zapisywane z przypomnieniami."
-        : "Doses were tracked with reminders.",
-    ],
-    infoCards: [
+    summaryLines: peakLine ? [peakLine] : [],
+    summaryTips: [
       {
         id: "duration",
-        label: isRu ? "Длительность" : isDe ? "Dauer" : isPl ? "Czas trwania" : "Duration",
-        value: isRu ? "1 день" : isDe ? "1 Tag" : isPl ? "1 dzień" : "1 day",
+        text: insights
+          ? (isRu ? `${insights.durationDays} дн.` : isDe ? `${insights.durationDays} Tage` : isPl ? `${insights.durationDays} dni` : `${insights.durationDays} days`)
+          : "—",
+        icon: "duration",
+        accent: {
+          background: "#FFF7F1",
+          border: "#F0D8CA",
+          iconBackground: "#FCE9DE",
+          iconColor: "#CC8B67",
+        },
       },
-      {
-        id: "last-entry",
-        label: isRu ? "Последняя запись" : isDe ? "Letzter Eintrag" : isPl ? "Ostatni wpis" : "Last entry",
-        value: isRu ? "21:04 • 3 мая" : isDe ? "21:04 • 3. Mai" : isPl ? "21:04 • 3 maja" : "21:04 • May 3",
-      },
-    ],
-    progressTitle: isRu ? "Ход эпизода" : isDe ? "Verlauf der Episode" : isPl ? "Przebieg epizodu" : "Episode progress",
-    progressItems: [
       {
         id: "doses",
-        value: "7",
-        label: isRu ? "приёмов" : isDe ? "Einnahmen" : isPl ? "dawek" : "doses",
+        text: insights
+          ? (isRu
+              ? `${insights.administrationCount} приёмов`
+              : isDe
+                ? `${insights.administrationCount} Einnahmen`
+                : isPl
+                  ? `${insights.administrationCount} dawek`
+                  : `${insights.administrationCount} doses`)
+          : isRu
+            ? "0 приёмов"
+            : isDe
+              ? "0 Einnahmen"
+              : isPl
+                ? "0 dawek"
+                : "0 doses",
+        icon: "medicine",
+        accent: {
+          background: "#FEF4EA",
+          border: "#F3D1BF",
+          iconBackground: "#F9E0CC",
+          iconColor: "#D98659",
+        },
       },
       {
         id: "readings",
-        value: "0",
-        label: isRu ? "замеров" : isDe ? "Messungen" : isPl ? "pomiarów" : "readings",
+        text: insights
+          ? String(insights.temperatureCount)
+          : "0",
+        icon: "temperature",
+        accent: {
+          background: "#FEF0EE",
+          border: "#F4CDC6",
+          iconBackground: "#FAD8D2",
+          iconColor: "#E27C6D",
+        },
       },
       {
         id: "mode",
-        value: isRu ? "с" : isDe ? "mit" : isPl ? "z" : "with",
-        label: isRu ? "напоминаниями" : isDe ? "Erinnerungen" : isPl ? "przypomnieniami" : "reminders",
+        text: insights
+          ? (insights.medicationMode === "guided"
+              ? (isRu ? "1 напоминание" : isDe ? "1 Erinnerung" : isPl ? "1 przypomnienie" : "1 reminder")
+              : (isRu ? "0 напоминаний" : isDe ? "0 Erinnerungen" : isPl ? "0 przypomnień" : "0 reminders"))
+          : isRu
+            ? "0 напоминаний"
+            : isDe
+              ? "0 Erinnerungen"
+              : isPl
+                ? "0 przypomnień"
+                : "0 reminders",
+        icon: "mode",
+        accent: {
+          background: "#F6F0FF",
+          border: "#DDD0F8",
+          iconBackground: "#E5D8FF",
+          iconColor: "#8B6CD9",
+        },
       },
     ],
     temperatureTitle: isRu ? "Температура по эпизоду" : isDe ? "Temperatur in der Episode" : isPl ? "Temperatura w epizodzie" : "Episode temperature",
-    temperatureEmptyState: isRu
-      ? "Для этого эпизода ещё нет\nзамеров температуры."
-      : isDe
-        ? "Für diese Episode gibt es noch\nkeine Temperaturmessungen."
-      : isPl
-        ? "Dla tego epizodu nie ma jeszcze\npomiarów temperatury."
-      : "There are no temperature\nreadings for this episode yet.",
+    temperatureEmptyState: insights && insights.temperatureCount > 0
+      ? isRu
+        ? `Замеров: ${insights.temperatureCount}. Последний: ${insights.lastTemperatureCelsius?.toFixed(1) ?? "—"}°C.`
+        : isDe
+          ? `Messungen: ${insights.temperatureCount}. Letzter Wert: ${insights.lastTemperatureCelsius?.toFixed(1) ?? "—"}°C.`
+          : isPl
+            ? `Pomiary: ${insights.temperatureCount}. Ostatni wynik: ${insights.lastTemperatureCelsius?.toFixed(1) ?? "—"}°C.`
+            : `Readings: ${insights.temperatureCount}. Last value: ${insights.lastTemperatureCelsius?.toFixed(1) ?? "—"}°C.`
+      : isRu
+        ? "Для этого эпизода не было\nзамеров температуры."
+        : isDe
+          ? "Für diese Episode gab es\nkeine Temperaturmessungen."
+          : isPl
+            ? "Dla tego epizodu nie było\npomiarów temperatury."
+            : "There were no temperature\nreadings for this episode.",
   };
 }
