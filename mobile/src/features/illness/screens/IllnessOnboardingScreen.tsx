@@ -156,15 +156,23 @@ function buildLocalIllnessDate(dayOffset = 0) {
 function getOnboardingSuggestionWarmupSources(
   childGender: "boy" | "girl" | null,
 ) {
-  if (childGender === "boy") {
-    return illnessOnboardingSuggestionAssetLists.boys;
+  switch (childGender) {
+    case "boy":
+      return [
+        ...illnessOnboardingSuggestionAssetLists.boys,
+        ...illnessOnboardingSuggestionAssetLists.girls,
+      ];
+    case "girl":
+      return [
+        ...illnessOnboardingSuggestionAssetLists.girls,
+        ...illnessOnboardingSuggestionAssetLists.boys,
+      ];
+    default:
+      return [
+        ...illnessOnboardingSuggestionAssetLists.boys,
+        ...illnessOnboardingSuggestionAssetLists.girls,
+      ];
   }
-
-  if (childGender === "girl") {
-    return illnessOnboardingSuggestionAssetLists.girls;
-  }
-
-  return [];
 }
 
 export function IllnessOnboardingScreen({

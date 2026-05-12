@@ -1,19 +1,19 @@
 const onboardingSuggestionAssets = {
   boys: {
-    feverChild: require("./onboarding/suggestions/fever.png"),
-    coughChild: require("./onboarding/suggestions/cough.png"),
-    runnyNoseChild: require("./onboarding/suggestions/runny-nose-boy.png"),
-    soreThroatChild: require("./onboarding/suggestions/sore-throat-boy.png"),
-    rashChild: require("./onboarding/suggestions/rash.png"),
-    nauseaChild: require("./onboarding/suggestions/nausea-boy.png"),
+    feverChild: require("./onboarding/suggestions/boys/thumbs/fever_ui.png"),
+    coughChild: require("./onboarding/suggestions/boys/thumbs/cough_ui.png"),
+    runnyNoseChild: require("./onboarding/suggestions/boys/thumbs/runny_nose_ui.png"),
+    soreThroatChild: require("./onboarding/suggestions/boys/thumbs/sore_throat_ui.png"),
+    rashChild: require("./onboarding/suggestions/boys/thumbs/rash_ui.png"),
+    nauseaChild: require("./onboarding/suggestions/boys/thumbs/nausea_ui.png"),
   },
   girls: {
-    feverChild: require("./onboarding/suggestions/fever.png"),
-    coughChild: require("./onboarding/suggestions/cough.png"),
-    runnyNoseChild: require("./onboarding/suggestions/runny-nose.png"),
-    soreThroatChild: require("./onboarding/suggestions/sore-throat.png"),
-    rashChild: require("./onboarding/suggestions/rash.png"),
-    nauseaChild: require("./onboarding/suggestions/nausea-boy.png"),
+    feverChild: require("./onboarding/suggestions/girls/thumbs/fever_ui.png"),
+    coughChild: require("./onboarding/suggestions/girls/thumbs/cough_ui.png"),
+    runnyNoseChild: require("./onboarding/suggestions/girls/thumbs/runny_nose_ui.png"),
+    soreThroatChild: require("./onboarding/suggestions/girls/thumbs/sore_throat_ui.png"),
+    rashChild: require("./onboarding/suggestions/girls/thumbs/rash_ui.png"),
+    nauseaChild: require("./onboarding/suggestions/girls/thumbs/nausea_ui.png"),
   },
 } as const;
 
