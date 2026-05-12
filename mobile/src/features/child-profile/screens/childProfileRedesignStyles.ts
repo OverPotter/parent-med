@@ -259,9 +259,9 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
   },
   notesBody: {
-    color: "#6A7889",
-    fontSize: 11,
-    lineHeight: 15,
+    color: "#46576A",
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: "500",
   },
   exportCard: {

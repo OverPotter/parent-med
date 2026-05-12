@@ -38,3 +38,12 @@ async def create_height_entry(
     service: HeightEntryService = Depends(get_height_entry_service),
 ) -> HeightEntryResponseDto:
     return await service.create(dto, current_account.family_id)
+
+
+@router.delete("/{entry_id}", status_code=204)
+async def delete_height_entry(
+    entry_id: UUID,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: HeightEntryService = Depends(get_height_entry_service),
+) -> None:
+    await service.delete(entry_id, current_account.family_id)

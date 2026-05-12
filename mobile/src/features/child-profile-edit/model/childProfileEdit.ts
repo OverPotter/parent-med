@@ -62,10 +62,8 @@ export function buildChildProfileEditContent(
   const birthDate =
     formatBirthDateFromIso(child.child.birthDate, locale) ||
     copy.editProfileScreen.values.birthDate;
-  const allergiesDescription =
-    child.child.allergies?.trim() || copy.editProfileScreen.descriptions.allergies;
-  const notesDescription =
-    child.child.notes?.trim() || copy.editProfileScreen.descriptions.notes;
+  const allergiesDescription = child.child.allergies?.trim() || "";
+  const notesDescription = child.child.notes?.trim() || "";
 
   return {
     backLabel: copy.editProfileScreen.backToProfile,

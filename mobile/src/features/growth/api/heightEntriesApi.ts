@@ -119,6 +119,21 @@ export async function fetchLatestMobileHeightEntry(
   return response ? toMobileHeightEntry(response) : null;
 }
 
+export async function fetchMobileHeightEntries(
+  session: Pick<MobileAuthSession, "accessToken">,
+  childId: string,
+): Promise<MobileHeightEntry[]> {
+  const response = await requestAuthedJson<RawHeightEntryResponse[]>(
+    `/height-entries?child_id=${encodeURIComponent(childId)}`,
+    {
+      method: "GET",
+    },
+    session.accessToken,
+  );
+
+  return response.map(toMobileHeightEntry);
+}
+
 export async function createMobileHeightEntry(
   session: Pick<MobileAuthSession, "accessToken">,
   payload: {
@@ -141,4 +156,17 @@ export async function createMobileHeightEntry(
   );
 
   return toMobileHeightEntry(response);
+}
+
+export async function deleteMobileHeightEntry(
+  session: Pick<MobileAuthSession, "accessToken">,
+  entryId: string,
+): Promise<void> {
+  await requestAuthedJson<void>(
+    `/height-entries/${encodeURIComponent(entryId)}`,
+    {
+      method: "DELETE",
+    },
+    session.accessToken,
+  );
 }

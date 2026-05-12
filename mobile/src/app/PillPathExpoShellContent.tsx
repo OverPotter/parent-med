@@ -14,6 +14,7 @@ import {
 import { ChildrenRedesignScreen } from "../features/children/screens/ChildrenRedesignScreen";
 import { FeedingHistoryScreen } from "../features/feeding/screens/FeedingHistoryScreen";
 import { GrowthHistoryScreen } from "../features/growth/screens/GrowthHistoryScreen";
+import { illnessAssets } from "../features/illness/assets";
 import { IllnessActionPlaceholderScreen } from "../features/illness/screens/IllnessActionPlaceholderScreen";
 import { IllnessJournalScreen } from "../features/illness/screens/IllnessJournalScreen";
 import { IllnessOnboardingScreen } from "../features/illness/screens/IllnessOnboardingScreen";
@@ -328,24 +329,28 @@ function SelectedChildOverlays({
       />
       <SleepHistoryScreen
         key={`sleep-history-${selectedChild.nodeId}`}
+        authSession={authSession}
         child={selectedChild}
         visible={activeScreen === "sleepHistory"}
         onBack={childFlow.onBackSleepHistory}
       />
       <WeightHistoryScreen
         key={`weight-history-${selectedChild.nodeId}`}
+        authSession={authSession}
         child={selectedChild}
         visible={activeScreen === "weightHistory"}
         onBack={childFlow.onBackWeightHistory}
       />
       <GrowthHistoryScreen
         key={`growth-history-${selectedChild.nodeId}`}
+        authSession={authSession}
         child={selectedChild}
         visible={activeScreen === "growthHistory"}
         onBack={childFlow.onBackGrowthHistory}
       />
       <ChildOverviewScreen
         key={`overview-${selectedChild.nodeId}`}
+        authSession={authSession}
         child={selectedChild}
         visible={activeScreen === "overview"}
         onBack={childFlow.onBackOverview}
@@ -379,9 +384,22 @@ function IllnessOverlays({
 }: IllnessOverlayProps) {
   const focusedChild =
     childrenCards.find((child) => child.nodeId === focusedChildId) ?? null;
+  const shouldWarmIllnessJournalAssets =
+    activeScreen === "illnessOnboarding" ||
+    activeScreen === "illnessJournal" ||
+    activeScreen === "illnessActionPlaceholder";
 
   return (
     <>
+      <AssetWarmupLayer
+        active={shouldWarmIllnessJournalAssets}
+        assetModules={[
+          illnessAssets.journal.quickTemperature,
+          illnessAssets.journal.quickMedicine,
+          illnessAssets.journal.quickNote,
+          illnessAssets.journal.quickReminder,
+        ]}
+      />
       <IllnessJournalScreen
         children={childrenCards}
         observationsByChildId={observationsByChildId}

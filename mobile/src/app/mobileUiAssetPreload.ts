@@ -45,6 +45,7 @@ function getShellReadyAssetModules() {
   collectModulesToSet(redesignSharedIcons, modules);
   collectModulesToSet(mobileTabAssets, modules);
   collectModulesToSet(redesignBackgrounds.childrenModule, modules);
+  collectIllnessJournalAssets(modules);
 
   return Array.from(modules);
 }
@@ -238,6 +239,8 @@ export function getInitialShellAssetModules(childrenCards: ChildCard[]) {
       collectModulesToSet(action.imageSource, modules);
     });
   });
+
+  collectIllnessJournalAssets(modules);
 
   return Array.from(modules);
 }

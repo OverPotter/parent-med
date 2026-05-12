@@ -192,24 +192,22 @@ export function ChildProfileRedesignScreen({
               ))}
             </View>
 
-            <View style={[styles.notesBlock, styles.disabledCard]}>
+            <View style={styles.notesBlock}>
               <View style={styles.infoRow}>
                 <Text style={styles.notesTitle}>
                   {copy.childProfile.stats.allergies}
                 </Text>
-                <Text style={styles.infoOptional}>
-                  {content.allergiesOptionalLabel}
-                </Text>
               </View>
-              <Text style={styles.notesBody}>{content.allergiesValue}</Text>
+              {content.hasAllergiesValue ? (
+                <Text style={styles.notesBody}>{content.allergiesValue}</Text>
+              ) : null}
               <View style={styles.infoDivider} />
               <View style={styles.infoRow}>
                 <Text style={styles.notesTitle}>{content.notesTitle}</Text>
-                <Text style={styles.infoOptional}>
-                  {content.notesOptionalLabel}
-                </Text>
               </View>
-              <Text style={styles.notesBody}>{content.notesBody}</Text>
+              {content.hasNotesValue ? (
+                <Text style={styles.notesBody}>{content.notesBody}</Text>
+              ) : null}
             </View>
 
             <Pressable

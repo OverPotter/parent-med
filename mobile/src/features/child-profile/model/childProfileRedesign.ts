@@ -31,6 +31,7 @@ export type ChildProfileScreenContent = {
   weightValue: string;
   heightValue: string;
   allergiesValue: string;
+  hasAllergiesValue: boolean;
   avatarSource: ImageSourcePropType | null;
   statusPills: string[];
   editProfileLabel: string;
@@ -38,8 +39,7 @@ export type ChildProfileScreenContent = {
   journalRows: ChildProfileJournalItem[][];
   notesTitle: string;
   notesBody: string;
-  notesOptionalLabel: string;
-  allergiesOptionalLabel: string;
+  hasNotesValue: boolean;
   exportTitle: string;
   exportCaption: string;
 };
@@ -67,13 +67,6 @@ function parseStats(statsText: string) {
     weightValue: parts[1] ?? "—",
     heightValue: parts[2] ?? "—",
   };
-}
-
-function getEmptyValue(locale: MobileLocale) {
-  if (locale === "ru") return "Не указано";
-  if (locale === "de") return "Nicht angegeben";
-  if (locale === "pl") return "Nie podano";
-  return "Not specified";
 }
 
 function formatCompactAge(birthDate: string | null, fallbackAgeLabel: string | null) {
@@ -202,9 +195,10 @@ export function buildChildProfileScreenContent(
   );
   const weightValue = child.child.weightValue || "—";
   const heightValue = child.child.heightValue || "—";
-  const emptyValue = getEmptyValue(locale);
-  const allergiesValue = child.child.allergies?.trim() || emptyValue;
-  const notesValue = child.child.notes?.trim() || emptyValue;
+  const trimmedAllergies = child.child.allergies?.trim() || "";
+  const trimmedNotes = child.child.notes?.trim() || "";
+  const allergiesValue = trimmedAllergies;
+  const notesValue = trimmedNotes;
   const statusPills: string[] = [];
 
   if (child.child.babyModeEnabled) {
@@ -232,6 +226,7 @@ export function buildChildProfileScreenContent(
     weightValue,
     heightValue,
     allergiesValue,
+    hasAllergiesValue: Boolean(trimmedAllergies),
     avatarSource: child.avatarSource,
     statusPills,
     editProfileLabel: isRu
@@ -276,8 +271,7 @@ export function buildChildProfileScreenContent(
     ),
     notesTitle: isRu ? notesBlock.title.text : isDe ? "Notizen" : isPl ? "Notatki" : "Notes",
     notesBody: notesValue,
-    notesOptionalLabel: isRu ? "Необязательно" : isDe ? "Optional" : isPl ? "Opcjonalnie" : "Optional",
-    allergiesOptionalLabel: isRu ? "Необязательно" : isDe ? "Optional" : isPl ? "Opcjonalnie" : "Optional",
+    hasNotesValue: Boolean(trimmedNotes),
     exportTitle: isRu ? exportCard.title.text : isDe ? "Verlauf exportieren" : isPl ? "Eksport historii" : "Export history",
     exportCaption: isRu
       ? exportCard.caption.text

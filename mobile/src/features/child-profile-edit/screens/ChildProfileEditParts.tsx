@@ -157,6 +157,11 @@ export function ChildProfileHealthSection({
   editableNotes: string;
   onOpenTextEditor: (field: "allergies" | "notes") => void;
 }) {
+  const trimmedAllergies = editableAllergies.trim();
+  const trimmedNotes = editableNotes.trim();
+  const hasAllergiesValue = trimmedAllergies.length > 0;
+  const hasNotesValue = trimmedNotes.length > 0;
+
   return (
     <View style={styles.sectionWrap}>
       <Text style={styles.sectionTitle}>{content.sections.health.title}</Text>
@@ -173,8 +178,16 @@ export function ChildProfileHealthSection({
             >
               <View style={styles.rowTextWrap}>
                 <Text style={styles.rowLabel}>{row.label}</Text>
-                <Text style={styles.rowDescription}>
-                  {row.id === "allergies" ? editableAllergies : editableNotes}
+                <Text
+                  style={styles.rowDescription}
+                >
+                  {row.id === "allergies"
+                    ? hasAllergiesValue
+                      ? trimmedAllergies
+                      : ""
+                    : hasNotesValue
+                      ? trimmedNotes
+                      : ""}
                 </Text>
               </View>
 

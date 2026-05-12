@@ -63,8 +63,8 @@ export function ChildProfileEditScreen({
   const surfaceTheme = useMobileSurfaceTheme();
   const content = buildChildProfileEditContent(child, locale, copy);
   const defaultBirthDate = content.sections.main.rows[1]?.value ?? "";
-  const defaultAllergies = content.sections.health.rows[0]?.description ?? "";
-  const defaultNotes = content.sections.health.rows[1]?.description ?? "";
+  const defaultAllergies = child.child.allergies ?? "";
+  const defaultNotes = child.child.notes ?? "";
   const [selectedAvatarKey, setSelectedAvatarKey] =
     useState<ChildAvatarPresetKey | null>(
       (child.child.avatarKey as ChildAvatarPresetKey | null) ?? null,
@@ -122,7 +122,9 @@ export function ChildProfileEditScreen({
   }, [
     content.childName,
     child.child.avatarKey,
+    child.child.allergies,
     child.child.birthDate,
+    child.child.notes,
     defaultBabyModeEnabled,
     defaultAllergies,
     defaultNotes,

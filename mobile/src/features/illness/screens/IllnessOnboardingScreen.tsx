@@ -156,21 +156,31 @@ function buildLocalIllnessDate(dayOffset = 0) {
 function getOnboardingSuggestionWarmupSources(
   childGender: "boy" | "girl" | null,
 ) {
+  const journalSources = [
+    illnessAssets.journal.quickTemperature,
+    illnessAssets.journal.quickMedicine,
+    illnessAssets.journal.quickNote,
+    illnessAssets.journal.quickReminder,
+  ];
+
   switch (childGender) {
     case "boy":
       return [
         ...illnessOnboardingSuggestionAssetLists.boys,
         ...illnessOnboardingSuggestionAssetLists.girls,
+        ...journalSources,
       ];
     case "girl":
       return [
         ...illnessOnboardingSuggestionAssetLists.girls,
         ...illnessOnboardingSuggestionAssetLists.boys,
+        ...journalSources,
       ];
     default:
       return [
         ...illnessOnboardingSuggestionAssetLists.boys,
         ...illnessOnboardingSuggestionAssetLists.girls,
+        ...journalSources,
       ];
   }
 }
