@@ -50,6 +50,7 @@ export function FeedingHistoryScreen({
     buildFeedingHistoryScreenContent(locale, childDisplayName).periods.find((item) => item.active)?.id ?? "",
   );
   const [records, setRecords] = useState<MobileFeedingRecord[]>([]);
+  const [loadErrorVisible, setLoadErrorVisible] = useState(false);
   const [pendingDeleteRecordId, setPendingDeleteRecordId] = useState<string | null>(null);
   const [deleteErrorVisible, setDeleteErrorVisible] = useState(false);
 
@@ -69,9 +70,10 @@ export function FeedingHistoryScreen({
         }
 
         setRecords(items);
+        setLoadErrorVisible(false);
       } catch {
         if (!cancelled) {
-          setRecords([]);
+          setLoadErrorVisible(true);
         }
       }
     }
@@ -101,6 +103,10 @@ export function FeedingHistoryScreen({
   );
   const deleteDialogCopy = useMemo(() => buildFeedingDeleteDialogCopy(locale), [locale]);
   const deleteErrorCopy = useMemo(() => buildFeedingDeleteErrorCopy(locale), [locale]);
+  const loadErrorCopy = useMemo(() => buildFeedingLoadErrorCopy(locale), [locale]);
+  const showDeleteConfirm = visible && pendingDeleteRecordId !== null;
+  const showDeleteError = visible && deleteErrorVisible;
+  const showLoadError = visible && loadErrorVisible;
 
   const deleteRecord = async (recordId: string) => {
     try {
@@ -114,64 +120,66 @@ export function FeedingHistoryScreen({
   };
 
   return (
-    <JournalScreenScaffold
-      visible={visible}
-      backLabel={content.backLabel}
-      title={content.title}
-      subtitle={content.subtitle}
-      periods={content.periods}
-      activePeriodId={activePeriodId}
-      onSelectPeriod={setActivePeriodId}
-      onBack={onBack}
-      activeBackgroundColor="#FFEDE7"
-      activeTextColor="#FF6E61"
-      headerMarginBottom={14}
-      segmentedMarginBottom={12}
-    >
-      <View style={styles.heroCard}>
-        <View style={styles.heroTopRow}>
-          <View style={styles.heroCopy}>
-            <Text style={styles.heroTitle}>{content.heroTitle}</Text>
-            <Text style={styles.heroSubtitle}>{content.heroSubtitle}</Text>
+    <View style={styles.screenRoot}>
+      <JournalScreenScaffold
+        visible={visible}
+        backLabel={content.backLabel}
+        title={content.title}
+        subtitle={content.subtitle}
+        periods={content.periods}
+        activePeriodId={activePeriodId}
+        onSelectPeriod={setActivePeriodId}
+        onBack={onBack}
+        activeBackgroundColor="#FFEDE7"
+        activeTextColor="#FF6E61"
+        headerMarginBottom={14}
+        segmentedMarginBottom={12}
+      >
+        <View style={styles.heroCard}>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroCopy}>
+              <Text style={styles.heroTitle}>{content.heroTitle}</Text>
+              <Text style={styles.heroSubtitle}>{content.heroSubtitle}</Text>
+            </View>
+            <View style={styles.heroVisual}>
+              <Image
+                source={feedingHeroDecor}
+                style={styles.heroDecorAsset}
+                resizeMode="contain"
+              />
+            </View>
           </View>
-          <View style={styles.heroVisual}>
-            <Image
-              source={feedingHeroDecor}
-              style={styles.heroDecorAsset}
-              resizeMode="contain"
+
+          <View style={styles.metricsPanel}>
+            {content.metrics.map((metric, index) => {
+              const metricValue = metrics.find((item) => item.id === metric.id)?.value ?? metric.value;
+
+              return (
+                <View key={metric.id} style={styles.metricColumn}>
+                  <MetricColumn metric={{ ...metric, value: metricValue }} />
+                  {index < content.metrics.length - 1 ? (
+                    <View style={styles.metricDivider} />
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        <Text style={styles.historyTitle}>{content.historyTitle}</Text>
+
+        <View style={styles.timelineList}>
+          {timeline.map((item) => (
+            <TimelineRow
+              key={item.id}
+              item={item}
+              onDelete={() => setPendingDeleteRecordId(item.id)}
             />
-          </View>
+          ))}
         </View>
+      </JournalScreenScaffold>
 
-        <View style={styles.metricsPanel}>
-          {content.metrics.map((metric, index) => {
-            const metricValue = metrics.find((item) => item.id === metric.id)?.value ?? metric.value;
-
-            return (
-              <View key={metric.id} style={styles.metricColumn}>
-                <MetricColumn metric={{ ...metric, value: metricValue }} />
-                {index < content.metrics.length - 1 ? (
-                  <View style={styles.metricDivider} />
-                ) : null}
-              </View>
-            );
-          })}
-        </View>
-      </View>
-
-      <Text style={styles.historyTitle}>{content.historyTitle}</Text>
-
-      <View style={styles.timelineList}>
-        {timeline.map((item) => (
-          <TimelineRow
-            key={item.id}
-            item={item}
-            onDelete={() => setPendingDeleteRecordId(item.id)}
-          />
-        ))}
-      </View>
-
-      {pendingDeleteRecordId ? (
+      {showDeleteConfirm ? (
         <View style={styles.confirmOverlay}>
           <Pressable
             style={styles.confirmBackdrop}
@@ -209,7 +217,8 @@ export function FeedingHistoryScreen({
           </View>
         </View>
       ) : null}
-      {deleteErrorVisible ? (
+
+      {showDeleteError ? (
         <View style={styles.confirmOverlay}>
           <Pressable
             style={styles.confirmBackdrop}
@@ -234,7 +243,32 @@ export function FeedingHistoryScreen({
           </View>
         </View>
       ) : null}
-    </JournalScreenScaffold>
+      {showLoadError ? (
+        <View style={styles.confirmOverlay}>
+          <Pressable
+            style={styles.confirmBackdrop}
+            onPress={() => setLoadErrorVisible(false)}
+          />
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>{loadErrorCopy.title}</Text>
+            <Text style={styles.confirmDescription}>{loadErrorCopy.message}</Text>
+            <View style={styles.confirmActions}>
+              <Pressable
+                onPress={() => setLoadErrorVisible(false)}
+                style={({ pressed }) => [
+                  styles.confirmButtonPrimary,
+                  pressed ? styles.confirmButtonPressed : null,
+                ]}
+              >
+                <Text style={styles.confirmButtonPrimaryText}>
+                  {loadErrorCopy.confirm}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -316,6 +350,38 @@ function buildFeedingDeleteErrorCopy(locale: MobileLocale) {
   return {
     title: "Delete failed",
     message: "Please try again.",
+    confirm: "OK",
+  };
+}
+
+function buildFeedingLoadErrorCopy(locale: MobileLocale) {
+  if (locale === "ru") {
+    return {
+      title: "Не удалось загрузить кормления",
+      message: "Проверь соединение и попробуй ещё раз.",
+      confirm: "Понятно",
+    };
+  }
+
+  if (locale === "de") {
+    return {
+      title: "Fütterungen konnten nicht geladen werden",
+      message: "Bitte prüfe die Verbindung und versuche es erneut.",
+      confirm: "Verstanden",
+    };
+  }
+
+  if (locale === "pl") {
+    return {
+      title: "Nie udało się załadować karmień",
+      message: "Sprawdź połączenie i spróbuj ponownie.",
+      confirm: "Rozumiem",
+    };
+  }
+
+  return {
+    title: "Failed to load feedings",
+    message: "Check your connection and try again.",
     confirm: "OK",
   };
 }

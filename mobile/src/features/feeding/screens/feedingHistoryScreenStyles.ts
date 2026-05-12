@@ -2,6 +2,9 @@ import { StyleSheet } from "react-native";
 import { journalTypography } from "../../../shared/theme/journalTypography";
 
 export const styles = StyleSheet.create({
+  screenRoot: {
+    flex: 1,
+  },
   heroCard: {
     borderRadius: 28,
     borderWidth: 1,
