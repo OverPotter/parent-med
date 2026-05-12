@@ -8,7 +8,7 @@ import { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import {
   MobileBottomTabItem,
   MobileBottomTabKey,
-} from "../../../shared/components/MobileBottomTabBar";
+} from "../../../shared/components/mobileBottomTabModel";
 
 type SourceQuickActionSpec = {
   nodeId: string;
@@ -111,11 +111,14 @@ export type ChildCard = {
   name: string;
   stats: string;
   child: ChildCardChild;
-  avatarSource: ImageSourcePropType;
+  avatarSource: ImageSourcePropType | null;
   quickActions: ChildQuickAction[];
 };
 
-export function getObservationActionLabel(locale: MobileLocale, hasActiveObservation: boolean) {
+export function getObservationActionLabel(
+  locale: MobileLocale,
+  hasActiveObservation: boolean,
+) {
   if (hasActiveObservation) {
     if (locale === "ru") return "Журнал";
     if (locale === "de") return "Journal";
@@ -301,6 +304,18 @@ export const childAvatarPresets: Array<{
   },
 ];
 
+export function getChildAvatarPresets(gender?: ChildAvatarGender | null) {
+  if (!gender) {
+    return childAvatarPresets;
+  }
+
+  return childAvatarPresets.filter((item) => item.gender === gender);
+}
+
+export function getChildAvatarPresetSources(gender?: ChildAvatarGender | null) {
+  return getChildAvatarPresets(gender).map((item) => item.source);
+}
+
 const avatarByKey: Record<string, ImageSourcePropType> = {
   boy_black_hair: childrenScreenAssets.avatars.boyBlackHair,
   boy_red_hair: childrenScreenAssets.avatars.boyRedHair,
@@ -326,8 +341,10 @@ const avatarByKey: Record<string, ImageSourcePropType> = {
   baby_boy_blonde_short: childrenScreenAssets.avatars.babyBoyBlondeShort,
   baby_boy_brown_curls: childrenScreenAssets.avatars.babyBoyBrownCurls,
   baby_girl_curls: childrenScreenAssets.avatars.babyGirlCurls,
-  baby_girl_blonde_pigtails: childrenScreenAssets.avatars.babyGirlBlondePigtails,
-  baby_girl_blonde_pigtails_alt: childrenScreenAssets.avatars.babyGirlBlondePigtailsAlt,
+  baby_girl_blonde_pigtails:
+    childrenScreenAssets.avatars.babyGirlBlondePigtails,
+  baby_girl_blonde_pigtails_alt:
+    childrenScreenAssets.avatars.babyGirlBlondePigtailsAlt,
   baby_girl_dark_sideclip: childrenScreenAssets.avatars.babyGirlDarkSideclip,
   baby_girl_dark_puff_buns: childrenScreenAssets.avatars.babyGirlDarkPuffBuns,
   baby_girl_curls_bow: childrenScreenAssets.avatars.babyGirlCurlsBow,
@@ -352,17 +369,35 @@ function buildQuickActionMap(
     },
     Кормление: {
       kind: "feeding" as const,
-      label: isRu ? "Кормление" : isDe ? "Fütterung" : isPl ? "Karmienie" : "Feeding",
+      label: isRu
+        ? "Кормление"
+        : isDe
+          ? "Fütterung"
+          : isPl
+            ? "Karmienie"
+            : "Feeding",
       imageSource: childrenScreenAssets.icons.feeding,
     },
     Наблюдение: {
       kind: "observation" as const,
-      label: isRu ? "Наблюдать" : isDe ? "Beobachten" : isPl ? "Obserwuj" : "Observe",
+      label: isRu
+        ? "Наблюдать"
+        : isDe
+          ? "Beobachten"
+          : isPl
+            ? "Obserwuj"
+            : "Observe",
       imageSource: childrenScreenAssets.icons.observation,
     },
     Наблюдать: {
       kind: "observation" as const,
-      label: isRu ? "Наблюдать" : isDe ? "Beobachten" : isPl ? "Obserwuj" : "Observe",
+      label: isRu
+        ? "Наблюдать"
+        : isDe
+          ? "Beobachten"
+          : isPl
+            ? "Obserwuj"
+            : "Observe",
       imageSource: childrenScreenAssets.icons.observation,
     },
     Профиль: {
@@ -411,19 +446,21 @@ function resolveAvatarSourceWithGender(
     return avatarByKey[avatarKey];
   }
 
-  if (gender === "boy") {
-    return childrenScreenAssets.avatars.boyBlackHair;
+  const normalizedGender = normalizeChildAvatarGender(gender);
+
+  if (normalizedGender === "girl") {
+    return childrenScreenAssets.avatars.girl;
   }
 
-  if (gender === "girl") {
-    return childrenScreenAssets.avatars.girlBlonde;
+  if (normalizedGender === "boy") {
+    return childrenScreenAssets.avatars.boy;
   }
 
   return resolveAvatarSource(avatarKey, index);
 }
 
 export function getChildAvatarSourceByKey(avatarKey: string | null) {
-  return avatarKey ? avatarByKey[avatarKey] ?? null : null;
+  return avatarKey ? (avatarByKey[avatarKey] ?? null) : null;
 }
 
 export function getChildAvatarGenderByKey(
@@ -433,7 +470,23 @@ export function getChildAvatarGenderByKey(
     return null;
   }
 
-  return childAvatarPresets.find((item) => item.key === avatarKey)?.gender ?? null;
+  return (
+    childAvatarPresets.find((item) => item.key === avatarKey)?.gender ?? null
+  );
+}
+
+export function normalizeChildAvatarGender(
+  value: string | null,
+): ChildAvatarGender | null {
+  if (value === "boy" || value === "male") {
+    return "boy";
+  }
+
+  if (value === "girl" || value === "female") {
+    return "girl";
+  }
+
+  return null;
 }
 
 export function isCompactAvatarPresetKey(key: ChildAvatarPresetKey) {
@@ -465,7 +518,10 @@ function buildCardStatsLabel(
   return "";
 }
 
-function formatWeightValue(valueKg: number | null | undefined, locale: MobileLocale) {
+function formatWeightValue(
+  valueKg: number | null | undefined,
+  locale: MobileLocale,
+) {
   if (typeof valueKg !== "number") {
     return "";
   }
@@ -477,7 +533,10 @@ function formatWeightValue(valueKg: number | null | undefined, locale: MobileLoc
   return `${formatted} ${locale === "ru" ? "кг" : "kg"}`;
 }
 
-function formatHeightValue(valueCm: number | null | undefined, locale: MobileLocale) {
+function formatHeightValue(
+  valueCm: number | null | undefined,
+  locale: MobileLocale,
+) {
   if (typeof valueCm !== "number") {
     return "";
   }
@@ -486,7 +545,12 @@ function formatHeightValue(valueCm: number | null | undefined, locale: MobileLoc
 }
 
 function mapTabKey(label: string): MobileBottomTabKey {
-  if (label === "Дети" || label === "Children" || label === "Dzieci" || label === "Kinder") {
+  if (
+    label === "Дети" ||
+    label === "Children" ||
+    label === "Dzieci" ||
+    label === "Kinder"
+  ) {
     return "children";
   }
 
@@ -499,11 +563,21 @@ function mapTabKey(label: string): MobileBottomTabKey {
     return "more";
   }
 
-  if (label === "Таблетница" || label === "Pillbox" || label === "Pudełko leków" || label === "Pillenbox") {
+  if (
+    label === "Таблетница" ||
+    label === "Pillbox" ||
+    label === "Pudełko leków" ||
+    label === "Pillenbox"
+  ) {
     return "pillbox";
   }
 
-  if (label === "Аптечка" || label === "Cabinet" || label === "Apteczka" || label === "Hausapotheke") {
+  if (
+    label === "Аптечка" ||
+    label === "Cabinet" ||
+    label === "Apteczka" ||
+    label === "Hausapotheke"
+  ) {
     return "cabinet";
   }
 
@@ -532,38 +606,50 @@ export function buildChildrenScreenContent(
               : tab.label === "Аптечка"
                 ? "Hausapotheke"
                 : tab.label
-      : isPl
-        ? tab.label === "Дети"
-          ? "Dzieci"
-          : tab.label === "Ещё"
-            ? "Więcej"
-            : tab.label === "Таблетница"
-              ? "Pudełko leków"
-              : tab.label === "Аптечка"
-                ? "Apteczka"
-                : tab.label
-      : tab.label === "Дети"
-        ? "Children"
-        : tab.label === "Ещё"
-          ? "More"
-          : tab.label === "Таблетница"
-            ? "Pillbox"
-            : tab.label === "Аптечка"
-              ? "Cabinet"
-              : tab.label,
+        : isPl
+          ? tab.label === "Дети"
+            ? "Dzieci"
+            : tab.label === "Ещё"
+              ? "Więcej"
+              : tab.label === "Таблетница"
+                ? "Pudełko leków"
+                : tab.label === "Аптечка"
+                  ? "Apteczka"
+                  : tab.label
+          : tab.label === "Дети"
+            ? "Children"
+            : tab.label === "Ещё"
+              ? "More"
+              : tab.label === "Таблетница"
+                ? "Pillbox"
+                : tab.label === "Аптечка"
+                  ? "Cabinet"
+                  : tab.label,
   }));
 
   return {
     backgroundSource: childrenScreenAssets.background,
-    headerTitle: isRu ? screenSpec.header.title.text : isDe ? "Kinder" : isPl ? "Dzieci" : "Children",
+    headerTitle: isRu
+      ? screenSpec.header.title.text
+      : isDe
+        ? "Kinder"
+        : isPl
+          ? "Dzieci"
+          : "Children",
     headerSubtitle: isRu
       ? screenSpec.header.subtitle.text
       : isDe
         ? "Kinderprofile und schneller Zugriff auf Einträge."
-      : isPl
-        ? "Profile dzieci i szybki dostęp do wpisów."
-      : "Children profiles and quick access to records.",
-    addChildLabel: isRu ? screenSpec.addChildCta.label : isDe ? "Kind hinzufügen" : isPl ? "Dodaj dziecko" : "Add child",
+        : isPl
+          ? "Profile dzieci i szybki dostęp do wpisów."
+          : "Children profiles and quick access to records.",
+    addChildLabel: isRu
+      ? screenSpec.addChildCta.label
+      : isDe
+        ? "Kind hinzufügen"
+        : isPl
+          ? "Dodaj dziecko"
+          : "Add child",
     cards: screenSpec.childrenCards.map((card, index) => ({
       nodeId: card.nodeId,
       name: card.info.nameText,

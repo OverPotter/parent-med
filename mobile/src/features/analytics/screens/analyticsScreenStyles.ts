@@ -5,6 +5,7 @@ export const styles = StyleSheet.create({
   overlayLayer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 12,
+    backgroundColor: "#FBF3EC",
   },
   overlayLayerVisible: {
     opacity: 1,
@@ -14,6 +15,7 @@ export const styles = StyleSheet.create({
   },
   background: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#FBF3EC",
   },
   backgroundImage: {
     width: "100%",
@@ -21,10 +23,11 @@ export const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,248,241,0.52)",
+    backgroundColor: "rgba(255,248,241,0.72)",
   },
   root: {
     flex: 1,
+    backgroundColor: "#FBF3EC",
   },
   swipeBackEdge: {
     position: "absolute",

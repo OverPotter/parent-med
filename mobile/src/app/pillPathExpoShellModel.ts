@@ -1,8 +1,8 @@
 import type { MobileAuthSession } from "../features/auth/api/authApi";
 import type { JournalEntryKind } from "../features/journal/model/journalEntryScreen";
 import type { AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
+import type { MobileBottomTabKey } from "../shared/components/mobileBottomTabModel";
 import type { MobileLocale } from "../shared/i18n/mobileI18n";
-import type { MobileBottomTabKey } from "../shared/components/MobileBottomTabBar";
 
 export type ChildProfileDestination = JournalEntryKind | "overview" | "illness";
 

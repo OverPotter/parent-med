@@ -31,7 +31,7 @@ export type ChildProfileScreenContent = {
   weightValue: string;
   heightValue: string;
   allergiesValue: string;
-  avatarSource: ImageSourcePropType;
+  avatarSource: ImageSourcePropType | null;
   statusPills: string[];
   editProfileLabel: string;
   journalTitle: string;

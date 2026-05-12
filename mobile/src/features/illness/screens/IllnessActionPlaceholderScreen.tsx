@@ -129,7 +129,9 @@ export function IllnessActionPlaceholderScreen({
               <Text style={styles.cardBody}>{copy.body}</Text>
             </View>
             <View style={styles.avatarWrap}>
-              <Image source={child.avatarSource} style={styles.avatar} resizeMode="contain" />
+              {child.avatarSource ? (
+                <Image source={child.avatarSource} style={styles.avatar} resizeMode="contain" fadeDuration={0} />
+              ) : null}
             </View>
           </View>
         </ScrollView>
@@ -146,6 +148,7 @@ const styles = {
     bottom: 0,
     left: 0,
     zIndex: 32,
+    backgroundColor: "#FBF3EC",
   },
   overlayLayerHidden: { opacity: 0 },
   overlayLayerVisible: { opacity: 1 },
@@ -162,6 +165,7 @@ const styles = {
     right: 0,
     bottom: 0,
     left: 0,
+    backgroundColor: "#FBF3EC",
   },
   backgroundImage: {
     width: "100%" as const,
@@ -173,9 +177,9 @@ const styles = {
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: "rgba(255,248,241,0.58)",
+    backgroundColor: "rgba(255,248,241,0.72)",
   },
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: "#FBF3EC" },
   scroll: { flex: 1 },
   scrollContent: {
     paddingTop: 54,

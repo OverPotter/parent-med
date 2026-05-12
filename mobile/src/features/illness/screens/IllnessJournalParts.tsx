@@ -119,6 +119,7 @@ function JournalIcon({
       source={icon.source}
       style={resolveJournalAssetIconStyle(context, icon.variant)}
       resizeMode="contain"
+      fadeDuration={0}
     />
   );
 }

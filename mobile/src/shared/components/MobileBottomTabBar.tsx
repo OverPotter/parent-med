@@ -1,25 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import {
-  Image,
-  ImageSourcePropType,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-
-export type MobileBottomTabKey =
-  | "journal"
-  | "children"
-  | "cabinet"
-  | "more"
-  | "pillbox";
-
-export type MobileBottomTabItem = {
-  key: MobileBottomTabKey;
-  label: string;
-  active: boolean;
-};
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { mobileTabAssets } from "../assets/mobileTabAssets";
+import type {
+  MobileBottomTabItem,
+  MobileBottomTabKey,
+} from "./mobileBottomTabModel";
 
 type MobileBottomTabBarProps = {
   items: MobileBottomTabItem[];
@@ -28,16 +13,6 @@ type MobileBottomTabBarProps = {
 
 const noop = () => {};
 const tabIconSize = 38;
-
-const tabImageSourceByKey: Partial<
-  Record<MobileBottomTabKey, ImageSourcePropType>
-> = {
-  journal: require("../../redesign/shared/icons/book_icon_transparent_high_quality.png"),
-  children: require("../assets/bottom-tabs/parent_child_transparent.png"),
-  pillbox: require("../assets/bottom-tabs/pillpath_icon_transparent.png"),
-  cabinet: require("../assets/bottom-tabs/medical_bag_icon_transparent_FIXED.png"),
-  more: require("../assets/bottom-tabs/chat_bubble_icon_transparent.png"),
-};
 
 export function MobileBottomTabBar({
   items,
@@ -80,7 +55,7 @@ function TabIcon({
   active: boolean;
 }) {
   const color = active ? "#F47667" : "#6C7C90";
-  const imageSource = tabImageSourceByKey[tab];
+  const imageSource = mobileTabAssets[tab];
 
   if (imageSource) {
     return (
@@ -127,11 +102,7 @@ function TabIcon({
 
   if (tab === "pillbox") {
     return (
-      <MaterialCommunityIcons
-        name="pill"
-        size={tabIconSize}
-        color={color}
-      />
+      <MaterialCommunityIcons name="pill" size={tabIconSize} color={color} />
     );
   }
 

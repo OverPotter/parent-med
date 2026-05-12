@@ -1,6 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SwipeToDeleteRow } from "../../../shared/components/SwipeToDeleteRow";
+import { getLocalAssetDefaultSource } from "../../../shared/lib/assetSources";
 import {
   AnalyticsEpisodeCard,
   AnalyticsHighlightCard,
@@ -114,7 +115,15 @@ export function AnalyticsSummaryCard({
         <View style={[styles.decorBadge, styles.decorLeafNearFeet]}>
           <Ionicons name="leaf-outline" size={11} color="#CF947F" />
         </View>
-        <Image source={avatarSource} style={styles.summaryAvatar} resizeMode="contain" />
+        {avatarSource ? (
+          <Image
+            source={avatarSource}
+            defaultSource={getLocalAssetDefaultSource(avatarSource)}
+            style={styles.summaryAvatar}
+            resizeMode="contain"
+            fadeDuration={0}
+          />
+        ) : null}
       </View>
     </View>
   );
@@ -201,7 +210,9 @@ function InsightRow({ insight }: { insight: AnalyticsInsightItem }) {
 
   return (
     <View style={styles.insightRow}>
-      <View style={[styles.insightIconWrap, { backgroundColor: config.background }]}>
+      <View
+        style={[styles.insightIconWrap, { backgroundColor: config.background }]}
+      >
         <Ionicons name={config.icon} size={18} color={config.color} />
       </View>
       <View style={styles.insightCopy}>

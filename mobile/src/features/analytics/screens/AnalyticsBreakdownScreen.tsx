@@ -1,9 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Animated, Image, ImageBackground, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import {
+  Animated,
+  Image,
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
 import { redesignSharedIcons } from "../../../redesign/shared/icons";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import { getLocalAssetDefaultSource } from "../../../shared/lib/assetSources";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import type { MobileAuthSession } from "../../auth/api/authApi";
 import type { ChildCard } from "../../children/model/childrenRedesign";
@@ -73,7 +83,10 @@ export function AnalyticsBreakdownScreen({
           >
             <View style={styles.topBar}>
               <Pressable onPress={onBack} style={styles.backLink}>
-                <Text style={styles.backLinkText}>{"← "}{content.backLabel}</Text>
+                <Text style={styles.backLinkText}>
+                  {"← "}
+                  {content.backLabel}
+                </Text>
               </Pressable>
             </View>
 
@@ -85,11 +98,17 @@ export function AnalyticsBreakdownScreen({
             <View style={styles.summaryCard}>
               <View style={styles.selectorCardCompact}>
                 <View style={styles.selectorAvatarWrap}>
-                  <Image
-                    source={child.avatarSource}
-                    style={styles.selectorAvatar}
-                    resizeMode="cover"
-                  />
+                  {child.avatarSource ? (
+                    <Image
+                      source={child.avatarSource}
+                      defaultSource={getLocalAssetDefaultSource(
+                        child.avatarSource,
+                      )}
+                      style={styles.selectorAvatar}
+                      resizeMode="cover"
+                      fadeDuration={0}
+                    />
+                  ) : null}
                 </View>
                 <View style={styles.selectorCopy}>
                   <View style={styles.selectorTopRow}>
@@ -143,7 +162,9 @@ export function AnalyticsBreakdownScreen({
             </View>
 
             <View style={styles.temperatureSection}>
-              <Text style={styles.temperatureTitle}>{content.temperatureTitle}</Text>
+              <Text style={styles.temperatureTitle}>
+                {content.temperatureTitle}
+              </Text>
               <View style={styles.temperatureCard}>
                 <View style={styles.temperatureCopy}>
                   <Text style={styles.temperatureText}>
@@ -181,6 +202,9 @@ function ProgressIcon({
     return (
       <Image
         source={illnessAssets.journal.quickMedicine}
+        defaultSource={getLocalAssetDefaultSource(
+          illnessAssets.journal.quickMedicine,
+        )}
         style={styles.progressTipMedicineAssetIcon}
         resizeMode="contain"
       />

@@ -156,6 +156,11 @@ export const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 10,
   },
+  quickActionsGridHidden: {
+    height: 0,
+    opacity: 0,
+    overflow: "hidden",
+  },
   quickActionCard: {
     alignItems: "center",
     justifyContent: "center",

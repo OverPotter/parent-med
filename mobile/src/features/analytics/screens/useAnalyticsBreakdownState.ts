@@ -5,6 +5,12 @@ import {
   type MobileIllnessEpisodeInsights,
 } from "../../illness/api/illnessAnalyticsApi";
 
+const illnessEpisodeInsightsCache = new Map<string, MobileIllnessEpisodeInsights | null>();
+
+export function resetAnalyticsBreakdownStateCache() {
+  illnessEpisodeInsightsCache.clear();
+}
+
 type UseAnalyticsBreakdownStateOptions = {
   authSession: Pick<MobileAuthSession, "accessToken">;
   episodeId: string;
@@ -14,9 +20,19 @@ export function useAnalyticsBreakdownState({
   authSession,
   episodeId,
 }: UseAnalyticsBreakdownStateOptions) {
-  const [insights, setInsights] = useState<MobileIllnessEpisodeInsights | null>(null);
+  const [insights, setInsights] = useState<MobileIllnessEpisodeInsights | null>(
+    () => illnessEpisodeInsightsCache.get(episodeId) ?? null,
+  );
 
   useEffect(() => {
+    const cachedInsights = illnessEpisodeInsightsCache.get(episodeId);
+    if (cachedInsights !== undefined) {
+      setInsights(cachedInsights);
+      return;
+    }
+
+    setInsights(null);
+
     let cancelled = false;
 
     async function loadInsights() {
@@ -27,6 +43,7 @@ export function useAnalyticsBreakdownState({
         );
 
         if (!cancelled) {
+          illnessEpisodeInsightsCache.set(episodeId, nextInsights);
           setInsights(nextInsights);
         }
       } catch {

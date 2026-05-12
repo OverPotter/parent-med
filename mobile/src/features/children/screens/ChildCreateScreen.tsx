@@ -1,4 +1,4 @@
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -15,13 +15,15 @@ import {
   View,
 } from "react-native";
 import { childrenScreenAssets } from "../../../redesign/screens/children/manifest";
+import { AssetWarmupLayer } from "../../../shared/components/AssetWarmupLayer";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import {
   type ChildAvatarGender,
-  childAvatarPresets,
   getChildAvatarGenderByKey,
+  getChildAvatarPresets,
+  getChildAvatarPresetSources,
   getChildAvatarSourceByKey,
   type ChildAvatarPresetKey,
 } from "../model/childrenRedesign";
@@ -82,14 +84,18 @@ export function ChildCreateScreen({
   const [notes, setNotes] = useState("");
   const [isDateSheetOpen, setIsDateSheetOpen] = useState(false);
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
-  const [avatarPickerGender, setAvatarPickerGender] = useState<ChildAvatarGender>("boy");
-  const [textEditorField, setTextEditorField] = useState<"allergies" | "notes" | null>(null);
+  const [avatarPickerGender, setAvatarPickerGender] =
+    useState<ChildAvatarGender>("boy");
+  const [textEditorField, setTextEditorField] = useState<
+    "allergies" | "notes" | null
+  >(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const avatarOptions = useMemo(
-    () => childAvatarPresets.filter((item) => item.gender === avatarPickerGender),
+    () => getChildAvatarPresets(avatarPickerGender),
     [avatarPickerGender],
   );
+  const avatarWarmupSources = useMemo(() => getChildAvatarPresetSources(), []);
 
   useEffect(() => {
     if (!visible) {
@@ -166,7 +172,10 @@ export function ChildCreateScreen({
       </ImageBackground>
 
       <View style={styles.root}>
-        <View style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]} {...panHandlers} />
+        <View
+          style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]}
+          {...panHandlers}
+        />
         <KeyboardAvoidingView
           style={styles.root}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -180,7 +189,10 @@ export function ChildCreateScreen({
             keyboardShouldPersistTaps="handled"
           >
             <Pressable onPress={onBack} style={styles.backLink}>
-              <Text style={styles.backLinkText}>{"← "}{copy.back}</Text>
+              <Text style={styles.backLinkText}>
+                {"← "}
+                {copy.back}
+              </Text>
             </Pressable>
 
             <View style={styles.heroCard}>
@@ -208,157 +220,143 @@ export function ChildCreateScreen({
               </Pressable>
               <View style={styles.heroInfo}>
                 <Text style={styles.heroName}>{previewName}</Text>
-                {confirmedGender ? (
-                  <View
-                    style={[
-                      styles.heroGenderPill,
-                      confirmedGender === "boy"
-                        ? styles.heroGenderPillBoy
-                        : styles.heroGenderPillGirl,
-                    ]}
-                  >
-                    {confirmedGender === "boy" ? (
-                      <Ionicons name="car-sport-outline" size={13} color="#4E7DB0" />
-                    ) : (
-                      <Feather name="heart" size={12} color="#C56A95" />
-                    )}
-                  </View>
-                ) : null}
                 <Text style={styles.heroMeta}>{previewMeta}</Text>
               </View>
             </View>
 
             <View style={styles.sectionWrap}>
-            <Text style={styles.sectionTitle}>{copy.identity}</Text>
-            <View style={styles.cardList}>
-              <View style={styles.fieldRow}>
-                <Text style={styles.fieldLabel}>{copy.nameLabel}</Text>
-                <TextInput
-                  value={name}
-                  onChangeText={setName}
-                  placeholder={copy.namePlaceholder}
-                  placeholderTextColor={placeholderColor}
-                  style={styles.textInput}
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                  returnKeyType="done"
-                  onFocus={scrollToLowerInputs}
-                />
-              </View>
-              <View style={styles.fieldDivider} />
-              <Pressable
-                onPress={() => setIsDateSheetOpen(true)}
-                style={({ pressed }) => [
-                  styles.fieldRow,
-                  pressed ? { opacity: 0.9 } : null,
-                ]}
-              >
-                <Text style={styles.fieldLabel}>{copy.birthDateLabel}</Text>
-                <View style={styles.dateButton}>
-                  <Text
-                    style={[
-                      styles.dateValue,
-                      !birthDateLabel ? styles.placeholderText : null,
-                    ]}
-                  >
-                    {birthDateLabel || copy.birthDatePlaceholder}
-                  </Text>
-                  <Feather name="chevron-right" size={16} color="#9AA7B3" />
+              <Text style={styles.sectionTitle}>{copy.identity}</Text>
+              <View style={styles.cardList}>
+                <View style={styles.fieldRow}>
+                  <Text style={styles.fieldLabel}>{copy.nameLabel}</Text>
+                  <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder={copy.namePlaceholder}
+                    placeholderTextColor={placeholderColor}
+                    style={styles.textInput}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    returnKeyType="done"
+                    onFocus={scrollToLowerInputs}
+                  />
                 </View>
-              </Pressable>
-              <View style={styles.fieldDivider} />
-              <View style={styles.fieldRow}>
-                <Text style={styles.fieldLabel}>{copy.weightLabel}</Text>
-                <TextInput
-                  value={weightKg}
-                  onChangeText={setWeightKg}
-                  placeholder={copy.weightPlaceholder}
-                  placeholderTextColor={placeholderColor}
-                  style={styles.textInput}
-                  keyboardType="decimal-pad"
-                  autoCorrect={false}
-                  onFocus={scrollToLowerInputs}
-                />
-              </View>
-              <View style={styles.fieldDivider} />
-              <View style={styles.fieldRow}>
-                <Text style={styles.fieldLabel}>{copy.heightLabel}</Text>
-                <TextInput
-                  value={heightCm}
-                  onChangeText={setHeightCm}
-                  placeholder={copy.heightPlaceholder}
-                  placeholderTextColor={placeholderColor}
-                  style={styles.textInput}
-                  keyboardType="decimal-pad"
-                  autoCorrect={false}
-                  onFocus={scrollToLowerInputs}
-                />
-              </View>
-              <View style={styles.fieldDivider} />
-              <Pressable
-                onPress={() => setTextEditorField("allergies")}
-                style={({ pressed }) => [
-                  styles.fieldRow,
-                  pressed ? { opacity: 0.9 } : null,
-                ]}
-              >
-                <Text style={styles.fieldLabel}>{copy.allergiesTitle}</Text>
-                <View style={styles.dateButton}>
-                  <Text
-                    style={[
-                      styles.dateValue,
-                      !allergies ? styles.placeholderText : null,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {allergies || copy.allergiesPlaceholder}
-                  </Text>
-                  <Feather name="chevron-right" size={16} color="#9AA7B3" />
+                <View style={styles.fieldDivider} />
+                <Pressable
+                  onPress={() => setIsDateSheetOpen(true)}
+                  style={({ pressed }) => [
+                    styles.fieldRow,
+                    pressed ? { opacity: 0.9 } : null,
+                  ]}
+                >
+                  <Text style={styles.fieldLabel}>{copy.birthDateLabel}</Text>
+                  <View style={styles.dateButton}>
+                    <Text
+                      style={[
+                        styles.dateValue,
+                        !birthDateLabel ? styles.placeholderText : null,
+                      ]}
+                    >
+                      {birthDateLabel || copy.birthDatePlaceholder}
+                    </Text>
+                    <Feather name="chevron-right" size={16} color="#9AA7B3" />
+                  </View>
+                </Pressable>
+                <View style={styles.fieldDivider} />
+                <View style={styles.fieldRow}>
+                  <Text style={styles.fieldLabel}>{copy.weightLabel}</Text>
+                  <TextInput
+                    value={weightKg}
+                    onChangeText={setWeightKg}
+                    placeholder={copy.weightPlaceholder}
+                    placeholderTextColor={placeholderColor}
+                    style={styles.textInput}
+                    keyboardType="decimal-pad"
+                    autoCorrect={false}
+                    onFocus={scrollToLowerInputs}
+                  />
                 </View>
-              </Pressable>
-              <View style={styles.fieldDivider} />
-              <Pressable
-                onPress={() => setTextEditorField("notes")}
-                style={({ pressed }) => [
-                  styles.fieldRow,
-                  pressed ? { opacity: 0.9 } : null,
-                ]}
-              >
-                <Text style={styles.fieldLabel}>{copy.notesTitle}</Text>
-                <View style={styles.dateButton}>
-                  <Text
-                    style={[
-                      styles.dateValue,
-                      !notes ? styles.placeholderText : null,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {notes || copy.notesPlaceholder}
-                  </Text>
-                  <Feather name="chevron-right" size={16} color="#9AA7B3" />
+                <View style={styles.fieldDivider} />
+                <View style={styles.fieldRow}>
+                  <Text style={styles.fieldLabel}>{copy.heightLabel}</Text>
+                  <TextInput
+                    value={heightCm}
+                    onChangeText={setHeightCm}
+                    placeholder={copy.heightPlaceholder}
+                    placeholderTextColor={placeholderColor}
+                    style={styles.textInput}
+                    keyboardType="decimal-pad"
+                    autoCorrect={false}
+                    onFocus={scrollToLowerInputs}
+                  />
                 </View>
-              </Pressable>
+                <View style={styles.fieldDivider} />
+                <Pressable
+                  onPress={() => setTextEditorField("allergies")}
+                  style={({ pressed }) => [
+                    styles.fieldRow,
+                    pressed ? { opacity: 0.9 } : null,
+                  ]}
+                >
+                  <Text style={styles.fieldLabel}>{copy.allergiesTitle}</Text>
+                  <View style={styles.dateButton}>
+                    <Text
+                      style={[
+                        styles.dateValue,
+                        !allergies ? styles.placeholderText : null,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {allergies || copy.allergiesPlaceholder}
+                    </Text>
+                    <Feather name="chevron-right" size={16} color="#9AA7B3" />
+                  </View>
+                </Pressable>
+                <View style={styles.fieldDivider} />
+                <Pressable
+                  onPress={() => setTextEditorField("notes")}
+                  style={({ pressed }) => [
+                    styles.fieldRow,
+                    pressed ? { opacity: 0.9 } : null,
+                  ]}
+                >
+                  <Text style={styles.fieldLabel}>{copy.notesTitle}</Text>
+                  <View style={styles.dateButton}>
+                    <Text
+                      style={[
+                        styles.dateValue,
+                        !notes ? styles.placeholderText : null,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {notes || copy.notesPlaceholder}
+                    </Text>
+                    <Feather name="chevron-right" size={16} color="#9AA7B3" />
+                  </View>
+                </Pressable>
+              </View>
             </View>
-          </View>
 
-          <View style={styles.sectionWrap}>
-            <Text style={styles.sectionTitle}>{copy.babyModeTitle}</Text>
-            <View style={styles.cardList}>
-              <View style={styles.switchRow}>
-                <View style={styles.switchTextWrap}>
-                  <Text style={styles.fieldLabel}>{copy.babyModeTitle}</Text>
-                  <Text style={styles.rowDescription}>{copy.babyModeDescription}</Text>
+            <View style={styles.sectionWrap}>
+              <Text style={styles.sectionTitle}>{copy.babyModeTitle}</Text>
+              <View style={styles.cardList}>
+                <View style={styles.switchRow}>
+                  <View style={styles.switchTextWrap}>
+                    <Text style={styles.fieldLabel}>{copy.babyModeTitle}</Text>
+                    <Text style={styles.rowDescription}>
+                      {copy.babyModeDescription}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={babyModeEnabled}
+                    onValueChange={setBabyModeEnabled}
+                    trackColor={{ false: "#E7DDD7", true: "#46C06F" }}
+                    thumbColor="#FFFFFF"
+                    ios_backgroundColor="#E7DDD7"
+                  />
                 </View>
-                <Switch
-                  value={babyModeEnabled}
-                  onValueChange={setBabyModeEnabled}
-                  trackColor={{ false: "#E7DDD7", true: "#46C06F" }}
-                  thumbColor="#FFFFFF"
-                  ios_backgroundColor="#E7DDD7"
-                />
               </View>
             </View>
-          </View>
 
             <Pressable
               disabled={!canSubmit}
@@ -395,6 +393,7 @@ export function ChildCreateScreen({
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
+        <AssetWarmupLayer active={visible} assetModules={avatarWarmupSources} />
       </View>
 
       <BirthDatePickerSheet
@@ -436,7 +435,11 @@ export function ChildCreateScreen({
       <TextEditorSheet
         visible={textEditorField !== null}
         locale={locale}
-        title={textEditorField === "allergies" ? copy.allergiesTitle : copy.notesTitle}
+        title={
+          textEditorField === "allergies"
+            ? copy.allergiesTitle
+            : copy.notesTitle
+        }
         initialValue={textEditorField === "allergies" ? allergies : notes}
         onClose={() => setTextEditorField(null)}
         onApply={(value) => {

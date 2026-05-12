@@ -22,6 +22,7 @@ import {
   isCompactAvatarPresetKey,
   getMonths,
   parseBirthDate,
+  type ChildAvatarGender,
   type ChildAvatarPresetKey,
 } from "../model/childProfileEditHelpers";
 import { styles } from "./childProfileEditStyles";
@@ -39,7 +40,7 @@ export function ChildProfileEditHeroCard({
   changePhotoLabel,
   onPressChangePhoto,
 }: {
-  avatarSource: ImageSourcePropType;
+  avatarSource: ImageSourcePropType | null;
   childName: string;
   childMeta: string;
   changePhotoLabel: string;
@@ -48,7 +49,9 @@ export function ChildProfileEditHeroCard({
   return (
     <View style={styles.heroCard}>
       <View style={styles.avatarWrap}>
-        <Image source={avatarSource} style={styles.avatarImage} resizeMode="cover" />
+        {avatarSource ? (
+          <Image source={avatarSource} style={styles.avatarImage} resizeMode="cover" fadeDuration={0} />
+        ) : null}
       </View>
 
       <View style={styles.heroInfo}>
@@ -277,6 +280,9 @@ type AvatarPickerSheetProps = {
   locale: MobileLocale;
   onClose: () => void;
   options: typeof avatarOptions;
+  gender: ChildAvatarGender;
+  showGenderSwitch: boolean;
+  onChangeGender: (value: ChildAvatarGender) => void;
   selectedAvatarKey: ChildAvatarPresetKey | null;
   onSelect: (avatarKey: ChildAvatarPresetKey) => void;
 };
@@ -286,6 +292,9 @@ export function AvatarPickerSheet({
   locale,
   onClose,
   options,
+  gender,
+  showGenderSwitch,
+  onChangeGender,
   selectedAvatarKey,
   onSelect,
 }: AvatarPickerSheetProps) {
@@ -298,6 +307,7 @@ export function AvatarPickerSheet({
       overlayStyle={styles.sheetOverlay}
       backdropStyle={styles.sheetBackdrop}
       sheetStyle={styles.sheetCard}
+      keepMountedPreview
     >
       {({ panHandlers, requestClose }) => (
         <>
@@ -306,6 +316,47 @@ export function AvatarPickerSheet({
             <Text style={styles.sheetTitle}>{sheetCopy.avatarTitle}</Text>
             <Text style={styles.sheetSubtitle}>{sheetCopy.avatarSubtitle}</Text>
           </View>
+
+          {showGenderSwitch ? (
+            <View style={styles.sheetGenderSwitch}>
+              <Pressable
+                onPress={() => onChangeGender("boy")}
+                style={({ pressed }) => [
+                  styles.genderSwitchOption,
+                  styles.genderSwitchOptionBoy,
+                  gender === "boy" ? styles.genderSwitchOptionBoyActive : null,
+                  pressed ? styles.genderChipPressed : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.genderSwitchText,
+                    gender === "boy" ? styles.genderSwitchTextActive : null,
+                  ]}
+                >
+                  {sheetCopy.boyLabel}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => onChangeGender("girl")}
+                style={({ pressed }) => [
+                  styles.genderSwitchOption,
+                  styles.genderSwitchOptionGirl,
+                  gender === "girl" ? styles.genderSwitchOptionGirlActive : null,
+                  pressed ? styles.genderChipPressed : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.genderSwitchText,
+                    gender === "girl" ? styles.genderSwitchTextActive : null,
+                  ]}
+                >
+                  {sheetCopy.girlLabel}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
 
           <ScrollView
             style={styles.avatarGridScroll}
@@ -329,6 +380,7 @@ export function AvatarPickerSheet({
                     source={avatarOption.source}
                     style={resolveAvatarOptionImageStyle(avatarOption.key)}
                     resizeMode="contain"
+                    fadeDuration={0}
                   />
                 </Pressable>
               );

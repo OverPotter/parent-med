@@ -9,13 +9,16 @@ import {
   View,
 } from "react-native";
 import { childrenScreenAssets } from "../../../redesign/screens/children/manifest";
+import { AssetWarmupLayer } from "../../../shared/components/AssetWarmupLayer";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import { ChildCard } from "../../children/model/childrenRedesign";
 import {
-  childAvatarPresets,
+  type ChildAvatarGender,
   getChildAvatarGenderByKey,
+  getChildAvatarPresets,
+  getChildAvatarPresetSources,
   getChildAvatarSourceByKey,
   type ChildAvatarPresetKey,
 } from "../../children/model/childrenRedesign";
@@ -62,16 +65,20 @@ export function ChildProfileEditScreen({
   const defaultBirthDate = content.sections.main.rows[1]?.value ?? "";
   const defaultAllergies = content.sections.health.rows[0]?.description ?? "";
   const defaultNotes = content.sections.health.rows[1]?.description ?? "";
-  const [selectedAvatarKey, setSelectedAvatarKey] = useState<ChildAvatarPresetKey | null>(
-    (child.child.avatarKey as ChildAvatarPresetKey | null) ?? null,
+  const [selectedAvatarKey, setSelectedAvatarKey] =
+    useState<ChildAvatarPresetKey | null>(
+      (child.child.avatarKey as ChildAvatarPresetKey | null) ?? null,
+    );
+  const selectedAvatarGender = getChildAvatarGenderByKey(selectedAvatarKey);
+  const avatarGenderFromProfile = getChildAvatarGenderByKey(
+    child.child.avatarKey as ChildAvatarPresetKey | null,
   );
-  const lockedAvatarGender =
-    (child.child.gender as "boy" | "girl" | null) ??
-    getChildAvatarGenderByKey(child.child.avatarKey as ChildAvatarPresetKey | null) ??
-    getChildAvatarGenderByKey(selectedAvatarKey) ??
-    "boy";
+  const [avatarPickerGender, setAvatarPickerGender] =
+    useState<ChildAvatarGender>(avatarGenderFromProfile ?? "boy");
   const [editableName, setEditableName] = useState(content.childName);
-  const [editableBirthDate, setEditableBirthDate] = useState(child.child.birthDate);
+  const [editableBirthDate, setEditableBirthDate] = useState(
+    child.child.birthDate,
+  );
   const [editableAllergies, setEditableAllergies] = useState(defaultAllergies);
   const [editableNotes, setEditableNotes] = useState(defaultNotes);
   const [editingField, setEditingField] = useState<"childName" | null>(null);
@@ -93,10 +100,18 @@ export function ChildProfileEditScreen({
   const [babyModeEnabled, setBabyModeEnabled] = useState(
     content.sections.settings.rows[0]?.enabled ?? true,
   );
-  const defaultBabyModeEnabled = content.sections.settings.rows[0]?.enabled ?? true;
+  const defaultBabyModeEnabled =
+    content.sections.settings.rows[0]?.enabled ?? true;
 
   useEffect(() => {
-    setSelectedAvatarKey((child.child.avatarKey as ChildAvatarPresetKey | null) ?? null);
+    setSelectedAvatarKey(
+      (child.child.avatarKey as ChildAvatarPresetKey | null) ?? null,
+    );
+    setAvatarPickerGender(
+      getChildAvatarGenderByKey(
+        child.child.avatarKey as ChildAvatarPresetKey | null,
+      ) ?? "boy",
+    );
     setEditableName(content.childName);
     setEditableBirthDate(child.child.birthDate);
     setEditableAllergies(defaultAllergies);
@@ -114,8 +129,12 @@ export function ChildProfileEditScreen({
     visible,
   ]);
 
-  const avatarOptions = childAvatarPresets.filter(
-    (item) => item.gender === lockedAvatarGender,
+  const hasLockedAvatarGender = avatarGenderFromProfile !== null;
+  const avatarOptions = getChildAvatarPresets(
+    hasLockedAvatarGender ? avatarGenderFromProfile : avatarPickerGender,
+  );
+  const avatarWarmupSources = getChildAvatarPresetSources(
+    hasLockedAvatarGender ? avatarGenderFromProfile : null,
   );
   const heroAvatarSource =
     getChildAvatarSourceByKey(selectedAvatarKey) ?? child.avatarSource;
@@ -167,9 +186,15 @@ export function ChildProfileEditScreen({
             <ChildProfileEditHeroCard
               avatarSource={heroAvatarSource}
               childName={editableName}
-              childMeta={content.childMeta.replace(defaultBirthDate, editableBirthDateLabel)}
+              childMeta={content.childMeta.replace(
+                defaultBirthDate,
+                editableBirthDateLabel,
+              )}
               changePhotoLabel={content.changePhotoLabel}
               onPressChangePhoto={() => {
+                if (!hasLockedAvatarGender) {
+                  setAvatarPickerGender(selectedAvatarGender ?? "boy");
+                }
                 setIsAvatarSheetOpen(true);
               }}
             />
@@ -208,7 +233,7 @@ export function ChildProfileEditScreen({
                   avatarKey: selectedAvatarKey,
                   gender:
                     selectedAvatarKey != null
-                      ? lockedAvatarGender
+                      ? getChildAvatarGenderByKey(selectedAvatarKey)
                       : child.child.gender,
                   babyModeEnabled,
                   allergies: editableAllergies.trim() || null,
@@ -225,12 +250,16 @@ export function ChildProfileEditScreen({
         locale={locale}
         onClose={() => setIsAvatarSheetOpen(false)}
         options={avatarOptions}
+        gender={avatarPickerGender}
+        showGenderSwitch={!hasLockedAvatarGender}
+        onChangeGender={setAvatarPickerGender}
         selectedAvatarKey={selectedAvatarKey}
         onSelect={(avatarKey) => {
           setSelectedAvatarKey(avatarKey);
           setIsAvatarSheetOpen(false);
         }}
       />
+      <AssetWarmupLayer active={visible} assetModules={avatarWarmupSources} />
       <BirthDatePickerSheet
         visible={isDateSheetOpen}
         locale={locale}

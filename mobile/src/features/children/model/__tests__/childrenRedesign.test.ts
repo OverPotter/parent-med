@@ -1,4 +1,3 @@
-import { childrenScreenAssets } from "../../../../redesign/screens/children/manifest";
 import type { MobileChildSummary } from "../../api/childrenApi";
 import {
   buildChildrenCardsFromApi,
@@ -66,12 +65,12 @@ describe("buildChildrenCardsFromApi", () => {
     ]);
   });
 
-  it("uses gender fallback avatar when avatar key is missing", () => {
+  it("keeps avatar empty when avatar key is missing", () => {
     const [card] = buildChildrenCardsFromApi(
       [makeChild({ gender: "boy", avatarKey: null })],
       "ru",
     );
 
-    expect(card.avatarSource).toBe(childrenScreenAssets.avatars.boyBlackHair);
+    expect(card.avatarSource).toBeNull();
   });
 });

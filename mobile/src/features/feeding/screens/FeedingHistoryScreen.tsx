@@ -1,25 +1,36 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Image,
+  Pressable,
   Text,
   View,
 } from "react-native";
+import type { MobileAuthSession } from "../../auth/api/authApi";
 import { ChildCard } from "../../children/model/childrenRedesign";
+import {
+  type MobileFeedingRecord,
+  deleteMobileFeedingRecord,
+  fetchMobileFeedingRecords,
+} from "../api/feedingRecordsApi";
 import { journalHeroAssets } from "../../../redesign/screens/journal/assets";
 import { JournalScreenScaffold } from "../../../shared/components/JournalScreenScaffold";
 import { SwipeToDeleteRow } from "../../../shared/components/SwipeToDeleteRow";
-import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import { type MobileLocale, useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import {
+  buildFeedingMetricsFromApi,
   buildFeedingHistoryScreenContent,
-  FeedingMetric,
-  FeedingTimelineItem,
+  type FeedingMetric,
+  type FeedingTimelineItem,
+  filterFeedingRecordsByPeriod,
+  mapFeedingTimelineFromApi,
 } from "../model/feedingHistoryScreen";
 import { styles } from "./feedingHistoryScreenStyles";
 
 const feedingHeroDecor = journalHeroAssets.feeding;
 
 type FeedingHistoryScreenProps = {
+  authSession: MobileAuthSession;
   child: ChildCard;
   visible?: boolean;
   onBack?: () => void;
@@ -28,16 +39,79 @@ type FeedingHistoryScreenProps = {
 const noop = () => {};
 
 export function FeedingHistoryScreen({
+  authSession,
   child,
   visible = true,
   onBack = noop,
 }: FeedingHistoryScreenProps) {
   const { locale } = useMobileI18n();
-  const content = buildFeedingHistoryScreenContent(locale);
+  const childDisplayName = resolveFeedingChildDisplayName(child, locale);
   const [activePeriodId, setActivePeriodId] = useState(
-    content.periods.find((item) => item.active)?.id ?? content.periods[0]?.id ?? "",
+    buildFeedingHistoryScreenContent(locale, childDisplayName).periods.find((item) => item.active)?.id ?? "",
   );
-  const [timeline, setTimeline] = useState(content.timeline);
+  const [records, setRecords] = useState<MobileFeedingRecord[]>([]);
+  const [pendingDeleteRecordId, setPendingDeleteRecordId] = useState<string | null>(null);
+  const [deleteErrorVisible, setDeleteErrorVisible] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadTimeline() {
+      try {
+        const items = await fetchMobileFeedingRecords(authSession, child.child.id);
+
+        if (cancelled) {
+          return;
+        }
+
+        setRecords(items);
+      } catch {
+        if (!cancelled) {
+          setRecords([]);
+        }
+      }
+    }
+
+    void loadTimeline();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authSession, child.child.id, visible]);
+
+  const filteredRecords = useMemo(
+    () => filterFeedingRecordsByPeriod(records, activePeriodId),
+    [activePeriodId, records],
+  );
+  const content = useMemo(
+    () => buildFeedingHistoryScreenContent(locale, childDisplayName, activePeriodId),
+    [activePeriodId, childDisplayName, locale],
+  );
+  const timeline = useMemo(
+    () => mapFeedingTimelineFromApi(filteredRecords, locale),
+    [filteredRecords, locale],
+  );
+  const metrics = useMemo(
+    () => buildFeedingMetricsFromApi(filteredRecords, locale, activePeriodId),
+    [activePeriodId, filteredRecords, locale],
+  );
+  const deleteDialogCopy = useMemo(() => buildFeedingDeleteDialogCopy(locale), [locale]);
+  const deleteErrorCopy = useMemo(() => buildFeedingDeleteErrorCopy(locale), [locale]);
+
+  const deleteRecord = async (recordId: string) => {
+    try {
+      await deleteMobileFeedingRecord(authSession, recordId);
+      setRecords((current) => current.filter((entry) => entry.id !== recordId));
+      setPendingDeleteRecordId(null);
+    } catch {
+      setPendingDeleteRecordId(null);
+      setDeleteErrorVisible(true);
+    }
+  };
 
   return (
     <JournalScreenScaffold
@@ -70,14 +144,18 @@ export function FeedingHistoryScreen({
         </View>
 
         <View style={styles.metricsPanel}>
-          {content.metrics.map((metric, index) => (
-            <View key={metric.id} style={styles.metricColumn}>
-              <MetricColumn metric={metric} />
-              {index < content.metrics.length - 1 ? (
-                <View style={styles.metricDivider} />
-              ) : null}
-            </View>
-          ))}
+          {content.metrics.map((metric, index) => {
+            const metricValue = metrics.find((item) => item.id === metric.id)?.value ?? metric.value;
+
+            return (
+              <View key={metric.id} style={styles.metricColumn}>
+                <MetricColumn metric={{ ...metric, value: metricValue }} />
+                {index < content.metrics.length - 1 ? (
+                  <View style={styles.metricDivider} />
+                ) : null}
+              </View>
+            );
+          })}
         </View>
       </View>
 
@@ -88,14 +166,158 @@ export function FeedingHistoryScreen({
           <TimelineRow
             key={item.id}
             item={item}
-            onDelete={() =>
-              setTimeline((current) => current.filter((entry) => entry.id !== item.id))
-            }
+            onDelete={() => setPendingDeleteRecordId(item.id)}
           />
         ))}
       </View>
+
+      {pendingDeleteRecordId ? (
+        <View style={styles.confirmOverlay}>
+          <Pressable
+            style={styles.confirmBackdrop}
+            onPress={() => setPendingDeleteRecordId(null)}
+          />
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>{deleteDialogCopy.title}</Text>
+            <Text style={styles.confirmDescription}>{deleteDialogCopy.message}</Text>
+            <View style={styles.confirmActions}>
+              <Pressable
+                onPress={() => setPendingDeleteRecordId(null)}
+                style={({ pressed }) => [
+                  styles.confirmButtonSecondary,
+                  pressed ? styles.confirmButtonPressed : null,
+                ]}
+              >
+                <Text style={styles.confirmButtonSecondaryText}>
+                  {deleteDialogCopy.cancel}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  void deleteRecord(pendingDeleteRecordId);
+                }}
+                style={({ pressed }) => [
+                  styles.confirmButtonPrimary,
+                  pressed ? styles.confirmButtonPressed : null,
+                ]}
+              >
+                <Text style={styles.confirmButtonPrimaryText}>
+                  {deleteDialogCopy.confirm}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
+      {deleteErrorVisible ? (
+        <View style={styles.confirmOverlay}>
+          <Pressable
+            style={styles.confirmBackdrop}
+            onPress={() => setDeleteErrorVisible(false)}
+          />
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>{deleteErrorCopy.title}</Text>
+            <Text style={styles.confirmDescription}>{deleteErrorCopy.message}</Text>
+            <View style={styles.confirmActions}>
+              <Pressable
+                onPress={() => setDeleteErrorVisible(false)}
+                style={({ pressed }) => [
+                  styles.confirmButtonPrimary,
+                  pressed ? styles.confirmButtonPressed : null,
+                ]}
+              >
+                <Text style={styles.confirmButtonPrimaryText}>
+                  {deleteErrorCopy.confirm}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </JournalScreenScaffold>
   );
+}
+
+function resolveFeedingChildDisplayName(child: ChildCard, locale: MobileLocale) {
+  return (
+    child.name?.trim() ||
+    child.child.name?.trim() ||
+    (locale === "ru"
+      ? "ребёнок"
+      : locale === "de"
+        ? "Kind"
+        : locale === "pl"
+          ? "dziecko"
+          : "child")
+  );
+}
+
+function buildFeedingDeleteDialogCopy(locale: MobileLocale) {
+  if (locale === "ru") {
+    return {
+      title: "Точно удалить?",
+      message: "Запись кормления будет удалена без возможности восстановления.",
+      cancel: "Нет",
+      confirm: "Да, удалить",
+    };
+  }
+
+  if (locale === "de") {
+    return {
+      title: "Wirklich löschen?",
+      message: "Der Fütterungseintrag wird ohne Wiederherstellung gelöscht.",
+      cancel: "Nein",
+      confirm: "Ja, löschen",
+    };
+  }
+
+  if (locale === "pl") {
+    return {
+      title: "Na pewno usunąć?",
+      message: "Wpis karmienia zostanie usunięty bez możliwości przywrócenia.",
+      cancel: "Nie",
+      confirm: "Tak, usuń",
+    };
+  }
+
+  return {
+    title: "Are you sure?",
+    message: "This feeding record will be deleted permanently.",
+    cancel: "No",
+    confirm: "Yes, delete",
+  };
+}
+
+function buildFeedingDeleteErrorCopy(locale: MobileLocale) {
+  if (locale === "ru") {
+    return {
+      title: "Не удалось удалить",
+      message: "Попробуй ещё раз.",
+      confirm: "Понятно",
+    };
+  }
+
+  if (locale === "de") {
+    return {
+      title: "Löschen fehlgeschlagen",
+      message: "Bitte versuche es erneut.",
+      confirm: "Verstanden",
+    };
+  }
+
+  if (locale === "pl") {
+    return {
+      title: "Nie udało się usunąć",
+      message: "Spróbuj ponownie.",
+      confirm: "Rozumiem",
+    };
+  }
+
+  return {
+    title: "Delete failed",
+    message: "Please try again.",
+    confirm: "OK",
+  };
 }
 
 function MetricColumn({ metric }: { metric: FeedingMetric }) {

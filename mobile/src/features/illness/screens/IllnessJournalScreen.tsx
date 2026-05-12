@@ -1,26 +1,40 @@
 import { Feather } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Animated, Image, ImageBackground, Pressable, ScrollView, Text, View } from "react-native";
 import {
-  MobileBottomTabBar,
-  type MobileBottomTabItem,
-  type MobileBottomTabKey,
-} from "../../../shared/components/MobileBottomTabBar";
+  Animated,
+  Image,
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { MobileBottomTabBar } from "../../../shared/components/MobileBottomTabBar";
+import type {
+  MobileBottomTabItem,
+  MobileBottomTabKey,
+} from "../../../shared/components/mobileBottomTabModel";
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import { getLocalAssetDefaultSource } from "../../../shared/lib/assetSources";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import { ChildCard } from "../../children/model/childrenRedesign";
-import {
-  getIllnessSummaryChipAppearance,
-} from "../model/illnessJournalAppearance";
+import { getIllnessSummaryChipAppearance } from "../model/illnessJournalAppearance";
 import {
   buildIllnessJournalContent,
   getObservationChildStatsLabel,
   getObservationEntryCount,
 } from "../model/illnessJournal";
-import { IllnessQuickActionKind, MobileIllnessObservation } from "../model/illnessObservation";
+import {
+  IllnessQuickActionKind,
+  MobileIllnessObservation,
+} from "../model/illnessObservation";
 import { groupIllnessEntriesByDay } from "../model/illnessJournalTimeline";
-import { EntryRow, QuickActionButton, SummaryChip } from "./IllnessJournalParts";
+import {
+  EntryRow,
+  QuickActionButton,
+  SummaryChip,
+} from "./IllnessJournalParts";
 import { styles } from "./illnessJournalStyles";
 import { formatIllnessDateLabel } from "../model/illnessOnboarding";
 
@@ -35,26 +49,56 @@ type IllnessJournalScreenProps = {
   onSelectTab: (key: MobileBottomTabKey) => void;
 };
 
-function buildJournalTabItems(locale: ReturnType<typeof useMobileI18n>["locale"]): MobileBottomTabItem[] {
+function buildJournalTabItems(
+  locale: ReturnType<typeof useMobileI18n>["locale"],
+): MobileBottomTabItem[] {
   return [
     {
       key: "journal",
-      label: locale === "ru" ? "Журнал" : locale === "de" ? "Journal" : locale === "pl" ? "Dziennik" : "Journal",
+      label:
+        locale === "ru"
+          ? "Журнал"
+          : locale === "de"
+            ? "Journal"
+            : locale === "pl"
+              ? "Dziennik"
+              : "Journal",
       active: true,
     },
     {
       key: "children",
-      label: locale === "ru" ? "Дети" : locale === "de" ? "Kinder" : locale === "pl" ? "Dzieci" : "Children",
+      label:
+        locale === "ru"
+          ? "Дети"
+          : locale === "de"
+            ? "Kinder"
+            : locale === "pl"
+              ? "Dzieci"
+              : "Children",
       active: false,
     },
     {
       key: "pillbox",
-      label: locale === "ru" ? "Таблетница" : locale === "de" ? "Pillenbox" : locale === "pl" ? "Pudełko leków" : "Pillbox",
+      label:
+        locale === "ru"
+          ? "Таблетница"
+          : locale === "de"
+            ? "Pillenbox"
+            : locale === "pl"
+              ? "Pudełko leków"
+              : "Pillbox",
       active: false,
     },
     {
       key: "cabinet",
-      label: locale === "ru" ? "Аптечка" : locale === "de" ? "Hausapotheke" : locale === "pl" ? "Apteczka" : "Cabinet",
+      label:
+        locale === "ru"
+          ? "Аптечка"
+          : locale === "de"
+            ? "Hausapotheke"
+            : locale === "pl"
+              ? "Apteczka"
+              : "Cabinet",
       active: false,
     },
   ];
@@ -74,7 +118,9 @@ export function IllnessJournalScreen({
   const surfaceTheme = useMobileSurfaceTheme();
   const content = buildIllnessJournalContent(locale);
   const [expandedChildId, setExpandedChildId] = useState<string>("");
-  const [pendingFinishChildId, setPendingFinishChildId] = useState<string | null>(null);
+  const [pendingFinishChildId, setPendingFinishChildId] = useState<
+    string | null
+  >(null);
   const tabItems = useMemo(() => buildJournalTabItems(locale), [locale]);
 
   const activeCards = useMemo(() => {
@@ -127,9 +173,13 @@ export function IllnessJournalScreen({
             {activeCards.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyTitle}>{content.emptyTitle}</Text>
-                <Text style={styles.emptySubtitle}>{content.emptySubtitle}</Text>
+                <Text style={styles.emptySubtitle}>
+                  {content.emptySubtitle}
+                </Text>
                 <Pressable style={styles.emptyButton} onPress={onOpenChildren}>
-                  <Text style={styles.emptyButtonText}>{content.emptyPrimaryLabel}</Text>
+                  <Text style={styles.emptyButtonText}>
+                    {content.emptyPrimaryLabel}
+                  </Text>
                 </Pressable>
               </View>
             ) : null}
@@ -142,7 +192,17 @@ export function IllnessJournalScreen({
                   <View style={styles.cardHeader}>
                     <View style={styles.cardMainRow}>
                       <View style={styles.avatarWrap}>
-                        <Image source={child.avatarSource} style={styles.avatar as never} resizeMode="contain" />
+                        {child.avatarSource ? (
+                          <Image
+                            source={child.avatarSource}
+                            defaultSource={getLocalAssetDefaultSource(
+                              child.avatarSource,
+                            )}
+                            style={styles.avatar as never}
+                            resizeMode="contain"
+                            fadeDuration={0}
+                          />
+                        ) : null}
                       </View>
                       <View style={styles.cardHeaderCopy}>
                         <View style={styles.headerTopRow}>
@@ -152,9 +212,13 @@ export function IllnessJournalScreen({
                           </View>
                           <Pressable
                             style={styles.finishButton}
-                            onPress={() => setPendingFinishChildId(child.nodeId)}
+                            onPress={() =>
+                              setPendingFinishChildId(child.nodeId)
+                            }
                           >
-                            <Text style={styles.finishButtonText}>{content.finishLabel}</Text>
+                            <Text style={styles.finishButtonText}>
+                              {content.finishLabel}
+                            </Text>
                           </Pressable>
                         </View>
                         <Text style={styles.childStats}>
@@ -162,7 +226,10 @@ export function IllnessJournalScreen({
                         </Text>
                         <Text style={styles.observationSince}>
                           {content.observationSince(
-                            formatIllnessDateLabel(observation!.startedAt, locale),
+                            formatIllnessDateLabel(
+                              observation!.startedAt,
+                              locale,
+                            ),
                           )}
                         </Text>
                       </View>
@@ -170,19 +237,22 @@ export function IllnessJournalScreen({
                   </View>
 
                   <View style={styles.chipsRow}>
-                    {(["temperature", "medicine", "reminder"] as const).map((kind) => {
-                      const appearance = getIllnessSummaryChipAppearance(kind);
+                    {(["temperature", "medicine", "reminder"] as const).map(
+                      (kind) => {
+                        const appearance =
+                          getIllnessSummaryChipAppearance(kind);
 
-                      return (
-                        <SummaryChip
-                          key={kind}
-                          icon={appearance.icon}
-                          text={content.summaryChipLabels[kind]}
-                          backgroundColor={appearance.backgroundColor}
-                          borderColor={appearance.borderColor}
-                        />
-                      );
-                    })}
+                        return (
+                          <SummaryChip
+                            key={kind}
+                            icon={appearance.icon}
+                            text={content.summaryChipLabels[kind]}
+                            backgroundColor={appearance.backgroundColor}
+                            borderColor={appearance.borderColor}
+                          />
+                        );
+                      },
+                    )}
                   </View>
 
                   <View style={styles.quickActionsGrid}>
@@ -221,7 +291,9 @@ export function IllnessJournalScreen({
                         <Feather name="list" size={18} color="#F56F68" />
                       </View>
                       <Text style={styles.feedLabel}>
-                        {content.feedLabel(getObservationEntryCount(observation!))}
+                        {content.feedLabel(
+                          getObservationEntryCount(observation!),
+                        )}
                       </Text>
                     </View>
                     <Feather
@@ -233,9 +305,14 @@ export function IllnessJournalScreen({
 
                   {isExpanded ? (
                     <View style={styles.entriesWrap}>
-                      {groupIllnessEntriesByDay(observation!.entries, locale).map((section) => (
+                      {groupIllnessEntriesByDay(
+                        observation!.entries,
+                        locale,
+                      ).map((section) => (
                         <View key={section.key} style={styles.entrySection}>
-                          <Text style={styles.entrySectionTitle}>{section.label}</Text>
+                          <Text style={styles.entrySectionTitle}>
+                            {section.label}
+                          </Text>
                           <View style={styles.entrySectionRows}>
                             {section.entries.map((entry, index) => (
                               <EntryRow
@@ -259,13 +336,23 @@ export function IllnessJournalScreen({
 
       {pendingFinishChildId ? (
         <View style={styles.confirmOverlay}>
-          <Pressable style={styles.confirmBackdrop} onPress={() => setPendingFinishChildId(null)} />
+          <Pressable
+            style={styles.confirmBackdrop}
+            onPress={() => setPendingFinishChildId(null)}
+          />
           <View style={styles.confirmCard}>
             <Text style={styles.confirmTitle}>{content.finishTitle}</Text>
-            <Text style={styles.confirmDescription}>{content.finishDescription}</Text>
+            <Text style={styles.confirmDescription}>
+              {content.finishDescription}
+            </Text>
             <View style={styles.confirmActions}>
-              <Pressable style={styles.secondaryButton} onPress={() => setPendingFinishChildId(null)}>
-                <Text style={styles.secondaryButtonText}>{content.finishCancelLabel}</Text>
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={() => setPendingFinishChildId(null)}
+              >
+                <Text style={styles.secondaryButtonText}>
+                  {content.finishCancelLabel}
+                </Text>
               </Pressable>
               <Pressable
                 style={styles.primaryButton}
@@ -274,7 +361,9 @@ export function IllnessJournalScreen({
                   setPendingFinishChildId(null);
                 }}
               >
-                <Text style={styles.primaryButtonText}>{content.finishConfirmLabel}</Text>
+                <Text style={styles.primaryButtonText}>
+                  {content.finishConfirmLabel}
+                </Text>
               </Pressable>
             </View>
           </View>

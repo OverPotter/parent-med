@@ -315,11 +315,13 @@ export function ChildOverviewScreen({
                       { backgroundColor: content.theme.avatarBlobColor },
                     ]}
                   >
-                    <Image
-                      source={content.avatarSource}
-                      style={styles.avatarImage}
-                      resizeMode="cover"
-                    />
+                    {content.avatarSource ? (
+                      <Image
+                        source={content.avatarSource}
+                        style={styles.avatarImage}
+                        resizeMode="cover"
+                      />
+                    ) : null}
                   </View>
                 </View>
               </View>

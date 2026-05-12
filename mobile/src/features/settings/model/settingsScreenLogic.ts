@@ -19,6 +19,24 @@ export type SettingsBundle = {
   familyAccess: MobileFamilyAccessSummary;
 };
 
+const settingsBundleCache = new Map<string, SettingsBundle>();
+
+export function getCachedSettingsBundle(accessToken: string | null) {
+  if (!accessToken) {
+    return null;
+  }
+
+  return settingsBundleCache.get(accessToken) ?? null;
+}
+
+export function setCachedSettingsBundle(accessToken: string | null, bundle: SettingsBundle) {
+  if (!accessToken) {
+    return;
+  }
+
+  settingsBundleCache.set(accessToken, bundle);
+}
+
 export async function loadSettingsBundle(
   session: Pick<MobileAuthSession, "accessToken">,
 ): Promise<SettingsBundle> {
@@ -30,12 +48,16 @@ export async function loadSettingsBundle(
       fetchMyFamilyAccessSummary({ accessToken: session.accessToken }),
     ]);
 
-  return {
+  const bundle = {
     pushPreferences,
     pushConfig,
     familySummary,
     familyAccess,
   };
+
+  setCachedSettingsBundle(session.accessToken, bundle);
+
+  return bundle;
 }
 
 export function getPasswordInlineHint(

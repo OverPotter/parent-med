@@ -64,7 +64,7 @@ export function AnalyticsScreen({
   });
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
-    enabled: true,
+    enabled: visible,
     width,
     onBack,
   });

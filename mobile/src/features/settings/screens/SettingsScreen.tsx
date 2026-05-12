@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { childrenScreenAssets } from "../../../redesign/screens/children/manifest";
+import { mobileTabAssets } from "../../../shared/assets/mobileTabAssets";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
@@ -39,6 +40,7 @@ import {
 import {
   buildCabinetReminderPatch,
   buildOptimisticMasterPushPreferences,
+  getCachedSettingsBundle,
   getPasswordInlineHint,
   loadSettingsBundle,
   validatePasswordForm,
@@ -85,9 +87,9 @@ type SettingsScreenProps = {
 const settingsModuleIcons = {
   language: settingsScreenAssets.language,
   notifications: settingsScreenAssets.notifications,
-  children: require("../../../shared/assets/bottom-tabs/parent_child_transparent.png"),
-  pillbox: require("../../../shared/assets/bottom-tabs/pillpath_icon_transparent.png"),
-  cabinet: require("../../../shared/assets/bottom-tabs/medical_bag_icon_transparent_FIXED.png"),
+  children: mobileTabAssets.children,
+  pillbox: mobileTabAssets.pillbox,
+  cabinet: mobileTabAssets.cabinet,
   medicationPlans: settingsScreenAssets.medicationInterval,
 } as const;
 
@@ -116,8 +118,9 @@ export function SettingsScreen({
     onBack,
   });
 
-  const [pushPreferences, setPushPreferences] =
-    useState<MobilePushPreferences>(defaultPushPreferences);
+  const [pushPreferences, setPushPreferences] = useState<MobilePushPreferences>(
+    defaultPushPreferences,
+  );
   const [pushConfig, setPushConfig] =
     useState<MobilePushConfig>(defaultPushConfig);
   const [familySummary, setFamilySummary] =
@@ -134,12 +137,15 @@ export function SettingsScreen({
   const [recoveryCodeExpanded, setRecoveryCodeExpanded] = useState(false);
   const [languageExpanded, setLanguageExpanded] = useState(false);
   const [subscriptionExpanded, setSubscriptionExpanded] = useState(false);
-  const [medicationIntervalExpanded, setMedicationIntervalExpanded] = useState(false);
+  const [medicationIntervalExpanded, setMedicationIntervalExpanded] =
+    useState(false);
   const [medicationIntervalUnit, setMedicationIntervalUnit] =
     useState<MedicationIntervalUnit>("hours");
   const [passwordForm, setPasswordForm] =
     useState<PasswordFormState>(emptyPasswordForm);
-  const [passwordSubmitError, setPasswordSubmitError] = useState<string | null>(null);
+  const [passwordSubmitError, setPasswordSubmitError] = useState<string | null>(
+    null,
+  );
   const [recoveryCode, setRecoveryCode] = useState("");
   const [hasRecoveryCode, setHasRecoveryCode] = useState(
     Boolean(session?.account.hasRecoveryCode),
@@ -191,10 +197,19 @@ export function SettingsScreen({
     }
 
     const activeSession = session;
+    const cachedBundle = getCachedSettingsBundle(activeSession.accessToken);
     let cancelled = false;
 
+    if (cachedBundle) {
+      setPushPreferences(cachedBundle.pushPreferences);
+      setPushConfig(cachedBundle.pushConfig);
+      setFamilySummary(cachedBundle.familySummary);
+      setFamilyAccess(cachedBundle.familyAccess);
+      setIsLoading(false);
+    }
+
     async function loadSettings() {
-      setIsLoading(true);
+      setIsLoading(!cachedBundle);
       setError(null);
 
       try {
@@ -214,7 +229,7 @@ export function SettingsScreen({
         setFamilySummary(nextFamilySummary);
         setFamilyAccess(nextFamilyAccess);
       } catch {
-        if (!cancelled) {
+        if (!cancelled && !cachedBundle) {
           setError(content.saveErrorLabel);
         }
       } finally {
@@ -302,8 +317,7 @@ export function SettingsScreen({
 
     setMedicationIntervalUnit(nextUnit);
     setMedicationIntervalExpanded(false);
-    setError(null);
-    setSuccess(null);
+    resetTransientMessages();
 
     if (result.submitError) {
       setError(result.submitError);
@@ -455,19 +469,23 @@ export function SettingsScreen({
       return;
     }
 
-    Alert.alert(ownershipPolicy.confirmDeleteTitle, ownershipPolicy.confirmDeleteMessage, [
-      {
-        text: content.cancelActionLabel,
-        style: "cancel",
-      },
-      {
-        text: content.confirmDeleteAction,
-        style: "destructive",
-        onPress: () => {
-          void handleDelete();
+    Alert.alert(
+      ownershipPolicy.confirmDeleteTitle,
+      ownershipPolicy.confirmDeleteMessage,
+      [
+        {
+          text: content.cancelActionLabel,
+          style: "cancel",
         },
-      },
-    ]);
+        {
+          text: content.confirmDeleteAction,
+          style: "destructive",
+          onPress: () => {
+            void handleDelete();
+          },
+        },
+      ],
+    );
   };
 
   const handleDelete = async () => {
@@ -486,7 +504,10 @@ export function SettingsScreen({
     }
   };
 
-  const subscriptionPlanLabel = mapSubscriptionPlanLabel(content, familyAccess.planCode);
+  const subscriptionPlanLabel = mapSubscriptionPlanLabel(
+    content,
+    familyAccess.planCode,
+  );
   const subscriptionStatusLabel = mapSubscriptionStatusLabel(
     content,
     familyAccess.subscriptionStatus,
@@ -551,7 +572,10 @@ export function SettingsScreen({
             <View style={styles.topBar}>
               <Pressable onPress={onBack} style={styles.backLink}>
                 <Text
-                  style={[styles.backLinkText, { color: surfaceTheme.textSecondaryColor }]}
+                  style={[
+                    styles.backLinkText,
+                    { color: surfaceTheme.textSecondaryColor },
+                  ]}
                 >
                   {"← "}
                   {content.backLabel}
@@ -560,22 +584,30 @@ export function SettingsScreen({
             </View>
 
             <View style={styles.introBlock}>
-              <Text style={[styles.title, { color: surfaceTheme.textPrimaryColor }]}>
+              <Text
+                style={[styles.title, { color: surfaceTheme.textPrimaryColor }]}
+              >
                 {content.title}
               </Text>
-              <Text style={[styles.subtitle, { color: surfaceTheme.textSecondaryColor }]}>
+              <Text
+                style={[
+                  styles.subtitle,
+                  { color: surfaceTheme.textSecondaryColor },
+                ]}
+              >
                 {content.subtitle}
               </Text>
             </View>
 
-            {error ? (
-              <Text style={styles.errorNote}>{error}</Text>
-            ) : null}
-            {success ? (
-              <Text style={styles.successNote}>{success}</Text>
-            ) : null}
+            {error ? <Text style={styles.errorNote}>{error}</Text> : null}
+            {success ? <Text style={styles.successNote}>{success}</Text> : null}
             {isLoading ? (
-              <Text style={[styles.loadingNote, { color: surfaceTheme.textMutedColor }]}>
+              <Text
+                style={[
+                  styles.loadingNote,
+                  { color: surfaceTheme.textMutedColor },
+                ]}
+              >
                 {content.loadingLabel}
               </Text>
             ) : null}
@@ -657,7 +689,9 @@ export function SettingsScreen({
             >
               <NotificationsSettingsCard
                 pushConfigEnabled={pushConfig.enabled}
-                notificationsUnavailableHint={content.notificationsUnavailableHint}
+                notificationsUnavailableHint={
+                  content.notificationsUnavailableHint
+                }
                 pushMasterIcon={settingsModuleIcons.notifications}
                 pushMasterTitle={content.pushMasterTitle}
                 pushMasterHint={content.pushMasterHint}
@@ -678,7 +712,9 @@ export function SettingsScreen({
                 reminderChoices={content.reminderChoices}
                 beforeReminderMinutes={pushPreferences.beforeReminderMinutes}
                 onSelectBeforeReminderMinutes={(value) => {
-                  void patchPushPreferences({ beforeReminderMinutes: Number(value) });
+                  void patchPushPreferences({
+                    beforeReminderMinutes: Number(value),
+                  });
                 }}
                 pillboxIcon={settingsModuleIcons.pillbox}
                 pillboxTitle={content.pillboxPushTitle}
@@ -689,7 +725,9 @@ export function SettingsScreen({
                 }}
                 pillboxLeadTimeTitle={content.pillboxLeadTimeTitle}
                 pillboxLeadTimeHint={content.pillboxLeadTimeHint}
-                pillboxBeforeReminderMinutes={pushPreferences.pillboxBeforeReminderMinutes}
+                pillboxBeforeReminderMinutes={
+                  pushPreferences.pillboxBeforeReminderMinutes
+                }
                 onSelectPillboxBeforeReminderMinutes={(value) => {
                   void patchPushPreferences({
                     pillboxBeforeReminderMinutes: Number(value),
@@ -748,13 +786,19 @@ export function SettingsScreen({
                 illnessEnabled={pushPreferences.liveActivityIllnessEnabled}
                 disabled={isSavingPush}
                 onToggleSleep={(value) => {
-                  void patchPushPreferences({ liveActivitySleepEnabled: value });
+                  void patchPushPreferences({
+                    liveActivitySleepEnabled: value,
+                  });
                 }}
                 onToggleFeeding={(value) => {
-                  void patchPushPreferences({ liveActivityFeedingEnabled: value });
+                  void patchPushPreferences({
+                    liveActivityFeedingEnabled: value,
+                  });
                 }}
                 onToggleIllness={(value) => {
-                  void patchPushPreferences({ liveActivityIllnessEnabled: value });
+                  void patchPushPreferences({
+                    liveActivityIllnessEnabled: value,
+                  });
                 }}
               />
             </SettingsSection>
@@ -842,7 +886,9 @@ export function SettingsScreen({
                   savePasswordLabel={content.savePasswordLabel}
                   recoveryCodeTitle={content.recoveryCodeTitle}
                   recoveryCodeHint={content.recoveryCodeHint}
-                  recoveryCodeConfiguredHint={content.recoveryCodeConfiguredHint}
+                  recoveryCodeConfiguredHint={
+                    content.recoveryCodeConfiguredHint
+                  }
                   hasRecoveryCode={hasRecoveryCode}
                   recoveryCodeExpanded={recoveryCodeExpanded}
                   onToggleRecoveryCode={() => {

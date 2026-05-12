@@ -48,6 +48,7 @@ export function ChildAvatarPickerSheet({
       overlayStyle={styles.sheetOverlay}
       backdropStyle={styles.sheetBackdrop}
       sheetStyle={styles.avatarSheetCard}
+      keepMountedPreview
     >
       {({ panHandlers, requestClose }) => (
         <>
@@ -115,6 +116,7 @@ export function ChildAvatarPickerSheet({
                     source={avatar.source}
                     style={resolveAvatarOptionImageStyle(avatar.key)}
                     resizeMode="contain"
+                    fadeDuration={0}
                   />
                 ) : null}
               </Pressable>

@@ -1,14 +1,30 @@
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
-  overlayLayer: { ...StyleSheet.absoluteFillObject, zIndex: 30 },
+  overlayLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 30,
+    backgroundColor: "#FBF3EC",
+  },
   overlayLayerHidden: { opacity: 0 },
   overlayLayerVisible: { opacity: 1 },
-  background: { ...StyleSheet.absoluteFillObject },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#FBF3EC",
+  },
   backgroundImage: { width: "100%", height: "100%" },
-  backgroundOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,248,241,0.58)" },
-  screen: { flex: 1 },
-  root: { flex: 1 },
+  backgroundOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,248,241,0.72)",
+  },
+  screen: {
+    flex: 1,
+    backgroundColor: "#FBF3EC",
+  },
+  root: {
+    flex: 1,
+    backgroundColor: "#FBF3EC",
+  },
   scroll: { flex: 1 },
   scrollContent: { paddingTop: 54, paddingHorizontal: 16, paddingBottom: 150 },
   bottomBarLayer: {

@@ -257,7 +257,7 @@ export type ChildOverviewScreenContent = {
   backLabel: string;
   title: string;
   subtitle: string;
-  avatarSource: ImageSourcePropType;
+  avatarSource: ImageSourcePropType | null;
   periodOptions: ChildOverviewPeriodOption[];
   summaryTitle: string;
   summaryInsights: Array<{

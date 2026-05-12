@@ -20,6 +20,7 @@ import { ChildExportSheet } from "../export/ChildExportSheet";
 import { styles } from "./childProfileRedesignStyles";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
+import { getLocalAssetDefaultSource } from "../../../shared/lib/assetSources";
 import { getChildModuleTint } from "../../../shared/theme/childModuleTints";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 
@@ -98,11 +99,17 @@ export function ChildProfileRedesignScreen({
             <View style={styles.profileCard}>
               <View style={styles.profileTopRow}>
                 <View style={styles.photoWrap}>
-                  <Image
-                    source={content.avatarSource}
-                    style={styles.photoImage}
-                    resizeMode="cover"
-                  />
+                  {content.avatarSource ? (
+                    <Image
+                      source={content.avatarSource}
+                      defaultSource={getLocalAssetDefaultSource(
+                        content.avatarSource,
+                      )}
+                      style={styles.photoImage}
+                      resizeMode="cover"
+                      fadeDuration={0}
+                    />
+                  ) : null}
                 </View>
 
                 <View style={styles.summary}>
@@ -156,44 +163,51 @@ export function ChildProfileRedesignScreen({
                   key={`${content.journalTitle}-${index}`}
                   style={styles.journalRow}
                 >
-                  {row.map((item) => (
+                  {row.map((item) =>
                     (() => {
                       const canPress =
-                        item.iconVariant === "illnessBadge" || Boolean(item.targetKind);
+                        item.iconVariant === "illnessBadge" ||
+                        Boolean(item.targetKind);
 
                       return (
-                    <JournalItem
-                      key={item.id}
-                      item={item}
-                      disabled={!canPress}
-                      onPress={() => {
-                        if (item.iconVariant === "illnessBadge") {
-                          handleOpenAnalytics();
-                          return;
-                        }
+                        <JournalItem
+                          key={item.id}
+                          item={item}
+                          disabled={!canPress}
+                          onPress={() => {
+                            if (item.iconVariant === "illnessBadge") {
+                              handleOpenAnalytics();
+                              return;
+                            }
 
-                        if (item.targetKind) {
-                          handleOpenJournalEntry(item.targetKind);
-                        }
-                      }}
-                    />
+                            if (item.targetKind) {
+                              handleOpenJournalEntry(item.targetKind);
+                            }
+                          }}
+                        />
                       );
-                    })()
-                  ))}
+                    })(),
+                  )}
                 </View>
               ))}
             </View>
 
             <View style={[styles.notesBlock, styles.disabledCard]}>
               <View style={styles.infoRow}>
-                <Text style={styles.notesTitle}>{copy.childProfile.stats.allergies}</Text>
-                <Text style={styles.infoOptional}>{content.allergiesOptionalLabel}</Text>
+                <Text style={styles.notesTitle}>
+                  {copy.childProfile.stats.allergies}
+                </Text>
+                <Text style={styles.infoOptional}>
+                  {content.allergiesOptionalLabel}
+                </Text>
               </View>
               <Text style={styles.notesBody}>{content.allergiesValue}</Text>
               <View style={styles.infoDivider} />
               <View style={styles.infoRow}>
                 <Text style={styles.notesTitle}>{content.notesTitle}</Text>
-                <Text style={styles.infoOptional}>{content.notesOptionalLabel}</Text>
+                <Text style={styles.infoOptional}>
+                  {content.notesOptionalLabel}
+                </Text>
               </View>
               <Text style={styles.notesBody}>{content.notesBody}</Text>
             </View>
@@ -295,7 +309,9 @@ function JournalIcon({ item }: { item: ChildProfileJournalItem }) {
   return <Feather name="clipboard" size={32} color="#D881A5" />;
 }
 
-function getJournalItemTint(iconVariant: ChildProfileJournalItem["iconVariant"]) {
+function getJournalItemTint(
+  iconVariant: ChildProfileJournalItem["iconVariant"],
+) {
   if (iconVariant === "sleep") {
     return getChildModuleTint("sleep");
   }

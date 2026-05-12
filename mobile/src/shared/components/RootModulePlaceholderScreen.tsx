@@ -1,7 +1,7 @@
 import { ImageBackground, Text, View } from "react-native";
 import { childrenScreenAssets } from "../../redesign/screens/children/manifest";
 import { useMobileI18n } from "../i18n/mobileI18n";
-import { MobileBottomTabKey } from "./MobileBottomTabBar";
+import { MobileBottomTabKey } from "./mobileBottomTabModel";
 
 type RootModulePlaceholderScreenProps = {
   tabKey: Exclude<MobileBottomTabKey, "children" | "journal">;
@@ -38,7 +38,8 @@ const placeholderCopy = {
     },
     de: {
       title: "Medikamentenschrank",
-      subtitle: "Dieser Bildschirm wird gerade in der gemeinsamen Designsprache aufgebaut.",
+      subtitle:
+        "Dieser Bildschirm wird gerade in der gemeinsamen Designsprache aufgebaut.",
       body: "Der Tab funktioniert bereits, das Modul selbst bleibt aber vorerst ein sauberer Platzhalter auf unserem gemeinsamen Hintergrund.",
     },
     pl: {
@@ -82,7 +83,13 @@ export function RootModulePlaceholderScreen({
   const { locale } = useMobileI18n();
   const copy = placeholderCopy[tabKey];
   const activeCopy =
-    locale === "ru" ? copy.ru : locale === "de" ? copy.de : locale === "pl" ? copy.pl : copy.en;
+    locale === "ru"
+      ? copy.ru
+      : locale === "de"
+        ? copy.de
+        : locale === "pl"
+          ? copy.pl
+          : copy.en;
   const title = activeCopy.title;
   const subtitle = activeCopy.subtitle;
 

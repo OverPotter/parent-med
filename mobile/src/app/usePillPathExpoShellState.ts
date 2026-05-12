@@ -14,6 +14,7 @@ import {
   writeStoredAuthSession,
 } from "../features/auth/session/mobileAuthSessionStorage";
 import { type AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
+import { prefetchAnalyticsScreenData } from "../features/analytics/screens/useAnalyticsScreenState";
 import {
   createMobileChild,
   deleteMobileChild,
@@ -27,6 +28,7 @@ import {
   type MobileFeedingRecord,
 } from "../features/feeding/api/feedingRecordsApi";
 import { createMobileHeightEntry } from "../features/growth/api/heightEntriesApi";
+import { type MobileBottomTabKey } from "../shared/components/mobileBottomTabModel";
 import {
   buildChildrenCardsFromApi,
   buildChildrenScreenContent,
@@ -41,6 +43,7 @@ import {
   applyPreferredLanguageToSession,
   updatePreferredLanguage,
 } from "../features/settings/api/settingsApi";
+import { loadSettingsBundle } from "../features/settings/model/settingsScreenLogic";
 import {
   startMobileSleepSession,
   stopMobileSleepSession,
@@ -48,7 +51,6 @@ import {
 } from "../features/sleep/api/sleepSessionsApi";
 import { createMobileWeightEntry } from "../features/weight/api/weightEntriesApi";
 import { useMobileI18n, type MobileLocale } from "../shared/i18n/mobileI18n";
-import { type MobileBottomTabKey } from "../shared/components/MobileBottomTabBar";
 import { OverlayScreens, RootTabContent } from "./PillPathExpoShellContent";
 import {
   resolveJournalTargetScreen,
@@ -67,16 +69,22 @@ function useChildFlowController({
   setSelectedEpisode,
   setSelectedJournalKind,
 }: {
-  activeIllnessObservationsByChildId: Record<string, MobileIllnessObservation | undefined>;
+  activeIllnessObservationsByChildId: Record<
+    string,
+    MobileIllnessObservation | undefined
+  >;
   setActiveScreen: Dispatch<SetStateAction<PillPathActiveScreen>>;
   setSelectedChildId: Dispatch<SetStateAction<string>>;
   setSelectedEpisode: Dispatch<SetStateAction<AnalyticsEpisodeCard | null>>;
   setSelectedJournalKind: Dispatch<SetStateAction<JournalEntryKind>>;
 }) {
-  const handleOpenChildProfile = useCallback((cardId: string) => {
-    setSelectedChildId(cardId);
-    setActiveScreen("childProfile");
-  }, [setActiveScreen, setSelectedChildId]);
+  const handleOpenChildProfile = useCallback(
+    (cardId: string) => {
+      setSelectedChildId(cardId);
+      setActiveScreen("childProfile");
+    },
+    [setActiveScreen, setSelectedChildId],
+  );
 
   const handleOpenRootJournalEntry = useCallback(
     (cardId: string, kind: JournalEntryKind) => {
@@ -119,27 +127,33 @@ function useChildFlowController({
     setActiveScreen("childProfile");
   }, [setActiveScreen]);
 
-  const handleOpenAnalyticsEpisode = useCallback((episode: AnalyticsEpisodeCard) => {
-    setSelectedEpisode(episode);
-    setActiveScreen("analyticsBreakdown");
-  }, [setActiveScreen, setSelectedEpisode]);
+  const handleOpenAnalyticsEpisode = useCallback(
+    (episode: AnalyticsEpisodeCard) => {
+      setSelectedEpisode(episode);
+      setActiveScreen("analyticsBreakdown");
+    },
+    [setActiveScreen, setSelectedEpisode],
+  );
 
   const handleCloseAnalyticsEpisode = useCallback(() => {
     setActiveScreen("analytics");
   }, [setActiveScreen]);
 
-  const handleOpenJournalEntry = useCallback((kind: ChildProfileDestination) => {
-    if (
-      kind === "feeding" ||
-      kind === "sleep" ||
-      kind === "weight" ||
-      kind === "height"
-    ) {
-      setSelectedJournalKind(kind);
-    }
+  const handleOpenJournalEntry = useCallback(
+    (kind: ChildProfileDestination) => {
+      if (
+        kind === "feeding" ||
+        kind === "sleep" ||
+        kind === "weight" ||
+        kind === "height"
+      ) {
+        setSelectedJournalKind(kind);
+      }
 
-    setActiveScreen(resolveJournalTargetScreen(kind));
-  }, [setActiveScreen, setSelectedJournalKind]);
+      setActiveScreen(resolveJournalTargetScreen(kind));
+    },
+    [setActiveScreen, setSelectedJournalKind],
+  );
 
   const handleCloseJournalEntry = useCallback(() => {
     setActiveScreen("children");
@@ -200,7 +214,9 @@ function useIllnessFlowController({
   setActiveScreen: Dispatch<SetStateAction<PillPathActiveScreen>>;
   setActiveRootTab: Dispatch<SetStateAction<MobileBottomTabKey>>;
   setSelectedChildId: Dispatch<SetStateAction<string>>;
-  setSelectedIllnessActionKind: Dispatch<SetStateAction<IllnessQuickActionKind>>;
+  setSelectedIllnessActionKind: Dispatch<
+    SetStateAction<IllnessQuickActionKind>
+  >;
   setActiveIllnessObservationsByChildId: Dispatch<
     SetStateAction<Record<string, MobileIllnessObservation | undefined>>
   >;
@@ -230,7 +246,12 @@ function useIllnessFlowController({
       }));
       setActiveScreen("illnessJournal");
     },
-    [locale, selectedChildId, setActiveIllnessObservationsByChildId, setActiveScreen],
+    [
+      locale,
+      selectedChildId,
+      setActiveIllnessObservationsByChildId,
+      setActiveScreen,
+    ],
   );
 
   const handleAddIllnessEntry = useCallback(
@@ -242,21 +263,27 @@ function useIllnessFlowController({
     [setActiveScreen, setSelectedChildId, setSelectedIllnessActionKind],
   );
 
-  const handleFinishIllnessObservation = useCallback((childId: string) => {
-    setActiveIllnessObservationsByChildId((current) => ({
-      ...current,
-      [childId]: undefined,
-    }));
-  }, [setActiveIllnessObservationsByChildId]);
+  const handleFinishIllnessObservation = useCallback(
+    (childId: string) => {
+      setActiveIllnessObservationsByChildId((current) => ({
+        ...current,
+        [childId]: undefined,
+      }));
+    },
+    [setActiveIllnessObservationsByChildId],
+  );
 
-  const handleSelectTab = useCallback((key: MobileBottomTabKey) => {
-    if (key === "journal") {
-      return;
-    }
+  const handleSelectTab = useCallback(
+    (key: MobileBottomTabKey) => {
+      if (key === "journal") {
+        return;
+      }
 
-    setActiveRootTab(key);
-    setActiveScreen("children");
-  }, [setActiveRootTab, setActiveScreen]);
+      setActiveRootTab(key);
+      setActiveScreen("children");
+    },
+    [setActiveRootTab, setActiveScreen],
+  );
 
   return {
     handleAddIllnessEntry,
@@ -535,6 +562,7 @@ export function usePillPathExpoShellState() {
     null,
   );
   const [isAuthBootstrapping, setIsAuthBootstrapping] = useState(true);
+  const [isShellBootstrapping, setIsShellBootstrapping] = useState(false);
   const [activeRootTab, setActiveRootTab] =
     useState<MobileBottomTabKey>("children");
   const [activeScreen, setActiveScreen] =
@@ -562,7 +590,10 @@ export function usePillPathExpoShellState() {
   ] = useState<Record<string, MobileIllnessObservation | undefined>>({});
 
   const loadChildren = useCallback(
-    async (session: MobileAuthSession, options?: { ignoreErrors?: boolean }) => {
+    async (
+      session: MobileAuthSession,
+      options?: { ignoreErrors?: boolean },
+    ) => {
       try {
         const summary = await fetchMobileChildrenSummary(session);
         const nextChildren = summary.map((item) => item.child);
@@ -651,7 +682,11 @@ export function usePillPathExpoShellState() {
       return [];
     }
 
-    return buildChildrenCardsFromApi(children, locale, latestChildMetricsByCardId);
+    return buildChildrenCardsFromApi(
+      children,
+      locale,
+      latestChildMetricsByCardId,
+    );
   }, [
     authSession?.account.familyId,
     children,
@@ -662,6 +697,7 @@ export function usePillPathExpoShellState() {
 
   useEffect(() => {
     if (!authSession?.account.familyId) {
+      setIsShellBootstrapping(false);
       setChildren([]);
       setLatestChildMetricsByCardId({});
       setActiveSleepSessionsByCardId({});
@@ -673,6 +709,8 @@ export function usePillPathExpoShellState() {
     const session = authSession;
 
     async function syncChildren() {
+      setIsShellBootstrapping(true);
+
       try {
         const nextChildren = await loadChildren(session, {
           ignoreErrors: true,
@@ -687,7 +725,20 @@ export function usePillPathExpoShellState() {
           setLatestChildMetricsByCardId({});
           setActiveSleepSessionsByCardId({});
           setActiveFeedingRecordsByCardId({});
+          setIsShellBootstrapping(false);
           return;
+        }
+
+        const bootstrapChildId = nextChildren[0]?.id;
+
+        void loadSettingsBundle(session).catch(() => {});
+
+        if (bootstrapChildId) {
+          void prefetchAnalyticsScreenData(
+            session,
+            bootstrapChildId,
+            "halfYear",
+          );
         }
       } catch {
         if (!cancelled) {
@@ -695,6 +746,10 @@ export function usePillPathExpoShellState() {
           setLatestChildMetricsByCardId({});
           setActiveSleepSessionsByCardId({});
           setActiveFeedingRecordsByCardId({});
+        }
+      } finally {
+        if (!cancelled) {
+          setIsShellBootstrapping(false);
         }
       }
     }
@@ -715,9 +770,17 @@ export function usePillPathExpoShellState() {
     setSelectedChildId((current) =>
       childrenCards.some((card) => card.nodeId === current)
         ? current
-        : childrenCards[0]?.nodeId ?? "",
+        : (childrenCards[0]?.nodeId ?? ""),
     );
   }, [childrenCards]);
+
+  useEffect(() => {
+    if (!authSession || !selectedChildId) {
+      return;
+    }
+
+    void prefetchAnalyticsScreenData(authSession, selectedChildId, "halfYear");
+  }, [authSession, selectedChildId]);
 
   const activeSleepStartedAtByCardId = useMemo(
     () =>
@@ -950,7 +1013,9 @@ export function usePillPathExpoShellState() {
         });
       }
 
-      const nextChildren = await loadChildren(authSession, { ignoreErrors: true });
+      const nextChildren = await loadChildren(authSession, {
+        ignoreErrors: true,
+      });
       setSelectedChildId(created.id);
 
       if (!nextChildren || nextChildren.length === 0) {
@@ -1014,10 +1079,14 @@ export function usePillPathExpoShellState() {
     activeRootTab,
     authSession,
     childrenCards,
+    selectedChildId,
     activeSleepStartedAtByCardId,
     activeFeedingStartedAtByCardId,
     activeObservationByCardId: Object.fromEntries(
-      Object.entries(activeIllnessObservationsByChildId).map(([key, value]) => [key, Boolean(value)]),
+      Object.entries(activeIllnessObservationsByChildId).map(([key, value]) => [
+        key,
+        Boolean(value),
+      ]),
     ),
     onOpenChildProfile: handleOpenChildProfile,
     onOpenChildCreate: handleOpenChildCreate,
@@ -1097,6 +1166,7 @@ export function usePillPathExpoShellState() {
   return {
     authSession,
     isAuthBootstrapping,
+    isShellBootstrapping,
     rootTabItems,
     handleAuthenticated,
     handleSelectRootTab,

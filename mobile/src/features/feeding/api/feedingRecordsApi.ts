@@ -144,6 +144,19 @@ export async function fetchActiveMobileFeedingRecord(
   return response ? toMobileFeedingRecord(response) : null;
 }
 
+export async function fetchMobileFeedingRecords(
+  session: Pick<MobileAuthSession, "accessToken">,
+  childId: string,
+): Promise<MobileFeedingRecord[]> {
+  const response = await requestAuthedJson<RawFeedingRecordResponse[]>(
+    `/feeding-records/child/${encodeURIComponent(childId)}`,
+    { method: "GET" },
+    session.accessToken,
+  );
+
+  return response.map(toMobileFeedingRecord);
+}
+
 export async function startMobileFeedingRecord(
   session: Pick<MobileAuthSession, "accessToken">,
   input: {
@@ -201,4 +214,17 @@ export async function stopMobileFeedingRecord(
   );
 
   return toMobileFeedingRecord(response);
+}
+
+export async function deleteMobileFeedingRecord(
+  session: Pick<MobileAuthSession, "accessToken">,
+  recordId: string,
+): Promise<void> {
+  await requestAuthedJson<void>(
+    `/feeding-records/${encodeURIComponent(recordId)}`,
+    {
+      method: "DELETE",
+    },
+    session.accessToken,
+  );
 }

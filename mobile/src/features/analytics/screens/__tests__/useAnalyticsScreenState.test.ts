@@ -10,7 +10,10 @@ import {
   fetchMobileIllnessEpisodes,
   fetchMobileIllnessHistorySummary,
 } from "../../../illness/api/illnessAnalyticsApi";
-import { useAnalyticsScreenState } from "../useAnalyticsScreenState";
+import {
+  resetAnalyticsScreenStateCache,
+  useAnalyticsScreenState,
+} from "../useAnalyticsScreenState";
 
 jest.mock("../../../illness/api/illnessAnalyticsApi", () => ({
   fetchMobileIllnessHistorySummary: jest.fn(),
@@ -119,6 +122,7 @@ function Probe({ locale, visible }: ProbeProps) {
 describe("useAnalyticsScreenState", () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    resetAnalyticsScreenStateCache();
     latestState = null;
   });
 
@@ -170,7 +174,7 @@ describe("useAnalyticsScreenState", () => {
     mockedFetchSummary.mockReturnValue(summaryDeferred.promise);
     mockedFetchEpisodes.mockReturnValue(episodesDeferred.promise);
 
-    let tree!: TestRenderer.ReactTestRenderer;
+    let tree: any;
 
     await act(async () => {
       tree = TestRenderer.create(
@@ -253,5 +257,40 @@ describe("useAnalyticsScreenState", () => {
     expect(latestState?.openSwipeEpisodeId).toBe("episode-1");
     expect(latestState?.pendingDeleteEpisode?.id).toBe("episode-1");
     expect(mockedDeleteEpisode).not.toHaveBeenCalled();
+  });
+
+  it("retries loading after a failed request on the next open", async () => {
+    mockedFetchSummary
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(makeSummary({ episodeCount: 4 }));
+    mockedFetchEpisodes
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce([makeEpisode("episode-2")]);
+
+    let tree: any;
+
+    await act(async () => {
+      tree = TestRenderer.create(
+        React.createElement(Probe, { locale: "ru", visible: true }),
+      );
+    });
+
+    expect(latestState?.summary ?? null).toBeNull();
+    expect(latestState?.episodes ?? null).toBeNull();
+    expect(mockedFetchSummary).toHaveBeenCalledTimes(1);
+    expect(mockedFetchEpisodes).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      tree.update(React.createElement(Probe, { locale: "ru", visible: false }));
+    });
+
+    await act(async () => {
+      tree.update(React.createElement(Probe, { locale: "ru", visible: true }));
+    });
+
+    expect(mockedFetchSummary).toHaveBeenCalledTimes(2);
+    expect(mockedFetchEpisodes).toHaveBeenCalledTimes(2);
+    expect(latestState?.summary?.episodeCount).toBe(4);
+    expect(latestState?.episodes?.[0]?.id).toBe("episode-2");
   });
 });

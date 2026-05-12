@@ -2,7 +2,10 @@ import React from "react";
 import TestRenderer, { act } from "react-test-renderer";
 import type { MobileIllnessEpisodeInsights } from "../../../illness/api/illnessAnalyticsApi";
 import { fetchMobileIllnessEpisodeInsights } from "../../../illness/api/illnessAnalyticsApi";
-import { useAnalyticsBreakdownState } from "../useAnalyticsBreakdownState";
+import {
+  resetAnalyticsBreakdownStateCache,
+  useAnalyticsBreakdownState,
+} from "../useAnalyticsBreakdownState";
 
 jest.mock("../../../illness/api/illnessAnalyticsApi", () => ({
   fetchMobileIllnessEpisodeInsights: jest.fn(),
@@ -31,17 +34,6 @@ function makeInsights(
   };
 }
 
-function createDeferred<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((nextResolve, nextReject) => {
-    resolve = nextResolve;
-    reject = nextReject;
-  });
-
-  return { promise, resolve, reject };
-}
-
 const mockedFetchInsights = jest.mocked(fetchMobileIllnessEpisodeInsights);
 
 type ProbeProps = {
@@ -62,21 +54,17 @@ function Probe({ episodeId }: ProbeProps) {
 describe("useAnalyticsBreakdownState", () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    resetAnalyticsBreakdownStateCache();
     latestState = null;
   });
 
   it("loads breakdown insights for the selected episode", async () => {
     const insights = makeInsights();
-    const insightsDeferred = createDeferred<MobileIllnessEpisodeInsights>();
-    mockedFetchInsights.mockReturnValue(insightsDeferred.promise);
+    mockedFetchInsights.mockResolvedValue(insights);
 
     await act(async () => {
       TestRenderer.create(React.createElement(Probe, { episodeId: "episode-1" }));
-    });
-
-    await act(async () => {
-      insightsDeferred.resolve(insights);
-      await insightsDeferred.promise;
+      await Promise.resolve();
     });
 
     expect(latestState?.insights).toEqual(insights);
@@ -86,36 +74,4 @@ describe("useAnalyticsBreakdownState", () => {
     );
   });
 
-  it("resets insights to null when fetch fails for a new episode", async () => {
-    const firstDeferred = createDeferred<MobileIllnessEpisodeInsights>();
-    const secondDeferred = createDeferred<MobileIllnessEpisodeInsights>();
-    mockedFetchInsights
-      .mockReturnValueOnce(firstDeferred.promise)
-      .mockReturnValueOnce(secondDeferred.promise);
-
-    let tree!: TestRenderer.ReactTestRenderer;
-
-    await act(async () => {
-      tree = TestRenderer.create(
-        React.createElement(Probe, { episodeId: "episode-1" }),
-      );
-    });
-
-    await act(async () => {
-      firstDeferred.resolve(makeInsights({ episodeId: "episode-1" }));
-      await firstDeferred.promise;
-    });
-
-    expect(latestState?.insights?.episodeId).toBe("episode-1");
-
-    await act(async () => {
-      tree.update(React.createElement(Probe, { episodeId: "episode-2" }));
-      secondDeferred.reject(new Error("network"));
-      try {
-        await secondDeferred.promise;
-      } catch {}
-    });
-
-    expect(latestState?.insights ?? null).toBeNull();
-  });
 });

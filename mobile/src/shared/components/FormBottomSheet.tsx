@@ -23,6 +23,7 @@ type FormBottomSheetProps = {
   sheetStyle: StyleProp<ViewStyle>;
   overlayStyle?: StyleProp<ViewStyle>;
   backdropStyle?: StyleProp<ViewStyle>;
+  keepMountedPreview?: boolean;
   keyboardAvoiding?: boolean;
   keyboardBehavior?: "height" | "position" | "padding";
   keyboardVerticalOffset?: number;
@@ -35,6 +36,7 @@ export function FormBottomSheet({
   sheetStyle,
   overlayStyle,
   backdropStyle,
+  keepMountedPreview = false,
   keyboardAvoiding = false,
   keyboardBehavior,
   keyboardVerticalOffset = 18,
@@ -45,10 +47,6 @@ export function FormBottomSheet({
     onClose,
   });
 
-  if (!visible) {
-    return null;
-  }
-
   const sheetNode = (
     <Animated.View style={[sheetStyle, { transform: [{ translateY }] }]}>
       <View style={styles.sheetContent}>
@@ -56,6 +54,18 @@ export function FormBottomSheet({
       </View>
     </Animated.View>
   );
+
+  if (!visible) {
+    if (!keepMountedPreview) {
+      return null;
+    }
+
+    return (
+      <View pointerEvents="none" style={styles.hiddenPreview}>
+        {sheetNode}
+      </View>
+    );
+  }
 
   return (
     <Modal
@@ -119,5 +129,12 @@ const styles = StyleSheet.create({
   },
   sheetContent: {
     width: "100%",
+  },
+  hiddenPreview: {
+    position: "absolute",
+    top: -9999,
+    left: -9999,
+    width: 420,
+    opacity: 0,
   },
 });

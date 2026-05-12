@@ -9,6 +9,7 @@ import { styles } from "../screens/childrenRedesignStyles";
 import { getChildModuleTint } from "../../../shared/theme/childModuleTints";
 import { JournalEntryKind } from "../../journal/model/journalEntryScreen";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import { getLocalAssetDefaultSource } from "../../../shared/lib/assetSources";
 
 const noop = () => {};
 
@@ -65,11 +66,15 @@ export function ChildrenChildCard({
         ]}
       >
         <View style={styles.avatarShell}>
-          <Image
-            source={card.avatarSource}
-            style={styles.avatarImage}
-            resizeMode="contain"
-          />
+          {card.avatarSource ? (
+            <Image
+              source={card.avatarSource}
+              defaultSource={getLocalAssetDefaultSource(card.avatarSource)}
+              style={styles.avatarImage}
+              resizeMode="contain"
+              fadeDuration={0}
+            />
+          ) : null}
         </View>
 
         <View style={styles.cardInfo}>
@@ -102,42 +107,46 @@ export function ChildrenChildCard({
         </View>
       </Pressable>
 
-      {!collapsed ? (
-        <View style={styles.quickActionsGrid}>
-          {card.quickActions.map((action) => (
-            <QuickActionCard
-              key={action.nodeId}
-              action={action}
-              observationActionLabel={
-                action.kind === "observation"
-                  ? getObservationActionLabel(locale, hasActiveObservation)
-                  : undefined
+      <View
+        pointerEvents={collapsed ? "none" : "auto"}
+        style={[
+          styles.quickActionsGrid,
+          collapsed ? styles.quickActionsGridHidden : null,
+        ]}
+      >
+        {card.quickActions.map((action) => (
+          <QuickActionCard
+            key={action.nodeId}
+            action={action}
+            observationActionLabel={
+              action.kind === "observation"
+                ? getObservationActionLabel(locale, hasActiveObservation)
+                : undefined
+            }
+            sleepElapsedLabel={sleepElapsedLabel}
+            feedingElapsedLabel={feedingElapsedLabel}
+            onPress={() => {
+              if (action.kind === "sleep") {
+                onSleepPress(card.nodeId);
+                return;
               }
-              sleepElapsedLabel={sleepElapsedLabel}
-              feedingElapsedLabel={feedingElapsedLabel}
-              onPress={() => {
-                if (action.kind === "sleep") {
-                  onSleepPress(card.nodeId);
-                  return;
-                }
-                if (action.kind === "profile") {
-                  onOpenProfile(card.nodeId);
-                  return;
-                }
-                if (action.kind === "feeding") {
-                  onFeedingPress(card.nodeId);
-                  return;
-                }
-                if (action.kind === "observation") {
-                  onOpenObservation(card.nodeId);
-                  return;
-                }
-                noop();
-              }}
-            />
-          ))}
-        </View>
-      ) : null}
+              if (action.kind === "profile") {
+                onOpenProfile(card.nodeId);
+                return;
+              }
+              if (action.kind === "feeding") {
+                onFeedingPress(card.nodeId);
+                return;
+              }
+              if (action.kind === "observation") {
+                onOpenObservation(card.nodeId);
+                return;
+              }
+              noop();
+            }}
+          />
+        ))}
+      </View>
     </View>
   );
 }
@@ -194,8 +203,10 @@ function QuickActionCard({
         >
           <Image
             source={action.imageSource}
+            defaultSource={getLocalAssetDefaultSource(action.imageSource)}
             style={styles.quickActionArt}
             resizeMode="contain"
+            fadeDuration={0}
           />
         </View>
         <Text

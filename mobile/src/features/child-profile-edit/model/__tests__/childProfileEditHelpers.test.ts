@@ -6,7 +6,7 @@ import {
 describe("childProfileEditHelpers", () => {
   it("returns german sheet copy", () => {
     expect(getEditProfileSheetCopy("de")).toMatchObject({
-      avatarTitle: "Foto ändern",
+      avatarTitle: "Icon ändern",
       dateTitle: "Geburtsdatum",
       apply: "Fertig",
     });

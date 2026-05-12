@@ -78,6 +78,8 @@ export function getEditProfileSheetCopy(locale: MobileLocale) {
     return {
       avatarTitle: "Сменить иконку",
       avatarSubtitle: "Выберите иконку для профиля.",
+      boyLabel: "Мальчик",
+      girlLabel: "Девочка",
       dateTitle: "Дата рождения",
       dateSubtitle: "Выберите день, месяц и год.",
       textEditorSubtitle: "Обновите текст для профиля.",
@@ -89,6 +91,8 @@ export function getEditProfileSheetCopy(locale: MobileLocale) {
     return {
       avatarTitle: "Zmień ikonę",
       avatarSubtitle: "Wybierz ikonę profilu.",
+      boyLabel: "Chłopiec",
+      girlLabel: "Dziewczynka",
       dateTitle: "Data urodzenia",
       dateSubtitle: "Wybierz dzień, miesiąc i rok.",
       textEditorSubtitle: "Zaktualizuj tekst w profilu.",
@@ -100,6 +104,8 @@ export function getEditProfileSheetCopy(locale: MobileLocale) {
     return {
       avatarTitle: "Icon ändern",
       avatarSubtitle: "Wählen Sie ein Symbol für das Profil.",
+      boyLabel: "Junge",
+      girlLabel: "Mädchen",
       dateTitle: "Geburtsdatum",
       dateSubtitle: "Wählen Sie Tag, Monat und Jahr.",
       textEditorSubtitle: "Aktualisieren Sie den Profiltext.",
@@ -110,6 +116,8 @@ export function getEditProfileSheetCopy(locale: MobileLocale) {
   return {
     avatarTitle: "Change icon",
     avatarSubtitle: "Choose an icon for the profile.",
+    boyLabel: "Boy",
+    girlLabel: "Girl",
     dateTitle: "Birth date",
     dateSubtitle: "Choose day, month, and year.",
     textEditorSubtitle: "Update the profile text.",

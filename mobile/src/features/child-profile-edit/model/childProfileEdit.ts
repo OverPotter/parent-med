@@ -10,7 +10,7 @@ export type ChildProfileEditContent = {
   childName: string;
   childMeta: string;
   changePhotoLabel: string;
-  avatarSource: ImageSourcePropType;
+  avatarSource: ImageSourcePropType | null;
   sections: {
     main: {
       title: string;

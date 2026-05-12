@@ -1,10 +1,16 @@
 import { Feather } from "@expo/vector-icons";
 import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
+import { AssetWarmupLayer } from "../../../shared/components/AssetWarmupLayer";
+import { getLocalAssetDefaultSource } from "../../../shared/lib/assetSources";
 import { childrenScreenAssets } from "../../../redesign/screens/children/manifest";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
-import { ChildCard } from "../../children/model/childrenRedesign";
+import {
+  ChildCard,
+  getChildAvatarGenderByKey,
+  type ChildAvatarPresetKey,
+} from "../../children/model/childrenRedesign";
 import {
   Animated,
   Image,
@@ -17,8 +23,15 @@ import {
   View,
 } from "react-native";
 import { useEffect, useMemo, useState } from "react";
-import { illnessAssets } from "../assets";
-import { buildIllnessOnboardingContent, formatIllnessDateLabel } from "../model/illnessOnboarding";
+import {
+  illnessAssets,
+  illnessOnboardingSuggestionAssetGroups,
+  illnessOnboardingSuggestionAssetLists,
+} from "../assets";
+import {
+  buildIllnessOnboardingContent,
+  formatIllnessDateLabel,
+} from "../model/illnessOnboarding";
 import { styles } from "./illnessOnboardingStyles";
 
 type IllnessOnboardingScreenProps = {
@@ -28,76 +41,104 @@ type IllnessOnboardingScreenProps = {
   onStartObservation: (payload: { startedAt: string; reason: string }) => void;
 };
 
-function getSuggestionVisual(
-  suggestionId:
-    | "fever"
-    | "cough"
-    | "runnyNose"
-    | "soreThroat"
-    | "rash"
-    | "nausea",
-) {
-  switch (suggestionId) {
-    case "fever":
-      return {
-        tint: "#E97C96",
-        bg: "#FFF0F5",
-        border: "#F1C8D4",
-        asset: illnessAssets.onboarding.suggestions.fever,
-        imageScale: 0.84,
-      };
-    case "cough":
-      return {
-        tint: "#D58C66",
-        bg: "#FFF2E8",
-        border: "#EDCEBE",
-        asset: illnessAssets.onboarding.suggestions.cough,
-        imageScale: 1.08,
-      };
-    case "runnyNose":
-      return {
-        tint: "#6E9AD8",
-        bg: "#EEF5FF",
-        border: "#D2E0F4",
-        asset: illnessAssets.onboarding.suggestions.runnyNose,
-        imageScale: 1,
-      };
-    case "soreThroat":
-      return {
-        tint: "#8E79D8",
-        bg: "#F4F0FF",
-        border: "#DDD3F5",
-        asset: illnessAssets.onboarding.suggestions.soreThroat,
-        imageScale: 1,
-      };
-    case "rash":
-      return {
-        tint: "#B88E3E",
-        bg: "#FBF3DE",
-        border: "#E6D39D",
-        asset: illnessAssets.onboarding.suggestions.rash,
-        imageScale: 0.84,
-      };
-    case "nausea":
-      return {
-        tint: "#7AA08D",
-        bg: "#EEF7F2",
-        border: "#CFE3D9",
-        asset: illnessAssets.onboarding.suggestions.nausea,
-        imageScale: 1,
-      };
-    default:
-      return fallbackSuggestionVisual;
+type IllnessSuggestionId =
+  | "fever"
+  | "cough"
+  | "runnyNose"
+  | "soreThroat"
+  | "rash"
+  | "nausea";
+
+const suggestionAssetKeyById = {
+  fever: "feverChild",
+  cough: "coughChild",
+  runnyNose: "runnyNoseChild",
+  soreThroat: "soreThroatChild",
+  rash: "rashChild",
+  nausea: "nauseaChild",
+} as const satisfies Record<
+  IllnessSuggestionId,
+  keyof typeof illnessOnboardingSuggestionAssetGroups.boys
+>;
+
+const suggestionVisualById = {
+  fever: {
+    tint: "#E97C96",
+    bg: "#FFF0F5",
+    border: "#F1C8D4",
+    imageScale: 0.84,
+  },
+  cough: {
+    tint: "#D58C66",
+    bg: "#FFF2E8",
+    border: "#EDCEBE",
+    imageScale: 1,
+  },
+  runnyNose: {
+    tint: "#6E9AD8",
+    bg: "#EEF5FF",
+    border: "#D2E0F4",
+    imageScale: 1,
+  },
+  soreThroat: {
+    tint: "#8E79D8",
+    bg: "#F4F0FF",
+    border: "#DDD3F5",
+    imageScale: 1,
+  },
+  rash: {
+    tint: "#B88E3E",
+    bg: "#FBF3DE",
+    border: "#E6D39D",
+    imageScale: 0.84,
+  },
+  nausea: {
+    tint: "#7AA08D",
+    bg: "#EEF7F2",
+    border: "#CFE3D9",
+    imageScale: 1,
+  },
+} as const satisfies Record<
+  IllnessSuggestionId,
+  {
+    tint: string;
+    bg: string;
+    border: string;
+    imageScale: number;
   }
+>;
+
+function resolveSuggestionAsset(
+  childGender: "boy" | "girl" | null,
+  suggestionId: IllnessSuggestionId,
+) {
+  if (!childGender) {
+    return null;
+  }
+
+  const assetGroup =
+    childGender === "girl"
+      ? illnessOnboardingSuggestionAssetGroups.girls
+      : illnessOnboardingSuggestionAssetGroups.boys;
+
+  return assetGroup[suggestionAssetKeyById[suggestionId]];
 }
 
-const fallbackSuggestionVisual = {
-  tint: "#7AA08D",
-  bg: "#EEF7F2",
-  border: "#CFE3D9",
-  asset: null,
-  imageScale: 1,
-} as const;
+function getSuggestionVisual(
+  childGender: "boy" | "girl" | null,
+  suggestionId: IllnessSuggestionId,
+) {
+  const visual = suggestionVisualById[suggestionId];
+
+  return {
+    ...visual,
+    asset: resolveSuggestionAsset(childGender, suggestionId),
+    imageScale:
+      suggestionId === "cough" && childGender === "boy"
+        ? 0.76
+        : visual.imageScale,
+  };
+}
 
 function buildDateOptions() {
   return Array.from({ length: 4 }, (_, index) => {
@@ -110,6 +151,20 @@ function buildLocalIllnessDate(dayOffset = 0) {
   date.setDate(date.getDate() - dayOffset);
   date.setHours(12, 0, 0, 0);
   return date.toISOString();
+}
+
+function getOnboardingSuggestionWarmupSources(
+  childGender: "boy" | "girl" | null,
+) {
+  if (childGender === "boy") {
+    return illnessOnboardingSuggestionAssetLists.boys;
+  }
+
+  if (childGender === "girl") {
+    return illnessOnboardingSuggestionAssetLists.girls;
+  }
+
+  return [];
 }
 
 export function IllnessOnboardingScreen({
@@ -134,6 +189,13 @@ export function IllnessOnboardingScreen({
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const dateOptions = useMemo(buildDateOptions, [visible]);
+  const childGender = getChildAvatarGenderByKey(
+    child.child.avatarKey as ChildAvatarPresetKey | null,
+  );
+  const suggestionWarmupSources = useMemo(
+    () => getOnboardingSuggestionWarmupSources(childGender),
+    [childGender],
+  );
   const isDirty = reason.trim().length > 0 || selectedSuggestions.length > 0;
 
   useEffect(() => {
@@ -147,7 +209,7 @@ export function IllnessOnboardingScreen({
     setIsDateSheetOpen(false);
     setIsLeaveConfirmOpen(false);
     setIsSubmitting(false);
-  }, [visible]);
+  }, [child.nodeId, visible]);
 
   const handleBack = () => {
     if (isDirty) {
@@ -218,14 +280,20 @@ export function IllnessOnboardingScreen({
         </ImageBackground>
         <View style={styles.screen}>
           <View style={styles.contentWrap}>
-            <View style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]} {...panHandlers} />
+            <View
+              style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]}
+              {...panHandlers}
+            />
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
             >
               <View style={styles.topBar}>
                 <Pressable onPress={handleBack} style={styles.backLink}>
-                  <Text style={styles.backLinkText}>{"← "}{content.backLabel}</Text>
+                  <Text style={styles.backLinkText}>
+                    {"← "}
+                    {content.backLabel}
+                  </Text>
                 </Pressable>
               </View>
 
@@ -237,8 +305,12 @@ export function IllnessOnboardingScreen({
                 <View style={styles.hintTitleRow}>
                   <Image
                     source={illnessAssets.onboarding.careHint}
+                    defaultSource={getLocalAssetDefaultSource(
+                      illnessAssets.onboarding.careHint,
+                    )}
                     style={styles.hintIconImage}
                     resizeMode="contain"
+                    fadeDuration={0}
                   />
                   <Text style={styles.hintTitle}>{content.hintTitle}</Text>
                 </View>
@@ -250,68 +322,97 @@ export function IllnessOnboardingScreen({
                   <View style={styles.fieldLabelRow}>
                     <View style={styles.fieldIconWrap}>
                       <Image
-                      source={illnessAssets.onboarding.startDate}
-                      style={styles.fieldIconImage}
-                      resizeMode="contain"
-                    />
+                        source={illnessAssets.onboarding.startDate}
+                        defaultSource={getLocalAssetDefaultSource(
+                          illnessAssets.onboarding.startDate,
+                        )}
+                        style={styles.fieldIconImage}
+                        resizeMode="contain"
+                        fadeDuration={0}
+                      />
+                    </View>
+                    <Text style={styles.fieldLabel}>{content.dateLabel}</Text>
                   </View>
-                  <Text style={styles.fieldLabel}>{content.dateLabel}</Text>
-                </View>
-                <Pressable style={styles.fieldShell} onPress={() => setIsDateSheetOpen(true)}>
-                  <View style={styles.fieldValueRow}>
-                    <Feather name="calendar" size={18} color="#7D6A61" />
-                    <Text style={styles.fieldValue}>
-                      {formatIllnessDateLabel(selectedDate, locale)}
-                    </Text>
-                  </View>
-                  <Feather name="chevron-down" size={18} color="#7D6A61" />
-                </Pressable>
+                  <Pressable
+                    style={styles.fieldShell}
+                    onPress={() => setIsDateSheetOpen(true)}
+                  >
+                    <View style={styles.fieldValueRow}>
+                      <Feather name="calendar" size={18} color="#7D6A61" />
+                      <Text style={styles.fieldValue}>
+                        {formatIllnessDateLabel(selectedDate, locale)}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-down" size={18} color="#7D6A61" />
+                  </Pressable>
                 </View>
 
                 <View style={styles.fieldGroup}>
                   <View style={styles.fieldLabelRow}>
                     <View style={styles.fieldIconWrap}>
                       <Image
-                      source={illnessAssets.onboarding.reason}
-                      style={styles.fieldIconImage}
-                      resizeMode="contain"
-                    />
+                        source={illnessAssets.onboarding.reason}
+                        defaultSource={getLocalAssetDefaultSource(
+                          illnessAssets.onboarding.reason,
+                        )}
+                        style={styles.fieldIconImage}
+                        resizeMode="contain"
+                        fadeDuration={0}
+                      />
+                    </View>
+                    <Text style={styles.fieldLabel}>{content.reasonLabel}</Text>
                   </View>
-                  <Text style={styles.fieldLabel}>{content.reasonLabel}</Text>
-                </View>
-                <TextInput
-                  value={reason}
-                  onChangeText={(next) => setReason(next.slice(0, content.reasonMaxLength))}
-                  placeholder={content.reasonPlaceholder}
-                  placeholderTextColor="#9AA3AF"
-                  style={styles.textArea}
-                  multiline
-                />
-                <Text style={styles.textCounter}>
-                  {reason.length}/{content.reasonMaxLength}
-                </Text>
+                  <TextInput
+                    value={reason}
+                    onChangeText={(next) =>
+                      setReason(next.slice(0, content.reasonMaxLength))
+                    }
+                    placeholder={content.reasonPlaceholder}
+                    placeholderTextColor="#9AA3AF"
+                    style={styles.textArea}
+                    multiline
+                  />
+                  <Text style={styles.textCounter}>
+                    {reason.length}/{content.reasonMaxLength}
+                  </Text>
                 </View>
 
                 <View style={styles.suggestionsCard}>
                   <View style={styles.suggestionsHeader}>
-                  <Image
-                    source={illnessAssets.onboarding.commonReasons}
-                    style={styles.suggestionsIconImage}
-                    resizeMode="contain"
-                  />
-                  <Text style={styles.suggestionsLabel}>{content.suggestionsLabel}</Text>
-                </View>
-                <View style={styles.suggestionsGrid}>
-                  {content.suggestions.map((suggestion) => {
-                    const active = selectedSuggestions.includes(suggestion.label);
-                    const visual = getSuggestionVisual(suggestion.id);
-                    return (
-                      <Pressable
-                        key={suggestion.id}
-                        onPress={() => handleToggleSuggestion(suggestion.label)}
-                        style={[
-                          styles.suggestionChip,
-                          { backgroundColor: visual.bg, borderColor: visual.border },
+                    <Image
+                      source={illnessAssets.onboarding.commonReasons}
+                      defaultSource={getLocalAssetDefaultSource(
+                        illnessAssets.onboarding.commonReasons,
+                      )}
+                      style={styles.suggestionsIconImage}
+                      resizeMode="contain"
+                      fadeDuration={0}
+                    />
+                    <Text style={styles.suggestionsLabel}>
+                      {content.suggestionsLabel}
+                    </Text>
+                  </View>
+                  <View style={styles.suggestionsGrid}>
+                    {content.suggestions.map((suggestion) => {
+                      const active = selectedSuggestions.includes(
+                        suggestion.label,
+                      );
+                      const visual = getSuggestionVisual(
+                        childGender,
+                        suggestion.id,
+                      );
+                      return (
+                        <Pressable
+                          key={suggestion.id}
+                          onPress={() =>
+                            handleToggleSuggestion(suggestion.label)
+                          }
+                          style={[
+                            styles.suggestionChip,
+                            {
+                              backgroundColor: visual.bg,
+                              borderColor: visual.border,
+                            },
                             active
                               ? {
                                   backgroundColor: visual.tint,
@@ -324,50 +425,66 @@ export function IllnessOnboardingScreen({
                             <View style={styles.suggestionChipIconWrap}>
                               <Image
                                 source={visual.asset}
+                                defaultSource={getLocalAssetDefaultSource(
+                                  visual.asset,
+                                )}
                                 style={[
                                   styles.suggestionChipIconImage,
                                   { transform: [{ scale: visual.imageScale }] },
                                 ]}
                                 resizeMode="contain"
+                                fadeDuration={0}
                               />
                             </View>
                           ) : null}
-                        <Text
-                          style={[
-                            styles.suggestionChipText,
-                            active ? styles.suggestionChipTextActive : null,
-                          ]}
-                        >
-                          {suggestion.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                          <Text
+                            style={[
+                              styles.suggestionChipText,
+                              active ? styles.suggestionChipTextActive : null,
+                            ]}
+                          >
+                            {suggestion.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.buttonsRow}>
-                <Pressable style={styles.secondaryButton} onPress={handleBack}>
-                  <Text style={styles.secondaryButtonText}>{content.backLabel}</Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.primaryButton,
-                    isSubmitting ? styles.primaryButtonDisabled : null,
-                  ]}
-                  disabled={isSubmitting}
-                  onPress={handleSubmit}
-                >
-                  <Text style={styles.primaryButtonText}>
-                    {isSubmitting ? content.submitLoadingLabel : content.submitLabel}
-                  </Text>
-                </Pressable>
-              </View>
+                <View style={styles.buttonsRow}>
+                  <Pressable
+                    style={styles.secondaryButton}
+                    onPress={handleBack}
+                  >
+                    <Text style={styles.secondaryButtonText}>
+                      {content.backLabel}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.primaryButton,
+                      isSubmitting ? styles.primaryButtonDisabled : null,
+                    ]}
+                    disabled={isSubmitting}
+                    onPress={handleSubmit}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      {isSubmitting
+                        ? content.submitLoadingLabel
+                        : content.submitLabel}
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
             </ScrollView>
           </View>
         </View>
       </View>
+
+      <AssetWarmupLayer
+        active={visible}
+        assetModules={suggestionWarmupSources}
+      />
 
       <FormBottomSheet
         visible={isDateSheetOpen}
@@ -395,7 +512,8 @@ export function IllnessOnboardingScreen({
               contentContainerStyle={styles.sheetScrollContent}
             >
               {dateOptions.map((dateIso) => {
-                const active = dateIso.slice(0, 10) === selectedDate.slice(0, 10);
+                const active =
+                  dateIso.slice(0, 10) === selectedDate.slice(0, 10);
                 return (
                   <Pressable
                     key={dateIso}
@@ -403,7 +521,10 @@ export function IllnessOnboardingScreen({
                       setSelectedDate(dateIso);
                       setIsDateSheetOpen(false);
                     }}
-                    style={[styles.dateOption, active ? styles.dateOptionActive : null]}
+                    style={[
+                      styles.dateOption,
+                      active ? styles.dateOptionActive : null,
+                    ]}
                   >
                     <Text
                       style={[
@@ -423,16 +544,23 @@ export function IllnessOnboardingScreen({
 
       {isLeaveConfirmOpen ? (
         <View style={styles.confirmOverlay}>
-          <Pressable style={styles.confirmBackdrop} onPress={() => setIsLeaveConfirmOpen(false)} />
+          <Pressable
+            style={styles.confirmBackdrop}
+            onPress={() => setIsLeaveConfirmOpen(false)}
+          />
           <View style={styles.confirmCard}>
             <Text style={styles.confirmTitle}>{content.leaveTitle}</Text>
-            <Text style={styles.confirmDescription}>{content.leaveDescription}</Text>
+            <Text style={styles.confirmDescription}>
+              {content.leaveDescription}
+            </Text>
             <View style={styles.confirmActions}>
               <Pressable
                 style={styles.secondaryButton}
                 onPress={() => setIsLeaveConfirmOpen(false)}
               >
-                <Text style={styles.secondaryButtonText}>{content.stayLabel}</Text>
+                <Text style={styles.secondaryButtonText}>
+                  {content.stayLabel}
+                </Text>
               </Pressable>
               <Pressable
                 style={styles.primaryButton}
@@ -441,7 +569,9 @@ export function IllnessOnboardingScreen({
                   onBack();
                 }}
               >
-                <Text style={styles.primaryButtonText}>{content.leaveConfirmLabel}</Text>
+                <Text style={styles.primaryButtonText}>
+                  {content.leaveConfirmLabel}
+                </Text>
               </Pressable>
             </View>
           </View>
