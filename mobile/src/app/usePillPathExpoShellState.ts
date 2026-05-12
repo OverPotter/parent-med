@@ -62,8 +62,57 @@ import {
 type RootTabContentProps = ComponentProps<typeof RootTabContent>;
 type OverlayScreensProps = ComponentProps<typeof OverlayScreens>;
 
+function resolveActiveIllnessChildId(
+  observationsByChildId: Record<string, MobileIllnessObservation | undefined>,
+  preferredChildId: string,
+) {
+  if (observationsByChildId[preferredChildId]) {
+    return preferredChildId;
+  }
+
+  return (
+    Object.entries(observationsByChildId).find(([, observation]) =>
+      Boolean(observation),
+    )?.[0] ?? null
+  );
+}
+
+function hasActiveIllnessObservation(
+  observationsByChildId: Record<string, MobileIllnessObservation | undefined>,
+) {
+  return Object.values(observationsByChildId).some(Boolean);
+}
+
+function openChildrenRoot(
+  setActiveRootTab: Dispatch<SetStateAction<MobileBottomTabKey>>,
+  setActiveScreen: Dispatch<SetStateAction<PillPathActiveScreen>>,
+) {
+  setActiveRootTab("children");
+  setActiveScreen("children");
+}
+
+function openIllnessJournalRoot({
+  childId,
+  setActiveRootTab,
+  setActiveScreen,
+  setSelectedChildId,
+}: {
+  childId?: string | null;
+  setActiveRootTab: Dispatch<SetStateAction<MobileBottomTabKey>>;
+  setActiveScreen: Dispatch<SetStateAction<PillPathActiveScreen>>;
+  setSelectedChildId?: Dispatch<SetStateAction<string>>;
+}) {
+  if (childId && setSelectedChildId) {
+    setSelectedChildId(childId);
+  }
+
+  setActiveRootTab("journal");
+  setActiveScreen("illnessJournal");
+}
+
 function useChildFlowController({
   activeIllnessObservationsByChildId,
+  setActiveRootTab,
   setActiveScreen,
   setSelectedChildId,
   setSelectedEpisode,
@@ -73,6 +122,7 @@ function useChildFlowController({
     string,
     MobileIllnessObservation | undefined
   >;
+  setActiveRootTab: Dispatch<SetStateAction<MobileBottomTabKey>>;
   setActiveScreen: Dispatch<SetStateAction<PillPathActiveScreen>>;
   setSelectedChildId: Dispatch<SetStateAction<string>>;
   setSelectedEpisode: Dispatch<SetStateAction<AnalyticsEpisodeCard | null>>;
@@ -98,13 +148,24 @@ function useChildFlowController({
   const handleOpenObservation = useCallback(
     (cardId: string) => {
       setSelectedChildId(cardId);
-      setActiveScreen(
-        activeIllnessObservationsByChildId[cardId]
-          ? "illnessJournal"
-          : "illnessOnboarding",
-      );
+      if (activeIllnessObservationsByChildId[cardId]) {
+        openIllnessJournalRoot({
+          childId: cardId,
+          setActiveRootTab,
+          setActiveScreen,
+        });
+        return;
+      }
+
+      setActiveRootTab("children");
+      setActiveScreen("illnessOnboarding");
     },
-    [activeIllnessObservationsByChildId, setActiveScreen, setSelectedChildId],
+    [
+      activeIllnessObservationsByChildId,
+      setActiveRootTab,
+      setActiveScreen,
+      setSelectedChildId,
+    ],
   );
 
   const handleCloseChildProfile = useCallback(() => {
@@ -201,6 +262,7 @@ function useChildFlowController({
 }
 
 function useIllnessFlowController({
+  activeIllnessObservationsByChildId,
   locale,
   selectedChildId,
   setActiveScreen,
@@ -209,6 +271,10 @@ function useIllnessFlowController({
   setSelectedIllnessActionKind,
   setActiveIllnessObservationsByChildId,
 }: {
+  activeIllnessObservationsByChildId: Record<
+    string,
+    MobileIllnessObservation | undefined
+  >;
   locale: MobileLocale;
   selectedChildId: string;
   setActiveScreen: Dispatch<SetStateAction<PillPathActiveScreen>>;
@@ -222,12 +288,12 @@ function useIllnessFlowController({
   >;
 }) {
   const handleCloseIllnessOnboarding = useCallback(() => {
-    setActiveScreen("children");
-  }, [setActiveScreen]);
+    openChildrenRoot(setActiveRootTab, setActiveScreen);
+  }, [setActiveRootTab, setActiveScreen]);
 
   const handleCloseIllnessJournal = useCallback(() => {
-    setActiveScreen("children");
-  }, [setActiveScreen]);
+    openChildrenRoot(setActiveRootTab, setActiveScreen);
+  }, [setActiveRootTab, setActiveScreen]);
 
   const handleCloseIllnessActionPlaceholder = useCallback(() => {
     setActiveScreen("illnessJournal");
@@ -244,12 +310,16 @@ function useIllnessFlowController({
           locale,
         }),
       }));
-      setActiveScreen("illnessJournal");
+      openIllnessJournalRoot({
+        setActiveRootTab,
+        setActiveScreen,
+      });
     },
     [
       locale,
       selectedChildId,
       setActiveIllnessObservationsByChildId,
+      setActiveRootTab,
       setActiveScreen,
     ],
   );
@@ -265,12 +335,40 @@ function useIllnessFlowController({
 
   const handleFinishIllnessObservation = useCallback(
     (childId: string) => {
-      setActiveIllnessObservationsByChildId((current) => ({
-        ...current,
+      const nextObservationsByChildId = {
+        ...activeIllnessObservationsByChildId,
         [childId]: undefined,
-      }));
+      };
+
+      setActiveIllnessObservationsByChildId(nextObservationsByChildId);
+
+      if (hasActiveIllnessObservation(nextObservationsByChildId)) {
+        const nextActiveChildId = resolveActiveIllnessChildId(
+          nextObservationsByChildId,
+          selectedChildId,
+        );
+
+        if (nextActiveChildId) {
+          setSelectedChildId(nextActiveChildId);
+        }
+
+        openIllnessJournalRoot({
+          setActiveRootTab,
+          setActiveScreen,
+        });
+        return;
+      }
+
+      openChildrenRoot(setActiveRootTab, setActiveScreen);
     },
-    [setActiveIllnessObservationsByChildId],
+    [
+      activeIllnessObservationsByChildId,
+      selectedChildId,
+      setActiveIllnessObservationsByChildId,
+      setActiveRootTab,
+      setActiveScreen,
+      setSelectedChildId,
+    ],
   );
 
   const handleSelectTab = useCallback(
@@ -552,7 +650,7 @@ function useAuthSessionController({
 }
 
 export function usePillPathExpoShellState() {
-  const { locale, setLocale } = useMobileI18n();
+  const { copy, locale, setLocale } = useMobileI18n();
   const childrenScreenContent = useMemo(
     () => buildChildrenScreenContent(locale),
     [locale],
@@ -804,9 +902,33 @@ export function usePillPathExpoShellState() {
     [activeFeedingRecordsByCardId],
   );
 
+  const shouldShowJournalTab = useMemo(
+    () =>
+      hasActiveIllnessObservation(activeIllnessObservationsByChildId) ||
+      activeRootTab === "journal" ||
+      activeScreen === "illnessJournal" ||
+      activeScreen === "illnessActionPlaceholder",
+    [activeIllnessObservationsByChildId, activeRootTab, activeScreen],
+  );
   const rootTabItems = useMemo(
-    () => buildChildrenScreenContent(locale, activeRootTab).tabs,
-    [activeRootTab, locale],
+    () => {
+      const baseTabs = buildChildrenScreenContent(locale, activeRootTab).tabs;
+      const journalTab = {
+        key: "journal" as const,
+        label: copy.childProfile.journalTitle,
+        active: activeRootTab === "journal",
+      };
+
+      const tabsWithoutMore = baseTabs.filter((tab) => tab.key !== "more");
+      const moreTab = baseTabs.find((tab) => tab.key === "more");
+
+      return [
+        ...(shouldShowJournalTab ? [journalTab] : []),
+        ...tabsWithoutMore,
+        ...(moreTab ? [moreTab] : []),
+      ];
+    },
+    [activeRootTab, copy.childProfile.journalTitle, locale, shouldShowJournalTab],
   );
   const {
     handleAuthenticated,
@@ -840,6 +962,7 @@ export function usePillPathExpoShellState() {
     handleOpenRootJournalEntry,
   } = useChildFlowController({
     activeIllnessObservationsByChildId,
+    setActiveRootTab,
     setActiveScreen,
     setSelectedChildId,
     setSelectedEpisode,
@@ -854,6 +977,7 @@ export function usePillPathExpoShellState() {
     handleSelectTab,
     handleStartIllnessObservation,
   } = useIllnessFlowController({
+    activeIllnessObservationsByChildId,
     locale,
     selectedChildId,
     setActiveScreen,
@@ -875,9 +999,39 @@ export function usePillPathExpoShellState() {
     setActiveScreen,
   });
 
-  const handleSelectRootTab = useCallback((key: MobileBottomTabKey) => {
-    setActiveRootTab(key);
-  }, []);
+  const handleSelectRootTab = useCallback(
+    (key: MobileBottomTabKey) => {
+      if (key === "journal") {
+        const activeIllnessChildId = resolveActiveIllnessChildId(
+          activeIllnessObservationsByChildId,
+          selectedChildId,
+        );
+
+        if (!activeIllnessChildId) {
+          openChildrenRoot(setActiveRootTab, setActiveScreen);
+          return;
+        }
+
+        openIllnessJournalRoot({
+          childId: activeIllnessChildId,
+          setActiveRootTab,
+          setActiveScreen,
+          setSelectedChildId,
+        });
+        return;
+      }
+
+      setActiveRootTab(key);
+      setActiveScreen("children");
+    },
+    [
+      activeIllnessObservationsByChildId,
+      selectedChildId,
+      setActiveRootTab,
+      setActiveScreen,
+      setSelectedChildId,
+    ],
+  );
 
   const handleOpenChildCreate = useCallback(() => {
     setActiveScreen("childCreate");
