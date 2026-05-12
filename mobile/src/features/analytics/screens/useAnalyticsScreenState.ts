@@ -108,7 +108,12 @@ export function useAnalyticsScreenState({
   }, [locale]);
 
   useEffect(() => {
-    setSummary(illnessSummaryCache.get(summaryCacheKey) ?? null);
+    const cachedSummary = illnessSummaryCache.get(summaryCacheKey);
+
+    if (cachedSummary !== undefined) {
+      setSummary(cachedSummary);
+    }
+
     setOpenSwipeEpisodeId(null);
     setPendingDeleteEpisode(null);
   }, [summaryCacheKey]);

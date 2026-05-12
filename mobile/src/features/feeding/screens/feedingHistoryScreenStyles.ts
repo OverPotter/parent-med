@@ -154,9 +154,9 @@ export const styles = StyleSheet.create({
   },
   dayValue: {
     color: "#66758A",
-    fontSize: 10,
-    lineHeight: 14,
-    fontWeight: "500",
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "600",
     fontFamily: journalTypography.body,
     textAlign: "center",
   },
@@ -217,9 +217,9 @@ export const styles = StyleSheet.create({
   },
   entryMeta: {
     color: "#66758A",
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: "500",
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "600",
     fontFamily: journalTypography.body,
   },
   confirmOverlay: {

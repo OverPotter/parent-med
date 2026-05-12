@@ -204,8 +204,8 @@ describe("useAnalyticsScreenState", () => {
     });
 
     expect(latestState?.selectedPeriodId).toBe("year");
-    expect(latestState?.openSwipeEpisodeId).toBe("episode-1");
-    expect(latestState?.pendingDeleteEpisode?.id).toBe("episode-1");
+    expect(latestState?.openSwipeEpisodeId).toBeNull();
+    expect(latestState?.pendingDeleteEpisode).toBeNull();
 
     await act(async () => {
       tree.update(React.createElement(Probe, { locale: "de", visible: true }));
@@ -257,6 +257,42 @@ describe("useAnalyticsScreenState", () => {
     expect(latestState?.openSwipeEpisodeId).toBe("episode-1");
     expect(latestState?.pendingDeleteEpisode?.id).toBe("episode-1");
     expect(mockedDeleteEpisode).not.toHaveBeenCalled();
+  });
+
+  it("keeps the previous summary while a new period summary is loading", async () => {
+    const halfYearSummary = createDeferred<MobileIllnessHistorySummary>();
+    const yearSummary = createDeferred<MobileIllnessHistorySummary>();
+    const episodesDeferred = createDeferred<MobileIllnessEpisode[]>();
+
+    mockedFetchSummary
+      .mockReturnValueOnce(halfYearSummary.promise)
+      .mockReturnValueOnce(yearSummary.promise);
+    mockedFetchEpisodes.mockReturnValue(episodesDeferred.promise);
+
+    await act(async () => {
+      TestRenderer.create(React.createElement(Probe, { locale: "ru", visible: true }));
+    });
+
+    await act(async () => {
+      halfYearSummary.resolve(makeSummary({ episodeCount: 2 }));
+      episodesDeferred.resolve([makeEpisode("episode-1")]);
+      await Promise.all([halfYearSummary.promise, episodesDeferred.promise]);
+    });
+
+    expect(latestState?.summary?.episodeCount).toBe(2);
+
+    act(() => {
+      latestState?.setSelectedPeriodId("year");
+    });
+
+    expect(latestState?.summary?.episodeCount).toBe(2);
+
+    await act(async () => {
+      yearSummary.resolve(makeSummary({ period: "year", episodeCount: 5 }));
+      await yearSummary.promise;
+    });
+
+    expect(latestState?.summary?.episodeCount).toBe(5);
   });
 
   it("retries loading after a failed request on the next open", async () => {
