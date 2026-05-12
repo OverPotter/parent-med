@@ -240,14 +240,51 @@ export function getGraphicsTrendSamples(
   return [0, 0, 0.18, 0, 0.22, 0, 0.16];
 }
 
-export function buildSelectedDayTitle(day: number, locale: string) {
+export function buildSelectedDayTitle(dayOrDate: number | string, locale: string) {
+  if (typeof dayOrDate === "number") {
+    return locale === "ru"
+      ? `Записи за ${dayOrDate} мая`
+      : locale === "pl"
+        ? `Wpisy z ${dayOrDate} maja`
+        : locale === "de"
+          ? `Einträge vom ${dayOrDate}. Mai`
+          : `Entries for May ${dayOrDate}`;
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dayOrDate);
+  if (!match) {
+    return locale === "ru"
+      ? "Записи за день"
+      : locale === "pl"
+        ? "Wpisy z dnia"
+        : locale === "de"
+          ? "Einträge für den Tag"
+          : "Entries for the day";
+  }
+
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0, 0);
+  const formatted = new Intl.DateTimeFormat(
+    locale === "ru"
+      ? "ru-RU"
+      : locale === "pl"
+        ? "pl-PL"
+        : locale === "de"
+          ? "de-DE"
+          : "en-US",
+    {
+      day: "numeric",
+      month: "long",
+    },
+  ).format(date);
+
   return locale === "ru"
-    ? `Записи за ${day} мая`
+    ? `Записи за ${formatted}`
     : locale === "pl"
-      ? `Wpisy z ${day} maja`
+      ? `Wpisy z ${formatted}`
       : locale === "de"
-        ? `Einträge vom ${day}. Mai`
-      : `Entries for May ${day}`;
+        ? `Einträge vom ${formatted}`
+        : `Entries for ${formatted}`;
 }
 
 export function getGraphicsIconToken(

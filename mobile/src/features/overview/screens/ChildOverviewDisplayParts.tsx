@@ -58,12 +58,13 @@ export function CalendarDayCell({
 }) {
   return (
     <Pressable
+      disabled={day.muted}
       onPress={onPress}
       style={({ pressed }) => [
         styles.calendarDayCell,
         day.muted ? styles.calendarDayCellMuted : null,
         selected ? styles.calendarDayCellSelected : null,
-        pressed ? styles.tabPressed : null,
+        pressed && !day.muted ? styles.tabPressed : null,
       ]}
     >
       <Text
@@ -73,7 +74,7 @@ export function CalendarDayCell({
           selected ? styles.calendarDayNumberSelected : null,
         ]}
       >
-        {day.day}
+        {day.muted ? "" : day.day}
       </Text>
       {day.dots.length > 0 ? (
         <View style={styles.calendarDayDots}>

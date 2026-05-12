@@ -66,6 +66,9 @@ export const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 20,
   },
+  periodTabsWrap: {
+    marginBottom: 12,
+  },
   title: {
     color: "#1E2A38",
     fontSize: 27,
@@ -110,83 +113,12 @@ export const styles = StyleSheet.create({
     fontFamily: journalTypography.display,
     letterSpacing: -0.2,
   },
-  periodChip: {
-    minHeight: 34,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    borderRadius: 18,
-    borderWidth: 1,
-    justifyContent: "center",
-    backgroundColor: "#FFFDFC",
-  },
-  periodChipOpen: {
-    backgroundColor: "#FFFDFC",
-  },
-  periodChipPressed: {
-    opacity: 0.9,
-  },
-  periodChipText: {
-    color: "#1F2A44",
-    fontSize: 13,
-    lineHeight: 17,
-    fontWeight: "600",
-    fontFamily: journalTypography.body,
-  },
-  periodDropdown: {
-    borderRadius: 18,
-    borderWidth: 1,
-    marginBottom: 14,
-    overflow: "hidden",
-    shadowColor: "#432215",
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  periodDropdownItem: {
-    position: "relative",
-    minHeight: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 13,
-    paddingVertical: 11,
-  },
-  periodDropdownItemActive: {
-    backgroundColor: "#FFFDFC",
-  },
-  periodDropdownItemPressed: {
-    opacity: 0.92,
-  },
-  periodDropdownCopy: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  periodDropdownLabel: {
-    color: "#1F2A44",
-    fontSize: 13,
-    lineHeight: 17,
-    fontWeight: "600",
-    fontFamily: journalTypography.body,
-    marginBottom: 2,
-  },
-  periodDropdownLabelActive: {
-    color: "#FF7E6B",
-  },
-  periodDropdownHelper: {
+  summaryPeriodHint: {
     color: "#6F7C91",
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: "500",
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "600",
     fontFamily: journalTypography.body,
-  },
-  periodDropdownDivider: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 0,
-    height: 1,
   },
   summaryContentRow: {
     flexDirection: "row",
@@ -377,11 +309,10 @@ export const styles = StyleSheet.create({
   },
   calendarWeekdaysRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     marginBottom: 10,
   },
   calendarWeekdayLabel: {
-    width: 44,
+    flex: 1,
     textAlign: "center",
     color: "#6F7C91",
     fontSize: 12,
@@ -392,10 +323,11 @@ export const styles = StyleSheet.create({
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
+    justifyContent: "space-between",
+    rowGap: 6,
   },
   calendarDayCell: {
-    width: 47,
+    width: "13.4%",
     minHeight: 58,
     borderRadius: 15,
     borderWidth: 1,
@@ -409,6 +341,7 @@ export const styles = StyleSheet.create({
   calendarDayCellMuted: {
     borderColor: "transparent",
     backgroundColor: "transparent",
+    opacity: 0,
   },
   calendarDayCellSelected: {
     borderColor: "#F2DDD6",

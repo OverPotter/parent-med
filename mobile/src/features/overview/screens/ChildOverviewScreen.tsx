@@ -1,5 +1,5 @@
-import { Feather, Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useMemo, useState } from "react";
 import {
   Animated,
   Image,
@@ -10,15 +10,28 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import type { MobileAuthSession } from "../../auth/api/authApi";
 import { ChildCard } from "../../children/model/childrenRedesign";
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
+import { DateRangePickerSheet } from "../../../shared/components/DateRangePickerSheet";
+import { SegmentedPillTabs } from "../../../shared/components/SegmentedPillTabs";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import {
+  buildRangeFromAllTime,
+  buildRangeFromTrailingDays,
+  localizeCustomDateRangeLabel,
+  type DateRangeValue,
+} from "../../../shared/lib/dateRange";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import {
   buildChildOverviewScreenContent,
   ChildOverviewPeriodOption,
 } from "../model/childOverviewScreen";
+import {
+  fetchMobileChildOverview,
+  type MobileChildOverview,
+} from "../api/overviewApi";
 import {
   getOverviewIconBadgeBackground,
   getOverviewIconBadgeBorder,
@@ -32,6 +45,7 @@ import {
 import { styles } from "./childOverviewScreenStyles";
 
 type ChildOverviewScreenProps = {
+  authSession: Pick<MobileAuthSession, "accessToken">;
   child: ChildCard;
   visible?: boolean;
   onBack?: () => void;
@@ -40,34 +54,70 @@ type ChildOverviewScreenProps = {
 const noop = () => {};
 
 export function ChildOverviewScreen({
+  authSession,
   child,
   visible = true,
   onBack = noop,
 }: ChildOverviewScreenProps) {
   const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
-  const content = buildChildOverviewScreenContent(child, locale);
+  const [initialState] = useState(() => {
+    const initialContent = buildChildOverviewScreenContent(child, locale);
+    return {
+      activeTabId:
+        initialContent.tabs.find((item) => item.active)?.id ??
+        initialContent.tabs[0]?.id ??
+        "",
+      activeFilterId:
+        initialContent.filters.find((item) => item.active)?.id ?? "",
+      selectedPeriodId:
+        initialContent.periodOptions[0]?.id ?? ("week" as ChildOverviewPeriodOption["id"]),
+    };
+  });
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
     enabled: visible,
     width,
     onBack,
   });
-  const [activeTabId, setActiveTabId] = useState(
-    content.tabs.find((item) => item.active)?.id ?? content.tabs[0]?.id ?? "",
+  const [activeTabId, setActiveTabId] = useState(initialState.activeTabId);
+  const [activeFilterId, setActiveFilterId] = useState(initialState.activeFilterId);
+  const [selectedPeriodId, setSelectedPeriodId] = useState<
+    ChildOverviewPeriodOption["id"]
+  >(initialState.selectedPeriodId);
+  const [customRange, setCustomRange] = useState<DateRangeValue | null>(null);
+  const [isCustomRangeOpen, setIsCustomRangeOpen] = useState(false);
+  const [visibleCalendarMonthKey, setVisibleCalendarMonthKey] = useState<string | null>(
+    null,
+  );
+  const [overviewData, setOverviewData] = useState<MobileChildOverview>({
+    feedingRecords: [],
+    sleepSessions: [],
+    weightEntries: [],
+    heightEntries: [],
+    illnessEpisodes: [],
+  });
+  const content = useMemo(
+    () =>
+      buildChildOverviewScreenContent(child, locale, {
+        periodId: selectedPeriodId,
+        activeFilterId,
+        data: overviewData,
+        customRange,
+        visibleCalendarMonthKey,
+      }),
+    [
+      activeFilterId,
+      child,
+      customRange,
+      locale,
+      overviewData,
+      selectedPeriodId,
+      visibleCalendarMonthKey,
+    ],
   );
   const activeTab =
     content.tabs.find((item) => item.id === activeTabId) ?? content.tabs[0];
-  const [activeFilterId, setActiveFilterId] = useState(
-    content.filters.find((item) => item.active)?.id ?? "",
-  );
-  const [selectedPeriodId, setSelectedPeriodId] = useState<
-    ChildOverviewPeriodOption["id"]
-  >(content.periodOptions[0]?.id ?? "week");
-  const [isPeriodOpen, setIsPeriodOpen] = useState(false);
-  const selectedPeriod =
-    content.periodOptions.find((item) => item.id === selectedPeriodId) ??
-    content.periodOptions[0];
   const maxGraphicsBarValue = Math.max(
     ...content.graphicsBarData.map((item) => item.value),
     1,
@@ -76,9 +126,61 @@ export function ChildOverviewScreen({
     "",
   );
   const selectedCalendarDay =
-    content.calendarDays.find((item) => item.id === selectedCalendarDayId) ?? null;
-  const selectedDayEntries =
-    selectedCalendarDay?.day === 3 ? content.selectedDayEntries : [];
+    content.calendarMonths
+      .flatMap((month) => month.days)
+      .find((item) => item.id === selectedCalendarDayId) ?? null;
+  const selectedDayEntries = selectedCalendarDay
+    ? content.selectedDayEntriesByDay[selectedCalendarDay.id] ?? []
+    : [];
+  const todayMonthKey = useMemo(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
+  const currentCalendarMonthKey =
+    visibleCalendarMonthKey ?? content.calendarAvailableMonthKeys[0] ?? todayMonthKey;
+  const canGoPrevMonth = true;
+  const canGoNextMonth = currentCalendarMonthKey < todayMonthKey;
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadOverviewData() {
+      try {
+        const nextOverviewData = await fetchMobileChildOverview(
+          authSession,
+          child.child.id,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        setOverviewData(nextOverviewData);
+      } catch {
+        if (cancelled) {
+          return;
+        }
+
+        setOverviewData({
+          feedingRecords: [],
+          sleepSessions: [],
+          weightEntries: [],
+          heightEntries: [],
+          illnessEpisodes: [],
+        });
+      }
+    }
+
+    void loadOverviewData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authSession, child.child.id, visible]);
 
   return (
     <Animated.View
@@ -128,6 +230,25 @@ export function ChildOverviewScreen({
               <Text style={styles.subtitle}>{content.subtitle}</Text>
             </View>
 
+            <View style={styles.periodTabsWrap}>
+              <SegmentedPillTabs
+                items={content.periodOptions}
+                activeId={customRange ? "" : selectedPeriodId}
+                onSelect={(id) => {
+                  setCustomRange(null);
+                  setSelectedPeriodId(id as ChildOverviewPeriodOption["id"]);
+                  setVisibleCalendarMonthKey(null);
+                }}
+                activeBackgroundColor="#FFEDE7"
+                activeTextColor="#FF6E61"
+                extraItem={{
+                  label: localizeCustomDateRangeLabel(locale),
+                  active: Boolean(customRange),
+                  onPress: () => setIsCustomRangeOpen(true),
+                }}
+              />
+            </View>
+
             <View
               style={[
                 styles.summaryCard,
@@ -139,84 +260,12 @@ export function ChildOverviewScreen({
             >
               <View style={styles.summaryTopRow}>
                 <Text style={styles.summaryTitle}>{content.summaryTitle}</Text>
-                {activeTab?.kind !== "calendar" ? (
-                  <Pressable
-                    onPress={() => setIsPeriodOpen((current) => !current)}
-                    style={({ pressed }) => [
-                      styles.periodChip,
-                      isPeriodOpen ? styles.periodChipOpen : null,
-                      { borderColor: content.theme.colors.stroke },
-                      pressed ? styles.periodChipPressed : null,
-                    ]}
-                  >
-                    <Text style={styles.periodChipText}>{selectedPeriod?.label}</Text>
-                    <Feather
-                      name={isPeriodOpen ? "chevron-up" : "chevron-down"}
-                      size={14}
-                      color={content.theme.colors.textSecondary}
-                    />
-                  </Pressable>
-                ) : null}
+                <Text style={styles.summaryPeriodHint}>
+                  {customRange
+                    ? localizeCustomDateRangeLabel(locale)
+                    : content.periodOptions.find((item) => item.id === selectedPeriodId)?.label}
+                </Text>
               </View>
-              {activeTab?.kind !== "calendar" && isPeriodOpen ? (
-                <View
-                  style={[
-                    styles.periodDropdown,
-                    {
-                      backgroundColor: content.theme.colors.surface,
-                      borderColor: content.theme.colors.stroke,
-                    },
-                  ]}
-                >
-                  {content.periodOptions.map((option, index) => {
-                    const active = option.id === selectedPeriod?.id;
-
-                    return (
-                      <Pressable
-                        key={option.id}
-                        onPress={() => {
-                          setSelectedPeriodId(option.id);
-                          setIsPeriodOpen(false);
-                        }}
-                        style={({ pressed }) => [
-                          styles.periodDropdownItem,
-                          active ? styles.periodDropdownItemActive : null,
-                          pressed ? styles.periodDropdownItemPressed : null,
-                        ]}
-                      >
-                        <View style={styles.periodDropdownCopy}>
-                          <Text
-                            style={[
-                              styles.periodDropdownLabel,
-                              active ? styles.periodDropdownLabelActive : null,
-                            ]}
-                          >
-                            {option.label}
-                          </Text>
-                          <Text style={styles.periodDropdownHelper}>
-                            {option.helperLabel}
-                          </Text>
-                        </View>
-                        {active ? (
-                          <Feather
-                            name="check"
-                            size={15}
-                            color={content.theme.colors.accentCoral}
-                          />
-                        ) : null}
-                        {index < content.periodOptions.length - 1 ? (
-                          <View
-                            style={[
-                              styles.periodDropdownDivider,
-                              { backgroundColor: content.theme.colors.stroke },
-                            ]}
-                          />
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              ) : null}
 
               <View
                 style={[
@@ -404,6 +453,21 @@ export function ChildOverviewScreen({
                 selectedCalendarDayId={selectedCalendarDayId}
                 selectedCalendarDay={selectedCalendarDay}
                 selectedDayEntries={selectedDayEntries}
+                canGoPrevMonth={canGoPrevMonth}
+                canGoNextMonth={canGoNextMonth}
+                onPrevMonth={() => {
+                  setVisibleCalendarMonthKey(
+                    shiftOverviewMonthKey(currentCalendarMonthKey, -1),
+                  );
+                  setSelectedCalendarDayId("");
+                }}
+                onNextMonth={() => {
+                  if (!canGoNextMonth) return;
+                  setVisibleCalendarMonthKey(
+                    shiftOverviewMonthKey(currentCalendarMonthKey, 1),
+                  );
+                  setSelectedCalendarDayId("");
+                }}
                 onSelectCalendarDay={(dayId) =>
                   setSelectedCalendarDayId((current) =>
                     current === dayId ? "" : dayId,
@@ -420,9 +484,50 @@ export function ChildOverviewScreen({
               <OverviewEventsSection content={content} />
             )}
           </ScrollView>
-
         </View>
       </ImageBackground>
+      <DateRangePickerSheet
+        visible={visible && isCustomRangeOpen}
+        locale={locale}
+        title={localizeCustomDateRangeLabel(locale)}
+        subtitle={content.subtitle}
+        initialRange={resolveInitialRange(selectedPeriodId, customRange, overviewData)}
+        onClose={() => setIsCustomRangeOpen(false)}
+        onApply={(range) => {
+          setCustomRange(range);
+          setVisibleCalendarMonthKey(null);
+          setSelectedCalendarDayId("");
+          setIsCustomRangeOpen(false);
+        }}
+      />
     </Animated.View>
   );
+}
+
+function shiftOverviewMonthKey(monthKey: string, delta: number) {
+  const [year, month] = monthKey.split("-").map(Number);
+  const nextDate = new Date(year, month - 1 + delta, 1);
+  return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function resolveInitialRange(
+  periodId: ChildOverviewPeriodOption["id"],
+  customRange: DateRangeValue | null,
+  data: MobileChildOverview,
+) {
+  if (customRange) {
+    return customRange;
+  }
+
+  if (periodId === "twoWeeks") return buildRangeFromTrailingDays(14);
+  if (periodId === "month") return buildRangeFromTrailingDays(30);
+  if (periodId === "week") return buildRangeFromTrailingDays(7);
+
+  return buildRangeFromAllTime([
+    ...data.feedingRecords.map((item) => item.recordedAt),
+    ...data.sleepSessions.map((item) => item.startedAt),
+    ...data.weightEntries.map((item) => item.measuredAt),
+    ...data.heightEntries.map((item) => item.measuredAt),
+    ...data.illnessEpisodes.map((item) => item.closedAt ?? item.startedAt),
+  ]);
 }

@@ -3,6 +3,8 @@ import { Pressable, Text, View } from "react-native";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type {
   ChildOverviewCalendarDay,
+  ChildOverviewCalendarMonth,
+  ChildOverviewEventRow,
   ChildOverviewScreenContent,
 } from "../model/childOverviewScreen";
 import {
@@ -27,83 +29,38 @@ export function OverviewCalendarSection({
   selectedCalendarDayId,
   selectedCalendarDay,
   selectedDayEntries,
+  canGoPrevMonth,
+  canGoNextMonth,
+  onPrevMonth,
+  onNextMonth,
   onSelectCalendarDay,
 }: {
   content: ChildOverviewScreenContent;
   locale: MobileLocale;
   selectedCalendarDayId: string;
   selectedCalendarDay: ChildOverviewCalendarDay | null;
-  selectedDayEntries: ChildOverviewScreenContent["selectedDayEntries"];
+  selectedDayEntries: ChildOverviewEventRow[];
+  canGoPrevMonth: boolean;
+  canGoNextMonth: boolean;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
   onSelectCalendarDay: (dayId: string) => void;
 }) {
   return (
     <>
-      <View
-        style={[
-          styles.calendarCard,
-          {
-            backgroundColor: content.theme.colors.surface,
-            borderColor: content.theme.colors.stroke,
-          },
-        ]}
-      >
-        <View style={styles.calendarHeaderRow}>
-          <Text style={styles.calendarMonthTitle}>
-            {content.calendarMonthLabel}
-          </Text>
-          <View style={styles.calendarNavButtons}>
-            <Pressable
-              disabled
-              style={({ pressed }) => [
-                styles.calendarNavButton,
-                styles.calendarNavButtonDisabled,
-                { borderColor: content.theme.colors.stroke },
-                pressed ? styles.tabPressed : null,
-              ]}
-            >
-              <Feather
-                name="chevron-left"
-                size={16}
-                color={content.theme.colors.textSecondary}
-              />
-            </Pressable>
-            <Pressable
-              disabled
-              style={({ pressed }) => [
-                styles.calendarNavButton,
-                styles.calendarNavButtonDisabled,
-                { borderColor: content.theme.colors.stroke },
-                pressed ? styles.tabPressed : null,
-              ]}
-            >
-              <Feather
-                name="chevron-right"
-                size={16}
-                color={content.theme.colors.textSecondary}
-              />
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.calendarWeekdaysRow}>
-          {content.calendarWeekdays.map((label) => (
-            <Text key={label} style={styles.calendarWeekdayLabel}>
-              {label}
-            </Text>
-          ))}
-        </View>
-
-        <View style={styles.calendarGrid}>
-          {content.calendarDays.map((day) => (
-            <CalendarDayCell
-              key={day.id}
-              day={day}
-              selected={day.id === selectedCalendarDayId}
-              onPress={() => onSelectCalendarDay(day.id)}
-            />
-          ))}
-        </View>
-      </View>
+      {content.calendarMonths.map((month) => (
+        <CalendarMonthCard
+          key={month.id}
+          month={month}
+          content={content}
+          selectedCalendarDayId={selectedCalendarDayId}
+          canGoPrevMonth={canGoPrevMonth}
+          canGoNextMonth={canGoNextMonth}
+          onPrevMonth={onPrevMonth}
+          onNextMonth={onNextMonth}
+          onSelectCalendarDay={onSelectCalendarDay}
+        />
+      ))}
 
       <View
         style={[
@@ -118,7 +75,7 @@ export function OverviewCalendarSection({
           <>
             <View style={styles.calendarSummaryHeader}>
               <Text style={styles.calendarSummaryTitle}>
-                {buildSelectedDayTitle(selectedCalendarDay.day, locale)}
+                {buildSelectedDayTitle(selectedCalendarDay.id, locale)}
               </Text>
               <Text style={styles.calendarSummaryHint}>
                 {content.selectedDayToggleHint}
@@ -155,6 +112,95 @@ export function OverviewCalendarSection({
         )}
       </View>
     </>
+  );
+}
+
+function CalendarMonthCard({
+  month,
+  content,
+  selectedCalendarDayId,
+  canGoPrevMonth,
+  canGoNextMonth,
+  onPrevMonth,
+  onNextMonth,
+  onSelectCalendarDay,
+}: {
+  month: ChildOverviewCalendarMonth;
+  content: ChildOverviewScreenContent;
+  selectedCalendarDayId: string;
+  canGoPrevMonth: boolean;
+  canGoNextMonth: boolean;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onSelectCalendarDay: (dayId: string) => void;
+}) {
+  return (
+    <View
+      style={[
+        styles.calendarCard,
+        {
+          backgroundColor: content.theme.colors.surface,
+          borderColor: content.theme.colors.stroke,
+        },
+      ]}
+    >
+      <View style={styles.calendarHeaderRow}>
+        <Text style={styles.calendarMonthTitle}>{month.label}</Text>
+        <View style={styles.calendarNavButtons}>
+          <Pressable
+            disabled={!canGoPrevMonth}
+            onPress={onPrevMonth}
+            style={({ pressed }) => [
+              styles.calendarNavButton,
+              !canGoPrevMonth ? styles.calendarNavButtonDisabled : null,
+              { borderColor: content.theme.colors.stroke },
+              pressed ? styles.tabPressed : null,
+            ]}
+          >
+            <Feather
+              name="chevron-left"
+              size={16}
+              color={content.theme.colors.textSecondary}
+            />
+          </Pressable>
+          <Pressable
+            disabled={!canGoNextMonth}
+            onPress={onNextMonth}
+            style={({ pressed }) => [
+              styles.calendarNavButton,
+              !canGoNextMonth ? styles.calendarNavButtonDisabled : null,
+              { borderColor: content.theme.colors.stroke },
+              pressed ? styles.tabPressed : null,
+            ]}
+          >
+            <Feather
+              name="chevron-right"
+              size={16}
+              color={content.theme.colors.textSecondary}
+            />
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={styles.calendarWeekdaysRow}>
+        {content.calendarWeekdays.map((label) => (
+          <Text key={`${month.id}-${label}`} style={styles.calendarWeekdayLabel}>
+            {label}
+          </Text>
+        ))}
+      </View>
+
+      <View style={styles.calendarGrid}>
+        {month.days.map((day) => (
+          <CalendarDayCell
+            key={day.id}
+            day={day}
+            selected={day.id === selectedCalendarDayId}
+            onPress={() => onSelectCalendarDay(day.id)}
+          />
+        ))}
+      </View>
+    </View>
   );
 }
 

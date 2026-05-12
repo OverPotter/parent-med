@@ -1,164 +1,37 @@
 import { ImageSourcePropType } from "react-native";
 import { ChildCard } from "../../children/model/childrenRedesign";
-import { overviewScreenSpecs } from "../../../redesign/screens/overview/specs";
 import { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import { getInclusiveDaySpan, type DateRangeValue } from "../../../shared/lib/dateRange";
 import {
   getOverviewCopy,
   translateOverviewBottomNavLabel,
-  translateOverviewDetail,
-  translateOverviewEventDate,
-  translateOverviewEventType,
-  translateOverviewFilter,
-  translateOverviewInsightSubtitle,
-  translateOverviewInsightTitle,
-  translateOverviewMonth,
   translateOverviewSelectedDayHeader,
   translateOverviewSelectedDayHint,
   translateOverviewTab,
 } from "./childOverviewCopy";
 import {
   getOverviewTabKind,
-  mapOverviewCalendarDotKey,
-  mapOverviewSelectedDayEntries,
   overviewIconTokens,
   replaceOverviewDemoName,
 } from "./childOverviewHelpers";
-
-const overviewSpec = overviewScreenSpecs.childOverview;
-const overviewCalendarSpec = overviewScreenSpecs.childOverviewCalendar;
-
-type OverviewIconKey =
-  | "sleep"
-  | "feeding"
-  | "illness"
-  | "weightHeight"
-  | "notes"
-  | "bottomChildren"
-  | "bottomPills"
-  | "bottomMedicineCabinet"
-  | "bottomMore";
-
-type OverviewStyleGuide = {
-  canvas: {
-    layout: {
-      sideMarginPt: number;
-      contentWidthPt: number;
-      sectionGapPt: number;
-      columnGapPt: number;
-    };
-  };
-  colors: {
-    background: string;
-    surface: string;
-    surfaceAccent: string;
-    stroke: string;
-    textPrimary: string;
-    textSecondary: string;
-    accentCoral: string;
-    accentCoralSoft: string;
-    sleepPurple: string;
-    feedingOrange: string;
-    illnessPink: string;
-    weightGreen: string;
-    notesYellow: string;
-    heightGreen: string;
-    blueSoft: string;
-    white: string;
-  };
-  gradients: {
-    screenBackground: {
-      type: "linear";
-      angle: number;
-      stops: Array<{ color: string; position: number }>;
-    };
-    selectedTab: {
-      type: "linear";
-      angle: number;
-      stops: Array<{ color: string; position: number }>;
-    };
-    primaryCoralButton: {
-      type: "linear";
-      angle: number;
-      stops: Array<{ color: string; position: number }>;
-    };
-  };
-  components: {
-    topBar: {
-      backLink: { text: string; color: string };
-      actions: { icons: string[] };
-    };
-    heroHeader: {
-      title: string;
-      subtitle: string;
-    };
-    summaryCard: {
-      title: string;
-      periodSelector: { text: string };
-      insights: Array<{
-        icon: OverviewIconKey;
-        title: string;
-        subtitle: string;
-      }>;
-    };
-    quickCards: {
-      items: Array<{
-        label: string;
-        value: string;
-        caption: string;
-        icon: OverviewIconKey;
-      }>;
-    };
-    tabs: {
-      items: string[];
-    };
-    filters: {
-      items: Array<{
-        label: string;
-        active?: boolean;
-        type?: "dropdown";
-        dotColor?: string;
-      }>;
-    };
-    eventsList: {
-      sectionTitle: string;
-      items: Array<{
-        date: string;
-        rows: Array<{
-          time: string;
-          type: string;
-          detail: string;
-          icon: OverviewIconKey;
-        }>;
-      }>;
-    };
-    bottomNavigation: {
-      items: Array<{
-        label: string;
-        icon: OverviewIconKey;
-        active?: boolean;
-      }>;
-    };
-  };
-  characterIllustration: {
-    blobColor: string;
-    decorations: {
-      smallHeartColor: string;
-      smallLeafColor: string;
-      opacity: number;
-    };
-  };
-  spacingReference: {
-    screenPaddingHorizontalPt: number;
-    headerTopFromSafeAreaPt: number;
-    headerToSummaryCardPt: number;
-    summaryCardToQuickCardsPt: number;
-    quickCardsToTabsPt: number;
-    tabsToFiltersPt: number;
-    filtersToEventsTitlePt: number;
-    eventsTitleToListPt: number;
-    bottomNavFloatingMarginPt: number;
-  };
-};
+import { buildLiveOverviewData, type ChildOverviewDataBundle } from "./childOverviewLive";
+import {
+  buildFallbackCalendarDays,
+  buildFallbackCalendarMonths,
+  buildFallbackCalendarStats,
+  buildFallbackCalendarWeekdays,
+  buildFallbackEvents,
+  buildFallbackFilters,
+  buildFallbackGraphics,
+  buildFallbackSummaryInsights,
+  buildOverviewPeriodOptions,
+} from "./childOverviewFallback";
+import {
+  overviewCalendarSpec as calendarSpec,
+  overviewSpec as spec,
+  type OverviewIconKey,
+  type OverviewStyleGuide,
+} from "./childOverviewSpec";
 
 export type ChildOverviewTheme = {
   colors: OverviewStyleGuide["colors"];
@@ -214,9 +87,8 @@ export type ChildOverviewBottomNavItem = {
 };
 
 export type ChildOverviewPeriodOption = {
-  id: "week" | "twoWeeks" | "month" | "customRange";
+  id: "week" | "twoWeeks" | "month";
   label: string;
-  helperLabel: string;
 };
 
 export type ChildOverviewCalendarDotKey =
@@ -233,6 +105,12 @@ export type ChildOverviewCalendarDay = {
   muted: boolean;
   selected: boolean;
   dots: ChildOverviewCalendarDotKey[];
+};
+
+export type ChildOverviewCalendarMonth = {
+  id: string;
+  label: string;
+  days: ChildOverviewCalendarDay[];
 };
 
 export type ChildOverviewCalendarStat = {
@@ -270,7 +148,8 @@ export type ChildOverviewScreenContent = {
   filters: ChildOverviewFilter[];
   eventsTitle: string;
   events: ChildOverviewEventSection[];
-  calendarMonthLabel: string;
+  calendarAvailableMonthKeys: string[];
+  calendarMonths: ChildOverviewCalendarMonth[];
   calendarWeekdays: string[];
   calendarDays: ChildOverviewCalendarDay[];
   calendarStats: ChildOverviewCalendarStat[];
@@ -278,7 +157,7 @@ export type ChildOverviewScreenContent = {
   selectedDayHint: string;
   selectedDayToggleHint: string;
   selectedDayEmptyLabel: string;
-  selectedDayEntries: ChildOverviewEventRow[];
+  selectedDayEntriesByDay: Record<string, ChildOverviewEventRow[]>;
   graphicsBarTitle: string;
   graphicsBarSubtitle: string;
   graphicsBarTotalLabel: string;
@@ -298,109 +177,35 @@ export type ChildOverviewScreenContent = {
   };
 };
 
-const spec = overviewSpec as OverviewStyleGuide;
-const calendarSpec = overviewCalendarSpec as {
-  copy: {
-    month: string;
-    selectedDayHeader: string;
-    selectedDayHint: string;
-    addEntry: string;
-    monthStats: Array<{ label: string; value: string }>;
-  };
-  colorTokens: {
-    ["sleep/blue"]: string;
-    ["feeding/orange"]: string;
-    ["illness/pink"]: string;
-    ["weight/teal"]: string;
-    ["growth/green"]: string;
-    ["purple/secondary"]: string;
-  };
-  components: {
-    calendarCard: {
-      legend: {
-        items: Array<{ label: string; dotColor: string }>;
-      };
-      weekdays: {
-        labels: string[];
-      };
-      grid: {
-        days: Array<{
-          day: number;
-          muted?: boolean;
-          selected?: boolean;
-          dots?: string[];
-        }>;
-      };
-    };
-    monthStatsCard: {
-      items: Array<{
-        iconCircleBg: string;
-        icon: "calendar" | "star" | "clock";
-        label: string;
-        value: string;
-      }>;
-    };
-    selectedDayCard: {
-      list: {
-        items: Array<{
-          type: "illness" | "feeding" | "sleep";
-          time: string;
-          title: string;
-          subtitle: string;
-        }>;
-      };
-    };
-  };
-};
 export function buildChildOverviewScreenContent(
   child: ChildCard,
   locale: MobileLocale,
+  options?: {
+    periodId?: ChildOverviewPeriodOption["id"];
+    activeFilterId?: string;
+    data?: ChildOverviewDataBundle;
+    customRange?: DateRangeValue | null;
+    visibleCalendarMonthKey?: string | null;
+  },
 ): ChildOverviewScreenContent {
   const isRu = locale === "ru";
   const copy = getOverviewCopy(locale);
   const { components, colors, gradients, characterIllustration } = spec;
-  const demoBarData = [
-    {
-      icon: "feeding" as const,
-      label: copy.eventTypes.feeding,
-      value: 4,
-      unit: "entries" as const,
-      color: "#F7A14C",
-    },
-    {
-      icon: "illness" as const,
-      label: copy.filters.illness,
-      value: 2,
-      unit: "episodes" as const,
-      color: "#F58E97",
-    },
-    {
-      icon: "sleep" as const,
-      label: copy.filters.sleep,
-      value: 3,
-      unit: "sleeps" as const,
-      color: "#8B74D9",
-    },
-    {
-      icon: "weight" as const,
-      label: copy.filters.weight,
-      value: 1,
-      unit: "measurements" as const,
-      color: "#39C0A6",
-    },
-    {
-      icon: "growth" as const,
-      label: copy.filters.height,
-      value: 1,
-      unit: "measurements" as const,
-      color: "#8CCB2E",
-    },
-  ];
-  const demoBarTotal = demoBarData.reduce((sum, item) => sum + item.value, 0);
-  const demoBarPeak = demoBarData.reduce(
-    (max, item) => (item.value > max.value ? item : max),
-    demoBarData[0],
+  const periodId = options?.periodId ?? "week";
+  const activeFilterId = options?.activeFilterId ?? "chip-Все";
+  const data = options?.data;
+  const customRange = options?.customRange ?? null;
+  const visibleCalendarMonthKey = options?.visibleCalendarMonthKey ?? null;
+  const liveOverview = buildLiveOverviewData(
+    locale,
+    copy,
+    periodId,
+    activeFilterId,
+    data,
+    customRange,
+    visibleCalendarMonthKey,
   );
+  const fallbackGraphics = buildFallbackGraphics(copy);
 
   return {
     backLabel: copy.backLabel,
@@ -411,98 +216,23 @@ export function buildChildOverviewScreenContent(
       ? components.heroHeader.subtitle
       : copy.subtitle,
     avatarSource: child.avatarSource,
-    periodOptions: [
-      {
-        id: "week",
-        label: copy.periodLabels.week,
-        helperLabel: copy.periodHelpers.week,
-      },
-      {
-        id: "twoWeeks",
-        label: copy.periodLabels.twoWeeks,
-        helperLabel: copy.periodHelpers.twoWeeks,
-      },
-      {
-        id: "month",
-        label: copy.periodLabels.month,
-        helperLabel: copy.periodHelpers.month,
-      },
-      {
-        id: "customRange",
-        label: copy.periodLabels.customRange,
-        helperLabel: copy.periodHelpers.customRange,
-      },
-    ],
-    summaryTitle: copy.summaryTitle,
-    summaryInsights: components.summaryCard.insights.map((item) => ({
-      id: `${item.icon}-${item.title}`,
-      title: isRu ? item.title : translateOverviewInsightTitle(item.title, locale),
-      subtitle: isRu ? item.subtitle : translateOverviewInsightSubtitle(item.subtitle, locale),
-      icon: overviewIconTokens[item.icon],
-    })),
+    periodOptions: buildOverviewPeriodOptions(copy),
+    summaryTitle: resolveOverviewSummaryTitle(locale, copy, periodId, customRange),
+    summaryInsights: liveOverview?.summaryInsights ?? buildFallbackSummaryInsights(locale, components),
     tabs: components.tabs.items.map((item, index) => ({
       id: item,
       kind: getOverviewTabKind(item),
       label: isRu ? item : translateOverviewTab(item, locale),
       active: index === 0,
     })),
-    filters: components.filters.items
-      .filter((item) => item.type !== "dropdown")
-      .map((item) => ({
-        id: `${item.type ?? "chip"}-${item.label}`,
-        label: isRu ? item.label : translateOverviewFilter(item.label, locale),
-        active: Boolean(item.active),
-        kind: "chip" as const,
-        dotColor: item.dotColor,
-      })),
+    filters: buildFallbackFilters(locale, components),
     eventsTitle: copy.eventsTitle,
-    events: components.eventsList.items.map((section) => ({
-      id: section.date,
-      date: isRu ? section.date : translateOverviewEventDate(section.date, locale),
-      rows: section.rows.map((row) => ({
-        id: `${section.date}-${row.time}-${row.type}`,
-        time: row.time,
-        type: isRu ? row.type : translateOverviewEventType(row.type, locale),
-        detail: isRu ? row.detail : translateOverviewDetail(row.detail, locale),
-        icon: overviewIconTokens[row.icon],
-      })),
-    })),
-    calendarMonthLabel: isRu
-      ? calendarSpec.copy.month
-      : translateOverviewMonth(calendarSpec.copy.month, locale),
-    calendarWeekdays: isRu
-      ? calendarSpec.components.calendarCard.weekdays.labels
-      : locale === "pl"
-        ? ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"]
-        : locale === "de"
-          ? ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
-          : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    calendarDays: calendarSpec.components.calendarCard.grid.days.map((day, index) => ({
-      id: `calendar-day-${index}-${day.day}`,
-      day: day.day,
-      muted: Boolean(day.muted),
-      selected: Boolean(day.selected),
-      dots: (day.dots ?? []).map(mapOverviewCalendarDotKey),
-    })),
-    calendarStats: calendarSpec.components.monthStatsCard.items.map((item, index) => ({
-      id: `${item.icon}-${index}`,
-      icon: item.icon,
-      label: isRu
-        ? item.label
-        : item.label === "Активные дни"
-          ? copy.calendarStats.activeDays
-          : item.label === "Чаще всего"
-            ? copy.calendarStats.mostOften
-            : copy.calendarStats.latestEntry,
-      value: isRu
-        ? item.value
-        : item.value === "Кормление"
-          ? copy.eventTypes.feeding
-          : item.value === "3 мая"
-            ? copy.dates.may3
-            : item.value,
-      iconCircleBg: item.iconCircleBg,
-    })),
+    events: liveOverview?.events ?? buildFallbackEvents(locale, components),
+    calendarAvailableMonthKeys: liveOverview?.calendarAvailableMonthKeys ?? [],
+    calendarMonths: liveOverview?.calendarMonths ?? buildFallbackCalendarMonths(locale, calendarSpec),
+    calendarWeekdays: buildFallbackCalendarWeekdays(locale, calendarSpec),
+    calendarDays: liveOverview?.calendarDays ?? buildFallbackCalendarDays(calendarSpec),
+    calendarStats: liveOverview?.calendarStats ?? buildFallbackCalendarStats(locale, copy, calendarSpec),
     selectedDayHeader: isRu
       ? calendarSpec.copy.selectedDayHeader
       : translateOverviewSelectedDayHeader(calendarSpec.copy.selectedDayHeader, locale),
@@ -511,20 +241,15 @@ export function buildChildOverviewScreenContent(
       : translateOverviewSelectedDayHint(calendarSpec.copy.selectedDayHint, locale),
     selectedDayToggleHint: copy.selectedDayToggleHint,
     selectedDayEmptyLabel: copy.selectedDayEmptyLabel,
-    selectedDayEntries: mapOverviewSelectedDayEntries(locale, calendarSpec),
+    selectedDayEntriesByDay: liveOverview?.selectedDayEntriesByDay ?? {},
     graphicsBarTitle: copy.graphics.title,
     graphicsBarSubtitle: copy.graphics.subtitle,
-    graphicsBarTotalLabel: `${copy.graphics.totalPrefix}: ${demoBarTotal}`,
-    graphicsBarPeakLabel: `${copy.graphics.peakPrefix}: ${demoBarPeak.label} · ${demoBarPeak.value}`,
-    graphicsBarData: demoBarData.map((item, index) => ({
-      id: `${item.label}-${index}`,
-      icon: item.icon,
-      label: item.label,
-      value: item.value,
-      unit: item.unit,
-      color: item.color,
-      highlighted: item.value === demoBarPeak.value && item.value > 0,
-    })),
+    graphicsBarTotalLabel:
+      liveOverview?.graphicsBarTotalLabel ?? `${copy.graphics.totalPrefix}: ${fallbackGraphics.total}`,
+    graphicsBarPeakLabel:
+      liveOverview?.graphicsBarPeakLabel ??
+      `${copy.graphics.peakPrefix}: ${fallbackGraphics.peak.label} · ${fallbackGraphics.peak.value}`,
+    graphicsBarData: liveOverview?.graphicsBarData ?? fallbackGraphics.rows,
     graphicsCategoryTitle: copy.graphics.categoryTitle,
     graphicsCategorySubtitle: copy.graphics.categorySubtitle,
     calendarMonthSummaryTitle: copy.calendarMonthSummaryTitle,
@@ -551,4 +276,35 @@ export function buildChildOverviewScreenContent(
       columnGapPt: spec.canvas.layout.columnGapPt,
     },
   };
+}
+
+function resolveOverviewSummaryTitle(
+  locale: MobileLocale,
+  copy: ReturnType<typeof getOverviewCopy>,
+  periodId: ChildOverviewPeriodOption["id"],
+  customRange: DateRangeValue | null,
+) {
+  if (customRange) {
+    const daySpan = getInclusiveDaySpan(customRange);
+    if (locale === "ru") return `Главное за ${daySpan} дн.`;
+    if (locale === "pl") return `Najważniejsze z ${daySpan} dni`;
+    if (locale === "de") return `Wichtigstes der letzten ${daySpan} Tage`;
+    return `Highlights for ${daySpan} days`;
+  }
+
+  if (periodId === "twoWeeks") {
+    if (locale === "ru") return "Главное за 14 дней";
+    if (locale === "pl") return "Najważniejsze z 14 dni";
+    if (locale === "de") return "Wichtigstes der letzten 14 Tage";
+    return "Highlights for 14 days";
+  }
+
+  if (periodId === "month") {
+    if (locale === "ru") return "Главное за 30 дней";
+    if (locale === "pl") return "Najważniejsze z 30 dni";
+    if (locale === "de") return "Wichtigstes der letzten 30 Tage";
+    return "Highlights for 30 days";
+  }
+
+  return copy.summaryTitle;
 }

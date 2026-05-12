@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Response
 
 from src.api.deps import (
     get_child_export_service,
+    get_child_overview_service,
     get_child_service,
     get_child_summary_service,
     get_current_account,
@@ -20,7 +21,9 @@ from src.application.dto.child import (
     ChildSummaryResponseDto,
     ChildUpdateDto,
 )
+from src.application.dto.child_overview import ChildOverviewResponseDto
 from src.application.services.child_export_service import ChildExportService
+from src.application.services.child_overview_service import ChildOverviewService
 from src.application.services.child_service import ChildService
 from src.application.services.child_summary_service import ChildSummaryService
 
@@ -62,6 +65,16 @@ async def get_child(
 ) -> ChildResponseDto:
     """Получить ребёнка по id."""
     return await service.get_by_id_for_account(child_id, account)
+
+
+@router.get("/{child_id}/overview", response_model=ChildOverviewResponseDto)
+async def get_child_overview(
+    child_id: UUID,
+    account: AuthenticatedAccount = Depends(get_current_account),
+    service: ChildOverviewService = Depends(get_child_overview_service),
+) -> ChildOverviewResponseDto:
+    """Агрегированный overview payload для mobile."""
+    return await service.get_for_child(child_id, account)
 
 
 @router.get("/{child_id}/exports/archive")
