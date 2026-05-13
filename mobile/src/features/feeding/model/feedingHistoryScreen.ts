@@ -169,13 +169,14 @@ export function buildFeedingMetricsFromApi(
   items: MobileFeedingRecord[],
   locale: MobileLocale,
   periodId: string,
+  customDaySpan?: number,
 ) {
   const normalizedPeriod = mapFeedingPeriodId(periodId);
 
   return [
     {
       id: "amount",
-      value: formatAveragePerDay(items, normalizedPeriod, locale),
+      value: formatAveragePerDay(items, normalizedPeriod, locale, customDaySpan),
     },
     {
       id: "time",
@@ -483,12 +484,13 @@ function formatAveragePerDay(
   items: MobileFeedingRecord[],
   periodId: FeedingPeriodId,
   locale: MobileLocale,
+  customDaySpan?: number,
 ) {
   if (items.length === 0) {
     return "—";
   }
 
-  const perDay = items.length / resolvePeriodDaySpan(items, periodId);
+  const perDay = items.length / resolvePeriodDaySpan(items, periodId, customDaySpan);
   const rounded = perDay >= 10 ? Math.round(perDay) : Math.round(perDay * 10) / 10;
 
   if (locale === "ru") return `${rounded} раз`;
@@ -500,7 +502,12 @@ function formatAveragePerDay(
 function resolvePeriodDaySpan(
   items: MobileFeedingRecord[],
   periodId: FeedingPeriodId,
+  customDaySpan?: number,
 ) {
+  if (typeof customDaySpan === "number" && customDaySpan > 0) {
+    return customDaySpan;
+  }
+
   if (periodId === "24h") {
     return 1;
   }

@@ -14,9 +14,20 @@ import {
   fetchMobileFeedingRecords,
 } from "../api/feedingRecordsApi";
 import { journalHeroAssets } from "../../../redesign/screens/journal/assets";
+import { DateRangePickerSheet } from "../../../shared/components/DateRangePickerSheet";
 import { JournalScreenScaffold } from "../../../shared/components/JournalScreenScaffold";
 import { SwipeToDeleteRow } from "../../../shared/components/SwipeToDeleteRow";
 import { type MobileLocale, useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import {
+  buildRangeFromAllTime,
+  buildRangeFromTrailingDays,
+  formatDateRangeLabel,
+  getInclusiveDaySpan,
+  isDateWithinRange,
+  localizeCustomDateRangeLabel,
+  localizeCustomDateRangeSubtitle,
+  type DateRangeValue,
+} from "../../../shared/lib/dateRange";
 import {
   buildFeedingMetricsFromApi,
   buildFeedingHistoryScreenContent,
@@ -50,6 +61,8 @@ export function FeedingHistoryScreen({
     buildFeedingHistoryScreenContent(locale, childDisplayName).periods.find((item) => item.active)?.id ?? "",
   );
   const [records, setRecords] = useState<MobileFeedingRecord[]>([]);
+  const [isCustomRangeOpen, setIsCustomRangeOpen] = useState(false);
+  const [customRange, setCustomRange] = useState<DateRangeValue | null>(null);
   const [loadErrorVisible, setLoadErrorVisible] = useState(false);
   const [pendingDeleteRecordId, setPendingDeleteRecordId] = useState<string | null>(null);
   const [deleteErrorVisible, setDeleteErrorVisible] = useState(false);
@@ -85,10 +98,13 @@ export function FeedingHistoryScreen({
     };
   }, [authSession, child.child.id, visible]);
 
-  const filteredRecords = useMemo(
-    () => filterFeedingRecordsByPeriod(records, activePeriodId),
-    [activePeriodId, records],
-  );
+  const filteredRecords = useMemo(() => {
+    if (customRange) {
+      return records.filter((item) => isDateWithinRange(item.recordedAt, customRange));
+    }
+
+    return filterFeedingRecordsByPeriod(records, activePeriodId);
+  }, [activePeriodId, customRange, records]);
   const content = useMemo(
     () => buildFeedingHistoryScreenContent(locale, childDisplayName, activePeriodId),
     [activePeriodId, childDisplayName, locale],
@@ -98,9 +114,18 @@ export function FeedingHistoryScreen({
     [filteredRecords, locale],
   );
   const metrics = useMemo(
-    () => buildFeedingMetricsFromApi(filteredRecords, locale, activePeriodId),
-    [activePeriodId, filteredRecords, locale],
+    () =>
+      buildFeedingMetricsFromApi(
+        filteredRecords,
+        locale,
+        activePeriodId,
+        customRange ? getInclusiveDaySpan(customRange) : undefined,
+      ),
+    [activePeriodId, customRange, filteredRecords, locale],
   );
+  const customRangeLabel = customRange
+    ? formatDateRangeLabel(customRange, locale)
+    : null;
   const deleteDialogCopy = useMemo(() => buildFeedingDeleteDialogCopy(locale), [locale]);
   const deleteErrorCopy = useMemo(() => buildFeedingDeleteErrorCopy(locale), [locale]);
   const loadErrorCopy = useMemo(() => buildFeedingLoadErrorCopy(locale), [locale]);
@@ -127,19 +152,29 @@ export function FeedingHistoryScreen({
         title={content.title}
         subtitle={content.subtitle}
         periods={content.periods}
-        activePeriodId={activePeriodId}
-        onSelectPeriod={setActivePeriodId}
+        activePeriodId={customRange ? "" : activePeriodId}
+        onSelectPeriod={(id) => {
+          setCustomRange(null);
+          setActivePeriodId(id);
+        }}
         onBack={onBack}
         activeBackgroundColor="#FFEDE7"
         activeTextColor="#FF6E61"
         headerMarginBottom={14}
         segmentedMarginBottom={12}
+        customRangeLabel={localizeCustomDateRangeLabel(locale)}
+        customRangeActive={Boolean(customRange)}
+        onPressCustomRange={() => setIsCustomRangeOpen(true)}
       >
         <View style={styles.heroCard}>
           <View style={styles.heroTopRow}>
             <View style={styles.heroCopy}>
               <Text style={styles.heroTitle}>{content.heroTitle}</Text>
-              <Text style={styles.heroSubtitle}>{content.heroSubtitle}</Text>
+              <Text style={styles.heroSubtitle}>
+                {customRange
+                  ? localizeCustomDateRangeSubtitle(locale)
+                  : content.heroSubtitle}
+              </Text>
             </View>
             <View style={styles.heroVisual}>
               <Image
@@ -268,8 +303,43 @@ export function FeedingHistoryScreen({
           </View>
         </View>
       ) : null}
+
+      <DateRangePickerSheet
+        visible={visible && isCustomRangeOpen}
+        locale={locale}
+        title={localizeCustomDateRangeLabel(locale)}
+        subtitle={localizeRangeSheetSubtitle(locale)}
+        initialRange={resolveInitialRange(activePeriodId, customRange, records)}
+        onClose={() => setIsCustomRangeOpen(false)}
+        onApply={(range) => {
+          setCustomRange(range);
+          setIsCustomRangeOpen(false);
+        }}
+      />
     </View>
   );
+}
+
+function resolveInitialRange(
+  activePeriodId: string,
+  customRange: DateRangeValue | null,
+  records: MobileFeedingRecord[],
+) {
+  if (customRange) {
+    return customRange;
+  }
+
+  if (activePeriodId === "24h") return buildRangeFromTrailingDays(1);
+  if (activePeriodId === "7d") return buildRangeFromTrailingDays(7);
+  if (activePeriodId === "30d") return buildRangeFromTrailingDays(30);
+  return buildRangeFromAllTime(records.map((item) => item.recordedAt));
+}
+
+function localizeRangeSheetSubtitle(locale: MobileLocale) {
+  if (locale === "ru") return "Выберите диапазон, чтобы посмотреть свои даты.";
+  if (locale === "de") return "Wähle einen eigenen Zeitraum für die Anzeige.";
+  if (locale === "pl") return "Wybierz własny zakres dat do podglądu.";
+  return "Choose a custom date range to review data.";
 }
 
 function resolveFeedingChildDisplayName(child: ChildCard, locale: MobileLocale) {

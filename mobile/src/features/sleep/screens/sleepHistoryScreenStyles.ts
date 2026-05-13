@@ -2,6 +2,9 @@ import { StyleSheet } from "react-native";
 import { journalTypography } from "../../../shared/theme/journalTypography";
 
 export const styles = StyleSheet.create({
+  screenRoot: {
+    ...StyleSheet.absoluteFillObject,
+  },
   heroCard: {
     borderRadius: 28,
     borderWidth: 1,
@@ -147,6 +150,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "#FFFDFC",
     padding: 12,
     justifyContent: "center",
+    alignItems: "center",
   },
   timeValue: {
     color: "#1E2A38",
@@ -158,15 +162,16 @@ export const styles = StyleSheet.create({
   },
   dayValue: {
     color: "#66758A",
-    fontSize: 10,
-    lineHeight: 14,
-    fontWeight: "500",
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "600",
     fontFamily: journalTypography.body,
+    textAlign: "center",
   },
   timelineCenterColumn: {
-    width: 18,
+    width: 20,
     alignItems: "center",
-    paddingTop: 14,
+    justifyContent: "center",
   },
   timelineDot: {
     width: 10,
@@ -179,6 +184,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#DDD8F4",
     marginTop: 6,
+    marginBottom: 14,
   },
   entryCard: {
     flex: 1,
@@ -188,7 +194,6 @@ export const styles = StyleSheet.create({
     borderColor: "#F6E7E0",
     backgroundColor: "#FFFDFC",
     padding: 12,
-    marginLeft: 10,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -219,9 +224,84 @@ export const styles = StyleSheet.create({
   },
   entryMeta: {
     color: "#66758A",
-    fontSize: 10,
-    lineHeight: 13,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "600",
+    fontFamily: journalTypography.body,
+  },
+  confirmOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    zIndex: 60,
+  },
+  confirmBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(22, 32, 43, 0.24)",
+  },
+  confirmCard: {
+    width: "100%",
+    borderRadius: 28,
+    backgroundColor: "#FFFCF8",
+    padding: 22,
+    borderWidth: 1,
+    borderColor: "#EED8CE",
+  },
+  confirmTitle: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: "800",
+    color: "#1E2A3A",
+    fontFamily: journalTypography.display,
+  },
+  confirmDescription: {
+    marginTop: 8,
+    fontSize: 15,
+    lineHeight: 22,
     fontWeight: "500",
+    color: "#6B7585",
+    fontFamily: journalTypography.body,
+  },
+  confirmActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 18,
+  },
+  confirmButtonSecondary: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E7D7CE",
+    backgroundColor: "#FFFDFC",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmButtonPrimary: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: 18,
+    backgroundColor: "#8F80E3",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmButtonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.985 }],
+  },
+  confirmButtonSecondaryText: {
+    color: "#31475C",
+    fontSize: 15,
+    lineHeight: 18,
+    fontWeight: "700",
+    fontFamily: journalTypography.body,
+  },
+  confirmButtonPrimaryText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    lineHeight: 18,
+    fontWeight: "700",
     fontFamily: journalTypography.body,
   },
 });

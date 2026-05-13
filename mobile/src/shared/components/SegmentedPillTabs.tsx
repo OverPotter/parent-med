@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export type SegmentedPillTabItem = {
   id: string;
@@ -11,6 +11,11 @@ type SegmentedPillTabsProps = {
   onSelect: (id: string) => void;
   activeBackgroundColor: string;
   activeTextColor: string;
+  extraItem?: {
+    label: string;
+    active?: boolean;
+    onPress: () => void;
+  } | null;
 };
 
 export function SegmentedPillTabs({
@@ -19,58 +24,90 @@ export function SegmentedPillTabs({
   onSelect,
   activeBackgroundColor,
   activeTextColor,
+  extraItem = null,
 }: SegmentedPillTabsProps) {
   return (
-    <View style={styles.container}>
-      {items.map((item) => {
-        const isActive = item.id === activeId;
+    <View style={styles.wrap}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.container}
+      >
+        {items.map((item) => {
+          const isActive = item.id === activeId;
 
-        return (
+          return (
+            <Pressable
+              key={item.id}
+              onPress={() => onSelect(item.id)}
+              style={({ pressed }) => [
+                styles.button,
+                isActive ? { backgroundColor: activeBackgroundColor } : null,
+                pressed ? styles.buttonPressed : null,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.label,
+                  isActive
+                    ? { color: activeTextColor, fontWeight: "700" }
+                    : null,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+        {extraItem ? (
           <Pressable
-            key={item.id}
-            onPress={() => onSelect(item.id)}
+            onPress={extraItem.onPress}
             style={({ pressed }) => [
               styles.button,
-              isActive ? { backgroundColor: activeBackgroundColor } : null,
+              extraItem.active ? styles.extraButtonActive : null,
               pressed ? styles.buttonPressed : null,
             ]}
           >
             <Text
               style={[
                 styles.label,
-                isActive
-                  ? { color: activeTextColor, fontWeight: "700" }
-                  : null,
+                extraItem.active ? styles.extraButtonLabelActive : null,
               ]}
             >
-              {item.label}
+              {extraItem.label}
             </Text>
           </Pressable>
-        );
-      })}
+        ) : null}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrap: {
     minHeight: 58,
     borderRadius: 22,
     borderWidth: 1,
     borderColor: "#F1D9CF",
     backgroundColor: "#FFFDFC",
-    padding: 6,
+    overflow: "hidden",
+    paddingRight: 6,
+  },
+  container: {
+    paddingLeft: 6,
+    paddingRight: 12,
+    paddingVertical: 6,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 12,
   },
   button: {
-    flex: 1,
     minHeight: 44,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: 18,
+    flexShrink: 0,
   },
   buttonPressed: {
     opacity: 0.9,
@@ -82,5 +119,12 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: "500",
     textAlign: "center",
+  },
+  extraButtonActive: {
+    backgroundColor: "#FFF1EB",
+  },
+  extraButtonLabelActive: {
+    color: "#F76961",
+    fontWeight: "700",
   },
 });

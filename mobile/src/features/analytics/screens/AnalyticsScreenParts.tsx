@@ -14,10 +14,16 @@ export function AnalyticsPeriodTabs({
   items,
   activeId,
   onSelect,
+  extraItem,
 }: {
   items: AnalyticsPeriodOption[];
-  activeId: AnalyticsPeriodOption["id"];
+  activeId: string;
   onSelect: (id: AnalyticsPeriodOption["id"]) => void;
+  extraItem?: {
+    label: string;
+    active?: boolean;
+    onPress: () => void;
+  } | null;
 }) {
   return (
     <View style={styles.periodTabsWrap}>
@@ -50,6 +56,25 @@ export function AnalyticsPeriodTabs({
             </Pressable>
           );
         })}
+        {extraItem ? (
+          <Pressable
+            onPress={extraItem.onPress}
+            style={({ pressed }) => [
+              styles.periodTab,
+              extraItem.active ? styles.periodTabCustomActive : null,
+              pressed ? styles.periodTabPressed : null,
+            ]}
+          >
+            <Text
+              style={[
+                styles.periodTabText,
+                extraItem.active ? styles.periodTabCustomTextActive : null,
+              ]}
+            >
+              {extraItem.label}
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </View>
   );

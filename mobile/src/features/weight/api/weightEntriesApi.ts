@@ -119,6 +119,21 @@ export async function fetchLatestMobileWeightEntry(
   return response ? toMobileWeightEntry(response) : null;
 }
 
+export async function fetchMobileWeightEntries(
+  session: Pick<MobileAuthSession, "accessToken">,
+  childId: string,
+): Promise<MobileWeightEntry[]> {
+  const response = await requestAuthedJson<RawWeightEntryResponse[]>(
+    `/weight-entries?child_id=${encodeURIComponent(childId)}`,
+    {
+      method: "GET",
+    },
+    session.accessToken,
+  );
+
+  return response.map(toMobileWeightEntry);
+}
+
 export async function createMobileWeightEntry(
   session: Pick<MobileAuthSession, "accessToken">,
   payload: {
@@ -141,4 +156,17 @@ export async function createMobileWeightEntry(
   );
 
   return toMobileWeightEntry(response);
+}
+
+export async function deleteMobileWeightEntry(
+  session: Pick<MobileAuthSession, "accessToken">,
+  entryId: string,
+): Promise<void> {
+  await requestAuthedJson<void>(
+    `/weight-entries/${encodeURIComponent(entryId)}`,
+    {
+      method: "DELETE",
+    },
+    session.accessToken,
+  );
 }

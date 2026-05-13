@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Image, Pressable, Text, View } from "react-native";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import { getLocalAssetDefaultSource } from "../../../shared/lib/assetSources";
 import { styles } from "./illnessJournalStyles";
 import type { IllnessQuickActionKind, MobileIllnessObservation } from "../model/illnessObservation";
 import type { IllnessJournalIconDescriptor } from "../model/illnessJournalAppearance";
@@ -117,6 +118,7 @@ function JournalIcon({
   return (
     <Image
       source={icon.source}
+      defaultSource={getLocalAssetDefaultSource(icon.source)}
       style={resolveJournalAssetIconStyle(context, icon.variant)}
       resizeMode="contain"
       fadeDuration={0}

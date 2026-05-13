@@ -42,7 +42,11 @@ export function FormBottomSheet({
   keyboardVerticalOffset = 18,
   children,
 }: FormBottomSheetProps) {
-  const { panHandlers, requestClose, translateY } = useBottomSheetSwipeDismiss({
+  const {
+    sheetPanHandlers,
+    requestClose,
+    translateY,
+  } = useBottomSheetSwipeDismiss({
     visible,
     onClose,
   });
@@ -50,7 +54,7 @@ export function FormBottomSheet({
   const sheetNode = (
     <Animated.View style={[sheetStyle, { transform: [{ translateY }] }]}>
       <View style={styles.sheetContent}>
-        {children({ panHandlers, requestClose })}
+        {children({ panHandlers: sheetPanHandlers, requestClose })}
       </View>
     </Animated.View>
   );

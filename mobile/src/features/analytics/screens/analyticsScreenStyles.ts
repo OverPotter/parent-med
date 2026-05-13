@@ -114,6 +114,14 @@ export const styles = StyleSheet.create({
     color: "#FF7E73",
     fontWeight: "700",
   },
+  periodTabCustomActive: {
+    backgroundColor: "#FFF1EB",
+    borderColor: "#F4C9BB",
+  },
+  periodTabCustomTextActive: {
+    color: "#FF7E73",
+    fontWeight: "700",
+  },
   summaryCard: {
     minHeight: 240,
     borderRadius: 32,

@@ -31,6 +31,9 @@ type JournalScreenScaffoldProps = {
   activeTextColor: string;
   headerMarginBottom?: number;
   segmentedMarginBottom?: number;
+  customRangeLabel?: string;
+  customRangeActive?: boolean;
+  onPressCustomRange?: (() => void) | null;
   children: ReactNode;
 };
 
@@ -49,6 +52,9 @@ export function JournalScreenScaffold({
   activeTextColor,
   headerMarginBottom = 20,
   segmentedMarginBottom = 18,
+  customRangeLabel,
+  customRangeActive = false,
+  onPressCustomRange = null,
   children,
 }: JournalScreenScaffoldProps) {
   const { width } = useWindowDimensions();
@@ -114,6 +120,15 @@ export function JournalScreenScaffold({
                 onSelect={onSelectPeriod}
                 activeBackgroundColor={activeBackgroundColor}
                 activeTextColor={activeTextColor}
+                extraItem={
+                  typeof onPressCustomRange === "function" && customRangeLabel
+                    ? {
+                        label: customRangeLabel,
+                        active: customRangeActive,
+                        onPress: onPressCustomRange,
+                      }
+                    : null
+                }
               />
             </View>
 

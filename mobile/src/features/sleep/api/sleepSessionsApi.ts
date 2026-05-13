@@ -126,6 +126,19 @@ export async function fetchActiveMobileSleepSession(
   return response ? toMobileSleepSession(response) : null;
 }
 
+export async function fetchMobileSleepSessions(
+  session: Pick<MobileAuthSession, "accessToken">,
+  childId: string,
+): Promise<MobileSleepSession[]> {
+  const response = await requestAuthedJson<RawSleepSessionResponse[]>(
+    `/sleep-sessions/child/${encodeURIComponent(childId)}`,
+    { method: "GET" },
+    session.accessToken,
+  );
+
+  return response.map(toMobileSleepSession);
+}
+
 export async function startMobileSleepSession(
   session: Pick<MobileAuthSession, "accessToken">,
   input: { childId: string; startedAt?: string | null },
@@ -161,4 +174,17 @@ export async function stopMobileSleepSession(
   );
 
   return toMobileSleepSession(response);
+}
+
+export async function deleteMobileSleepSession(
+  session: Pick<MobileAuthSession, "accessToken">,
+  sessionId: string,
+): Promise<void> {
+  await requestAuthedJson<void>(
+    `/sleep-sessions/${encodeURIComponent(sessionId)}`,
+    {
+      method: "DELETE",
+    },
+    session.accessToken,
+  );
 }
