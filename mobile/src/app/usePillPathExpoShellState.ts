@@ -16,6 +16,10 @@ import {
 import { type AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
 import { prefetchAnalyticsScreenData } from "../features/analytics/screens/useAnalyticsScreenState";
 import {
+  fetchMobileFamilyMembers,
+  type MobileFamilyMember,
+} from "../features/family/api/familyMembersApi";
+import {
   createMobileChild,
   deleteMobileChild,
   fetchMobileChildrenSummary,
@@ -34,16 +38,56 @@ import {
   buildChildrenScreenContent,
 } from "../features/children/model/childrenRedesign";
 import {
-  createMobileIllnessObservation,
+  createMobileAdministrationEvent,
+  deleteMobileAdministrationEvent,
+} from "../features/illness/api/administrationEventsApi";
+import {
+  createMobileEpisodeMedicationPlan,
+  deleteMobileEpisodeMedicationPlan,
+  type MobileEpisodeMedicationPlan,
+  updateMobileEpisodeMedicationPlan,
+} from "../features/illness/api/episodeMedicationPlansApi";
+import {
+  createMobileIllnessEpisode,
+  fetchMobileActiveIllnessEpisode,
+  updateMobileIllnessEpisode,
+} from "../features/illness/api/illnessAnalyticsApi";
+import {
+  createMobileIllnessComment,
+  deleteMobileIllnessComment,
+} from "../features/illness/api/illnessCommentsApi";
+import {
+  createMobileIllnessEntryFromAdministration,
+  createMobileIllnessEntryFromComment,
+  createMobileIllnessEntryFromMedicationPlan,
+  createMobileIllnessEntryFromTemperature,
   type IllnessQuickActionKind,
   type MobileIllnessObservation,
 } from "../features/illness/model/illnessObservation";
+import {
+  extractIllnessMedicineNameFromTitle,
+  normalizeIllnessMedicineName,
+} from "../features/illness/model/illnessMedicineNames";
+import { resolveIllnessRecipientSelection } from "../features/illness/model/illnessRecipients";
+import {
+  createMobileTemperatureEntry,
+  deleteMobileTemperatureEntry,
+} from "../features/illness/api/temperatureEntriesApi";
+import {
+  hasActiveIllnessObservation,
+  hydrateObservationFromEpisode,
+  resolveActiveIllnessChildId,
+  toIllnessEpisodeDate,
+} from "../features/illness/model/illnessObservationState";
 import { type JournalEntryKind } from "../features/journal/model/journalEntryScreen";
 import {
   applyPreferredLanguageToSession,
   updatePreferredLanguage,
 } from "../features/settings/api/settingsApi";
-import { loadSettingsBundle } from "../features/settings/model/settingsScreenLogic";
+import {
+  getCachedSettingsBundle,
+  loadSettingsBundle,
+} from "../features/settings/model/settingsScreenLogic";
 import {
   startMobileSleepSession,
   stopMobileSleepSession,
@@ -53,6 +97,7 @@ import { createMobileWeightEntry } from "../features/weight/api/weightEntriesApi
 import { useMobileI18n, type MobileLocale } from "../shared/i18n/mobileI18n";
 import { OverlayScreens, RootTabContent } from "./PillPathExpoShellContent";
 import {
+  isRootModuleScreen,
   resolveJournalTargetScreen,
   resolveStoredSessionPreferredLocale,
   type ChildProfileDestination,
@@ -61,27 +106,6 @@ import {
 
 type RootTabContentProps = ComponentProps<typeof RootTabContent>;
 type OverlayScreensProps = ComponentProps<typeof OverlayScreens>;
-
-function resolveActiveIllnessChildId(
-  observationsByChildId: Record<string, MobileIllnessObservation | undefined>,
-  preferredChildId: string,
-) {
-  if (observationsByChildId[preferredChildId]) {
-    return preferredChildId;
-  }
-
-  return (
-    Object.entries(observationsByChildId).find(([, observation]) =>
-      Boolean(observation),
-    )?.[0] ?? null
-  );
-}
-
-function hasActiveIllnessObservation(
-  observationsByChildId: Record<string, MobileIllnessObservation | undefined>,
-) {
-  return Object.values(observationsByChildId).some(Boolean);
-}
 
 function openChildrenRoot(
   setActiveRootTab: Dispatch<SetStateAction<MobileBottomTabKey>>,
@@ -262,31 +286,114 @@ function useChildFlowController({
 }
 
 function useIllnessFlowController({
+  authSession,
+  activeScreen,
   activeIllnessObservationsByChildId,
   locale,
   selectedChildId,
+  selectedReminderPlanId,
   setActiveScreen,
   setActiveRootTab,
   setSelectedChildId,
+  setSelectedReminderPlanId,
   setSelectedIllnessActionKind,
+  setIllnessActionReturnScreen,
   setActiveIllnessObservationsByChildId,
 }: {
+  authSession: MobileAuthSession | null;
+  activeScreen: PillPathActiveScreen;
   activeIllnessObservationsByChildId: Record<
     string,
     MobileIllnessObservation | undefined
   >;
   locale: MobileLocale;
   selectedChildId: string;
+  selectedReminderPlanId: string | null;
   setActiveScreen: Dispatch<SetStateAction<PillPathActiveScreen>>;
   setActiveRootTab: Dispatch<SetStateAction<MobileBottomTabKey>>;
   setSelectedChildId: Dispatch<SetStateAction<string>>;
+  setSelectedReminderPlanId: Dispatch<SetStateAction<string | null>>;
   setSelectedIllnessActionKind: Dispatch<
     SetStateAction<IllnessQuickActionKind>
+  >;
+  setIllnessActionReturnScreen: Dispatch<
+    SetStateAction<
+      "illnessJournal" | "illnessReminders" | "illnessReminderDetail"
+    >
   >;
   setActiveIllnessObservationsByChildId: Dispatch<
     SetStateAction<Record<string, MobileIllnessObservation | undefined>>
   >;
 }) {
+  const openObservationJournal = useCallback(
+    (childId: string) => {
+      openIllnessJournalRoot({
+        childId,
+        setActiveRootTab,
+        setActiveScreen,
+        setSelectedChildId,
+      });
+    },
+    [setActiveRootTab, setActiveScreen, setSelectedChildId],
+  );
+
+  const replaceObservationEntry = useCallback(
+    (
+      childId: string,
+      entryId: string,
+      nextEntry: MobileIllnessObservation["entries"][number],
+    ) => {
+      setActiveIllnessObservationsByChildId((current) => {
+        const currentObservation = current[childId];
+
+        if (!currentObservation) {
+          return current;
+        }
+
+        const nextEntries = [
+          nextEntry,
+          ...currentObservation.entries.filter(
+            (currentEntry) => currentEntry.id !== entryId,
+          ),
+        ].sort(
+          (left, right) =>
+            new Date(right.createdAt).getTime() -
+            new Date(left.createdAt).getTime(),
+        );
+
+        return {
+          ...current,
+          [childId]: {
+            ...currentObservation,
+            entries: nextEntries,
+          },
+        };
+      });
+    },
+    [setActiveIllnessObservationsByChildId],
+  );
+
+  const removeObservationEntry = useCallback(
+    (childId: string, entryId: string) => {
+      setActiveIllnessObservationsByChildId((current) => {
+        const observation = current[childId];
+
+        if (!observation) {
+          return current;
+        }
+
+        return {
+          ...current,
+          [childId]: {
+            ...observation,
+            entries: observation.entries.filter((entry) => entry.id !== entryId),
+          },
+        };
+      });
+    },
+    [setActiveIllnessObservationsByChildId],
+  );
+
   const handleCloseIllnessOnboarding = useCallback(() => {
     openChildrenRoot(setActiveRootTab, setActiveScreen);
   }, [setActiveRootTab, setActiveScreen]);
@@ -295,46 +402,711 @@ function useIllnessFlowController({
     openChildrenRoot(setActiveRootTab, setActiveScreen);
   }, [setActiveRootTab, setActiveScreen]);
 
-  const handleCloseIllnessActionPlaceholder = useCallback(() => {
+  const handleCloseIllnessReminders = useCallback(() => {
     setActiveScreen("illnessJournal");
   }, [setActiveScreen]);
 
+  const handleCloseIllnessReminderDetail = useCallback(() => {
+    setActiveScreen("illnessReminders");
+  }, [setActiveScreen]);
+
   const handleStartIllnessObservation = useCallback(
-    ({ startedAt, reason }: { startedAt: string; reason: string }) => {
+    async ({ startedAt, reason }: { startedAt: string; reason: string }) => {
+      if (!authSession || !selectedChildId) {
+        return;
+      }
+
+      const episode = await createMobileIllnessEpisode(authSession, {
+        childId: selectedChildId,
+        startedAt: toIllnessEpisodeDate(startedAt),
+        note: reason.trim() || null,
+      });
+      const observation = await hydrateObservationFromEpisode(
+        authSession,
+        episode,
+        locale,
+      );
+
       setActiveIllnessObservationsByChildId((current) => ({
         ...current,
-        [selectedChildId]: createMobileIllnessObservation({
-          childId: selectedChildId,
-          startedAt,
-          reason,
-          locale,
-        }),
+        [selectedChildId]: observation,
       }));
       openIllnessJournalRoot({
+        childId: selectedChildId,
         setActiveRootTab,
         setActiveScreen,
+        setSelectedChildId,
       });
     },
     [
+      authSession,
       locale,
       selectedChildId,
       setActiveIllnessObservationsByChildId,
       setActiveRootTab,
       setActiveScreen,
+      setSelectedChildId,
     ],
   );
 
   const handleAddIllnessEntry = useCallback(
     (childId: string, kind: IllnessQuickActionKind) => {
       setSelectedChildId(childId);
+      if (kind === "reminder") {
+        setSelectedReminderPlanId(null);
+        setActiveScreen("illnessReminders");
+        return;
+      }
       setSelectedIllnessActionKind(kind);
+      setIllnessActionReturnScreen("illnessJournal");
       setActiveScreen("illnessActionPlaceholder");
     },
-    [setActiveScreen, setSelectedChildId, setSelectedIllnessActionKind],
+    [
+      setActiveScreen,
+      setIllnessActionReturnScreen,
+      setSelectedChildId,
+      setSelectedIllnessActionKind,
+      setSelectedReminderPlanId,
+    ],
+  );
+
+  const handleOpenIllnessReminders = useCallback(
+    (childId: string) => {
+      setSelectedChildId(childId);
+      setSelectedReminderPlanId(null);
+      setActiveScreen("illnessReminders");
+    },
+    [setActiveScreen, setSelectedChildId, setSelectedReminderPlanId],
+  );
+
+  const handleOpenIllnessReminderDetail = useCallback(
+    (childId: string, planId: string) => {
+      setSelectedChildId(childId);
+      setSelectedReminderPlanId(planId);
+      setActiveScreen("illnessReminderDetail");
+    },
+    [setActiveScreen, setSelectedChildId, setSelectedReminderPlanId],
+  );
+
+  const handleOpenReminderComposer = useCallback(
+    (childId: string) => {
+      setSelectedChildId(childId);
+      setSelectedReminderPlanId(null);
+      setSelectedIllnessActionKind("reminder");
+      setIllnessActionReturnScreen("illnessReminders");
+      setActiveScreen("illnessActionPlaceholder");
+    },
+    [
+      setActiveScreen,
+      setIllnessActionReturnScreen,
+      setSelectedChildId,
+      setSelectedIllnessActionKind,
+      setSelectedReminderPlanId,
+    ],
+  );
+
+  const handleOpenReminderEditor = useCallback(
+    (childId: string, planId: string) => {
+      setSelectedChildId(childId);
+      setSelectedReminderPlanId(planId);
+      setSelectedIllnessActionKind("reminder");
+      setIllnessActionReturnScreen("illnessReminderDetail");
+      setActiveScreen("illnessActionPlaceholder");
+    },
+    [
+      setActiveScreen,
+      setIllnessActionReturnScreen,
+      setSelectedChildId,
+      setSelectedIllnessActionKind,
+      setSelectedReminderPlanId,
+    ],
+  );
+
+  const handleSaveTemperatureEntry = useCallback(
+    async ({
+      childId,
+      valueCelsius,
+      measuredAt,
+    }: {
+      childId: string;
+      valueCelsius: number;
+      measuredAt: string;
+    }) => {
+      if (!authSession) {
+        return;
+      }
+
+      const observation = activeIllnessObservationsByChildId[childId];
+
+      if (!observation) {
+        return;
+      }
+
+      const entry = await createMobileTemperatureEntry(authSession, {
+        episodeId: observation.episodeId,
+        valueCelsius,
+        measuredAt,
+      });
+
+      replaceObservationEntry(
+        childId,
+        entry.id,
+        createMobileIllnessEntryFromTemperature(entry, locale),
+      );
+      openObservationJournal(childId);
+    },
+    [
+      activeIllnessObservationsByChildId,
+      authSession,
+      locale,
+      openObservationJournal,
+      replaceObservationEntry,
+    ],
+  );
+
+  const handleSaveIllnessNoteEntry = useCallback(
+    async ({
+      childId,
+      text,
+      createdAt,
+    }: {
+      childId: string;
+      text: string;
+      createdAt: string;
+    }) => {
+      if (!authSession) {
+        return;
+      }
+
+      const observation = activeIllnessObservationsByChildId[childId];
+
+      if (!observation) {
+        return;
+      }
+
+      const entry = await createMobileIllnessComment(authSession, {
+        episodeId: observation.episodeId,
+        text,
+        createdAt,
+      });
+
+      replaceObservationEntry(
+        childId,
+        entry.id,
+        createMobileIllnessEntryFromComment(entry, locale),
+      );
+      openObservationJournal(childId);
+    },
+    [
+      activeIllnessObservationsByChildId,
+      authSession,
+      locale,
+      openObservationJournal,
+      replaceObservationEntry,
+    ],
+  );
+
+  const handleSaveAdministrationEntry = useCallback(
+    async ({
+      childId,
+      customMedicineName,
+      amount,
+      administeredAt,
+      reason,
+    }: {
+      childId: string;
+      customMedicineName: string;
+      amount: string;
+      administeredAt: string;
+      reason?: string | null;
+    }) => {
+      if (!authSession) {
+        return;
+      }
+
+      const observation = activeIllnessObservationsByChildId[childId];
+
+      if (!observation) {
+        return;
+      }
+
+      const entry = await createMobileAdministrationEvent(authSession, {
+        episodeId: observation.episodeId,
+        customMedicineName,
+        amount,
+        administeredAt,
+        reason: reason ?? null,
+      });
+
+      replaceObservationEntry(
+        childId,
+        entry.id,
+        createMobileIllnessEntryFromAdministration(entry, locale),
+      );
+      openObservationJournal(childId);
+    },
+    [
+      activeIllnessObservationsByChildId,
+      authSession,
+      locale,
+      openObservationJournal,
+      replaceObservationEntry,
+    ],
+  );
+
+  const handleTakeReminderDose = useCallback(
+    async ({
+      childId,
+      plan,
+      administeredAt,
+    }: {
+      childId: string;
+      plan: MobileEpisodeMedicationPlan;
+      administeredAt?: string | null;
+    }) => {
+      if (!authSession) {
+        return;
+      }
+
+      const observation = activeIllnessObservationsByChildId[childId];
+
+      if (!observation) {
+        return;
+      }
+
+      const entry = await createMobileAdministrationEvent(authSession, {
+        episodeId: observation.episodeId,
+        customMedicineName: plan.customMedicineName?.trim() || "",
+        amount: plan.doseAmount,
+        administeredAt: administeredAt ?? new Date().toISOString(),
+        reason: locale === "ru" ? "Отмечено по напоминанию" : "Logged from reminder",
+      });
+
+      replaceObservationEntry(
+        childId,
+        entry.id,
+        createMobileIllnessEntryFromAdministration(entry, locale),
+      );
+    },
+    [
+      activeIllnessObservationsByChildId,
+      authSession,
+      locale,
+      replaceObservationEntry,
+    ],
+  );
+
+  const handleSaveReminderEntry = useCallback(
+    async ({
+      childId,
+      customMedicineName,
+      doseAmount,
+      minIntervalMinutes,
+      maxDosesPerDay,
+      alreadyGiven,
+      lastGivenAt,
+      notes,
+    }: {
+      childId: string;
+      customMedicineName: string;
+      doseAmount: string;
+      minIntervalMinutes: number;
+      maxDosesPerDay?: number | null;
+      alreadyGiven?: boolean;
+      lastGivenAt?: string | null;
+      notes?: string | null;
+    }) => {
+      if (!authSession) {
+        return;
+      }
+
+      const observation = activeIllnessObservationsByChildId[childId];
+
+      if (!observation) {
+        return;
+      }
+
+      const recipientIds =
+        observation.notificationRecipientAccountIds.length > 0
+          ? observation.notificationRecipientAccountIds
+          : [authSession.account.id];
+
+      const plan = await createMobileEpisodeMedicationPlan(authSession, {
+        episodeId: observation.episodeId,
+        customMedicineName,
+        doseAmount,
+        minIntervalMinutes,
+        maxDosesPerDay,
+        memberAccountIds: recipientIds,
+        notes,
+      });
+
+      let administrationEntryForState:
+        | ReturnType<typeof createMobileIllnessEntryFromAdministration>
+        | null = null;
+
+      if (alreadyGiven && lastGivenAt) {
+        const normalizedMedicineName =
+          normalizeIllnessMedicineName(customMedicineName);
+        const alreadyLogged = observation.entries.some((entry) => {
+          if (entry.kind !== "medicine") {
+            return false;
+          }
+
+          const medicineName = normalizeIllnessMedicineName(
+            entry.medicineName ?? extractIllnessMedicineNameFromTitle(entry.title),
+          );
+          return (
+            medicineName === normalizedMedicineName &&
+            new Date(entry.createdAt).getTime() === new Date(lastGivenAt).getTime()
+          );
+        });
+
+        if (!alreadyLogged) {
+          try {
+            const administrationEntry = await createMobileAdministrationEvent(
+              authSession,
+              {
+                episodeId: observation.episodeId,
+                customMedicineName,
+                amount: doseAmount,
+                administeredAt: lastGivenAt,
+              },
+            );
+            administrationEntryForState =
+              createMobileIllnessEntryFromAdministration(
+                administrationEntry,
+                locale,
+              );
+          } catch (error) {
+            await deleteMobileEpisodeMedicationPlan(authSession, plan.id);
+            throw error;
+          }
+        }
+      }
+
+      replaceObservationEntry(
+        childId,
+        plan.id,
+        createMobileIllnessEntryFromMedicationPlan(plan, locale),
+      );
+      setActiveIllnessObservationsByChildId((current) => {
+        const currentObservation = current[childId];
+
+        if (!currentObservation) {
+          return current;
+        }
+
+        const nextEntries = administrationEntryForState
+          ? [
+              administrationEntryForState,
+              ...currentObservation.entries.filter(
+                (entry) => entry.id !== administrationEntryForState?.id,
+              ),
+            ].sort(
+              (left, right) =>
+                new Date(right.createdAt).getTime() -
+                new Date(left.createdAt).getTime(),
+            )
+          : currentObservation.entries;
+
+        return {
+          ...current,
+          [childId]: {
+            ...currentObservation,
+            notificationRecipientAccountIds: recipientIds,
+            medicationPlans: [
+              plan,
+              ...currentObservation.medicationPlans.filter(
+                (currentPlan) => currentPlan.id !== plan.id,
+              ),
+            ],
+            entries: nextEntries,
+          },
+        };
+      });
+      setActiveScreen("illnessReminders");
+    },
+    [
+      activeIllnessObservationsByChildId,
+      authSession,
+      locale,
+      replaceObservationEntry,
+      setActiveIllnessObservationsByChildId,
+      setActiveScreen,
+    ],
+  );
+
+  const handleUpdateReminderEntry = useCallback(
+    async ({
+      childId,
+      planId,
+      customMedicineName,
+      doseAmount,
+      minIntervalMinutes,
+      maxDosesPerDay,
+      alreadyGiven,
+      lastGivenAt,
+      notes,
+    }: {
+      childId: string;
+      planId: string;
+      customMedicineName: string;
+      doseAmount: string;
+      minIntervalMinutes: number;
+      maxDosesPerDay?: number | null;
+      alreadyGiven?: boolean;
+      lastGivenAt?: string | null;
+      notes?: string | null;
+    }) => {
+      if (!authSession) {
+        return;
+      }
+
+      const observation = activeIllnessObservationsByChildId[childId];
+
+      if (!observation) {
+        return;
+      }
+
+      const updatedPlan = await updateMobileEpisodeMedicationPlan(
+        authSession,
+        planId,
+        {
+          customMedicineName,
+          doseAmount,
+          minIntervalMinutes,
+          maxDosesPerDay,
+          notes,
+        },
+      );
+
+      let administrationEntryForState:
+        | ReturnType<typeof createMobileIllnessEntryFromAdministration>
+        | null = null;
+
+      if (alreadyGiven && lastGivenAt) {
+        const normalizedMedicineName =
+          normalizeIllnessMedicineName(customMedicineName);
+        const alreadyLogged = observation.entries.some((entry) => {
+          if (entry.kind !== "medicine") {
+            return false;
+          }
+
+          const medicineName = normalizeIllnessMedicineName(
+            entry.medicineName ?? extractIllnessMedicineNameFromTitle(entry.title),
+          );
+          return (
+            medicineName === normalizedMedicineName &&
+            new Date(entry.createdAt).getTime() === new Date(lastGivenAt).getTime()
+          );
+        });
+
+        if (!alreadyLogged) {
+          const administrationEntry = await createMobileAdministrationEvent(
+            authSession,
+            {
+              episodeId: observation.episodeId,
+              customMedicineName,
+              amount: doseAmount,
+              administeredAt: lastGivenAt,
+            },
+          );
+          administrationEntryForState = createMobileIllnessEntryFromAdministration(
+            administrationEntry,
+            locale,
+          );
+        }
+      }
+
+      replaceObservationEntry(
+        childId,
+        updatedPlan.id,
+        createMobileIllnessEntryFromMedicationPlan(updatedPlan, locale),
+      );
+      setActiveIllnessObservationsByChildId((current) => {
+        const currentObservation = current[childId];
+
+        if (!currentObservation) {
+          return current;
+        }
+
+        const nextEntries = administrationEntryForState
+          ? [
+              administrationEntryForState,
+              ...currentObservation.entries.filter(
+                (entry) => entry.id !== administrationEntryForState?.id,
+              ),
+            ].sort(
+              (left, right) =>
+                new Date(right.createdAt).getTime() -
+                new Date(left.createdAt).getTime(),
+            )
+          : currentObservation.entries;
+
+        return {
+          ...current,
+          [childId]: {
+            ...currentObservation,
+            medicationPlans: currentObservation.medicationPlans.map((plan) =>
+              plan.id === updatedPlan.id ? updatedPlan : plan,
+            ),
+            entries: nextEntries,
+          },
+        };
+      });
+      if (activeScreen === "illnessReminderDetail") {
+        setSelectedReminderPlanId(updatedPlan.id);
+        setActiveScreen("illnessReminderDetail");
+      } else {
+        setSelectedReminderPlanId((current) =>
+          current === updatedPlan.id ? updatedPlan.id : current,
+        );
+        setActiveScreen("illnessReminders");
+      }
+    },
+    [
+      activeScreen,
+      activeIllnessObservationsByChildId,
+      authSession,
+      locale,
+      replaceObservationEntry,
+      setActiveIllnessObservationsByChildId,
+      setActiveScreen,
+      setSelectedReminderPlanId,
+    ],
+  );
+
+  const handleDeleteIllnessEntry = useCallback(
+    async ({
+      childId,
+      entryId,
+      kind,
+    }: {
+      childId: string;
+      entryId: string;
+      kind: "temperature" | "note" | "medicine" | "reminder";
+    }) => {
+      if (!authSession) {
+        return;
+      }
+
+      if (kind === "temperature") {
+        await deleteMobileTemperatureEntry(authSession, entryId);
+      } else if (kind === "medicine") {
+        await deleteMobileAdministrationEvent(authSession, entryId);
+      } else if (kind === "reminder") {
+        await deleteMobileEpisodeMedicationPlan(authSession, entryId);
+      } else {
+        await deleteMobileIllnessComment(authSession, entryId);
+      }
+
+      removeObservationEntry(childId, entryId);
+      if (kind === "reminder") {
+        if (selectedReminderPlanId === entryId) {
+          setSelectedReminderPlanId(null);
+          setActiveScreen("illnessReminders");
+        }
+        setActiveIllnessObservationsByChildId((current) => {
+          const observation = current[childId];
+
+          if (!observation) {
+            return current;
+          }
+
+          return {
+            ...current,
+            [childId]: {
+              ...observation,
+              medicationPlans: observation.medicationPlans.filter(
+                (plan) => plan.id !== entryId,
+              ),
+            },
+          };
+        });
+      }
+    },
+    [
+      authSession,
+      removeObservationEntry,
+      selectedReminderPlanId,
+      setActiveIllnessObservationsByChildId,
+      setActiveScreen,
+      setSelectedReminderPlanId,
+    ],
+  );
+
+  const handleSaveReminderRecipients = useCallback(
+    async ({
+      childId,
+      memberAccountIds,
+    }: {
+      childId: string;
+      memberAccountIds: string[];
+    }) => {
+      if (!authSession) {
+        return;
+      }
+
+      const observation = activeIllnessObservationsByChildId[childId];
+
+      if (!observation) {
+        return;
+      }
+
+      const updatedEpisode = await updateMobileIllnessEpisode(
+        authSession,
+        observation.episodeId,
+        {
+          memberAccountIds,
+        },
+      );
+      const updatedPlans = await Promise.all(
+        observation.medicationPlans.map((plan) =>
+          updateMobileEpisodeMedicationPlan(authSession, plan.id, {
+            memberAccountIds,
+          }),
+        ),
+      );
+
+      setActiveIllnessObservationsByChildId((current) => {
+        const currentObservation = current[childId];
+
+        if (!currentObservation) {
+          return current;
+        }
+
+        return {
+          ...current,
+          [childId]: {
+            ...currentObservation,
+            notificationRecipientAccountIds: updatedEpisode.memberAccountIds,
+            medicationPlans: updatedPlans,
+          },
+        };
+      });
+    },
+    [
+      activeIllnessObservationsByChildId,
+      authSession,
+      setActiveIllnessObservationsByChildId,
+      updateMobileEpisodeMedicationPlan,
+    ],
   );
 
   const handleFinishIllnessObservation = useCallback(
-    (childId: string) => {
+    async (childId: string) => {
+      const observation = activeIllnessObservationsByChildId[childId];
+
+      if (!authSession || !observation) {
+        return;
+      }
+
+      await updateMobileIllnessEpisode(authSession, observation.episodeId, {
+        status: "closed",
+        closedAt: new Date().toISOString(),
+      });
+
       const nextObservationsByChildId = {
         ...activeIllnessObservationsByChildId,
         [childId]: undefined,
@@ -363,6 +1135,7 @@ function useIllnessFlowController({
     },
     [
       activeIllnessObservationsByChildId,
+      authSession,
       selectedChildId,
       setActiveIllnessObservationsByChildId,
       setActiveRootTab,
@@ -371,34 +1144,53 @@ function useIllnessFlowController({
     ],
   );
 
-  const handleSelectTab = useCallback(
-    (key: MobileBottomTabKey) => {
-      if (key === "journal") {
-        return;
-      }
-
-      setActiveRootTab(key);
-      setActiveScreen("children");
-    },
-    [setActiveRootTab, setActiveScreen],
-  );
-
   return {
     handleAddIllnessEntry,
-    handleCloseIllnessActionPlaceholder,
+    handleCloseIllnessReminderDetail,
+    handleCloseIllnessReminders,
     handleCloseIllnessJournal,
     handleCloseIllnessOnboarding,
+    handleDeleteIllnessEntry,
     handleFinishIllnessObservation,
-    handleSelectTab,
+    handleOpenIllnessReminderDetail,
+    handleOpenIllnessReminders,
+    handleOpenReminderComposer,
+    handleOpenReminderEditor,
+    handleSaveAdministrationEntry,
+    handleSaveIllnessNoteEntry,
+    handleTakeReminderDose,
+    handleSaveReminderRecipients,
+    handleSaveReminderEntry,
+    handleUpdateReminderEntry,
+    handleSaveTemperatureEntry,
     handleStartIllnessObservation,
   };
 }
 
 function useUtilityNavigationController({
+  setActiveRootTab,
   setActiveScreen,
 }: {
+  setActiveRootTab: Dispatch<SetStateAction<MobileBottomTabKey>>;
   setActiveScreen: Dispatch<SetStateAction<PillPathActiveScreen>>;
 }) {
+  const handleOpenFamily = useCallback(() => {
+    setActiveScreen("family");
+  }, [setActiveScreen]);
+
+  const handleCloseFamily = useCallback(() => {
+    setActiveScreen("children");
+  }, [setActiveScreen]);
+
+  const handleOpenChildrenFromFamily = useCallback(() => {
+    openChildrenRoot(setActiveRootTab, setActiveScreen);
+  }, [setActiveRootTab, setActiveScreen]);
+
+  const handleOpenPillboxFromFamily = useCallback(() => {
+    setActiveRootTab("pillbox");
+    setActiveScreen("children");
+  }, [setActiveRootTab, setActiveScreen]);
+
   const handleOpenPrivacyPolicy = useCallback(() => {
     setActiveScreen("privacyPolicy");
   }, [setActiveScreen]);
@@ -432,10 +1224,14 @@ function useUtilityNavigationController({
   }, [setActiveScreen]);
 
   return {
+    handleCloseFamily,
     handleClosePrivacyPolicy,
     handleCloseSettings,
     handleCloseSupport,
     handleCloseTermsOfUse,
+    handleOpenFamily,
+    handleOpenChildrenFromFamily,
+    handleOpenPillboxFromFamily,
     handleOpenPrivacyPolicy,
     handleOpenSettings,
     handleOpenSupport,
@@ -674,7 +1470,14 @@ export function usePillPathExpoShellState() {
     useState<JournalEntryKind>("feeding");
   const [selectedIllnessActionKind, setSelectedIllnessActionKind] =
     useState<IllnessQuickActionKind>("temperature");
+  const [illnessActionReturnScreen, setIllnessActionReturnScreen] = useState<
+    "illnessJournal" | "illnessReminders" | "illnessReminderDetail"
+  >("illnessJournal");
+  const [selectedReminderPlanId, setSelectedReminderPlanId] = useState<
+    string | null
+  >(null);
   const [children, setChildren] = useState<MobileChildSummary[]>([]);
+  const [familyMembers, setFamilyMembers] = useState<MobileFamilyMember[]>([]);
   const [latestChildMetricsByCardId, setLatestChildMetricsByCardId] = useState<
     Record<string, { weightKg?: number | null; heightCm?: number | null }>
   >({});
@@ -686,6 +1489,75 @@ export function usePillPathExpoShellState() {
     activeIllnessObservationsByChildId,
     setActiveIllnessObservationsByChildId,
   ] = useState<Record<string, MobileIllnessObservation | undefined>>({});
+  const [familyCanInviteMembers, setFamilyCanInviteMembers] = useState(false);
+  const [familyRoutinesCount, setFamilyRoutinesCount] = useState(0);
+
+  const applyFamilySettingsMeta = useCallback(
+    (
+      session: MobileAuthSession,
+      bundle: {
+        familySummary: { premiumActive: boolean };
+        familyAccess: { currentPillboxPlanCount: number };
+      },
+    ) => {
+      setFamilyCanInviteMembers(
+        session.family.ownerAccountId === session.account.id &&
+          Boolean(bundle.familySummary.premiumActive),
+      );
+      setFamilyRoutinesCount(bundle.familyAccess.currentPillboxPlanCount);
+    },
+    [],
+  );
+
+  const hydrateActiveIllnessObservations = useCallback(
+    async (session: MobileAuthSession, childIds: string[]) => {
+      if (childIds.length === 0) {
+        setActiveIllnessObservationsByChildId({});
+        return;
+      }
+
+      const activeEpisodeResults = await Promise.allSettled(
+        childIds.map((childId) => fetchMobileActiveIllnessEpisode(session, childId)),
+      );
+      const activeEpisodeHydrationResults = await Promise.allSettled(
+        activeEpisodeResults.map(async (result) => {
+          if (result.status !== "fulfilled" || !result.value) {
+            return null;
+          }
+
+          return hydrateObservationFromEpisode(session, result.value, locale);
+        }),
+      );
+      const nextIllnessObservations = Object.fromEntries(
+        childIds.map((childId, index) => {
+          const result = activeEpisodeHydrationResults[index];
+          const observation = result?.status === "fulfilled" ? result.value : null;
+
+          return [childId, observation ?? undefined];
+        }),
+      );
+
+      setActiveIllnessObservationsByChildId(nextIllnessObservations);
+    },
+    [locale],
+  );
+
+  const loadFamilyMembers = useCallback(async (session: MobileAuthSession) => {
+    try {
+      const nextFamilyMembers = await fetchMobileFamilyMembers(session);
+      setFamilyMembers(nextFamilyMembers);
+    } catch {
+      setFamilyMembers([]);
+    }
+  }, []);
+
+  const handleRefreshFamilyMembers = useCallback(async () => {
+    if (!authSession) {
+      return;
+    }
+
+    await loadFamilyMembers(authSession);
+  }, [authSession, loadFamilyMembers]);
 
   const loadChildren = useCallback(
     async (
@@ -698,9 +1570,11 @@ export function usePillPathExpoShellState() {
 
         if (nextChildren.length === 0) {
           setChildren([]);
+          setFamilyMembers([]);
           setLatestChildMetricsByCardId({});
           setActiveSleepSessionsByCardId({});
           setActiveFeedingRecordsByCardId({});
+          setActiveIllnessObservationsByChildId({});
           return [];
         }
 
@@ -751,11 +1625,16 @@ export function usePillPathExpoShellState() {
               : null,
           ]),
         );
-
         setChildren(nextChildren);
+        void loadFamilyMembers(session);
         setLatestChildMetricsByCardId(nextMetrics);
         setActiveSleepSessionsByCardId(nextSleepSessions);
         setActiveFeedingRecordsByCardId(nextFeedingRecords);
+        setActiveIllnessObservationsByChildId({});
+        void hydrateActiveIllnessObservations(
+          session,
+          nextChildren.map((child) => child.id),
+        );
         return nextChildren;
       } catch (error) {
         if (!options?.ignoreErrors) {
@@ -763,12 +1642,13 @@ export function usePillPathExpoShellState() {
           setLatestChildMetricsByCardId({});
           setActiveSleepSessionsByCardId({});
           setActiveFeedingRecordsByCardId({});
+          setActiveIllnessObservationsByChildId({});
           throw error;
         }
         return null;
       }
     },
-    [],
+    [hydrateActiveIllnessObservations, loadFamilyMembers],
   );
 
   const childrenCards = useMemo(() => {
@@ -797,9 +1677,13 @@ export function usePillPathExpoShellState() {
     if (!authSession?.account.familyId) {
       setIsShellBootstrapping(false);
       setChildren([]);
+      setFamilyMembers([]);
+      setFamilyCanInviteMembers(false);
+      setFamilyRoutinesCount(0);
       setLatestChildMetricsByCardId({});
       setActiveSleepSessionsByCardId({});
       setActiveFeedingRecordsByCardId({});
+      setActiveIllnessObservationsByChildId({});
       return;
     }
 
@@ -820,16 +1704,23 @@ export function usePillPathExpoShellState() {
 
         if (!nextChildren || nextChildren.length === 0) {
           setChildren([]);
+          setFamilyMembers([]);
+          setFamilyCanInviteMembers(false);
+          setFamilyRoutinesCount(0);
           setLatestChildMetricsByCardId({});
           setActiveSleepSessionsByCardId({});
           setActiveFeedingRecordsByCardId({});
+          setActiveIllnessObservationsByChildId({});
           setIsShellBootstrapping(false);
           return;
         }
 
         const bootstrapChildId = nextChildren[0]?.id;
+        const settingsBundle = await loadSettingsBundle(session).catch(() => null);
 
-        void loadSettingsBundle(session).catch(() => {});
+        if (!cancelled && settingsBundle) {
+          applyFamilySettingsMeta(session, settingsBundle);
+        }
 
         if (bootstrapChildId) {
           void prefetchAnalyticsScreenData(
@@ -841,9 +1732,13 @@ export function usePillPathExpoShellState() {
       } catch {
         if (!cancelled) {
           setChildren([]);
+          setFamilyMembers([]);
+          setFamilyCanInviteMembers(false);
+          setFamilyRoutinesCount(0);
           setLatestChildMetricsByCardId({});
           setActiveSleepSessionsByCardId({});
           setActiveFeedingRecordsByCardId({});
+          setActiveIllnessObservationsByChildId({});
         }
       } finally {
         if (!cancelled) {
@@ -857,7 +1752,22 @@ export function usePillPathExpoShellState() {
     return () => {
       cancelled = true;
     };
-  }, [authSession, loadChildren]);
+  }, [applyFamilySettingsMeta, authSession, loadChildren]);
+
+  useEffect(() => {
+    if (!authSession) {
+      setFamilyCanInviteMembers(false);
+      setFamilyRoutinesCount(0);
+      return;
+    }
+
+    const cachedSettingsBundle = getCachedSettingsBundle(authSession.accessToken);
+    if (!cachedSettingsBundle) {
+      return;
+    }
+
+    applyFamilySettingsMeta(authSession, cachedSettingsBundle);
+  }, [applyFamilySettingsMeta, authSession]);
 
   useEffect(() => {
     if (childrenCards.length === 0) {
@@ -907,6 +1817,8 @@ export function usePillPathExpoShellState() {
       hasActiveIllnessObservation(activeIllnessObservationsByChildId) ||
       activeRootTab === "journal" ||
       activeScreen === "illnessJournal" ||
+      activeScreen === "illnessReminders" ||
+      activeScreen === "illnessReminderDetail" ||
       activeScreen === "illnessActionPlaceholder",
     [activeIllnessObservationsByChildId, activeRootTab, activeScreen],
   );
@@ -970,32 +1882,54 @@ export function usePillPathExpoShellState() {
   });
   const {
     handleAddIllnessEntry,
-    handleCloseIllnessActionPlaceholder,
+    handleCloseIllnessReminderDetail,
+    handleCloseIllnessReminders,
     handleCloseIllnessJournal,
     handleCloseIllnessOnboarding,
+    handleDeleteIllnessEntry,
     handleFinishIllnessObservation,
-    handleSelectTab,
+    handleOpenIllnessReminderDetail,
+    handleOpenIllnessReminders,
+    handleOpenReminderComposer,
+    handleOpenReminderEditor,
+    handleSaveAdministrationEntry,
+    handleSaveIllnessNoteEntry,
+    handleTakeReminderDose,
+    handleSaveReminderRecipients,
+    handleSaveReminderEntry,
+    handleUpdateReminderEntry,
+    handleSaveTemperatureEntry,
     handleStartIllnessObservation,
   } = useIllnessFlowController({
+    authSession,
+    activeScreen,
     activeIllnessObservationsByChildId,
     locale,
     selectedChildId,
+    selectedReminderPlanId,
     setActiveScreen,
     setActiveRootTab,
     setSelectedChildId,
+    setSelectedReminderPlanId,
     setSelectedIllnessActionKind,
+    setIllnessActionReturnScreen,
     setActiveIllnessObservationsByChildId,
   });
   const {
+    handleCloseFamily,
     handleClosePrivacyPolicy,
     handleCloseSettings,
     handleCloseSupport,
     handleCloseTermsOfUse,
+    handleOpenFamily,
+    handleOpenChildrenFromFamily,
+    handleOpenPillboxFromFamily,
     handleOpenPrivacyPolicy,
     handleOpenSettings,
     handleOpenSupport,
     handleOpenTermsOfUse,
   } = useUtilityNavigationController({
+    setActiveRootTab,
     setActiveScreen,
   });
 
@@ -1249,6 +2183,7 @@ export function usePillPathExpoShellState() {
     onSleepPress: handleSleepPress,
     onFeedingPress: handleFeedingPress,
     onLogout: handleLogout,
+    onOpenFamily: handleOpenFamily,
     onOpenSettings: handleOpenSettings,
     onOpenSupport: handleOpenSupport,
     onOpenTermsOfUse: handleOpenTermsOfUse,
@@ -1272,7 +2207,36 @@ export function usePillPathExpoShellState() {
         selectedEpisode,
         selectedJournalKind,
         selectedIllnessActionKind,
+        selectedReminderPlanId,
         observationsByChildId: activeIllnessObservationsByChildId,
+        familyMembers:
+          familyMembers.length > 0
+            ? familyMembers
+            : [
+                {
+                  id: authSession.account.id,
+                  email: authSession.account.email,
+                  familyId: authSession.account.familyId,
+                  displayName: authSession.account.displayName,
+                  relationshipLabel: authSession.account.relationshipLabel,
+                  phone: authSession.account.phone,
+                  preferredLanguage:
+                    authSession.account.preferredLanguage === "ru"
+                      ? "ru"
+                      : "en",
+                  familyRole: authSession.account.familyRole,
+                  accessPolicy: {
+                    allChildren: true,
+                    childIds: [],
+                    childrenAccess: "edit",
+                    cabinetAccess: "edit",
+                    pillboxAccess: "edit",
+                    cabinetPushEnabled: true,
+                  },
+                },
+              ],
+        familyCanInviteMembers,
+        familyRoutinesCount,
         authSession,
         childFlow: {
           onOpenChildCreate: handleOpenChildCreate,
@@ -1299,14 +2263,33 @@ export function usePillPathExpoShellState() {
         illnessFlow: {
           onStartIllnessObservation: handleStartIllnessObservation,
           onAddIllnessEntry: handleAddIllnessEntry,
+          onDeleteIllnessEntry: handleDeleteIllnessEntry,
+          onSaveAdministrationEntry: handleSaveAdministrationEntry,
+          onTakeReminderDose: handleTakeReminderDose,
+          onUpdateReminderEntry: handleUpdateReminderEntry,
+          onSaveIllnessNoteEntry: handleSaveIllnessNoteEntry,
+          onSaveReminderEntry: handleSaveReminderEntry,
+          onOpenIllnessReminders: handleOpenIllnessReminders,
+          onOpenIllnessReminderDetail: handleOpenIllnessReminderDetail,
+          onOpenReminderComposer: handleOpenReminderComposer,
+          onOpenReminderEditor: handleOpenReminderEditor,
+          onSaveReminderRecipients: handleSaveReminderRecipients,
+          onSaveTemperatureEntry: handleSaveTemperatureEntry,
           selectedIllnessActionKind,
-          onBackIllnessActionPlaceholder: handleCloseIllnessActionPlaceholder,
+          onBackIllnessActionPlaceholder: () =>
+            setActiveScreen(illnessActionReturnScreen),
           onFinishIllnessObservation: handleFinishIllnessObservation,
           onBackIllnessJournal: handleCloseIllnessJournal,
+          onBackIllnessReminders: handleCloseIllnessReminders,
+          onBackIllnessReminderDetail: handleCloseIllnessReminderDetail,
           onBackIllnessOnboarding: handleCloseIllnessOnboarding,
-          onSelectTab: handleSelectTab,
         },
         utilityFlow: {
+          onBackFamily: handleCloseFamily,
+          onOpenChildrenFromFamily: handleOpenChildrenFromFamily,
+          onOpenPillboxFromFamily: handleOpenPillboxFromFamily,
+          onRefreshFamilyMembers: handleRefreshFamilyMembers,
+          onUpdateCurrentProfile: handleUpdateAuthSession,
           onSessionDeleted: handleSessionDeleted,
           onUpdatePreferredLanguage: handleUpdatePreferredLanguage,
           onBackPrivacyPolicy: handleClosePrivacyPolicy,
@@ -1322,6 +2305,7 @@ export function usePillPathExpoShellState() {
     isAuthBootstrapping,
     isShellBootstrapping,
     rootTabItems,
+    shouldShowRootTabBar: isRootModuleScreen(activeScreen),
     handleAuthenticated,
     handleSelectRootTab,
     rootTabContentProps,

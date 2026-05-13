@@ -5,6 +5,7 @@ import type { MobileAuthSession } from "../features/auth/api/authApi";
 import { ChildCreateScreen } from "../features/children/screens/ChildCreateScreen";
 import { ChildProfileEditScreen } from "../features/child-profile-edit/screens/ChildProfileEditScreen";
 import { ChildProfileRedesignScreen } from "../features/child-profile/screens/ChildProfileRedesignScreen";
+import { FamilyScreen } from "../features/family/screens/FamilyScreen";
 import {
   getChildAvatarGenderByKey,
   getChildAvatarPresetSources,
@@ -18,10 +19,14 @@ import { illnessAssets } from "../features/illness/assets";
 import { IllnessActionPlaceholderScreen } from "../features/illness/screens/IllnessActionPlaceholderScreen";
 import { IllnessJournalScreen } from "../features/illness/screens/IllnessJournalScreen";
 import { IllnessOnboardingScreen } from "../features/illness/screens/IllnessOnboardingScreen";
+import { IllnessReminderDetailScreen } from "../features/illness/screens/IllnessReminderDetailScreen";
+import { IllnessReminderListScreen } from "../features/illness/screens/IllnessReminderListScreen";
+import type { MobileEpisodeMedicationPlan } from "../features/illness/api/episodeMedicationPlansApi";
 import type {
   IllnessQuickActionKind,
   MobileIllnessObservation,
 } from "../features/illness/model/illnessObservation";
+import type { MobileFamilyMember } from "../features/family/api/familyMembersApi";
 import type { JournalEntryKind } from "../features/journal/model/journalEntryScreen";
 import { JournalEntryScreen } from "../features/journal/screens/JournalEntryScreen";
 import { LegalDocumentScreen } from "../features/legal/screens/LegalDocumentScreen";
@@ -60,6 +65,7 @@ type RootTabContentProps = {
   onSleepPress: (cardId: string) => void;
   onFeedingPress: (cardId: string) => void;
   onLogout: () => Promise<void>;
+  onOpenFamily: () => void;
   onOpenSettings: () => void;
   onOpenSupport: () => void;
   onOpenTermsOfUse: () => void;
@@ -88,6 +94,7 @@ export function RootTabContent({
   onSleepPress,
   onFeedingPress,
   onLogout,
+  onOpenFamily,
   onOpenSettings,
   onOpenSupport,
   onOpenTermsOfUse,
@@ -138,6 +145,7 @@ export function RootTabContent({
           <MoreScreen
             session={authSession}
             onLogout={onLogout}
+            onOpenFamily={onOpenFamily}
             onOpenSettings={onOpenSettings}
             onOpenSupport={onOpenSupport}
             onOpenTerms={onOpenTermsOfUse}
@@ -182,7 +190,11 @@ type OverlayScreensProps = {
   selectedEpisode: AnalyticsEpisodeCard | null;
   selectedJournalKind: JournalEntryKind;
   selectedIllnessActionKind: IllnessQuickActionKind;
+  selectedReminderPlanId: string | null;
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
+  familyMembers: MobileFamilyMember[];
+  familyCanInviteMembers: boolean;
+  familyRoutinesCount: number;
   authSession: MobileAuthSession;
   childFlow: {
     onOpenChildCreate: () => void;
@@ -228,16 +240,82 @@ type OverlayScreensProps = {
     onStartIllnessObservation: (payload: {
       startedAt: string;
       reason: string;
-    }) => void;
+    }) => void | Promise<void>;
     onAddIllnessEntry: (childId: string, kind: IllnessQuickActionKind) => void;
-    onFinishIllnessObservation: (childId: string) => void;
+    onSaveAdministrationEntry: (payload: {
+      childId: string;
+      customMedicineName: string;
+      amount: string;
+      administeredAt: string;
+      reason?: string | null;
+    }) => void | Promise<void>;
+    onTakeReminderDose: (payload: {
+      childId: string;
+      plan: MobileEpisodeMedicationPlan;
+      administeredAt?: string | null;
+    }) => void | Promise<void>;
+    onUpdateReminderEntry: (payload: {
+      childId: string;
+      planId: string;
+      customMedicineName: string;
+      doseAmount: string;
+      minIntervalMinutes: number;
+      maxDosesPerDay?: number | null;
+      alreadyGiven?: boolean;
+      lastGivenAt?: string | null;
+      notes?: string | null;
+    }) => void | Promise<void>;
+    onSaveIllnessNoteEntry: (payload: {
+      childId: string;
+      text: string;
+      createdAt: string;
+    }) => void | Promise<void>;
+    onSaveReminderEntry: (payload: {
+      childId: string;
+      customMedicineName: string;
+      doseAmount: string;
+      minIntervalMinutes: number;
+      maxDosesPerDay?: number | null;
+      alreadyGiven?: boolean;
+      lastGivenAt?: string | null;
+      notes?: string | null;
+    }) => void | Promise<void>;
+    onOpenIllnessReminders: (childId: string) => void;
+    onOpenIllnessReminderDetail: (childId: string, planId: string) => void;
+    onOpenReminderComposer: (childId: string) => void;
+    onOpenReminderEditor: (childId: string, planId: string) => void;
+    onSaveReminderRecipients: (payload: {
+      childId: string;
+      memberAccountIds: string[];
+    }) => void | Promise<void>;
+    onSaveTemperatureEntry: (payload: {
+      childId: string;
+      valueCelsius: number;
+      measuredAt: string;
+    }) => void | Promise<void>;
+    onDeleteIllnessEntry: (payload: {
+      childId: string;
+      entryId: string;
+      kind: "temperature" | "note" | "medicine" | "reminder";
+    }) => void | Promise<void>;
+    onFinishIllnessObservation: (childId: string) => void | Promise<void>;
     selectedIllnessActionKind: IllnessQuickActionKind;
     onBackIllnessJournal: () => void;
+    onBackIllnessReminders: () => void;
+    onBackIllnessReminderDetail: () => void;
     onBackIllnessActionPlaceholder: () => void;
     onBackIllnessOnboarding: () => void;
-    onSelectTab: (key: MobileBottomTabKey) => void;
   };
   utilityFlow: {
+    onBackFamily: () => void;
+    onOpenChildrenFromFamily: () => void;
+    onOpenPillboxFromFamily: () => void;
+    onRefreshFamilyMembers: () => Promise<void>;
+    onUpdateCurrentProfile: (patch: {
+      displayName?: string;
+      relationshipLabel?: string | null;
+      phone?: string | null;
+    }) => Promise<void>;
     onSessionDeleted: () => Promise<void>;
     onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
     onBackPrivacyPolicy: () => void;
@@ -369,8 +447,11 @@ type IllnessOverlayProps = {
   activeScreen: PillPathActiveScreen;
   childrenCards: ChildCard[];
   focusedChildId: string;
+  currentAccountId: string;
   selectedIllnessActionKind: IllnessQuickActionKind;
+  selectedReminderPlanId: string | null;
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
+  familyMembers: MobileFamilyMember[];
   illnessFlow: OverlayScreensProps["illnessFlow"];
 };
 
@@ -378,15 +459,27 @@ function IllnessOverlays({
   activeScreen,
   childrenCards,
   focusedChildId,
+  currentAccountId,
   selectedIllnessActionKind,
+  selectedReminderPlanId,
   observationsByChildId,
+  familyMembers,
   illnessFlow,
 }: IllnessOverlayProps) {
   const focusedChild =
     childrenCards.find((child) => child.nodeId === focusedChildId) ?? null;
+  const focusedObservation = focusedChild
+    ? (observationsByChildId[focusedChild.nodeId] ?? null)
+    : null;
+  const selectedReminderPlan =
+    focusedObservation?.medicationPlans.find(
+      (plan) => plan.id === selectedReminderPlanId,
+    ) ?? null;
   const shouldWarmIllnessJournalAssets =
     activeScreen === "illnessOnboarding" ||
     activeScreen === "illnessJournal" ||
+    activeScreen === "illnessReminders" ||
+    activeScreen === "illnessReminderDetail" ||
     activeScreen === "illnessActionPlaceholder";
 
   return (
@@ -406,20 +499,119 @@ function IllnessOverlays({
         focusedChildId={focusedChildId}
         visible={
           activeScreen === "illnessJournal" ||
+          activeScreen === "illnessReminders" ||
+          activeScreen === "illnessReminderDetail" ||
           activeScreen === "illnessActionPlaceholder"
         }
         onAddEntry={illnessFlow.onAddIllnessEntry}
+        onOpenReminders={illnessFlow.onOpenIllnessReminders}
+        onTakeReminderDose={illnessFlow.onTakeReminderDose}
         onFinishObservation={illnessFlow.onFinishIllnessObservation}
         onOpenChildren={illnessFlow.onBackIllnessJournal}
-        onSelectTab={illnessFlow.onSelectTab}
       />
+      {focusedChild ? (
+        <IllnessReminderListScreen
+          child={focusedChild}
+          observation={focusedObservation}
+          familyMembers={familyMembers}
+          currentAccountId={currentAccountId}
+          visible={
+            activeScreen === "illnessReminders" ||
+            activeScreen === "illnessReminderDetail"
+          }
+          backgroundVisible={activeScreen === "illnessReminderDetail"}
+          onBack={illnessFlow.onBackIllnessReminders}
+          onOpenCreateReminder={() =>
+            illnessFlow.onOpenReminderComposer(focusedChild.nodeId)
+          }
+          onOpenReminder={(planId) =>
+            illnessFlow.onOpenIllnessReminderDetail(focusedChild.nodeId, planId)
+          }
+          onUpdateReminder={(payload) =>
+            illnessFlow.onUpdateReminderEntry({
+              childId: focusedChild.nodeId,
+              planId: payload.planId,
+              customMedicineName:
+                payload.customMedicineName,
+              doseAmount: payload.doseAmount,
+              minIntervalMinutes: payload.minIntervalMinutes,
+              maxDosesPerDay: payload.maxDosesPerDay,
+              notes: payload.notes,
+            })
+          }
+          onDeleteReminder={(entryId) =>
+            illnessFlow.onDeleteIllnessEntry({
+              childId: focusedChild.nodeId,
+              entryId,
+              kind: "reminder",
+            })
+          }
+          onTakeDose={({ plan, administeredAt }) =>
+            illnessFlow.onTakeReminderDose({
+              childId: focusedChild.nodeId,
+              plan,
+              administeredAt,
+            })
+          }
+          onSaveRecipients={(memberAccountIds) =>
+            illnessFlow.onSaveReminderRecipients({
+              childId: focusedChild.nodeId,
+              memberAccountIds,
+            })
+          }
+        />
+      ) : null}
+      {focusedChild ? (
+        <IllnessReminderDetailScreen
+          child={focusedChild}
+          plan={selectedReminderPlan}
+          observation={focusedObservation}
+          visible={activeScreen === "illnessReminderDetail"}
+          onBack={illnessFlow.onBackIllnessReminderDetail}
+          onUpdate={(payload) =>
+            illnessFlow.onUpdateReminderEntry({
+              childId: focusedChild.nodeId,
+              planId: selectedReminderPlan?.id ?? "",
+              customMedicineName: payload.customMedicineName ?? selectedReminderPlan?.customMedicineName?.trim() ?? "",
+              doseAmount: payload.doseAmount ?? selectedReminderPlan?.doseAmount ?? "",
+              minIntervalMinutes:
+                payload.minIntervalMinutes ?? selectedReminderPlan?.minIntervalMinutes ?? 180,
+              maxDosesPerDay:
+                payload.maxDosesPerDay === undefined
+                  ? (selectedReminderPlan?.maxDosesPerDay ?? null)
+                  : payload.maxDosesPerDay,
+              notes:
+                payload.notes === undefined
+                  ? (selectedReminderPlan?.notes ?? null)
+                  : payload.notes,
+            })
+          }
+          onTakeDose={({ plan, administeredAt }) =>
+            illnessFlow.onTakeReminderDose({
+              childId: focusedChild.nodeId,
+              plan,
+              administeredAt,
+            })
+          }
+        />
+      ) : null}
       {focusedChild ? (
         <IllnessActionPlaceholderScreen
           key={`illness-action-${focusedChild.nodeId}-${selectedIllnessActionKind}`}
           child={focusedChild}
           kind={selectedIllnessActionKind}
+          observation={focusedObservation}
           visible={activeScreen === "illnessActionPlaceholder"}
           onBack={illnessFlow.onBackIllnessActionPlaceholder}
+          onSaveAdministration={illnessFlow.onSaveAdministrationEntry}
+          onSaveNote={illnessFlow.onSaveIllnessNoteEntry}
+          onSaveReminder={illnessFlow.onSaveReminderEntry}
+          onUpdateReminder={illnessFlow.onUpdateReminderEntry}
+          onSaveTemperature={illnessFlow.onSaveTemperatureEntry}
+          onDeleteEntry={illnessFlow.onDeleteIllnessEntry}
+          editingReminderPlan={
+            selectedIllnessActionKind === "reminder" ? selectedReminderPlan : null
+          }
         />
       ) : null}
     </>
@@ -429,12 +621,20 @@ function IllnessOverlays({
 type UtilityOverlayProps = {
   activeScreen: PillPathActiveScreen;
   authSession: MobileAuthSession;
+  childrenCards: ChildCard[];
+  familyCanInviteMembers: boolean;
+  familyMembers: MobileFamilyMember[];
+  familyRoutinesCount: number;
   utilityFlow: OverlayScreensProps["utilityFlow"];
 };
 
 function UtilityOverlays({
   activeScreen,
   authSession,
+  childrenCards,
+  familyCanInviteMembers,
+  familyMembers,
+  familyRoutinesCount,
   utilityFlow,
 }: UtilityOverlayProps) {
   return (
@@ -443,6 +643,19 @@ function UtilityOverlays({
         documentKey="privacy"
         visible={activeScreen === "privacyPolicy"}
         onBack={utilityFlow.onBackPrivacyPolicy}
+      />
+      <FamilyScreen
+        visible={activeScreen === "family"}
+        onBack={utilityFlow.onBackFamily}
+        onOpenChildren={utilityFlow.onOpenChildrenFromFamily}
+        onOpenPillbox={utilityFlow.onOpenPillboxFromFamily}
+        onRefreshFamilyMembers={utilityFlow.onRefreshFamilyMembers}
+        onUpdateCurrentProfile={utilityFlow.onUpdateCurrentProfile}
+        canInviteMembers={familyCanInviteMembers}
+        familyMembers={familyMembers}
+        routinesCount={familyRoutinesCount}
+        childrenCards={childrenCards}
+        session={authSession}
       />
       <SupportScreen
         visible={activeScreen === "support"}
@@ -472,7 +685,11 @@ export function OverlayScreens({
   selectedEpisode,
   selectedJournalKind,
   selectedIllnessActionKind,
+  selectedReminderPlanId,
   observationsByChildId,
+  familyMembers,
+  familyCanInviteMembers,
+  familyRoutinesCount,
   authSession,
   childFlow,
   illnessFlow,
@@ -503,13 +720,20 @@ export function OverlayScreens({
         activeScreen={activeScreen}
         childrenCards={childrenCards}
         focusedChildId={selectedChildId}
+        currentAccountId={authSession.account.id}
         selectedIllnessActionKind={selectedIllnessActionKind}
+        selectedReminderPlanId={selectedReminderPlanId}
         observationsByChildId={observationsByChildId}
+        familyMembers={familyMembers}
         illnessFlow={illnessFlow}
       />
       <UtilityOverlays
         activeScreen={activeScreen}
         authSession={authSession}
+        childrenCards={childrenCards}
+        familyCanInviteMembers={familyCanInviteMembers}
+        familyMembers={familyMembers}
+        familyRoutinesCount={familyRoutinesCount}
         utilityFlow={utilityFlow}
       />
     </>
