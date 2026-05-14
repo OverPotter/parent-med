@@ -7,24 +7,22 @@ import {
   Pressable,
   ScrollView,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
-import { MobileBottomTabBar } from "../../../shared/components/MobileBottomTabBar";
-import type {
-  MobileBottomTabItem,
-  MobileBottomTabKey,
-} from "../../../shared/components/mobileBottomTabModel";
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
+import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { getLocalAssetDefaultSource } from "../../../shared/lib/assetSources";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import { ChildCard } from "../../children/model/childrenRedesign";
-import { getIllnessSummaryChipAppearance } from "../model/illnessJournalAppearance";
 import {
   buildIllnessJournalContent,
   getObservationChildStatsLabel,
   getObservationEntryCount,
 } from "../model/illnessJournal";
+import { getReminderPlanDisplayTitle } from "../model/illnessReminderPlanTitle";
+import { getLeadMobileReminderPlan } from "../model/illnessReminderPlanStats";
 import {
   IllnessQuickActionKind,
   MobileIllnessObservation,
@@ -33,10 +31,11 @@ import { groupIllnessEntriesByDay } from "../model/illnessJournalTimeline";
 import {
   EntryRow,
   QuickActionButton,
-  SummaryChip,
 } from "./IllnessJournalParts";
+import { getReminderLeadStatusText } from "./illnessReminderCardStatus";
 import { styles } from "./illnessJournalStyles";
 import { formatIllnessDateLabel } from "../model/illnessOnboarding";
+import { reminderFieldIcons } from "../assets";
 
 type IllnessJournalScreenProps = {
   children: ChildCard[];
@@ -44,65 +43,14 @@ type IllnessJournalScreenProps = {
   focusedChildId: string;
   visible: boolean;
   onAddEntry: (childId: string, kind: IllnessQuickActionKind) => void;
+  onOpenReminders: (childId: string) => void;
+  onTakeReminderDose: (payload: {
+    childId: string;
+    plan: MobileIllnessObservation["medicationPlans"][number];
+  }) => void | Promise<void>;
   onFinishObservation: (childId: string) => void;
   onOpenChildren: () => void;
-  onSelectTab: (key: MobileBottomTabKey) => void;
 };
-
-function buildJournalTabItems(
-  locale: ReturnType<typeof useMobileI18n>["locale"],
-): MobileBottomTabItem[] {
-  return [
-    {
-      key: "journal",
-      label:
-        locale === "ru"
-          ? "Журнал"
-          : locale === "de"
-            ? "Journal"
-            : locale === "pl"
-              ? "Dziennik"
-              : "Journal",
-      active: true,
-    },
-    {
-      key: "children",
-      label:
-        locale === "ru"
-          ? "Дети"
-          : locale === "de"
-            ? "Kinder"
-            : locale === "pl"
-              ? "Dzieci"
-              : "Children",
-      active: false,
-    },
-    {
-      key: "pillbox",
-      label:
-        locale === "ru"
-          ? "Таблетница"
-          : locale === "de"
-            ? "Pillenbox"
-            : locale === "pl"
-              ? "Pudełko leków"
-              : "Pillbox",
-      active: false,
-    },
-    {
-      key: "cabinet",
-      label:
-        locale === "ru"
-          ? "Аптечка"
-          : locale === "de"
-            ? "Hausapotheke"
-            : locale === "pl"
-              ? "Apteczka"
-              : "Cabinet",
-      active: false,
-    },
-  ];
-}
 
 export function IllnessJournalScreen({
   children,
@@ -110,18 +58,24 @@ export function IllnessJournalScreen({
   focusedChildId,
   visible,
   onAddEntry,
+  onOpenReminders,
+  onTakeReminderDose,
   onFinishObservation,
   onOpenChildren,
-  onSelectTab,
 }: IllnessJournalScreenProps) {
   const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
+  const { width } = useWindowDimensions();
+  const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
+    enabled: visible,
+    width,
+    onBack: onOpenChildren,
+  });
   const content = buildIllnessJournalContent(locale);
   const [expandedChildId, setExpandedChildId] = useState<string>("");
   const [pendingFinishChildId, setPendingFinishChildId] = useState<
     string | null
   >(null);
-  const tabItems = useMemo(() => buildJournalTabItems(locale), [locale]);
 
   const activeCards = useMemo(() => {
     const mapped = children
@@ -144,6 +98,7 @@ export function IllnessJournalScreen({
       style={[
         styles.overlayLayer,
         visible ? styles.overlayLayerVisible : styles.overlayLayerHidden,
+        { transform: [{ translateX }] },
       ]}
     >
       <ImageBackground
@@ -161,6 +116,10 @@ export function IllnessJournalScreen({
       </ImageBackground>
 
       <View style={styles.screen}>
+        <View
+          style={[styles.swipeBackEdge, { width: swipeCaptureWidth }]}
+          {...panHandlers}
+        />
         <View style={styles.root}>
           <ScrollView
             style={styles.scroll}
@@ -186,6 +145,21 @@ export function IllnessJournalScreen({
 
             {activeCards.map(({ child, observation }) => {
               const isExpanded = expandedChildId === child.nodeId;
+              const now = new Date();
+              const leadReminder = observation
+                ? getLeadMobileReminderPlan(
+                    observation.medicationPlans,
+                    observation.entries,
+                    now,
+                  )
+                : null;
+              const leadReminderPlan = leadReminder?.plan ?? null;
+              const leadReminderStats = leadReminder?.stats ?? null;
+              const canTakeReminderNow = !!(
+                leadReminderPlan &&
+                leadReminderStats &&
+                !leadReminderStats.isBlocked
+              );
 
               return (
                 <View key={child.nodeId} style={styles.card}>
@@ -236,24 +210,94 @@ export function IllnessJournalScreen({
                     </View>
                   </View>
 
-                  <View style={styles.chipsRow}>
-                    {(["temperature", "medicine", "reminder"] as const).map(
-                      (kind) => {
-                        const appearance =
-                          getIllnessSummaryChipAppearance(kind);
-
-                        return (
-                          <SummaryChip
-                            key={kind}
-                            icon={appearance.icon}
-                            text={content.summaryChipLabels[kind]}
-                            backgroundColor={appearance.backgroundColor}
-                            borderColor={appearance.borderColor}
+                  {leadReminderPlan ? (
+                    <View style={styles.reminderLeadCard}>
+                      <View style={styles.reminderLeadHeader}>
+                        <View style={styles.reminderLeadIconWrap}>
+                          <Image
+                            source={reminderFieldIcons.medicine}
+                            defaultSource={getLocalAssetDefaultSource(
+                              reminderFieldIcons.medicine,
+                            )}
+                            style={styles.reminderLeadIconImage as never}
+                            resizeMode="contain"
+                            fadeDuration={0}
                           />
-                        );
-                      },
-                    )}
-                  </View>
+                        </View>
+                        <View style={styles.reminderLeadCopy}>
+                          <Text style={styles.reminderLeadTitle}>
+                            {getReminderPlanDisplayTitle(leadReminderPlan, locale)}
+                          </Text>
+                          <Text style={styles.reminderLeadStatus}>
+                            {leadReminderStats
+                              ? getReminderLeadStatusText(
+                                  leadReminderStats,
+                                  {
+                                    dailyLimitReached:
+                                      locale === "ru"
+                                        ? "Лимит на сегодня"
+                                        : locale === "pl"
+                                          ? "Limit na dziś"
+                                          : locale === "de"
+                                            ? "Tageslimit erreicht"
+                                            : "Daily limit reached",
+                                    giveAtLabel:
+                                      locale === "ru"
+                                        ? "Дать в"
+                                        : locale === "pl"
+                                          ? "Podać o"
+                                          : locale === "de"
+                                            ? "Geben um"
+                                            : "Give at",
+                                    nextDosePrefix:
+                                      locale === "ru"
+                                        ? "Следующий приём в"
+                                        : locale === "pl"
+                                          ? "Następne podanie o"
+                                          : locale === "de"
+                                            ? "Nächste Gabe um"
+                                            : "Next dose at",
+                                    giveNowLabel:
+                                      locale === "ru"
+                                        ? "Дать сейчас"
+                                        : locale === "pl"
+                                          ? "Podać teraz"
+                                          : locale === "de"
+                                            ? "Jetzt geben"
+                                            : "Give now",
+                                  },
+                                  locale,
+                                  now,
+                                )
+                              : ""}
+                          </Text>
+                        </View>
+                      </View>
+                      {canTakeReminderNow ? (
+                        <View style={styles.reminderLeadActions}>
+                          <Pressable
+                            style={styles.reminderLeadPrimaryButton}
+                            onPress={() => {
+                              void onTakeReminderDose({
+                                childId: child.nodeId,
+                                plan: leadReminderPlan,
+                              });
+                            }}
+                          >
+                            <Text style={styles.reminderLeadPrimaryButtonText}>
+                              {locale === "ru"
+                                ? "Отметить приём"
+                                : locale === "pl"
+                                  ? "Zapisz podanie"
+                                  : locale === "de"
+                                    ? "Gabe eintragen"
+                                    : "Log dose"}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : null}
 
                   <View style={styles.quickActionsGrid}>
                     <QuickActionButton
@@ -274,7 +318,7 @@ export function IllnessJournalScreen({
                     <QuickActionButton
                       kind="reminder"
                       label={content.quickActionLabels.reminder}
-                      onPress={() => onAddEntry(child.nodeId, "reminder")}
+                      onPress={() => onOpenReminders(child.nodeId)}
                     />
                   </View>
 
@@ -369,10 +413,6 @@ export function IllnessJournalScreen({
           </View>
         </View>
       ) : null}
-
-      <View style={styles.bottomBarLayer}>
-        <MobileBottomTabBar items={tabItems} onSelectTab={onSelectTab} />
-      </View>
     </Animated.View>
   );
 }

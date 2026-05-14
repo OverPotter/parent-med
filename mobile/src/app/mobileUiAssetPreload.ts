@@ -207,6 +207,7 @@ function collectAssetsForScreenBranch(
       return;
     case "illnessOnboarding":
     case "illnessJournal":
+    case "illnessReminders":
     case "illnessActionPlaceholder":
       collectIllnessBranchAssets(modules, context.selectedChild ?? null);
       return;

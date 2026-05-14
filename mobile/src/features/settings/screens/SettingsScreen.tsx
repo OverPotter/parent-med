@@ -71,10 +71,8 @@ import {
   SubscriptionManagementCard,
 } from "./SettingsScreenParts";
 import { styles } from "./settingsScreenStyles";
-import {
-  readStoredSettingsPreferences,
-  type MedicationIntervalUnit,
-} from "../session/mobileSettingsPreferencesStorage";
+import type { MedicationIntervalUnit } from "../session/mobileSettingsPreferencesStorage";
+import { useStoredMedicationIntervalUnit } from "../session/useStoredMedicationIntervalUnit";
 
 type SettingsScreenProps = {
   visible: boolean;
@@ -139,8 +137,8 @@ export function SettingsScreen({
   const [subscriptionExpanded, setSubscriptionExpanded] = useState(false);
   const [medicationIntervalExpanded, setMedicationIntervalExpanded] =
     useState(false);
-  const [medicationIntervalUnit, setMedicationIntervalUnit] =
-    useState<MedicationIntervalUnit>("hours");
+  const { medicationIntervalUnit, setMedicationIntervalUnit } =
+    useStoredMedicationIntervalUnit();
   const [passwordForm, setPasswordForm] =
     useState<PasswordFormState>(emptyPasswordForm);
   const [passwordSubmitError, setPasswordSubmitError] = useState<string | null>(
@@ -167,23 +165,6 @@ export function SettingsScreen({
   useEffect(() => {
     setHasRecoveryCode(Boolean(session?.account.hasRecoveryCode));
   }, [session?.account.hasRecoveryCode]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadLocalPreferences() {
-      const storedPreferences = await readStoredSettingsPreferences();
-      if (!cancelled) {
-        setMedicationIntervalUnit(storedPreferences.medicationIntervalUnit);
-      }
-    }
-
-    void loadLocalPreferences();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (passwordExpanded) {

@@ -9,7 +9,7 @@ export type IllnessJournalIconDescriptor =
   | {
       type: "asset";
       source: ImageSourcePropType;
-      variant?: "temperatureChip" | "temperatureQuick" | "temperatureEntry";
+      variant?: "temperatureQuick" | "temperatureEntry";
     }
   | {
       type: "feather";
@@ -17,42 +17,6 @@ export type IllnessJournalIconDescriptor =
       size: number;
       color: string;
     };
-
-export function getIllnessSummaryChipAppearance(
-  kind: "temperature" | "medicine" | "reminder",
-) {
-  if (kind === "temperature") {
-    return {
-      backgroundColor: "#FFF9F8",
-      borderColor: "#F1DAD4",
-      icon: {
-        type: "asset" as const,
-        source: illnessAssets.journal.quickTemperature,
-        variant: "temperatureChip" as const,
-      },
-    };
-  }
-
-  if (kind === "medicine") {
-    return {
-      backgroundColor: "#FFF9F2",
-      borderColor: "#F1DAD0",
-      icon: {
-        type: "asset" as const,
-        source: illnessAssets.journal.quickMedicine,
-      },
-    };
-  }
-
-  return {
-    backgroundColor: "#FFFAFF",
-    borderColor: "#E8DDF5",
-    icon: {
-      type: "asset" as const,
-      source: illnessAssets.journal.quickReminder,
-    },
-  };
-}
 
 export function getIllnessQuickActionAppearance(kind: IllnessQuickActionKind) {
   if (kind === "temperature") {
@@ -103,6 +67,7 @@ export function getIllnessEntryAppearance(kind: MobileIllnessEntry["kind"]) {
   if (kind === "temperature") {
     return {
       timelineColor: "#F56F68",
+      borderColor: "#F3D7D3",
       icon: {
         type: "asset" as const,
         source: illnessAssets.journal.quickTemperature,
@@ -114,6 +79,7 @@ export function getIllnessEntryAppearance(kind: MobileIllnessEntry["kind"]) {
   if (kind === "medicine") {
     return {
       timelineColor: "#F59B45",
+      borderColor: "#F1DCC8",
       icon: {
         type: "asset" as const,
         source: illnessAssets.journal.quickMedicine,
@@ -124,6 +90,7 @@ export function getIllnessEntryAppearance(kind: MobileIllnessEntry["kind"]) {
   if (kind === "reminder") {
     return {
       timelineColor: "#8B5CF6",
+      borderColor: "#DED1F5",
       icon: {
         type: "asset" as const,
         source: illnessAssets.journal.quickReminder,
@@ -134,6 +101,7 @@ export function getIllnessEntryAppearance(kind: MobileIllnessEntry["kind"]) {
   if (kind === "reason") {
     return {
       timelineColor: "#18A7E0",
+      borderColor: "#CBE8F5",
       icon: {
         type: "feather" as const,
         name: "activity" as const,
@@ -145,6 +113,7 @@ export function getIllnessEntryAppearance(kind: MobileIllnessEntry["kind"]) {
 
   return {
     timelineColor: "#7EDFA3",
+    borderColor: "#D3E7D8",
     icon: {
       type: "asset" as const,
       source: illnessAssets.journal.quickNote,

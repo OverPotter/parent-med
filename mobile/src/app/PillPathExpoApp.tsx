@@ -49,11 +49,14 @@ function PillPathExpoShell() {
     isAuthBootstrapping,
     isShellBootstrapping,
     rootTabItems,
+    shouldShowRootTabBar,
     handleAuthenticated,
     handleSelectRootTab,
     rootTabContentProps,
     overlayScreensProps,
   } = usePillPathExpoShellState();
+  const shouldShowRootTabBarBackground =
+    overlayScreensProps?.activeScreen === "illnessReminders";
   const criticalAssetModules = useMemo(
     () => getCriticalMobileUiAssetModules(),
     [],
@@ -157,10 +160,22 @@ function PillPathExpoShell() {
     >
       <StatusBar style={surfaceTheme.statusBarStyle} />
       <RootTabContent {...rootTabContentProps} />
-      <MobileBottomTabBar
-        items={rootTabItems}
-        onSelectTab={handleSelectRootTab}
-      />
+      <View
+        pointerEvents={shouldShowRootTabBar ? "auto" : "none"}
+        style={[
+          styles.rootTabBarLayer,
+          shouldShowRootTabBar
+            ? styles.rootTabBarLayerForeground
+            : shouldShowRootTabBarBackground
+              ? styles.rootTabBarLayerBackground
+            : styles.rootTabBarLayerHidden,
+        ]}
+      >
+        <MobileBottomTabBar
+          items={rootTabItems}
+          onSelectTab={handleSelectRootTab}
+        />
+      </View>
       {overlayScreensProps ? <OverlayScreens {...overlayScreensProps} /> : null}
       <AssetWarmupLayer active assetModules={persistentAssetModules} />
     </View>
@@ -179,10 +194,40 @@ function CriticalAssetBootLayer({
   const total = assetModules.length;
 
   useEffect(() => {
-    if (total === 0 && !readyRef.current) {
+    let cancelled = false;
+
+    if (readyRef.current) {
+      return;
+    }
+
+    if (total === 0) {
       readyRef.current = true;
       onReady();
+      return;
     }
+
+    Promise.all(
+      assetModules.map(async (moduleId) => {
+        const resolved = Image.resolveAssetSource(moduleId as ImageSourcePropType);
+
+        if (resolved?.uri) {
+          await Image.prefetch(resolved.uri).catch(() => false);
+        }
+      }),
+    )
+      .catch(() => {})
+      .finally(() => {
+        if (cancelled || readyRef.current) {
+          return;
+        }
+
+        readyRef.current = true;
+        onReady();
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [onReady, total]);
 
   useEffect(() => {
@@ -467,5 +512,23 @@ const styles = StyleSheet.create({
   assetWarmupBootImage: {
     width: 1,
     height: 1,
+  },
+  rootTabBarLayer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+  },
+  rootTabBarLayerHidden: {
+    opacity: 0,
+  },
+  rootTabBarLayerForeground: {
+    opacity: 1,
+    zIndex: 90,
+  },
+  rootTabBarLayerBackground: {
+    opacity: 1,
+    zIndex: 90,
   },
 });

@@ -37,6 +37,7 @@ function makeEpisode(overrides: Partial<MobileIllnessEpisode> = {}): MobileIllne
     status: "closed",
     medicationMode: "guided",
     note: "Был жар ночью",
+    memberAccountIds: [],
     createdByAccountId: "account-1",
     closedAt: "2026-05-02T09:00:00.000Z",
     ...overrides,

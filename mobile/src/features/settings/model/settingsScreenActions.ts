@@ -19,6 +19,7 @@ import {
   writeStoredMedicationIntervalUnit,
   type MedicationIntervalUnit,
 } from "../session/mobileSettingsPreferencesStorage";
+import { setMedicationIntervalUnitSnapshot } from "../session/medicationIntervalUnitStore";
 
 export async function saveSettingsPassword(params: {
   session: Pick<MobileAuthSession, "accessToken"> | null;
@@ -157,6 +158,7 @@ export async function saveMedicationIntervalUnitPreference(params: {
 
   try {
     await writeStoredMedicationIntervalUnit(params.nextUnit);
+    setMedicationIntervalUnitSnapshot(params.nextUnit);
     return { blocked: false as const, success: true as const };
   } catch {
     return {

@@ -22,6 +22,18 @@ export function formatIllnessEntryTime(
   }).format(date);
 }
 
+export function formatIllnessEntryDate(
+  createdAt: string,
+  locale: MobileLocale,
+) {
+  const date = new Date(createdAt);
+
+  return new Intl.DateTimeFormat(resolveTimelineLocale(locale), {
+    day: "numeric",
+    month: "short",
+  }).format(date);
+}
+
 export function groupIllnessEntriesByDay(
   entries: IllnessJournalEntry[],
   locale: MobileLocale,

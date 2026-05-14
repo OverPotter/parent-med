@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useEffect } from "react";
 import { Image, ImageSourcePropType, StyleSheet, View } from "react-native";
 import { dedupeAssetModules } from "../lib/assetSources";
 
@@ -15,6 +16,30 @@ export function AssetWarmupLayer({
     () => dedupeAssetModules(assetModules),
     [assetModules],
   );
+
+  useEffect(() => {
+    if (!active || uniqueAssetModules.length === 0) {
+      return;
+    }
+
+    const localModuleIds = uniqueAssetModules.filter(
+      (source): source is number => typeof source === "number",
+    );
+
+    if (localModuleIds.length === 0) {
+      return;
+    }
+
+    Promise.all(
+      localModuleIds.map(async (moduleId) => {
+        const resolved = Image.resolveAssetSource(moduleId);
+
+        if (resolved?.uri) {
+          await Image.prefetch(resolved.uri).catch(() => false);
+        }
+      }),
+    ).catch(() => {});
+  }, [active, uniqueAssetModules]);
 
   if (!active || uniqueAssetModules.length === 0) {
     return null;
@@ -43,16 +68,15 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 112,
-    opacity: 0.01,
+    bottom: 0,
+    opacity: 0,
     overflow: "hidden",
-    zIndex: -1,
   },
   cacheStrip: {
     flexDirection: "row",
     flexWrap: "wrap",
-    width: 1120,
-    height: 112,
+    width: 2000,
+    minHeight: 2000,
   },
   image: {
     width: 96,

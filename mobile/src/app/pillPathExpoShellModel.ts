@@ -13,6 +13,7 @@ export type PillPathActiveScreen =
   | "childProfile"
   | "childCreate"
   | "childProfileEdit"
+  | "family"
   | "feedingHistory"
   | "growthHistory"
   | "privacyPolicy"
@@ -25,6 +26,7 @@ export type PillPathActiveScreen =
   | "journalEntry"
   | "illnessOnboarding"
   | "illnessJournal"
+  | "illnessReminders"
   | "illnessActionPlaceholder";
 
 const CHILD_PROFILE_VISIBLE_SCREENS: PillPathActiveScreen[] = [
@@ -37,6 +39,11 @@ const CHILD_PROFILE_VISIBLE_SCREENS: PillPathActiveScreen[] = [
   "overview",
   "sleepHistory",
   "weightHistory",
+];
+
+const ROOT_MODULE_SCREENS: PillPathActiveScreen[] = [
+  "children",
+  "illnessJournal",
 ];
 
 export function resolveJournalTargetScreen(
@@ -88,4 +95,10 @@ export function shouldShowAnalyticsBreakdown(
   selectedEpisode: AnalyticsEpisodeCard | null,
 ): boolean {
   return activeScreen === "analyticsBreakdown" && selectedEpisode != null;
+}
+
+export function isRootModuleScreen(
+  activeScreen: PillPathActiveScreen,
+): boolean {
+  return ROOT_MODULE_SCREENS.includes(activeScreen);
 }

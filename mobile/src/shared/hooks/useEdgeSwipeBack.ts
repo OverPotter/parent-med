@@ -5,16 +5,31 @@ type UseEdgeSwipeBackArgs = {
   enabled: boolean;
   width: number;
   onBack: () => void;
+  shouldCloseOnBack?: boolean;
+  shouldTranslateOnSwipe?: boolean;
+  captureWidth?: number;
 };
+
+const IOS_LIKE_EDGE_CAPTURE_WIDTH = 28;
+const SWIPE_BACK_TRIGGER_DISTANCE = 92;
+const SWIPE_BACK_TRIGGER_VELOCITY = 0.82;
 
 export function useEdgeSwipeBack({
   enabled,
   width,
   onBack,
+  shouldCloseOnBack = true,
+  shouldTranslateOnSwipe = true,
+  captureWidth,
 }: UseEdgeSwipeBackArgs) {
   const translateX = useRef(new Animated.Value(0)).current;
   const enabledRef = useRef(enabled);
-  const swipeCaptureWidth = Math.min(72, width * 0.16);
+  const onBackRef = useRef(onBack);
+  const widthRef = useRef(width);
+  const shouldCloseOnBackRef = useRef(shouldCloseOnBack);
+  const shouldTranslateOnSwipeRef = useRef(shouldTranslateOnSwipe);
+  const swipeCaptureWidth =
+    captureWidth ?? Math.min(IOS_LIKE_EDGE_CAPTURE_WIDTH, width * 0.1);
 
   useEffect(() => {
     enabledRef.current = enabled;
@@ -22,6 +37,25 @@ export function useEdgeSwipeBack({
       translateX.setValue(0);
     }
   }, [enabled, translateX]);
+
+  useEffect(() => {
+    onBackRef.current = onBack;
+  }, [onBack]);
+
+  useEffect(() => {
+    widthRef.current = width;
+  }, [width]);
+
+  useEffect(() => {
+    shouldCloseOnBackRef.current = shouldCloseOnBack;
+  }, [shouldCloseOnBack]);
+
+  useEffect(() => {
+    shouldTranslateOnSwipeRef.current = shouldTranslateOnSwipe;
+    if (!shouldTranslateOnSwipe) {
+      translateX.setValue(0);
+    }
+  }, [shouldTranslateOnSwipe, translateX]);
 
   const animateBackToStart = () => {
     Animated.spring(translateX, {
@@ -34,14 +68,29 @@ export function useEdgeSwipeBack({
 
   const animateBackAndClose = () => {
     Animated.timing(translateX, {
-      toValue: width,
+      toValue: widthRef.current,
       duration: 180,
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) {
-        onBack();
+        onBackRef.current();
       }
     });
+  };
+
+  const animateBackWithinScreen = () => {
+    onBackRef.current();
+    Animated.spring(translateX, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 220,
+      friction: 26,
+    }).start();
+  };
+
+  const triggerBackWithoutTranslate = () => {
+    onBackRef.current();
+    translateX.setValue(0);
   };
 
   const panResponder = useRef(
@@ -62,15 +111,27 @@ export function useEdgeSwipeBack({
         return startedNearLeftEdge && isHorizontalSwipe;
       },
       onPanResponderMove: (_, gestureState) => {
+        if (!shouldTranslateOnSwipeRef.current) {
+          return;
+        }
+
         translateX.setValue(Math.max(0, gestureState.dx));
       },
       onPanResponderRelease: (_, gestureState) => {
         const shouldGoBack =
-          gestureState.dx > Math.max(92, width * 0.18) ||
-          gestureState.vx > 0.82;
+          gestureState.dx > Math.max(SWIPE_BACK_TRIGGER_DISTANCE, widthRef.current * 0.18) ||
+          gestureState.vx > SWIPE_BACK_TRIGGER_VELOCITY;
 
         if (shouldGoBack) {
-          animateBackAndClose();
+          if (!shouldTranslateOnSwipeRef.current) {
+            triggerBackWithoutTranslate();
+            return;
+          }
+          if (shouldCloseOnBackRef.current) {
+            animateBackAndClose();
+          } else {
+            animateBackWithinScreen();
+          }
           return;
         }
 

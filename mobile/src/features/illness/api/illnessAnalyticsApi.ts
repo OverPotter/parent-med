@@ -1,4 +1,8 @@
 import type { MobileAuthSession } from "../../auth/api/authApi";
+import {
+  requestIllnessAuthedJson,
+  type MobileIllnessApiErrorOptions,
+} from "./illnessApiClient";
 
 type RawIllnessAnalyticsSeriesPoint = {
   label: string;
@@ -40,6 +44,25 @@ type RawIllnessEpisodeResponse = {
   member_account_ids: string[];
   created_by_account_id: string | null;
   closed_at: string | null;
+};
+
+type RawIllnessEpisodeCreateRequest = {
+  child_id: string;
+  started_at: string;
+  title: string | null;
+  medication_mode: string;
+  note: string | null;
+  member_account_ids: string[];
+};
+
+type RawIllnessEpisodeUpdateRequest = {
+  started_at?: string;
+  title?: string | null;
+  status?: string;
+  medication_mode?: string;
+  note?: string | null;
+  member_account_ids?: string[];
+  closed_at?: string | null;
 };
 
 type RawEpisodeTemperaturePoint = {
@@ -92,6 +115,7 @@ export type MobileIllnessEpisode = {
   status: string;
   medicationMode: string;
   note: string | null;
+  memberAccountIds: string[];
   createdByAccountId: string | null;
   closedAt: string | null;
 };
@@ -118,81 +142,12 @@ export class MobileIllnessAnalyticsApiError extends Error {
   code?: string;
   detail?: string;
 
-  constructor(message: string, options?: { code?: string; detail?: string }) {
+  constructor(message: string, options?: MobileIllnessApiErrorOptions) {
     super(message);
     this.name = "MobileIllnessAnalyticsApiError";
     this.code = options?.code;
     this.detail = options?.detail;
   }
-}
-
-const PROD_API_ORIGIN = "https://parent-med-production.up.railway.app";
-const DEV_API_ORIGIN = "http://localhost:8000";
-
-function normalizeApiOrigin(raw: string | undefined) {
-  const value = raw?.trim().replace(/\/+$/, "") ?? "";
-
-  if (!value) {
-    return __DEV__ ? DEV_API_ORIGIN : PROD_API_ORIGIN;
-  }
-
-  if (/^https?:\/\//i.test(value)) {
-    return value;
-  }
-
-  return `https://${value}`;
-}
-
-const API_BASE_URL = `${normalizeApiOrigin(process.env.EXPO_PUBLIC_API_URL)}/api/v1`;
-
-function parseErrorPayload(payload: unknown) {
-  if (!payload || typeof payload !== "object") {
-    return {};
-  }
-
-  const candidate = payload as {
-    code?: unknown;
-    detail?: unknown;
-    message?: unknown;
-  };
-
-  return {
-    code: typeof candidate.code === "string" ? candidate.code : undefined,
-    detail:
-      typeof candidate.detail === "string"
-        ? candidate.detail
-        : typeof candidate.message === "string"
-          ? candidate.message
-          : undefined,
-  };
-}
-
-async function requestAuthedJson<T>(
-  path: string,
-  init: RequestInit,
-  accessToken: string | null,
-): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
-
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
-
-  if (!response.ok) {
-    const { code, detail } = parseErrorPayload(payload);
-    throw new MobileIllnessAnalyticsApiError(detail ?? "Request failed", {
-      code,
-      detail,
-    });
-  }
-
-  return payload as T;
 }
 
 function toMobileIllnessHistorySummary(
@@ -230,6 +185,7 @@ function toMobileIllnessEpisode(raw: RawIllnessEpisodeResponse): MobileIllnessEp
     status: raw.status,
     medicationMode: raw.medication_mode,
     note: raw.note,
+    memberAccountIds: raw.member_account_ids,
     createdByAccountId: raw.created_by_account_id,
     closedAt: raw.closed_at,
   };
@@ -265,10 +221,11 @@ export async function fetchMobileIllnessHistorySummary(
   childId: string,
   period: "month" | "quarter" | "half_year" | "year" | "all",
 ): Promise<MobileIllnessHistorySummary> {
-  const response = await requestAuthedJson<RawIllnessHistorySummaryResponse>(
+  const response = await requestIllnessAuthedJson<RawIllnessHistorySummaryResponse>(
     `/illness-episodes/child/${encodeURIComponent(childId)}/history-summary?period=${encodeURIComponent(period)}`,
     { method: "GET" },
     session.accessToken,
+    (message, options) => new MobileIllnessAnalyticsApiError(message, options),
   );
 
   return toMobileIllnessHistorySummary(response);
@@ -278,23 +235,122 @@ export async function fetchMobileIllnessEpisodes(
   session: Pick<MobileAuthSession, "accessToken">,
   childId: string,
 ): Promise<MobileIllnessEpisode[]> {
-  const response = await requestAuthedJson<RawIllnessEpisodeResponse[]>(
+  const response = await requestIllnessAuthedJson<RawIllnessEpisodeResponse[]>(
     `/illness-episodes?child_id=${encodeURIComponent(childId)}`,
     { method: "GET" },
     session.accessToken,
+    (message, options) => new MobileIllnessAnalyticsApiError(message, options),
   );
 
   return response.map(toMobileIllnessEpisode);
+}
+
+export async function fetchMobileActiveIllnessEpisode(
+  session: Pick<MobileAuthSession, "accessToken">,
+  childId: string,
+): Promise<MobileIllnessEpisode | null> {
+  const response = await requestIllnessAuthedJson<RawIllnessEpisodeResponse | null>(
+    `/illness-episodes/child/${encodeURIComponent(childId)}/active`,
+    { method: "GET" },
+    session.accessToken,
+    (message, options) => new MobileIllnessAnalyticsApiError(message, options),
+  );
+
+  return response ? toMobileIllnessEpisode(response) : null;
+}
+
+export async function createMobileIllnessEpisode(
+  session: Pick<MobileAuthSession, "accessToken">,
+  payload: {
+    childId: string;
+    startedAt: string;
+    title?: string | null;
+    medicationMode?: string;
+    note?: string | null;
+    memberAccountIds?: string[];
+  },
+): Promise<MobileIllnessEpisode> {
+  const body: RawIllnessEpisodeCreateRequest = {
+    child_id: payload.childId,
+    started_at: payload.startedAt,
+    title: payload.title ?? null,
+    medication_mode: payload.medicationMode ?? "manual",
+    note: payload.note ?? null,
+    member_account_ids: payload.memberAccountIds ?? [],
+  };
+
+  const response = await requestIllnessAuthedJson<RawIllnessEpisodeResponse>(
+    "/illness-episodes",
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+    session.accessToken,
+    (message, options) => new MobileIllnessAnalyticsApiError(message, options),
+  );
+
+  return toMobileIllnessEpisode(response);
+}
+
+export async function updateMobileIllnessEpisode(
+  session: Pick<MobileAuthSession, "accessToken">,
+  episodeId: string,
+  patch: {
+    startedAt?: string;
+    title?: string | null;
+    status?: string;
+    medicationMode?: string;
+    note?: string | null;
+    memberAccountIds?: string[];
+    closedAt?: string | null;
+  },
+): Promise<MobileIllnessEpisode> {
+  const body: RawIllnessEpisodeUpdateRequest = {};
+
+  if (patch.startedAt !== undefined) {
+    body.started_at = patch.startedAt;
+  }
+  if (patch.title !== undefined) {
+    body.title = patch.title;
+  }
+  if (patch.status !== undefined) {
+    body.status = patch.status;
+  }
+  if (patch.medicationMode !== undefined) {
+    body.medication_mode = patch.medicationMode;
+  }
+  if (patch.note !== undefined) {
+    body.note = patch.note;
+  }
+  if (patch.memberAccountIds !== undefined) {
+    body.member_account_ids = patch.memberAccountIds;
+  }
+  if (patch.closedAt !== undefined) {
+    body.closed_at = patch.closedAt;
+  }
+
+  const response = await requestIllnessAuthedJson<RawIllnessEpisodeResponse>(
+    `/illness-episodes/${encodeURIComponent(episodeId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    },
+    session.accessToken,
+    (message, options) => new MobileIllnessAnalyticsApiError(message, options),
+  );
+
+  return toMobileIllnessEpisode(response);
 }
 
 export async function fetchMobileIllnessEpisodeInsights(
   session: Pick<MobileAuthSession, "accessToken">,
   episodeId: string,
 ): Promise<MobileIllnessEpisodeInsights> {
-  const response = await requestAuthedJson<RawIllnessEpisodeInsightsResponse>(
+  const response = await requestIllnessAuthedJson<RawIllnessEpisodeInsightsResponse>(
     `/illness-episodes/${encodeURIComponent(episodeId)}/insights`,
     { method: "GET" },
     session.accessToken,
+    (message, options) => new MobileIllnessAnalyticsApiError(message, options),
   );
 
   return toMobileIllnessEpisodeInsights(response);
@@ -304,9 +360,10 @@ export async function deleteMobileIllnessEpisode(
   session: Pick<MobileAuthSession, "accessToken">,
   episodeId: string,
 ): Promise<void> {
-  await requestAuthedJson<null>(
+  await requestIllnessAuthedJson<null>(
     `/illness-episodes/${encodeURIComponent(episodeId)}`,
     { method: "DELETE" },
     session.accessToken,
+    (message, options) => new MobileIllnessAnalyticsApiError(message, options),
   );
 }

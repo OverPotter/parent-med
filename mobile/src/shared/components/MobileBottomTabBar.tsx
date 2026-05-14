@@ -1,5 +1,14 @@
+import { useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Image,
+  LayoutChangeEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { mobileTabAssets } from "../assets/mobileTabAssets";
 import type {
   MobileBottomTabItem,
@@ -13,35 +22,74 @@ type MobileBottomTabBarProps = {
 
 const noop = () => {};
 const tabIconSize = 38;
+const tabBarHorizontalPadding = 8;
+const tabBarItemGap = 4;
 
 export function MobileBottomTabBar({
   items,
   onSelectTab = noop,
 }: MobileBottomTabBarProps) {
+  const [barWidth, setBarWidth] = useState(0);
+  const shouldScroll = items.length > 4;
+  const scrollItemWidth =
+    shouldScroll && barWidth > 0
+      ? Math.floor(
+          (barWidth - tabBarHorizontalPadding * 2 - tabBarItemGap * 3) / 4,
+        )
+      : undefined;
+
+  const handleBarLayout = (event: LayoutChangeEvent) => {
+    setBarWidth(event.nativeEvent.layout.width);
+  };
+
+  const renderedItems = items.map((item, index) => (
+    <Pressable
+      key={item.key}
+      onPress={() => onSelectTab(item.key)}
+      style={({ pressed }) => [
+        styles.item,
+        shouldScroll ? styles.itemScrollable : null,
+        shouldScroll && scrollItemWidth ? { width: scrollItemWidth } : null,
+        shouldScroll && index < items.length - 1
+          ? styles.itemScrollableSpacing
+          : null,
+        item.active ? styles.itemActive : null,
+        pressed ? styles.itemPressed : null,
+      ]}
+    >
+      <View
+        style={styles.iconWrap}
+      >
+        <TabIcon tab={item.key} active={item.active} />
+      </View>
+      <Text
+        style={[
+          styles.label,
+          shouldScroll ? styles.labelScrollable : null,
+          item.key === "more" ? styles.labelMore : null,
+          item.active ? styles.labelActive : null,
+        ]}
+        numberOfLines={1}
+      >
+        {item.label}
+      </Text>
+    </Pressable>
+  ));
+
   return (
     <View style={styles.wrap}>
-      <View style={styles.bar}>
-        {items.map((item) => (
-          <Pressable
-            key={item.key}
-            onPress={() => onSelectTab(item.key)}
-            style={({ pressed }) => [
-              styles.item,
-              item.active ? styles.itemActive : null,
-              pressed ? styles.itemPressed : null,
-            ]}
+      <View style={styles.bar} onLayout={handleBarLayout}>
+        {shouldScroll ? (
+          <ScrollView
+            horizontal
+            style={styles.barScroll}
+            showsHorizontalScrollIndicator={false}
           >
-            <View style={styles.iconWrap}>
-              <TabIcon tab={item.key} active={item.active} />
-            </View>
-            <Text
-              style={[styles.label, item.active ? styles.labelActive : null]}
-              numberOfLines={1}
-            >
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
+            {renderedItems}
+          </ScrollView>
+        ) : (
+          renderedItems
+        )}
       </View>
     </View>
   );
@@ -131,6 +179,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 80,
     paddingHorizontal: 16,
     paddingBottom: 22,
   },
@@ -141,13 +190,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E8D8CF",
     backgroundColor: "#FFF9F4",
-    paddingHorizontal: 8,
+    paddingHorizontal: tabBarHorizontalPadding,
     paddingVertical: 8,
-    gap: 4,
+    gap: tabBarItemGap,
     shadowColor: "#CFAE9F",
     shadowOpacity: 0.05,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
+  },
+  barScroll: {
+    width: "100%",
   },
   item: {
     flex: 1,
@@ -158,6 +210,12 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 4,
     paddingVertical: 7,
+  },
+  itemScrollable: {
+    flex: 0,
+  },
+  itemScrollableSpacing: {
+    marginRight: tabBarItemGap,
   },
   itemActive: {
     backgroundColor: "#FCEBE4",
@@ -186,6 +244,16 @@ const styles = StyleSheet.create({
     color: "#6C7C90",
     fontSize: 12,
     lineHeight: 14,
+    fontWeight: "500",
+  },
+  labelScrollable: {
+    fontSize: 11,
+    lineHeight: 13,
+  },
+  labelMore: {
+    color: "#8B938D",
+    fontSize: 11,
+    lineHeight: 13,
     fontWeight: "500",
   },
   labelActive: {

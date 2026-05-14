@@ -17,6 +17,8 @@ const onboardingSuggestionAssets = {
   },
 } as const;
 
+export { reminderFieldIcons } from "./reminderFieldIcons";
+
 export const illnessAssets = {
   onboarding: {
     careHint: require("./onboarding/care-hint.png"),

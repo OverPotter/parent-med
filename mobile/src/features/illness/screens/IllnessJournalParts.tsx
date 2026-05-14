@@ -9,7 +9,10 @@ import {
   getIllnessEntryAppearance,
   getIllnessQuickActionAppearance,
 } from "../model/illnessJournalAppearance";
-import { formatIllnessEntryTime } from "../model/illnessJournalTimeline";
+import {
+  formatIllnessEntryDate,
+  formatIllnessEntryTime,
+} from "../model/illnessJournalTimeline";
 
 export function EntryRow({
   entry,
@@ -24,9 +27,16 @@ export function EntryRow({
 
   return (
     <View style={styles.entryRow}>
-      <Text style={styles.entryTime}>
-        {formatIllnessEntryTime(entry.createdAt, locale)}
-      </Text>
+      <View style={styles.entryTimeColumn}>
+        <View style={[styles.entryTimeCard, { borderColor: appearance.borderColor }]}>
+          <Text style={styles.entryTime}>
+            {formatIllnessEntryTime(entry.createdAt, locale)}
+          </Text>
+          <Text style={styles.entryDate}>
+            {formatIllnessEntryDate(entry.createdAt, locale)}
+          </Text>
+        </View>
+      </View>
       <View style={styles.entryTimelineColumn}>
         <View
           style={[
@@ -34,9 +44,8 @@ export function EntryRow({
             { backgroundColor: appearance.timelineColor },
           ]}
         />
-        {!isLast ? <View style={styles.entryLine} /> : null}
       </View>
-      <View style={styles.entryCard}>
+      <View style={[styles.entryCard, { borderColor: appearance.borderColor }]}>
         <View style={styles.entryIconWrap}>
           <JournalIcon icon={appearance.icon} context="entry" />
         </View>
@@ -45,29 +54,6 @@ export function EntryRow({
           <Text style={styles.entryDetail}>{entry.title}</Text>
         </View>
       </View>
-    </View>
-  );
-}
-
-export function SummaryChip({
-  icon,
-  text,
-  backgroundColor,
-  borderColor,
-}: {
-  icon: IllnessJournalIconDescriptor;
-  text: string;
-  backgroundColor: string;
-  borderColor: string;
-}) {
-  return (
-    <View style={[styles.chip, { backgroundColor, borderColor }]}>
-      <View style={styles.chipIconWrap}>
-        <JournalIcon icon={icon} context="chip" />
-      </View>
-      <Text style={styles.chipText} numberOfLines={1}>
-        {text}
-      </Text>
     </View>
   );
 }
@@ -109,7 +95,7 @@ function JournalIcon({
   context,
 }: {
   icon: IllnessJournalIconDescriptor;
-  context: "chip" | "quickAction" | "entry";
+  context: "quickAction" | "entry";
 }) {
   if (icon.type === "feather") {
     return <Feather name={icon.name} size={icon.size} color={icon.color} />;
@@ -127,15 +113,9 @@ function JournalIcon({
 }
 
 function resolveJournalAssetIconStyle(
-  context: "chip" | "quickAction" | "entry",
-  variant?: "temperatureChip" | "temperatureQuick" | "temperatureEntry",
+  context: "quickAction" | "entry",
+  variant?: "temperatureQuick" | "temperatureEntry",
 ) {
-  if (context === "chip") {
-    return variant === "temperatureChip"
-      ? [styles.chipIconImage, styles.temperatureChipIconImage]
-      : styles.chipIconImage;
-  }
-
   if (context === "quickAction") {
     return variant === "temperatureQuick"
       ? [styles.quickActionIconImage, styles.temperatureQuickActionIconImage]

@@ -48,6 +48,7 @@ type RawIllnessEpisodeResponse = {
   status: string;
   medication_mode: string;
   note: string | null;
+  member_account_ids: string[] | null;
   created_by_account_id: string | null;
   closed_at: string | null;
 };
@@ -108,6 +109,7 @@ export type MobileIllnessEpisode = {
   status: string;
   medicationMode: string;
   note: string | null;
+  memberAccountIds: string[];
   createdByAccountId: string | null;
   closedAt: string | null;
 };
@@ -258,6 +260,7 @@ function toMobileIllnessEpisode(raw: RawIllnessEpisodeResponse): MobileIllnessEp
     status: raw.status,
     medicationMode: raw.medication_mode,
     note: raw.note,
+    memberAccountIds: raw.member_account_ids ?? [],
     createdByAccountId: raw.created_by_account_id,
     closedAt: raw.closed_at,
   };
