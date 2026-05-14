@@ -1,6 +1,6 @@
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type { MedicationIntervalUnit } from "../../settings/session/mobileSettingsPreferencesStorage";
-import { formatReminderIntervalForUnit } from "./useReminderActionState";
+import { formatReminderIntervalForUnit } from "./reminderIntervalFormatting";
 
 export type ReminderNumberSheetOption = {
   value: number;

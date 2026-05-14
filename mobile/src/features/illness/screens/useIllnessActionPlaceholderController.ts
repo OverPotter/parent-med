@@ -6,10 +6,8 @@ import type {
   IllnessQuickActionKind,
   MobileIllnessObservation,
 } from "../model/illnessObservation";
-import {
-  formatReminderIntervalForUnit,
-  useReminderActionState,
-} from "./useReminderActionState";
+import { useReminderActionState } from "./useReminderActionState";
+import { formatReminderIntervalForUnit } from "./reminderIntervalFormatting";
 
 const TEMPERATURE_MIN = 32;
 const TEMPERATURE_MAX = 43;

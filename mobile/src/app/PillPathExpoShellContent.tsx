@@ -34,6 +34,10 @@ import { MedicineCabinetOverviewScreen } from "../features/medicine-cabinet/scre
 import { ChildOverviewScreen } from "../features/overview/screens/ChildOverviewScreen";
 import { RootModulePlaceholderScreen } from "../shared/components/RootModulePlaceholderScreen";
 import { SettingsScreen } from "../features/settings/screens/SettingsScreen";
+import type {
+  MobileFamilyAccessSummary,
+  MobilePushPreferences,
+} from "../features/settings/api/settingsApi";
 import { SleepHistoryScreen } from "../features/sleep/screens/SleepHistoryScreen";
 import { SupportScreen } from "../features/support/screens/SupportScreen";
 import { WeightHistoryScreen } from "../features/weight/screens/WeightHistoryScreen";
@@ -53,6 +57,7 @@ type RootTabContentProps = {
   locale: MobileLocale;
   activeRootTab: MobileBottomTabKey;
   authSession: MobileAuthSession | null;
+  familyMembers: MobileFamilyMember[];
   childrenCards: ChildCard[];
   selectedChildId: string;
   activeSleepStartedAtByCardId: Record<string, string | null>;
@@ -76,12 +81,14 @@ type RootTabContentProps = {
     relationshipLabel?: string | null;
     phone?: string | null;
   }) => Promise<void>;
+  onCabinetOverlayVisibilityChange?: (visible: boolean) => void;
   screenLayerStyle: object;
 };
 
 export function RootTabContent({
   activeRootTab,
   authSession,
+  familyMembers,
   childrenCards,
   selectedChildId,
   activeSleepStartedAtByCardId,
@@ -100,6 +107,7 @@ export function RootTabContent({
   onOpenTermsOfUse,
   onOpenPrivacyPolicy,
   onUpdateAuthSession,
+  onCabinetOverlayVisibilityChange,
   screenLayerStyle,
 }: RootTabContentProps) {
   const showMoreTab = shouldRenderMoreTab(activeRootTab, authSession);
@@ -166,7 +174,11 @@ export function RootTabContent({
         ]}
       >
         {activeRootTab === "cabinet" && !showMoreTab ? (
-          <MedicineCabinetOverviewScreen />
+          <MedicineCabinetOverviewScreen
+            authSession={authSession}
+            familyMembers={familyMembers}
+            onOverlayVisibilityChange={onCabinetOverlayVisibilityChange}
+          />
         ) : placeholderTabKey ? (
           <RootModulePlaceholderScreen tabKey={placeholderTabKey} />
         ) : null}
@@ -292,6 +304,12 @@ type OverlayScreensProps = {
       valueCelsius: number;
       measuredAt: string;
     }) => void | Promise<void>;
+    isIllnessLiveActivityEnabled: (
+      observation: MobileIllnessObservation,
+    ) => boolean;
+    onToggleIllnessLiveActivity: (
+      observation: MobileIllnessObservation,
+    ) => void | Promise<void>;
     onDeleteIllnessEntry: (payload: {
       childId: string;
       entryId: string;
@@ -316,6 +334,8 @@ type OverlayScreensProps = {
     }) => Promise<void>;
     onSessionDeleted: () => Promise<void>;
     onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
+    onPushPreferencesChanged: (preferences: MobilePushPreferences) => void;
+    onFamilyAccessChanged: (familyAccess: MobileFamilyAccessSummary) => void;
     onBackPrivacyPolicy: () => void;
     onBackSupport: () => void;
     onBackSettings: () => void;
@@ -493,9 +513,11 @@ function IllnessOverlays({
           activeScreen === "illnessReminders" ||
           activeScreen === "illnessActionPlaceholder"
         }
+        isLiveActivityEnabled={illnessFlow.isIllnessLiveActivityEnabled}
         onAddEntry={illnessFlow.onAddIllnessEntry}
         onOpenReminders={illnessFlow.onOpenIllnessReminders}
         onTakeReminderDose={illnessFlow.onTakeReminderDose}
+        onToggleLiveActivity={illnessFlow.onToggleIllnessLiveActivity}
         onFinishObservation={illnessFlow.onFinishIllnessObservation}
         onOpenChildren={illnessFlow.onBackIllnessJournal}
       />
@@ -616,6 +638,8 @@ function UtilityOverlays({
         onSessionDeleted={utilityFlow.onSessionDeleted}
         session={authSession}
         onUpdatePreferredLanguage={utilityFlow.onUpdatePreferredLanguage}
+        onPushPreferencesChanged={utilityFlow.onPushPreferencesChanged}
+        onFamilyAccessChanged={utilityFlow.onFamilyAccessChanged}
       />
       <LegalDocumentScreen
         documentKey="terms"

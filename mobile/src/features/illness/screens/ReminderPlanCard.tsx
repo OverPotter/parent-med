@@ -6,7 +6,7 @@ import { reminderFieldIcons } from "../assets";
 import type { MobileEpisodeMedicationPlan } from "../api/episodeMedicationPlansApi";
 import { getReminderPlanDisplayTitle } from "../model/illnessReminderPlanTitle";
 import { buildMobileReminderPlanAdministrationStats } from "../model/illnessReminderPlanStats";
-import { formatReminderIntervalForUnit } from "./useReminderActionState";
+import { formatReminderIntervalForUnit } from "./reminderIntervalFormatting";
 import { getReminderCardStatusText } from "./illnessReminderCardStatus";
 
 type ReminderPlanCardProps = {

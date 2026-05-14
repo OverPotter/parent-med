@@ -78,8 +78,19 @@ export function useEdgeSwipeBack({
     });
   };
 
-  const animateBackWithinScreen = () => {
+  const animateBackWithinScreen = (startX: number) => {
+    const nextStartX = Math.max(0, Math.min(startX, widthRef.current));
     onBackRef.current();
+    translateX.setValue(nextStartX);
+    Animated.spring(translateX, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 220,
+      friction: 26,
+    }).start();
+  };
+
+  const resetWithoutBack = () => {
     Animated.spring(translateX, {
       toValue: 0,
       useNativeDriver: true,
@@ -130,15 +141,15 @@ export function useEdgeSwipeBack({
           if (shouldCloseOnBackRef.current) {
             animateBackAndClose();
           } else {
-            animateBackWithinScreen();
+            animateBackWithinScreen(gestureState.dx);
           }
           return;
         }
 
-        animateBackToStart();
+        resetWithoutBack();
       },
       onPanResponderTerminate: () => {
-        animateBackToStart();
+        resetWithoutBack();
       },
     }),
   ).current;

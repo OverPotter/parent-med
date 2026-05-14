@@ -27,6 +27,8 @@ type BackdatedDateTimePickerSheetProps = {
   setPickerMinute: (value: number) => void;
   onClose: () => void;
   onConfirm: () => void;
+  pastYears?: number;
+  futureYears?: number;
 };
 
 export function BackdatedDateTimePickerSheet({
@@ -45,6 +47,8 @@ export function BackdatedDateTimePickerSheet({
   setPickerMinute,
   onClose,
   onConfirm,
+  pastYears = 5,
+  futureYears = 0,
 }: BackdatedDateTimePickerSheetProps) {
   if (!visible) {
     return null;
@@ -52,7 +56,13 @@ export function BackdatedDateTimePickerSheet({
 
   const months = getMonths(locale);
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 6 }, (_, index) => currentYear - index);
+  const minYear = Math.min(currentYear - pastYears, pickerYear);
+  const maxYear = Math.max(currentYear + futureYears, pickerYear);
+  const yearCount = maxYear - minYear + 1;
+  const years =
+    futureYears > 0
+      ? Array.from({ length: yearCount }, (_, index) => minYear + index)
+      : Array.from({ length: yearCount }, (_, index) => maxYear - index);
   const hours = Array.from({ length: 24 }, (_, index) => index);
   const minutes = Array.from({ length: 12 }, (_, index) => index * 5);
   const availableDays = Array.from(

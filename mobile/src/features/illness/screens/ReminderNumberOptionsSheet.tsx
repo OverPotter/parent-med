@@ -6,6 +6,8 @@ type ReminderNumberOptionsSheetProps = {
   title: string;
   value: number | null;
   options: ReminderNumberSheetOption[];
+  columns?: 2 | 3;
+  customActionActive?: boolean;
   showEmptyOption?: boolean;
   emptyOptionLabel?: string;
   customActionLabel?: string;
@@ -19,6 +21,8 @@ export function ReminderNumberOptionsSheet({
   title,
   value,
   options,
+  columns = 3,
+  customActionActive = false,
   showEmptyOption,
   emptyOptionLabel,
   customActionLabel,
@@ -29,6 +33,8 @@ export function ReminderNumberOptionsSheet({
   if (!visible) {
     return null;
   }
+
+  const cellWidth = columns === 2 ? "48%" : "31%";
 
   return (
     <View style={styles.overlay}>
@@ -49,6 +55,7 @@ export function ReminderNumberOptionsSheet({
                 onPress={() => onSelect(null)}
                 style={({ pressed }) => [
                   styles.cell,
+                  { width: cellWidth },
                   value === null ? styles.cellActive : null,
                   pressed ? styles.cellPressed : null,
                 ]}
@@ -71,6 +78,7 @@ export function ReminderNumberOptionsSheet({
                 onPress={() => onSelect(option.value)}
                 style={({ pressed }) => [
                   styles.cell,
+                  { width: cellWidth },
                   value === option.value ? styles.cellActive : null,
                   pressed ? styles.cellPressed : null,
                 ]}
@@ -102,12 +110,20 @@ export function ReminderNumberOptionsSheet({
                 onPress={onCustomPress}
                 style={({ pressed }) => [
                   styles.cell,
-                  styles.customCell,
+                  { width: cellWidth },
+                  customActionActive ? styles.cellActive : styles.customCell,
                   pressed ? styles.cellPressed : null,
                 ]}
               >
                 <View style={styles.cellCopy}>
-                  <Text style={styles.customText}>{customActionLabel}</Text>
+                  <Text
+                    style={[
+                      styles.customText,
+                      customActionActive ? styles.cellTextActive : null,
+                    ]}
+                  >
+                    {customActionLabel}
+                  </Text>
                 </View>
               </Pressable>
             ) : null}
@@ -168,7 +184,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cell: {
-    width: "31%",
     minHeight: 72,
     borderRadius: 20,
     borderWidth: 1,
@@ -212,8 +227,8 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.82)",
   },
   customCell: {
-    backgroundColor: "#FFFFFF",
-    borderStyle: "dashed",
+    backgroundColor: "#FFF8F3",
+    borderColor: "#EED8CE",
   },
   customText: {
     color: "#F56F68",

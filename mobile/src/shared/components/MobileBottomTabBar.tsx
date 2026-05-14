@@ -25,6 +25,17 @@ const tabIconSize = 38;
 const tabBarHorizontalPadding = 8;
 const tabBarItemGap = 4;
 
+const tabImageTuning: Record<
+  MobileBottomTabKey,
+  { width: number; height: number; translateY?: number; opacity?: number }
+> = {
+  journal: { width: 36, height: 36, translateY: -0.5, opacity: 1 },
+  children: { width: 36, height: 36, translateY: -0.5 },
+  pillbox: { width: 35, height: 35, translateY: 0 },
+  cabinet: { width: 34, height: 34, translateY: -0.5 },
+  more: { width: 32, height: 32, translateY: 0 },
+};
+
 export function MobileBottomTabBar({
   items,
   onSelectTab = noop,
@@ -106,11 +117,20 @@ function TabIcon({
   const imageSource = mobileTabAssets[tab];
 
   if (imageSource) {
+    const tuning = tabImageTuning[tab];
     return (
       <Image
         source={imageSource}
         style={[
           styles.iconImage,
+          tuning
+            ? {
+                width: tuning.width,
+                height: tuning.height,
+                opacity: tuning.opacity,
+                transform: [{ translateY: tuning.translateY ?? 0 }],
+              }
+            : null,
           active ? styles.iconImageActive : styles.iconImageInactive,
         ]}
         resizeMode="contain"
@@ -207,9 +227,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: 2,
     paddingHorizontal: 4,
-    paddingVertical: 7,
+    paddingVertical: 8,
   },
   itemScrollable: {
     flex: 0,
@@ -226,7 +246,7 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     width: 46,
-    height: 46,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
   },

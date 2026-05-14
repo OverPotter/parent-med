@@ -2,11 +2,9 @@ import { Feather } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 
-type ReminderRecipientsSheetProps = {
+type ReminderRecipientsSheetBaseProps = {
   title: string;
   subtitle: string;
-  cancelLabel: string;
-  saveLabel: string;
   currentUserLabel: string;
   visible: boolean;
   isSaving: boolean;
@@ -15,14 +13,11 @@ type ReminderRecipientsSheetProps = {
   selectedIds: string[];
   onToggleMember: (memberId: string) => void;
   onClose: () => void;
-  onSave: () => void;
 };
 
-export function ReminderRecipientsSheet({
+function ReminderRecipientsSheetBase({
   title,
   subtitle,
-  cancelLabel,
-  saveLabel,
   currentUserLabel,
   visible,
   isSaving,
@@ -31,8 +26,10 @@ export function ReminderRecipientsSheet({
   selectedIds,
   onToggleMember,
   onClose,
-  onSave,
-}: ReminderRecipientsSheetProps) {
+  footer,
+}: ReminderRecipientsSheetBaseProps & {
+  footer?: React.ReactNode;
+}) {
   if (!visible) {
     return null;
   }
@@ -91,24 +88,50 @@ export function ReminderRecipientsSheet({
           })}
         </ScrollView>
 
+        {footer}
+      </View>
+    </View>
+  );
+}
+
+export function ReminderRecipientsSheet({
+  cancelLabel,
+  saveLabel,
+  onSave,
+  ...props
+}: ReminderRecipientsSheetBaseProps & {
+  cancelLabel: string;
+  saveLabel: string;
+  onSave: () => void;
+}) {
+  return (
+    <ReminderRecipientsSheetBase
+      {...props}
+      footer={
         <View style={styles.sheetActions}>
-          <Pressable style={styles.sheetSecondaryButton} onPress={onClose}>
+          <Pressable style={styles.sheetSecondaryButton} onPress={props.onClose}>
             <Text style={styles.sheetSecondaryButtonText}>{cancelLabel}</Text>
           </Pressable>
           <Pressable
             style={[
               styles.sheetPrimaryButton,
-              isSaving ? styles.sheetPrimaryButtonDisabled : null,
+              props.isSaving ? styles.sheetPrimaryButtonDisabled : null,
             ]}
             onPress={onSave}
-            disabled={isSaving}
+            disabled={props.isSaving}
           >
             <Text style={styles.sheetPrimaryButtonText}>{saveLabel}</Text>
           </Pressable>
         </View>
-      </View>
-    </View>
+      }
+    />
   );
+}
+
+export function InstantReminderRecipientsSheet(
+  props: ReminderRecipientsSheetBaseProps,
+) {
+  return <ReminderRecipientsSheetBase {...props} />;
 }
 
 const styles = StyleSheet.create({
