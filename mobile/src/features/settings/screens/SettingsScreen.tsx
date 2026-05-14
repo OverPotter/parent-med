@@ -43,6 +43,7 @@ import {
   getCachedSettingsBundle,
   getPasswordInlineHint,
   loadSettingsBundle,
+  patchCachedSettingsBundle,
   validatePasswordForm,
 } from "../model/settingsScreenLogic";
 import {
@@ -80,6 +81,8 @@ type SettingsScreenProps = {
   onSessionDeleted: () => Promise<void>;
   session: MobileAuthSession | null;
   onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
+  onPushPreferencesChanged?: (preferences: MobilePushPreferences) => void;
+  onFamilyAccessChanged?: (familyAccess: MobileFamilyAccessSummary) => void;
 };
 
 const settingsModuleIcons = {
@@ -103,6 +106,8 @@ export function SettingsScreen({
   onSessionDeleted,
   session,
   onUpdatePreferredLanguage,
+  onPushPreferencesChanged,
+  onFamilyAccessChanged,
 }: SettingsScreenProps) {
   const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
@@ -209,6 +214,8 @@ export function SettingsScreen({
         setPushConfig(nextPushConfig);
         setFamilySummary(nextFamilySummary);
         setFamilyAccess(nextFamilyAccess);
+        onPushPreferencesChanged?.(nextPushPreferences);
+        onFamilyAccessChanged?.(nextFamilyAccess);
       } catch {
         if (!cancelled && !cachedBundle) {
           setError(content.saveErrorLabel);
@@ -225,7 +232,13 @@ export function SettingsScreen({
     return () => {
       cancelled = true;
     };
-  }, [content.saveErrorLabel, session, visible]);
+  }, [
+    content.saveErrorLabel,
+    onFamilyAccessChanged,
+    onPushPreferencesChanged,
+    session,
+    visible,
+  ]);
 
   const ownershipPolicy = resolveSettingsOwnershipPolicy({
     content,
@@ -334,6 +347,10 @@ export function SettingsScreen({
 
     if (result.nextPreferences) {
       setPushPreferences(result.nextPreferences);
+      patchCachedSettingsBundle(session?.accessToken ?? null, {
+        pushPreferences: result.nextPreferences,
+      });
+      onPushPreferencesChanged?.(result.nextPreferences);
       setIsSavingPush(false);
       return;
     }

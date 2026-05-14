@@ -29,6 +29,7 @@ function makeObservation(
   return {
     episodeId: "episode-1",
     childId: "child-1",
+    createdByAccountId: null,
     startedAt: "2026-05-14T08:00:00.000Z",
     reason: "Fever",
     notificationRecipientAccountIds: ["acc-1"],

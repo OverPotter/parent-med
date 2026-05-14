@@ -8,12 +8,14 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "pillpath",
+    "plugins": ["./plugins/withLiveActivities"],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#FBF3EC"
     },
     "ios": {
+      "deploymentTarget": "16.1",
       "supportsTablet": false,
       "bundleIdentifier": "com.pillpath.ios"
     }

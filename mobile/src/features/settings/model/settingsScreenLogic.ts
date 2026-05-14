@@ -37,6 +37,25 @@ export function setCachedSettingsBundle(accessToken: string | null, bundle: Sett
   settingsBundleCache.set(accessToken, bundle);
 }
 
+export function patchCachedSettingsBundle(
+  accessToken: string | null,
+  patch: Partial<SettingsBundle>,
+) {
+  if (!accessToken) {
+    return;
+  }
+
+  const current = settingsBundleCache.get(accessToken);
+  if (!current) {
+    return;
+  }
+
+  settingsBundleCache.set(accessToken, {
+    ...current,
+    ...patch,
+  });
+}
+
 export async function loadSettingsBundle(
   session: Pick<MobileAuthSession, "accessToken">,
 ): Promise<SettingsBundle> {

@@ -25,6 +25,7 @@ export type MobileIllnessEntry = {
 export type MobileIllnessObservation = {
   episodeId: string;
   childId: string;
+  createdByAccountId: string | null;
   startedAt: string;
   reason: string;
   notificationRecipientAccountIds: string[];
@@ -233,6 +234,7 @@ export function createMobileIllnessObservation({
   episodeId,
   childId,
   startedAt,
+  createdByAccountId,
   reason,
   reasonCreatedAt,
   notificationRecipientAccountIds,
@@ -240,6 +242,7 @@ export function createMobileIllnessObservation({
 }: {
   episodeId: string;
   childId: string;
+  createdByAccountId?: string | null;
   startedAt: string;
   reason: string;
   reasonCreatedAt?: string;
@@ -262,6 +265,7 @@ export function createMobileIllnessObservation({
   return {
     episodeId,
     childId,
+    createdByAccountId: createdByAccountId ?? null,
     startedAt,
     reason: trimmedReason,
     notificationRecipientAccountIds: notificationRecipientAccountIds ?? [],
@@ -277,6 +281,7 @@ export function createMobileIllnessObservationFromEpisode(
   return createMobileIllnessObservation({
     episodeId: episode.id,
     childId: episode.childId,
+    createdByAccountId: episode.createdByAccountId,
     startedAt: episode.startedAt,
     reason: episode.note ?? "",
     reasonCreatedAt: episode.startedAt,

@@ -5,6 +5,10 @@ export type IllnessJournalContent = {
   backLabel: string;
   title: string;
   subtitle: string;
+  liveTitle: string;
+  liveHint: string;
+  liveOn: string;
+  liveOff: string;
   emptyTitle: string;
   emptySubtitle: string;
   emptyPrimaryLabel: string;
@@ -38,6 +42,16 @@ export function buildIllnessJournalContent(locale: MobileLocale): IllnessJournal
         : isDe
           ? "Aktuelle Beobachtungen und schnelle Aktionen."
           : "Current observations and quick actions.",
+    liveTitle: isRu ? "Live" : isPl ? "Live" : isDe ? "Live" : "Live",
+    liveHint: isRu
+      ? "На этом устройстве"
+      : isPl
+        ? "Na tym urządzeniu"
+        : isDe
+          ? "Auf diesem Gerät"
+          : "On this device",
+    liveOn: isRu ? "Вкл" : isPl ? "Wł." : isDe ? "Ein" : "On",
+    liveOff: isRu ? "Выкл" : isPl ? "Wył." : isDe ? "Aus" : "Off",
     emptyTitle: isRu ? "Нет активных наблюдений" : isPl ? "Brak aktywnych obserwacji" : isDe ? "Keine aktiven Beobachtungen" : "No active observations",
     emptySubtitle: isRu
       ? "Когда ребёнок заболеет, включите наблюдение в его профиле — здесь появятся быстрые действия и записи."

@@ -6,6 +6,7 @@ import {
   ImageBackground,
   Pressable,
   ScrollView,
+  Switch,
   Text,
   useWindowDimensions,
   View,
@@ -42,12 +43,14 @@ type IllnessJournalScreenProps = {
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
   focusedChildId: string;
   visible: boolean;
+  isLiveActivityEnabled: (observation: MobileIllnessObservation) => boolean;
   onAddEntry: (childId: string, kind: IllnessQuickActionKind) => void;
   onOpenReminders: (childId: string) => void;
   onTakeReminderDose: (payload: {
     childId: string;
     plan: MobileIllnessObservation["medicationPlans"][number];
   }) => void | Promise<void>;
+  onToggleLiveActivity: (observation: MobileIllnessObservation) => void | Promise<void>;
   onFinishObservation: (childId: string) => void;
   onOpenChildren: () => void;
 };
@@ -57,9 +60,11 @@ export function IllnessJournalScreen({
   observationsByChildId,
   focusedChildId,
   visible,
+  isLiveActivityEnabled,
   onAddEntry,
   onOpenReminders,
   onTakeReminderDose,
+  onToggleLiveActivity,
   onFinishObservation,
   onOpenChildren,
 }: IllnessJournalScreenProps) {
@@ -145,6 +150,9 @@ export function IllnessJournalScreen({
 
             {activeCards.map(({ child, observation }) => {
               const isExpanded = expandedChildId === child.nodeId;
+              const isLiveEnabled = observation
+                ? isLiveActivityEnabled(observation)
+                : false;
               const now = new Date();
               const leadReminder = observation
                 ? getLeadMobileReminderPlan(
@@ -207,6 +215,28 @@ export function IllnessJournalScreen({
                           )}
                         </Text>
                       </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.liveRow}>
+                    <View style={styles.liveRowCopy}>
+                      <Text style={styles.liveRowTitle}>{content.liveTitle}</Text>
+                      <Text style={styles.liveRowHint}>{content.liveHint}</Text>
+                    </View>
+                    <View style={styles.liveRowControl}>
+                      <Text style={styles.liveRowValue}>
+                        {isLiveEnabled ? content.liveOn : content.liveOff}
+                      </Text>
+                      <Switch
+                        value={isLiveEnabled}
+                        onValueChange={() => {
+                          if (observation) {
+                            void onToggleLiveActivity(observation);
+                          }
+                        }}
+                        trackColor={{ false: "#E9DED7", true: "#34C759" }}
+                        thumbColor="#FFFFFF"
+                      />
                     </View>
                   </View>
 
