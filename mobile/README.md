@@ -5,7 +5,7 @@ Separate native client for the redesign migration.
 ## Run
 
 ```bash
-cd expo-ios
+cd mobile
 npm run ios
 ```
 
