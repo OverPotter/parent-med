@@ -9,6 +9,8 @@ export const appPillActionClass =
 export const appBtnDangerClass = "illness-action-shell soft-pill-danger app-profile-action";
 export const illnessPanelClass =
   "illness-panel-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]";
+export const illnessPanelSoftClass =
+  "illness-panel-shell rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_42%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_62%,var(--color-background)_38%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_48%,transparent)]";
 export const illnessListClass =
   "illness-panel-shell overflow-hidden rounded-[24px] border border-[color:color-mix(in_srgb,var(--color-border)_46%,transparent)] bg-[color:color-mix(in_srgb,var(--color-surface)_66%,var(--color-background)_34%)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-surface-glare-soft)_55%,transparent)]";
 export const illnessListRowClass =
