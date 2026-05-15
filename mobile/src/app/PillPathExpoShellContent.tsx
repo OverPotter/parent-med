@@ -82,7 +82,7 @@ type RootTabContentProps = {
     relationshipLabel?: string | null;
     phone?: string | null;
   }) => Promise<void>;
-  onCabinetTabBarModeChange?: (
+  onRootTabBarModeChange?: (
     mode: "foreground" | "background" | "hidden",
   ) => void;
   screenLayerStyle: object;
@@ -110,7 +110,7 @@ export function RootTabContent({
   onOpenTermsOfUse,
   onOpenPrivacyPolicy,
   onUpdateAuthSession,
-  onCabinetTabBarModeChange,
+  onRootTabBarModeChange,
   screenLayerStyle,
 }: RootTabContentProps) {
   const showMoreTab = shouldRenderMoreTab(activeRootTab, authSession);
@@ -176,10 +176,15 @@ export function RootTabContent({
           <MedicineCabinetOverviewScreen
             authSession={authSession}
             familyMembers={familyMembers}
-            onTabBarModeChange={onCabinetTabBarModeChange}
+            onTabBarModeChange={onRootTabBarModeChange}
           />
         ) : activeRootTab === "pillbox" && !showMoreTab ? (
-          <PillboxHomeScreen familyMembers={familyMembers} />
+          <PillboxHomeScreen
+            accessToken={authSession?.accessToken ?? null}
+            currentAccountId={authSession?.account.id ?? ""}
+            familyMembers={familyMembers}
+            onTabBarModeChange={onRootTabBarModeChange}
+          />
         ) : placeholderTabKey ? (
           <RootModulePlaceholderScreen tabKey={placeholderTabKey} />
         ) : null}

@@ -35,6 +35,7 @@ export type MobileAuthSession = {
     email: string | null;
     familyId: string;
     displayName: string;
+    needsProfileCompletion: boolean;
     relationshipLabel: string | null;
     phone: string | null;
     preferredLanguage: MobileLocale;
@@ -69,6 +70,7 @@ type RawAuthResponse = {
     email: string | null;
     family_id: string;
     display_name: string;
+    needs_profile_completion?: boolean | null;
     relationship_label?: string | null;
     phone?: string | null;
     preferred_language: BackendPreferredLanguage;
@@ -107,6 +109,7 @@ function toSession(raw: RawAuthResponse): MobileAuthSession {
       email: raw.account.email,
       familyId: raw.account.family_id,
       displayName: raw.account.display_name,
+      needsProfileCompletion: Boolean(raw.account.needs_profile_completion),
       relationshipLabel: raw.account.relationship_label ?? null,
       phone: raw.account.phone ?? null,
       preferredLanguage: raw.account.preferred_language,

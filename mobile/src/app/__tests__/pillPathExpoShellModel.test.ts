@@ -1,6 +1,7 @@
 import type { MobileAuthSession } from "../../features/auth/api/authApi";
 import {
   isChildProfileVisibleScreen,
+  resolvePostAuthLandingScreen,
   resolveJournalTargetScreen,
   resolveStoredSessionPreferredLocale,
   shouldRenderMoreTab,
@@ -17,6 +18,7 @@ const baseSession: MobileAuthSession = {
     email: "user@example.com",
     familyId: "family-1",
     displayName: "Anna",
+    needsProfileCompletion: false,
     relationshipLabel: null,
     phone: null,
     preferredLanguage: "ru",
@@ -64,6 +66,33 @@ describe("pillPathExpoShellModel", () => {
     );
     expect(shouldShowAnalyticsBreakdown("analytics", { id: "1" } as never)).toBe(false);
     expect(shouldShowAnalyticsBreakdown("analyticsBreakdown", null)).toBe(false);
+  });
+
+  it("opens family as the post-auth landing screen only when family setup is missing", () => {
+    expect(
+      resolvePostAuthLandingScreen({
+        justAuthenticated: true,
+        hasFamily: true,
+      }),
+    ).toBeNull();
+    expect(
+      resolvePostAuthLandingScreen({
+        justAuthenticated: false,
+        hasFamily: true,
+      }),
+    ).toBeNull();
+    expect(
+      resolvePostAuthLandingScreen({
+        justAuthenticated: true,
+        hasFamily: false,
+      }),
+    ).toBe("family");
+    expect(
+      resolvePostAuthLandingScreen({
+        justAuthenticated: false,
+        hasFamily: false,
+      }),
+    ).toBe("family");
   });
 
   it("knows which child profile screens keep the child profile visible", () => {

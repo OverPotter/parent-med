@@ -20,6 +20,7 @@ import {
   MobileThemeProvider,
   useMobileSurfaceTheme,
 } from "../shared/theme/mobileSurfaceTheme";
+import { PostAuthOnboardingOverlay } from "./PostAuthOnboardingOverlay";
 import { OverlayScreens, RootTabContent } from "./PillPathExpoShellContent";
 import {
   getCriticalMobileUiAssetModules,
@@ -55,7 +56,12 @@ function PillPathExpoShell() {
     rootTabItems,
     shouldShowRootTabBar,
     handleAuthenticated,
+    handleSavePostAuthDisplayName,
+    handleSavePostAuthRecoveryCode,
     handleSelectRootTab,
+    handleSkipDisplayNameOnboarding,
+    handleSkipRecoveryCodeOnboarding,
+    postAuthOnboardingStep,
     rootTabContentProps,
     overlayScreensProps,
   } = usePillPathExpoShellState();
@@ -64,7 +70,9 @@ function PillPathExpoShell() {
       ? shouldShowRootTabBarUnderlay(overlayScreensProps.activeScreen)
       : false) || cabinetTabBarMode === "background";
   const shouldRenderRootTabBar =
-    shouldShowRootTabBar && cabinetTabBarMode !== "hidden";
+    shouldShowRootTabBar &&
+    cabinetTabBarMode !== "hidden" &&
+    postAuthOnboardingStep == null;
   const criticalAssetModules = useMemo(
     () => getCriticalMobileUiAssetModules(),
     [],
@@ -169,7 +177,7 @@ function PillPathExpoShell() {
       <StatusBar style={surfaceTheme.statusBarStyle} />
       <RootTabContent
         {...rootTabContentProps}
-        onCabinetTabBarModeChange={setCabinetTabBarMode}
+        onRootTabBarModeChange={setCabinetTabBarMode}
       />
       <View
         pointerEvents={shouldRenderRootTabBar ? "auto" : "none"}
@@ -188,6 +196,16 @@ function PillPathExpoShell() {
         />
       </View>
       {overlayScreensProps ? <OverlayScreens {...overlayScreensProps} /> : null}
+      {authSession ? (
+        <PostAuthOnboardingOverlay
+          session={authSession}
+          visibleStep={postAuthOnboardingStep}
+          onSkipDisplayName={handleSkipDisplayNameOnboarding}
+          onSkipRecoveryCode={handleSkipRecoveryCodeOnboarding}
+          onSaveDisplayName={handleSavePostAuthDisplayName}
+          onRecoveryCodeSaved={handleSavePostAuthRecoveryCode}
+        />
+      ) : null}
       <AssetWarmupLayer active assetModules={persistentAssetModules} />
     </View>
   );

@@ -29,6 +29,13 @@ import { useLiveActivitiesSync } from "../features/live-activities/useLiveActivi
 import { createMobileWeightEntry } from "../features/weight/api/weightEntriesApi";
 import { useMobileI18n, type MobileLocale } from "../shared/i18n/mobileI18n";
 import { OverlayScreens, RootTabContent } from "./PillPathExpoShellContent";
+import type { PostAuthOnboardingStep } from "./postAuthOnboardingModel";
+import { resolvePostAuthOnboardingStep } from "./postAuthOnboardingModel";
+import {
+  markDisplayNameOnboardingSkipped,
+  markRecoveryCodeOnboardingSkipped,
+  readPostAuthOnboardingSkips,
+} from "./postAuthOnboardingStorage";
 import { useShellAuthSessionController } from "./useShellAuthSessionController";
 import { useCareSessionController } from "./useCareSessionController";
 import { useLiveActivitySettingsController } from "./useLiveActivitySettingsController";
@@ -37,7 +44,11 @@ import { useShellChildFlowController } from "./useShellChildFlowController";
 import { useShellFamilyState } from "./useShellFamilyState";
 import { useShellUtilityNavigationController } from "./useShellUtilityNavigationController";
 import { useLiveActivityNavigation } from "./useLiveActivityNavigation";
-import { isRootModuleScreen, type PillPathActiveScreen } from "./pillPathExpoShellModel";
+import {
+  isRootModuleScreen,
+  resolvePostAuthLandingScreen,
+  type PillPathActiveScreen,
+} from "./pillPathExpoShellModel";
 
 type RootTabContentProps = ComponentProps<typeof RootTabContent>;
 type OverlayScreensProps = ComponentProps<typeof OverlayScreens>;
@@ -53,6 +64,7 @@ export function usePillPathExpoShellState() {
     null,
   );
   const [isAuthBootstrapping, setIsAuthBootstrapping] = useState(true);
+  const [didJustAuthenticate, setDidJustAuthenticate] = useState(false);
   const [activeRootTab, setActiveRootTab] =
     useState<MobileBottomTabKey>("children");
   const [activeScreen, setActiveScreen] =
@@ -69,6 +81,12 @@ export function usePillPathExpoShellState() {
   const [illnessActionReturnScreen, setIllnessActionReturnScreen] = useState<
     "illnessJournal" | "illnessReminders"
   >("illnessJournal");
+  const [skippedDisplayNameOnboarding, setSkippedDisplayNameOnboarding] =
+    useState(false);
+  const [skippedRecoveryCodeOnboarding, setSkippedRecoveryCodeOnboarding] =
+    useState(false);
+  const [forcedPostAuthOnboardingStep, setForcedPostAuthOnboardingStep] =
+    useState<PostAuthOnboardingStep>(null);
   const {
     activeFeedingRecordsByCardId,
     activeIllnessObservationsByChildId,
@@ -109,8 +127,12 @@ export function usePillPathExpoShellState() {
   });
 
   const childrenCards = useMemo(() => {
-    if (!authSession?.account.familyId) {
+    if (!authSession) {
       return fallbackChildrenCards;
+    }
+
+    if (!authSession.account.familyId) {
+      return [];
     }
 
     if (children.length === 0) {
@@ -179,6 +201,26 @@ export function usePillPathExpoShellState() {
     canUseLiveActivities,
     illnessPreferenceVersion: illnessLiveActivityPreferenceVersion,
   });
+
+  useEffect(() => {
+    if (!authSession) {
+      setDidJustAuthenticate(false);
+      return;
+    }
+
+    const landingScreen = resolvePostAuthLandingScreen({
+      justAuthenticated: didJustAuthenticate,
+      hasFamily: Boolean(authSession.account.familyId),
+    });
+
+    if (!landingScreen) {
+      return;
+    }
+
+    setActiveRootTab("children");
+    setActiveScreen(landingScreen);
+    setDidJustAuthenticate(false);
+  }, [authSession, didJustAuthenticate]);
 
   useEffect(() => {
     if (childrenCards.length === 0) {
@@ -253,8 +295,9 @@ export function usePillPathExpoShellState() {
     [activeRootTab, copy.childProfile.journalTitle, locale, shouldShowJournalTab],
   );
   const {
-    handleAuthenticated,
+    handleAuthenticated: applyAuthenticated,
     handleLogout,
+    handleMarkRecoveryCodeConfigured,
     handleSessionDeleted,
     handleUpdateAuthSession,
     handleUpdatePreferredLanguage,
@@ -264,6 +307,97 @@ export function usePillPathExpoShellState() {
     setIsAuthBootstrapping,
     setLocale,
   });
+  const handleAuthenticated = useCallback(
+    async (session: MobileAuthSession) => {
+      await applyAuthenticated(session);
+      setDidJustAuthenticate(true);
+    },
+    [applyAuthenticated],
+  );
+  useEffect(() => {
+    if (!authSession?.account.id) {
+      setSkippedDisplayNameOnboarding(false);
+      setSkippedRecoveryCodeOnboarding(false);
+      setForcedPostAuthOnboardingStep(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    void readPostAuthOnboardingSkips(authSession.account.id).then((result) => {
+      if (cancelled) {
+        return;
+      }
+
+      setSkippedDisplayNameOnboarding(result.skippedDisplayName);
+      setSkippedRecoveryCodeOnboarding(result.skippedRecoveryCode);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authSession?.account.id]);
+
+  const resolvedPostAuthOnboardingStep = useMemo(
+    () =>
+      resolvePostAuthOnboardingStep({
+        session: authSession,
+        skippedDisplayName: skippedDisplayNameOnboarding,
+        skippedRecoveryCode: skippedRecoveryCodeOnboarding,
+      }),
+    [
+      authSession,
+      skippedDisplayNameOnboarding,
+      skippedRecoveryCodeOnboarding,
+    ],
+  );
+  const postAuthOnboardingStep =
+    forcedPostAuthOnboardingStep ?? resolvedPostAuthOnboardingStep;
+  const handleSkipDisplayNameOnboarding = useCallback(async () => {
+    if (!authSession?.account.id) {
+      return;
+    }
+
+    if (forcedPostAuthOnboardingStep) {
+      setForcedPostAuthOnboardingStep("recovery-code");
+      return;
+    }
+
+    await markDisplayNameOnboardingSkipped(authSession.account.id);
+    setSkippedDisplayNameOnboarding(true);
+  }, [authSession?.account.id, forcedPostAuthOnboardingStep]);
+  const handleSkipRecoveryCodeOnboarding = useCallback(async () => {
+    if (!authSession?.account.id) {
+      return;
+    }
+
+    if (forcedPostAuthOnboardingStep) {
+      setForcedPostAuthOnboardingStep(null);
+      return;
+    }
+
+    await markRecoveryCodeOnboardingSkipped(authSession.account.id);
+    setSkippedRecoveryCodeOnboarding(true);
+  }, [authSession?.account.id, forcedPostAuthOnboardingStep]);
+  const handleSavePostAuthDisplayName = useCallback(
+    async (patch: {
+      displayName: string;
+      relationshipLabel: string | null;
+      phone: string | null;
+    }) => {
+      await handleUpdateAuthSession(patch);
+      if (forcedPostAuthOnboardingStep) {
+        setForcedPostAuthOnboardingStep("recovery-code");
+      }
+    },
+    [forcedPostAuthOnboardingStep, handleUpdateAuthSession],
+  );
+  const handleSavePostAuthRecoveryCode = useCallback(async () => {
+    await handleMarkRecoveryCodeConfigured();
+    if (forcedPostAuthOnboardingStep) {
+      setForcedPostAuthOnboardingStep(null);
+    }
+  }, [forcedPostAuthOnboardingStep, handleMarkRecoveryCodeConfigured]);
   const {
     handleCloseAnalytics,
     handleCloseAnalyticsEpisode,
@@ -635,6 +769,11 @@ export function usePillPathExpoShellState() {
     shouldShowRootTabBar: isRootModuleScreen(activeScreen),
     handleAuthenticated,
     handleSelectRootTab,
+    postAuthOnboardingStep,
+    handleSkipDisplayNameOnboarding,
+    handleSkipRecoveryCodeOnboarding,
+    handleSavePostAuthDisplayName,
+    handleSavePostAuthRecoveryCode,
     rootTabContentProps,
     overlayScreensProps,
   };

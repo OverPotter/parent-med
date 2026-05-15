@@ -46,6 +46,7 @@ function makeAuthSession(): MobileAuthSession {
       email: "parent@example.com",
       familyId: "family-1",
       displayName: "Parent",
+      needsProfileCompletion: false,
       relationshipLabel: "Mom",
       phone: null,
       preferredLanguage: "ru",

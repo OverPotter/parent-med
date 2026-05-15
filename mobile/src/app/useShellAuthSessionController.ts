@@ -131,6 +131,7 @@ export function useShellAuthSessionController({
           account: {
             ...nextSession.account,
             displayName: updatedProfile.displayName,
+            needsProfileCompletion: !updatedProfile.displayName.trim(),
             relationshipLabel: updatedProfile.relationshipLabel,
             phone: updatedProfile.phone,
           },
@@ -142,6 +143,23 @@ export function useShellAuthSessionController({
     },
     [authSession, setAuthSession],
   );
+
+  const handleMarkRecoveryCodeConfigured = useCallback(async () => {
+    if (!authSession) {
+      return;
+    }
+
+    const nextSession: MobileAuthSession = {
+      ...authSession,
+      account: {
+        ...authSession.account,
+        hasRecoveryCode: true,
+      },
+    };
+
+    setAuthSession(nextSession);
+    await writeStoredAuthSession(nextSession);
+  }, [authSession, setAuthSession]);
 
   const handleUpdatePreferredLanguage = useCallback(
     async (preferredLanguage: MobileLocale) => {
@@ -218,6 +236,7 @@ export function useShellAuthSessionController({
   return {
     handleAuthenticated,
     handleLogout,
+    handleMarkRecoveryCodeConfigured,
     handleSessionDeleted,
     handleUpdateAuthSession,
     handleUpdatePreferredLanguage,

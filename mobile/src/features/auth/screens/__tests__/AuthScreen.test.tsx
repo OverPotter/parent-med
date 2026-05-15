@@ -31,6 +31,7 @@ const authSession: MobileAuthSession = {
     email: "family@example.com",
     familyId: "family-1",
     displayName: "Anna",
+    needsProfileCompletion: false,
     relationshipLabel: null,
     phone: null,
     preferredLanguage: "ru",

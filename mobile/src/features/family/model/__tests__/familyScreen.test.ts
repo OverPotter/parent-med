@@ -12,6 +12,7 @@ const session: MobileAuthSession = {
     email: "owner@example.com",
     familyId: "family-1",
     displayName: "Анна",
+    needsProfileCompletion: false,
     familyRole: "owner",
     preferredLanguage: "ru",
     relationshipLabel: "Мама",

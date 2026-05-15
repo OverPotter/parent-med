@@ -90,6 +90,17 @@ export function shouldRenderMoreTab(
   return activeRootTab === "more" && authSession != null;
 }
 
+export function resolvePostAuthLandingScreen(args: {
+  justAuthenticated: boolean;
+  hasFamily: boolean;
+}): PillPathActiveScreen | null {
+  if (!args.hasFamily) {
+    return "family";
+  }
+
+  return null;
+}
+
 export function shouldShowAnalyticsBreakdown(
   activeScreen: PillPathActiveScreen,
   selectedEpisode: AnalyticsEpisodeCard | null,
