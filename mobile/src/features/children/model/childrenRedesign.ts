@@ -446,6 +446,10 @@ function resolveAvatarSourceWithGender(
     return avatarByKey[avatarKey];
   }
 
+  if (!avatarKey) {
+    return null;
+  }
+
   const normalizedGender = normalizeChildAvatarGender(gender);
 
   if (normalizedGender === "girl") {
