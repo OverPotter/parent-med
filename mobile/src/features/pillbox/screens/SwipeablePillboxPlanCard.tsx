@@ -49,17 +49,23 @@ export function SwipeablePillboxPlanCard({
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) =>
-        Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && gestureState.dx < -12,
+        Math.abs(gestureState.dx) > Math.abs(gestureState.dy) &&
+        gestureState.dx < -12,
       onPanResponderGrant: () => {
         translateX.stopAnimation();
       },
       onPanResponderMove: (_, gestureState) => {
-        const nextX = Math.max(-SWIPE_DELETE_ACTION_WIDTH, Math.min(0, gestureState.dx));
+        const nextX = Math.max(
+          -SWIPE_DELETE_ACTION_WIDTH,
+          Math.min(0, gestureState.dx),
+        );
         translateX.setValue(nextX);
       },
       onPanResponderRelease: (_, gestureState) => {
         const shouldOpen =
-          gestureState.dx < -48 || gestureState.vx < -0.45 || (isOpen && gestureState.dx < -16);
+          gestureState.dx < -48 ||
+          gestureState.vx < -0.45 ||
+          (isOpen && gestureState.dx < -16);
 
         if (shouldOpen) {
           animateTo(-SWIPE_DELETE_ACTION_WIDTH, onOpenSwipe);
@@ -125,10 +131,7 @@ export function SwipeablePillboxPlanCard({
             }
             onOpenPlan();
           }}
-          style={({ pressed }) => [
-            styles.planCard,
-            pressed ? styles.buttonPressed : null,
-          ]}
+          style={({ pressed }) => [styles.planCard, pressed ? styles.buttonPressed : null]}
         >
           <View style={styles.planAvatar}>
             <Text style={styles.planAvatarText}>{item.avatarText}</Text>
@@ -148,7 +151,9 @@ export function SwipeablePillboxPlanCard({
               numberOfLines={1}
               style={[
                 styles.planNextInfo,
-                isPillboxStatusAlert(item.status) ? styles.planMetaAttention : null,
+                isPillboxStatusAlert(item.status)
+                  ? styles.planMetaAttention
+                  : null,
               ]}
             >
               {item.nextInfo}

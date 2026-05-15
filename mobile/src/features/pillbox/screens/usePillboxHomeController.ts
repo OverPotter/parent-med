@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import { resolveIllnessRecipientSelection } from "../../illness/model/illnessRecipients";
 import {
@@ -30,7 +31,7 @@ export function usePillboxHomeController({
   accessToken: string | null;
   currentAccountId: string;
   familyMembers: MobileFamilyMember[];
-  locale: "ru" | "en";
+  locale: MobileLocale;
   onMarkIntake?: (intakeId: string) => void;
   onTabBarModeChange?: (mode: "foreground" | "background" | "hidden") => void;
 }) {
@@ -79,7 +80,9 @@ export function usePillboxHomeController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : "Не удалось загрузить планы.";
+            : locale === "ru"
+              ? "Не удалось загрузить планы."
+              : "Could not load plans.";
         setPlansError(message);
       });
   };
@@ -101,25 +104,50 @@ export function usePillboxHomeController({
       return;
     }
 
-    setDeletingPlanId(planId);
-    void deleteMobilePillboxPlan({ accessToken, planId })
-      .then(() => {
-        setPlanSummaries((current) => current.filter((plan) => plan.id !== planId));
-        setOpenSwipePlanId(null);
-        if (selectedPlan?.id === planId) {
-          setSelectedPlan(null);
-        }
-      })
-      .catch((error: unknown) => {
-        const message =
-          error instanceof Error && error.message
-            ? error.message
-            : "Не удалось удалить план.";
-        Alert.alert("Не удалось удалить", message);
-      })
-      .finally(() => {
-        setDeletingPlanId(null);
-      });
+    const title = locale === "ru" ? "Удалить план?" : "Delete plan?";
+    const message =
+      locale === "ru"
+        ? "План приёма удалится, и его историю нельзя будет восстановить."
+        : "The medication plan will be deleted and its history cannot be restored.";
+    const cancelLabel = locale === "ru" ? "Отмена" : "Cancel";
+    const confirmLabel = locale === "ru" ? "Удалить" : "Delete";
+
+    Alert.alert(title, message, [
+      {
+        text: cancelLabel,
+        style: "cancel",
+      },
+      {
+        text: confirmLabel,
+        style: "destructive",
+        onPress: () => {
+          setDeletingPlanId(planId);
+          void deleteMobilePillboxPlan({ accessToken, planId })
+            .then(() => {
+              setPlanSummaries((current) => current.filter((plan) => plan.id !== planId));
+              setOpenSwipePlanId(null);
+              if (selectedPlan?.id === planId) {
+                setSelectedPlan(null);
+              }
+            })
+            .catch((error: unknown) => {
+              const errorMessage =
+                error instanceof Error && error.message
+                  ? error.message
+                  : locale === "ru"
+                    ? "Не удалось удалить план."
+                    : "Could not delete the plan.";
+              Alert.alert(
+                locale === "ru" ? "Не удалось удалить" : "Could not delete",
+                errorMessage,
+              );
+            })
+            .finally(() => {
+              setDeletingPlanId(null);
+            });
+        },
+      },
+    ]);
   };
 
   const handleOpenPlan = (planId: string) => {
@@ -142,8 +170,10 @@ export function usePillboxHomeController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : "Не удалось открыть план.";
-        Alert.alert("Не удалось открыть", message);
+            : locale === "ru"
+              ? "Не удалось открыть план."
+              : "Could not open the plan.";
+        Alert.alert(locale === "ru" ? "Не удалось открыть" : "Could not open", message);
       })
       .finally(() => {
         setOpeningPlanId(null);
@@ -181,8 +211,10 @@ export function usePillboxHomeController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : "Не удалось обновить план.";
-        Alert.alert("Не удалось обновить", message);
+            : locale === "ru"
+              ? "Не удалось обновить план."
+              : "Could not update the plan.";
+        Alert.alert(locale === "ru" ? "Не удалось обновить" : "Could not update", message);
       })
       .finally(() => {
         setUpdatingPlanId(null);
@@ -195,7 +227,9 @@ export function usePillboxHomeController({
     }
 
     const eligibleRecipientIds =
-      familyMembers.length > 0 ? familyMembers.map((member) => member.id) : selectedPlan.recipientIds;
+      familyMembers.length > 0
+        ? familyMembers.map((member) => member.id)
+        : selectedPlan.recipientIds;
     const normalizedRecipientIds = resolveIllnessRecipientSelection(
       recipientIds,
       eligibleRecipientIds,
@@ -228,15 +262,21 @@ export function usePillboxHomeController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : "Не удалось обновить уведомления.";
-        Alert.alert("Не удалось обновить", message);
+            : locale === "ru"
+              ? "Не удалось обновить уведомления."
+              : "Could not update notifications.";
+        Alert.alert(locale === "ru" ? "Не удалось обновить" : "Could not update", message);
       })
       .finally(() => {
         setUpdatingPlanId(null);
       });
   };
 
-  const handleMarkIntake = (planId: string, medicationId?: string | null, scheduledFor?: string | null) => {
+  const handleMarkIntake = (
+    planId: string,
+    medicationId?: string | null,
+    scheduledFor?: string | null,
+  ) => {
     if (!accessToken || !medicationId || takingPlanId) {
       return;
     }
@@ -258,8 +298,10 @@ export function usePillboxHomeController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : "Не удалось отметить приём.";
-        Alert.alert("Не удалось отметить", message);
+            : locale === "ru"
+              ? "Не удалось отметить приём."
+              : "Could not mark the intake.";
+        Alert.alert(locale === "ru" ? "Не удалось отметить" : "Could not mark", message);
       })
       .finally(() => {
         setTakingPlanId(null);

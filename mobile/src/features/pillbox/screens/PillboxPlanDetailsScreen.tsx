@@ -12,8 +12,8 @@ import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
-import { ReminderRecipientsSheet } from "../../illness/screens/ReminderRecipientsSheet";
 import { resolveIllnessRecipientSelection } from "../../illness/model/illnessRecipients";
+import { ReminderRecipientsSheet } from "../../illness/screens/ReminderRecipientsSheet";
 import type { PillboxPlanDetail } from "../model/pillboxHomeScreen";
 import { resolvePillboxStatusTone } from "../model/pillboxStatus";
 import { pillboxPlanDetailsStyles as styles } from "./pillboxPlanDetailsStyles";
@@ -54,6 +54,7 @@ export function PillboxPlanDetailsScreen({
     if (!plan) {
       return "Пауза";
     }
+
     return plan.status === "paused" ? "Возобновить" : "Поставить на паузу";
   }, [plan]);
   const eligibleRecipientIds = useMemo(
@@ -70,12 +71,14 @@ export function PillboxPlanDetailsScreen({
       setDraftRecipientIds([]);
       return;
     }
+
     setDraftRecipientIds([...plan.recipientIds]);
   }, [plan, visible]);
 
   if (!plan) {
     return null;
   }
+
   const statusTone = resolvePillboxStatusTone(plan.status);
 
   return (
@@ -121,15 +124,27 @@ export function PillboxPlanDetailsScreen({
           </View>
 
           <View style={styles.headerCard}>
-            <View style={styles.avatar}>{/* avatar */}
+            <View style={styles.avatar}>
               <Text style={styles.avatarText}>{plan.avatarText}</Text>
             </View>
             <View style={styles.headerCopy}>
               <Text style={styles.title}>{plan.title}</Text>
               <Text style={styles.subtitle}>{plan.recipientsLabel}</Text>
             </View>
-            <View style={statusTone === "paused" ? styles.statusChipPaused : styles.statusChip}>
-              <Text style={statusTone === "paused" ? styles.statusChipTextPaused : styles.statusChipText}>
+            <View
+              style={
+                statusTone === "paused"
+                  ? styles.statusChipPaused
+                  : styles.statusChip
+              }
+            >
+              <Text
+                style={
+                  statusTone === "paused"
+                    ? styles.statusChipTextPaused
+                    : styles.statusChipText
+                }
+              >
                 {plan.statusText}
               </Text>
             </View>
@@ -169,7 +184,9 @@ export function PillboxPlanDetailsScreen({
                   key={medicine.id}
                   style={[
                     styles.medicineRow,
-                    index === plan.medicines.length - 1 ? styles.medicineRowLast : null,
+                    index === plan.medicines.length - 1
+                      ? styles.medicineRowLast
+                      : null,
                   ]}
                 >
                   <View style={styles.medicineDot} />
@@ -177,7 +194,9 @@ export function PillboxPlanDetailsScreen({
                     <Text style={styles.medicineTitle}>{medicine.title}</Text>
                     <Text style={styles.medicineMeta}>{medicine.summary}</Text>
                     <View style={styles.medicineScheduleChip}>
-                      <Text style={styles.medicineSchedule}>{medicine.schedule}</Text>
+                      <Text style={styles.medicineSchedule}>
+                        {medicine.schedule}
+                      </Text>
                     </View>
                   </View>
                 </View>

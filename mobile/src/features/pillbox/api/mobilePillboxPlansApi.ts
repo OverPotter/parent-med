@@ -74,6 +74,34 @@ export type MobilePillboxPlanSummary = {
   courseDayLabel: string | null;
 };
 
+export type MobilePillboxAnalyticsSeriesPoint = {
+  label: string;
+  value: number;
+};
+
+export type MobilePillboxTopMedication = {
+  medicationName: string;
+  missedSlots: number;
+};
+
+export type MobilePillboxHistorySummary = {
+  planId: string;
+  planTitle: string;
+  planStatus: MobilePillboxPlan["status"];
+  memberCount: number;
+  period: string;
+  totalMedications: number;
+  scheduledSlots: number;
+  takenSlots: number;
+  missedSlots: number;
+  lateSlots: number;
+  onTimeSlots: number;
+  adherenceRate: number;
+  onTimeRate: number;
+  timeline: MobilePillboxAnalyticsSeriesPoint[];
+  topMissedMedications: MobilePillboxTopMedication[];
+};
+
 type RawMobilePillboxMedication = {
   id: string;
   household_medicine_id: string | null;
@@ -112,6 +140,34 @@ type RawMobilePillboxPlanSummary = {
   course_summary_kind: MobilePillboxPlanSummary["courseSummaryKind"];
   course_progress_ratio: number | null;
   course_day_label: string | null;
+};
+
+type RawMobilePillboxAnalyticsSeriesPoint = {
+  label: string;
+  value: number;
+};
+
+type RawMobilePillboxTopMedication = {
+  medication_name: string;
+  missed_slots: number;
+};
+
+type RawMobilePillboxHistorySummary = {
+  plan_id: string;
+  plan_title: string;
+  plan_status: MobilePillboxPlan["status"];
+  member_count: number;
+  period: string;
+  total_medications: number;
+  scheduled_slots: number;
+  taken_slots: number;
+  missed_slots: number;
+  late_slots: number;
+  on_time_slots: number;
+  adherence_rate: number;
+  on_time_rate: number;
+  timeline: RawMobilePillboxAnalyticsSeriesPoint[];
+  top_missed_medications: RawMobilePillboxTopMedication[];
 };
 
 export class MobilePillboxPlansApiError extends Error {
@@ -202,6 +258,34 @@ function toWritePayload(payload: MobilePillboxPlanWrite) {
   };
 }
 
+function toMobilePillboxHistorySummary(
+  raw: RawMobilePillboxHistorySummary,
+): MobilePillboxHistorySummary {
+  return {
+    planId: raw.plan_id,
+    planTitle: raw.plan_title,
+    planStatus: raw.plan_status,
+    memberCount: raw.member_count,
+    period: raw.period,
+    totalMedications: raw.total_medications,
+    scheduledSlots: raw.scheduled_slots,
+    takenSlots: raw.taken_slots,
+    missedSlots: raw.missed_slots,
+    lateSlots: raw.late_slots,
+    onTimeSlots: raw.on_time_slots,
+    adherenceRate: raw.adherence_rate,
+    onTimeRate: raw.on_time_rate,
+    timeline: (raw.timeline ?? []).map((item) => ({
+      label: item.label,
+      value: item.value,
+    })),
+    topMissedMedications: (raw.top_missed_medications ?? []).map((item) => ({
+      medicationName: item.medication_name,
+      missedSlots: item.missed_slots,
+    })),
+  };
+}
+
 export function toMobilePillboxPlanWrite(plan: MobilePillboxPlan): MobilePillboxPlanWrite {
   return {
     title: plan.title,
@@ -268,6 +352,29 @@ export async function getMobilePillboxPlan(payload: {
   );
 
   return toMobilePillboxPlan(response);
+}
+
+export async function getMobilePillboxHistorySummary(payload: {
+  accessToken: string | null;
+  planId: string;
+  period: "month" | "quarter" | "half_year" | "year" | "all";
+  language?: "ru" | "en";
+}): Promise<MobilePillboxHistorySummary> {
+  const params = new URLSearchParams({ period: payload.period });
+  if (payload.language) {
+    params.set("language", payload.language);
+  }
+
+  const response = await requestIllnessAuthedJson<RawMobilePillboxHistorySummary>(
+    `/pillbox-plans/${payload.planId}/history-summary?${params.toString()}`,
+    {
+      method: "GET",
+    },
+    payload.accessToken,
+    (message, options) => new MobilePillboxPlansApiError(message, options),
+  );
+
+  return toMobilePillboxHistorySummary(response);
 }
 
 export async function deleteMobilePillboxPlan(payload: {

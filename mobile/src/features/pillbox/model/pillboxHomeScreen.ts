@@ -48,6 +48,10 @@ export type PillboxHomeScreenContent = {
   emptyTodayDescription: string;
   emptyPlansTitle: string;
   emptyPlansDescription: string;
+  loadingPlansTitle: string;
+  loadingPlansDescription: string;
+  loadingErrorTitle: string;
+  retryLabel: string;
 };
 
 export type PillboxPlanDetailMedicine = {
@@ -77,7 +81,7 @@ export function buildPillboxHomeScreenContent(
   if (locale === "ru") {
     return {
       title: "Таблетница",
-      subtitle: "Планы приёма для всей семьи.",
+      subtitle: "Планы и напоминания для всей семьи.",
       createPlanLabel: "Создать план",
       analyticsLabel: "Аналитика",
       activePlansTitle: "Активные планы",
@@ -85,16 +89,20 @@ export function buildPillboxHomeScreenContent(
       nextIntakeAction: "Отметить приём",
       emptyTodayTitle: "Сегодня приёмов нет",
       emptyTodayDescription:
-        "Все активные планы спокойны. Следующий приём появится здесь.",
+        "На сегодня всё спокойно. Следующий приём появится здесь.",
       emptyPlansTitle: "Планов пока нет",
       emptyPlansDescription:
-        "Создайте первый план, чтобы видеть лекарства, напоминания и историю выполнения.",
+        "Создайте первый план, чтобы видеть расписание и напоминания.",
+      loadingPlansTitle: "Загружаем планы…",
+      loadingPlansDescription: "Подтягиваем ближайшие приёмы и активные планы.",
+      loadingErrorTitle: "Не удалось загрузить планы",
+      retryLabel: "Повторить",
     };
   }
 
   return {
     title: "Pillbox",
-    subtitle: "Medication plans for the whole family.",
+    subtitle: "Plans and reminders for the whole family.",
     createPlanLabel: "Create plan",
     analyticsLabel: "Analytics",
     activePlansTitle: "Active plans",
@@ -102,16 +110,20 @@ export function buildPillboxHomeScreenContent(
     nextIntakeAction: "Mark as taken",
     emptyTodayTitle: "No intakes today",
     emptyTodayDescription:
-      "All active plans are calm. The next intake will appear here.",
+      "Nothing is scheduled for today. The next intake will appear here.",
     emptyPlansTitle: "No plans yet",
     emptyPlansDescription:
-      "Create your first plan to see medicines, reminders, and completion history.",
+      "Create your first plan to see schedules and reminders.",
+    loadingPlansTitle: "Loading plans…",
+    loadingPlansDescription: "Fetching upcoming intakes and active plans.",
+    loadingErrorTitle: "Could not load plans",
+    retryLabel: "Retry",
   };
 }
 
 export function buildPillboxPlanCardsFromSummaries(input: {
   summaries: MobilePillboxPlanSummary[];
-  locale: "ru" | "en";
+  locale: MobileLocale;
   now?: Date;
 }): PillboxPlanCard[] {
   const now = input.now ?? new Date();
@@ -141,7 +153,7 @@ export function buildPillboxPlanCardsFromSummaries(input: {
 
 export function buildPillboxIntakeCardsFromSummaries(input: {
   summaries: MobilePillboxPlanSummary[];
-  locale: "ru" | "en";
+  locale: MobileLocale;
   now?: Date;
 }): PillboxIntakeCard[] {
   const now = input.now ?? new Date();
@@ -163,33 +175,27 @@ export function buildPillboxIntakeCardsFromSummaries(input: {
 
 export function buildPillboxSummaryStatsFromSummaries(input: {
   summaries: MobilePillboxPlanSummary[];
-  locale: "ru" | "en";
+  locale: MobileLocale;
   now?: Date;
 }): PillboxSummaryStat[] {
   const now = input.now ?? new Date();
   const plansCount = input.summaries.length;
-  const medicinesCount = input.summaries.reduce(
-    (sum, item) => sum + item.activeMedicationCount,
-    0,
-  );
   const todayCount = input.summaries.filter((item) => isSameDay(item.nextDoseAt, now)).length;
 
   return input.locale === "ru"
     ? [
-        { id: "plans", number: String(plansCount), label: "плана\nактивно" },
-        { id: "medicines", number: String(medicinesCount), label: "лекарств\nв планах" },
-        { id: "today", number: String(todayCount), label: "приёма\nсегодня" },
+        { id: "plans", number: String(plansCount), label: "активных\nплана" },
+        { id: "today", number: String(todayCount), label: "приёма\nна сегодня" },
       ]
     : [
-        { id: "plans", number: String(plansCount), label: "plans\nactive" },
-        { id: "medicines", number: String(medicinesCount), label: "medicines\nin plans" },
-        { id: "today", number: String(todayCount), label: "intakes\ntoday" },
+        { id: "plans", number: String(plansCount), label: "active\nplans" },
+        { id: "today", number: String(todayCount), label: "intakes\nfor today" },
       ];
 }
 
 export function buildPillboxPlanDetailFromEntity(input: {
   plan: MobilePillboxPlan;
-  locale: "ru" | "en";
+  locale: MobileLocale;
   familyMembers: Pick<MobileFamilyMember, "id" | "displayName">[];
 }): PillboxPlanDetail {
   const { plan, locale, familyMembers } = input;
@@ -249,7 +255,7 @@ function resolveAvatarText(label: string) {
   return first ? first.toUpperCase() : "•";
 }
 
-function buildMedicineCountLabel(count: number, locale: "ru" | "en") {
+function buildMedicineCountLabel(count: number, locale: MobileLocale) {
   if (locale === "ru") {
     const mod10 = count % 10;
     const mod100 = count % 100;
@@ -265,18 +271,20 @@ function buildMedicineCountLabel(count: number, locale: "ru" | "en") {
   return `${count} ${count === 1 ? "medicine" : "medicines"}`;
 }
 
-function buildNextInfoLabel(input: { locale: "ru" | "en"; times: string[] }) {
+function buildNextInfoLabel(input: { locale: MobileLocale; times: string[] }) {
   const nextTime = [...input.times].sort()[0];
   if (!nextTime) {
-    return input.locale === "ru" ? "расписание настроено" : "schedule is set";
+    return input.locale === "ru" ? "Расписание настроено" : "Schedule is set";
   }
 
-  return input.locale === "ru" ? `следующий в ${nextTime}` : `next at ${nextTime}`;
+  return input.locale === "ru"
+    ? `Следующий приём в ${nextTime}`
+    : `Next intake at ${nextTime}`;
 }
 
 function formatMealRule(
   value: MobilePillboxPlan["medications"][number]["mealRule"],
-  locale: "ru" | "en",
+  locale: MobileLocale,
 ) {
   if (value === "before_meal") {
     return locale === "ru" ? "До еды" : "Before meal";
@@ -293,7 +301,7 @@ function formatMealRule(
 function formatCourse(
   mode: MobilePillboxPlan["medications"][number]["courseMode"],
   courseEndDate: string | null,
-  locale: "ru" | "en",
+  locale: MobileLocale,
 ) {
   if (mode !== "period") {
     return locale === "ru" ? "Постоянно" : "Continuous";
@@ -338,7 +346,7 @@ function getSummarySortRank(summary: MobilePillboxPlanSummary, now: Date) {
 
 function buildSummaryNextInfo(
   summary: MobilePillboxPlanSummary,
-  locale: "ru" | "en",
+  locale: MobileLocale,
   now: Date,
   isOverdue: boolean,
 ) {
@@ -353,13 +361,13 @@ function buildSummaryNextInfo(
   }
   if (isSameDay(summary.nextDoseAt, now)) {
     return locale === "ru"
-      ? `следующий в ${formatClock(summary.nextDoseAt, locale)}`
-      : `next at ${formatClock(summary.nextDoseAt, locale)}`;
+      ? `сегодня в ${formatClock(summary.nextDoseAt, locale)}`
+      : `today at ${formatClock(summary.nextDoseAt, locale)}`;
   }
   if (isTomorrow(summary.nextDoseAt, now)) {
     return locale === "ru"
-      ? `следующий завтра в ${formatClock(summary.nextDoseAt, locale)}`
-      : `next tomorrow at ${formatClock(summary.nextDoseAt, locale)}`;
+      ? `завтра в ${formatClock(summary.nextDoseAt, locale)}`
+      : `tomorrow at ${formatClock(summary.nextDoseAt, locale)}`;
   }
   return summary.nextDoseLabel?.trim() || (locale === "ru" ? "расписание настроено" : "schedule is set");
 }
@@ -381,12 +389,12 @@ function mapSummaryStatus(
   return "active";
 }
 
-function buildSummaryStatusText(status: PillboxPlanStatus, locale: "ru" | "en") {
+function buildSummaryStatusText(status: PillboxPlanStatus, locale: MobileLocale) {
   if (status === "attention") {
-    return locale === "ru" ? "Требует внимания" : "Needs attention";
+    return locale === "ru" ? "Скоро" : "Soon";
   }
   if (status === "missed") {
-    return locale === "ru" ? "Пропущен" : "Missed";
+    return locale === "ru" ? "Пропуск" : "Missed";
   }
   if (status === "completed") {
     return locale === "ru" ? "На паузе" : "Paused";
@@ -424,17 +432,19 @@ function compareDateStrings(left: string | null, right: string | null) {
   return leftMs - rightMs;
 }
 
-function formatClock(value: string | null, locale: "ru" | "en") {
+function formatClock(value: string | null, locale: MobileLocale) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+  const languageTag =
+    locale === "ru" ? "ru-RU" : locale === "de" ? "de-DE" : locale === "pl" ? "pl-PL" : "en-US";
+  return new Intl.DateTimeFormat(languageTag, {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
 }
 
-function buildRelativeDate(value: string | null, locale: "ru" | "en", now: Date) {
+function buildRelativeDate(value: string | null, locale: MobileLocale, now: Date) {
   if (!value) {
     return locale === "ru" ? "Без даты" : "No date";
   }
@@ -450,20 +460,26 @@ function buildRelativeDate(value: string | null, locale: "ru" | "en", now: Date)
       ? locale === "ru"
         ? "Завтра"
         : "Tomorrow"
-      : new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+      : new Intl.DateTimeFormat(
+          locale === "ru" ? "ru-RU" : locale === "de" ? "de-DE" : locale === "pl" ? "pl-PL" : "en-US",
+          {
           day: "numeric",
           month: "long",
-        }).format(date);
+          },
+        ).format(date);
 
-  const dateLabel = new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
-    day: "numeric",
-    month: "long",
-  }).format(date);
+  const dateLabel = new Intl.DateTimeFormat(
+    locale === "ru" ? "ru-RU" : locale === "de" ? "de-DE" : locale === "pl" ? "pl-PL" : "en-US",
+    {
+      day: "numeric",
+      month: "long",
+    },
+  ).format(date);
 
   return isSameDay(value, now) || isTomorrow(value, now) ? `${dayLabel}, ${dateLabel}` : dateLabel;
 }
 
-function buildCountdown(value: string | null, locale: "ru" | "en", now: Date) {
+function buildCountdown(value: string | null, locale: MobileLocale, now: Date) {
   if (!value) {
     return locale === "ru" ? "без времени" : "no time";
   }
@@ -511,6 +527,6 @@ function isLateDose(summary: MobilePillboxPlanSummary, now: Date) {
   return diffMs > 30 * 60 * 1000 && diffMs <= 4 * 60 * 60 * 1000;
 }
 
-function fallbackMedicineLabel(locale: "ru" | "en") {
+function fallbackMedicineLabel(locale: MobileLocale) {
   return locale === "ru" ? "Лекарство по плану" : "Medication in plan";
 }

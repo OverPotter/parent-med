@@ -163,6 +163,15 @@ export function usePillPathExpoShellState() {
     setActiveScreen("children");
   }, [setActiveRootTab, setActiveScreen]);
 
+  const handleOpenPillboxAnalytics = useCallback(() => {
+    setActiveRootTab("pillbox");
+    setActiveScreen("pillboxAnalytics");
+  }, [setActiveRootTab, setActiveScreen]);
+
+  const handleClosePillboxAnalytics = useCallback(() => {
+    setActiveScreen("children");
+  }, [setActiveScreen]);
+
   const handleOpenIllnessJournalRoot = useCallback(
     (childId: string) => {
       openIllnessJournalRoot({
@@ -672,6 +681,7 @@ export function usePillPathExpoShellState() {
     onOpenTermsOfUse: handleOpenTermsOfUse,
     onOpenPrivacyPolicy: handleOpenPrivacyPolicy,
     onUpdateAuthSession: handleUpdateAuthSession,
+    onOpenPillboxAnalytics: handleOpenPillboxAnalytics,
     screenLayerStyle: {
       position: "absolute",
       top: 0,
@@ -779,6 +789,9 @@ export function usePillPathExpoShellState() {
           onBackSupport: handleCloseSupport,
           onBackSettings: handleCloseSettings,
           onBackTermsOfUse: handleCloseTermsOfUse,
+        },
+        pillboxFlow: {
+          onBackAnalytics: handleClosePillboxAnalytics,
         },
       }
     : null;

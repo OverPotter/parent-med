@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
+import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 
 type ReminderRecipientsSheetBaseProps = {
   title: string;
@@ -35,62 +36,65 @@ function ReminderRecipientsSheetBase({
   }
 
   return (
-    <View style={styles.sheetOverlay}>
-      <Pressable style={styles.sheetBackdrop} onPress={onClose} />
-      <View style={styles.sheetCard}>
-        <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>{title}</Text>
-        <Text style={styles.sheetSubtitle}>{subtitle}</Text>
+    <FormBottomSheet visible={visible} onClose={onClose} sheetStyle={styles.sheetCard}>
+      {({ panHandlers, requestClose }) => (
+        <>
+          <View {...panHandlers}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>{title}</Text>
+            <Text style={styles.sheetSubtitle}>{subtitle}</Text>
+          </View>
 
-        <ScrollView
-          style={styles.sheetMembersScroll}
-          contentContainerStyle={styles.sheetMembersContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {members.map((member) => {
-            const selected = selectedIds.includes(member.id);
-            const isCurrentUser = member.id === currentAccountId;
+          <ScrollView
+            style={styles.sheetMembersScroll}
+            contentContainerStyle={styles.sheetMembersContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {members.map((member) => {
+              const selected = selectedIds.includes(member.id);
+              const isCurrentUser = member.id === currentAccountId;
 
-            return (
-              <Pressable
-                key={member.id}
-                onPress={() => onToggleMember(member.id)}
-                style={[
-                  styles.memberRow,
-                  selected ? styles.memberRowSelected : null,
-                ]}
-              >
-                <View style={styles.memberCopy}>
-                  <View style={styles.memberTitleRow}>
-                    <Text style={styles.memberName}>{member.displayName}</Text>
-                    {isCurrentUser ? (
-                      <View style={styles.memberBadge}>
-                        <Text style={styles.memberBadgeText}>
-                          {currentUserLabel}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  {member.relationshipLabel ? (
-                    <Text style={styles.memberMeta}>{member.relationshipLabel}</Text>
-                  ) : null}
-                </View>
-                <View
+              return (
+                <Pressable
+                  key={member.id}
+                  onPress={() => onToggleMember(member.id)}
                   style={[
-                    styles.memberCheck,
-                    selected ? styles.memberCheckSelected : null,
+                    styles.memberRow,
+                    selected ? styles.memberRowSelected : null,
                   ]}
                 >
-                  {selected ? <Feather name="check" size={15} color="#FFFFFF" /> : null}
-                </View>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+                  <View style={styles.memberCopy}>
+                    <View style={styles.memberTitleRow}>
+                      <Text style={styles.memberName}>{member.displayName}</Text>
+                      {isCurrentUser ? (
+                        <View style={styles.memberBadge}>
+                          <Text style={styles.memberBadgeText}>
+                            {currentUserLabel}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    {member.relationshipLabel ? (
+                      <Text style={styles.memberMeta}>{member.relationshipLabel}</Text>
+                    ) : null}
+                  </View>
+                  <View
+                    style={[
+                      styles.memberCheck,
+                      selected ? styles.memberCheckSelected : null,
+                    ]}
+                  >
+                    {selected ? <Feather name="check" size={15} color="#FFFFFF" /> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
 
-        {footer}
-      </View>
-    </View>
+          {footer}
+        </>
+      )}
+    </FormBottomSheet>
   );
 }
 
@@ -135,15 +139,6 @@ export function InstantReminderRecipientsSheet(
 }
 
 const styles = StyleSheet.create({
-  sheetOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 60,
-    justifyContent: "flex-end",
-  },
-  sheetBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(22, 32, 43, 0.24)",
-  },
   sheetCard: {
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,

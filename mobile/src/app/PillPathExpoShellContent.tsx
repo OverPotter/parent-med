@@ -32,6 +32,7 @@ import { LegalDocumentScreen } from "../features/legal/screens/LegalDocumentScre
 import { MoreScreen } from "../features/more/screens/MoreScreen";
 import { MedicineCabinetOverviewScreen } from "../features/medicine-cabinet/screens/MedicineCabinetOverviewScreen";
 import { ChildOverviewScreen } from "../features/overview/screens/ChildOverviewScreen";
+import { PillboxAnalyticsScreen } from "../features/pillbox/screens/PillboxAnalyticsScreen";
 import { PillboxHomeScreen } from "../features/pillbox/screens/PillboxHomeScreen";
 import { RootModulePlaceholderScreen } from "../shared/components/RootModulePlaceholderScreen";
 import { SettingsScreen } from "../features/settings/screens/SettingsScreen";
@@ -85,6 +86,7 @@ type RootTabContentProps = {
   onRootTabBarModeChange?: (
     mode: "foreground" | "background" | "hidden",
   ) => void;
+  onOpenPillboxAnalytics: () => void;
   screenLayerStyle: object;
 };
 
@@ -111,6 +113,7 @@ export function RootTabContent({
   onOpenPrivacyPolicy,
   onUpdateAuthSession,
   onRootTabBarModeChange,
+  onOpenPillboxAnalytics,
   screenLayerStyle,
 }: RootTabContentProps) {
   const showMoreTab = shouldRenderMoreTab(activeRootTab, authSession);
@@ -183,6 +186,7 @@ export function RootTabContent({
             accessToken={authSession?.accessToken ?? null}
             currentAccountId={authSession?.account.id ?? ""}
             familyMembers={familyMembers}
+            onOpenAnalytics={onOpenPillboxAnalytics}
             onTabBarModeChange={onRootTabBarModeChange}
           />
         ) : placeholderTabKey ? (
@@ -346,6 +350,9 @@ type OverlayScreensProps = {
     onBackSupport: () => void;
     onBackSettings: () => void;
     onBackTermsOfUse: () => void;
+  };
+  pillboxFlow: {
+    onBackAnalytics: () => void;
   };
 };
 
@@ -657,6 +664,7 @@ function UtilityOverlays({
 }
 
 export function OverlayScreens({
+  locale,
   activeScreen,
   childrenCards,
   selectedChildId,
@@ -671,6 +679,7 @@ export function OverlayScreens({
   childFlow,
   illnessFlow,
   utilityFlow,
+  pillboxFlow,
 }: OverlayScreensProps) {
   const selectedChild =
     childrenCards.find((card) => card.nodeId === selectedChildId) ?? null;
@@ -711,6 +720,12 @@ export function OverlayScreens({
         familyMembers={familyMembers}
         familyRoutinesCount={familyRoutinesCount}
         utilityFlow={utilityFlow}
+      />
+      <PillboxAnalyticsScreen
+        visible={activeScreen === "pillboxAnalytics"}
+        accessToken={authSession.accessToken}
+        locale={locale}
+        onBack={pillboxFlow.onBackAnalytics}
       />
     </>
   );

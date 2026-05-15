@@ -9,12 +9,12 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
-import { useMemo, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
 import { pillboxTimeIcons } from "../assets/time";
 import { buildPillboxHomeScreenContent } from "../model/pillboxHomeScreen";
 import { pillboxHomeScreenStyles as styles } from "./pillboxHomeScreenStyles";
@@ -45,7 +45,6 @@ export function PillboxHomeScreen({
   onTabBarModeChange?: (mode: "foreground" | "background" | "hidden") => void;
 }) {
   const { locale } = useMobileI18n();
-  const pillboxLocale = locale === "ru" ? "ru" : "en";
   const surfaceTheme = useMobileSurfaceTheme();
   const content = useMemo(() => buildPillboxHomeScreenContent(locale), [locale]);
   const { width } = useWindowDimensions();
@@ -77,7 +76,7 @@ export function PillboxHomeScreen({
     accessToken,
     currentAccountId,
     familyMembers,
-    locale: pillboxLocale,
+    locale,
     onMarkIntake,
     onTabBarModeChange,
   });
@@ -86,7 +85,8 @@ export function PillboxHomeScreen({
     event: NativeSyntheticEvent<NativeScrollEvent>,
   ) => {
     const nextPage = Math.round(
-      event.nativeEvent.contentOffset.x / Math.max(event.nativeEvent.layoutMeasurement.width, 1),
+      event.nativeEvent.contentOffset.x /
+        Math.max(event.nativeEvent.layoutMeasurement.width, 1),
     );
     setActiveIntakePage(nextPage);
   };
@@ -130,7 +130,9 @@ export function PillboxHomeScreen({
                 style={styles.headerGhostActionIcon}
                 resizeMode="contain"
               />
-              <Text style={styles.headerGhostActionText}>{content.analyticsLabel}</Text>
+              <Text style={styles.headerGhostActionText}>
+                {content.analyticsLabel}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -161,16 +163,16 @@ export function PillboxHomeScreen({
                   <Text style={styles.statNumber}>{item.number}</Text>
                   <Text style={styles.statLabel}>{item.label}</Text>
                 </View>
-                {index < summaryStats.length - 1 ? <View style={styles.statDivider} /> : null}
+                {index < summaryStats.length - 1 ? (
+                  <View style={styles.statDivider} />
+                ) : null}
               </View>
             ))}
           </View>
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {locale === "ru" ? "Ближайший приём" : "Next intake"}
-          </Text>
+          <Text style={styles.sectionTitle}>{content.nextIntakeLabel}</Text>
         </View>
 
         {todayIntakes.length > 0 ? (
@@ -191,10 +193,14 @@ export function PillboxHomeScreen({
                   <View style={styles.intakeCard}>
                     <View style={styles.intakeCardTopRow}>
                       <View style={styles.intakeLabelPill}>
-                        <Text style={styles.intakeLabel}>{content.nextIntakeLabel}</Text>
+                        <Text style={styles.intakeLabel}>
+                          {content.nextIntakeLabel}
+                        </Text>
                       </View>
                       <View style={styles.countdownChip}>
-                        <Text style={styles.countdownChipText}>{item.countdown}</Text>
+                        <Text style={styles.countdownChipText}>
+                          {item.countdown}
+                        </Text>
                       </View>
                     </View>
 
@@ -206,13 +212,19 @@ export function PillboxHomeScreen({
 
                       <View style={styles.intakeBody}>
                         <Text style={styles.intakePlanTitle}>{item.planTitle}</Text>
-                        <Text style={styles.intakeMedicine}>{item.medicineSummary}</Text>
+                        <Text style={styles.intakeMedicine}>
+                          {item.medicineSummary}
+                        </Text>
                       </View>
                     </View>
 
                     <Pressable
                       onPress={() =>
-                        handleMarkIntake(item.id, item.medicationId, item.scheduledFor ?? null)
+                        handleMarkIntake(
+                          item.id,
+                          item.medicationId,
+                          item.scheduledFor ?? null,
+                        )
                       }
                       style={({ pressed }) => [
                         styles.intakeActionButton,
@@ -233,7 +245,10 @@ export function PillboxHomeScreen({
                 {todayIntakes.map((item, index) => (
                   <View
                     key={item.id}
-                    style={[styles.dot, index === activeIntakePage ? styles.dotActive : null]}
+                    style={[
+                      styles.dot,
+                      index === activeIntakePage ? styles.dotActive : null,
+                    ]}
                   />
                 ))}
               </View>
@@ -251,26 +266,22 @@ export function PillboxHomeScreen({
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{content.activePlansTitle}</Text>
           <View style={styles.sectionCounterInline}>
-            <Text style={styles.sectionCounterInlineText}>{displayedPlans.length}</Text>
+            <Text style={styles.sectionCounterInlineText}>
+              {displayedPlans.length}
+            </Text>
           </View>
         </View>
 
         {isLoadingPlans && displayedPlans.length === 0 ? (
           <View style={[styles.emptyCard, { marginTop: 22 }]}>
-            <Text style={styles.emptyTitle}>
-              {locale === "ru" ? "Загружаем планы…" : "Loading plans..."}
-            </Text>
+            <Text style={styles.emptyTitle}>{content.loadingPlansTitle}</Text>
             <Text style={styles.emptyDescription}>
-              {locale === "ru"
-                ? "Подтягиваем ближайшие приёмы и активные планы."
-                : "Loading next intakes and active plans."}
+              {content.loadingPlansDescription}
             </Text>
           </View>
         ) : plansError && displayedPlans.length === 0 ? (
           <View style={[styles.emptyCard, { marginTop: 22 }]}>
-            <Text style={styles.emptyTitle}>
-              {locale === "ru" ? "Не загрузилось" : "Could not load"}
-            </Text>
+            <Text style={styles.emptyTitle}>{content.loadingErrorTitle}</Text>
             <Text style={styles.emptyDescription}>{plansError}</Text>
             <Pressable
               onPress={() => {
@@ -283,7 +294,7 @@ export function PillboxHomeScreen({
               ]}
             >
               <Text style={styles.emptyRetryButtonText}>
-                {locale === "ru" ? "Повторить" : "Retry"}
+                {content.retryLabel}
               </Text>
             </Pressable>
           </View>
@@ -297,7 +308,9 @@ export function PillboxHomeScreen({
                 deleting={deletingPlanId === plan.id}
                 onOpenSwipe={() => setOpenSwipePlanId(plan.id)}
                 onCloseSwipe={() =>
-                  setOpenSwipePlanId((current) => (current === plan.id ? null : current))
+                  setOpenSwipePlanId((current) =>
+                    current === plan.id ? null : current,
+                  )
                 }
                 onOpenPlan={() => {
                   onOpenPlan(plan.id);

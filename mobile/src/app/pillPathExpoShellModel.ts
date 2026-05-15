@@ -10,6 +10,7 @@ export type PillPathActiveScreen =
   | "children"
   | "analytics"
   | "analyticsBreakdown"
+  | "pillboxAnalytics"
   | "childProfile"
   | "childCreate"
   | "childProfileEdit"
