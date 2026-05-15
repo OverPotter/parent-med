@@ -7,8 +7,8 @@ import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import { InstantReminderRecipientsSheet } from "../../illness/screens/ReminderRecipientsSheet";
 import type { MedicineCardItem } from "../model/medicineCabinetOverviewModel";
 import { MedicineCabinetAddChoiceSheet } from "./MedicineCabinetAddChoiceSheet";
-import { MedicineCabinetMedicineDetailsScreen } from "./MedicineCabinetMedicineDetailsScreen";
 import { MedicineCabinetManualCreateScreen } from "./MedicineCabinetManualCreateScreen";
+import { MedicineCabinetRenewPackSheet } from "./MedicineCabinetRenewPackSheet";
 import { MedicineCabinetReferenceCreateScreen } from "./MedicineCabinetReferenceCreateScreen";
 import { medicineCabinetOverviewStyles as styles } from "./medicineCabinetOverviewScreenStyles";
 import type { MedicineCabinetOverviewScreenKey } from "./useMedicineCabinetOverviewController";
@@ -18,7 +18,6 @@ export function MedicineCabinetOverviewOverlays({
   activeScreen,
   setActiveScreen,
   onCreated,
-  selectedMedicine,
   onRenewPack,
   isRecipientsSheetOpen,
   setIsRecipientsSheetOpen,
@@ -29,7 +28,10 @@ export function MedicineCabinetOverviewOverlays({
   onToggleRecipient,
   isAddChoiceSheetOpen,
   setIsAddChoiceSheetOpen,
-  setPendingAddChoiceTarget,
+  onOpenReferenceCreate,
+  onOpenManualCreate,
+  pendingRenewItem,
+  setPendingRenewItem,
   pendingDeleteItem,
   setPendingDeleteItem,
   onConfirmDelete,
@@ -39,7 +41,6 @@ export function MedicineCabinetOverviewOverlays({
   activeScreen: MedicineCabinetOverviewScreenKey;
   setActiveScreen: (value: MedicineCabinetOverviewScreenKey) => void;
   onCreated: () => void;
-  selectedMedicine: MedicineCardItem | null;
   onRenewPack: (payload: { expiryDate: string; openedDate: string | null }) => void;
   isRecipientsSheetOpen: boolean;
   setIsRecipientsSheetOpen: (value: boolean) => void;
@@ -50,7 +51,10 @@ export function MedicineCabinetOverviewOverlays({
   onToggleRecipient: (memberId: string) => void;
   isAddChoiceSheetOpen: boolean;
   setIsAddChoiceSheetOpen: (value: boolean) => void;
-  setPendingAddChoiceTarget: (value: "reference-create" | "manual-create" | null) => void;
+  onOpenReferenceCreate: () => void;
+  onOpenManualCreate: () => void;
+  pendingRenewItem: MedicineCardItem | null;
+  setPendingRenewItem: (item: MedicineCardItem | null) => void;
   pendingDeleteItem: MedicineCardItem | null;
   setPendingDeleteItem: (item: MedicineCardItem | null) => void;
   onConfirmDelete: () => void;
@@ -97,29 +101,26 @@ export function MedicineCabinetOverviewOverlays({
         </View>
       ) : null}
 
-      {activeScreen === "details" && selectedMedicine ? (
-        <View style={styles.manualCreateOverlay}>
-          <MedicineCabinetMedicineDetailsScreen
-            item={selectedMedicine}
-            onBack={() => setActiveScreen("overview")}
-            onRenewPack={onRenewPack}
-          />
-        </View>
-      ) : null}
-
       <MedicineCabinetAddChoiceSheet
         visible={isAddChoiceSheetOpen}
         onClose={() => {
           setIsAddChoiceSheetOpen(false);
         }}
         onOpenReferenceCreate={() => {
-          setPendingAddChoiceTarget("reference-create");
           setIsAddChoiceSheetOpen(false);
+          onOpenReferenceCreate();
         }}
         onOpenManualCreate={() => {
-          setPendingAddChoiceTarget("manual-create");
           setIsAddChoiceSheetOpen(false);
+          onOpenManualCreate();
         }}
+      />
+
+      <MedicineCabinetRenewPackSheet
+        item={pendingRenewItem}
+        visible={pendingRenewItem !== null}
+        onClose={() => setPendingRenewItem(null)}
+        onSave={onRenewPack}
       />
 
       <FormBottomSheet

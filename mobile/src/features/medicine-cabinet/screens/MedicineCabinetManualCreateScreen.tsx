@@ -17,7 +17,11 @@ export function MedicineCabinetManualCreateScreen({
   onBack: () => void;
   onCreated: () => void;
 }) {
-  const flow = useManualMedicineCreateFlow({ authSession, onBack, onCreated });
+  const flow = useManualMedicineCreateFlow({
+    authSession,
+    onBack,
+    onCreated,
+  });
 
   return (
     <View style={styles.root}>

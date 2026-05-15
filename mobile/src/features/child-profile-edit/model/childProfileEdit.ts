@@ -41,6 +41,10 @@ export type ChildProfileEditContent = {
   actions: {
     save: string;
     delete: string;
+    confirmDeleteTitle: string;
+    confirmDeleteMessage: string;
+    confirmDeleteCancel: string;
+    confirmDeleteConfirm: string;
   };
 };
 

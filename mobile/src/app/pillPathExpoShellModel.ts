@@ -97,6 +97,23 @@ export function shouldShowAnalyticsBreakdown(
   return activeScreen === "analyticsBreakdown" && selectedEpisode != null;
 }
 
+export function shouldShowRootTabBarUnderlay(
+  activeScreen: PillPathActiveScreen,
+): boolean {
+  return (
+    activeScreen === "childCreate" ||
+    activeScreen === "childProfile" ||
+    activeScreen === "journalEntry" ||
+    activeScreen === "illnessOnboarding" ||
+    activeScreen === "illnessReminders" ||
+    activeScreen === "family" ||
+    activeScreen === "support" ||
+    activeScreen === "settings" ||
+    activeScreen === "privacyPolicy" ||
+    activeScreen === "termsOfUse"
+  );
+}
+
 export function isRootModuleScreen(
   activeScreen: PillPathActiveScreen,
 ): boolean {

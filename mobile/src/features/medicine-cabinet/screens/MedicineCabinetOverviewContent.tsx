@@ -22,7 +22,9 @@ export function MedicineCabinetOverviewContent({
   openSwipeCardId,
   onOpenSwipe,
   onCloseSwipe,
-  onOpenItem,
+  expandedMedicineId,
+  onToggleExpanded,
+  onOpenRenew,
   onDeleteItem,
 }: {
   isRu: boolean;
@@ -42,7 +44,9 @@ export function MedicineCabinetOverviewContent({
   openSwipeCardId: string | null;
   onOpenSwipe: (id: string) => void;
   onCloseSwipe: (id: string) => void;
-  onOpenItem: (id: string) => void;
+  expandedMedicineId: string | null;
+  onToggleExpanded: (id: string) => void;
+  onOpenRenew: (item: MedicineCardItem) => void;
   onDeleteItem: (item: MedicineCardItem) => void;
 }) {
   return (
@@ -195,9 +199,11 @@ export function MedicineCabinetOverviewContent({
                 key={item.id}
                 item={item}
                 isOpen={openSwipeCardId === item.id}
+                expanded={expandedMedicineId === item.id}
                 onOpenSwipe={() => onOpenSwipe(item.id)}
                 onCloseSwipe={() => onCloseSwipe(item.id)}
-                onOpen={() => onOpenItem(item.id)}
+                onToggleExpanded={() => onToggleExpanded(item.id)}
+                onOpenRenew={() => onOpenRenew(item)}
                 onDelete={() => onDeleteItem(item)}
               />
             ))}

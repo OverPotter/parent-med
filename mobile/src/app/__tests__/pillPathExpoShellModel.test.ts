@@ -4,6 +4,7 @@ import {
   resolveJournalTargetScreen,
   resolveStoredSessionPreferredLocale,
   shouldRenderMoreTab,
+  shouldShowRootTabBarUnderlay,
   shouldShowAnalyticsBreakdown,
 } from "../pillPathExpoShellModel";
 
@@ -69,5 +70,13 @@ describe("pillPathExpoShellModel", () => {
     expect(isChildProfileVisibleScreen("childProfile")).toBe(true);
     expect(isChildProfileVisibleScreen("analytics")).toBe(true);
     expect(isChildProfileVisibleScreen("settings")).toBe(false);
+  });
+
+  it("shows the root tab bar under overlay screens that swipe back to a root module", () => {
+    expect(shouldShowRootTabBarUnderlay("childProfile")).toBe(true);
+    expect(shouldShowRootTabBarUnderlay("journalEntry")).toBe(true);
+    expect(shouldShowRootTabBarUnderlay("illnessReminders")).toBe(true);
+    expect(shouldShowRootTabBarUnderlay("analytics")).toBe(false);
+    expect(shouldShowRootTabBarUnderlay("childProfileEdit")).toBe(false);
   });
 });

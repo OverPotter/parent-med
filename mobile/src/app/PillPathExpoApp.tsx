@@ -26,6 +26,7 @@ import {
   getInitialShellAssetModules,
   getPersistentMobileUiAssetModules,
 } from "./mobileUiAssetPreload";
+import { shouldShowRootTabBarUnderlay } from "./pillPathExpoShellModel";
 import { usePillPathExpoShellState } from "./usePillPathExpoShellState";
 
 export function PillPathExpoApp() {
@@ -44,8 +45,9 @@ function PillPathExpoShell() {
     useState(false);
   const [isInitialShellVisualReady, setIsInitialShellVisualReady] =
     useState(false);
-  const [isCabinetOverlayVisible, setIsCabinetOverlayVisible] =
-    useState(false);
+  const [cabinetTabBarMode, setCabinetTabBarMode] = useState<
+    "foreground" | "background" | "hidden"
+  >("foreground");
   const {
     authSession,
     isAuthBootstrapping,
@@ -58,9 +60,11 @@ function PillPathExpoShell() {
     overlayScreensProps,
   } = usePillPathExpoShellState();
   const shouldShowRootTabBarBackground =
-    overlayScreensProps?.activeScreen === "illnessReminders";
+    (overlayScreensProps
+      ? shouldShowRootTabBarUnderlay(overlayScreensProps.activeScreen)
+      : false) || cabinetTabBarMode === "background";
   const shouldRenderRootTabBar =
-    shouldShowRootTabBar && !isCabinetOverlayVisible;
+    shouldShowRootTabBar && cabinetTabBarMode !== "hidden";
   const criticalAssetModules = useMemo(
     () => getCriticalMobileUiAssetModules(),
     [],
@@ -165,7 +169,7 @@ function PillPathExpoShell() {
       <StatusBar style={surfaceTheme.statusBarStyle} />
       <RootTabContent
         {...rootTabContentProps}
-        onCabinetOverlayVisibilityChange={setIsCabinetOverlayVisible}
+        onCabinetTabBarModeChange={setCabinetTabBarMode}
       />
       <View
         pointerEvents={shouldRenderRootTabBar ? "auto" : "none"}
@@ -536,6 +540,6 @@ const styles = StyleSheet.create({
   },
   rootTabBarLayerBackground: {
     opacity: 1,
-    zIndex: 90,
+    zIndex: 5,
   },
 });

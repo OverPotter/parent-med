@@ -24,7 +24,6 @@ export function useMedicineCabinetListController({
   const [medicinesError, setMedicinesError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<CabinetFilterKey>("all");
-  const [selectedMedicineId, setSelectedMedicineId] = useState<string | null>(null);
   const [openSwipeCardId, setOpenSwipeCardId] = useState<string | null>(null);
 
   const loadMedicines = useCallback(
@@ -93,10 +92,6 @@ export function useMedicineCabinetListController({
     [medicineItems],
   );
 
-  const selectedMedicine = selectedMedicineId
-    ? medicineItems.find((item) => item.id === selectedMedicineId) ?? null
-    : null;
-
   return {
     medicineItems,
     isLoadingMedicines,
@@ -105,8 +100,6 @@ export function useMedicineCabinetListController({
     setSearchQuery,
     activeFilter,
     setActiveFilter,
-    selectedMedicine,
-    setSelectedMedicineId,
     openSwipeCardId,
     setOpenSwipeCardId,
     filteredItems,

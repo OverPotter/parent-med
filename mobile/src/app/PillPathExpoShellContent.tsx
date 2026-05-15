@@ -32,6 +32,7 @@ import { LegalDocumentScreen } from "../features/legal/screens/LegalDocumentScre
 import { MoreScreen } from "../features/more/screens/MoreScreen";
 import { MedicineCabinetOverviewScreen } from "../features/medicine-cabinet/screens/MedicineCabinetOverviewScreen";
 import { ChildOverviewScreen } from "../features/overview/screens/ChildOverviewScreen";
+import { PillboxHomeScreen } from "../features/pillbox/screens/PillboxHomeScreen";
 import { RootModulePlaceholderScreen } from "../shared/components/RootModulePlaceholderScreen";
 import { SettingsScreen } from "../features/settings/screens/SettingsScreen";
 import type {
@@ -81,7 +82,9 @@ type RootTabContentProps = {
     relationshipLabel?: string | null;
     phone?: string | null;
   }) => Promise<void>;
-  onCabinetOverlayVisibilityChange?: (visible: boolean) => void;
+  onCabinetTabBarModeChange?: (
+    mode: "foreground" | "background" | "hidden",
+  ) => void;
   screenLayerStyle: object;
 };
 
@@ -107,16 +110,12 @@ export function RootTabContent({
   onOpenTermsOfUse,
   onOpenPrivacyPolicy,
   onUpdateAuthSession,
-  onCabinetOverlayVisibilityChange,
+  onCabinetTabBarModeChange,
   screenLayerStyle,
 }: RootTabContentProps) {
   const showMoreTab = shouldRenderMoreTab(activeRootTab, authSession);
   const placeholderTabKey =
-    activeRootTab === "cabinet" ||
-    activeRootTab === "pillbox" ||
-    activeRootTab === "more"
-      ? activeRootTab
-      : null;
+    activeRootTab === "cabinet" || activeRootTab === "more" ? activeRootTab : null;
 
   return (
     <>
@@ -177,8 +176,10 @@ export function RootTabContent({
           <MedicineCabinetOverviewScreen
             authSession={authSession}
             familyMembers={familyMembers}
-            onOverlayVisibilityChange={onCabinetOverlayVisibilityChange}
+            onTabBarModeChange={onCabinetTabBarModeChange}
           />
+        ) : activeRootTab === "pillbox" && !showMoreTab ? (
+          <PillboxHomeScreen familyMembers={familyMembers} />
         ) : placeholderTabKey ? (
           <RootModulePlaceholderScreen tabKey={placeholderTabKey} />
         ) : null}

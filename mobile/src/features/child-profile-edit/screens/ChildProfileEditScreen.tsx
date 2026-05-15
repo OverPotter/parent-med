@@ -84,6 +84,7 @@ export function ChildProfileEditScreen({
   const [editingField, setEditingField] = useState<"childName" | null>(null);
   const [isAvatarSheetOpen, setIsAvatarSheetOpen] = useState(false);
   const [isDateSheetOpen, setIsDateSheetOpen] = useState(false);
+  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const [textEditorField, setTextEditorField] = useState<
     "allergies" | "notes" | null
   >(null);
@@ -93,6 +94,7 @@ export function ChildProfileEditScreen({
       visible &&
       !isAvatarSheetOpen &&
       !isDateSheetOpen &&
+      !isDeleteConfirmVisible &&
       textEditorField === null,
     width,
     onBack,
@@ -118,6 +120,7 @@ export function ChildProfileEditScreen({
     setEditableNotes(defaultNotes);
     setEditingField(null);
     setTextEditorField(null);
+    setIsDeleteConfirmVisible(false);
     setBabyModeEnabled(defaultBabyModeEnabled);
   }, [
     content.childName,
@@ -242,11 +245,58 @@ export function ChildProfileEditScreen({
                   notes: editableNotes.trim() || null,
                 })
               }
-              onPressDelete={onDelete ?? null}
+              onPressDelete={
+                onDelete ? () => setIsDeleteConfirmVisible(true) : null
+              }
             />
           </ScrollView>
         </View>
       </ImageBackground>
+      {isDeleteConfirmVisible ? (
+        <View style={styles.confirmOverlay}>
+          <Pressable
+            style={styles.confirmBackdrop}
+            onPress={() => setIsDeleteConfirmVisible(false)}
+          />
+          <View style={styles.confirmCard}>
+            <View style={styles.confirmContent}>
+              <Text style={styles.confirmTitle}>
+                {content.actions.confirmDeleteTitle}
+              </Text>
+              <Text style={styles.confirmDescription}>
+                {content.actions.confirmDeleteMessage}
+              </Text>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  onPress={() => setIsDeleteConfirmVisible(false)}
+                  style={({ pressed }) => [
+                    styles.confirmButtonSecondary,
+                    pressed ? styles.confirmButtonPressed : null,
+                  ]}
+                >
+                  <Text style={styles.confirmButtonSecondaryText}>
+                    {content.actions.confirmDeleteCancel}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setIsDeleteConfirmVisible(false);
+                    void onDelete?.();
+                  }}
+                  style={({ pressed }) => [
+                    styles.confirmButtonPrimary,
+                    pressed ? styles.confirmButtonPressed : null,
+                  ]}
+                >
+                  <Text style={styles.confirmButtonPrimaryText}>
+                    {content.actions.confirmDeleteConfirm}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      ) : null}
       <AvatarPickerSheet
         visible={isAvatarSheetOpen}
         locale={locale}

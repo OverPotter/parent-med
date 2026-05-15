@@ -92,6 +92,10 @@ export type TranslationTree = {
     actions: {
       save: string;
       delete: string;
+      confirmDeleteTitle: string;
+      confirmDeleteMessage: string;
+      confirmDeleteCancel: string;
+      confirmDeleteConfirm: string;
     };
   };
 };
@@ -187,6 +191,10 @@ const ru: TranslationTree = {
     actions: {
       save: "Сохранить изменения",
       delete: "Удалить ребёнка",
+      confirmDeleteTitle: "Точно удалить?",
+      confirmDeleteMessage: "Профиль ребёнка будет удалён без возможности восстановления.",
+      confirmDeleteCancel: "Отмена",
+      confirmDeleteConfirm: "Да, удалить",
     },
   },
 };
@@ -283,6 +291,10 @@ const en: TranslationTree = {
     actions: {
       save: "Save changes",
       delete: "Delete child",
+      confirmDeleteTitle: "Delete child?",
+      confirmDeleteMessage: "This child profile will be deleted permanently.",
+      confirmDeleteCancel: "Cancel",
+      confirmDeleteConfirm: "Yes, delete",
     },
   },
 };
@@ -378,6 +390,10 @@ const pl: TranslationTree = {
     actions: {
       save: "Zapisz zmiany",
       delete: "Usuń dziecko",
+      confirmDeleteTitle: "Usunąć dziecko?",
+      confirmDeleteMessage: "Profil dziecka zostanie usunięty bez możliwości przywrócenia.",
+      confirmDeleteCancel: "Anuluj",
+      confirmDeleteConfirm: "Tak, usuń",
     },
   },
 };
@@ -474,6 +490,10 @@ const de: TranslationTree = {
     actions: {
       save: "Änderungen speichern",
       delete: "Kind löschen",
+      confirmDeleteTitle: "Kind löschen?",
+      confirmDeleteMessage: "Dieses Kinderprofil wird dauerhaft gelöscht.",
+      confirmDeleteCancel: "Abbrechen",
+      confirmDeleteConfirm: "Ja, löschen",
     },
   },
 };

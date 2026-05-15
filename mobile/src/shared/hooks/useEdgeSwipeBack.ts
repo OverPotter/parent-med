@@ -8,6 +8,7 @@ type UseEdgeSwipeBackArgs = {
   shouldCloseOnBack?: boolean;
   shouldTranslateOnSwipe?: boolean;
   captureWidth?: number;
+  onSwipePreviewChange?: (visible: boolean) => void;
 };
 
 const IOS_LIKE_EDGE_CAPTURE_WIDTH = 28;
@@ -21,6 +22,7 @@ export function useEdgeSwipeBack({
   shouldCloseOnBack = true,
   shouldTranslateOnSwipe = true,
   captureWidth,
+  onSwipePreviewChange,
 }: UseEdgeSwipeBackArgs) {
   const translateX = useRef(new Animated.Value(0)).current;
   const enabledRef = useRef(enabled);
@@ -28,13 +30,25 @@ export function useEdgeSwipeBack({
   const widthRef = useRef(width);
   const shouldCloseOnBackRef = useRef(shouldCloseOnBack);
   const shouldTranslateOnSwipeRef = useRef(shouldTranslateOnSwipe);
+  const previewVisibleRef = useRef(false);
   const swipeCaptureWidth =
     captureWidth ?? Math.min(IOS_LIKE_EDGE_CAPTURE_WIDTH, width * 0.1);
+
+  const setPreviewVisible = (visible: boolean) => {
+    if (previewVisibleRef.current === visible) {
+      return;
+    }
+
+    previewVisibleRef.current = visible;
+    onSwipePreviewChange?.(visible);
+  };
 
   useEffect(() => {
     enabledRef.current = enabled;
     if (enabled) {
       translateX.setValue(0);
+    } else {
+      setPreviewVisible(false);
     }
   }, [enabled, translateX]);
 
@@ -54,6 +68,7 @@ export function useEdgeSwipeBack({
     shouldTranslateOnSwipeRef.current = shouldTranslateOnSwipe;
     if (!shouldTranslateOnSwipe) {
       translateX.setValue(0);
+      setPreviewVisible(false);
     }
   }, [shouldTranslateOnSwipe, translateX]);
 
@@ -63,7 +78,9 @@ export function useEdgeSwipeBack({
       useNativeDriver: true,
       tension: 220,
       friction: 26,
-    }).start();
+    }).start(() => {
+      setPreviewVisible(false);
+    });
   };
 
   const animateBackAndClose = () => {
@@ -74,6 +91,8 @@ export function useEdgeSwipeBack({
     }).start(({ finished }) => {
       if (finished) {
         onBackRef.current();
+      } else {
+        setPreviewVisible(false);
       }
     });
   };
@@ -87,7 +106,9 @@ export function useEdgeSwipeBack({
       useNativeDriver: true,
       tension: 220,
       friction: 26,
-    }).start();
+    }).start(() => {
+      setPreviewVisible(false);
+    });
   };
 
   const resetWithoutBack = () => {
@@ -100,6 +121,7 @@ export function useEdgeSwipeBack({
   };
 
   const triggerBackWithoutTranslate = () => {
+    setPreviewVisible(false);
     onBackRef.current();
     translateX.setValue(0);
   };
@@ -127,6 +149,7 @@ export function useEdgeSwipeBack({
         }
 
         translateX.setValue(Math.max(0, gestureState.dx));
+        setPreviewVisible(shouldCloseOnBackRef.current && gestureState.dx > 0);
       },
       onPanResponderRelease: (_, gestureState) => {
         const shouldGoBack =
@@ -139,6 +162,7 @@ export function useEdgeSwipeBack({
             return;
           }
           if (shouldCloseOnBackRef.current) {
+            setPreviewVisible(true);
             animateBackAndClose();
           } else {
             animateBackWithinScreen(gestureState.dx);
@@ -146,10 +170,10 @@ export function useEdgeSwipeBack({
           return;
         }
 
-        resetWithoutBack();
+        animateBackToStart();
       },
       onPanResponderTerminate: () => {
-        resetWithoutBack();
+        animateBackToStart();
       },
     }),
   ).current;

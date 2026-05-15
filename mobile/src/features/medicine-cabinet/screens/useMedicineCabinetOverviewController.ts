@@ -13,17 +13,18 @@ import { useMedicineCabinetListController } from "./useMedicineCabinetListContro
 export type MedicineCabinetOverviewScreenKey =
   | "overview"
   | "manual-create"
-  | "reference-create"
-  | "details";
+  | "reference-create";
+
+export type CabinetTabBarMode = "foreground" | "background" | "hidden";
 
 export function useMedicineCabinetOverviewController({
   authSession,
   familyMembers,
-  onOverlayVisibilityChange,
+  onTabBarModeChange,
 }: {
   authSession: MobileAuthSession | null;
   familyMembers: MobileFamilyMember[];
-  onOverlayVisibilityChange?: (visible: boolean) => void;
+  onTabBarModeChange?: (mode: CabinetTabBarMode) => void;
 }) {
   const { locale } = useMobileI18n();
   const isRu = locale === "ru";
@@ -31,25 +32,27 @@ export function useMedicineCabinetOverviewController({
     useState<MedicineCabinetOverviewScreenKey>("overview");
   const [transientNotice, setTransientNotice] = useState<string | null>(null);
   const [isAddChoiceSheetOpen, setIsAddChoiceSheetOpen] = useState(false);
-  const [pendingAddChoiceTarget, setPendingAddChoiceTarget] = useState<
-    "reference-create" | "manual-create" | null
-  >(null);
   const [pendingDeleteItem, setPendingDeleteItem] = useState<MedicineCardItem | null>(null);
+  const [expandedMedicineId, setExpandedMedicineId] = useState<string | null>(null);
+  const [pendingRenewItem, setPendingRenewItem] = useState<MedicineCardItem | null>(null);
   const list = useMedicineCabinetListController({ authSession, isRu });
   const recipients = useCabinetRecipientsController({ authSession, familyMembers });
 
-  const isAnyCabinetOverlayVisible =
-    activeScreen !== "overview" ||
+  const tabBarMode: CabinetTabBarMode =
     isAddChoiceSheetOpen ||
     recipients.isRecipientsSheetOpen ||
-    pendingDeleteItem !== null;
+    pendingDeleteItem !== null ||
+    pendingRenewItem !== null ||
+    activeScreen !== "overview"
+      ? "hidden"
+      : "foreground";
 
   useEffect(() => {
-    onOverlayVisibilityChange?.(isAnyCabinetOverlayVisible);
+    onTabBarModeChange?.(tabBarMode);
     return () => {
-      onOverlayVisibilityChange?.(false);
+      onTabBarModeChange?.("foreground");
     };
-  }, [isAnyCabinetOverlayVisible, onOverlayVisibilityChange]);
+  }, [onTabBarModeChange, tabBarMode]);
 
   useEffect(() => {
     if (!transientNotice) {
@@ -62,16 +65,6 @@ export function useMedicineCabinetOverviewController({
 
     return () => clearTimeout(timeoutId);
   }, [transientNotice]);
-
-  useEffect(() => {
-    if (isAddChoiceSheetOpen || !pendingAddChoiceTarget) {
-      return;
-    }
-
-    const target = pendingAddChoiceTarget;
-    setPendingAddChoiceTarget(null);
-    setActiveScreen(target);
-  }, [isAddChoiceSheetOpen, pendingAddChoiceTarget]);
 
   const sectionSubtitle = list.filteredItems.length
     ? `${list.filteredItems.length} ${
@@ -88,9 +81,9 @@ export function useMedicineCabinetOverviewController({
 
     const deletingItemId = pendingDeleteItem.id;
     setPendingDeleteItem(null);
-    if (list.selectedMedicine?.id === deletingItemId) {
-      list.setSelectedMedicineId(null);
-    }
+    setExpandedMedicineId((current) =>
+      current === deletingItemId ? null : current,
+    );
 
     void deleteMobileHouseholdMedicine({
       accessToken: authSession.accessToken,
@@ -102,17 +95,17 @@ export function useMedicineCabinetOverviewController({
   };
 
   const handleRenewPack = (payload: { expiryDate: string; openedDate: string | null }) => {
-    if (!authSession || !list.selectedMedicine) {
+    if (!authSession || !pendingRenewItem) {
       return;
     }
 
     void updateMobileHouseholdMedicine({
       accessToken: authSession.accessToken,
-      id: list.selectedMedicine.id,
+      id: pendingRenewItem.id,
       expiryDate: payload.expiryDate,
       openedAt: payload.openedDate,
     }).then(() => {
-      list.setSelectedMedicineId(null);
+      setPendingRenewItem(null);
       setActiveScreen("overview");
       setTransientNotice("Упаковка обновлена");
       void list.loadMedicines();
@@ -131,9 +124,12 @@ export function useMedicineCabinetOverviewController({
     activeScreen,
     setActiveScreen,
     transientNotice,
+    expandedMedicineId,
+    setExpandedMedicineId,
     isAddChoiceSheetOpen,
     setIsAddChoiceSheetOpen,
-    setPendingAddChoiceTarget,
+    pendingRenewItem,
+    setPendingRenewItem,
     pendingDeleteItem,
     setPendingDeleteItem,
     sectionSubtitle,

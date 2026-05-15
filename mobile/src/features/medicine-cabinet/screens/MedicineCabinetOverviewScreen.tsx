@@ -5,21 +5,24 @@ import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import { MedicineCabinetOverviewContent } from "./MedicineCabinetOverviewContent";
 import { MedicineCabinetOverviewOverlays } from "./MedicineCabinetOverviewOverlays";
 import { medicineCabinetOverviewStyles as styles } from "./medicineCabinetOverviewScreenStyles";
-import { useMedicineCabinetOverviewController } from "./useMedicineCabinetOverviewController";
+import {
+  type CabinetTabBarMode,
+  useMedicineCabinetOverviewController,
+} from "./useMedicineCabinetOverviewController";
 
 export function MedicineCabinetOverviewScreen({
   authSession,
   familyMembers,
-  onOverlayVisibilityChange,
+  onTabBarModeChange,
 }: {
   authSession: MobileAuthSession | null;
   familyMembers: MobileFamilyMember[];
-  onOverlayVisibilityChange?: (visible: boolean) => void;
+  onTabBarModeChange?: (mode: CabinetTabBarMode) => void;
 }) {
   const controller = useMedicineCabinetOverviewController({
     authSession,
     familyMembers,
-    onOverlayVisibilityChange,
+    onTabBarModeChange,
   });
 
   return (
@@ -52,10 +55,16 @@ export function MedicineCabinetOverviewScreen({
           onCloseSwipe={(id) =>
             controller.setOpenSwipeCardId((current) => (current === id ? null : current))
           }
-          onOpenItem={(id) => {
+          expandedMedicineId={controller.expandedMedicineId}
+          onToggleExpanded={(id) => {
             controller.setOpenSwipeCardId(null);
-            controller.setActiveScreen("details");
-            controller.setSelectedMedicineId(id);
+            controller.setExpandedMedicineId((current) =>
+              current === id ? null : id,
+            );
+          }}
+          onOpenRenew={(item) => {
+            controller.setOpenSwipeCardId(null);
+            controller.setPendingRenewItem(item);
           }}
           onDeleteItem={(item) => {
             controller.setOpenSwipeCardId(null);
@@ -68,7 +77,6 @@ export function MedicineCabinetOverviewScreen({
         activeScreen={controller.activeScreen}
         setActiveScreen={controller.setActiveScreen}
         onCreated={controller.handleCreated}
-        selectedMedicine={controller.selectedMedicine}
         onRenewPack={controller.handleRenewPack}
         isRecipientsSheetOpen={controller.isRecipientsSheetOpen}
         setIsRecipientsSheetOpen={controller.setIsRecipientsSheetOpen}
@@ -79,7 +87,10 @@ export function MedicineCabinetOverviewScreen({
         onToggleRecipient={controller.handleToggleRecipient}
         isAddChoiceSheetOpen={controller.isAddChoiceSheetOpen}
         setIsAddChoiceSheetOpen={controller.setIsAddChoiceSheetOpen}
-        setPendingAddChoiceTarget={controller.setPendingAddChoiceTarget}
+        onOpenReferenceCreate={() => controller.setActiveScreen("reference-create")}
+        onOpenManualCreate={() => controller.setActiveScreen("manual-create")}
+        pendingRenewItem={controller.pendingRenewItem}
+        setPendingRenewItem={controller.setPendingRenewItem}
         pendingDeleteItem={controller.pendingDeleteItem}
         setPendingDeleteItem={controller.setPendingDeleteItem}
         onConfirmDelete={controller.handleConfirmDelete}

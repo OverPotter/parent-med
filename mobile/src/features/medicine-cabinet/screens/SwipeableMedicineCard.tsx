@@ -10,16 +10,20 @@ const SWIPE_DELETE_ACTION_WIDTH = 92;
 export function SwipeableMedicineCard({
   item,
   isOpen,
+  expanded,
   onOpenSwipe,
   onCloseSwipe,
-  onOpen,
+  onToggleExpanded,
+  onOpenRenew,
   onDelete,
 }: {
   item: MedicineCardItem;
   isOpen: boolean;
+  expanded: boolean;
   onOpenSwipe: () => void;
   onCloseSwipe: () => void;
-  onOpen: () => void;
+  onToggleExpanded: () => void;
+  onOpenRenew: () => void;
   onDelete: () => void;
 }) {
   const translateX = useRef(new Animated.Value(0)).current;
@@ -92,16 +96,17 @@ export function SwipeableMedicineCard({
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Открыть карточку препарата ${item.title}`}
+          accessibilityLabel={`Раскрыть карточку препарата ${item.title}`}
           onPress={() => {
             if (isOpen) {
               animateTo(0, onCloseSwipe);
               return;
             }
-            onOpen();
+            onToggleExpanded();
           }}
           style={({ pressed }) => [
             styles.medicineCard,
+            expanded ? styles.medicineCardExpanded : null,
             pressed ? styles.medicineCardPressed : null,
           ]}
         >
@@ -147,9 +152,83 @@ export function SwipeableMedicineCard({
                   {item.statusText}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#B79A91" />
+              <Ionicons
+                name={expanded ? "chevron-up" : "chevron-down"}
+                size={18}
+                color="#B79A91"
+              />
             </View>
           </View>
+
+          {expanded ? (
+            <View style={styles.cardExpandedSection}>
+              {item.description ? (
+                <View style={styles.cardExpandedBlock}>
+                  <Text style={styles.cardExpandedLabel}>О препарате</Text>
+                  <Text style={styles.cardExpandedText}>{item.description}</Text>
+                </View>
+              ) : null}
+
+              {item.dosage ? (
+                <View style={styles.cardExpandedBlock}>
+                  <Text style={styles.cardExpandedLabel}>Как принимать</Text>
+                  <Text style={styles.cardExpandedText}>{item.dosage}</Text>
+                </View>
+              ) : null}
+
+              {item.comment ? (
+                <View style={styles.cardExpandedBlock}>
+                  <Text style={styles.cardExpandedLabel}>Комментарий</Text>
+                  <Text style={styles.cardExpandedText}>{item.comment}</Text>
+                </View>
+              ) : null}
+
+              {item.expiryLabel || item.afterOpeningLabel || item.openedLabel ? (
+                <View style={styles.cardExpandedFactsRow}>
+                  {item.expiryLabel ? (
+                    <View
+                      style={[
+                        styles.cardExpandedFactCard,
+                        styles.cardExpandedFactCardDanger,
+                      ]}
+                    >
+                      <Text style={styles.cardExpandedFactLabel}>Годен до</Text>
+                      <Text style={styles.cardExpandedFactValue}>{item.expiryLabel}</Text>
+                    </View>
+                  ) : null}
+                  {item.openedLabel ? (
+                    <View style={styles.cardExpandedFactCard}>
+                      <Text style={styles.cardExpandedFactLabel}>Дата вскрытия</Text>
+                      <Text style={styles.cardExpandedFactValue}>{item.openedLabel}</Text>
+                    </View>
+                  ) : null}
+                  {item.afterOpeningLabel ? (
+                    <View
+                      style={[
+                        styles.cardExpandedFactCard,
+                        styles.cardExpandedFactCardWarning,
+                      ]}
+                    >
+                      <Text style={styles.cardExpandedFactLabel}>После открытия</Text>
+                      <Text style={styles.cardExpandedFactValue}>{item.afterOpeningLabel}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Обновить упаковку ${item.title}`}
+                onPress={onOpenRenew}
+                style={({ pressed }) => [
+                  styles.cardExpandedAction,
+                  pressed ? styles.cardExpandedActionPressed : null,
+                ]}
+              >
+                <Text style={styles.cardExpandedActionText}>Обновить упаковку</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </Pressable>
       </Animated.View>
     </View>
