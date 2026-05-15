@@ -1,26 +1,38 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type { PillboxDraftMedicine } from "../model/pillboxPlanOnboarding";
 import { Hero } from "./pillboxPlanOnboardingParts";
 import { pillboxPlanOnboardingStyles as styles } from "./pillboxPlanOnboardingStyles";
 
 export function PillboxReviewStepSection({
+  locale,
   recipientTitle,
   medicines,
   onOpenRecipients,
   buildMedicineLines,
 }: {
+  locale: MobileLocale;
   recipientTitle: string;
   medicines: PillboxDraftMedicine[];
   onOpenRecipients: () => void;
   buildMedicineLines: (medicine: PillboxDraftMedicine) => string[];
 }) {
+  const title = locale === "ru" ? "Проверьте план" : "Review the plan";
+  const subtitle =
+    locale === "ru"
+      ? "Убедитесь, что всё верно. Вы сможете изменить план в любое время."
+      : "Make sure everything looks right. You can edit the plan later.";
+  const notificationsTitle =
+    locale === "ru" ? "Кому придут уведомления" : "Who will get notifications";
+  const medicinesTitle = locale === "ru" ? "Лекарства в плане" : "Medicines in plan";
+  const privacyText =
+    locale === "ru"
+      ? "План сохраняется только у вас и не передаётся третьим лицам."
+      : "The plan is stored only in your account and is not shared with third parties.";
   return (
     <>
-      <Hero
-        title="Проверьте план"
-        subtitle="Убедитесь, что всё верно. Вы сможете изменить план в любое время."
-      />
+      <Hero title={title} subtitle={subtitle} />
       <Pressable
         onPress={onOpenRecipients}
         style={({ pressed }) => [
@@ -31,7 +43,7 @@ export function PillboxReviewStepSection({
         ]}
       >
         <View style={styles.summaryActionCopy}>
-          <Text style={styles.summaryTitle}>Кому придут уведомления</Text>
+          <Text style={styles.summaryTitle}>{notificationsTitle}</Text>
           <Text style={[styles.summaryHint, { marginTop: 4 }]}>
             {recipientTitle}
           </Text>
@@ -40,7 +52,7 @@ export function PillboxReviewStepSection({
       </Pressable>
       <View style={styles.reviewMedicineSection}>
         <View style={styles.reviewMedicineHeader}>
-          <Text style={styles.sectionTitle}>Лекарства в плане</Text>
+          <Text style={styles.sectionTitle}>{medicinesTitle}</Text>
           <View style={styles.reviewMedicineCountChip}>
             <Text style={styles.reviewMedicineCountChipText}>{medicines.length}</Text>
           </View>
@@ -71,7 +83,7 @@ export function PillboxReviewStepSection({
       <View style={styles.privacyNote}>
         <MaterialCommunityIcons name="lock-outline" size={16} color="#8A94A6" />
         <Text style={styles.privacyText}>
-          План сохраняется только у вас и не передаётся третьим лицам.
+          {privacyText}
         </Text>
       </View>
     </>

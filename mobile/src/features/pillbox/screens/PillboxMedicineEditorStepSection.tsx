@@ -1,4 +1,5 @@
 import { Image, Pressable, Text, View } from "react-native";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import { pillboxCoreIcons } from "../assets/core";
 import { pillboxMealIcons } from "../assets/meal";
 import { pillboxTimeIcons } from "../assets/time";
@@ -10,6 +11,7 @@ import {
 import { pillboxPlanOnboardingStyles as styles } from "./pillboxPlanOnboardingStyles";
 
 export function PillboxMedicineEditorStepSection({
+  locale,
   participantTitle,
   medicineDraft,
   onChangeName,
@@ -21,6 +23,7 @@ export function PillboxMedicineEditorStepSection({
   onToggleWeekday,
   onSelectMealRelation,
 }: {
+  locale: MobileLocale;
   participantTitle: string;
   medicineDraft: PillboxDraftMedicine;
   onChangeName: (value: string) => void;
@@ -32,30 +35,39 @@ export function PillboxMedicineEditorStepSection({
   onToggleWeekday: (day: string) => void;
   onSelectMealRelation: (mealRelation: PillboxDraftMedicine["mealRelation"]) => void;
 }) {
+  const weekdayLabels = locale === "ru"
+    ? WEEKDAY_LABELS_RU
+    : WEEKDAY_LABELS_EN;
+  const mealOptions = buildMealOptions(locale);
   return (
     <>
       <View style={styles.editorHeader}>
-        <Text style={styles.editorTitle}>Добавить лекарство</Text>
+        <Text style={styles.editorTitle}>
+          {locale === "ru" ? "Добавить лекарство" : "Add medicine"}
+        </Text>
         <Text style={styles.editorMeta}>{participantTitle}</Text>
       </View>
       <View style={styles.formCard}>
         <View style={styles.editorSurface}>
-          <Field label="Препарат" iconSource={pillboxCoreIcons.medicineName}>
+          <Field
+            label={locale === "ru" ? "Препарат" : "Medicine"}
+            iconSource={pillboxCoreIcons.medicineName}
+          >
             <InputField
               value={medicineDraft.name}
               onChangeText={onChangeName}
-              placeholder="Нурофен сироп"
+              placeholder={locale === "ru" ? "Нурофен сироп" : "Nurofen syrup"}
             />
           </Field>
-          <Field label="Доза" iconSource={pillboxCoreIcons.medicineDose}>
+          <Field label={locale === "ru" ? "Доза" : "Dose"} iconSource={pillboxCoreIcons.medicineDose}>
             <InputField
               value={medicineDraft.dose}
               onChangeText={onChangeDose}
-              placeholder="2 мл"
+              placeholder={locale === "ru" ? "2 мл" : "2 ml"}
             />
           </Field>
           <View style={styles.editorDivider} />
-          <Field label="Время" iconSource={pillboxTimeIcons.field} largeIcon>
+          <Field label={locale === "ru" ? "Время" : "Time"} iconSource={pillboxTimeIcons.field} largeIcon>
             <View style={styles.timeChipsWrap}>
               {medicineDraft.times.map((time, index) => (
                 <Pressable
@@ -95,20 +107,26 @@ export function PillboxMedicineEditorStepSection({
                   />
                 </View>
                 <Text style={[styles.timeChipText, styles.addTimeChipText]}>
-                  + Добавить время
+                  {locale === "ru" ? "+ Добавить время" : "+ Add time"}
                 </Text>
               </Pressable>
             </View>
             <Text style={styles.fieldMeta}>
               {medicineDraft.times.length > 0
-                ? `${medicineDraft.times.length} ${
-                    medicineDraft.times.length === 1 ? "время" : "времени"
-                  }`
-                : "Добавьте время"}
+                ? locale === "ru"
+                  ? `${medicineDraft.times.length} ${
+                      medicineDraft.times.length === 1 ? "время" : "времени"
+                    }`
+                  : `${medicineDraft.times.length} ${
+                      medicineDraft.times.length === 1 ? "time" : "times"
+                    }`
+                : locale === "ru"
+                  ? "Добавьте время"
+                  : "Add time"}
             </Text>
           </Field>
 
-          <Field label="Режим">
+          <Field label={locale === "ru" ? "Режим" : "Mode"}>
             <View style={styles.modeSegmentedRow}>
               <Pressable
                 onPress={onSelectContinuousMode}
@@ -138,7 +156,7 @@ export function PillboxMedicineEditorStepSection({
                         : null,
                     ]}
                   >
-                    Постоянно
+                    {locale === "ru" ? "Постоянно" : "Continuous"}
                   </Text>
                   <Text
                     style={[
@@ -148,7 +166,7 @@ export function PillboxMedicineEditorStepSection({
                         : null,
                     ]}
                   >
-                    Без срока
+                    {locale === "ru" ? "Без срока" : "No end date"}
                   </Text>
                 </View>
               </Pressable>
@@ -181,7 +199,7 @@ export function PillboxMedicineEditorStepSection({
                         : null,
                     ]}
                   >
-                    Курсом
+                    {locale === "ru" ? "Курсом" : "Course"}
                   </Text>
                   <Text
                     style={[
@@ -192,8 +210,12 @@ export function PillboxMedicineEditorStepSection({
                     ]}
                   >
                     {medicineDraft.courseDurationDays
-                      ? `${medicineDraft.courseDurationDays} дн.`
-                      : "Срок"}
+                      ? locale === "ru"
+                        ? `${medicineDraft.courseDurationDays} дн.`
+                        : `${medicineDraft.courseDurationDays} d`
+                      : locale === "ru"
+                        ? "Срок"
+                        : "Duration"}
                   </Text>
                 </View>
                 <Text
@@ -210,13 +232,15 @@ export function PillboxMedicineEditorStepSection({
             </View>
             {medicineDraft.intakeMode === "course" &&
             !medicineDraft.courseDurationDays ? (
-              <Text style={styles.fieldHint}>Выберите срок курса</Text>
+              <Text style={styles.fieldHint}>
+                {locale === "ru" ? "Выберите срок курса" : "Choose course duration"}
+              </Text>
             ) : null}
           </Field>
 
-          <Field label="Дни">
+          <Field label={locale === "ru" ? "Дни" : "Days"}>
             <View style={styles.weekdaysRow}>
-              {WEEKDAY_OPTIONS.map((day) => {
+              {WEEKDAY_OPTIONS.map((day, index) => {
                 const active = medicineDraft.weekdays.includes(day);
                 return (
                   <Pressable
@@ -234,7 +258,7 @@ export function PillboxMedicineEditorStepSection({
                         active ? styles.weekdayTextActive : styles.weekdayTextInactive,
                       ]}
                     >
-                      {day}
+                      {weekdayLabels[index]}
                     </Text>
                   </Pressable>
                 );
@@ -242,14 +266,18 @@ export function PillboxMedicineEditorStepSection({
             </View>
             <Text style={styles.fieldMeta}>
               {medicineDraft.weekdays.length === 7
-                ? "Каждый день"
-                : `${medicineDraft.weekdays.length} дн.`}
+                ? locale === "ru"
+                  ? "Каждый день"
+                  : "Every day"
+                : locale === "ru"
+                  ? `${medicineDraft.weekdays.length} дн.`
+                  : `${medicineDraft.weekdays.length} d`}
             </Text>
           </Field>
           <View style={styles.editorDivider} />
-          <Field label="Еда" iconSource={pillboxMealIcons.field} largeIcon>
+          <Field label={locale === "ru" ? "Еда" : "Meals"} iconSource={pillboxMealIcons.field} largeIcon>
             <View style={styles.mealSegmentedGrid}>
-              {MEAL_OPTIONS.map(({ id, label, iconSource }) => {
+              {mealOptions.map(({ id, label, iconSource }) => {
                 const active = medicineDraft.mealRelation === id;
                 return (
                   <Pressable
@@ -300,17 +328,29 @@ export function PillboxMedicineEditorStepSection({
 }
 
 const WEEKDAY_OPTIONS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
+const WEEKDAY_LABELS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
+const WEEKDAY_LABELS_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
-const MEAL_OPTIONS: Array<{
+function buildMealOptions(locale: MobileLocale): Array<{
   id: PillboxDraftMedicine["mealRelation"];
   label: string;
   iconSource: number;
-}> = [
-  { id: "before_food", label: "До еды", iconSource: pillboxMealIcons.beforeFood },
-  { id: "with_food", label: "Во время", iconSource: pillboxMealIcons.withFood },
-  { id: "after_food", label: "После еды", iconSource: pillboxMealIcons.afterFood },
-  { id: "not_matter", label: "Независимо", iconSource: pillboxMealIcons.notMatter },
-];
+}> {
+  if (locale === "ru") {
+    return [
+      { id: "before_food", label: "До еды", iconSource: pillboxMealIcons.beforeFood },
+      { id: "with_food", label: "Во время", iconSource: pillboxMealIcons.withFood },
+      { id: "after_food", label: "После еды", iconSource: pillboxMealIcons.afterFood },
+      { id: "not_matter", label: "Независимо", iconSource: pillboxMealIcons.notMatter },
+    ];
+  }
+  return [
+    { id: "before_food", label: "Before", iconSource: pillboxMealIcons.beforeFood },
+    { id: "with_food", label: "With food", iconSource: pillboxMealIcons.withFood },
+    { id: "after_food", label: "After", iconSource: pillboxMealIcons.afterFood },
+    { id: "not_matter", label: "Any time", iconSource: pillboxMealIcons.notMatter },
+  ];
+}
 
 function resolveMealSegmentStyle(id: PillboxDraftMedicine["mealRelation"]) {
   if (id === "before_food") {

@@ -1,3 +1,4 @@
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import type { MobilePillboxPlanWrite } from "../api/mobilePillboxPlansApi";
 
@@ -201,7 +202,7 @@ export function buildPlanAvatarText(label: string): string {
   return resolveAvatarText(label);
 }
 
-export function buildMedicineCountLabel(count: number, locale: "ru" | "en") {
+export function buildMedicineCountLabel(count: number, locale: MobileLocale) {
   if (locale === "ru") {
     const mod10 = count % 10;
     const mod100 = count % 100;
@@ -218,7 +219,7 @@ export function buildMedicineCountLabel(count: number, locale: "ru" | "en") {
 }
 
 export function buildNextInfoLabel(input: {
-  locale: "ru" | "en";
+  locale: MobileLocale;
   times: string[];
 }) {
   const nextTime = [...input.times].sort()[0];

@@ -28,7 +28,7 @@ export function TopNav({
 export function Stepper({ activeStep }: { activeStep: number }) {
   return (
     <View style={styles.stepper}>
-      {[1, 2, 3, 4].map((step, index) => {
+      {[1, 2, 3].map((step, index) => {
         const completed = step < activeStep;
         const active = step === activeStep;
 
@@ -51,7 +51,7 @@ export function Stepper({ activeStep }: { activeStep: number }) {
                 {completed ? "✓" : step}
               </Text>
             </View>
-            {index < 3 ? (
+            {index < 2 ? (
               <View
                 style={[
                   styles.stepConnector,

@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
+import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { BackdatedDateTimePickerSheet } from "../../../shared/components/BackdatedDateTimePickerSheet";
 import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
@@ -58,6 +59,7 @@ export function PillboxPlanOnboardingFlow({
   onClose: () => void;
   onPlanSaved: (payload: { plan: MobilePillboxPlan; participantId: string }) => void;
 }) {
+  const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
   const { width } = useWindowDimensions();
   const {
@@ -116,6 +118,7 @@ export function PillboxPlanOnboardingFlow({
     accessToken,
     currentAccountId,
     familyMembers,
+    locale,
     onClose,
     onPlanSaved,
   });
@@ -172,6 +175,7 @@ export function PillboxPlanOnboardingFlow({
 
           {step === "participant" ? (
             <PillboxParticipantStepSection
+              locale={locale}
               participants={participants}
               participantId={draft.participantId}
               onSelectParticipant={handleSelectParticipant}
@@ -180,6 +184,7 @@ export function PillboxPlanOnboardingFlow({
 
           {step === "list" ? (
             <PillboxMedicineListStepSection
+              locale={locale}
               medicines={draft.medicines}
               onAddMedicine={() => handleOpenMedicineEditor()}
               onOpenMedicine={handleOpenMedicineEditor}
@@ -188,6 +193,7 @@ export function PillboxPlanOnboardingFlow({
 
           {step === "medicine" && medicineDraft ? (
             <PillboxMedicineEditorStepSection
+              locale={locale}
               participantTitle={participantTitle}
               medicineDraft={medicineDraft}
               onChangeName={(value) =>
@@ -211,6 +217,7 @@ export function PillboxPlanOnboardingFlow({
 
           {step === "review" ? (
             <PillboxReviewStepSection
+              locale={locale}
               recipientTitle={notificationRecipientTitle}
               medicines={draft.medicines}
               onOpenRecipients={handleOpenRecipients}
@@ -222,7 +229,15 @@ export function PillboxPlanOnboardingFlow({
         <View style={styles.bottomActionDock}>
           {step === "participant" ? (
             <PrimaryButton
-              label={canGoNextFromParticipant ? "Далее" : "Выберите участника"}
+              label={
+                canGoNextFromParticipant
+                  ? locale === "ru"
+                    ? "Далее"
+                    : "Next"
+                  : locale === "ru"
+                    ? "Выберите участника"
+                    : "Choose a participant"
+              }
               disabled={!canGoNextFromParticipant}
               onPress={() => setStep("list")}
             />
@@ -230,7 +245,13 @@ export function PillboxPlanOnboardingFlow({
           {step === "list" ? (
             <PrimaryButton
               label={
-                canGoNextFromList ? "Далее" : "Добавьте хотя бы одно лекарство"
+                canGoNextFromList
+                  ? locale === "ru"
+                    ? "Далее"
+                    : "Next"
+                  : locale === "ru"
+                    ? "Добавьте хотя бы одно лекарство"
+                    : "Add at least one medicine"
               }
               disabled={!canGoNextFromList}
               onPress={() => setStep("review")}
@@ -238,14 +259,22 @@ export function PillboxPlanOnboardingFlow({
           ) : null}
           {step === "medicine" ? (
             <PrimaryButton
-              label="Сохранить лекарство"
+              label={locale === "ru" ? "Сохранить лекарство" : "Save medicine"}
               disabled={!canSaveMedicine}
               onPress={handleSaveMedicine}
             />
           ) : null}
           {step === "review" ? (
             <PrimaryButton
-              label={isSavingPlan ? "Сохраняем..." : "Сохранить план"}
+              label={
+                isSavingPlan
+                  ? locale === "ru"
+                    ? "Сохраняем..."
+                    : "Saving..."
+                  : locale === "ru"
+                    ? "Сохранить план"
+                    : "Save plan"
+              }
               disabled={isSavingPlan}
               onPress={handleCompletePlan}
             />
@@ -255,9 +284,13 @@ export function PillboxPlanOnboardingFlow({
         {showDiscardAlert ? (
           <View style={styles.overlayScrim}>
             <View style={styles.alertCard}>
-              <Text style={styles.alertTitle}>Не сохранять план?</Text>
+              <Text style={styles.alertTitle}>
+                {locale === "ru" ? "Не сохранять план?" : "Discard plan?"}
+              </Text>
               <Text style={styles.alertText}>
-                Введённые данные будут потеряны.
+                {locale === "ru"
+                  ? "Введённые данные будут потеряны."
+                  : "Entered data will be lost."}
               </Text>
               <View style={styles.alertActions}>
                 <Pressable
@@ -267,7 +300,9 @@ export function PillboxPlanOnboardingFlow({
                     pressed ? styles.backLinkPressed : null,
                   ]}
                 >
-                  <Text style={styles.alertActionText}>Продолжить</Text>
+                  <Text style={styles.alertActionText}>
+                    {locale === "ru" ? "Продолжить" : "Continue editing"}
+                  </Text>
                 </Pressable>
                 <Pressable
                   onPress={() => {
@@ -281,7 +316,7 @@ export function PillboxPlanOnboardingFlow({
                   ]}
                 >
                   <Text style={[styles.alertActionText, styles.alertActionTextDanger]}>
-                    Не сохранять
+                    {locale === "ru" ? "Не сохранять" : "Discard"}
                   </Text>
                 </Pressable>
               </View>
@@ -291,7 +326,7 @@ export function PillboxPlanOnboardingFlow({
 
         <BackdatedDateTimePickerSheet
           visible={activePickerField !== null}
-          locale="ru"
+          locale={locale}
           activePickerField={activePickerField ?? "time"}
           pickerDay={PICKER_DAY}
           pickerMonthIndex={PICKER_MONTH_INDEX}
@@ -312,7 +347,7 @@ export function PillboxPlanOnboardingFlow({
 
         <ReminderNumberOptionsSheet
           visible={isCourseSheetOpen}
-          title="Сколько дней курс"
+          title={locale === "ru" ? "Сколько дней курс" : "Course duration"}
           value={currentCourseDurationDays}
           options={COURSE_OPTIONS}
           columns={2}
@@ -320,7 +355,7 @@ export function PillboxPlanOnboardingFlow({
             currentCourseDurationDays !== null &&
             !COURSE_OPTIONS.some((option) => option.value === currentCourseDurationDays)
           }
-          customActionLabel="Свои дни"
+          customActionLabel={locale === "ru" ? "Свои дни" : "Custom days"}
           onClose={() => setIsCourseSheetOpen(false)}
           onSelect={handleSelectCourseOption}
           onCustomPress={() => {
@@ -346,9 +381,13 @@ export function PillboxPlanOnboardingFlow({
             <>
               <View style={styles.sheetDragZone} {...sheetPanHandlers}>
                 <View style={styles.sheetHandle} />
-                <Text style={styles.sheetTitle}>Свои дни</Text>
+                <Text style={styles.sheetTitle}>
+                  {locale === "ru" ? "Свои дни" : "Custom days"}
+                </Text>
                 <Text style={styles.sheetSubtitle}>
-                  Сколько дней длится курс.
+                  {locale === "ru"
+                    ? "Сколько дней длится курс."
+                    : "How many days the course lasts."}
                 </Text>
               </View>
 
@@ -370,7 +409,9 @@ export function PillboxPlanOnboardingFlow({
                     pressed ? styles.secondaryButtonPressed : null,
                   ]}
                 >
-                  <Text style={styles.customValueCancelText}>Отмена</Text>
+                  <Text style={styles.customValueCancelText}>
+                    {locale === "ru" ? "Отмена" : "Cancel"}
+                  </Text>
                 </Pressable>
 
                 <Pressable
@@ -392,7 +433,9 @@ export function PillboxPlanOnboardingFlow({
                     end={{ x: 1, y: 1 }}
                     style={styles.customValueSaveGradient}
                   />
-                  <Text style={styles.customValueSaveText}>Сохранить</Text>
+                  <Text style={styles.customValueSaveText}>
+                    {locale === "ru" ? "Сохранить" : "Save"}
+                  </Text>
                 </Pressable>
               </View>
             </>
@@ -400,11 +443,19 @@ export function PillboxPlanOnboardingFlow({
         </FormBottomSheet>
 
         <ReminderRecipientsSheet
-          title="Кому придут уведомления"
-          subtitle="По умолчанию выбран участник плана."
-          cancelLabel="Отмена"
-          saveLabel="Сохранить"
-          currentUserLabel="Вы"
+          title={
+            locale === "ru"
+              ? "Кому придут уведомления"
+              : "Who will get notifications"
+          }
+          subtitle={
+            locale === "ru"
+              ? "По умолчанию выбран участник плана."
+              : "The plan participant is selected by default."
+          }
+          cancelLabel={locale === "ru" ? "Отмена" : "Cancel"}
+          saveLabel={locale === "ru" ? "Сохранить" : "Save"}
+          currentUserLabel={locale === "ru" ? "Вы" : "You"}
           visible={isRecipientSheetOpen}
           isSaving={isSavingPlan}
           members={recipientSheetMembers}

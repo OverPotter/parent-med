@@ -1,4 +1,5 @@
 import { Image, Pressable, Text, View } from "react-native";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import { resolveMedicineFormIcon } from "../../medicine-cabinet/model/medicineCabinetOverviewModel";
 import {
   formatMedicineSummary,
@@ -8,25 +9,37 @@ import { Hero } from "./pillboxPlanOnboardingParts";
 import { pillboxPlanOnboardingStyles as styles } from "./pillboxPlanOnboardingStyles";
 
 export function PillboxMedicineListStepSection({
+  locale,
   medicines,
   onAddMedicine,
   onOpenMedicine,
 }: {
+  locale: MobileLocale;
   medicines: PillboxDraftMedicine[];
   onAddMedicine: () => void;
   onOpenMedicine: (medicine: PillboxDraftMedicine) => void;
 }) {
+  const title = locale === "ru" ? "Что будем принимать?" : "What will we take?";
+  const subtitle =
+    locale === "ru"
+      ? "Добавьте все лекарства и витамины, которые нужно принимать."
+      : "Add all medicines and vitamins that should be taken.";
+  const inPlanLabel =
+    locale === "ru" ? `В плане (${medicines.length})` : `In plan (${medicines.length})`;
+  const addLabel = locale === "ru" ? "Добавить лекарство" : "Add medicine";
+  const emptyTitle = locale === "ru" ? "Пока пусто" : "Nothing here yet";
+  const emptyHint =
+    locale === "ru"
+      ? "Сначала добавьте первое лекарство, и оно появится в этом списке."
+      : "Add the first medicine and it will appear in this list.";
   return (
     <>
-      <Hero
-        title="Что будем принимать?"
-        subtitle="Добавьте все лекарства и витамины, которые нужно принимать."
-      />
+      <Hero title={title} subtitle={subtitle} />
       <View style={styles.sectionWrap}>
         {medicines.length > 0 ? (
           <>
             <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
-              В плане ({medicines.length})
+              {inPlanLabel}
             </Text>
 
             <View style={styles.medicineListBlock}>
@@ -37,7 +50,7 @@ export function PillboxMedicineListStepSection({
                   pressed ? styles.backLinkPressed : null,
                 ]}
               >
-                <Text style={styles.addMedicineLabel}>Добавить лекарство</Text>
+                <Text style={styles.addMedicineLabel}>{addLabel}</Text>
                 <View style={styles.addMedicinePlusWrap}>
                   <Text style={styles.addMedicinePlusText}>+</Text>
                 </View>
@@ -90,15 +103,15 @@ export function PillboxMedicineListStepSection({
                 pressed ? styles.backLinkPressed : null,
               ]}
             >
-              <Text style={styles.addMedicineLabel}>Добавить лекарство</Text>
+              <Text style={styles.addMedicineLabel}>{addLabel}</Text>
               <View style={styles.addMedicinePlusWrap}>
                 <Text style={styles.addMedicinePlusText}>+</Text>
               </View>
             </Pressable>
             <View style={styles.medicineEmptyState}>
-              <Text style={styles.summaryTitle}>Пока пусто</Text>
+              <Text style={styles.summaryTitle}>{emptyTitle}</Text>
               <Text style={[styles.privacyText, { marginTop: 4 }]}>
-                Сначала добавьте первое лекарство, и оно появится в этом списке.
+                {emptyHint}
               </Text>
             </View>
           </View>

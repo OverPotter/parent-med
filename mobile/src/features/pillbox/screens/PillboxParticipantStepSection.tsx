@@ -1,23 +1,28 @@
 import { Pressable, Text, View } from "react-native";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type { PillboxParticipantOption } from "../model/pillboxPlanOnboarding";
 import { Hero } from "./pillboxPlanOnboardingParts";
 import { pillboxPlanOnboardingStyles as styles } from "./pillboxPlanOnboardingStyles";
 
 export function PillboxParticipantStepSection({
+  locale,
   participants,
   participantId,
   onSelectParticipant,
 }: {
+  locale: MobileLocale;
   participants: PillboxParticipantOption[];
   participantId: string | null;
   onSelectParticipant: (participantId: string) => void;
 }) {
+  const title = locale === "ru" ? "Для кого этот план?" : "Who is this plan for?";
+  const subtitle =
+    locale === "ru"
+      ? "Выберите участника, для которого мы составим план приёма."
+      : "Choose the person for whom we will create the medication plan.";
   return (
     <>
-      <Hero
-        title="Для кого этот план?"
-        subtitle="Выберите участника, для которого мы составим план приёма."
-      />
+      <Hero title={title} subtitle={subtitle} />
       <View style={styles.sectionWrap}>
         <View style={styles.participantListCard}>
           {participants.map((item, index) => {

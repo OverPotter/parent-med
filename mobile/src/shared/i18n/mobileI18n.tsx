@@ -1,6 +1,30 @@
+import { getLocales } from "expo-localization";
 import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 
 export type MobileLocale = "ru" | "en" | "pl" | "de";
+
+export function normalizeMobileLocale(locale: string | null | undefined): MobileLocale {
+  const normalized = (locale ?? "").trim().toLowerCase();
+
+  if (normalized === "ru" || normalized.startsWith("ru-")) {
+    return "ru";
+  }
+
+  if (normalized === "de" || normalized.startsWith("de-")) {
+    return "de";
+  }
+
+  if (normalized === "pl" || normalized.startsWith("pl-")) {
+    return "pl";
+  }
+
+  return "en";
+}
+
+export function getDeviceMobileLocale(): MobileLocale {
+  const firstLocale = getLocales()[0];
+  return normalizeMobileLocale(firstLocale?.languageTag ?? firstLocale?.languageCode);
+}
 
 export type TranslationTree = {
   tabs: {
@@ -514,7 +538,7 @@ type MobileI18nContextValue = {
 const MobileI18nContext = createContext<MobileI18nContextValue | null>(null);
 
 export function MobileI18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<MobileLocale>("ru");
+  const [locale, setLocale] = useState<MobileLocale>(() => getDeviceMobileLocale());
 
   const value = useMemo(
     () => ({

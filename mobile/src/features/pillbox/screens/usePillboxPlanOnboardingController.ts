@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import { formatBackdatedTime } from "../../../shared/lib/backdatedDateTime";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import { resolveIllnessRecipientSelection } from "../../illness/model/illnessRecipients";
@@ -25,6 +26,7 @@ export function usePillboxPlanOnboardingController({
   accessToken,
   currentAccountId,
   familyMembers,
+  locale,
   onClose,
   onPlanSaved,
 }: {
@@ -32,6 +34,7 @@ export function usePillboxPlanOnboardingController({
   accessToken: string | null;
   currentAccountId: string;
   familyMembers: MobileFamilyMember[];
+  locale: MobileLocale;
   onClose: () => void;
   onPlanSaved: (payload: { plan: MobilePillboxPlan; participantId: string }) => void;
 }) {
@@ -76,7 +79,7 @@ export function usePillboxPlanOnboardingController({
   }, [visible]);
 
   const currentStepIndex =
-    step === "participant" ? 1 : step === "list" ? 2 : step === "medicine" ? 3 : 4;
+    step === "participant" ? 1 : step === "review" ? 3 : 2;
   const participantTitle = resolvePlanParticipantTitle(draft.participantId, participants);
   const recipientSheetMembers = useMemo(
     () => buildPillboxRecipientSheetMembers(familyMembers, participants),
@@ -197,8 +200,10 @@ export function usePillboxPlanOnboardingController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : "Не удалось сохранить план.";
-        Alert.alert("Не удалось сохранить", message);
+            : locale === "ru"
+              ? "Не удалось сохранить план."
+              : "Could not save the plan.";
+        Alert.alert(locale === "ru" ? "Не удалось сохранить" : "Could not save", message);
       })
       .finally(() => {
         setIsSavingPlan(false);
