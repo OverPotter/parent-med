@@ -32,6 +32,10 @@ export type SettingsScreenContent = {
   notificationsSectionTitle: string;
   notificationsSectionHint: string;
   notificationsUnavailableHint: string;
+  notificationsPermissionDeniedHint: string;
+  notificationsPermissionPromptTitle: string;
+  notificationsPermissionPromptBody: string;
+  notificationsOpenSettingsLabel: string;
   pushMasterTitle: string;
   pushMasterHint: string;
   childrenPushTitle: string;
@@ -185,6 +189,34 @@ export function buildSettingsScreenContent(
       : isPl
         ? "Powiadomienia push nie są jeszcze dostępne w tym środowisku."
       : "Push is not available in this environment yet.",
+    notificationsPermissionDeniedHint: isRu
+      ? "Уведомления отключены в системных настройках iPhone."
+      : isDe
+        ? "Benachrichtigungen sind in den iPhone-Systemeinstellungen deaktiviert."
+      : isPl
+        ? "Powiadomienia są wyłączone w ustawieniach iPhone'a."
+      : "Notifications are disabled in iPhone settings.",
+    notificationsPermissionPromptTitle: isRu
+      ? "Разрешить уведомления"
+      : isDe
+        ? "Benachrichtigungen erlauben"
+      : isPl
+        ? "Włączyć powiadomienia"
+      : "Enable notifications",
+    notificationsPermissionPromptBody: isRu
+      ? "Чтобы push-напоминания работали, включите уведомления для PillPath в настройках iPhone."
+      : isDe
+        ? "Damit Push-Erinnerungen funktionieren, aktivieren Sie Benachrichtigungen für PillPath in den iPhone-Einstellungen."
+      : isPl
+        ? "Aby przypomnienia push działały, włącz powiadomienia dla PillPath w ustawieniach iPhone'a."
+      : "To receive push reminders, enable notifications for PillPath in iPhone Settings.",
+    notificationsOpenSettingsLabel: isRu
+      ? "Открыть настройки"
+      : isDe
+        ? "Einstellungen öffnen"
+      : isPl
+        ? "Otwórz ustawienia"
+      : "Open Settings",
     pushMasterTitle: isRu ? "Все уведомления" : isDe ? "Alle Benachrichtigungen" : isPl ? "Wszystkie powiadomienia" : "All notifications",
     pushMasterHint: isRu
       ? "Главный переключатель."

@@ -15,6 +15,7 @@ import {
 } from "../features/auth/session/mobileAuthSessionStorage";
 import { applyPreferredLanguageToSession } from "../features/settings/api/settingsApi";
 import { updatePreferredLanguage } from "../features/settings/api/settingsApi";
+import { deleteStoredNativePushSubscription } from "../shared/push/nativePushSync";
 import { type MobileLocale } from "../shared/i18n/mobileI18n";
 import { resolveStoredSessionPreferredLocale } from "./pillPathExpoShellModel";
 
@@ -48,6 +49,14 @@ export function useShellAuthSessionController({
   const handleLogout = useCallback(async () => {
     if (authSession) {
       try {
+        await deleteStoredNativePushSubscription({
+          accessToken: authSession.accessToken,
+        });
+      } catch {
+        // Local logout still continues if push cleanup fails.
+      }
+
+      try {
         await logoutMobileSession({
           accessToken: authSession.accessToken,
           refreshToken: authSession.refreshToken,
@@ -62,9 +71,19 @@ export function useShellAuthSessionController({
   }, [authSession, setAuthSession]);
 
   const handleSessionDeleted = useCallback(async () => {
+    if (authSession) {
+      try {
+        await deleteStoredNativePushSubscription({
+          accessToken: authSession.accessToken,
+        });
+      } catch {
+        // Local account cleanup still continues if push cleanup fails.
+      }
+    }
+
     await clearStoredAuthSession();
     setAuthSession(null);
-  }, [setAuthSession]);
+  }, [authSession, setAuthSession]);
 
   const handleUpdateAuthSession = useCallback(
     async (patch: {

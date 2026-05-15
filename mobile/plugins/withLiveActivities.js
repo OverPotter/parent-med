@@ -161,19 +161,29 @@ function withLiveActivitiesTarget(config) {
       });
     }
 
-    const buildConfigurations = IOSConfig.XcodeUtils.getBuildConfigurationsForListId(
-      project,
-      target.pbxNativeTarget.buildConfigurationList,
-    );
+    const targetBuildConfigurationList =
+      target?.pbxNativeTarget?.buildConfigurationList ??
+      target?.buildConfigurationList;
+    const buildConfigurations = targetBuildConfigurationList
+      ? IOSConfig.XcodeUtils.getBuildConfigurationsForListId(
+          project,
+          targetBuildConfigurationList,
+        )
+      : [];
     const applicationTarget = IOSConfig.XcodeUtils.getApplicationNativeTarget({
       project,
       projectName,
     });
+    const applicationBuildConfigurationList =
+      applicationTarget?.target?.buildConfigurationList ??
+      applicationTarget?.buildConfigurationList;
     const applicationConfigurations =
-      IOSConfig.XcodeUtils.getBuildConfigurationsForListId(
-        project,
-        applicationTarget.target.buildConfigurationList,
-      );
+      applicationBuildConfigurationList
+        ? IOSConfig.XcodeUtils.getBuildConfigurationsForListId(
+            project,
+            applicationBuildConfigurationList,
+          )
+        : [];
     const developmentTeam =
       applicationConfigurations?.find(
         (config) => config?.buildSettings?.DEVELOPMENT_TEAM,

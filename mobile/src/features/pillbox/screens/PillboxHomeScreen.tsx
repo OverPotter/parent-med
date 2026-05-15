@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
 import {
+  Image,
   ImageBackground,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -9,36 +9,78 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { buildPillboxHomeScreenContent } from "../model/pillboxHomeScreen";
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
+import { useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { pillboxTimeIcons } from "../assets/time";
+import { buildPillboxHomeScreenContent } from "../model/pillboxHomeScreen";
 import { pillboxHomeScreenStyles as styles } from "./pillboxHomeScreenStyles";
+import { PillboxPlanDetailsScreen } from "./PillboxPlanDetailsScreen";
 import { PillboxPlanOnboardingFlow } from "./PillboxPlanOnboardingFlow";
+import { SwipeablePillboxPlanCard } from "./SwipeablePillboxPlanCard";
+import { usePillboxHomeController } from "./usePillboxHomeController";
 
 const noop = () => {};
 
 export function PillboxHomeScreen({
+  accessToken,
+  currentAccountId,
   onOpenCreatePlan = noop,
   onOpenAnalytics = noop,
   onOpenPlan = noop,
   onMarkIntake = noop,
   familyMembers = [],
+  onTabBarModeChange,
 }: {
+  accessToken: string | null;
+  currentAccountId: string;
   onOpenCreatePlan?: () => void;
   onOpenAnalytics?: () => void;
   onOpenPlan?: (planId: string) => void;
   onMarkIntake?: (intakeId: string) => void;
   familyMembers?: MobileFamilyMember[];
+  onTabBarModeChange?: (mode: "foreground" | "background" | "hidden") => void;
 }) {
   const { locale } = useMobileI18n();
+  const pillboxLocale = locale === "ru" ? "ru" : "en";
   const surfaceTheme = useMobileSurfaceTheme();
   const content = useMemo(() => buildPillboxHomeScreenContent(locale), [locale]);
   const { width } = useWindowDimensions();
   const [activeIntakePage, setActiveIntakePage] = useState(0);
-  const [isPlanFlowVisible, setIsPlanFlowVisible] = useState(false);
   const carouselPageWidth = width - 44;
+  const {
+    displayedPlans,
+    todayIntakes,
+    summaryStats,
+    isPlanFlowVisible,
+    setIsPlanFlowVisible,
+    selectedPlan,
+    setSelectedPlan,
+    openSwipePlanId,
+    setOpenSwipePlanId,
+    deletingPlanId,
+    updatingPlanId,
+    isLoadingPlans,
+    plansError,
+    handleDeletePlan,
+    handleOpenPlan,
+    handleTogglePlanPause,
+    handleSavePlanRecipients,
+    handleMarkIntake,
+    handlePlanSaved,
+    reloadPlans,
+    setIsLoadingPlans,
+  } = usePillboxHomeController({
+    accessToken,
+    currentAccountId,
+    familyMembers,
+    locale: pillboxLocale,
+    onMarkIntake,
+    onTabBarModeChange,
+  });
 
   const handleCarouselScroll = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
@@ -71,8 +113,26 @@ export function PillboxHomeScreen({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>{content.title}</Text>
-          <Text style={styles.subtitle}>{content.subtitle}</Text>
+          <View style={styles.headerTopRow}>
+            <View style={styles.headerTextBlock}>
+              <Text style={styles.title}>{content.title}</Text>
+              <Text style={styles.subtitle}>{content.subtitle}</Text>
+            </View>
+            <Pressable
+              onPress={onOpenAnalytics}
+              style={({ pressed }) => [
+                styles.headerGhostAction,
+                pressed ? styles.buttonPressed : null,
+              ]}
+            >
+              <Image
+                source={pillboxTimeIcons.modeCourse}
+                style={styles.headerGhostActionIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.headerGhostActionText}>{content.analyticsLabel}</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.quickActionsRow}>
@@ -82,34 +142,38 @@ export function PillboxHomeScreen({
               setIsPlanFlowVisible(true);
             }}
             style={({ pressed }) => [
-              styles.quickActionButton,
-              styles.quickActionPrimary,
-              pressed ? styles.buttonPressed : null,
+              styles.createPlanCta,
+              pressed ? styles.createPlanCtaPressed : null,
             ]}
           >
-            <Text style={styles.quickActionPlus}>+</Text>
-            <Text style={styles.quickActionPrimaryText}>{content.createPlanLabel}</Text>
-          </Pressable>
-          <Pressable
-            onPress={onOpenAnalytics}
-            style={({ pressed }) => [
-              styles.quickActionButton,
-              styles.quickActionSecondary,
-              pressed ? styles.buttonPressed : null,
-            ]}
-          >
-            <Text style={styles.quickActionSecondaryText}>{content.analyticsLabel}</Text>
+            <View style={styles.createPlanIconCircle}>
+              <Ionicons name="add" size={22} color="#FFFFFF" />
+            </View>
+            <Text style={styles.createPlanLabel}>{content.createPlanLabel}</Text>
           </Pressable>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{content.activePlansTitle}</Text>
-          <View style={styles.sectionCounter}>
-            <Text style={styles.sectionCounterText}>{content.plansCounter}</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statsCard}>
+            {summaryStats.map((item, index) => (
+              <View key={item.id} style={styles.statColumn}>
+                <View style={styles.statInner}>
+                  <Text style={styles.statNumber}>{item.number}</Text>
+                  <Text style={styles.statLabel}>{item.label}</Text>
+                </View>
+                {index < summaryStats.length - 1 ? <View style={styles.statDivider} /> : null}
+              </View>
+            ))}
           </View>
         </View>
 
-        {content.todayIntakes.length > 0 ? (
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            {locale === "ru" ? "Ближайший приём" : "Next intake"}
+          </Text>
+        </View>
+
+        {todayIntakes.length > 0 ? (
           <View style={styles.carouselWrap}>
             <ScrollView
               horizontal
@@ -119,27 +183,37 @@ export function PillboxHomeScreen({
               onScroll={handleCarouselScroll}
               scrollEventThrottle={16}
             >
-              {content.todayIntakes.map((item) => (
+              {todayIntakes.map((item) => (
                 <View
                   key={item.id}
                   style={[styles.carouselPage, { width: carouselPageWidth }]}
                 >
                   <View style={styles.intakeCard}>
-                    <View style={styles.intakeCardTop}>
-                      <Text style={styles.intakeLabel}>{content.nextIntakeLabel}</Text>
-                      <Text style={styles.intakeTime}>{item.time}</Text>
-                      <View style={styles.intakeDateRow}>
-                        <Text style={styles.intakeDate}>{item.relativeDate}</Text>
-                        <View style={styles.countdownChip}>
-                          <Text style={styles.countdownChipText}>{item.countdown}</Text>
-                        </View>
+                    <View style={styles.intakeCardTopRow}>
+                      <View style={styles.intakeLabelPill}>
+                        <Text style={styles.intakeLabel}>{content.nextIntakeLabel}</Text>
                       </View>
-                      <Text style={styles.intakePlanTitle}>{item.planTitle}</Text>
-                      <Text style={styles.intakeMedicine}>{item.medicineSummary}</Text>
+                      <View style={styles.countdownChip}>
+                        <Text style={styles.countdownChipText}>{item.countdown}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.intakeHeroRow}>
+                      <View style={styles.intakeTimeBlock}>
+                        <Text style={styles.intakeTime}>{item.time}</Text>
+                        <Text style={styles.intakeDate}>{item.relativeDate}</Text>
+                      </View>
+
+                      <View style={styles.intakeBody}>
+                        <Text style={styles.intakePlanTitle}>{item.planTitle}</Text>
+                        <Text style={styles.intakeMedicine}>{item.medicineSummary}</Text>
+                      </View>
                     </View>
 
                     <Pressable
-                      onPress={() => onMarkIntake(item.id)}
+                      onPress={() =>
+                        handleMarkIntake(item.id, item.medicationId, item.scheduledFor ?? null)
+                      }
                       style={({ pressed }) => [
                         styles.intakeActionButton,
                         pressed ? styles.buttonPressed : null,
@@ -154,9 +228,9 @@ export function PillboxHomeScreen({
               ))}
             </ScrollView>
 
-            {content.todayIntakes.length > 1 ? (
+            {todayIntakes.length > 1 ? (
               <View style={styles.dotsRow}>
-                {content.todayIntakes.map((item, index) => (
+                {todayIntakes.map((item, index) => (
                   <View
                     key={item.id}
                     style={[styles.dot, index === activeIntakePage ? styles.dotActive : null]}
@@ -171,90 +245,67 @@ export function PillboxHomeScreen({
             <Text style={styles.emptyDescription}>
               {content.emptyTodayDescription}
             </Text>
-            <Pressable
-              onPress={onOpenCreatePlan}
-              style={({ pressed }) => [
-                styles.quickActionButton,
-                styles.quickActionPrimary,
-                pressed ? styles.buttonPressed : null,
-              ]}
-            >
-              <Text style={styles.quickActionPrimaryText}>{content.createPlanLabel}</Text>
-            </Pressable>
           </View>
         )}
 
-        <View style={styles.statsRow}>
-          {content.summaryStats.map((item) => (
-            <View key={item.id} style={styles.statCard}>
-              <Text style={styles.statNumber}>{item.number}</Text>
-              <Text style={styles.statLabel}>{item.label}</Text>
-            </View>
-          ))}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{content.activePlansTitle}</Text>
+          <View style={styles.sectionCounterInline}>
+            <Text style={styles.sectionCounterInlineText}>{displayedPlans.length}</Text>
+          </View>
         </View>
 
-        {content.plans.length > 0 ? (
+        {isLoadingPlans && displayedPlans.length === 0 ? (
+          <View style={[styles.emptyCard, { marginTop: 22 }]}>
+            <Text style={styles.emptyTitle}>
+              {locale === "ru" ? "Загружаем планы…" : "Loading plans..."}
+            </Text>
+            <Text style={styles.emptyDescription}>
+              {locale === "ru"
+                ? "Подтягиваем ближайшие приёмы и активные планы."
+                : "Loading next intakes and active plans."}
+            </Text>
+          </View>
+        ) : plansError && displayedPlans.length === 0 ? (
+          <View style={[styles.emptyCard, { marginTop: 22 }]}>
+            <Text style={styles.emptyTitle}>
+              {locale === "ru" ? "Не загрузилось" : "Could not load"}
+            </Text>
+            <Text style={styles.emptyDescription}>{plansError}</Text>
+            <Pressable
+              onPress={() => {
+                setIsLoadingPlans(true);
+                void reloadPlans().finally(() => setIsLoadingPlans(false));
+              }}
+              style={({ pressed }) => [
+                styles.emptyRetryButton,
+                pressed ? styles.buttonPressed : null,
+              ]}
+            >
+              <Text style={styles.emptyRetryButtonText}>
+                {locale === "ru" ? "Повторить" : "Retry"}
+              </Text>
+            </Pressable>
+          </View>
+        ) : displayedPlans.length > 0 ? (
           <View style={styles.plansList}>
-            {content.plans.map((plan) => {
-              const statusChipStyle =
-                plan.status === "attention"
-                  ? styles.statusChipAttention
-                  : plan.status === "missed"
-                    ? styles.statusChipMissed
-                    : plan.status === "completed"
-                      ? styles.statusChipCompleted
-                      : styles.statusChipActive;
-              const statusTextStyle =
-                plan.status === "attention"
-                  ? styles.statusTextAttention
-                  : plan.status === "missed"
-                    ? styles.statusTextMissed
-                    : plan.status === "completed"
-                      ? styles.statusTextCompleted
-                      : styles.statusTextActive;
-
-              return (
-                <Pressable
-                  key={plan.id}
-                  onPress={() => onOpenPlan(plan.id)}
-                  style={({ pressed }) => [
-                    styles.planCard,
-                    pressed ? styles.buttonPressed : null,
-                  ]}
-                >
-                  <View style={styles.planAvatar}>
-                    <Text style={styles.planAvatarText}>{plan.avatarText}</Text>
-                  </View>
-                  <View style={styles.planMain}>
-                    <Text numberOfLines={1} style={styles.planTitle}>
-                      {plan.title}
-                    </Text>
-                    <Text numberOfLines={1} style={styles.planMeta}>
-                      {plan.medicineCount}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        styles.planMeta,
-                        plan.status === "attention" || plan.status === "missed"
-                          ? styles.planMetaAttention
-                          : null,
-                      ]}
-                    >
-                      {plan.nextInfo}
-                    </Text>
-                  </View>
-                  <View style={styles.planRight}>
-                    <View style={[styles.statusChip, statusChipStyle]}>
-                      <Text style={[styles.statusChipText, statusTextStyle]}>
-                        {plan.statusText}
-                      </Text>
-                    </View>
-                    <Text style={styles.chevron}>›</Text>
-                  </View>
-                </Pressable>
-              );
-            })}
+            {displayedPlans.map((plan) => (
+              <SwipeablePillboxPlanCard
+                key={plan.id}
+                item={plan}
+                isOpen={openSwipePlanId === plan.id}
+                deleting={deletingPlanId === plan.id}
+                onOpenSwipe={() => setOpenSwipePlanId(plan.id)}
+                onCloseSwipe={() =>
+                  setOpenSwipePlanId((current) => (current === plan.id ? null : current))
+                }
+                onOpenPlan={() => {
+                  onOpenPlan(plan.id);
+                  handleOpenPlan(plan.id);
+                }}
+                onDelete={() => handleDeletePlan(plan.id)}
+              />
+            ))}
           </View>
         ) : (
           <View style={[styles.emptyCard, { marginTop: 22 }]}>
@@ -263,14 +314,19 @@ export function PillboxHomeScreen({
               {content.emptyPlansDescription}
             </Text>
             <Pressable
-              onPress={onOpenCreatePlan}
+              onPress={() => {
+                onOpenCreatePlan();
+                setIsPlanFlowVisible(true);
+              }}
               style={({ pressed }) => [
-                styles.quickActionButton,
-                styles.quickActionPrimary,
-                pressed ? styles.buttonPressed : null,
+                styles.createPlanCta,
+                pressed ? styles.createPlanCtaPressed : null,
               ]}
             >
-              <Text style={styles.quickActionPrimaryText}>{content.createPlanLabel}</Text>
+              <View style={styles.createPlanIconCircle}>
+                <Ionicons name="add" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.createPlanLabel}>{content.createPlanLabel}</Text>
             </Pressable>
           </View>
         )}
@@ -278,9 +334,22 @@ export function PillboxHomeScreen({
 
       <PillboxPlanOnboardingFlow
         visible={isPlanFlowVisible}
+        accessToken={accessToken}
+        currentAccountId={currentAccountId}
         familyMembers={familyMembers}
         onClose={() => setIsPlanFlowVisible(false)}
-        onPlanSaved={() => setIsPlanFlowVisible(false)}
+        onPlanSaved={() => handlePlanSaved()}
+      />
+
+      <PillboxPlanDetailsScreen
+        visible={selectedPlan !== null}
+        plan={selectedPlan}
+        isUpdating={selectedPlan !== null && updatingPlanId === selectedPlan.id}
+        currentAccountId={currentAccountId}
+        familyMembers={familyMembers}
+        onClose={() => setSelectedPlan(null)}
+        onTogglePause={handleTogglePlanPause}
+        onSaveRecipients={handleSavePlanRecipients}
       />
     </View>
   );

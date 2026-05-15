@@ -60,6 +60,11 @@ import {
 } from "../model/settingsScreenHelpers";
 import { resolveSettingsOwnershipPolicy } from "../model/settingsOwnershipPolicy";
 import { openSystemSubscriptionManagement } from "../model/settingsSubscriptionActions";
+import {
+  openNativeNotificationSettings,
+  type NativePushPermissionStatus,
+} from "../../../shared/push/nativePushNotifications";
+import { syncNativePushSubscription } from "../../../shared/push/nativePushSync";
 import { settingsScreenAssets } from "../assets";
 import {
   ChoiceRow,
@@ -136,6 +141,8 @@ export function SettingsScreen({
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isSavingRecoveryCode, setIsSavingRecoveryCode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [devicePushPermissionStatus, setDevicePushPermissionStatus] =
+    useState<NativePushPermissionStatus>("undetermined");
   const [passwordExpanded, setPasswordExpanded] = useState(false);
   const [recoveryCodeExpanded, setRecoveryCodeExpanded] = useState(false);
   const [languageExpanded, setLanguageExpanded] = useState(false);
@@ -240,6 +247,40 @@ export function SettingsScreen({
     visible,
   ]);
 
+  useEffect(() => {
+    if (!visible || !session) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void syncNativePushSubscription({
+      accessToken: session.accessToken,
+      promptIfNeeded: false,
+    })
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+
+        if ("permissionStatus" in result) {
+          setDevicePushPermissionStatus(result.permissionStatus);
+          return;
+        }
+
+        setDevicePushPermissionStatus("undetermined");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDevicePushPermissionStatus("undetermined");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.accessToken, visible]);
+
   const ownershipPolicy = resolveSettingsOwnershipPolicy({
     content,
     session,
@@ -247,6 +288,10 @@ export function SettingsScreen({
     familyAccess,
   });
   const pushMasterEnabled = isPushMasterEnabled(pushPreferences);
+  const notificationsPermissionHint =
+    pushConfig.enabled && devicePushPermissionStatus === "denied"
+      ? content.notificationsPermissionDeniedHint
+      : null;
 
   const selectedCabinetDays = useMemo(
     () => getSelectedCabinetDays(pushPreferences),
@@ -361,6 +406,62 @@ export function SettingsScreen({
   };
 
   const handleMasterPushToggle = async (enabled: boolean) => {
+    if (enabled) {
+      if (!session?.accessToken) {
+        return;
+      }
+
+      setIsSavingPush(true);
+      resetTransientMessages();
+
+      try {
+        const syncResult = await syncNativePushSubscription({
+          accessToken: session.accessToken,
+          promptIfNeeded: true,
+        });
+
+        if (syncResult.status !== "enabled") {
+          if ("permissionStatus" in syncResult) {
+            setDevicePushPermissionStatus(syncResult.permissionStatus);
+          }
+
+          if (
+            syncResult.status === "permission_denied" &&
+            syncResult.permissionStatus === "denied"
+          ) {
+            Alert.alert(
+              content.notificationsPermissionPromptTitle,
+              content.notificationsPermissionPromptBody,
+              [
+                {
+                  text: content.cancelActionLabel,
+                  style: "cancel",
+                },
+                {
+                  text: content.notificationsOpenSettingsLabel,
+                  onPress: () => {
+                    void openNativeNotificationSettings();
+                  },
+                },
+              ],
+            );
+          }
+
+          setError(content.saveErrorLabel);
+          setIsSavingPush(false);
+          return;
+        }
+
+        setDevicePushPermissionStatus(syncResult.permissionStatus);
+      } catch {
+        setError(content.saveErrorLabel);
+        setIsSavingPush(false);
+        return;
+      }
+
+      setIsSavingPush(false);
+    }
+
     const optimistic = buildOptimisticMasterPushPreferences(
       pushPreferences,
       enabled,
@@ -690,6 +791,7 @@ export function SettingsScreen({
                 notificationsUnavailableHint={
                   content.notificationsUnavailableHint
                 }
+                notificationsPermissionHint={notificationsPermissionHint}
                 pushMasterIcon={settingsModuleIcons.notifications}
                 pushMasterTitle={content.pushMasterTitle}
                 pushMasterHint={content.pushMasterHint}

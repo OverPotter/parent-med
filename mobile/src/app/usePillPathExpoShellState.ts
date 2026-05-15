@@ -42,6 +42,8 @@ import { useLiveActivitySettingsController } from "./useLiveActivitySettingsCont
 import { openChildrenRoot, openIllnessJournalRoot } from "./shellNavigation";
 import { useShellChildFlowController } from "./useShellChildFlowController";
 import { useShellFamilyState } from "./useShellFamilyState";
+import { usePushNotificationNavigation } from "./usePushNotificationNavigation";
+import { usePushSubscriptionSync } from "./usePushSubscriptionSync";
 import { useShellUtilityNavigationController } from "./useShellUtilityNavigationController";
 import { useLiveActivityNavigation } from "./useLiveActivityNavigation";
 import {
@@ -156,6 +158,11 @@ export function usePillPathExpoShellState() {
     openChildrenRoot(setActiveRootTab, setActiveScreen);
   }, [setActiveRootTab, setActiveScreen]);
 
+  const handleOpenCabinetRoot = useCallback(() => {
+    setActiveRootTab("cabinet");
+    setActiveScreen("children");
+  }, [setActiveRootTab, setActiveScreen]);
+
   const handleOpenIllnessJournalRoot = useCallback(
     (childId: string) => {
       openIllnessJournalRoot({
@@ -174,6 +181,8 @@ export function usePillPathExpoShellState() {
     onOpenChildren: handleOpenChildrenRoot,
     onOpenIllnessJournal: handleOpenIllnessJournalRoot,
   });
+
+  usePushSubscriptionSync(authSession);
 
   const {
     handleFeedingPress,
@@ -477,6 +486,19 @@ export function usePillPathExpoShellState() {
   } = useShellUtilityNavigationController({
     setActiveRootTab,
     setActiveScreen,
+  });
+
+  usePushNotificationNavigation({
+    authSession,
+    selectedChildId,
+    onSelectChild: setSelectedChildId,
+    onOpenChildren: handleOpenChildrenRoot,
+    onOpenIllnessJournal: (childId) => {
+      handleOpenIllnessJournalRoot(childId ?? selectedChildId);
+    },
+    onOpenCabinet: handleOpenCabinetRoot,
+    onOpenPillbox: handleOpenPillboxFromFamily,
+    onOpenSettings: handleOpenSettings,
   });
 
   const handleSelectRootTab = useCallback(

@@ -15,7 +15,7 @@ class PillboxMedicationWriteDto(BaseModel):
     household_medicine_id: UUID | None = Field(None, description="ID упаковки из аптечки")
     custom_medicine_name: str | None = Field(None, description="Ручное название лекарства")
     dose_amount: str = Field(..., description="Например, 1 таблетка")
-    meal_rule: str = Field(..., description="before_meal | with_meal | after_meal")
+    meal_rule: str = Field(..., description="before_meal | with_meal | after_meal | not_matter")
     repeat_days: list[int] = Field(..., description="ISO weekdays 1..7")
     times: list[time] = Field(..., description="Времена приёма")
     course_mode: str = Field(..., description="continuous | period")

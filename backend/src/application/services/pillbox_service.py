@@ -389,7 +389,7 @@ class PillboxService:
             raise ValidationError("Выберите хотя бы один день недели")
         if any(day < 1 or day > 7 for day in repeat_days):
             raise ValidationError("Дни недели должны быть в диапазоне 1..7")
-        if dto.meal_rule not in {"before_meal", "with_meal", "after_meal"}:
+        if dto.meal_rule not in {"before_meal", "with_meal", "after_meal", "not_matter"}:
             raise ValidationError("Некорректное правило приёма относительно еды")
         if dto.course_mode not in {"continuous", "period"}:
             raise ValidationError("Некорректный режим курса")

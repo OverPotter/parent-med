@@ -1,7 +1,14 @@
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
+import type {
+  MobilePillboxPlan,
+  MobilePillboxPlanSummary,
+} from "../api/mobilePillboxPlansApi";
 
 export type PillboxIntakeCard = {
   id: string;
+  medicationId?: string | null;
+  scheduledFor?: string | null;
   time: string;
   relativeDate: string;
   countdown: string;
@@ -19,6 +26,8 @@ export type PillboxPlanCard = {
   nextInfo: string;
   status: PillboxPlanStatus;
   statusText: string;
+  nextDoseAt?: string | null;
+  nextMedicationId?: string | null;
 };
 
 export type PillboxSummaryStat = {
@@ -35,14 +44,31 @@ export type PillboxHomeScreenContent = {
   activePlansTitle: string;
   nextIntakeLabel: string;
   nextIntakeAction: string;
-  plansCounter: string;
-  todayIntakes: PillboxIntakeCard[];
-  summaryStats: PillboxSummaryStat[];
-  plans: PillboxPlanCard[];
   emptyTodayTitle: string;
   emptyTodayDescription: string;
   emptyPlansTitle: string;
   emptyPlansDescription: string;
+};
+
+export type PillboxPlanDetailMedicine = {
+  id: string;
+  title: string;
+  summary: string;
+  schedule: string;
+};
+
+export type PillboxPlanDetail = {
+  id: string;
+  title: string;
+  avatarText: string;
+  status: "active" | "paused" | "completed" | "archived" | "attention" | "missed";
+  statusText: string;
+  recipientIds: string[];
+  medicineCountLabel: string;
+  recipientsLabel: string;
+  scheduleNote: string;
+  medicines: PillboxPlanDetailMedicine[];
+  isCreatedPlan: boolean;
 };
 
 export function buildPillboxHomeScreenContent(
@@ -57,76 +83,6 @@ export function buildPillboxHomeScreenContent(
       activePlansTitle: "Активные планы",
       nextIntakeLabel: "Следующий приём",
       nextIntakeAction: "Отметить приём",
-      plansCounter: "4",
-      todayIntakes: [
-        {
-          id: "intake_father",
-          time: "08:30",
-          relativeDate: "Сегодня, 15 мая",
-          countdown: "через 45 мин",
-          planTitle: "Для папы Артёма",
-          medicineSummary: "Нурофен сироп · 2 мл · После еды",
-        },
-        {
-          id: "intake_grandmother",
-          time: "09:00",
-          relativeDate: "Сегодня, 15 мая",
-          countdown: "через 1 ч 15 мин",
-          planTitle: "Для бабушки",
-          medicineSummary: "Таблетка от давления · 1 табл.",
-        },
-        {
-          id: "intake_nanny",
-          time: "10:30",
-          relativeDate: "Сегодня, 15 мая",
-          countdown: "через 2 ч 45 мин",
-          planTitle: "Для няни Ирины",
-          medicineSummary: "Витамин D · 1 капсула",
-        },
-      ],
-      summaryStats: [
-        { id: "plans", number: "4", label: "плана\nактивно" },
-        { id: "medicines", number: "7", label: "лекарств\nв планах" },
-        { id: "today", number: "3", label: "приёма\nсегодня" },
-      ],
-      plans: [
-        {
-          id: "plan_grandmother",
-          title: "Для бабушки",
-          avatarText: "Б",
-          medicineCount: "5 лекарств",
-          nextInfo: "пропущен приём",
-          status: "attention",
-          statusText: "Требует внимания",
-        },
-        {
-          id: "plan_father",
-          title: "Для папы Артёма",
-          avatarText: "П",
-          medicineCount: "3 лекарства",
-          nextInfo: "следующий в 08:30",
-          status: "active",
-          statusText: "Активен",
-        },
-        {
-          id: "plan_grandfather",
-          title: "Для дедушки",
-          avatarText: "Д",
-          medicineCount: "2 лекарства",
-          nextInfo: "следующий в 11:00",
-          status: "active",
-          statusText: "Активен",
-        },
-        {
-          id: "plan_nanny",
-          title: "Для няни Ирины",
-          avatarText: "Н",
-          medicineCount: "1 лекарство",
-          nextInfo: "следующий завтра в 09:00",
-          status: "active",
-          statusText: "Активен",
-        },
-      ],
       emptyTodayTitle: "Сегодня приёмов нет",
       emptyTodayDescription:
         "Все активные планы спокойны. Следующий приём появится здесь.",
@@ -144,76 +100,6 @@ export function buildPillboxHomeScreenContent(
     activePlansTitle: "Active plans",
     nextIntakeLabel: "Next intake",
     nextIntakeAction: "Mark as taken",
-    plansCounter: "4",
-    todayIntakes: [
-      {
-        id: "intake_father",
-        time: "08:30",
-        relativeDate: "Today, May 15",
-        countdown: "in 45 min",
-        planTitle: "For Artem's dad",
-        medicineSummary: "Nurofen syrup · 2 ml · After meal",
-      },
-      {
-        id: "intake_grandmother",
-        time: "09:00",
-        relativeDate: "Today, May 15",
-        countdown: "in 1 h 15 min",
-        planTitle: "For grandma",
-        medicineSummary: "Blood pressure tablet · 1 pill",
-      },
-      {
-        id: "intake_nanny",
-        time: "10:30",
-        relativeDate: "Today, May 15",
-        countdown: "in 2 h 45 min",
-        planTitle: "For nanny Irina",
-        medicineSummary: "Vitamin D · 1 capsule",
-      },
-    ],
-    summaryStats: [
-      { id: "plans", number: "4", label: "plans\nactive" },
-      { id: "medicines", number: "7", label: "medicines\nin plans" },
-      { id: "today", number: "3", label: "intakes\ntoday" },
-    ],
-    plans: [
-      {
-        id: "plan_grandmother",
-        title: "For grandma",
-        avatarText: "G",
-        medicineCount: "5 medicines",
-        nextInfo: "missed intake",
-        status: "attention",
-        statusText: "Needs attention",
-      },
-      {
-        id: "plan_father",
-        title: "For Artem's dad",
-        avatarText: "D",
-        medicineCount: "3 medicines",
-        nextInfo: "next at 08:30",
-        status: "active",
-        statusText: "Active",
-      },
-      {
-        id: "plan_grandfather",
-        title: "For grandpa",
-        avatarText: "G",
-        medicineCount: "2 medicines",
-        nextInfo: "next at 11:00",
-        status: "active",
-        statusText: "Active",
-      },
-      {
-        id: "plan_nanny",
-        title: "For nanny Irina",
-        avatarText: "N",
-        medicineCount: "1 medicine",
-        nextInfo: "next tomorrow at 09:00",
-        status: "active",
-        statusText: "Active",
-      },
-    ],
     emptyTodayTitle: "No intakes today",
     emptyTodayDescription:
       "All active plans are calm. The next intake will appear here.",
@@ -221,4 +107,410 @@ export function buildPillboxHomeScreenContent(
     emptyPlansDescription:
       "Create your first plan to see medicines, reminders, and completion history.",
   };
+}
+
+export function buildPillboxPlanCardsFromSummaries(input: {
+  summaries: MobilePillboxPlanSummary[];
+  locale: "ru" | "en";
+  now?: Date;
+}): PillboxPlanCard[] {
+  const now = input.now ?? new Date();
+
+  return input.summaries
+    .slice()
+    .sort((left, right) => comparePlanSummaries(left, right, now))
+    .map((summary) => {
+      const normalizedTitle = normalizePlanTitle(summary.title);
+      const isOverdue = isOverdueDose(summary, now);
+      const isLate = isLateDose(summary, now);
+      const status = mapSummaryStatus(summary, isOverdue, isLate);
+
+      return {
+        id: summary.id,
+        title: normalizedTitle,
+        avatarText: resolveAvatarText(normalizedTitle),
+        medicineCount: buildMedicineCountLabel(summary.activeMedicationCount, input.locale),
+        nextInfo: buildSummaryNextInfo(summary, input.locale, now, isOverdue),
+        status,
+        statusText: buildSummaryStatusText(status, input.locale),
+        nextDoseAt: summary.nextDoseAt,
+        nextMedicationId: summary.nextMedicationId,
+      };
+    });
+}
+
+export function buildPillboxIntakeCardsFromSummaries(input: {
+  summaries: MobilePillboxPlanSummary[];
+  locale: "ru" | "en";
+  now?: Date;
+}): PillboxIntakeCard[] {
+  const now = input.now ?? new Date();
+
+  return input.summaries
+    .filter((summary) => summary.status === "active" && isSameDay(summary.nextDoseAt, now))
+    .sort((left, right) => compareDateStrings(left.nextDoseAt, right.nextDoseAt))
+    .map((summary) => ({
+      id: summary.id,
+      medicationId: summary.nextMedicationId,
+      scheduledFor: summary.nextDoseAt,
+      time: formatClock(summary.nextDoseAt, input.locale),
+      relativeDate: buildRelativeDate(summary.nextDoseAt, input.locale, now),
+      countdown: buildCountdown(summary.nextDoseAt, input.locale, now),
+      planTitle: normalizePlanTitle(summary.title),
+      medicineSummary: summary.nextMedicationTitle?.trim() || fallbackMedicineLabel(input.locale),
+    }));
+}
+
+export function buildPillboxSummaryStatsFromSummaries(input: {
+  summaries: MobilePillboxPlanSummary[];
+  locale: "ru" | "en";
+  now?: Date;
+}): PillboxSummaryStat[] {
+  const now = input.now ?? new Date();
+  const plansCount = input.summaries.length;
+  const medicinesCount = input.summaries.reduce(
+    (sum, item) => sum + item.activeMedicationCount,
+    0,
+  );
+  const todayCount = input.summaries.filter((item) => isSameDay(item.nextDoseAt, now)).length;
+
+  return input.locale === "ru"
+    ? [
+        { id: "plans", number: String(plansCount), label: "плана\nактивно" },
+        { id: "medicines", number: String(medicinesCount), label: "лекарств\nв планах" },
+        { id: "today", number: String(todayCount), label: "приёма\nсегодня" },
+      ]
+    : [
+        { id: "plans", number: String(plansCount), label: "plans\nactive" },
+        { id: "medicines", number: String(medicinesCount), label: "medicines\nin plans" },
+        { id: "today", number: String(todayCount), label: "intakes\ntoday" },
+      ];
+}
+
+export function buildPillboxPlanDetailFromEntity(input: {
+  plan: MobilePillboxPlan;
+  locale: "ru" | "en";
+  familyMembers: Pick<MobileFamilyMember, "id" | "displayName">[];
+}): PillboxPlanDetail {
+  const { plan, locale, familyMembers } = input;
+  const recipientsLabel =
+    familyMembers
+      .filter((member) => plan.memberAccountIds.includes(member.id))
+      .map((member) => member.displayName)
+      .join(", ") ||
+    (locale === "ru" ? "Без уведомлений" : "No recipients");
+
+  const medicines = [...plan.medications]
+    .sort((left, right) => left.position - right.position)
+    .map((item) => ({
+      id: item.id,
+      title: item.customMedicineName?.trim() || (locale === "ru" ? "Без названия" : "Untitled"),
+      summary: [
+        item.doseAmount,
+        formatMealRule(item.mealRule, locale),
+        formatCourse(item.courseMode, item.courseEndDate, locale),
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      schedule: item.times.join(", ") || (locale === "ru" ? "Без времени" : "No time"),
+    }));
+
+  return {
+    id: plan.id,
+    title: normalizePlanTitle(plan.title),
+    avatarText: resolveAvatarText(plan.title),
+    status: plan.status,
+    statusText:
+      plan.status === "paused"
+        ? locale === "ru"
+          ? "На паузе"
+          : "Paused"
+        : locale === "ru"
+          ? "Активен"
+          : "Active",
+    recipientIds: [...plan.memberAccountIds],
+    medicineCountLabel: buildMedicineCountLabel(plan.medications.length, locale),
+    recipientsLabel,
+    scheduleNote: buildNextInfoLabel({
+      locale,
+      times: plan.medications.flatMap((item) => item.times),
+    }),
+    medicines,
+    isCreatedPlan: true,
+  };
+}
+
+function normalizePlanTitle(value: string) {
+  return value.trim() || "Plan";
+}
+
+function resolveAvatarText(label: string) {
+  const first = label.trim().charAt(0);
+  return first ? first.toUpperCase() : "•";
+}
+
+function buildMedicineCountLabel(count: number, locale: "ru" | "en") {
+  if (locale === "ru") {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) {
+      return `${count} лекарство`;
+    }
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+      return `${count} лекарства`;
+    }
+    return `${count} лекарств`;
+  }
+
+  return `${count} ${count === 1 ? "medicine" : "medicines"}`;
+}
+
+function buildNextInfoLabel(input: { locale: "ru" | "en"; times: string[] }) {
+  const nextTime = [...input.times].sort()[0];
+  if (!nextTime) {
+    return input.locale === "ru" ? "расписание настроено" : "schedule is set";
+  }
+
+  return input.locale === "ru" ? `следующий в ${nextTime}` : `next at ${nextTime}`;
+}
+
+function formatMealRule(
+  value: MobilePillboxPlan["medications"][number]["mealRule"],
+  locale: "ru" | "en",
+) {
+  if (value === "before_meal") {
+    return locale === "ru" ? "До еды" : "Before meal";
+  }
+  if (value === "with_meal") {
+    return locale === "ru" ? "Во время еды" : "With meal";
+  }
+  if (value === "after_meal") {
+    return locale === "ru" ? "После еды" : "After meal";
+  }
+  return locale === "ru" ? "Независимо от еды" : "Independent of meal";
+}
+
+function formatCourse(
+  mode: MobilePillboxPlan["medications"][number]["courseMode"],
+  courseEndDate: string | null,
+  locale: "ru" | "en",
+) {
+  if (mode !== "period") {
+    return locale === "ru" ? "Постоянно" : "Continuous";
+  }
+  if (!courseEndDate) {
+    return locale === "ru" ? "Курсом" : "Course";
+  }
+  return locale === "ru" ? `До ${courseEndDate}` : `Until ${courseEndDate}`;
+}
+
+function comparePlanSummaries(
+  left: MobilePillboxPlanSummary,
+  right: MobilePillboxPlanSummary,
+  now: Date,
+) {
+  const leftRank = getSummarySortRank(left, now);
+  const rightRank = getSummarySortRank(right, now);
+  if (leftRank !== rightRank) {
+    return leftRank - rightRank;
+  }
+  return compareDateStrings(left.nextDoseAt, right.nextDoseAt);
+}
+
+function getSummarySortRank(summary: MobilePillboxPlanSummary, now: Date) {
+  if (summary.status === "completed" || summary.status === "archived") {
+    return 5;
+  }
+  if (summary.status === "paused") {
+    return 4;
+  }
+  if (isOverdueDose(summary, now) || isLateDose(summary, now)) {
+    return 0;
+  }
+  if (isSameDay(summary.nextDoseAt, now)) {
+    return 1;
+  }
+  if (isTomorrow(summary.nextDoseAt, now)) {
+    return 2;
+  }
+  return 3;
+}
+
+function buildSummaryNextInfo(
+  summary: MobilePillboxPlanSummary,
+  locale: "ru" | "en",
+  now: Date,
+  isOverdue: boolean,
+) {
+  if (summary.status === "paused") {
+    return locale === "ru" ? "план на паузе" : "plan is paused";
+  }
+  if (summary.status === "completed" || summary.status === "archived") {
+    return locale === "ru" ? "курс завершён" : "course completed";
+  }
+  if (isOverdue) {
+    return locale === "ru" ? "пропущен приём" : "missed intake";
+  }
+  if (isSameDay(summary.nextDoseAt, now)) {
+    return locale === "ru"
+      ? `следующий в ${formatClock(summary.nextDoseAt, locale)}`
+      : `next at ${formatClock(summary.nextDoseAt, locale)}`;
+  }
+  if (isTomorrow(summary.nextDoseAt, now)) {
+    return locale === "ru"
+      ? `следующий завтра в ${formatClock(summary.nextDoseAt, locale)}`
+      : `next tomorrow at ${formatClock(summary.nextDoseAt, locale)}`;
+  }
+  return summary.nextDoseLabel?.trim() || (locale === "ru" ? "расписание настроено" : "schedule is set");
+}
+
+function mapSummaryStatus(
+  summary: MobilePillboxPlanSummary,
+  isOverdue: boolean,
+  isLate: boolean,
+): PillboxPlanStatus {
+  if (summary.status === "completed" || summary.status === "archived" || summary.status === "paused") {
+    return "completed";
+  }
+  if (isOverdue) {
+    return "missed";
+  }
+  if (isLate) {
+    return "attention";
+  }
+  return "active";
+}
+
+function buildSummaryStatusText(status: PillboxPlanStatus, locale: "ru" | "en") {
+  if (status === "attention") {
+    return locale === "ru" ? "Требует внимания" : "Needs attention";
+  }
+  if (status === "missed") {
+    return locale === "ru" ? "Пропущен" : "Missed";
+  }
+  if (status === "completed") {
+    return locale === "ru" ? "На паузе" : "Paused";
+  }
+  return locale === "ru" ? "Активен" : "Active";
+}
+
+function isSameDay(value: string | null, now: Date) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
+function isTomorrow(value: string | null, now: Date) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  return (
+    date.getFullYear() === tomorrow.getFullYear() &&
+    date.getMonth() === tomorrow.getMonth() &&
+    date.getDate() === tomorrow.getDate()
+  );
+}
+
+function compareDateStrings(left: string | null, right: string | null) {
+  const leftMs = left ? new Date(left).getTime() : Number.MAX_SAFE_INTEGER;
+  const rightMs = right ? new Date(right).getTime() : Number.MAX_SAFE_INTEGER;
+  return leftMs - rightMs;
+}
+
+function formatClock(value: string | null, locale: "ru" | "en") {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function buildRelativeDate(value: string | null, locale: "ru" | "en", now: Date) {
+  if (!value) {
+    return locale === "ru" ? "Без даты" : "No date";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return locale === "ru" ? "Без даты" : "No date";
+  }
+  const dayLabel = isSameDay(value, now)
+    ? locale === "ru"
+      ? "Сегодня"
+      : "Today"
+    : isTomorrow(value, now)
+      ? locale === "ru"
+        ? "Завтра"
+        : "Tomorrow"
+      : new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+          day: "numeric",
+          month: "long",
+        }).format(date);
+
+  const dateLabel = new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+    day: "numeric",
+    month: "long",
+  }).format(date);
+
+  return isSameDay(value, now) || isTomorrow(value, now) ? `${dayLabel}, ${dateLabel}` : dateLabel;
+}
+
+function buildCountdown(value: string | null, locale: "ru" | "en", now: Date) {
+  if (!value) {
+    return locale === "ru" ? "без времени" : "no time";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return locale === "ru" ? "без времени" : "no time";
+  }
+  const diffMs = date.getTime() - now.getTime();
+  if (diffMs <= 0) {
+    return locale === "ru" ? "сейчас" : "now";
+  }
+  const totalMinutes = Math.round(diffMs / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (locale === "ru") {
+    if (hours <= 0) {
+      return `через ${minutes} мин`;
+    }
+    if (minutes === 0) {
+      return `через ${hours} ч`;
+    }
+    return `через ${hours} ч ${minutes} мин`;
+  }
+  if (hours <= 0) {
+    return `in ${minutes} min`;
+  }
+  if (minutes === 0) {
+    return `in ${hours} h`;
+  }
+  return `in ${hours} h ${minutes} min`;
+}
+
+function isOverdueDose(summary: MobilePillboxPlanSummary, now: Date) {
+  if (summary.status !== "active" || !summary.nextDoseAt) return false;
+  const scheduledAt = new Date(summary.nextDoseAt);
+  if (Number.isNaN(scheduledAt.getTime())) return false;
+  return now.getTime() - scheduledAt.getTime() > 4 * 60 * 60 * 1000;
+}
+
+function isLateDose(summary: MobilePillboxPlanSummary, now: Date) {
+  if (summary.status !== "active" || !summary.nextDoseAt) return false;
+  const scheduledAt = new Date(summary.nextDoseAt);
+  if (Number.isNaN(scheduledAt.getTime())) return false;
+  const diffMs = now.getTime() - scheduledAt.getTime();
+  return diffMs > 30 * 60 * 1000 && diffMs <= 4 * 60 * 60 * 1000;
+}
+
+function fallbackMedicineLabel(locale: "ru" | "en") {
+  return locale === "ru" ? "Лекарство по плану" : "Medication in plan";
 }

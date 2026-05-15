@@ -6,6 +6,7 @@ import { styles } from "./settingsScreenStyles";
 export function NotificationsSettingsCard({
   pushConfigEnabled,
   notificationsUnavailableHint,
+  notificationsPermissionHint,
   pushMasterIcon,
   pushMasterTitle,
   pushMasterHint,
@@ -47,6 +48,7 @@ export function NotificationsSettingsCard({
 }: {
   pushConfigEnabled: boolean;
   notificationsUnavailableHint: string;
+  notificationsPermissionHint?: string | null;
   pushMasterIcon: ImageSourcePropType;
   pushMasterTitle: string;
   pushMasterHint: string;
@@ -93,6 +95,11 @@ export function NotificationsSettingsCard({
       {!pushConfigEnabled ? (
         <Text style={[styles.inlineNote, { color: surfaceTheme.textMutedColor }]}>
           {notificationsUnavailableHint}
+        </Text>
+      ) : null}
+      {pushConfigEnabled && notificationsPermissionHint ? (
+        <Text style={[styles.inlineNote, { color: surfaceTheme.textMutedColor }]}>
+          {notificationsPermissionHint}
         </Text>
       ) : null}
 

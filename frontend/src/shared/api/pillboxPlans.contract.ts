@@ -1,6 +1,6 @@
 /** Контракт API семейной таблетницы. */
 
-export type PillboxMealRule = "before_meal" | "with_meal" | "after_meal";
+export type PillboxMealRule = "before_meal" | "with_meal" | "after_meal" | "not_matter";
 export type PillboxCourseMode = "continuous" | "period";
 export type PillboxPlanStatus = "active" | "paused" | "completed" | "archived";
 export type PillboxPlanWritableStatus = "active" | "paused" | "archived";

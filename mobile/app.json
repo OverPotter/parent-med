@@ -8,14 +8,17 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "pillpath",
-    "plugins": ["./plugins/withLiveActivities"],
+    "plugins": ["./plugins/withLiveActivities", "expo-notifications"],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FBF3EC"
+      "backgroundColor": "#EBE4FF"
     },
     "ios": {
       "deploymentTarget": "16.1",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      },
       "supportsTablet": false,
       "bundleIdentifier": "com.pillpath.ios"
     }

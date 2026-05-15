@@ -85,6 +85,16 @@ export type MobilePushConfig = {
   enabled: boolean;
 };
 
+export type MobilePushSubscription = {
+  channel: "native";
+  endpoint: string;
+  native_token: string;
+  platform: "ios" | "android";
+  device_id: string;
+  user_agent: string;
+  device_label: string;
+};
+
 export type MobileFamilySettingsSummary = {
   id: string;
   name: string;
@@ -305,6 +315,36 @@ export async function fetchPushConfig(payload: {
   return {
     enabled: response.enabled,
   };
+}
+
+export async function upsertPushSubscription(payload: {
+  accessToken: string | null;
+  subscription: MobilePushSubscription;
+}) {
+  await requestAuthedJson<void>(
+    "/push-notifications/subscriptions",
+    {
+      method: "POST",
+      body: JSON.stringify(payload.subscription),
+    },
+    payload.accessToken,
+  );
+}
+
+export async function deletePushSubscription(payload: {
+  accessToken: string | null;
+  endpoint: string;
+}) {
+  await requestAuthedJson<void>(
+    "/push-notifications/subscriptions",
+    {
+      method: "DELETE",
+      body: JSON.stringify({
+        endpoint: payload.endpoint,
+      }),
+    },
+    payload.accessToken,
+  );
 }
 
 export async function fetchMyFamilySettingsSummary(payload: {
