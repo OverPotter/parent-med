@@ -2,7 +2,6 @@ import type { MobileAuthSession } from "../features/auth/api/authApi";
 import type { JournalEntryKind } from "../features/journal/model/journalEntryScreen";
 import type { AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
 import type { MobileBottomTabKey } from "../shared/components/mobileBottomTabModel";
-import type { MobileLocale } from "../shared/i18n/mobileI18n";
 
 export type ChildProfileDestination = JournalEntryKind | "overview" | "illness";
 
@@ -72,16 +71,6 @@ export function isChildProfileVisibleScreen(
   activeScreen: PillPathActiveScreen,
 ): boolean {
   return CHILD_PROFILE_VISIBLE_SCREENS.includes(activeScreen);
-}
-
-export function resolveStoredSessionPreferredLocale(
-  storedSession: MobileAuthSession,
-  refreshedSession: MobileAuthSession,
-): MobileLocale {
-  return storedSession.account.preferredLanguage === "pl" ||
-    storedSession.account.preferredLanguage === "de"
-    ? storedSession.account.preferredLanguage
-    : refreshedSession.account.preferredLanguage;
 }
 
 export function shouldRenderMoreTab(

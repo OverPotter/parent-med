@@ -178,13 +178,11 @@ export function FamilyProfileEditFields({
 
 export function FamilyAccessTargetHeader({
   content,
-  localeIsRu,
   memberName,
   memberRelationship,
   palette,
 }: {
   content: FamilyScreenContent;
-  localeIsRu: boolean;
   memberName: string;
   memberRelationship: string;
   palette: FamilyPalette;
@@ -195,9 +193,7 @@ export function FamilyAccessTargetHeader({
         {content.accessSettingsTitle}
       </Text>
       <Text style={[styles.subtitle, { color: palette.textSecondary }]}>
-        {localeIsRu
-          ? "Выберите, что этот участник видит и может делать."
-          : "Choose what this member can see and do."}
+        {content.accessTargetHint}
       </Text>
       <View
         style={[
@@ -246,7 +242,6 @@ export function FamilyAccessCardBody({
   childrenAccessLabels,
   content,
   inline,
-  localeIsRu,
   onChangePolicy,
   onOpenSheet,
   onSave,
@@ -259,7 +254,6 @@ export function FamilyAccessCardBody({
   childrenAccessLabels: Record<FamilyChildrenAccess, string>;
   content: FamilyScreenContent;
   inline: boolean;
-  localeIsRu: boolean;
   onChangePolicy: (policy: FamilyUiAccessPolicy) => void;
   onOpenSheet: (
     sheet:
@@ -300,9 +294,7 @@ export function FamilyAccessCardBody({
           <Text
             style={[styles.inlineAccessHint, { color: palette.textSecondary }]}
           >
-            {localeIsRu
-              ? "Выберите, что участник видит и может делать."
-              : "Choose what this member can see and do."}
+            {content.accessInlineHint}
           </Text>
         </View>
       ) : null}
@@ -400,9 +392,7 @@ export function FamilyAccessCardBody({
               {content.cabinetPushTitle}
             </Text>
             <Text style={[styles.switchHint, { color: palette.textSecondary }]}>
-              {localeIsRu
-                ? "Будут приходить только важные напоминания по аптечке."
-                : "Only important cabinet reminders will be sent."}
+              {content.cabinetPushHint}
             </Text>
           </View>
           <Switch

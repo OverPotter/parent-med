@@ -1,11 +1,17 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import type { CabinetFilterKey, MedicineCardItem, SummaryStat } from "../model/medicineCabinetOverviewModel";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import {
+  getCabinetFilterSectionTitle,
+  type CabinetFilterKey,
+  type MedicineCardItem,
+  type SummaryStat,
+} from "../model/medicineCabinetOverviewModel";
 import { SwipeableMedicineCard } from "./SwipeableMedicineCard";
 import { medicineCabinetOverviewStyles as styles } from "./medicineCabinetOverviewScreenStyles";
 
 export function MedicineCabinetOverviewContent({
-  isRu,
+  locale,
   searchQuery,
   onChangeSearchQuery,
   activeFilter,
@@ -27,7 +33,7 @@ export function MedicineCabinetOverviewContent({
   onOpenRenew,
   onDeleteItem,
 }: {
-  isRu: boolean;
+  locale: MobileLocale;
   searchQuery: string;
   onChangeSearchQuery: (value: string) => void;
   activeFilter: CabinetFilterKey;
@@ -49,6 +55,21 @@ export function MedicineCabinetOverviewContent({
   onOpenRenew: (item: MedicineCardItem) => void;
   onDeleteItem: (item: MedicineCardItem) => void;
 }) {
+  const isRu = locale === "ru";
+  const title = isRu
+    ? "Аптечка"
+    : locale === "de"
+      ? "Hausapotheke"
+      : locale === "pl"
+        ? "Apteczka"
+        : "Cabinet";
+  const subtitle = isRu
+    ? "Что есть дома и что пора проверить."
+    : locale === "de"
+      ? "Was zu Hause ist und was geprüft werden sollte."
+      : locale === "pl"
+        ? "Co jest w domu i co warto sprawdzić."
+        : "What you have at home and what should be checked.";
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -59,40 +80,78 @@ export function MedicineCabinetOverviewContent({
         <View style={styles.header}>
           <View style={styles.titleRow}>
             <View style={styles.titleGroup}>
-              <Text style={styles.title}>Аптечка</Text>
-              <Text style={styles.subtitle}>Что есть дома и что пора проверить.</Text>
+              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.subtitle}>{subtitle}</Text>
             </View>
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Настройки уведомлений аптечки"
+              accessibilityLabel={
+                isRu
+                  ? "Настройки уведомлений аптечки"
+                  : locale === "de"
+                    ? "Benachrichtigungseinstellungen der Hausapotheke"
+                    : locale === "pl"
+                      ? "Ustawienia powiadomień apteczki"
+                      : "Cabinet notification settings"
+              }
               onPress={onOpenRecipients}
               style={styles.notificationsPill}
             >
-              <Text style={styles.notificationsLabel}>Уведомления</Text>
+              <Text style={styles.notificationsLabel}>
+                {isRu
+                  ? "Уведомления"
+                  : locale === "de"
+                    ? "Hinweise"
+                    : locale === "pl"
+                      ? "Powiadomienia"
+                      : "Alerts"}
+              </Text>
             </Pressable>
           </View>
 
           <View style={styles.infoLine}>
             <Text style={styles.infoLineText}>
-              Уведомления получают:{" "}
+              {isRu
+                ? "Уведомления получают: "
+                : locale === "de"
+                  ? "Benachrichtigungen erhalten: "
+                  : locale === "pl"
+                    ? "Powiadomienia otrzymują: "
+                    : "Notifications go to: "}
               <Text style={styles.infoLineTextStrong}>{recipientsSummary}</Text>
             </Text>
           </View>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Добавить препарат в аптечку"
+            accessibilityLabel={
+              isRu
+                ? "Добавить препарат в аптечку"
+                : locale === "de"
+                  ? "Medikament zur Hausapotheke hinzufügen"
+                  : locale === "pl"
+                    ? "Dodaj lek do apteczki"
+                    : "Add medicine to cabinet"
+            }
             onPress={onOpenAddChoice}
             style={({ pressed }) => [
               styles.primaryCta,
               pressed ? styles.primaryCtaPressed : null,
             ]}
-          >
-            <View style={styles.primaryCtaIconCircle}>
-              <Ionicons name="add" size={20} color="#FFFFFF" />
-            </View>
-            <Text style={styles.primaryCtaLabel}>Добавить препарат</Text>
+            >
+              <View style={styles.primaryCtaIconCircle}>
+                <Ionicons name="add" size={20} color="#FFFFFF" />
+              </View>
+            <Text style={styles.primaryCtaLabel}>
+              {isRu
+                ? "Добавить препарат"
+                : locale === "de"
+                  ? "Medikament hinzufügen"
+                  : locale === "pl"
+                    ? "Dodaj lek"
+                    : "Add medicine"}
+            </Text>
           </Pressable>
         </View>
 
@@ -136,41 +195,79 @@ export function MedicineCabinetOverviewContent({
           <TextInput
             value={searchQuery}
             onChangeText={onChangeSearchQuery}
-            placeholder="Поиск по препаратам"
+            placeholder={
+              isRu
+                ? "Поиск по препаратам"
+                : locale === "de"
+                  ? "Medikamente durchsuchen"
+                  : locale === "pl"
+                    ? "Szukaj leków"
+                    : "Search medicines"
+            }
             placeholderTextColor="#A0A8B5"
             style={styles.searchInput}
-            accessibilityLabel={isRu ? "Поиск по препаратам" : "Search medicines"}
+            accessibilityLabel={
+              isRu
+                ? "Поиск по препаратам"
+                : locale === "de"
+                  ? "Medikamente durchsuchen"
+                  : locale === "pl"
+                    ? "Szukaj leków"
+                    : "Search medicines"
+            }
           />
         </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
-            {activeFilter === "all"
-              ? "Все препараты дома"
-              : activeFilter === "attention"
-                ? "Стоит проверить"
-                : activeFilter === "expired"
-                  ? "Просроченные препараты"
-                  : "Можно использовать"}
+            {getCabinetFilterSectionTitle(locale, activeFilter)}
           </Text>
           <Text style={styles.sectionSubtitle}>{sectionSubtitle}</Text>
         </View>
 
         {isLoadingMedicines ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Загружаем аптечку…</Text>
+            <Text style={styles.emptyTitle}>
+              {isRu
+                ? "Загружаем аптечку…"
+                : locale === "de"
+                  ? "Hausapotheke wird geladen…"
+                  : locale === "pl"
+                    ? "Ładowanie apteczki…"
+                    : "Loading cabinet…"}
+            </Text>
             <Text style={styles.emptyDescription}>
               {isRu
                 ? "Подтягиваем препараты и сроки годности."
+                : locale === "de"
+                  ? "Medikamente und Ablaufdaten werden geladen."
+                  : locale === "pl"
+                    ? "Pobieramy leki i daty ważności."
                 : "Loading medicines and expiry dates."}
             </Text>
           </View>
         ) : medicinesError ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Не загрузилось</Text>
+            <Text style={styles.emptyTitle}>
+              {isRu
+                ? "Не загрузилось"
+                : locale === "de"
+                  ? "Nicht geladen"
+                  : locale === "pl"
+                    ? "Nie udało się załadować"
+                    : "Couldn't load"}
+            </Text>
             <Text style={styles.emptyDescription}>{medicinesError}</Text>
             <Pressable accessibilityRole="button" onPress={onRetryLoad} style={styles.emptyButton}>
-              <Text style={styles.emptyButtonText}>Повторить</Text>
+              <Text style={styles.emptyButtonText}>
+                {isRu
+                  ? "Повторить"
+                  : locale === "de"
+                    ? "Erneut versuchen"
+                    : locale === "pl"
+                      ? "Spróbuj ponownie"
+                      : "Retry"}
+              </Text>
             </Pressable>
           </View>
         ) : filteredItems.length === 0 ? (
@@ -178,18 +275,47 @@ export function MedicineCabinetOverviewContent({
             <View style={styles.emptyIconCircle}>
               <MaterialCommunityIcons name="medical-bag" size={40} color="#F56565" />
             </View>
-            <Text style={styles.emptyTitle}>В аптечке пока пусто</Text>
+            <Text style={styles.emptyTitle}>
+              {isRu
+                ? "В аптечке пока пусто"
+                : locale === "de"
+                  ? "Die Hausapotheke ist noch leer"
+                  : locale === "pl"
+                    ? "Apteczka jest jeszcze pusta"
+                    : "Your cabinet is empty for now"}
+            </Text>
             <Text style={styles.emptyDescription}>
-              Добавьте первый препарат, чтобы отслеживать сроки, остатки и правила
-              хранения.
+              {isRu
+                ? "Добавьте первый препарат, чтобы отслеживать сроки, остатки и правила хранения."
+                : locale === "de"
+                  ? "Fügen Sie das erste Medikament hinzu, um Ablaufdaten, Restbestände und Lagerhinweise zu verfolgen."
+                  : locale === "pl"
+                    ? "Dodaj pierwszy lek, aby śledzić terminy, zapasy i zasady przechowywania."
+                    : "Add your first medicine to track expiries, remaining stock, and storage guidance."}
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Добавить препарат в аптечку"
+              accessibilityLabel={
+                isRu
+                  ? "Добавить препарат в аптечку"
+                  : locale === "de"
+                    ? "Medikament zur Hausapotheke hinzufügen"
+                    : locale === "pl"
+                      ? "Dodaj lek do apteczki"
+                      : "Add medicine to cabinet"
+              }
               onPress={onOpenAddChoice}
               style={styles.emptyButton}
             >
-              <Text style={styles.emptyButtonText}>Добавить препарат</Text>
+              <Text style={styles.emptyButtonText}>
+                {isRu
+                  ? "Добавить препарат"
+                  : locale === "de"
+                    ? "Medikament hinzufügen"
+                    : locale === "pl"
+                      ? "Dodaj lek"
+                      : "Add medicine"}
+              </Text>
             </Pressable>
           </View>
         ) : (

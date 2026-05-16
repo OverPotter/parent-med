@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
 import { Animated, Image, PanResponder, Pressable, Text, View } from "react-native";
+import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import type { MedicineCardItem } from "../model/medicineCabinetOverviewModel";
 import { resolveMedicineFormIcon } from "../model/medicineCabinetOverviewModel";
 import { medicineCabinetOverviewStyles as styles } from "./medicineCabinetOverviewScreenStyles";
@@ -26,6 +27,7 @@ export function SwipeableMedicineCard({
   onOpenRenew: () => void;
   onDelete: () => void;
 }) {
+  const { locale } = useMobileI18n();
   const translateX = useRef(new Animated.Value(0)).current;
 
   const animateTo = (value: number, onComplete?: () => void) => {
@@ -78,7 +80,15 @@ export function SwipeableMedicineCard({
       <View style={styles.swipeDeleteActionWrap}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Списать ${item.title}`}
+          accessibilityLabel={
+            locale === "ru"
+              ? `Списать ${item.title}`
+              : locale === "de"
+                ? `${item.title} entfernen`
+                : locale === "pl"
+                  ? `Usuń ${item.title}`
+                  : `Remove ${item.title}`
+          }
           onPress={onDelete}
           style={({ pressed }) => [
             styles.swipeDeleteAction,
@@ -86,7 +96,15 @@ export function SwipeableMedicineCard({
           ]}
         >
           <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-          <Text style={styles.swipeDeleteActionText}>Списать</Text>
+          <Text style={styles.swipeDeleteActionText}>
+            {locale === "ru"
+              ? "Списать"
+              : locale === "de"
+                ? "Entfernen"
+                : locale === "pl"
+                  ? "Usuń"
+                  : "Remove"}
+          </Text>
         </Pressable>
       </View>
 
@@ -96,7 +114,15 @@ export function SwipeableMedicineCard({
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Раскрыть карточку препарата ${item.title}`}
+          accessibilityLabel={
+            locale === "ru"
+              ? `Раскрыть карточку препарата ${item.title}`
+              : locale === "de"
+                ? `Medikamentenkarte ${item.title} öffnen`
+                : locale === "pl"
+                  ? `Otwórz kartę leku ${item.title}`
+                  : `Open medicine card ${item.title}`
+          }
           onPress={() => {
             if (isOpen) {
               animateTo(0, onCloseSwipe);
@@ -164,21 +190,45 @@ export function SwipeableMedicineCard({
             <View style={styles.cardExpandedSection}>
               {item.description ? (
                 <View style={styles.cardExpandedBlock}>
-                  <Text style={styles.cardExpandedLabel}>О препарате</Text>
+                  <Text style={styles.cardExpandedLabel}>
+                    {locale === "ru"
+                      ? "О препарате"
+                      : locale === "de"
+                        ? "Über das Medikament"
+                        : locale === "pl"
+                          ? "O leku"
+                          : "About the medicine"}
+                  </Text>
                   <Text style={styles.cardExpandedText}>{item.description}</Text>
                 </View>
               ) : null}
 
               {item.dosage ? (
                 <View style={styles.cardExpandedBlock}>
-                  <Text style={styles.cardExpandedLabel}>Как принимать</Text>
+                  <Text style={styles.cardExpandedLabel}>
+                    {locale === "ru"
+                      ? "Как принимать"
+                      : locale === "de"
+                        ? "Anwendung"
+                        : locale === "pl"
+                          ? "Jak stosować"
+                          : "How to use"}
+                  </Text>
                   <Text style={styles.cardExpandedText}>{item.dosage}</Text>
                 </View>
               ) : null}
 
               {item.comment ? (
                 <View style={styles.cardExpandedBlock}>
-                  <Text style={styles.cardExpandedLabel}>Комментарий</Text>
+                  <Text style={styles.cardExpandedLabel}>
+                    {locale === "ru"
+                      ? "Комментарий"
+                      : locale === "de"
+                        ? "Kommentar"
+                        : locale === "pl"
+                          ? "Komentarz"
+                          : "Comment"}
+                  </Text>
                   <Text style={styles.cardExpandedText}>{item.comment}</Text>
                 </View>
               ) : null}
@@ -192,13 +242,29 @@ export function SwipeableMedicineCard({
                         styles.cardExpandedFactCardDanger,
                       ]}
                     >
-                      <Text style={styles.cardExpandedFactLabel}>Годен до</Text>
+                      <Text style={styles.cardExpandedFactLabel}>
+                        {locale === "ru"
+                          ? "Годен до"
+                          : locale === "de"
+                            ? "Haltbar bis"
+                            : locale === "pl"
+                              ? "Ważny do"
+                              : "Good until"}
+                      </Text>
                       <Text style={styles.cardExpandedFactValue}>{item.expiryLabel}</Text>
                     </View>
                   ) : null}
                   {item.openedLabel ? (
                     <View style={styles.cardExpandedFactCard}>
-                      <Text style={styles.cardExpandedFactLabel}>Дата вскрытия</Text>
+                      <Text style={styles.cardExpandedFactLabel}>
+                        {locale === "ru"
+                          ? "Дата вскрытия"
+                          : locale === "de"
+                            ? "Öffnungsdatum"
+                            : locale === "pl"
+                              ? "Data otwarcia"
+                              : "Opened on"}
+                      </Text>
                       <Text style={styles.cardExpandedFactValue}>{item.openedLabel}</Text>
                     </View>
                   ) : null}
@@ -209,7 +275,15 @@ export function SwipeableMedicineCard({
                         styles.cardExpandedFactCardWarning,
                       ]}
                     >
-                      <Text style={styles.cardExpandedFactLabel}>После открытия</Text>
+                      <Text style={styles.cardExpandedFactLabel}>
+                        {locale === "ru"
+                          ? "После открытия"
+                          : locale === "de"
+                            ? "Nach dem Öffnen"
+                            : locale === "pl"
+                              ? "Po otwarciu"
+                              : "After opening"}
+                      </Text>
                       <Text style={styles.cardExpandedFactValue}>{item.afterOpeningLabel}</Text>
                     </View>
                   ) : null}
@@ -218,14 +292,30 @@ export function SwipeableMedicineCard({
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Обновить упаковку ${item.title}`}
+                accessibilityLabel={
+                  locale === "ru"
+                    ? `Обновить упаковку ${item.title}`
+                    : locale === "de"
+                      ? `Packung ${item.title} aktualisieren`
+                      : locale === "pl"
+                        ? `Zaktualizuj opakowanie ${item.title}`
+                        : `Update pack ${item.title}`
+                }
                 onPress={onOpenRenew}
                 style={({ pressed }) => [
                   styles.cardExpandedAction,
                   pressed ? styles.cardExpandedActionPressed : null,
                 ]}
               >
-                <Text style={styles.cardExpandedActionText}>Обновить упаковку</Text>
+                <Text style={styles.cardExpandedActionText}>
+                  {locale === "ru"
+                    ? "Обновить упаковку"
+                    : locale === "de"
+                      ? "Packung aktualisieren"
+                      : locale === "pl"
+                        ? "Zaktualizuj opakowanie"
+                        : "Update pack"}
+                </Text>
               </Pressable>
             </View>
           ) : null}

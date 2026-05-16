@@ -1,6 +1,6 @@
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 
-type BackendPreferredLanguage = "ru" | "en";
+type BackendPreferredLanguage = MobileLocale;
 
 type RawFamilyInvitePreviewResponse = {
   family_id: string;
@@ -188,9 +188,9 @@ async function requestAuthedJson<T>(
 }
 
 export function toBackendPreferredLanguage(
-  locale: "ru" | "en" | "pl" | "de",
+  locale: MobileLocale,
 ): BackendPreferredLanguage {
-  return locale === "ru" ? "ru" : "en";
+  return locale;
 }
 
 export async function loginWithPassword(payload: {

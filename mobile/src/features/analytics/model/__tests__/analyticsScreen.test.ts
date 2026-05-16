@@ -139,4 +139,16 @@ describe("buildAnalyticsScreenContent", () => {
     expect(content.highlights.map((item) => item.value)).toEqual(["—", "—"]);
     expect(content.episodes).toEqual([]);
   });
+
+  it("localizes most active period labels instead of reusing backend month text", () => {
+    const content = buildAnalyticsScreenContent("de", {
+      summary: makeSummary({ mostActivePeriodLabel: "Май 2026" }),
+      episodes: [],
+      period: "all",
+    });
+
+    expect(content.mainSummaryInsights[1].title).toBe(
+      "Aktivster Zeitraum — Mai 2026",
+    );
+  });
 });

@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, Text, TextInput, View, type StyleProp, type ViewStyle, type TextStyle } from "react-native";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 import { ReminderNumberOptionsSheet } from "../../illness/screens/ReminderNumberOptionsSheet";
 import { afterOpeningShelfOptions, type AfterOpeningMode } from "../model/afterOpeningShelfLife";
@@ -24,6 +25,7 @@ type AfterOpeningSheetsStyles = {
 };
 
 export function MedicineCabinetAfterOpeningSheets({
+  locale,
   isOptionSheetOpen,
   isCustomSheetOpen,
   mode,
@@ -36,6 +38,7 @@ export function MedicineCabinetAfterOpeningSheets({
   onSaveCustom,
   styles,
 }: {
+  locale: MobileLocale;
   isOptionSheetOpen: boolean;
   isCustomSheetOpen: boolean;
   mode: AfterOpeningMode;
@@ -48,18 +51,86 @@ export function MedicineCabinetAfterOpeningSheets({
   onSaveCustom: () => void;
   styles: AfterOpeningSheetsStyles;
 }) {
+  const optionTitle =
+    locale === "ru"
+      ? "Срок после вскрытия"
+      : locale === "de"
+        ? "Haltbarkeit nach dem Öffnen"
+        : locale === "pl"
+          ? "Trwałość po otwarciu"
+          : "After-opening shelf life";
+  const customActionLabel =
+    locale === "ru"
+      ? "Свой срок"
+      : locale === "de"
+        ? "Eigene Frist"
+        : locale === "pl"
+          ? "Własny okres"
+          : "Custom period";
+  const customSheetTitle =
+    locale === "ru"
+      ? "Свой срок"
+      : locale === "de"
+        ? "Eigener Zeitraum"
+        : locale === "pl"
+          ? "Własny okres"
+          : "Custom period";
+  const customSheetSubtitle =
+    locale === "ru"
+      ? "Укажите, сколько дней препарат хранится после вскрытия."
+      : locale === "de"
+        ? "Geben Sie an, wie viele Tage das Medikament nach dem Öffnen haltbar ist."
+        : locale === "pl"
+          ? "Podaj, przez ile dni lek jest ważny po otwarciu."
+          : "Enter how many days the medicine keeps after opening.";
+  const customPlaceholder =
+    locale === "ru"
+      ? "Например: 45"
+      : locale === "de"
+        ? "Zum Beispiel: 45"
+        : locale === "pl"
+          ? "Na przykład: 45"
+          : "For example: 45";
+  const cancelLabel =
+    locale === "ru"
+      ? "Отмена"
+      : locale === "de"
+        ? "Abbrechen"
+        : locale === "pl"
+          ? "Anuluj"
+          : "Cancel";
+  const saveLabel =
+    locale === "ru"
+      ? "Сохранить"
+      : locale === "de"
+        ? "Speichern"
+        : locale === "pl"
+          ? "Zapisz"
+          : "Save";
+  const options = afterOpeningShelfOptions.map((option) => ({
+    ...option,
+    label:
+      locale === "ru"
+        ? `${option.value} дн.`
+        : locale === "de"
+          ? `${option.value} Tg.`
+          : locale === "pl"
+            ? `${option.value} dni`
+            : `${option.value} days`,
+  }));
+
   return (
     <>
       <ReminderNumberOptionsSheet
         visible={isOptionSheetOpen}
-        title="Срок после вскрытия"
+        title={optionTitle}
         value={
           mode === "14" || mode === "30" || mode === "60" ? Number(mode) : null
         }
-        options={afterOpeningShelfOptions}
+        options={options}
         columns={2}
         customActionActive={mode === "custom"}
-        customActionLabel="Свой срок"
+        customActionLabel={customActionLabel}
         onClose={onCloseOptionSheet}
         onSelect={onSelectOption}
         onCustomPress={onPressCustom}
@@ -79,17 +150,15 @@ export function MedicineCabinetAfterOpeningSheets({
           <>
             <View style={styles.sheetDragZone} {...panHandlers}>
               <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>Свой срок</Text>
-              <Text style={styles.sheetSubtitle}>
-                Укажите, сколько дней препарат хранится после вскрытия.
-              </Text>
+              <Text style={styles.sheetTitle}>{customSheetTitle}</Text>
+              <Text style={styles.sheetSubtitle}>{customSheetSubtitle}</Text>
             </View>
 
             <TextInput
               value={customValue}
               onChangeText={onChangeCustomValue}
               style={styles.customValueInput}
-              placeholder="Например: 45"
+              placeholder={customPlaceholder}
               placeholderTextColor="#98A2AD"
               keyboardType="number-pad"
               autoFocus
@@ -103,7 +172,7 @@ export function MedicineCabinetAfterOpeningSheets({
                   pressed ? styles.secondaryButtonPressed : null,
                 ]}
               >
-                <Text style={styles.customValueCancelText}>Отмена</Text>
+                <Text style={styles.customValueCancelText}>{cancelLabel}</Text>
               </Pressable>
 
               <Pressable
@@ -112,14 +181,14 @@ export function MedicineCabinetAfterOpeningSheets({
                   styles.customValueSaveButton,
                   pressed ? styles.primaryButtonPressed : null,
                 ]}
-              >
-                <LinearGradient
-                  colors={["#F56565", "#EF4F4F"]}
+                >
+                  <LinearGradient
+                    colors={["#F56565", "#EF4F4F"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={styles.customValueSaveGradient}
-                />
-                <Text style={styles.customValueSaveText}>Сохранить</Text>
+                    style={styles.customValueSaveGradient}
+                  />
+                <Text style={styles.customValueSaveText}>{saveLabel}</Text>
               </Pressable>
             </View>
           </>
@@ -128,4 +197,3 @@ export function MedicineCabinetAfterOpeningSheets({
     </>
   );
 }
-

@@ -86,7 +86,7 @@ export function PillboxAnalyticsScreen({
     width,
     onBack,
   });
-  const requestLanguage = locale === "ru" ? "ru" : "en";
+  const requestLanguage = locale;
 
   const loadPlans = () => {
     if (!accessToken) {

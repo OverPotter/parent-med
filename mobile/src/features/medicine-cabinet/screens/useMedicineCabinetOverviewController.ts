@@ -17,6 +17,19 @@ export type MedicineCabinetOverviewScreenKey =
 
 export type CabinetTabBarMode = "foreground" | "background" | "hidden";
 
+function getItemCountLabel(count: number, locale: string) {
+  if (locale === "ru") {
+    return count === 1 ? "карточка" : "карточки";
+  }
+  if (locale === "de") {
+    return count === 1 ? "Eintrag" : "Einträge";
+  }
+  if (locale === "pl") {
+    return count === 1 ? "pozycja" : "pozycji";
+  }
+  return count === 1 ? "item" : "items";
+}
+
 export function useMedicineCabinetOverviewController({
   authSession,
   familyMembers,
@@ -27,7 +40,6 @@ export function useMedicineCabinetOverviewController({
   onTabBarModeChange?: (mode: CabinetTabBarMode) => void;
 }) {
   const { locale } = useMobileI18n();
-  const isRu = locale === "ru";
   const [activeScreen, setActiveScreen] =
     useState<MedicineCabinetOverviewScreenKey>("overview");
   const [transientNotice, setTransientNotice] = useState<string | null>(null);
@@ -35,7 +47,7 @@ export function useMedicineCabinetOverviewController({
   const [pendingDeleteItem, setPendingDeleteItem] = useState<MedicineCardItem | null>(null);
   const [expandedMedicineId, setExpandedMedicineId] = useState<string | null>(null);
   const [pendingRenewItem, setPendingRenewItem] = useState<MedicineCardItem | null>(null);
-  const list = useMedicineCabinetListController({ authSession, isRu });
+  const list = useMedicineCabinetListController({ authSession, locale });
   const recipients = useCabinetRecipientsController({ authSession, familyMembers });
 
   const tabBarMode: CabinetTabBarMode =
@@ -67,12 +79,14 @@ export function useMedicineCabinetOverviewController({
   }, [transientNotice]);
 
   const sectionSubtitle = list.filteredItems.length
-    ? `${list.filteredItems.length} ${
-        isRu ? (list.filteredItems.length === 1 ? "карточка" : "карточки") : "items"
-      }`
-    : isRu
+    ? `${list.filteredItems.length} ${getItemCountLabel(list.filteredItems.length, locale)}`
+    : locale === "ru"
       ? "Подберите другой фильтр или добавьте первый препарат"
-      : "Try a different filter or add your first medicine";
+      : locale === "de"
+        ? "Wählen Sie einen anderen Filter oder fügen Sie das erste Medikament hinzu"
+        : locale === "pl"
+          ? "Wybierz inny filtr albo dodaj pierwszy lek"
+          : "Try a different filter or add your first medicine";
 
   const handleConfirmDelete = () => {
     if (!pendingDeleteItem || !authSession) {
@@ -89,7 +103,15 @@ export function useMedicineCabinetOverviewController({
       accessToken: authSession.accessToken,
       id: deletingItemId,
     }).then(() => {
-      setTransientNotice("Препарат списан");
+      setTransientNotice(
+        locale === "ru"
+          ? "Препарат списан"
+          : locale === "de"
+            ? "Medikament entfernt"
+            : locale === "pl"
+              ? "Lek usunięty"
+              : "Medicine removed",
+      );
       void list.loadMedicines({ resetFilter: true });
     });
   };
@@ -107,19 +129,35 @@ export function useMedicineCabinetOverviewController({
     }).then(() => {
       setPendingRenewItem(null);
       setActiveScreen("overview");
-      setTransientNotice("Упаковка обновлена");
+      setTransientNotice(
+        locale === "ru"
+          ? "Упаковка обновлена"
+          : locale === "de"
+            ? "Packung aktualisiert"
+            : locale === "pl"
+              ? "Opakowanie zaktualizowane"
+              : "Pack updated",
+      );
       void list.loadMedicines();
     });
   };
 
   const handleCreated = () => {
     void list.loadMedicines({ resetFilter: true });
-    setTransientNotice("Препарат добавлен");
+    setTransientNotice(
+      locale === "ru"
+        ? "Препарат добавлен"
+        : locale === "de"
+          ? "Medikament hinzugefügt"
+          : locale === "pl"
+            ? "Lek dodany"
+            : "Medicine added",
+    );
   };
 
   return {
     authSession,
-    isRu,
+    locale,
     ...list,
     activeScreen,
     setActiveScreen,

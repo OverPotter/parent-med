@@ -3,7 +3,6 @@ import {
   isChildProfileVisibleScreen,
   resolvePostAuthLandingScreen,
   resolveJournalTargetScreen,
-  resolveStoredSessionPreferredLocale,
   shouldRenderMoreTab,
   shouldShowRootTabBarUnderlay,
   shouldShowAnalyticsBreakdown,
@@ -40,20 +39,6 @@ describe("pillPathExpoShellModel", () => {
     expect(resolveJournalTargetScreen("weight")).toBe("weightHistory");
     expect(resolveJournalTargetScreen("height")).toBe("growthHistory");
     expect(resolveJournalTargetScreen("illness")).toBe("illnessJournal");
-  });
-
-  it("keeps pl/de locale from stored session during bootstrap", () => {
-    const storedPl = {
-      ...baseSession,
-      account: { ...baseSession.account, preferredLanguage: "pl" as const },
-    };
-    const refreshedEn = {
-      ...baseSession,
-      account: { ...baseSession.account, preferredLanguage: "en" as const },
-    };
-
-    expect(resolveStoredSessionPreferredLocale(storedPl, refreshedEn)).toBe("pl");
-    expect(resolveStoredSessionPreferredLocale(baseSession, refreshedEn)).toBe("en");
   });
 
   it("exposes routing predicates for more tab and breakdown", () => {

@@ -13,16 +13,18 @@ import {
 import type { MobileMedicineCatalogItem } from "../api/mobileMedicineCatalogApi";
 import { resolveMedicineFormIcon } from "../model/medicineCabinetOverviewModel";
 import {
-  referenceCategories,
+  getReferenceCategories,
   type ReferenceCategoryKey,
   type ReferenceCreateStep,
 } from "../model/referenceMedicineCreateFlow";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import { ReferenceCatalogEmptyState } from "./ReferenceCatalogEmptyState";
 import { ReferenceCatalogResultCard } from "./ReferenceCatalogResultCard";
 import { styles } from "./medicineCabinetReferenceCreateScreenStyles";
 
 export function MedicineCabinetReferenceCreateFrame({
   step,
+  locale,
   searchQuery,
   onChangeSearchQuery,
   activeCategory,
@@ -50,6 +52,7 @@ export function MedicineCabinetReferenceCreateFrame({
   onChangeSearchQuery: (value: string) => void;
   activeCategory: ReferenceCategoryKey;
   onSelectCategory: (value: ReferenceCategoryKey) => void;
+  locale: MobileLocale;
   visibleItems: MobileMedicineCatalogItem[];
   selectedItem: MobileMedicineCatalogItem | null;
   onSelectItem: (item: MobileMedicineCatalogItem | null) => void;
@@ -68,6 +71,8 @@ export function MedicineCabinetReferenceCreateFrame({
   onBackPress: () => void;
   onPrimaryPress: () => void;
 }) {
+  const categories = getReferenceCategories(locale);
+  const isRu = locale === "ru";
   return (
     <View style={styles.root}>
       <LinearGradient
@@ -91,7 +96,15 @@ export function MedicineCabinetReferenceCreateFrame({
           >
             <View style={styles.topBar}>
               <Pressable onPress={onBackPress} style={styles.backLink}>
-                <Text style={styles.backLinkText}>← Назад</Text>
+                <Text style={styles.backLinkText}>
+                  {isRu
+                    ? "← Назад"
+                    : locale === "de"
+                      ? "← Zurück"
+                      : locale === "pl"
+                        ? "← Wstecz"
+                        : "← Back"}
+                </Text>
               </Pressable>
             </View>
 
@@ -99,10 +112,23 @@ export function MedicineCabinetReferenceCreateFrame({
               <>
                 <View style={styles.hero}>
                   <View style={styles.heroCopy}>
-                    <Text style={styles.heroTitle}>Из справочника</Text>
+                    <Text style={styles.heroTitle}>
+                      {isRu
+                        ? "Из справочника"
+                        : locale === "de"
+                          ? "Aus dem Katalog"
+                          : locale === "pl"
+                            ? "Z katalogu"
+                            : "From catalog"}
+                    </Text>
                     <Text style={styles.heroSubtitle}>
-                      Быстрее и безопаснее: форма, подсказка по применению и срок после
-                      вскрытия, если он задан, подтянутся из базы.
+                      {isRu
+                        ? "Быстрее и безопаснее: форма, подсказка по применению и срок после вскрытия, если он задан, подтянутся из базы."
+                        : locale === "de"
+                          ? "Schneller und sicherer: Form, Anwendungshinweise und Haltbarkeit nach dem Öffnen werden aus der Datenbank übernommen."
+                          : locale === "pl"
+                            ? "Szybciej i bezpieczniej: postać, wskazówka stosowania i termin po otwarciu, jeśli jest znany, uzupełnią się z bazy."
+                            : "Faster and safer: form, usage hint, and after-opening shelf life, when available, will come from the catalog."}
                     </Text>
                   </View>
                 </View>
@@ -112,7 +138,15 @@ export function MedicineCabinetReferenceCreateFrame({
                     <View style={styles.cardHeaderIconWrap}>
                       <Ionicons name="search" size={20} color="#8B6FE8" />
                     </View>
-                    <Text style={styles.cardHeaderTitle}>Поиск по справочнику</Text>
+                    <Text style={styles.cardHeaderTitle}>
+                      {isRu
+                        ? "Поиск по справочнику"
+                        : locale === "de"
+                          ? "Im Katalog suchen"
+                          : locale === "pl"
+                            ? "Szukaj w katalogu"
+                            : "Search catalog"}
+                    </Text>
                   </View>
 
                   <View style={styles.searchInputWrap}>
@@ -120,7 +154,15 @@ export function MedicineCabinetReferenceCreateFrame({
                     <TextInput
                       value={searchQuery}
                       onChangeText={onChangeSearchQuery}
-                      placeholder="Название препарата"
+                      placeholder={
+                        isRu
+                          ? "Название препарата"
+                          : locale === "de"
+                            ? "Medikamentenname"
+                            : locale === "pl"
+                              ? "Nazwa leku"
+                              : "Medicine name"
+                      }
                       placeholderTextColor="#A0A8B5"
                       style={styles.searchInput}
                     />
@@ -132,7 +174,7 @@ export function MedicineCabinetReferenceCreateFrame({
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.categoryScrollContent}
                     >
-                      {referenceCategories.map((category) => {
+                      {categories.map((category) => {
                         const isActive = activeCategory === category.key;
                         return (
                           <Pressable
@@ -174,7 +216,13 @@ export function MedicineCabinetReferenceCreateFrame({
                   </View>
 
                   <Text style={styles.helperText}>
-                    Можно искать по названию или выбрать категорию и пролистать список.
+                    {isRu
+                      ? "Можно искать по названию или выбрать категорию и пролистать список."
+                      : locale === "de"
+                        ? "Sie können nach Namen suchen oder eine Kategorie wählen und die Liste durchsuchen."
+                        : locale === "pl"
+                          ? "Możesz szukać po nazwie albo wybrać kategorię i przejrzeć listę."
+                          : "Search by name or choose a category and browse the list."}
                   </Text>
                 </View>
 
@@ -207,9 +255,23 @@ export function MedicineCabinetReferenceCreateFrame({
               <>
                 <View style={styles.hero}>
                   <View style={styles.heroCopy}>
-                    <Text style={styles.heroTitle}>Почти готово</Text>
+                    <Text style={styles.heroTitle}>
+                      {isRu
+                        ? "Почти готово"
+                        : locale === "de"
+                          ? "Fast fertig"
+                          : locale === "pl"
+                            ? "Prawie gotowe"
+                            : "Almost done"}
+                    </Text>
                     <Text style={styles.heroSubtitle}>
-                      Проверим сроки и упаковку перед добавлением в домашнюю аптечку.
+                      {isRu
+                        ? "Проверим сроки и упаковку перед добавлением в домашнюю аптечку."
+                        : locale === "de"
+                          ? "Prüfen wir Ablaufdaten und Packung, bevor wir sie zur Hausapotheke hinzufügen."
+                          : locale === "pl"
+                            ? "Sprawdźmy terminy i opakowanie przed dodaniem do domowej apteczki."
+                            : "Let's check the dates and pack before adding it to the cabinet."}
                     </Text>
                   </View>
                   <View style={[styles.heroArt, styles.heroArtSuccess]}>
@@ -241,7 +303,13 @@ export function MedicineCabinetReferenceCreateFrame({
                     ) : null}
                     {selectedItem.dosage ? (
                       <Text style={styles.selectedHint}>
-                        Как применять: {selectedItem.dosage}
+                        {isRu
+                          ? `Как применять: ${selectedItem.dosage}`
+                          : locale === "de"
+                            ? `Anwendung: ${selectedItem.dosage}`
+                            : locale === "pl"
+                              ? `Jak stosować: ${selectedItem.dosage}`
+                              : `How to use: ${selectedItem.dosage}`}
                       </Text>
                     ) : null}
                   </View>
@@ -250,7 +318,9 @@ export function MedicineCabinetReferenceCreateFrame({
                 <View style={styles.selectedCard}>
                   <View style={styles.inlineFieldRow}>
                     <View style={styles.inlineFieldLabelWrap}>
-                      <Text style={styles.fieldLabel}>Срок годности</Text>
+                      <Text style={styles.fieldLabel}>
+                        {isRu ? "Срок годности" : locale === "de" ? "Ablaufdatum" : locale === "pl" ? "Termin ważności" : "Expiry date"}
+                      </Text>
                     </View>
                     <Pressable onPress={onPressExpiryDate} style={styles.inlineDateField}>
                       <Text
@@ -259,7 +329,7 @@ export function MedicineCabinetReferenceCreateFrame({
                           !expiryDateLabel ? styles.datePlaceholderText : null,
                         ]}
                       >
-                        {expiryDateLabel || "Выберите дату"}
+                        {expiryDateLabel || (isRu ? "Выберите дату" : locale === "de" ? "Datum wählen" : locale === "pl" ? "Wybierz datę" : "Choose a date")}
                       </Text>
                       <Ionicons name="calendar-outline" size={18} color="#8A94A6" />
                     </Pressable>
@@ -267,7 +337,9 @@ export function MedicineCabinetReferenceCreateFrame({
 
                   <View style={styles.inlineFieldRow}>
                     <View style={styles.inlineFieldLabelWrap}>
-                      <Text style={styles.fieldLabel}>Дата вскрытия</Text>
+                      <Text style={styles.fieldLabel}>
+                        {isRu ? "Дата вскрытия" : locale === "de" ? "Öffnungsdatum" : locale === "pl" ? "Data otwarcia" : "Opened on"}
+                      </Text>
                     </View>
                     <Pressable onPress={onPressOpenedDate} style={styles.inlineDateField}>
                       <Text
@@ -276,7 +348,7 @@ export function MedicineCabinetReferenceCreateFrame({
                           !openedDateLabel ? styles.datePlaceholderText : null,
                         ]}
                       >
-                        {openedDateLabel || "Выберите дату"}
+                        {openedDateLabel || (isRu ? "Выберите дату" : locale === "de" ? "Datum wählen" : locale === "pl" ? "Wybierz datę" : "Choose a date")}
                       </Text>
                       <Ionicons name="calendar-outline" size={18} color="#8A94A6" />
                     </Pressable>
@@ -284,7 +356,9 @@ export function MedicineCabinetReferenceCreateFrame({
 
                   <View style={styles.inlineFieldRow}>
                     <View style={styles.inlineFieldLabelWrap}>
-                      <Text style={styles.fieldLabel}>Сколько хранится{`\n`}после вскрытия</Text>
+                      <Text style={styles.fieldLabel}>
+                        {isRu ? "Сколько хранится\nпосле вскрытия" : locale === "de" ? "Wie lange nach\ndem Öffnen haltbar" : locale === "pl" ? "Jak długo po\notwarciu" : "How long after\nopening"}
+                      </Text>
                     </View>
                     <Pressable onPress={onPressShelfSelector} style={styles.inlineDateField}>
                       <Text
@@ -293,19 +367,23 @@ export function MedicineCabinetReferenceCreateFrame({
                           !openedShelfLabel ? styles.datePlaceholderText : null,
                         ]}
                       >
-                        {openedShelfLabel || "Выберите срок"}
+                        {openedShelfLabel || (isRu ? "Выберите срок" : locale === "de" ? "Frist wählen" : locale === "pl" ? "Wybierz okres" : "Choose a period")}
                       </Text>
                       <Ionicons name="chevron-down" size={18} color="#8A94A6" />
                     </Pressable>
                   </View>
 
                   <View style={styles.fieldBlock}>
-                    <Text style={styles.fieldLabel}>Комментарий</Text>
+                    <Text style={styles.fieldLabel}>
+                      {isRu ? "Комментарий" : locale === "de" ? "Kommentar" : locale === "pl" ? "Komentarz" : "Comment"}
+                    </Text>
                     <View style={styles.textareaWrap}>
                       <TextInput
                         value={comment}
                         onChangeText={onChangeComment}
-                        placeholder="Например: хранить в холодильнике"
+                        placeholder={
+                          isRu ? "Например: хранить в холодильнике" : locale === "de" ? "Zum Beispiel: im Kühlschrank aufbewahren" : locale === "pl" ? "Na przykład: przechowywać w lodówce" : "For example: keep refrigerated"
+                        }
                         placeholderTextColor="#A0A8B5"
                         multiline
                         textAlignVertical="top"
@@ -337,7 +415,15 @@ export function MedicineCabinetReferenceCreateFrame({
                     <View style={styles.primaryIconCircle}>
                       <Ionicons name="add" size={18} color="#F56565" />
                     </View>
-                    <Text style={styles.primaryButtonText}>Добавить в аптечку</Text>
+                    <Text style={styles.primaryButtonText}>
+                      {isRu
+                        ? "Добавить в аптечку"
+                        : locale === "de"
+                          ? "Zur Hausapotheke hinzufügen"
+                          : locale === "pl"
+                            ? "Dodaj do apteczki"
+                            : "Add to cabinet"}
+                    </Text>
                   </Pressable>
                 </LinearGradient>
               </View>

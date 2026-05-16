@@ -1,5 +1,6 @@
 import type { MobileChildSummary } from "../../api/childrenApi";
 import {
+  buildChildrenScreenContent,
   buildChildrenCardsFromApi,
   buildChildrenStopActionCopy,
 } from "../childrenRedesign";
@@ -72,5 +73,25 @@ describe("buildChildrenCardsFromApi", () => {
     );
 
     expect(card.avatarSource).toBeNull();
+  });
+});
+
+describe("buildChildrenScreenContent", () => {
+  it("keeps stable tab keys when labels are localized", () => {
+    const germanTabs = buildChildrenScreenContent("de", "cabinet").tabs;
+    const polishTabs = buildChildrenScreenContent("pl", "more").tabs;
+
+    expect(germanTabs.map((tab) => [tab.key, tab.label, tab.active])).toEqual([
+      ["children", "Kinder", false],
+      ["pillbox", "Pillenbox", false],
+      ["cabinet", "Hausapotheke", true],
+      ["more", "Mehr", false],
+    ]);
+    expect(polishTabs.map((tab) => [tab.key, tab.label, tab.active])).toEqual([
+      ["children", "Dzieci", false],
+      ["pillbox", "Pudełko leków", false],
+      ["cabinet", "Apteczka", false],
+      ["more", "Więcej", true],
+    ]);
   });
 });

@@ -76,7 +76,7 @@ describe("buildAnalyticsBreakdownContent", () => {
     expect(content.summaryLines).toEqual(["Пик температуры: 39.1°C."]);
     expect(content.summaryTips.map((tip) => tip.text)).toEqual([
       "3 дн.",
-      "2 приёмов",
+      "2 приёма",
       "4",
       "1 напоминание",
     ]);
@@ -111,5 +111,30 @@ describe("buildAnalyticsBreakdownContent", () => {
     expect(content.temperatureEmptyState).toBe(
       "There were no temperature\nreadings for this episode.",
     );
+  });
+
+  it("uses localized plural forms for doses and reminders", () => {
+    const content = buildAnalyticsBreakdownContent(
+      makeEpisodeCard({
+        meta: "Episode 2 • May",
+        startedAt: null,
+        closedAtIso: null,
+      }),
+      "pl",
+      {
+        child: makeChildCard(),
+        insights: makeInsights({
+          administrationCount: 2,
+          medicationMode: "observation_only",
+        }),
+      },
+    );
+
+    expect(content.summaryTips.map((tip) => tip.text)).toEqual([
+      "3 dni",
+      "2 dawki",
+      "4",
+      "0 przypomnień",
+    ]);
   });
 });

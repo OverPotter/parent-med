@@ -214,15 +214,17 @@ export function ExpandableChoiceRow({
           >
             {selectedChoice?.label ?? ""}
           </Text>
-          <Feather
-            name={expanded ? "chevron-up" : "chevron-down"}
-            size={18}
-            color={surfaceTheme.textMutedColor}
-          />
+          {disabled ? null : (
+            <Feather
+              name={expanded ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={surfaceTheme.textMutedColor}
+            />
+          )}
         </View>
       </Pressable>
 
-      {expanded ? (
+      {expanded && !disabled ? (
         <View
           style={[
             styles.dropdownList,

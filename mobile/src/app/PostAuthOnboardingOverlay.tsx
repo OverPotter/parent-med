@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import type { MobileAuthSession } from "../features/auth/api/authApi";
 import { updateRecoveryCode } from "../features/settings/api/settingsApi";
+import { getDeviceMobileLocale } from "../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../shared/theme/mobileSurfaceTheme";
 import type { PostAuthOnboardingStep } from "./postAuthOnboardingModel";
 
@@ -89,7 +90,7 @@ export function PostAuthOnboardingOverlay({
   }, [visibleStep]);
 
   const copy = useMemo(() => {
-    const locale = session.account.preferredLanguage;
+    const locale = getDeviceMobileLocale();
     if (locale === "ru") {
       return {
         profileStepLabel: "Профиль",
@@ -117,6 +118,60 @@ export function PostAuthOnboardingOverlay({
       };
     }
 
+    if (locale === "de") {
+      return {
+        profileStepLabel: "Profil",
+        recoveryStepShortLabel: "Recovery",
+        laterLabel: "Später",
+        displayTitle: "Wie sollen Sie in der Familie erscheinen?",
+        displayHint:
+          "Dieser Name erscheint in der Familienchronik, der Hausapotheke und in den Einträgen.",
+        displayNameFieldLabel: "Ihr Name",
+        displayNameLabel: "Name in der Familie",
+        relationshipFieldLabel: "Rolle",
+        relationshipLabel: "Wer sind Sie in der Familie",
+        phoneFieldLabel: "Telefon",
+        phoneLabel: "Telefon",
+        saveDisplayLabel: "Speichern",
+        displayNameRequired: "Fügen Sie einen Namen hinzu, um fortzufahren.",
+        recoveryTitle: "Recovery-Code hinzufügen",
+        recoveryHint:
+          "Wenn Sie Ihr Passwort vergessen, hilft dieser Code dabei, den Zugriff schnell wiederherzustellen.",
+        recoveryCodeFieldLabel: "Recovery-Code",
+        recoveryCodeLabel: "Recovery-Code",
+        saveRecoveryLabel: "Code speichern",
+        recoveryTooShort: "Der Recovery-Code muss mindestens 8 Zeichen lang sein.",
+        saveError: "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      };
+    }
+
+    if (locale === "pl") {
+      return {
+        profileStepLabel: "Profil",
+        recoveryStepShortLabel: "Recovery",
+        laterLabel: "Później",
+        displayTitle: "Jak pokazywać Cię w rodzinie?",
+        displayHint:
+          "Ta nazwa będzie widoczna w rodzinnej osi czasu, apteczce i wpisach.",
+        displayNameFieldLabel: "Twoje imię",
+        displayNameLabel: "Imię w rodzinie",
+        relationshipFieldLabel: "Rola",
+        relationshipLabel: "Kim jesteś w rodzinie",
+        phoneFieldLabel: "Telefon",
+        phoneLabel: "Telefon",
+        saveDisplayLabel: "Zapisz",
+        displayNameRequired: "Dodaj imię, aby kontynuować.",
+        recoveryTitle: "Dodaj recovery code",
+        recoveryHint:
+          "Jeśli zapomnisz hasła, ten kod pomoże szybko odzyskać dostęp.",
+        recoveryCodeFieldLabel: "Recovery code",
+        recoveryCodeLabel: "Recovery code",
+        saveRecoveryLabel: "Zapisz code",
+        recoveryTooShort: "Recovery code musi mieć co najmniej 8 znaków.",
+        saveError: "Nie udało się zapisać. Spróbuj ponownie.",
+      };
+    }
+
     return {
       profileStepLabel: "Profile",
       recoveryStepShortLabel: "Recovery",
@@ -141,7 +196,7 @@ export function PostAuthOnboardingOverlay({
       recoveryTooShort: "Recovery code must be at least 8 characters.",
       saveError: "Could not save. Please try again.",
     };
-  }, [session.account.preferredLanguage]);
+  }, []);
 
   if (!visibleStep) {
     return null;

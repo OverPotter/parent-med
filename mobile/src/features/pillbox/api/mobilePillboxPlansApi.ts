@@ -2,6 +2,7 @@ import {
   requestIllnessAuthedJson,
   type MobileIllnessApiErrorOptions,
 } from "../../illness/api/illnessApiClient";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 
 export type MobilePillboxMealRule =
   | "before_meal"
@@ -358,7 +359,7 @@ export async function getMobilePillboxHistorySummary(payload: {
   accessToken: string | null;
   planId: string;
   period: "month" | "quarter" | "half_year" | "year" | "all";
-  language?: "ru" | "en";
+  language?: MobileLocale;
 }): Promise<MobilePillboxHistorySummary> {
   const params = new URLSearchParams({ period: payload.period });
   if (payload.language) {

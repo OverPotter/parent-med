@@ -11,13 +11,14 @@ import {
   type MedicineCardItem,
   toMedicineCardItem,
 } from "../model/medicineCabinetOverviewModel";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 
 export function useMedicineCabinetListController({
   authSession,
-  isRu,
+  locale,
 }: {
   authSession: MobileAuthSession | null;
-  isRu: boolean;
+  locale: MobileLocale;
 }) {
   const [medicineItems, setMedicineItems] = useState<MedicineCardItem[]>([]);
   const [isLoadingMedicines, setIsLoadingMedicines] = useState(false);
@@ -39,7 +40,9 @@ export function useMedicineCabinetListController({
         const medicines = await fetchMobileHouseholdMedicines({
           accessToken: authSession.accessToken,
         });
-        setMedicineItems(medicines.map(toMedicineCardItem));
+        setMedicineItems(
+          medicines.map((medicine) => toMedicineCardItem(medicine, locale)),
+        );
         setMedicinesError(null);
         if (options?.resetFilter) {
           setActiveFilter(getDefaultCabinetFilter(medicines));
@@ -47,15 +50,19 @@ export function useMedicineCabinetListController({
       } catch {
         setMedicineItems([]);
         setMedicinesError(
-          isRu
+          locale === "ru"
             ? "Не получилось загрузить аптечку. Попробуйте ещё раз."
+            : locale === "de"
+              ? "Die Hausapotheke konnte nicht geladen werden. Versuchen Sie es erneut."
+              : locale === "pl"
+                ? "Nie udało się załadować apteczki. Spróbuj ponownie."
             : "Couldn't load the cabinet. Try again.",
         );
       } finally {
         setIsLoadingMedicines(false);
       }
     },
-    [authSession, isRu],
+    [authSession, locale],
   );
 
   useEffect(() => {
@@ -88,8 +95,8 @@ export function useMedicineCabinetListController({
   }, [activeFilter, medicineItems, searchQuery]);
 
   const summaryStats = useMemo(
-    () => buildCabinetSummaryStats(medicineItems.map((item) => item.raw)),
-    [medicineItems],
+    () => buildCabinetSummaryStats(medicineItems.map((item) => item.raw), locale),
+    [locale, medicineItems],
   );
 
   return {

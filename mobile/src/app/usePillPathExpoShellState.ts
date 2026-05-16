@@ -211,6 +211,7 @@ export function usePillPathExpoShellState() {
 
   useLiveActivitiesSync({
     authSession,
+    locale,
     children,
     activeSleepByChildId: activeSleepSessionsByCardId,
     activeFeedingByChildId: activeFeedingRecordsByCardId,
@@ -712,10 +713,7 @@ export function usePillPathExpoShellState() {
                   displayName: authSession.account.displayName,
                   relationshipLabel: authSession.account.relationshipLabel,
                   phone: authSession.account.phone,
-                  preferredLanguage:
-                    authSession.account.preferredLanguage === "ru"
-                      ? "ru"
-                      : "en",
+                  preferredLanguage: locale,
                   familyRole: authSession.account.familyRole,
                   accessPolicy: {
                     allChildren: true,

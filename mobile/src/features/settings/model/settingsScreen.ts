@@ -149,12 +149,12 @@ export function buildSettingsScreenContent(
       : "Language and appearance.",
     languageTitle: isRu ? "Язык интерфейса" : isDe ? "App-Sprache" : isPl ? "Język aplikacji" : "Interface language",
     languageHint: isRu
-      ? "Меняет язык приложения."
+      ? "Выберите язык интерфейса приложения."
       : isDe
-        ? "Ändert die Sprache der App."
+        ? "Wählen Sie die Sprache der App-Oberfläche."
       : isPl
-        ? "Zmienia język aplikacji."
-      : "Changes the app language.",
+        ? "Wybierz język interfejsu aplikacji."
+      : "Choose the app interface language.",
     medicationPlansTitle: isRu ? "Планы лекарств" : isDe ? "Medikamentenpläne" : isPl ? "Plany leków" : "Medication plans",
     medicationPlansHint: isRu
       ? "Как показывать интервалы: в часах или в минутах."

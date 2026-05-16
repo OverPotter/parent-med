@@ -99,43 +99,48 @@ function formatCompactAge(birthDate: string | null, fallbackAgeLabel: string | n
   return "—";
 }
 
-function mapJournalIcon(label: string) {
-  if (label === "Болезни") {
+function mapJournalItemById(itemId: string) {
+  if (itemId === "I5zvnC") {
     return {
       iconVariant: "illnessBadge" as const,
       imageSource: redesignSharedIcons.illnessBadge,
+      labelKey: "illness" as const,
     };
   }
 
-  if (label === "Кормление") {
+  if (itemId === "MsiN1") {
     return {
       iconVariant: "feeding" as const,
       targetKind: "feeding" as const,
       imageSource: redesignSharedIcons.feeding,
+      labelKey: "feeding" as const,
     };
   }
 
-  if (label === "Сон") {
+  if (itemId === "LydMQ") {
     return {
       iconVariant: "sleep" as const,
       targetKind: "sleep" as const,
       imageSource: redesignSharedIcons.sleep,
+      labelKey: "sleep" as const,
     };
   }
 
-  if (label === "Рост") {
+  if (itemId === "sDT1m") {
     return {
       iconVariant: "height" as const,
       targetKind: "height" as const,
       imageSource: redesignSharedIcons.height,
+      labelKey: "height" as const,
     };
   }
 
-  if (label === "Обзор") {
+  if (itemId === "gDGtQ") {
     return {
       iconVariant: "overview" as const,
       targetKind: "overview" as const,
       imageSource: redesignSharedIcons.overview,
+      labelKey: "overview" as const,
     };
   }
 
@@ -143,6 +148,7 @@ function mapJournalIcon(label: string) {
     iconVariant: "weight" as const,
     targetKind: "weight" as const,
     iconColor: "#6AA58E",
+    labelKey: "weight" as const,
   };
 }
 
@@ -238,36 +244,62 @@ export function buildChildProfileScreenContent(
       : "Edit profile",
     journalTitle: isRu ? journalTitle.text : isDe ? "Journal" : isPl ? "Dziennik" : "Journal",
     journalRows: journalGrid.rows.map((row) =>
-      row.items.map((item) => ({
-        id: String(item.id ?? ""),
-        label:
-          isDe
-            ? String(item.label ?? "") === "Болезни"
-              ? "Krankheiten"
-              : String(item.label ?? "") === "Кормление"
-                ? "Fütterung"
-                : String(item.label ?? "") === "Сон"
-                  ? "Schlaf"
-                  : String(item.label ?? "") === "Рост"
-                    ? "Größe"
-                    : String(item.label ?? "") === "Обзор"
-                      ? "Übersicht"
-                      : String(item.label ?? "")
-            : isPl
-            ? String(item.label ?? "") === "Болезни"
-              ? "Choroby"
-              : String(item.label ?? "") === "Кормление"
-                ? "Karmienie"
-                : String(item.label ?? "") === "Сон"
-                  ? "Sen"
-                  : String(item.label ?? "") === "Рост"
-                    ? "Wzrost"
-                    : String(item.label ?? "") === "Обзор"
-                      ? "Przegląd"
-                      : String(item.label ?? "")
-            : String(item.label ?? ""),
-        ...mapJournalIcon(String(item.label ?? "")),
-      })),
+      row.items.map((item) => {
+        const mappedItem = mapJournalItemById(String(item.id ?? ""));
+
+        return {
+          id: String(item.id ?? ""),
+          label:
+            mappedItem.labelKey === "illness"
+            ? isRu
+              ? "Болезни"
+              : isDe
+                ? "Krankheiten"
+                : isPl
+                  ? "Choroby"
+                  : "Illness"
+            : mappedItem.labelKey === "feeding"
+              ? isRu
+                ? "Кормление"
+                : isDe
+                  ? "Fütterung"
+                  : isPl
+                    ? "Karmienie"
+                    : "Feeding"
+              : mappedItem.labelKey === "sleep"
+                ? isRu
+                  ? "Сон"
+                  : isDe
+                    ? "Schlaf"
+                    : isPl
+                      ? "Sen"
+                      : "Sleep"
+                : mappedItem.labelKey === "height"
+                  ? isRu
+                    ? "Рост"
+                    : isDe
+                      ? "Größe"
+                      : isPl
+                        ? "Wzrost"
+                        : "Height"
+                  : mappedItem.labelKey === "overview"
+                    ? isRu
+                      ? "Обзор"
+                      : isDe
+                        ? "Übersicht"
+                        : isPl
+                          ? "Przegląd"
+                          : "Overview"
+                    : isRu
+                      ? "Вес"
+                      : isDe
+                        ? "Gewicht"
+                        : isPl
+                          ? "Waga"
+                          : "Weight",
+          ...mappedItem,
+        };
+      }),
     ),
     notesTitle: isRu ? notesBlock.title.text : isDe ? "Notizen" : isPl ? "Notatki" : "Notes",
     notesBody: notesValue,

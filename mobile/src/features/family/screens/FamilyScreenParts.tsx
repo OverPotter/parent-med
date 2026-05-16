@@ -291,17 +291,39 @@ export function childrenAccessOptionLabel(
   locale: string,
   value: FamilyChildrenAccess,
 ) {
-  const isRu = locale === "ru";
-
   switch (value) {
     case "none":
-      return isRu ? "Нет доступа" : "No access";
+      return locale === "ru"
+        ? "Нет доступа"
+        : locale === "de"
+          ? "Kein Zugriff"
+          : locale === "pl"
+            ? "Brak dostępu"
+            : "No access";
     case "view":
-      return isRu ? "Только смотреть" : "View only";
+      return locale === "ru"
+        ? "Только смотреть"
+        : locale === "de"
+          ? "Nur ansehen"
+          : locale === "pl"
+            ? "Tylko podgląd"
+            : "View only";
     case "act":
-      return isRu ? "Может отмечать уход" : "Can log care";
+      return locale === "ru"
+        ? "Может отмечать уход"
+        : locale === "de"
+          ? "Kann Pflege protokollieren"
+          : locale === "pl"
+            ? "Może zapisywać opiekę"
+            : "Can log care";
     default:
-      return isRu ? "Полный доступ" : "Full access";
+      return locale === "ru"
+        ? "Полный доступ"
+        : locale === "de"
+          ? "Voller Zugriff"
+          : locale === "pl"
+            ? "Pełny dostęp"
+            : "Full access";
   }
 }
 
@@ -309,15 +331,31 @@ export function cabinetAccessOptionLabel(
   locale: string,
   value: FamilyCabinetAccess,
 ) {
-  const isRu = locale === "ru";
-
   switch (value) {
     case "none":
-      return isRu ? "Нет доступа" : "No access";
+      return locale === "ru"
+        ? "Нет доступа"
+        : locale === "de"
+          ? "Kein Zugriff"
+          : locale === "pl"
+            ? "Brak dostępu"
+            : "No access";
     case "view":
-      return isRu ? "Только смотреть" : "View only";
+      return locale === "ru"
+        ? "Только смотреть"
+        : locale === "de"
+          ? "Nur ansehen"
+          : locale === "pl"
+            ? "Tylko podgląd"
+            : "View only";
     default:
-      return isRu ? "Полный доступ" : "Full access";
+      return locale === "ru"
+        ? "Полный доступ"
+        : locale === "de"
+          ? "Voller Zugriff"
+          : locale === "pl"
+            ? "Pełny dostęp"
+            : "Full access";
   }
 }
 
@@ -325,17 +363,39 @@ export function pillboxAccessOptionLabel(
   locale: string,
   value: FamilyPillboxAccess,
 ) {
-  const isRu = locale === "ru";
-
   switch (value) {
     case "none":
-      return isRu ? "Нет доступа" : "No access";
+      return locale === "ru"
+        ? "Нет доступа"
+        : locale === "de"
+          ? "Kein Zugriff"
+          : locale === "pl"
+            ? "Brak dostępu"
+            : "No access";
     case "view":
-      return isRu ? "Только смотреть" : "View only";
+      return locale === "ru"
+        ? "Только смотреть"
+        : locale === "de"
+          ? "Nur ansehen"
+          : locale === "pl"
+            ? "Tylko podgląd"
+            : "View only";
     case "act":
-      return isRu ? "Может отмечать приём" : "Can mark doses";
+      return locale === "ru"
+        ? "Может отмечать приём"
+        : locale === "de"
+          ? "Kann Einnahmen markieren"
+          : locale === "pl"
+            ? "Może oznaczać dawki"
+            : "Can mark doses";
     default:
-      return isRu ? "Полный доступ" : "Full access";
+      return locale === "ru"
+        ? "Полный доступ"
+        : locale === "de"
+          ? "Voller Zugriff"
+          : locale === "pl"
+            ? "Pełny dostęp"
+            : "Full access";
   }
 }
 

@@ -121,8 +121,6 @@ function FamilyInviteCard({
   palette: FamilyPalette;
   stackInviteButtons: boolean;
 }) {
-  const isRu = content.copyInviteLabel === "Скопировать код";
-
   return (
     <View
       style={[
@@ -163,16 +161,10 @@ function FamilyInviteCard({
           </LinearGradient>
           <View style={styles.inviteTopCopy}>
             <Text style={[styles.inviteTitle, { color: palette.textPrimary }]}>
-              {isRu ? "Код приглашения" : "Invitation code"}
+              {content.inviteCodeTitle}
             </Text>
             <Text style={[styles.inviteDescription, { color: palette.textSecondary }]}>
-              {inviteCode
-                ? isRu
-                  ? "Код готов. Можно открыть блок и поделиться им."
-                  : "The code is ready. Open the block to share it."
-                : isRu
-                  ? "Пока кода нет. Создайте его, когда захотите пригласить взрослого."
-                  : "No code yet. Create one when you want to invite an adult."}
+              {inviteCode ? content.inviteReadyDescription : content.inviteEmptyDescription}
             </Text>
           </View>
         </Pressable>
@@ -213,7 +205,7 @@ function FamilyInviteCard({
                 color={palette.greenText}
               />
               <Text style={[styles.inviteStatusText, { color: palette.greenText }]}>
-                {isRu ? "Код готов к использованию" : "Code is ready to use"}
+                {content.inviteReadyStatus}
               </Text>
             </View>
           </View>
@@ -538,8 +530,6 @@ export function FamilyMemberActionSheet({
     return null;
   }
 
-  const isRu = content.copyInviteLabel === "Скопировать код";
-
   return (
     <FormBottomSheet
       visible={visible}
@@ -555,9 +545,7 @@ export function FamilyMemberActionSheet({
           </View>
           <Text style={styles.floatingSheetTitle}>{memberName}</Text>
           <Text style={styles.floatingSheetDescription}>
-            {isRu
-              ? "Выберите, что хотите изменить для участника."
-              : "Choose what you want to change for this member."}
+            {content.memberActionHint}
           </Text>
           <View style={styles.floatingSheetActions}>
             {canManageAccess ? (
@@ -616,14 +604,12 @@ export function FamilyMemberActionSheet({
 export function FamilyProfileEditContent({
   content,
   draft,
-  localeIsRu,
   onChangeDraft,
   onSave,
   palette,
 }: {
   content: FamilyScreenContent;
   draft: FamilyProfileEditDraft;
-  localeIsRu: boolean;
   onChangeDraft: (draft: FamilyProfileEditDraft) => void;
   onSave: () => void;
   palette: FamilyPalette;
@@ -635,9 +621,7 @@ export function FamilyProfileEditContent({
           {content.editProfileLabel}
         </Text>
         <Text style={[styles.subtitle, { color: palette.textSecondary }]}>
-          {localeIsRu
-            ? "Измените имя, телефон и кто это в семье."
-            : "Update the name, phone, and family relationship."}
+          {content.editProfileHint}
         </Text>
       </View>
 
@@ -657,11 +641,11 @@ export function FamilyProfileEditContent({
             styles.primaryFooterAction,
             pressed ? styles.actionButtonPressed : null,
           ]}
-        >
-          <Text style={styles.primaryFooterActionText}>
-            {localeIsRu ? "Сохранить профиль" : "Save profile"}
-          </Text>
-        </Pressable>
+          >
+            <Text style={styles.primaryFooterActionText}>
+              {content.saveProfileLabel}
+            </Text>
+          </Pressable>
       </View>
     </>
   );
@@ -672,7 +656,6 @@ export function FamilyAccessContent({
   children,
   childrenAccessLabels,
   content,
-  localeIsRu,
   memberName,
   memberRelationship,
   onChangePolicy,
@@ -686,7 +669,6 @@ export function FamilyAccessContent({
   children: ChildChoice[];
   childrenAccessLabels: Record<FamilyChildrenAccess, string>;
   content: FamilyScreenContent;
-  localeIsRu: boolean;
   memberName: string;
   memberRelationship: string;
   onChangePolicy: (policy: FamilyUiAccessPolicy) => void;
@@ -705,7 +687,6 @@ export function FamilyAccessContent({
       {!inline ? (
         <FamilyAccessTargetHeader
           content={content}
-          localeIsRu={localeIsRu}
           memberName={memberName}
           memberRelationship={memberRelationship}
           palette={palette}
@@ -719,7 +700,6 @@ export function FamilyAccessContent({
           childrenAccessLabels={childrenAccessLabels}
           content={content}
           inline={inline}
-          localeIsRu={localeIsRu}
           onChangePolicy={onChangePolicy}
           onOpenSheet={setActiveSheet}
           onSave={onSave}

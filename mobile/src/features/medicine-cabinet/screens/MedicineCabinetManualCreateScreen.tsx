@@ -30,7 +30,7 @@ export function MedicineCabinetManualCreateScreen({
           <View style={styles.backgroundStepLayer}>
             <MedicineCabinetManualCreateFrame
               step={flow.previousStep}
-              isRu={flow.isRu}
+              locale={flow.uiLocale}
               medicineName={flow.medicineName}
               onChangeMedicineName={flow.setMedicineName}
               category={flow.category}
@@ -71,7 +71,7 @@ export function MedicineCabinetManualCreateScreen({
         >
           <MedicineCabinetManualCreateFrame
             step={flow.step}
-            isRu={flow.isRu}
+            locale={flow.uiLocale}
             medicineName={flow.medicineName}
             onChangeMedicineName={flow.setMedicineName}
             category={flow.category}
@@ -149,6 +149,7 @@ export function MedicineCabinetManualCreateScreen({
       ) : null}
 
       <MedicineCabinetAfterOpeningSheets
+        locale={flow.uiLocale}
         isOptionSheetOpen={flow.isAfterOpeningSheetOpen}
         isCustomSheetOpen={flow.isAfterOpeningCustomSheetOpen}
         mode={flow.afterOpeningMode}

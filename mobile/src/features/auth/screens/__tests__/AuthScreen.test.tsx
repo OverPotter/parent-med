@@ -9,6 +9,10 @@ import {
   registerWithPassword,
 } from "../../api/authApi";
 
+jest.mock("expo-localization", () => ({
+  getLocales: jest.fn(() => [{ languageTag: "ru-RU", languageCode: "ru" }]),
+}));
+
 jest.mock("../../api/authApi", () => ({
   fetchFamilyInvitePreview: jest.fn(),
   loginWithPassword: jest.fn(),

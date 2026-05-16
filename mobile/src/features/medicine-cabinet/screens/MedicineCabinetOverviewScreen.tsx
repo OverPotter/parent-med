@@ -36,7 +36,7 @@ export function MedicineCabinetOverviewScreen({
         <View style={styles.decorationTop} />
         <View style={styles.decorationMiddle} />
         <MedicineCabinetOverviewContent
-          isRu={controller.isRu}
+          locale={controller.locale}
           searchQuery={controller.searchQuery}
           onChangeSearchQuery={controller.setSearchQuery}
           activeFilter={controller.activeFilter}

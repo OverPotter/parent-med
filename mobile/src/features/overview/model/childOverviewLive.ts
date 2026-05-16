@@ -104,7 +104,6 @@ export function buildLiveOverviewData(
       ...buildHeightEvents(heightEntries, locale, copy),
     ].sort((left, right) => right.timestamp - left.timestamp),
     activeFilterId,
-    copy,
   );
   const groupedEvents = groupOverviewEventsByDay(filteredEvents, locale);
   const calendarRangeStart =
@@ -188,6 +187,7 @@ function buildFeedingEvents(
     buildOverviewEvent(
       item.recordedAt,
       locale,
+      "feeding",
       copy.eventTypes.feeding,
       buildFeedingDetail(item, locale),
       overviewIconTokens.feeding,
@@ -204,6 +204,7 @@ function buildSleepEvents(
     buildOverviewEvent(
       item.startedAt,
       locale,
+      "sleep",
       copy.eventTypes.sleep,
       buildSleepDetail(item, locale),
       overviewIconTokens.sleep,
@@ -220,6 +221,7 @@ function buildIllnessEvents(
     buildOverviewEvent(
       item.closedAt ?? item.startedAt,
       locale,
+      "illness",
       copy.eventTypes.illness,
       buildIllnessDetail(item, locale),
       overviewIconTokens.illness,
@@ -236,6 +238,7 @@ function buildWeightEvents(
     buildOverviewEvent(
       item.measuredAt,
       locale,
+      "weight",
       copy.filters.weight,
       formatWeightDetail(item.valueKg, locale),
       overviewIconTokens.weightHeight,
@@ -252,6 +255,7 @@ function buildHeightEvents(
     buildOverviewEvent(
       item.measuredAt,
       locale,
+      "height",
       copy.filters.height,
       formatHeightDetail(item.valueCm),
       overviewIconTokens.weightHeight,
@@ -306,15 +310,12 @@ function isInOverviewRange(
 function filterOverviewEvents(
   items: ChildOverviewTimestampedEvent[],
   activeFilterId: string,
-  copy: ReturnType<typeof getOverviewCopy>,
 ) {
-  const filterLabel = activeFilterId.replace(/^chip-/, "");
-
-  if (filterLabel === copy.filters.all || filterLabel === copy.filters.week) {
+  if (activeFilterId === "filter-all" || !activeFilterId) {
     return items;
   }
 
-  return items.filter((item) => item.type === filterLabel);
+  return items.filter((item) => activeFilterId === `filter-${item.category}`);
 }
 
 function buildOverviewChartData(
@@ -407,7 +408,7 @@ function buildIllnessDetail(item: MobileIllnessEpisode, locale: MobileLocale) {
 }
 
 function formatWeightDetail(valueKg: number, locale: MobileLocale) {
-  return `${valueKg} ${locale === "en" ? "kg" : "кг"}`;
+  return `${valueKg} ${locale === "ru" ? "кг" : "kg"}`;
 }
 
 function formatHeightDetail(valueCm: number) {

@@ -1,7 +1,7 @@
 import type { MobileAuthSession } from "../../auth/api/authApi";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 
-type BackendPreferredLanguage = "ru" | "en";
+type BackendPreferredLanguage = MobileLocale;
 
 type RawAccountResponse = {
   id: string;

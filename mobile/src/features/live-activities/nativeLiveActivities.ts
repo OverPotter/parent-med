@@ -2,6 +2,7 @@ import { requireOptionalNativeModule } from "expo-modules-core";
 import { Platform } from "react-native";
 
 export type NativeLiveActivityKind = "sleep" | "feeding" | "illness";
+export type NativeLiveActivityLanguage = "ru" | "en" | "de" | "pl";
 
 type NativeLiveActivitiesModule = {
   getStatus(): Promise<{
@@ -12,7 +13,7 @@ type NativeLiveActivitiesModule = {
   upsert(args: {
     kind: NativeLiveActivityKind;
     itemId: string;
-    language?: "ru" | "en" | null;
+    language?: NativeLiveActivityLanguage | null;
     title: string;
     subtitle?: string | null;
     statusLabel?: string | null;
@@ -39,7 +40,7 @@ export function isNativeLiveActivitiesSupported() {
 export async function upsertNativeLiveActivity(args: {
   kind: NativeLiveActivityKind;
   itemId: string;
-  language?: "ru" | "en" | null;
+  language?: NativeLiveActivityLanguage | null;
   title: string;
   subtitle?: string | null;
   statusLabel?: string | null;

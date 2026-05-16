@@ -28,6 +28,54 @@ export type AnalyticsBreakdownContent = {
   temperatureEmptyState: string;
 };
 
+function formatAdministrationCount(count: number, locale: MobileLocale) {
+  if (locale === "ru") {
+    if (count === 1) return "1 приём";
+    if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14)) {
+      return `${count} приёма`;
+    }
+    return `${count} приёмов`;
+  }
+
+  if (locale === "de") {
+    return `${count} ${count === 1 ? "Einnahme" : "Einnahmen"}`;
+  }
+
+  if (locale === "pl") {
+    if (count === 1) return "1 dawka";
+    if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14)) {
+      return `${count} dawki`;
+    }
+    return `${count} dawek`;
+  }
+
+  return `${count} ${count === 1 ? "dose" : "doses"}`;
+}
+
+function formatReminderCount(count: number, locale: MobileLocale) {
+  if (locale === "ru") {
+    if (count === 1) return "1 напоминание";
+    if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14)) {
+      return `${count} напоминания`;
+    }
+    return `${count} напоминаний`;
+  }
+
+  if (locale === "de") {
+    return `${count} ${count === 1 ? "Erinnerung" : "Erinnerungen"}`;
+  }
+
+  if (locale === "pl") {
+    if (count === 1) return "1 przypomnienie";
+    if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14)) {
+      return `${count} przypomnienia`;
+    }
+    return `${count} przypomnień`;
+  }
+
+  return `${count} ${count === 1 ? "reminder" : "reminders"}`;
+}
+
 export function buildAnalyticsBreakdownContent(
   episode: AnalyticsEpisodeCard,
   locale: MobileLocale,
@@ -92,20 +140,8 @@ export function buildAnalyticsBreakdownContent(
       {
         id: "doses",
         text: insights
-          ? (isRu
-              ? `${insights.administrationCount} приёмов`
-              : isDe
-                ? `${insights.administrationCount} Einnahmen`
-                : isPl
-                  ? `${insights.administrationCount} dawek`
-                  : `${insights.administrationCount} doses`)
-          : isRu
-            ? "0 приёмов"
-            : isDe
-              ? "0 Einnahmen"
-              : isPl
-                ? "0 dawek"
-                : "0 doses",
+          ? formatAdministrationCount(insights.administrationCount, locale)
+          : formatAdministrationCount(0, locale),
         icon: "medicine",
         accent: {
           background: "#FEF4EA",
@@ -130,16 +166,8 @@ export function buildAnalyticsBreakdownContent(
       {
         id: "mode",
         text: insights
-          ? (insights.medicationMode === "guided"
-              ? (isRu ? "1 напоминание" : isDe ? "1 Erinnerung" : isPl ? "1 przypomnienie" : "1 reminder")
-              : (isRu ? "0 напоминаний" : isDe ? "0 Erinnerungen" : isPl ? "0 przypomnień" : "0 reminders"))
-          : isRu
-            ? "0 напоминаний"
-            : isDe
-              ? "0 Erinnerungen"
-              : isPl
-                ? "0 przypomnień"
-                : "0 reminders",
+          ? formatReminderCount(insights.medicationMode === "guided" ? 1 : 0, locale)
+          : formatReminderCount(0, locale),
         icon: "mode",
         accent: {
           background: "#F6F0FF",

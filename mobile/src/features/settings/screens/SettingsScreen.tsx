@@ -28,8 +28,8 @@ import {
   executeSettingsDeletion,
   patchSettingsPushPreferences,
   saveMedicationIntervalUnitPreference,
-  saveSettingsPreferredLanguage,
   saveSettingsPassword,
+  saveSettingsPreferredLanguage,
   saveSettingsRecoveryCode,
 } from "../model/settingsScreenActions";
 import {
@@ -136,8 +136,8 @@ export function SettingsScreen({
   const [familyAccess, setFamilyAccess] =
     useState<MobileFamilyAccessSummary>(defaultFamilyAccess);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSavingLanguage, setIsSavingLanguage] = useState(false);
   const [isSavingPush, setIsSavingPush] = useState(false);
+  const [isSavingLanguage, setIsSavingLanguage] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isSavingRecoveryCode, setIsSavingRecoveryCode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -145,8 +145,8 @@ export function SettingsScreen({
     useState<NativePushPermissionStatus>("undetermined");
   const [passwordExpanded, setPasswordExpanded] = useState(false);
   const [recoveryCodeExpanded, setRecoveryCodeExpanded] = useState(false);
-  const [languageExpanded, setLanguageExpanded] = useState(false);
   const [subscriptionExpanded, setSubscriptionExpanded] = useState(false);
+  const [languageExpanded, setLanguageExpanded] = useState(false);
   const [medicationIntervalExpanded, setMedicationIntervalExpanded] =
     useState(false);
   const { medicationIntervalUnit, setMedicationIntervalUnit } =
@@ -314,32 +314,6 @@ export function SettingsScreen({
     passwordSubmitError,
   );
 
-  const handleLanguageSelect = async (nextLocale: MobileLocale) => {
-    const result = await saveSettingsPreferredLanguage({
-      isSavingLanguage,
-      nextLocale,
-      currentLocale: session?.account.preferredLanguage,
-      onUpdatePreferredLanguage,
-      saveErrorLabel: content.saveErrorLabel,
-    });
-
-    if (result.blocked) {
-      return;
-    }
-
-    setIsSavingLanguage(true);
-    resetTransientMessages();
-
-    if (result.success) {
-      setLanguageExpanded(false);
-      setIsSavingLanguage(false);
-      return;
-    }
-
-    setError(result.submitError ?? content.saveErrorLabel);
-    setIsSavingLanguage(false);
-  };
-
   const handleMedicationIntervalUnitSelect = async (
     nextUnit: MedicationIntervalUnit,
   ) => {
@@ -361,6 +335,33 @@ export function SettingsScreen({
     if (result.submitError) {
       setError(result.submitError);
     }
+  };
+
+  const handleLanguageSelect = async (nextLocale: MobileLocale) => {
+    const result = await saveSettingsPreferredLanguage({
+      isSavingLanguage,
+      nextLocale,
+      currentLocale: locale,
+      onUpdatePreferredLanguage,
+      saveErrorLabel: content.saveErrorLabel,
+    });
+
+    if (result.blocked) {
+      setLanguageExpanded(false);
+      return;
+    }
+
+    setIsSavingLanguage(true);
+    resetTransientMessages();
+
+    if (result.success) {
+      setLanguageExpanded(false);
+      setIsSavingLanguage(false);
+      return;
+    }
+
+    setError(result.submitError ?? content.saveErrorLabel);
+    setIsSavingLanguage(false);
   };
 
   const patchPushPreferences = async (
@@ -738,7 +739,7 @@ export function SettingsScreen({
                   title={content.languageTitle}
                   hint={content.languageHint}
                   choices={content.languageChoices}
-                  selectedKey={session?.account.preferredLanguage ?? locale}
+                  selectedKey={locale}
                   expanded={languageExpanded}
                   onToggle={() => {
                     setLanguageExpanded((current) => !current);
@@ -747,7 +748,6 @@ export function SettingsScreen({
                   onSelect={(value) => {
                     void handleLanguageSelect(value as MobileLocale);
                   }}
-                  disabled={isSavingLanguage}
                 />
                 <View style={styles.rowDivider} />
                 <ExpandableChoiceRow

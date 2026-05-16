@@ -59,6 +59,21 @@ export type AnalyticsScreenContent = {
   episodes: AnalyticsEpisodeCard[];
 };
 
+const monthAliases = [
+  ["january", "jan", "январь", "янв", "januar", "styczeń", "stycznia"],
+  ["february", "feb", "февраль", "фев", "februar", "luty", "lutego"],
+  ["march", "mar", "март", "мар", "märz", "marzec", "marca"],
+  ["april", "apr", "апрель", "апр", "kwiecień", "kwietnia"],
+  ["may", "май", "mai", "maj"],
+  ["june", "jun", "июнь", "июн", "juni", "czerwiec", "czerwca"],
+  ["july", "jul", "июль", "июл", "lipiec", "lipca"],
+  ["august", "aug", "август", "авг", "sierpień", "sierpnia"],
+  ["september", "sep", "sept", "сентябрь", "сен", "wrzesień", "września"],
+  ["october", "oct", "октябрь", "окт", "oktober", "październik", "października"],
+  ["november", "nov", "ноябрь", "ноя", "listopad", "listopada"],
+  ["december", "dec", "декабрь", "дек", "dezember", "grudzień", "grudnia"],
+] as const;
+
 function formatMonthLabel(value: string | null, locale: MobileLocale) {
   if (!value) {
     return "—";
@@ -161,6 +176,54 @@ function formatZeroEpisodesMessage(locale: MobileLocale) {
   if (locale === "de") return "Noch keine abgeschlossenen Episoden";
   if (locale === "pl") return "Brak zakończonych epizodów";
   return "No completed episodes yet";
+}
+
+function normalizeMonthToken(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[.,]/g, "")
+    .trim();
+}
+
+function resolveMonthIndex(label: string) {
+  const normalizedLabel = normalizeMonthToken(label);
+
+  for (const [index, aliases] of monthAliases.entries()) {
+    if (aliases.some((alias) => normalizedLabel.includes(normalizeMonthToken(alias)))) {
+      return index;
+    }
+  }
+
+  return null;
+}
+
+function localizeMostActivePeriodLabel(
+  value: string | null,
+  locale: MobileLocale,
+) {
+  if (!value) {
+    return null;
+  }
+
+  const monthIndex = resolveMonthIndex(value);
+  if (monthIndex == null) {
+    return value;
+  }
+
+  const yearMatch = value.match(/\b(20\d{2}|\d{4})\b/);
+  const year = yearMatch ? Number(yearMatch[1]) : 2026;
+  const monthDate = new Date(Date.UTC(year, monthIndex, 1));
+
+  return monthDate.toLocaleDateString(
+    locale === "ru" ? "ru-RU" : locale === "de" ? "de-DE" : locale === "pl" ? "pl-PL" : "en-US",
+    {
+      month: "long",
+      year: yearMatch ? "numeric" : undefined,
+      timeZone: "UTC",
+    },
+  );
 }
 
 function filterEpisodesForPeriod(
@@ -315,12 +378,12 @@ export function buildAnalyticsScreenContent(
         icon: "activeMonth",
         title: summary?.mostActivePeriodLabel
           ? isRu
-            ? `Активный период — ${summary.mostActivePeriodLabel}`
+            ? `Активный период — ${localizeMostActivePeriodLabel(summary.mostActivePeriodLabel, locale)}`
             : isDe
-              ? `Aktivster Zeitraum — ${summary.mostActivePeriodLabel}`
-              : isPl
-              ? `Najaktywniejszy okres — ${summary.mostActivePeriodLabel}`
-              : `Most active period — ${summary.mostActivePeriodLabel}`
+              ? `Aktivster Zeitraum — ${localizeMostActivePeriodLabel(summary.mostActivePeriodLabel, locale)}`
+            : isPl
+              ? `Najaktywniejszy okres — ${localizeMostActivePeriodLabel(summary.mostActivePeriodLabel, locale)}`
+              : `Most active period — ${localizeMostActivePeriodLabel(summary.mostActivePeriodLabel, locale)}`
           : isRu
             ? "Активный период пока не определён"
             : isDe

@@ -2,18 +2,8 @@ import { ImageSourcePropType } from "react-native";
 import { ChildCard } from "../../children/model/childrenRedesign";
 import { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import { getInclusiveDaySpan, type DateRangeValue } from "../../../shared/lib/dateRange";
-import {
-  getOverviewCopy,
-  translateOverviewBottomNavLabel,
-  translateOverviewSelectedDayHeader,
-  translateOverviewSelectedDayHint,
-  translateOverviewTab,
-} from "./childOverviewCopy";
-import {
-  getOverviewTabKind,
-  overviewIconTokens,
-  replaceOverviewDemoName,
-} from "./childOverviewHelpers";
+import { getOverviewCopy } from "./childOverviewCopy";
+import { overviewIconTokens, replaceOverviewDemoName } from "./childOverviewHelpers";
 import { buildLiveOverviewData, type ChildOverviewDataBundle } from "./childOverviewLive";
 import {
   buildFallbackCalendarDays,
@@ -58,7 +48,13 @@ export type ChildOverviewTab = {
 };
 
 export type ChildOverviewFilter = {
-  id: string;
+  id:
+    | "filter-all"
+    | "filter-sleep"
+    | "filter-feeding"
+    | "filter-illness"
+    | "filter-weight"
+    | "filter-height";
   label: string;
   active: boolean;
   kind: "dropdown" | "chip";
@@ -67,6 +63,7 @@ export type ChildOverviewFilter = {
 
 export type ChildOverviewEventRow = {
   id: string;
+  category: "feeding" | "sleep" | "illness" | "weight" | "height";
   time: string;
   type: string;
   detail: string;
@@ -80,7 +77,7 @@ export type ChildOverviewEventSection = {
 };
 
 export type ChildOverviewBottomNavItem = {
-  id: string;
+  id: "bottomChildren" | "bottomPills" | "bottomMedicineCabinet" | "bottomMore";
   label: string;
   icon: ChildOverviewIconToken;
   active: boolean;
@@ -177,6 +174,12 @@ export type ChildOverviewScreenContent = {
   };
 };
 
+const overviewTabs = [
+  { id: "tab-feed", kind: "feed" as const, labelKey: "feed" as const },
+  { id: "tab-calendar", kind: "calendar" as const, labelKey: "calendar" as const },
+  { id: "tab-charts", kind: "charts" as const, labelKey: "charts" as const },
+];
+
 export function buildChildOverviewScreenContent(
   child: ChildCard,
   locale: MobileLocale,
@@ -192,7 +195,7 @@ export function buildChildOverviewScreenContent(
   const copy = getOverviewCopy(locale);
   const { components, colors, gradients, characterIllustration } = spec;
   const periodId = options?.periodId ?? "week";
-  const activeFilterId = options?.activeFilterId ?? "chip-Все";
+  const activeFilterId = options?.activeFilterId ?? "filter-all";
   const data = options?.data;
   const customRange = options?.customRange ?? null;
   const visibleCalendarMonthKey = options?.visibleCalendarMonthKey ?? null;
@@ -219,10 +222,10 @@ export function buildChildOverviewScreenContent(
     periodOptions: buildOverviewPeriodOptions(copy),
     summaryTitle: resolveOverviewSummaryTitle(locale, copy, periodId, customRange),
     summaryInsights: liveOverview?.summaryInsights ?? buildFallbackSummaryInsights(locale, components),
-    tabs: components.tabs.items.map((item, index) => ({
-      id: item,
-      kind: getOverviewTabKind(item),
-      label: isRu ? item : translateOverviewTab(item, locale),
+    tabs: overviewTabs.map((item, index) => ({
+      id: item.id,
+      kind: item.kind,
+      label: copy.tabs[item.labelKey],
       active: index === 0,
     })),
     filters: buildFallbackFilters(locale, components),
@@ -233,12 +236,8 @@ export function buildChildOverviewScreenContent(
     calendarWeekdays: buildFallbackCalendarWeekdays(locale, calendarSpec),
     calendarDays: liveOverview?.calendarDays ?? buildFallbackCalendarDays(calendarSpec),
     calendarStats: liveOverview?.calendarStats ?? buildFallbackCalendarStats(locale, copy, calendarSpec),
-    selectedDayHeader: isRu
-      ? calendarSpec.copy.selectedDayHeader
-      : translateOverviewSelectedDayHeader(calendarSpec.copy.selectedDayHeader, locale),
-    selectedDayHint: isRu
-      ? calendarSpec.copy.selectedDayHint
-      : translateOverviewSelectedDayHint(calendarSpec.copy.selectedDayHint, locale),
+    selectedDayHeader: copy.selectedDayHeader,
+    selectedDayHint: copy.selectedDayHint,
     selectedDayToggleHint: copy.selectedDayToggleHint,
     selectedDayEmptyLabel: copy.selectedDayEmptyLabel,
     selectedDayEntriesByDay: liveOverview?.selectedDayEntriesByDay ?? {},
@@ -255,8 +254,22 @@ export function buildChildOverviewScreenContent(
     calendarMonthSummaryTitle: copy.calendarMonthSummaryTitle,
     calendarMonthSummaryHint: copy.calendarMonthSummaryHint,
     bottomNav: components.bottomNavigation.items.map((item) => ({
-      id: item.icon,
-      label: isRu ? item.label : translateOverviewBottomNavLabel(item.label, locale),
+      id:
+        item.icon === "bottomChildren"
+          ? "bottomChildren"
+          : item.icon === "bottomPills"
+            ? "bottomPills"
+            : item.icon === "bottomMedicineCabinet"
+              ? "bottomMedicineCabinet"
+              : "bottomMore",
+      label:
+        item.icon === "bottomChildren"
+          ? copy.bottomNav.children
+          : item.icon === "bottomPills"
+            ? copy.bottomNav.pills
+            : item.icon === "bottomMedicineCabinet"
+              ? copy.bottomNav.cabinet
+              : copy.bottomNav.more,
       icon: overviewIconTokens[item.icon],
       active: Boolean(item.active),
     })),

@@ -1,13 +1,5 @@
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
-import {
-  translateOverviewDetail,
-  translateOverviewEventDate,
-  translateOverviewEventType,
-  translateOverviewFilter,
-  translateOverviewInsightSubtitle,
-  translateOverviewInsightTitle,
-  translateOverviewMonth,
-} from "./childOverviewCopy";
+import { getOverviewCopy } from "./childOverviewCopy";
 import { mapOverviewCalendarDotKey, overviewIconTokens } from "./childOverviewHelpers";
 import type {
   ChildOverviewBarDatum,
@@ -102,11 +94,24 @@ export function buildFallbackSummaryInsights(
   locale: MobileLocale,
   components: OverviewComponents,
 ) {
-  const isRu = locale === "ru";
-  return components.summaryCard.insights.map((item) => ({
+  const copy = getOverviewCopy(locale);
+  const titles = [
+    copy.insightTitles.illness,
+    copy.insightTitles.feeding,
+    copy.insightTitles.sleep,
+    copy.insightTitles.growth,
+  ];
+  const subtitles = [
+    copy.insightSubtitles.temperatureObservation,
+    copy.insightSubtitles.breast,
+    copy.insightSubtitles.addRecords,
+    copy.insightSubtitles.nothingNew,
+  ];
+
+  return components.summaryCard.insights.map((item, index) => ({
     id: `${item.icon}-${item.title}`,
-    title: isRu ? item.title : translateOverviewInsightTitle(item.title, locale),
-    subtitle: isRu ? item.subtitle : translateOverviewInsightSubtitle(item.subtitle, locale),
+    title: titles[index] ?? item.title,
+    subtitle: subtitles[index] ?? item.subtitle,
     icon: overviewIconTokens[item.icon],
   }));
 }
@@ -115,12 +120,29 @@ export function buildFallbackFilters(
   locale: MobileLocale,
   components: OverviewComponents,
 ): ChildOverviewFilter[] {
-  const isRu = locale === "ru";
+  const copy = getOverviewCopy(locale);
+  const labels = [
+    copy.filters.all,
+    copy.filters.sleep,
+    copy.filters.feeding,
+    copy.filters.illness,
+    copy.filters.weight,
+    copy.filters.height,
+  ] as const;
+  const ids: ChildOverviewFilter["id"][] = [
+    "filter-all",
+    "filter-sleep",
+    "filter-feeding",
+    "filter-illness",
+    "filter-weight",
+    "filter-height",
+  ];
+
   return components.filters.items
     .filter((item) => item.type !== "dropdown")
-    .map((item) => ({
-      id: `${item.type ?? "chip"}-${item.label}`,
-      label: isRu ? item.label : translateOverviewFilter(item.label, locale),
+    .map((item, index) => ({
+      id: ids[index] ?? "filter-all",
+      label: labels[index] ?? item.label,
       active: Boolean(item.active),
       kind: "chip" as const,
       dotColor: item.dotColor,
@@ -131,15 +153,31 @@ export function buildFallbackEvents(
   locale: MobileLocale,
   components: OverviewComponents,
 ): ChildOverviewEventSection[] {
-  const isRu = locale === "ru";
-  return components.eventsList.items.map((section) => ({
+  const copy = getOverviewCopy(locale);
+  return components.eventsList.items.map((section, sectionIndex) => ({
     id: section.date,
-    date: isRu ? section.date : translateOverviewEventDate(section.date, locale),
+    date: sectionIndex === 0 ? copy.dates.today : copy.dates.may3,
     rows: section.rows.map((row) => ({
       id: `${section.date}-${row.time}-${row.type}`,
+      category:
+        row.icon === "feeding"
+          ? "feeding"
+          : row.icon === "sleep"
+            ? "sleep"
+            : "illness",
       time: row.time,
-      type: isRu ? row.type : translateOverviewEventType(row.type, locale),
-      detail: isRu ? row.detail : translateOverviewDetail(row.detail, locale),
+      type:
+        row.icon === "feeding"
+          ? copy.eventTypes.feeding
+          : row.icon === "sleep"
+            ? copy.eventTypes.sleep
+            : copy.eventTypes.illness,
+      detail:
+        row.icon === "feeding"
+          ? copy.details.breast
+          : row.icon === "sleep"
+            ? copy.details.zeroMin
+            : copy.details.temperatureObservation,
       icon: overviewIconTokens[row.icon],
     })),
   }));
@@ -149,13 +187,11 @@ export function buildFallbackCalendarMonths(
   locale: MobileLocale,
   calendarSpec: OverviewCalendarSpec,
 ): ChildOverviewCalendarMonth[] {
-  const isRu = locale === "ru";
+  const copy = getOverviewCopy(locale);
   return [
     {
       id: "default-calendar-month",
-      label: isRu
-        ? calendarSpec.copy.month
-        : translateOverviewMonth(calendarSpec.copy.month, locale),
+      label: copy.month,
       days: calendarSpec.components.calendarCard.grid.days.map((day, index) => ({
         id: `calendar-day-${index}-${day.day}`,
         day: day.day,
@@ -208,24 +244,22 @@ export function buildFallbackCalendarStats(
   },
   calendarSpec: OverviewCalendarSpec,
 ): ChildOverviewCalendarStat[] {
-  const isRu = locale === "ru";
+  const labels = [
+    copy.calendarStats.activeDays,
+    copy.calendarStats.mostOften,
+    copy.calendarStats.latestEntry,
+  ];
+  const values = [
+    calendarSpec.components.monthStatsCard.items[0]?.value ?? "0",
+    copy.eventTypes.feeding,
+    copy.dates.may3,
+  ];
+
   return calendarSpec.components.monthStatsCard.items.map((item, index) => ({
     id: `${item.icon}-${index}`,
     icon: item.icon,
-    label: isRu
-      ? item.label
-      : item.label === "Активные дни"
-        ? copy.calendarStats.activeDays
-        : item.label === "Чаще всего"
-          ? copy.calendarStats.mostOften
-          : copy.calendarStats.latestEntry,
-    value: isRu
-      ? item.value
-      : item.value === "Кормление"
-        ? copy.eventTypes.feeding
-        : item.value === "3 мая"
-          ? copy.dates.may3
-          : item.value,
+    label: labels[index] ?? item.label,
+    value: values[index] ?? item.value,
     iconCircleBg: item.iconCircleBg,
   }));
 }

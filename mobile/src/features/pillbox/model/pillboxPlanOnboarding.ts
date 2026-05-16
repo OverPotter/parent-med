@@ -1,6 +1,10 @@
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import type { MobilePillboxPlanWrite } from "../api/mobilePillboxPlansApi";
+import {
+  buildPillboxMedicineCountLabel,
+  buildPillboxNextInfoLabel,
+} from "./pillboxLocalization";
 
 export type PillboxParticipantOption = {
   id: string;
@@ -203,33 +207,14 @@ export function buildPlanAvatarText(label: string): string {
 }
 
 export function buildMedicineCountLabel(count: number, locale: MobileLocale) {
-  if (locale === "ru") {
-    const mod10 = count % 10;
-    const mod100 = count % 100;
-    if (mod10 === 1 && mod100 !== 11) {
-      return `${count} лекарство`;
-    }
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-      return `${count} лекарства`;
-    }
-    return `${count} лекарств`;
-  }
-
-  return `${count} ${count === 1 ? "medicine" : "medicines"}`;
+  return buildPillboxMedicineCountLabel(count, locale);
 }
 
 export function buildNextInfoLabel(input: {
   locale: MobileLocale;
   times: string[];
 }) {
-  const nextTime = [...input.times].sort()[0];
-  if (!nextTime) {
-    return input.locale === "ru" ? "расписание настроено" : "schedule is set";
-  }
-
-  return input.locale === "ru"
-    ? `следующий в ${nextTime}`
-    : `next at ${nextTime}`;
+  return buildPillboxNextInfoLabel({ ...input, variant: "compact" });
 }
 
 export function buildNotificationRecipientSummary(input: {

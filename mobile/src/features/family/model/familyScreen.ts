@@ -87,6 +87,24 @@ export type FamilyScreenContent = {
   confirmDeleteMessage: string;
   confirmActionLabel: string;
   cancelActionLabel: string;
+  inviteCodeTitle: string;
+  inviteReadyDescription: string;
+  inviteEmptyDescription: string;
+  inviteReadyStatus: string;
+  memberActionHint: string;
+  accessTargetHint: string;
+  accessInlineHint: string;
+  cabinetPushHint: string;
+  editProfileHint: string;
+  saveProfileLabel: string;
+  roleRuleOwnerDescription: string;
+  roleRuleAdminDescription: string;
+  roleRuleMemberDescription: string;
+  shareInviteMessage: (inviteCode: string) => string;
+  genericActionError: string;
+  createInviteErrorTitle: string;
+  saveAccessErrorTitle: string;
+  saveProfileErrorTitle: string;
 };
 
 export type FamilyMemberPermissions = {
@@ -103,6 +121,13 @@ function normalizeFamilyMemberRole(role: string): FamilyMemberRole {
   }
 
   return "member";
+}
+
+function getGenericFamilyMemberLabel(locale: MobileLocale) {
+  if (locale === "ru") return "Участник семьи";
+  if (locale === "de") return "Familienmitglied";
+  if (locale === "pl") return "Członek rodziny";
+  return "Family member";
 }
 
 function buildFamilyMemberNote(params: {
@@ -124,7 +149,11 @@ function buildFamilyMemberNote(params: {
     ? childrenAccessLabel(accessPolicy.childrenAccess, locale)
     : isRu
       ? "нет доступа"
-      : "no access";
+      : locale === "de"
+        ? "kein Zugriff"
+        : locale === "pl"
+          ? "brak dostępu"
+          : "no access";
   const cabinetText = cabinetAccessLabel(accessPolicy.cabinetAccess, locale).toLowerCase();
   const pillboxText = pillboxAccessLabel(accessPolicy.pillboxAccess, locale).toLowerCase();
 
@@ -135,6 +164,18 @@ function buildFamilyMemberNote(params: {
         : "";
 
     const accessSentence = `Доступ: дети и журнал — ${childrenText.toLowerCase()}, аптечка — ${cabinetText}, таблетница — ${pillboxText}.`;
+    return adminPrefix ? `${adminPrefix} ${accessSentence}` : accessSentence;
+  }
+
+  if (locale === "de") {
+    const adminPrefix = role === "owner" ? "Verwaltet die Familie." : "";
+    const accessSentence = `Zugriff: Kinder und Journal ${childrenText.toLowerCase()}, Hausapotheke ${cabinetText}, Pillendose ${pillboxText}.`;
+    return adminPrefix ? `${adminPrefix} ${accessSentence}` : accessSentence;
+  }
+
+  if (locale === "pl") {
+    const adminPrefix = role === "owner" ? "Zarządza rodziną." : "";
+    const accessSentence = `Dostęp: dzieci i dziennik ${childrenText.toLowerCase()}, apteczka ${cabinetText}, organizer leków ${pillboxText}.`;
     return adminPrefix ? `${adminPrefix} ${accessSentence}` : accessSentence;
   }
 
@@ -174,7 +215,7 @@ export function buildFamilyStateFromData(params: {
             displayName: session.account.displayName || session.account.email || "Parent",
             relationshipLabel: session.account.relationshipLabel ?? null,
             phone: session.account.phone ?? null,
-            preferredLanguage: locale === "ru" ? "ru" : "en",
+            preferredLanguage: locale,
             familyRole: currentRole,
             accessPolicy: {
               allChildren: false,
@@ -198,7 +239,7 @@ export function buildFamilyStateFromData(params: {
         role: isCurrentUser ? currentRole : role,
         relationship:
           member.relationshipLabel ||
-          (locale === "ru" ? "Участник семьи" : "Family member"),
+          getGenericFamilyMemberLabel(locale),
         note: buildFamilyMemberNote({
           locale,
           isCurrentUser,
@@ -267,17 +308,39 @@ function childrenAccessLabel(
   value: FamilyChildrenAccess,
   locale: MobileLocale,
 ) {
-  const isRu = locale === "ru";
-
   switch (value) {
     case "none":
-      return isRu ? "Нет доступа" : "No access";
+      return locale === "ru"
+        ? "Нет доступа"
+        : locale === "de"
+          ? "Kein Zugriff"
+          : locale === "pl"
+            ? "Brak dostępu"
+            : "No access";
     case "view":
-      return isRu ? "Только смотреть" : "View only";
+      return locale === "ru"
+        ? "Только смотреть"
+        : locale === "de"
+          ? "Nur ansehen"
+          : locale === "pl"
+            ? "Tylko podgląd"
+            : "View only";
     case "act":
-      return isRu ? "Может записывать уход" : "Can log care";
+      return locale === "ru"
+        ? "Может записывать уход"
+        : locale === "de"
+          ? "Kann Pflege protokollieren"
+          : locale === "pl"
+            ? "Może zapisywać opiekę"
+            : "Can log care";
     default:
-      return isRu ? "Полный доступ" : "Full access";
+      return locale === "ru"
+        ? "Полный доступ"
+        : locale === "de"
+          ? "Voller Zugriff"
+          : locale === "pl"
+            ? "Pełny dostęp"
+            : "Full access";
   }
 }
 
@@ -285,15 +348,31 @@ function cabinetAccessLabel(
   value: FamilyCabinetAccess,
   locale: MobileLocale,
 ) {
-  const isRu = locale === "ru";
-
   switch (value) {
     case "none":
-      return isRu ? "Нет доступа" : "No access";
+      return locale === "ru"
+        ? "Нет доступа"
+        : locale === "de"
+          ? "Kein Zugriff"
+          : locale === "pl"
+            ? "Brak dostępu"
+            : "No access";
     case "view":
-      return isRu ? "Только смотреть" : "View only";
+      return locale === "ru"
+        ? "Только смотреть"
+        : locale === "de"
+          ? "Nur ansehen"
+          : locale === "pl"
+            ? "Tylko podgląd"
+            : "View only";
     default:
-      return isRu ? "Полный доступ" : "Full access";
+      return locale === "ru"
+        ? "Полный доступ"
+        : locale === "de"
+          ? "Voller Zugriff"
+          : locale === "pl"
+            ? "Pełny dostęp"
+            : "Full access";
   }
 }
 
@@ -301,17 +380,39 @@ function pillboxAccessLabel(
   value: FamilyPillboxAccess,
   locale: MobileLocale,
 ) {
-  const isRu = locale === "ru";
-
   switch (value) {
     case "none":
-      return isRu ? "Нет доступа" : "No access";
+      return locale === "ru"
+        ? "Нет доступа"
+        : locale === "de"
+          ? "Kein Zugriff"
+          : locale === "pl"
+            ? "Brak dostępu"
+            : "No access";
     case "view":
-      return isRu ? "Только смотреть" : "View only";
+      return locale === "ru"
+        ? "Только смотреть"
+        : locale === "de"
+          ? "Nur ansehen"
+          : locale === "pl"
+            ? "Tylko podgląd"
+            : "View only";
     case "act":
-      return isRu ? "Может отмечать приём" : "Can mark doses";
+      return locale === "ru"
+        ? "Может отмечать приём"
+        : locale === "de"
+          ? "Kann Einnahmen markieren"
+          : locale === "pl"
+            ? "Może oznaczać dawki"
+            : "Can mark doses";
     default:
-      return isRu ? "Полный доступ" : "Full access";
+      return locale === "ru"
+        ? "Полный доступ"
+        : locale === "de"
+          ? "Voller Zugriff"
+          : locale === "pl"
+            ? "Pełny dostęp"
+            : "Full access";
   }
 }
 
@@ -351,40 +452,179 @@ export function buildFamilyScreenContent(
         : isPl
           ? "To jest Twój bieżący profil."
           : "This is your current profile.",
-    accessSettingsTitle: isRu ? "Настройки доступа" : "Access settings",
-    profileFactsTitle: isRu ? "Профиль" : "Profile",
-    childrenScopeTitle: isRu ? "Каких детей видит" : "Children scope",
-    childrenAccessTitle: isRu ? "Доступ к детям / журналу" : "Children access",
-    cabinetAccessTitle: isRu ? "Аптечка" : "Medicine cabinet",
-    pillboxAccessTitle: isRu ? "Таблетница" : "Pillbox",
-    cabinetPushTitle: isRu ? "Уведомления по аптечке" : "Cabinet notifications",
-    allChildrenLabel: isRu ? "Все дети" : "All children",
-    selectedChildrenLabel: isRu ? "Выбранные дети" : "Selected children",
-    hiddenLabel: isRu ? "Нет доступа" : "Hidden",
-    saveAccessLabel: isRu ? "Сохранить настройки доступа" : "Save access settings",
-    editProfileLabel: isRu ? "Редактировать профиль" : "Edit profile",
-    manageAccessLabel: isRu ? "Настроить доступ" : "Manage access",
-    makeAdminLabel: isRu ? "Сделать админом" : "Make admin",
-    makeMemberLabel: isRu ? "Сделать участником" : "Make member",
-    removeMemberLabel: isRu ? "Удалить из семьи" : "Remove from family",
-    displayNameLabel: isRu ? "Имя в семье" : "Display name",
-    relationshipLabel: isRu ? "Кто это в семье" : "Relationship",
-    phoneLabel: isRu ? "Телефон" : "Phone",
-    noPhoneLabel: isRu ? "Не указан" : "Not set",
-    confirmPromoteTitle: isRu ? "Сделать участника администратором?" : "Promote to admin?",
+    accessSettingsTitle: isRu ? "Настройки доступа" : isDe ? "Zugriffseinstellungen" : isPl ? "Ustawienia dostępu" : "Access settings",
+    profileFactsTitle: isRu ? "Профиль" : isDe ? "Profil" : isPl ? "Profil" : "Profile",
+    childrenScopeTitle: isRu ? "Каких детей видит" : isDe ? "Kinderumfang" : isPl ? "Zakres dzieci" : "Children scope",
+    childrenAccessTitle: isRu ? "Доступ к детям / журналу" : isDe ? "Zugriff auf Kinder / Journal" : isPl ? "Dostęp do dzieci / dziennika" : "Children access",
+    cabinetAccessTitle: isRu ? "Аптечка" : isDe ? "Hausapotheke" : isPl ? "Apteczka" : "Medicine cabinet",
+    pillboxAccessTitle: isRu ? "Таблетница" : isDe ? "Pillendose" : isPl ? "Organizer leków" : "Pillbox",
+    cabinetPushTitle: isRu ? "Уведомления по аптечке" : isDe ? "Benachrichtigungen zur Hausapotheke" : isPl ? "Powiadomienia o apteczce" : "Cabinet notifications",
+    allChildrenLabel: isRu ? "Все дети" : isDe ? "Alle Kinder" : isPl ? "Wszystkie dzieci" : "All children",
+    selectedChildrenLabel: isRu ? "Выбранные дети" : isDe ? "Ausgewählte Kinder" : isPl ? "Wybrane dzieci" : "Selected children",
+    hiddenLabel: isRu ? "Нет доступа" : isDe ? "Kein Zugriff" : isPl ? "Brak dostępu" : "Hidden",
+    saveAccessLabel: isRu ? "Сохранить настройки доступа" : isDe ? "Zugriffseinstellungen speichern" : isPl ? "Zapisz ustawienia dostępu" : "Save access settings",
+    editProfileLabel: isRu ? "Редактировать профиль" : isDe ? "Profil bearbeiten" : isPl ? "Edytuj profil" : "Edit profile",
+    manageAccessLabel: isRu ? "Настроить доступ" : isDe ? "Zugriff verwalten" : isPl ? "Zarządzaj dostępem" : "Manage access",
+    makeAdminLabel: isRu ? "Сделать админом" : isDe ? "Zum Admin machen" : isPl ? "Uczyń administratorem" : "Make admin",
+    makeMemberLabel: isRu ? "Сделать участником" : isDe ? "Zum Mitglied machen" : isPl ? "Uczyń członkiem" : "Make member",
+    removeMemberLabel: isRu ? "Удалить из семьи" : isDe ? "Aus der Familie entfernen" : isPl ? "Usuń z rodziny" : "Remove from family",
+    displayNameLabel: isRu ? "Имя в семье" : isDe ? "Name in der Familie" : isPl ? "Imię w rodzinie" : "Display name",
+    relationshipLabel: isRu ? "Кто это в семье" : isDe ? "Wer das in der Familie ist" : isPl ? "Kim jest w rodzinie" : "Relationship",
+    phoneLabel: isRu ? "Телефон" : isDe ? "Telefon" : isPl ? "Telefon" : "Phone",
+    noPhoneLabel: isRu ? "Не указан" : isDe ? "Nicht angegeben" : isPl ? "Nie podano" : "Not set",
+    confirmPromoteTitle: isRu ? "Сделать участника администратором?" : isDe ? "Zum Administrator machen?" : isPl ? "Uczynić członka administratorem?" : "Promote to admin?",
     confirmPromoteMessage: isRu
       ? "Участник сможет управлять ролями, участниками и правами доступа."
-      : "The member will be able to manage roles, members, and access.",
-    confirmDemoteTitle: isRu ? "Снять права администратора?" : "Remove admin rights?",
+      : isDe
+        ? "Das Mitglied kann Rollen, Mitglieder und Zugriffsrechte verwalten."
+        : isPl
+          ? "Członek będzie mógł zarządzać rolami, członkami i dostępem."
+          : "The member will be able to manage roles, members, and access.",
+    confirmDemoteTitle: isRu ? "Снять права администратора?" : isDe ? "Adminrechte entziehen?" : isPl ? "Usunąć uprawnienia administratora?" : "Remove admin rights?",
     confirmDemoteMessage: isRu
       ? "Участник останется в семье, но потеряет права управления."
-      : "The member stays in the family but loses management rights.",
-    confirmDeleteTitle: isRu ? "Удалить участника из семьи?" : "Remove member from family?",
+      : isDe
+        ? "Das Mitglied bleibt in der Familie, verliert aber die Verwaltungsrechte."
+        : isPl
+          ? "Członek pozostanie w rodzinie, ale utraci uprawnienia do zarządzania."
+          : "The member stays in the family but loses management rights.",
+    confirmDeleteTitle: isRu ? "Удалить участника из семьи?" : isDe ? "Mitglied aus der Familie entfernen?" : isPl ? "Usunąć członka z rodziny?" : "Remove member from family?",
     confirmDeleteMessage: isRu
       ? "Участник потеряет доступ к семье. Для него будет создана новая пустая семья."
-      : "The member will lose access and get a new empty family.",
-    confirmActionLabel: isRu ? "Подтвердить" : "Confirm",
-    cancelActionLabel: isRu ? "Отмена" : "Cancel",
+      : isDe
+        ? "Das Mitglied verliert den Zugriff auf die Familie und erhält eine neue leere Familie."
+        : isPl
+          ? "Członek utraci dostęp do rodziny i otrzyma nową pustą rodzinę."
+          : "The member will lose access and get a new empty family.",
+    confirmActionLabel: isRu ? "Подтвердить" : isDe ? "Bestätigen" : isPl ? "Potwierdź" : "Confirm",
+    cancelActionLabel: isRu ? "Отмена" : isDe ? "Abbrechen" : isPl ? "Anuluj" : "Cancel",
+    inviteCodeTitle: isRu
+      ? "Код приглашения"
+      : isDe
+        ? "Einladungscode"
+        : isPl
+          ? "Kod zaproszenia"
+          : "Invitation code",
+    inviteReadyDescription: isRu
+      ? "Код готов. Можно открыть блок и поделиться им."
+      : isDe
+        ? "Der Code ist bereit. Öffnen Sie den Bereich und teilen Sie ihn."
+        : isPl
+          ? "Kod jest gotowy. Otwórz sekcję i udostępnij go."
+          : "The code is ready. Open the block to share it.",
+    inviteEmptyDescription: isRu
+      ? "Пока кода нет. Создайте его, когда захотите пригласить взрослого."
+      : isDe
+        ? "Noch kein Code. Erstellen Sie ihn, wenn Sie einen Erwachsenen einladen möchten."
+        : isPl
+          ? "Nie ma jeszcze kodu. Utwórz go, gdy chcesz zaprosić dorosłego."
+          : "No code yet. Create one when you want to invite an adult.",
+    inviteReadyStatus: isRu
+      ? "Код готов к использованию"
+      : isDe
+        ? "Code ist einsatzbereit"
+        : isPl
+          ? "Kod jest gotowy do użycia"
+          : "Code is ready to use",
+    memberActionHint: isRu
+      ? "Выберите, что хотите изменить для участника."
+      : isDe
+        ? "Wählen Sie aus, was Sie für dieses Mitglied ändern möchten."
+        : isPl
+          ? "Wybierz, co chcesz zmienić dla tego członka."
+          : "Choose what you want to change for this member.",
+    accessTargetHint: isRu
+      ? "Выберите, что этот участник видит и может делать."
+      : isDe
+        ? "Wählen Sie aus, was dieses Mitglied sehen und tun kann."
+        : isPl
+          ? "Wybierz, co ten członek może widzieć i robić."
+          : "Choose what this member can see and do.",
+    accessInlineHint: isRu
+      ? "Выберите, что участник видит и может делать."
+      : isDe
+        ? "Wählen Sie aus, was das Mitglied sehen und tun kann."
+        : isPl
+          ? "Wybierz, co członek może widzieć i robić."
+          : "Choose what this member can see and do.",
+    cabinetPushHint: isRu
+      ? "Будут приходить только важные напоминания по аптечке."
+      : isDe
+        ? "Es werden nur wichtige Erinnerungen zur Hausapotheke gesendet."
+        : isPl
+          ? "Będą przychodzić tylko ważne przypomnienia o apteczce."
+          : "Only important cabinet reminders will be sent.",
+    editProfileHint: isRu
+      ? "Измените имя, телефон и кто это в семье."
+      : isDe
+        ? "Aktualisieren Sie Name, Telefonnummer und Familienrolle."
+        : isPl
+          ? "Zmień imię, telefon i rolę w rodzinie."
+          : "Update the name, phone, and family relationship.",
+    saveProfileLabel: isRu
+      ? "Сохранить профиль"
+      : isDe
+        ? "Profil speichern"
+        : isPl
+          ? "Zapisz profil"
+          : "Save profile",
+    roleRuleOwnerDescription: isRu
+      ? "Управляет семьёй, приглашениями и критичными решениями."
+      : isDe
+        ? "Verwaltet Familie, Einladungen und wichtige Entscheidungen."
+        : isPl
+          ? "Zarządza rodziną, zaproszeniami i ważnymi decyzjami."
+          : "Manages the family, invitations, and critical decisions.",
+    roleRuleAdminDescription: isRu
+      ? "Помогает управлять доступом и ежедневными сценариями."
+      : isDe
+        ? "Hilft beim Verwalten von Zugängen und täglichen Abläufen."
+        : isPl
+          ? "Pomaga zarządzać dostępem i codziennymi scenariuszami."
+          : "Helps manage access and daily routines.",
+    roleRuleMemberDescription: isRu
+      ? "Пользуется нужными функциями и видит только доступные разделы."
+      : isDe
+        ? "Nutzt die nötigen Funktionen und sieht nur freigegebene Bereiche."
+        : isPl
+          ? "Korzysta z potrzebnych funkcji i widzi tylko dostępne sekcje."
+          : "Uses the needed features and only sees allowed sections.",
+    shareInviteMessage: (inviteCode: string) =>
+      isRu
+        ? `Присоединяйтесь к семье в PillPath. Код приглашения: ${inviteCode}`
+        : isDe
+          ? `Treten Sie der Familie in PillPath bei. Einladungscode: ${inviteCode}`
+          : isPl
+            ? `Dołącz do rodziny w PillPath. Kod zaproszenia: ${inviteCode}`
+            : `Join the family in PillPath. Invitation code: ${inviteCode}`,
+    genericActionError: isRu
+      ? "Не удалось выполнить действие."
+      : isDe
+        ? "Aktion konnte nicht abgeschlossen werden."
+        : isPl
+          ? "Nie udało się wykonać działania."
+          : "Could not complete the action.",
+    createInviteErrorTitle: isRu
+      ? "Не удалось создать приглашение"
+      : isDe
+        ? "Einladung konnte nicht erstellt werden"
+        : isPl
+          ? "Nie udało się utworzyć zaproszenia"
+          : "Could not create invite",
+    saveAccessErrorTitle: isRu
+      ? "Не удалось сохранить настройки доступа"
+      : isDe
+        ? "Zugriffseinstellungen konnten nicht gespeichert werden"
+        : isPl
+          ? "Nie udało się zapisać ustawień dostępu"
+          : "Could not save access settings",
+    saveProfileErrorTitle: isRu
+      ? "Не удалось сохранить профиль"
+      : isDe
+        ? "Profil konnte nicht gespeichert werden"
+        : isPl
+          ? "Nie udało się zapisać profilu"
+          : "Could not save profile",
   };
 }
 

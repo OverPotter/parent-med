@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, Text, View } from "react-native";
 import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
+import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import type { MobileAuthSession } from "../../auth/api/authApi";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import { InstantReminderRecipientsSheet } from "../../illness/screens/ReminderRecipientsSheet";
@@ -60,12 +61,37 @@ export function MedicineCabinetOverviewOverlays({
   onConfirmDelete: () => void;
   transientNotice: string | null;
 }) {
+  const { locale } = useMobileI18n();
   return (
     <>
       <InstantReminderRecipientsSheet
-        title="Кому приходят push по аптечке"
-        subtitle="Эти люди будут получать уведомления о сроках и просроченных лекарствах."
-        currentUserLabel="Вы"
+        title={
+          locale === "ru"
+            ? "Кому приходят push по аптечке"
+            : locale === "de"
+              ? "Wer Pushs zur Hausapotheke erhält"
+              : locale === "pl"
+                ? "Kto dostaje powiadomienia push o apteczce"
+                : "Who gets cabinet push notifications"
+        }
+        subtitle={
+          locale === "ru"
+            ? "Эти люди будут получать уведомления о сроках и просроченных лекарствах."
+            : locale === "de"
+              ? "Diese Personen erhalten Hinweise zu Ablaufdaten und abgelaufenen Medikamenten."
+              : locale === "pl"
+                ? "Te osoby będą otrzymywać powiadomienia o terminach i przeterminowanych lekach."
+                : "These people will receive alerts about upcoming expiries and expired medicines."
+        }
+        currentUserLabel={
+          locale === "ru"
+            ? "Вы"
+            : locale === "de"
+              ? "Du"
+              : locale === "pl"
+                ? "Ty"
+                : "You"
+        }
         visible={isRecipientsSheetOpen}
         isSaving={isSavingRecipients}
         members={eligibleFamilyMembers}
@@ -134,11 +160,31 @@ export function MedicineCabinetOverviewOverlays({
           <>
             <View style={styles.sheetDragZone} {...panHandlers}>
               <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>Списать препарат?</Text>
+              <Text style={styles.sheetTitle}>
+                {locale === "ru"
+                  ? "Списать препарат?"
+                  : locale === "de"
+                    ? "Medikament entfernen?"
+                    : locale === "pl"
+                      ? "Usunąć lek?"
+                      : "Remove medicine?"}
+              </Text>
               <Text style={styles.sheetSubtitle}>
                 {pendingDeleteItem
-                  ? `Карточка «${pendingDeleteItem.title}» исчезнет из домашней аптечки.`
-                  : "Карточка исчезнет из домашней аптечки."}
+                  ? locale === "ru"
+                    ? `Карточка «${pendingDeleteItem.title}» исчезнет из домашней аптечки.`
+                    : locale === "de"
+                      ? `Die Karte „${pendingDeleteItem.title}“ wird aus der Hausapotheke entfernt.`
+                      : locale === "pl"
+                        ? `Karta „${pendingDeleteItem.title}” zniknie z domowej apteczki.`
+                        : `The card "${pendingDeleteItem.title}" will be removed from the cabinet.`
+                  : locale === "ru"
+                    ? "Карточка исчезнет из домашней аптечки."
+                    : locale === "de"
+                      ? "Die Karte wird aus der Hausapotheke entfernt."
+                      : locale === "pl"
+                        ? "Karta zniknie z domowej apteczki."
+                        : "The card will be removed from the cabinet."}
               </Text>
             </View>
 
@@ -150,7 +196,15 @@ export function MedicineCabinetOverviewOverlays({
                   pressed ? styles.secondaryButtonPressed : null,
                 ]}
               >
-                <Text style={styles.customValueCancelText}>Нет</Text>
+                <Text style={styles.customValueCancelText}>
+                  {locale === "ru"
+                    ? "Нет"
+                    : locale === "de"
+                      ? "Nein"
+                      : locale === "pl"
+                        ? "Nie"
+                        : "No"}
+                </Text>
               </Pressable>
 
               <Pressable
@@ -166,7 +220,15 @@ export function MedicineCabinetOverviewOverlays({
                   end={{ x: 1, y: 1 }}
                   style={styles.customValueSaveGradient}
                 />
-                <Text style={styles.customValueSaveText}>Да</Text>
+                <Text style={styles.customValueSaveText}>
+                  {locale === "ru"
+                    ? "Да"
+                    : locale === "de"
+                      ? "Ja"
+                      : locale === "pl"
+                        ? "Tak"
+                        : "Yes"}
+                </Text>
               </Pressable>
             </View>
           </>

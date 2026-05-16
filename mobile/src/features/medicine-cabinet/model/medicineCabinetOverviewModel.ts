@@ -1,3 +1,4 @@
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type { MobileHouseholdMedicine } from "../api/mobileHouseholdMedicinesApi";
 
 export type CabinetFilterKey = "expired" | "attention" | "ready" | "all";
@@ -80,20 +81,38 @@ const summaryStatTemplates: Omit<SummaryStat, "value">[] = [
   },
 ];
 
-function formatRuDate(value: string | null | undefined) {
+function getDateLocale(locale: MobileLocale) {
+  if (locale === "ru") return "ru-RU";
+  if (locale === "de") return "de-DE";
+  if (locale === "pl") return "pl-PL";
+  return "en-US";
+}
+
+function formatCabinetDate(
+  value: string | null | undefined,
+  locale: MobileLocale,
+) {
   if (!value) {
     return null;
   }
 
   const normalized = value.slice(0, 10);
-  const [year, month, day] = normalized.split("-");
-  if (!year || !month || !day) {
+  const parsed = new Date(`${normalized}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
     return value;
   }
-  return `${day}.${month}.${year}`;
+
+  return new Intl.DateTimeFormat(getDateLocale(locale), {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(parsed);
 }
 
-function formatOpenedRelative(value: string | null | undefined) {
+function formatOpenedRelative(
+  value: string | null | undefined,
+  locale: MobileLocale,
+) {
   if (!value) {
     return null;
   }
@@ -108,12 +127,21 @@ function formatOpenedRelative(value: string | null | undefined) {
   const diffDays = Math.max(0, Math.floor(diffMs / 86_400_000));
 
   if (diffDays === 0) {
-    return "Открыт сегодня";
+    if (locale === "ru") return "Открыт сегодня";
+    if (locale === "de") return "Heute geöffnet";
+    if (locale === "pl") return "Otwarto dziś";
+    return "Opened today";
   }
   if (diffDays === 1) {
-    return "Открыт вчера";
+    if (locale === "ru") return "Открыт вчера";
+    if (locale === "de") return "Gestern geöffnet";
+    if (locale === "pl") return "Otwarto wczoraj";
+    return "Opened yesterday";
   }
-  return `Открыт ${diffDays} дн. назад`;
+  if (locale === "ru") return `Открыт ${diffDays} дн. назад`;
+  if (locale === "de") return `Vor ${diffDays} Tg. geöffnet`;
+  if (locale === "pl") return `Otwarto ${diffDays} dni temu`;
+  return `Opened ${diffDays}d ago`;
 }
 
 function capitalizeText(value: string | null | undefined) {
@@ -144,6 +172,7 @@ export function getDefaultCabinetFilter(
 
 export function buildCabinetSummaryStats(
   medicines: MobileHouseholdMedicine[],
+  locale: MobileLocale,
 ): SummaryStat[] {
   const expiredCount = medicines.filter((medicine) =>
     isExpiredStatus(medicine.status),
@@ -165,12 +194,77 @@ export function buildCabinetSummaryStats(
 
   return summaryStatTemplates.map((stat) => ({
     ...stat,
+    title:
+      stat.key === "all"
+        ? locale === "ru"
+          ? "Все"
+          : locale === "de"
+            ? "Alle"
+            : locale === "pl"
+              ? "Wszystkie"
+              : "All"
+        : stat.key === "ready"
+          ? locale === "ru"
+            ? "Можно"
+            : locale === "de"
+              ? "Okay"
+              : locale === "pl"
+                ? "Można"
+                : "Ready"
+          : stat.key === "attention"
+            ? locale === "ru"
+              ? "Проверить"
+              : locale === "de"
+                ? "Prüfen"
+                : locale === "pl"
+                  ? "Sprawdź"
+                  : "Check"
+            : locale === "ru"
+              ? "Просрочено"
+              : locale === "de"
+                ? "Abgelaufen"
+                : locale === "pl"
+                  ? "Przetermin."
+                  : "Expired",
+    hint:
+      stat.key === "all"
+        ? locale === "ru"
+          ? "Полный список домашних препаратов"
+          : locale === "de"
+            ? "Alle Medikamente zu Hause"
+            : locale === "pl"
+              ? "Pełna lista domowych leków"
+              : "Full list of home medicines"
+        : stat.key === "ready"
+          ? locale === "ru"
+            ? "Сейчас выглядят безопасными"
+            : locale === "de"
+              ? "Wirken derzeit unbedenklich"
+              : locale === "pl"
+                ? "Obecnie wyglądają bezpiecznie"
+                : "Currently look safe"
+          : stat.key === "attention"
+            ? locale === "ru"
+              ? "Срок подходит к концу"
+              : locale === "de"
+                ? "Ablaufdatum nähert sich"
+                : locale === "pl"
+                  ? "Termin wkrótce upływa"
+                  : "Expiry is coming up"
+            : locale === "ru"
+              ? "Упаковки с истекшим сроком"
+              : locale === "de"
+                ? "Packungen mit abgelaufenem Datum"
+                : locale === "pl"
+                  ? "Opakowania po terminie"
+                  : "Packs past their expiry date",
     value: String(values[stat.key]),
   }));
 }
 
 function getMedicineCardStatus(
   medicine: MobileHouseholdMedicine,
+  locale: MobileLocale,
 ): Pick<
   MedicineCardItem,
   "cabinetStatus" | "statusText" | "statusBackgroundColor" | "statusTextColor"
@@ -178,7 +272,14 @@ function getMedicineCardStatus(
   if (isExpiredStatus(medicine.status)) {
     return {
       cabinetStatus: "expired",
-      statusText: "Просрочен",
+      statusText:
+        locale === "ru"
+          ? "Просрочен"
+          : locale === "de"
+            ? "Abgelaufen"
+            : locale === "pl"
+              ? "Przetermin."
+              : "Expired",
       statusBackgroundColor: "#FFE1E1",
       statusTextColor: "#E85D5D",
     };
@@ -187,7 +288,14 @@ function getMedicineCardStatus(
   if (isAttentionStatus(medicine.status)) {
     return {
       cabinetStatus: "attention",
-      statusText: "Проверить",
+      statusText:
+        locale === "ru"
+          ? "Проверить"
+          : locale === "de"
+            ? "Prüfen"
+            : locale === "pl"
+              ? "Sprawdź"
+              : "Check",
       statusBackgroundColor: "#FFF0D9",
       statusTextColor: "#D77A16",
     };
@@ -196,7 +304,14 @@ function getMedicineCardStatus(
   if (!medicine.openedAt) {
     return {
       cabinetStatus: "ready",
-      statusText: "Не вскрыт",
+      statusText:
+        locale === "ru"
+          ? "Не вскрыт"
+          : locale === "de"
+            ? "Ungeöffnet"
+            : locale === "pl"
+              ? "Nieotwarty"
+              : "Unopened",
       statusBackgroundColor: "#EEF5FF",
       statusTextColor: "#4A90D9",
     };
@@ -204,7 +319,14 @@ function getMedicineCardStatus(
 
   return {
     cabinetStatus: "ready",
-    statusText: "Можно",
+    statusText:
+      locale === "ru"
+        ? "Можно"
+        : locale === "de"
+          ? "Okay"
+          : locale === "pl"
+            ? "Można"
+            : "Ready",
     statusBackgroundColor: "#E7F7EF",
     statusTextColor: "#1F8A5B",
   };
@@ -248,45 +370,80 @@ function getMedicineTags(medicine: MobileHouseholdMedicine): CabinetTag[] {
   ];
 }
 
-function getMedicineSubtitle(medicine: MobileHouseholdMedicine) {
-  const openedRelative = formatOpenedRelative(medicine.openedAt);
+function getMedicineSubtitle(
+  medicine: MobileHouseholdMedicine,
+  locale: MobileLocale,
+) {
+  const openedRelative = formatOpenedRelative(medicine.openedAt, locale);
   if (openedRelative) {
     return openedRelative;
   }
 
   if (isExpiredStatus(medicine.status)) {
-    return `Срок до ${formatRuDate(medicine.expiryDate) ?? medicine.expiryDate}`;
+    const expiryLabel =
+      formatCabinetDate(medicine.expiryDate, locale) ?? medicine.expiryDate;
+    if (locale === "ru") return `Срок до ${expiryLabel}`;
+    if (locale === "de") return `Haltbar bis ${expiryLabel}`;
+    if (locale === "pl") return `Termin do ${expiryLabel}`;
+    return `Expires ${expiryLabel}`;
   }
 
-  return "Не вскрыт";
+  if (locale === "ru") return "Не вскрыт";
+  if (locale === "de") return "Ungeöffnet";
+  if (locale === "pl") return "Nieotwarty";
+  return "Unopened";
 }
 
-function getMedicineExpiryLabel(medicine: MobileHouseholdMedicine) {
-  const expiryDate = formatRuDate(medicine.expiryDate);
+function getMedicineExpiryLabel(
+  medicine: MobileHouseholdMedicine,
+  locale: MobileLocale,
+) {
+  const expiryDate = formatCabinetDate(medicine.expiryDate, locale);
   if (!expiryDate) {
     return null;
   }
-  return `До ${expiryDate}`;
+  if (locale === "ru") return `До ${expiryDate}`;
+  if (locale === "de") return `Bis ${expiryDate}`;
+  if (locale === "pl") return `Do ${expiryDate}`;
+  return `By ${expiryDate}`;
 }
 
-function getMedicineOpenedLabel(medicine: MobileHouseholdMedicine) {
-  const openedAt = formatRuDate(medicine.openedAt);
+function getMedicineOpenedLabel(
+  medicine: MobileHouseholdMedicine,
+  locale: MobileLocale,
+) {
+  const openedAt = formatCabinetDate(medicine.openedAt, locale);
   if (!openedAt) {
     return null;
   }
-  return `Вскрыт ${openedAt}`;
+  if (locale === "ru") return `Вскрыт ${openedAt}`;
+  if (locale === "de") return `Geöffnet ${openedAt}`;
+  if (locale === "pl") return `Otwarto ${openedAt}`;
+  return `Opened ${openedAt}`;
 }
 
-function getMedicineAfterOpeningLabel(medicine: MobileHouseholdMedicine) {
+function getMedicineAfterOpeningLabel(
+  medicine: MobileHouseholdMedicine,
+  locale: MobileLocale,
+) {
   if (medicine.openedExpiresAt) {
-    const openedExpiryDate = formatRuDate(medicine.openedExpiresAt);
+    const openedExpiryDate = formatCabinetDate(
+      medicine.openedExpiresAt,
+      locale,
+    );
     if (openedExpiryDate) {
-      return `До ${openedExpiryDate}`;
+      if (locale === "ru") return `До ${openedExpiryDate}`;
+      if (locale === "de") return `Bis ${openedExpiryDate}`;
+      if (locale === "pl") return `Do ${openedExpiryDate}`;
+      return `By ${openedExpiryDate}`;
     }
   }
 
   if (medicine.effectiveOpenedShelfDays) {
-    return `${medicine.effectiveOpenedShelfDays} дн.`;
+    if (locale === "ru") return `${medicine.effectiveOpenedShelfDays} дн.`;
+    if (locale === "de") return `${medicine.effectiveOpenedShelfDays} Tg.`;
+    if (locale === "pl") return `${medicine.effectiveOpenedShelfDays} dni`;
+    return `${medicine.effectiveOpenedShelfDays} days`;
   }
 
   return null;
@@ -294,23 +451,24 @@ function getMedicineAfterOpeningLabel(medicine: MobileHouseholdMedicine) {
 
 export function toMedicineCardItem(
   medicine: MobileHouseholdMedicine,
+  locale: MobileLocale,
 ): MedicineCardItem {
   return {
     id: medicine.id,
     title: medicine.medicineName,
-    subtitle: getMedicineSubtitle(medicine),
+    subtitle: getMedicineSubtitle(medicine, locale),
     medicineForm: medicine.medicineForm,
     medicineCategory: medicine.medicineCategory,
     concentration: medicine.medicineConcentration,
     artBackgroundColor: getMedicineArtBackgroundColor(medicine.medicineForm),
     tags: getMedicineTags(medicine),
-    ...getMedicineCardStatus(medicine),
+    ...getMedicineCardStatus(medicine, locale),
     description: medicine.medicineDescription,
     dosage: medicine.medicineDosage,
     comment: medicine.comment,
-    expiryLabel: getMedicineExpiryLabel(medicine),
-    openedLabel: getMedicineOpenedLabel(medicine),
-    afterOpeningLabel: getMedicineAfterOpeningLabel(medicine),
+    expiryLabel: getMedicineExpiryLabel(medicine, locale),
+    openedLabel: getMedicineOpenedLabel(medicine, locale),
+    afterOpeningLabel: getMedicineAfterOpeningLabel(medicine, locale),
     raw: medicine,
   };
 }
@@ -373,4 +531,35 @@ export function filterEligibleCabinetRecipientIds(
   eligibleRecipientIds: string[],
 ) {
   return (selectedIds ?? []).filter((id) => eligibleRecipientIds.includes(id));
+}
+
+export function getCabinetFilterSectionTitle(
+  locale: MobileLocale,
+  filter: CabinetFilterKey,
+) {
+  if (filter === "all") {
+    if (locale === "ru") return "Все препараты дома";
+    if (locale === "de") return "Alle Medikamente zu Hause";
+    if (locale === "pl") return "Wszystkie leki w domu";
+    return "All medicines at home";
+  }
+
+  if (filter === "attention") {
+    if (locale === "ru") return "Стоит проверить";
+    if (locale === "de") return "Sollte geprüft werden";
+    if (locale === "pl") return "Warto sprawdzić";
+    return "Worth checking";
+  }
+
+  if (filter === "expired") {
+    if (locale === "ru") return "Просроченные препараты";
+    if (locale === "de") return "Abgelaufene Medikamente";
+    if (locale === "pl") return "Przeterminowane leki";
+    return "Expired medicines";
+  }
+
+  if (locale === "ru") return "Можно использовать";
+  if (locale === "de") return "Kann verwendet werden";
+  if (locale === "pl") return "Można użyć";
+  return "Ready to use";
 }

@@ -105,7 +105,13 @@ export function formatSubscriptionExpiresAt(
   }
 
   const dateLocale =
-    locale === "ru" ? "ru-RU" : locale === "pl" ? "pl-PL" : "en-US";
+    locale === "ru"
+      ? "ru-RU"
+      : locale === "de"
+        ? "de-DE"
+        : locale === "pl"
+          ? "pl-PL"
+          : "en-US";
 
   return new Intl.DateTimeFormat(dateLocale, {
     day: "numeric",

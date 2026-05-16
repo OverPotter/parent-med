@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import {
   getManualCategoryPreviewImageSource,
   manualCategoryOptions,
@@ -123,7 +124,7 @@ function SectionHeader({
 }
 
 export function Step1BasicSection({
-  isRu,
+  locale,
   medicineName,
   onChangeMedicineName,
   category,
@@ -131,7 +132,7 @@ export function Step1BasicSection({
   concentration,
   onChangeConcentration,
 }: {
-  isRu: boolean;
+  locale: MobileLocale;
   medicineName: string;
   onChangeMedicineName: (value: string) => void;
   category: ManualCategory | null;
@@ -139,19 +140,47 @@ export function Step1BasicSection({
   concentration: string;
   onChangeConcentration: (value: string) => void;
 }) {
+  const isRu = locale === "ru";
   return (
     <View style={styles.sectionCard}>
-      <SectionHeader title="Основное" iconName="medkit-outline" />
+      <SectionHeader
+        title={
+          isRu
+            ? "Основное"
+            : locale === "de"
+              ? "Grundlagen"
+              : locale === "pl"
+                ? "Podstawy"
+                : "Basics"
+        }
+        iconName="medkit-outline"
+      />
 
       <View style={styles.fieldBlock}>
         <View style={styles.fieldLabelStandalone}>
-          <Text style={styles.fieldLabel}>Название препарата</Text>
+          <Text style={styles.fieldLabel}>
+            {isRu
+              ? "Название препарата"
+              : locale === "de"
+                ? "Medikamentenname"
+                : locale === "pl"
+                  ? "Nazwa leku"
+                  : "Medicine name"}
+          </Text>
         </View>
         <View style={styles.inputWrap}>
           <TextInput
             value={medicineName}
             onChangeText={onChangeMedicineName}
-            placeholder="Например: Нурофен сироп"
+            placeholder={
+              isRu
+                ? "Например: Нурофен сироп"
+                : locale === "de"
+                  ? "Zum Beispiel: Nurofen Sirup"
+                  : locale === "pl"
+                    ? "Na przykład: syrop Nurofen"
+                    : "For example: Nurofen syrup"
+            }
             placeholderTextColor="#A0A8B5"
             style={styles.input}
           />
@@ -160,7 +189,15 @@ export function Step1BasicSection({
 
       <View style={styles.fieldBlock}>
         <View style={styles.fieldLabelStandalone}>
-          <Text style={styles.fieldLabel}>Категория препарата</Text>
+          <Text style={styles.fieldLabel}>
+            {isRu
+              ? "Категория препарата"
+              : locale === "de"
+                ? "Medikamentenkategorie"
+                : locale === "pl"
+                  ? "Kategoria leku"
+                  : "Medicine category"}
+          </Text>
         </View>
         <View style={styles.categoryGrid}>
           {manualCategoryOptions.map((option) => {
@@ -210,7 +247,41 @@ export function Step1BasicSection({
                   ) : null}
                 </View>
                 <Text style={styles.categoryCardLabel}>
-                  {isRu ? option.labelRu : option.labelEn}
+                  {locale === "ru"
+                    ? option.labelRu
+                    : locale === "de"
+                      ? option.value === "oral"
+                        ? "Oral"
+                        : option.value === "nose"
+                          ? "Nase"
+                          : option.value === "throat"
+                            ? "Hals"
+                            : option.value === "eyes"
+                              ? "Augen"
+                              : option.value === "ears"
+                                ? "Ohren"
+                                : option.value === "skin"
+                                  ? "Haut"
+                                  : option.value === "inhalation"
+                                    ? "Inhalation"
+                                    : "Andere"
+                      : locale === "pl"
+                        ? option.value === "oral"
+                          ? "Doustnie"
+                          : option.value === "nose"
+                            ? "Nos"
+                            : option.value === "throat"
+                              ? "Gardło"
+                              : option.value === "eyes"
+                                ? "Oczy"
+                                : option.value === "ears"
+                                  ? "Uszy"
+                                  : option.value === "skin"
+                                    ? "Skóra"
+                                    : option.value === "inhalation"
+                                      ? "Inhalacja"
+                                      : "Inne"
+                        : option.labelEn}
                 </Text>
               </Pressable>
             );
@@ -220,13 +291,29 @@ export function Step1BasicSection({
 
       <View style={styles.fieldBlock}>
         <View style={styles.fieldLabelStandalone}>
-          <Text style={styles.fieldLabel}>Концентрация</Text>
+          <Text style={styles.fieldLabel}>
+            {isRu
+              ? "Концентрация"
+              : locale === "de"
+                ? "Konzentration"
+                : locale === "pl"
+                  ? "Stężenie"
+                  : "Concentration"}
+          </Text>
         </View>
         <View style={styles.inputWrap}>
           <TextInput
             value={concentration}
             onChangeText={onChangeConcentration}
-            placeholder="Что написано на упаковке, если важно"
+            placeholder={
+              isRu
+                ? "Что написано на упаковке, если важно"
+                : locale === "de"
+                  ? "Was auf der Packung steht, falls wichtig"
+                  : locale === "pl"
+                    ? "Co jest napisane na opakowaniu, jeśli to ważne"
+                    : "What is written on the package, if relevant"
+            }
             placeholderTextColor="#A0A8B5"
             style={styles.input}
           />
@@ -237,6 +324,7 @@ export function Step1BasicSection({
 }
 
 export function Step2UsageSection({
+  locale,
   purpose,
   onChangePurpose,
   howToUse,
@@ -245,6 +333,7 @@ export function Step2UsageSection({
   previewTitle,
   previewSubtitleBase,
 }: {
+  locale: MobileLocale;
   purpose: string;
   onChangePurpose: (value: string) => void;
   howToUse: string;
@@ -253,11 +342,20 @@ export function Step2UsageSection({
   previewTitle: string;
   previewSubtitleBase: string;
 }) {
+  const isRu = locale === "ru";
   return (
     <>
       <View style={styles.sectionCardUsage}>
         <SectionHeader
-          title="Применение"
+          title={
+            isRu
+              ? "Применение"
+              : locale === "de"
+                ? "Anwendung"
+                : locale === "pl"
+                  ? "Stosowanie"
+                  : "Usage"
+          }
           iconName="reader-outline"
           iconColor="#8B6FE8"
           iconBackgroundColor="#F1EBFF"
@@ -265,13 +363,29 @@ export function Step2UsageSection({
 
         <View style={styles.fieldBlock}>
           <View style={styles.fieldLabelStandalone}>
-            <Text style={styles.fieldLabel}>Для чего препарат</Text>
+            <Text style={styles.fieldLabel}>
+              {isRu
+                ? "Для чего препарат"
+                : locale === "de"
+                  ? "Wofür ist das Medikament"
+                  : locale === "pl"
+                    ? "Na co jest ten lek"
+                    : "What is the medicine for"}
+            </Text>
           </View>
           <View style={styles.textareaWrap}>
             <TextInput
               value={purpose}
               onChangeText={onChangePurpose}
-              placeholder="Например: при температуре, боли или воспалении"
+              placeholder={
+                isRu
+                  ? "Например: при температуре, боли или воспалении"
+                  : locale === "de"
+                    ? "Zum Beispiel: bei Fieber, Schmerzen oder Entzündung"
+                    : locale === "pl"
+                      ? "Na przykład: na gorączkę, ból lub stan zapalny"
+                      : "For example: for fever, pain, or inflammation"
+              }
               placeholderTextColor="#A0A8B5"
               multiline
               textAlignVertical="top"
@@ -282,13 +396,29 @@ export function Step2UsageSection({
 
         <View style={styles.fieldBlock}>
           <View style={styles.fieldLabelStandalone}>
-            <Text style={styles.fieldLabel}>Как применять</Text>
+            <Text style={styles.fieldLabel}>
+              {isRu
+                ? "Как применять"
+                : locale === "de"
+                  ? "Wie anwenden"
+                  : locale === "pl"
+                    ? "Jak stosować"
+                    : "How to use"}
+            </Text>
           </View>
           <View style={styles.textareaWrap}>
             <TextInput
               value={howToUse}
               onChangeText={onChangeHowToUse}
-              placeholder="Например: по 5 мл 3 раза в день после еды"
+              placeholder={
+                isRu
+                  ? "Например: по 5 мл 3 раза в день после еды"
+                  : locale === "de"
+                    ? "Zum Beispiel: 5 ml dreimal täglich nach dem Essen"
+                    : locale === "pl"
+                      ? "Na przykład: 5 ml 3 razy dziennie po jedzeniu"
+                      : "For example: 5 ml three times a day after meals"
+              }
               placeholderTextColor="#A0A8B5"
               multiline
               textAlignVertical="top"
@@ -308,6 +438,7 @@ export function Step2UsageSection({
 }
 
 export function Step3StorageSection({
+  locale,
   expiryDateLabel,
   onPressExpiryDate,
   openedDateLabel,
@@ -320,6 +451,7 @@ export function Step3StorageSection({
   previewTitle,
   previewSubtitle,
 }: {
+  locale: MobileLocale;
   expiryDateLabel: string;
   onPressExpiryDate: () => void;
   openedDateLabel: string;
@@ -332,11 +464,20 @@ export function Step3StorageSection({
   previewTitle: string;
   previewSubtitle: string;
 }) {
+  const isRu = locale === "ru";
   return (
     <>
       <View style={styles.sectionCardStorage}>
         <SectionHeader
-          title="Упаковка и хранение"
+          title={
+            isRu
+              ? "Упаковка и хранение"
+              : locale === "de"
+                ? "Packung und Lagerung"
+                : locale === "pl"
+                  ? "Opakowanie i przechowywanie"
+                  : "Pack and storage"
+          }
           iconName="archive-outline"
           iconColor="#46B982"
           iconBackgroundColor="#E7F7EF"
@@ -351,7 +492,15 @@ export function Step3StorageSection({
                 color="#46B982"
                 style={styles.fieldLabelIcon}
               />
-              <Text style={styles.fieldLabel}>Срок годности</Text>
+              <Text style={styles.fieldLabel}>
+                {isRu
+                  ? "Срок годности"
+                  : locale === "de"
+                    ? "Ablaufdatum"
+                    : locale === "pl"
+                      ? "Termin ważności"
+                      : "Expiry date"}
+              </Text>
             </View>
           </View>
           <Pressable onPress={onPressExpiryDate} style={styles.inlineDateField}>
@@ -362,7 +511,14 @@ export function Step3StorageSection({
               ]}
               numberOfLines={1}
             >
-              {expiryDateLabel || "Выберите дату"}
+              {expiryDateLabel ||
+                (isRu
+                  ? "Выберите дату"
+                  : locale === "de"
+                    ? "Datum wählen"
+                    : locale === "pl"
+                      ? "Wybierz datę"
+                      : "Choose a date")}
             </Text>
             <Ionicons name="calendar-outline" size={18} color="#8A94A6" />
           </Pressable>
@@ -377,7 +533,15 @@ export function Step3StorageSection({
                 color="#46B982"
                 style={styles.fieldLabelIcon}
               />
-              <Text style={styles.fieldLabel}>Дата вскрытия</Text>
+              <Text style={styles.fieldLabel}>
+                {isRu
+                  ? "Дата вскрытия"
+                  : locale === "de"
+                    ? "Öffnungsdatum"
+                    : locale === "pl"
+                      ? "Data otwarcia"
+                      : "Opened on"}
+              </Text>
             </View>
           </View>
           <Pressable onPress={onPressOpenedDate} style={styles.inlineDateField}>
@@ -388,7 +552,14 @@ export function Step3StorageSection({
               ]}
               numberOfLines={1}
             >
-              {openedDateLabel || "Выберите дату"}
+              {openedDateLabel ||
+                (isRu
+                  ? "Выберите дату"
+                  : locale === "de"
+                    ? "Datum wählen"
+                    : locale === "pl"
+                      ? "Wybierz datę"
+                      : "Choose a date")}
             </Text>
             <Ionicons name="calendar-outline" size={18} color="#8A94A6" />
           </Pressable>
@@ -404,7 +575,15 @@ export function Step3StorageSection({
                   color="#46B982"
                   style={styles.fieldLabelIcon}
                 />
-                <Text style={styles.fieldLabel}>Сколько хранится{"\n"}после вскрытия</Text>
+                <Text style={styles.fieldLabel}>
+                  {isRu
+                    ? "Сколько хранится\nпосле вскрытия"
+                    : locale === "de"
+                      ? "Wie lange nach\ndem Öffnen haltbar"
+                      : locale === "pl"
+                        ? "Jak długo po\notwarciu"
+                        : "How long after\nopening"}
+                </Text>
               </View>
             </View>
             <Pressable onPress={onPressAfterOpeningSelector} style={styles.inlineDateField}>
@@ -415,7 +594,14 @@ export function Step3StorageSection({
                 ]}
                 numberOfLines={1}
               >
-                {afterOpeningLabel || "Выберите срок"}
+                {afterOpeningLabel ||
+                  (isRu
+                    ? "Выберите срок"
+                    : locale === "de"
+                      ? "Frist wählen"
+                      : locale === "pl"
+                        ? "Wybierz okres"
+                        : "Choose a period")}
               </Text>
               <Ionicons name="chevron-down" size={18} color="#8A94A6" />
             </Pressable>
@@ -430,13 +616,29 @@ export function Step3StorageSection({
               color="#46B982"
               style={styles.fieldLabelIcon}
             />
-            <Text style={styles.fieldLabel}>Комментарий</Text>
+            <Text style={styles.fieldLabel}>
+              {isRu
+                ? "Комментарий"
+                : locale === "de"
+                  ? "Kommentar"
+                  : locale === "pl"
+                    ? "Komentarz"
+                    : "Comment"}
+            </Text>
           </View>
           <View style={styles.textareaWrap}>
             <TextInput
               value={storageComment}
               onChangeText={onChangeStorageComment}
-              placeholder="Например: хранить в холодильнике"
+              placeholder={
+                isRu
+                  ? "Например: хранить в холодильнике"
+                  : locale === "de"
+                    ? "Zum Beispiel: im Kühlschrank aufbewahren"
+                    : locale === "pl"
+                      ? "Na przykład: przechowywać w lodówce"
+                      : "For example: keep refrigerated"
+              }
               placeholderTextColor="#A0A8B5"
               multiline
               textAlignVertical="top"

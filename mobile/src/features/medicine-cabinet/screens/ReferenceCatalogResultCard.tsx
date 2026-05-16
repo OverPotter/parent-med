@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image, Pressable, Text, View } from "react-native";
+import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import type { MobileMedicineCatalogItem } from "../api/mobileMedicineCatalogApi";
 import { resolveMedicineFormIcon } from "../model/medicineCabinetOverviewModel";
 import { styles } from "./medicineCabinetReferenceCreateScreenStyles";
@@ -15,6 +16,7 @@ export function ReferenceCatalogResultCard({
   onToggle: () => void;
   onContinue: () => void;
 }) {
+  const { locale } = useMobileI18n();
   return (
     <Pressable
       onPress={onToggle}
@@ -50,7 +52,13 @@ export function ReferenceCatalogResultCard({
             {item.defaultOpenedShelfDays ? (
               <View style={styles.metaChip}>
                 <Text style={styles.metaChipText}>
-                  После вскрытия {item.defaultOpenedShelfDays} дн.
+                  {locale === "ru"
+                    ? `После вскрытия ${item.defaultOpenedShelfDays} дн.`
+                    : locale === "de"
+                      ? `Nach dem Öffnen ${item.defaultOpenedShelfDays} Tg.`
+                      : locale === "pl"
+                        ? `Po otwarciu ${item.defaultOpenedShelfDays} dni`
+                        : `After opening ${item.defaultOpenedShelfDays} days`}
                 </Text>
               </View>
             ) : null}
@@ -71,13 +79,27 @@ export function ReferenceCatalogResultCard({
 
           {item.dosage ? (
             <View style={styles.resultExpandedInline}>
-              <Text style={styles.resultExpandedLabel}>Как применять</Text>
+              <Text style={styles.resultExpandedLabel}>
+                {locale === "ru"
+                  ? "Как применять"
+                  : locale === "de"
+                    ? "Anwendung"
+                    : locale === "pl"
+                      ? "Jak stosować"
+                      : "How to use"}
+              </Text>
               <Text style={styles.resultExpandedText}>{item.dosage}</Text>
             </View>
           ) : null}
 
           <Text style={styles.resultExpandedHint}>
-            Нажмите «Далее», чтобы проверить сроки и добавить упаковку в аптечку.
+            {locale === "ru"
+              ? "Нажмите «Далее», чтобы проверить сроки и добавить упаковку в аптечку."
+              : locale === "de"
+                ? "Tippen Sie auf „Weiter“, um Daten zu prüfen und die Packung hinzuzufügen."
+                : locale === "pl"
+                  ? "Naciśnij „Dalej”, aby sprawdzić terminy i dodać opakowanie do apteczki."
+                  : 'Tap "Next" to review dates and add the pack to your cabinet.'}
           </Text>
 
           <Pressable
@@ -87,7 +109,15 @@ export function ReferenceCatalogResultCard({
               pressed ? styles.resultExpandedActionPressed : null,
             ]}
           >
-            <Text style={styles.resultExpandedActionText}>Далее</Text>
+            <Text style={styles.resultExpandedActionText}>
+              {locale === "ru"
+                ? "Далее"
+                : locale === "de"
+                  ? "Weiter"
+                  : locale === "pl"
+                    ? "Dalej"
+                    : "Next"}
+            </Text>
           </Pressable>
         </View>
       ) : null}

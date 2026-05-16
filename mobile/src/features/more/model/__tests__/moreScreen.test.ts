@@ -107,4 +107,29 @@ describe("buildMoreScreenContent", () => {
 
     expect(content.familyRoleLabel).toBe("Участник семьи");
   });
+
+  it("uses distinct english profile labels for family and account fields", () => {
+    const content = buildMoreScreenContent(
+      "en",
+      buildSession({
+        account: {
+          id: "account-3",
+          email: "member@example.com",
+          familyId: "family-1",
+          displayName: "Member",
+          needsProfileCompletion: false,
+          relationshipLabel: null,
+          phone: null,
+          preferredLanguage: "en",
+          familyRole: "member",
+          hasRecoveryCode: true,
+        },
+      }),
+    );
+
+    expect(content.familyNameLabel).toBe("Family name");
+    expect(content.displayNameLabel).toBe("Name in family");
+    expect(content.relationshipLabel).toBe("Who I am in the family");
+    expect(content.noRelationshipValue).toBe("No family role yet");
+  });
 });

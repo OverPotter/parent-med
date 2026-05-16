@@ -147,6 +147,13 @@ const avatarSequence = [
   childrenScreenAssets.avatars.child1,
 ] as const;
 
+const tabKeyBySourceNodeId: Record<string, MobileBottomTabKey> = {
+  dARF2: "children",
+  n2LcFM: "pillbox",
+  zbsG1: "cabinet",
+  Z6buO: "more",
+};
+
 export const childAvatarPresets: Array<{
   key: ChildAvatarPresetKey;
   gender: ChildAvatarGender;
@@ -548,44 +555,8 @@ function formatHeightValue(
   return `${Math.round(valueCm)} ${locale === "ru" ? "см" : "cm"}`;
 }
 
-function mapTabKey(label: string): MobileBottomTabKey {
-  if (
-    label === "Дети" ||
-    label === "Children" ||
-    label === "Dzieci" ||
-    label === "Kinder"
-  ) {
-    return "children";
-  }
-
-  if (
-    label === "Ещё" ||
-    label === "More" ||
-    label === "Mehr" ||
-    label === "Więcej"
-  ) {
-    return "more";
-  }
-
-  if (
-    label === "Таблетница" ||
-    label === "Pillbox" ||
-    label === "Pudełko leków" ||
-    label === "Pillenbox"
-  ) {
-    return "pillbox";
-  }
-
-  if (
-    label === "Аптечка" ||
-    label === "Cabinet" ||
-    label === "Apteczka" ||
-    label === "Hausapotheke"
-  ) {
-    return "cabinet";
-  }
-
-  return "more";
+function mapTabKey(tab: SourceBottomTabSpec): MobileBottomTabKey {
+  return tabKeyBySourceNodeId[tab.nodeId] ?? "more";
 }
 
 export function buildChildrenScreenContent(
@@ -678,9 +649,9 @@ export function buildChildrenScreenContent(
     })),
     tabs: sourceTabs.map(
       (tab): MobileBottomTabItem => ({
-        key: mapTabKey(tab.label),
+        key: mapTabKey(tab),
         label: tab.label,
-        active: mapTabKey(tab.label) === activeTabKey,
+        active: mapTabKey(tab) === activeTabKey,
       }),
     ),
   } satisfies {

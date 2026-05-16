@@ -27,6 +27,7 @@ export type ChildOverviewCalendarData = {
 export function buildOverviewEvent(
   iso: string,
   locale: MobileLocale,
+  category: ChildOverviewEventRow["category"],
   type: string,
   detail: string,
   icon: ChildOverviewIconToken,
@@ -34,6 +35,7 @@ export function buildOverviewEvent(
   const date = new Date(iso);
   return {
     id: `${type}-${iso}`,
+    category,
     time: Number.isNaN(date.getTime())
       ? "—"
       : date.toLocaleTimeString(resolveOverviewLocale(locale), {
@@ -113,7 +115,7 @@ export function buildOverviewCalendarData(
     entriesByDay.set(dayKey, rows);
 
     const dots = dotsByDay.get(dayKey) ?? new Set<ChildOverviewCalendarDotKey>();
-    dots.add(mapTypeToCalendarDot(item.type, copy));
+    dots.add(mapCategoryToCalendarDot(item.category));
     dotsByDay.set(dayKey, dots);
   });
 
@@ -122,11 +124,21 @@ export function buildOverviewCalendarData(
   const activeDays = Array.from(entriesByDay.keys()).length;
   const categoryCounts = new Map<string, number>();
   events.forEach((item) => {
-    categoryCounts.set(item.type, (categoryCounts.get(item.type) ?? 0) + 1);
+    categoryCounts.set(item.category, (categoryCounts.get(item.category) ?? 0) + 1);
   });
-  const topCategory =
+  const topCategoryId =
     Array.from(categoryCounts.entries()).sort((left, right) => right[1] - left[1])[0]?.[0] ??
-    copy.filters.feeding;
+    "feeding";
+  const topCategory =
+    topCategoryId === "feeding"
+      ? copy.eventTypes.feeding
+      : topCategoryId === "sleep"
+        ? copy.eventTypes.sleep
+        : topCategoryId === "illness"
+          ? copy.eventTypes.illness
+          : topCategoryId === "weight"
+            ? copy.filters.weight
+            : copy.filters.height;
   const latestEvent = events[0];
 
   return {
@@ -181,15 +193,14 @@ export function parseOverviewMonthKey(value: string) {
   return new Date(Number(year), Number(month) - 1, 1);
 }
 
-function mapTypeToCalendarDot(
-  type: string,
-  copy: ReturnType<typeof getOverviewCopy>,
+function mapCategoryToCalendarDot(
+  category: ChildOverviewEventRow["category"],
 ): ChildOverviewCalendarDotKey {
-  if (type === copy.eventTypes.sleep) return "sleep";
-  if (type === copy.eventTypes.feeding) return "feeding";
-  if (type === copy.eventTypes.illness) return "illness";
-  if (type === copy.filters.weight) return "weight";
-  if (type === copy.filters.height) return "growth";
+  if (category === "sleep") return "sleep";
+  if (category === "feeding") return "feeding";
+  if (category === "illness") return "illness";
+  if (category === "weight") return "weight";
+  if (category === "height") return "growth";
   return "secondary";
 }
 

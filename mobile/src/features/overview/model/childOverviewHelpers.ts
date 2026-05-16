@@ -149,6 +149,7 @@ export function mapOverviewSelectedDayEntries(
 
   return calendarSpec.components.selectedDayCard.list.items.map((item, index) => ({
     id: `${item.type}-${item.time}-${index}`,
+    category: item.type,
     time: item.time,
     type:
       item.title === "Болезнь"

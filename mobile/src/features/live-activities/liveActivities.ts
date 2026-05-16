@@ -7,14 +7,29 @@ import type { MobileLiveActivityPreferences } from "./liveActivityPreferences";
 import { isIllnessLiveActivityEnabled } from "./illnessLiveActivityPreference";
 import { buildLiveActivityUrl } from "./liveActivityLinking";
 import {
+  type NativeLiveActivityLanguage,
   isNativeLiveActivitiesSupported,
   stopAllNativeLiveActivities,
   stopNativeLiveActivity,
   upsertNativeLiveActivity,
 } from "./nativeLiveActivities";
 
-function resolveLiveActivityLanguage(locale: MobileLocale): "ru" | "en" {
-  return locale === "ru" ? "ru" : "en";
+function resolveLiveActivityLanguage(locale: MobileLocale): NativeLiveActivityLanguage {
+  return locale;
+}
+
+function t<T extends string>(
+  language: NativeLiveActivityLanguage,
+  values: Record<NativeLiveActivityLanguage, T>,
+) {
+  return values[language];
+}
+
+function resolveLiveActivityLocaleTag(language: NativeLiveActivityLanguage) {
+  if (language === "ru") return "ru-RU";
+  if (language === "de") return "de-DE";
+  if (language === "pl") return "pl-PL";
+  return "en-US";
 }
 
 function isEnabled(
@@ -44,7 +59,10 @@ function normalizeStartedAt(value: string | null | undefined) {
   return new Date(timestamp).toISOString();
 }
 
-function formatTimeLabel(value: string | null | undefined, language: "ru" | "en") {
+function formatTimeLabel(
+  value: string | null | undefined,
+  language: NativeLiveActivityLanguage,
+) {
   const raw = value?.trim();
   if (!raw) {
     return null;
@@ -55,13 +73,16 @@ function formatTimeLabel(value: string | null | undefined, language: "ru" | "en"
     return null;
   }
 
-  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
+  return new Intl.DateTimeFormat(resolveLiveActivityLocaleTag(language), {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(timestamp));
 }
 
-function formatDateLabel(value: string | null | undefined, language: "ru" | "en") {
+function formatDateLabel(
+  value: string | null | undefined,
+  language: NativeLiveActivityLanguage,
+) {
   const raw = value?.trim();
   if (!raw) {
     return null;
@@ -72,7 +93,7 @@ function formatDateLabel(value: string | null | undefined, language: "ru" | "en"
     return null;
   }
 
-  return new Intl.DateTimeFormat(language === "ru" ? "ru-RU" : "en-US", {
+  return new Intl.DateTimeFormat(resolveLiveActivityLocaleTag(language), {
     day: "numeric",
     month: "short",
   }).format(new Date(timestamp));
@@ -102,14 +123,24 @@ function formatTemperatureValue(value: number | null) {
 
 function getIllnessDurationMeta(
   startedAt: string,
-  language: "ru" | "en",
+  language: NativeLiveActivityLanguage,
   now = new Date(),
 ) {
   const startedDate = new Date(startedAt);
   if (Number.isNaN(startedDate.getTime())) {
     return {
-      value: language === "ru" ? "Сегодня" : "Today",
-      caption: language === "ru" ? "Началось" : "Started",
+      value: t(language, {
+        ru: "Сегодня",
+        en: "Today",
+        de: "Heute",
+        pl: "Dzisiaj",
+      }),
+      caption: t(language, {
+        ru: "Началось",
+        en: "Started",
+        de: "Beginn",
+        pl: "Początek",
+      }),
     };
   }
 
@@ -126,8 +157,18 @@ function getIllnessDurationMeta(
 
   if (diffDays === 0) {
     return {
-      value: language === "ru" ? "Сегодня" : "Today",
-      caption: language === "ru" ? "Началось" : "Started",
+      value: t(language, {
+        ru: "Сегодня",
+        en: "Today",
+        de: "Heute",
+        pl: "Dzisiaj",
+      }),
+      caption: t(language, {
+        ru: "Началось",
+        en: "Started",
+        de: "Beginn",
+        pl: "Początek",
+      }),
     };
   }
 
@@ -152,6 +193,27 @@ function getIllnessDurationMeta(
     };
   }
 
+  if (language === "de") {
+    return {
+      value: `${diffDays} ${diffDays === 1 ? "Tag" : "Tage"}`,
+      caption: "Dauer",
+    };
+  }
+
+  if (language === "pl") {
+    return {
+      value:
+        diffDays === 1
+          ? "1 dzień"
+          : diffDays % 10 >= 2 &&
+              diffDays % 10 <= 4 &&
+              (diffDays % 100 < 12 || diffDays % 100 > 14)
+            ? `${diffDays} dni`
+            : `${diffDays} dni`,
+      caption: "Czas trwania",
+    };
+  }
+
   return {
     value: diffDays === 1 ? "1 day" : `${diffDays} days`,
     caption: "Duration",
@@ -169,7 +231,7 @@ async function safeStop(args: { kind: "sleep" | "feeding" | "illness"; itemId: s
 async function safeUpsert(args: {
   kind: "sleep" | "feeding" | "illness";
   itemId: string;
-  language?: "ru" | "en" | null;
+  language?: NativeLiveActivityLanguage | null;
   title: string;
   subtitle?: string | null;
   statusLabel?: string | null;
@@ -228,15 +290,47 @@ export async function syncSleepLiveActivity(params: {
     itemId: params.child.id,
     language,
     title: params.child.name,
-    subtitle: language === "ru" ? "Идёт сон" : "Sleep in progress",
+    subtitle: t(language, {
+      ru: "Идёт сон",
+      en: "Sleep in progress",
+      de: "Schlaf läuft",
+      pl: "Sen trwa",
+    }),
     statusLabel: joinParts([
-      language === "ru" ? "Сейчас спит" : "Sleeping now",
-      startedLabel ? (language === "ru" ? `с ${startedLabel}` : `since ${startedLabel}`) : null,
+      t(language, {
+        ru: "Сейчас спит",
+        en: "Sleeping now",
+        de: "Schläft gerade",
+        pl: "Teraz śpi",
+      }),
+      startedLabel
+        ? t(language, {
+            ru: `с ${startedLabel}`,
+            en: `since ${startedLabel}`,
+            de: `seit ${startedLabel}`,
+            pl: `od ${startedLabel}`,
+          })
+        : null,
     ]),
-    primaryValue: language === "ru" ? "Идёт" : "Active",
-    primaryCaption: language === "ru" ? "Статус" : "Status",
+    primaryValue: t(language, {
+      ru: "Идёт",
+      en: "Active",
+      de: "Aktiv",
+      pl: "Aktywne",
+    }),
+    primaryCaption: t(language, {
+      ru: "Статус",
+      en: "Status",
+      de: "Status",
+      pl: "Status",
+    }),
     secondaryValue: startedLabel,
-    secondaryCaption: language === "ru" ? "Началось" : "Started",
+    secondaryCaption: t(language, {
+      ru: "Началось",
+      en: "Started",
+      de: "Beginn",
+      pl: "Początek",
+    }),
     startedAt,
     deepLink: buildLiveActivityUrl(params.child.id, "sleep"),
   });
@@ -283,15 +377,47 @@ export async function syncFeedingLiveActivity(params: {
     itemId: params.child.id,
     language,
     title: params.child.name,
-    subtitle: language === "ru" ? "Идёт кормление" : "Feeding in progress",
+    subtitle: t(language, {
+      ru: "Идёт кормление",
+      en: "Feeding in progress",
+      de: "Füttern läuft",
+      pl: "Karmienie trwa",
+    }),
     statusLabel: joinParts([
-      language === "ru" ? "Кормление идёт" : "Feeding now",
-      startedLabel ? (language === "ru" ? `с ${startedLabel}` : `since ${startedLabel}`) : null,
+      t(language, {
+        ru: "Кормление идёт",
+        en: "Feeding now",
+        de: "Füttern läuft",
+        pl: "Karmienie trwa",
+      }),
+      startedLabel
+        ? t(language, {
+            ru: `с ${startedLabel}`,
+            en: `since ${startedLabel}`,
+            de: `seit ${startedLabel}`,
+            pl: `od ${startedLabel}`,
+          })
+        : null,
     ]),
-    primaryValue: language === "ru" ? "Идёт" : "Active",
-    primaryCaption: language === "ru" ? "Статус" : "Status",
+    primaryValue: t(language, {
+      ru: "Идёт",
+      en: "Active",
+      de: "Aktiv",
+      pl: "Aktywne",
+    }),
+    primaryCaption: t(language, {
+      ru: "Статус",
+      en: "Status",
+      de: "Status",
+      pl: "Status",
+    }),
     secondaryValue: startedLabel,
-    secondaryCaption: language === "ru" ? "Началось" : "Started",
+    secondaryCaption: t(language, {
+      ru: "Началось",
+      en: "Started",
+      de: "Beginn",
+      pl: "Początek",
+    }),
     startedAt,
     deepLink: buildLiveActivityUrl(params.child.id, "feeding"),
   });
@@ -408,7 +534,11 @@ export async function syncIllnessLiveActivity(params: {
     (isDoseReadyNow
       ? language === "ru"
         ? "Можно дать"
-        : "Ready now"
+        : language === "de"
+          ? "Bereit"
+          : language === "pl"
+            ? "Można podać"
+            : "Ready now"
       : nextDoseTimeLabel) ??
     durationMeta.value;
 
@@ -417,12 +547,26 @@ export async function syncIllnessLiveActivity(params: {
       ? lastTemperatureTime
         ? language === "ru"
           ? `Была в ${lastTemperatureTime}`
-          : `At ${lastTemperatureTime}`
+          : language === "de"
+            ? `Um ${lastTemperatureTime}`
+            : language === "pl"
+              ? `O ${lastTemperatureTime}`
+              : `At ${lastTemperatureTime}`
         : language === "ru"
           ? "Температура"
-          : "Temperature"
+          : language === "de"
+            ? "Temperatur"
+            : language === "pl"
+              ? "Temperatura"
+              : "Temperature"
       : nextDoseTimeLabel
-        ? planMedicineName ?? (language === "ru" ? "Следующая доза" : "Next dose")
+        ? planMedicineName ??
+          t(language, {
+            ru: "Следующая доза",
+            en: "Next dose",
+            de: "Nächste Dosis",
+            pl: "Następna dawka",
+          })
         : durationMeta.caption;
 
   const secondaryValue =
@@ -431,9 +575,12 @@ export async function syncIllnessLiveActivity(params: {
       : lastMedicineTime ?? null;
 
   const secondaryCaption = lastMedicineTime
-    ? language === "ru"
-      ? `Дали в ${lastMedicineTime}`
-      : `Given at ${lastMedicineTime}`
+    ? t(language, {
+        ru: `Дали в ${lastMedicineTime}`,
+        en: `Given at ${lastMedicineTime}`,
+        de: `Gegeben um ${lastMedicineTime}`,
+        pl: `Podano o ${lastMedicineTime}`,
+      })
     : null;
 
   await safeUpsert({
@@ -442,20 +589,41 @@ export async function syncIllnessLiveActivity(params: {
     language,
     title: params.child.name,
     subtitle: joinParts([
-      language === "ru" ? "Наблюдение с" : "Tracking since",
+      t(language, {
+        ru: "Наблюдение с",
+        en: "Tracking since",
+        de: "Beobachtung seit",
+        pl: "Obserwacja od",
+      }),
       formatDateLabel(startedAt, language),
     ]),
     statusLabel:
       isDoseReadyNow
-        ? joinParts([planMedicineName, language === "ru" ? "Можно дать" : "Ready now"])
+        ? joinParts([
+            planMedicineName,
+            t(language, {
+              ru: "Можно дать",
+              en: "Ready now",
+              de: "Bereit",
+              pl: "Można podać",
+            }),
+          ])
         : nextDoseTimeLabel
           ? joinParts([
               planMedicineName,
-              language === "ru" ? `дать в ${nextDoseTimeLabel}` : `give at ${nextDoseTimeLabel}`,
+              t(language, {
+                ru: `дать в ${nextDoseTimeLabel}`,
+                en: `give at ${nextDoseTimeLabel}`,
+                de: `geben um ${nextDoseTimeLabel}`,
+                pl: `podać o ${nextDoseTimeLabel}`,
+              }),
             ])
-          : language === "ru"
-            ? "Идёт наблюдение"
-            : "Tracking in progress",
+          : t(language, {
+              ru: "Идёт наблюдение",
+              en: "Tracking in progress",
+              de: "Beobachtung läuft",
+              pl: "Obserwacja trwa",
+            }),
     primaryValue,
     primaryCaption,
     secondaryValue,

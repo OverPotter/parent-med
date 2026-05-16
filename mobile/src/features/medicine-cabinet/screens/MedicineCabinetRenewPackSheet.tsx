@@ -5,6 +5,7 @@ import { Pressable, Text, View } from "react-native";
 import { BackdatedDateTimePickerSheet } from "../../../shared/components/BackdatedDateTimePickerSheet";
 import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 import { useBackdatedDateTimePicker } from "../../../shared/hooks/useBackdatedDateTimePicker";
+import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { formatBackdatedDate } from "../../../shared/lib/backdatedDateTime";
 import type { MedicineCardItem } from "../model/medicineCabinetOverviewModel";
 import { formatIsoDate, parseIsoDate } from "../model/manualMedicineCreateFlow";
@@ -21,6 +22,7 @@ export function MedicineCabinetRenewPackSheet({
   onClose: () => void;
   onSave: (payload: { expiryDate: string; openedDate: string | null }) => void;
 }) {
+  const { locale } = useMobileI18n();
   const expiryPicker = useBackdatedDateTimePicker(new Date());
   const openedPicker = useBackdatedDateTimePicker(new Date());
   const [renewExpiryDate, setRenewExpiryDate] = useState("");
@@ -61,10 +63,10 @@ export function MedicineCabinetRenewPackSheet({
   useEffect(() => () => clearReopenTimeout(), []);
 
   const expiryDateLabel = renewExpiryDate
-    ? formatBackdatedDate(parseIsoDate(renewExpiryDate, new Date()), "ru")
+    ? formatBackdatedDate(parseIsoDate(renewExpiryDate, new Date()), locale)
     : "";
   const openedDateLabel = renewOpenedDate
-    ? formatBackdatedDate(parseIsoDate(renewOpenedDate, new Date()), "ru")
+    ? formatBackdatedDate(parseIsoDate(renewOpenedDate, new Date()), locale)
     : "";
 
   const handleOpenRenewExpiryDatePicker = () => {
@@ -140,15 +142,37 @@ export function MedicineCabinetRenewPackSheet({
           <>
             <View style={styles.sheetDragZone} {...sheetPanHandlers}>
               <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>Новая упаковка</Text>
+              <Text style={styles.sheetTitle}>
+                {locale === "ru"
+                  ? "Новая упаковка"
+                  : locale === "de"
+                    ? "Neue Packung"
+                    : locale === "pl"
+                      ? "Nowe opakowanie"
+                      : "New pack"}
+              </Text>
               <Text style={styles.sheetSubtitle}>
-                Укажите новые даты для этой упаковки.
+                {locale === "ru"
+                  ? "Укажите новые даты для этой упаковки."
+                  : locale === "de"
+                    ? "Geben Sie neue Daten für diese Packung an."
+                    : locale === "pl"
+                      ? "Podaj nowe daty dla tego opakowania."
+                      : "Set the new dates for this pack."}
               </Text>
             </View>
 
             <View style={styles.detailsSheetFields}>
               <View style={styles.fieldBlock}>
-                <Text style={styles.fieldLabel}>Срок годности</Text>
+                <Text style={styles.fieldLabel}>
+                  {locale === "ru"
+                    ? "Срок годности"
+                    : locale === "de"
+                      ? "Ablaufdatum"
+                      : locale === "pl"
+                        ? "Termin ważności"
+                        : "Expiry date"}
+                </Text>
                 <Pressable onPress={handleOpenRenewExpiryDatePicker} style={styles.dateRow}>
                   <Text
                     style={[
@@ -156,14 +180,29 @@ export function MedicineCabinetRenewPackSheet({
                       !expiryDateLabel ? styles.datePlaceholderText : null,
                     ]}
                   >
-                    {expiryDateLabel || "Выберите дату"}
+                    {expiryDateLabel ||
+                      (locale === "ru"
+                        ? "Выберите дату"
+                        : locale === "de"
+                          ? "Datum wählen"
+                          : locale === "pl"
+                            ? "Wybierz datę"
+                            : "Choose a date")}
                   </Text>
                   <Ionicons name="calendar-outline" size={18} color="#8A94A6" />
                 </Pressable>
               </View>
 
               <View style={styles.fieldBlock}>
-                <Text style={styles.fieldLabel}>Дата вскрытия</Text>
+                <Text style={styles.fieldLabel}>
+                  {locale === "ru"
+                    ? "Дата вскрытия"
+                    : locale === "de"
+                      ? "Öffnungsdatum"
+                      : locale === "pl"
+                        ? "Data otwarcia"
+                        : "Opened on"}
+                </Text>
                 <Pressable onPress={handleOpenRenewOpenedDatePicker} style={styles.dateRow}>
                   <Text
                     style={[
@@ -171,7 +210,14 @@ export function MedicineCabinetRenewPackSheet({
                       !openedDateLabel ? styles.datePlaceholderText : null,
                     ]}
                   >
-                    {openedDateLabel || "Выберите дату"}
+                    {openedDateLabel ||
+                      (locale === "ru"
+                        ? "Выберите дату"
+                        : locale === "de"
+                          ? "Datum wählen"
+                          : locale === "pl"
+                            ? "Wybierz datę"
+                            : "Choose a date")}
                   </Text>
                   <Ionicons name="calendar-outline" size={18} color="#8A94A6" />
                 </Pressable>
@@ -186,7 +232,15 @@ export function MedicineCabinetRenewPackSheet({
                   pressed ? styles.secondaryButtonPressed : null,
                 ]}
               >
-                <Text style={styles.customValueCancelText}>Отмена</Text>
+                <Text style={styles.customValueCancelText}>
+                  {locale === "ru"
+                    ? "Отмена"
+                    : locale === "de"
+                      ? "Abbrechen"
+                      : locale === "pl"
+                        ? "Anuluj"
+                        : "Cancel"}
+                </Text>
               </Pressable>
 
               <Pressable
@@ -202,7 +256,15 @@ export function MedicineCabinetRenewPackSheet({
                   end={{ x: 1, y: 1 }}
                   style={styles.customValueSaveGradient}
                 />
-                <Text style={styles.customValueSaveText}>Сохранить</Text>
+                <Text style={styles.customValueSaveText}>
+                  {locale === "ru"
+                    ? "Сохранить"
+                    : locale === "de"
+                      ? "Speichern"
+                      : locale === "pl"
+                        ? "Zapisz"
+                        : "Save"}
+                </Text>
               </Pressable>
             </View>
           </>
@@ -212,7 +274,7 @@ export function MedicineCabinetRenewPackSheet({
       {expiryPicker.activePickerField ? (
         <BackdatedDateTimePickerSheet
           visible
-          locale="ru"
+          locale={locale}
           pastYears={3}
           futureYears={12}
           activePickerField={expiryPicker.activePickerField}
@@ -237,7 +299,7 @@ export function MedicineCabinetRenewPackSheet({
       {openedPicker.activePickerField ? (
         <BackdatedDateTimePickerSheet
           visible
-          locale="ru"
+          locale={locale}
           activePickerField={openedPicker.activePickerField}
           pickerDay={openedPicker.pickerDay}
           pickerMonthIndex={openedPicker.pickerMonthIndex}

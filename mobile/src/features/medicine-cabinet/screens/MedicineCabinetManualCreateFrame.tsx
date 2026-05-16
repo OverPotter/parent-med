@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type { ManualCategory } from "../model/manualMedicineFlow";
 import {
   Step1BasicSection,
@@ -20,7 +21,7 @@ import { styles } from "./medicineCabinetManualCreateScreenStyles";
 
 type ManualCreateFrameProps = {
   step: FlowStep;
-  isRu: boolean;
+  locale: MobileLocale;
   medicineName: string;
   onChangeMedicineName: (value: string) => void;
   category: ManualCategory | null;
@@ -55,7 +56,7 @@ type ManualCreateFrameProps = {
 
 export function MedicineCabinetManualCreateFrame({
   step,
-  isRu,
+  locale,
   medicineName,
   onChangeMedicineName,
   category,
@@ -87,6 +88,7 @@ export function MedicineCabinetManualCreateFrame({
   panHandlers,
   swipeCaptureWidth,
 }: ManualCreateFrameProps) {
+  const isRu = locale === "ru";
   return (
     <LinearGradient
       colors={["#FFF7F1", "#FFF3EA"]}
@@ -126,19 +128,35 @@ export function MedicineCabinetManualCreateFrame({
                 pressed && interactive ? styles.backLinkPressed : null,
               ]}
             >
-              <Text style={styles.backLinkText}>← К аптечке</Text>
+              <Text style={styles.backLinkText}>
+                {isRu
+                  ? "← К аптечке"
+                  : locale === "de"
+                    ? "← Zur Hausapotheke"
+                    : locale === "pl"
+                      ? "← Do apteczki"
+                      : "← Back to cabinet"}
+              </Text>
             </Pressable>
           </View>
 
           <View style={styles.header}>
-            <Text style={styles.title}>Новый препарат</Text>
+            <Text style={styles.title}>
+              {isRu
+                ? "Новый препарат"
+                : locale === "de"
+                  ? "Neues Medikament"
+                  : locale === "pl"
+                    ? "Nowy lek"
+                    : "New medicine"}
+            </Text>
           </View>
 
           <StepIndicator step={step} />
 
           {step === 1 ? (
             <Step1BasicSection
-              isRu={isRu}
+              locale={locale}
               medicineName={medicineName}
               onChangeMedicineName={onChangeMedicineName}
               category={category}
@@ -150,6 +168,7 @@ export function MedicineCabinetManualCreateFrame({
 
           {step === 2 ? (
             <Step2UsageSection
+              locale={locale}
               purpose={purpose}
               onChangePurpose={onChangePurpose}
               howToUse={howToUse}
@@ -162,6 +181,7 @@ export function MedicineCabinetManualCreateFrame({
 
           {step === 3 ? (
             <Step3StorageSection
+              locale={locale}
               expiryDateLabel={expiryDateLabel}
               onPressExpiryDate={onPressExpiryDate}
               openedDateLabel={openedDateLabel}
@@ -193,7 +213,21 @@ export function MedicineCabinetManualCreateFrame({
               ]}
             >
               <Text style={styles.secondaryButtonText}>
-                {step === 1 ? "Отмена" : "Назад"}
+                {step === 1
+                  ? isRu
+                    ? "Отмена"
+                    : locale === "de"
+                      ? "Abbrechen"
+                      : locale === "pl"
+                        ? "Anuluj"
+                        : "Cancel"
+                  : isRu
+                    ? "Назад"
+                    : locale === "de"
+                      ? "Zurück"
+                      : locale === "pl"
+                        ? "Wstecz"
+                        : "Back"}
               </Text>
             </Pressable>
 
@@ -237,7 +271,21 @@ export function MedicineCabinetManualCreateFrame({
                   </View>
                 ) : null}
                 <Text style={styles.primaryButtonText}>
-                  {step === 3 ? "Сохранить препарат" : "Далее"}
+                  {step === 3
+                    ? isRu
+                      ? "Сохранить препарат"
+                      : locale === "de"
+                        ? "Medikament speichern"
+                        : locale === "pl"
+                          ? "Zapisz lek"
+                          : "Save medicine"
+                    : isRu
+                      ? "Далее"
+                      : locale === "de"
+                        ? "Weiter"
+                        : locale === "pl"
+                          ? "Dalej"
+                          : "Next"}
                 </Text>
               </Pressable>
             </LinearGradient>

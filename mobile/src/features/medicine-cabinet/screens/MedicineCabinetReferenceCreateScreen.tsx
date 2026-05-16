@@ -43,6 +43,7 @@ export function MedicineCabinetReferenceCreateScreen({
         />
         <MedicineCabinetReferenceCreateFrame
           step={flow.step}
+          locale={flow.uiLocale}
           searchQuery={flow.searchQuery}
           onChangeSearchQuery={flow.setSearchQuery}
           activeCategory={flow.activeCategory}
@@ -110,6 +111,7 @@ export function MedicineCabinetReferenceCreateScreen({
       ) : null}
 
       <MedicineCabinetAfterOpeningSheets
+        locale={flow.uiLocale}
         isOptionSheetOpen={flow.isShelfSheetOpen}
         isCustomSheetOpen={flow.isCustomShelfSheetOpen}
         mode={flow.openedShelfMode}
@@ -134,9 +136,23 @@ export function MedicineCabinetReferenceCreateScreen({
           <>
             <View style={styles.sheetDragZone} {...panHandlers}>
               <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>Препарат добавлен</Text>
+              <Text style={styles.sheetTitle}>
+                {flow.uiLocale === "ru"
+                  ? "Препарат добавлен"
+                  : flow.uiLocale === "de"
+                    ? "Medikament hinzugefügt"
+                    : flow.uiLocale === "pl"
+                      ? "Lek dodany"
+                      : "Medicine added"}
+              </Text>
               <Text style={styles.sheetSubtitle}>
-                Теперь он появится в домашней аптечке.
+                {flow.uiLocale === "ru"
+                  ? "Теперь он появится в домашней аптечке."
+                  : flow.uiLocale === "de"
+                    ? "Es erscheint jetzt in der Hausapotheke."
+                    : flow.uiLocale === "pl"
+                      ? "Pojawi się teraz w domowej apteczce."
+                      : "It will now appear in your home cabinet."}
               </Text>
             </View>
 
@@ -154,7 +170,15 @@ export function MedicineCabinetReferenceCreateScreen({
                   end={{ x: 1, y: 1 }}
                   style={styles.customValueSaveGradient}
                 />
-                <Text style={styles.customValueSaveText}>Готово</Text>
+                <Text style={styles.customValueSaveText}>
+                  {flow.uiLocale === "ru"
+                    ? "Готово"
+                    : flow.uiLocale === "de"
+                      ? "Fertig"
+                      : flow.uiLocale === "pl"
+                        ? "Gotowe"
+                        : "Done"}
+                </Text>
               </Pressable>
             </View>
           </>

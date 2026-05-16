@@ -5,6 +5,7 @@ import type { MobileChildSummary } from "../children/api/childrenApi";
 import type { MobileFeedingRecord } from "../feeding/api/feedingRecordsApi";
 import type { MobileIllnessObservation } from "../illness/model/illnessObservation";
 import type { MobileSleepSession } from "../sleep/api/sleepSessionsApi";
+import type { MobileLocale } from "../../shared/i18n/mobileI18n";
 import type { MobileLiveActivityPreferences } from "./liveActivityPreferences";
 import { stopAllNativeLiveActivities } from "./nativeLiveActivities";
 import {
@@ -14,6 +15,7 @@ import {
 
 export function useLiveActivitiesSync(params: {
   authSession: MobileAuthSession | null;
+  locale: MobileLocale;
   children: MobileChildSummary[];
   activeSleepByChildId: Record<string, MobileSleepSession | null>;
   activeFeedingByChildId: Record<string, MobileFeedingRecord | null>;
@@ -56,7 +58,7 @@ export function useLiveActivitiesSync(params: {
           activeSleepByChildId: params.activeSleepByChildId,
           activeFeedingByChildId: params.activeFeedingByChildId,
           activeIllnessByChildId: params.activeIllnessByChildId,
-          locale: authSession.account.preferredLanguage,
+          locale: params.locale,
           preferences: params.preferences,
           currentAccountId: authSession.account.id,
         });
@@ -90,6 +92,7 @@ export function useLiveActivitiesSync(params: {
     params.canUseLiveActivities,
     params.children,
     params.illnessPreferenceVersion,
+    params.locale,
     params.preferences,
   ]);
 }

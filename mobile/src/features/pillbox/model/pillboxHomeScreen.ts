@@ -4,6 +4,14 @@ import type {
   MobilePillboxPlan,
   MobilePillboxPlanSummary,
 } from "../api/mobilePillboxPlansApi";
+import {
+  buildPillboxMedicineCountLabel,
+  buildPillboxNextInfoLabel,
+  localizePillboxCourse,
+  localizePillboxFallback,
+  localizePillboxMealRule,
+  localizePillboxStatus,
+} from "./pillboxLocalization";
 
 export type PillboxIntakeCard = {
   id: string;
@@ -100,6 +108,50 @@ export function buildPillboxHomeScreenContent(
     };
   }
 
+  if (locale === "de") {
+    return {
+      title: "Pillendose",
+      subtitle: "Pläne und Erinnerungen für die ganze Familie.",
+      createPlanLabel: "Plan erstellen",
+      analyticsLabel: "Analytik",
+      activePlansTitle: "Aktive Pläne",
+      nextIntakeLabel: "Nächste Einnahme",
+      nextIntakeAction: "Einnahme markieren",
+      emptyTodayTitle: "Heute keine Einnahmen",
+      emptyTodayDescription:
+        "Für heute ist nichts geplant. Die nächste Einnahme erscheint hier.",
+      emptyPlansTitle: "Noch keine Pläne",
+      emptyPlansDescription:
+        "Erstellen Sie Ihren ersten Plan, um Zeitpläne und Erinnerungen zu sehen.",
+      loadingPlansTitle: "Pläne werden geladen…",
+      loadingPlansDescription: "Anstehende Einnahmen und aktive Pläne werden geladen.",
+      loadingErrorTitle: "Pläne konnten nicht geladen werden",
+      retryLabel: "Erneut versuchen",
+    };
+  }
+
+  if (locale === "pl") {
+    return {
+      title: "Organizer leków",
+      subtitle: "Plany i przypomnienia dla całej rodziny.",
+      createPlanLabel: "Utwórz plan",
+      analyticsLabel: "Analityka",
+      activePlansTitle: "Aktywne plany",
+      nextIntakeLabel: "Następne przyjęcie",
+      nextIntakeAction: "Oznacz jako przyjęte",
+      emptyTodayTitle: "Dziś nie ma przyjęć",
+      emptyTodayDescription:
+        "Na dziś nic nie zaplanowano. Następne przyjęcie pojawi się tutaj.",
+      emptyPlansTitle: "Nie ma jeszcze planów",
+      emptyPlansDescription:
+        "Utwórz pierwszy plan, aby zobaczyć harmonogramy i przypomnienia.",
+      loadingPlansTitle: "Ładowanie planów…",
+      loadingPlansDescription: "Pobieramy najbliższe przyjęcia i aktywne plany.",
+      loadingErrorTitle: "Nie udało się załadować planów",
+      retryLabel: "Spróbuj ponownie",
+    };
+  }
+
   return {
     title: "Pillbox",
     subtitle: "Plans and reminders for the whole family.",
@@ -141,7 +193,10 @@ export function buildPillboxPlanCardsFromSummaries(input: {
         id: summary.id,
         title: normalizedTitle,
         avatarText: resolveAvatarText(normalizedTitle),
-        medicineCount: buildMedicineCountLabel(summary.activeMedicationCount, input.locale),
+        medicineCount: buildPillboxMedicineCountLabel(
+          summary.activeMedicationCount,
+          input.locale,
+        ),
         nextInfo: buildSummaryNextInfo(summary, input.locale, now, isOverdue),
         status,
         statusText: buildSummaryStatusText(status, input.locale),
@@ -204,21 +259,21 @@ export function buildPillboxPlanDetailFromEntity(input: {
       .filter((member) => plan.memberAccountIds.includes(member.id))
       .map((member) => member.displayName)
       .join(", ") ||
-    (locale === "ru" ? "Без уведомлений" : "No recipients");
+    localizePillboxFallback("noRecipients", locale);
 
   const medicines = [...plan.medications]
     .sort((left, right) => left.position - right.position)
     .map((item) => ({
       id: item.id,
-      title: item.customMedicineName?.trim() || (locale === "ru" ? "Без названия" : "Untitled"),
+      title: item.customMedicineName?.trim() || localizePillboxFallback("untitled", locale),
       summary: [
         item.doseAmount,
-        formatMealRule(item.mealRule, locale),
-        formatCourse(item.courseMode, item.courseEndDate, locale),
+        localizePillboxMealRule(item.mealRule, locale),
+        localizePillboxCourse(item.courseMode, item.courseEndDate, locale),
       ]
         .filter(Boolean)
         .join(" · "),
-      schedule: item.times.join(", ") || (locale === "ru" ? "Без времени" : "No time"),
+      schedule: item.times.join(", ") || localizePillboxFallback("noTime", locale),
     }));
 
   return {
@@ -228,16 +283,12 @@ export function buildPillboxPlanDetailFromEntity(input: {
     status: plan.status,
     statusText:
       plan.status === "paused"
-        ? locale === "ru"
-          ? "На паузе"
-          : "Paused"
-        : locale === "ru"
-          ? "Активен"
-          : "Active",
+        ? localizePillboxStatus("paused", locale)
+        : localizePillboxStatus("active", locale),
     recipientIds: [...plan.memberAccountIds],
-    medicineCountLabel: buildMedicineCountLabel(plan.medications.length, locale),
+    medicineCountLabel: buildPillboxMedicineCountLabel(plan.medications.length, locale),
     recipientsLabel,
-    scheduleNote: buildNextInfoLabel({
+    scheduleNote: buildPillboxNextInfoLabel({
       locale,
       times: plan.medications.flatMap((item) => item.times),
     }),
@@ -253,63 +304,6 @@ function normalizePlanTitle(value: string) {
 function resolveAvatarText(label: string) {
   const first = label.trim().charAt(0);
   return first ? first.toUpperCase() : "•";
-}
-
-function buildMedicineCountLabel(count: number, locale: MobileLocale) {
-  if (locale === "ru") {
-    const mod10 = count % 10;
-    const mod100 = count % 100;
-    if (mod10 === 1 && mod100 !== 11) {
-      return `${count} лекарство`;
-    }
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-      return `${count} лекарства`;
-    }
-    return `${count} лекарств`;
-  }
-
-  return `${count} ${count === 1 ? "medicine" : "medicines"}`;
-}
-
-function buildNextInfoLabel(input: { locale: MobileLocale; times: string[] }) {
-  const nextTime = [...input.times].sort()[0];
-  if (!nextTime) {
-    return input.locale === "ru" ? "Расписание настроено" : "Schedule is set";
-  }
-
-  return input.locale === "ru"
-    ? `Следующий приём в ${nextTime}`
-    : `Next intake at ${nextTime}`;
-}
-
-function formatMealRule(
-  value: MobilePillboxPlan["medications"][number]["mealRule"],
-  locale: MobileLocale,
-) {
-  if (value === "before_meal") {
-    return locale === "ru" ? "До еды" : "Before meal";
-  }
-  if (value === "with_meal") {
-    return locale === "ru" ? "Во время еды" : "With meal";
-  }
-  if (value === "after_meal") {
-    return locale === "ru" ? "После еды" : "After meal";
-  }
-  return locale === "ru" ? "Независимо от еды" : "Independent of meal";
-}
-
-function formatCourse(
-  mode: MobilePillboxPlan["medications"][number]["courseMode"],
-  courseEndDate: string | null,
-  locale: MobileLocale,
-) {
-  if (mode !== "period") {
-    return locale === "ru" ? "Постоянно" : "Continuous";
-  }
-  if (!courseEndDate) {
-    return locale === "ru" ? "Курсом" : "Course";
-  }
-  return locale === "ru" ? `До ${courseEndDate}` : `Until ${courseEndDate}`;
 }
 
 function comparePlanSummaries(
@@ -351,25 +345,51 @@ function buildSummaryNextInfo(
   isOverdue: boolean,
 ) {
   if (summary.status === "paused") {
-    return locale === "ru" ? "план на паузе" : "plan is paused";
+    return locale === "ru"
+      ? "план на паузе"
+      : locale === "de"
+        ? "Plan pausiert"
+        : locale === "pl"
+          ? "plan wstrzymany"
+          : "plan is paused";
   }
   if (summary.status === "completed" || summary.status === "archived") {
-    return locale === "ru" ? "курс завершён" : "course completed";
+    return locale === "ru"
+      ? "курс завершён"
+      : locale === "de"
+        ? "Kurs abgeschlossen"
+        : locale === "pl"
+          ? "kuracja zakończona"
+          : "course completed";
   }
   if (isOverdue) {
-    return locale === "ru" ? "пропущен приём" : "missed intake";
+    return locale === "ru"
+      ? "пропущен приём"
+      : locale === "de"
+        ? "Einnahme verpasst"
+        : locale === "pl"
+          ? "pominięto przyjęcie"
+          : "missed intake";
   }
   if (isSameDay(summary.nextDoseAt, now)) {
     return locale === "ru"
       ? `сегодня в ${formatClock(summary.nextDoseAt, locale)}`
-      : `today at ${formatClock(summary.nextDoseAt, locale)}`;
+      : locale === "de"
+        ? `heute um ${formatClock(summary.nextDoseAt, locale)}`
+        : locale === "pl"
+          ? `dzisiaj o ${formatClock(summary.nextDoseAt, locale)}`
+          : `today at ${formatClock(summary.nextDoseAt, locale)}`;
   }
   if (isTomorrow(summary.nextDoseAt, now)) {
     return locale === "ru"
       ? `завтра в ${formatClock(summary.nextDoseAt, locale)}`
-      : `tomorrow at ${formatClock(summary.nextDoseAt, locale)}`;
+      : locale === "de"
+        ? `morgen um ${formatClock(summary.nextDoseAt, locale)}`
+        : locale === "pl"
+          ? `jutro o ${formatClock(summary.nextDoseAt, locale)}`
+          : `tomorrow at ${formatClock(summary.nextDoseAt, locale)}`;
   }
-  return summary.nextDoseLabel?.trim() || (locale === "ru" ? "расписание настроено" : "schedule is set");
+  return summary.nextDoseLabel?.trim() || buildPillboxNextInfoLabel({ locale, times: [] });
 }
 
 function mapSummaryStatus(
@@ -391,15 +411,15 @@ function mapSummaryStatus(
 
 function buildSummaryStatusText(status: PillboxPlanStatus, locale: MobileLocale) {
   if (status === "attention") {
-    return locale === "ru" ? "Скоро" : "Soon";
+    return localizePillboxStatus("soon", locale);
   }
   if (status === "missed") {
-    return locale === "ru" ? "Пропуск" : "Missed";
+    return localizePillboxStatus("missed", locale);
   }
   if (status === "completed") {
-    return locale === "ru" ? "На паузе" : "Paused";
+    return localizePillboxStatus("paused", locale);
   }
-  return locale === "ru" ? "Активен" : "Active";
+  return localizePillboxStatus("active", locale);
 }
 
 function isSameDay(value: string | null, now: Date) {

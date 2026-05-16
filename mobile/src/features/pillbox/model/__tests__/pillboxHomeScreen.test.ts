@@ -3,6 +3,7 @@ import type {
   MobilePillboxPlanSummary,
 } from "../../api/mobilePillboxPlansApi";
 import {
+  buildPillboxHomeScreenContent,
   buildPillboxPlanCardsFromSummaries,
   buildPillboxPlanDetailFromEntity,
   buildPillboxSummaryStatsFromSummaries,
@@ -128,5 +129,29 @@ describe("pillbox home model", () => {
       summary: "1 капсула · After meal · Continuous",
       schedule: "09:00",
     });
+  });
+
+  it("returns localized copy for german and polish pillbox screens", () => {
+    expect(buildPillboxHomeScreenContent("de")).toMatchObject({
+      title: "Pillendose",
+      createPlanLabel: "Plan erstellen",
+    });
+    expect(buildPillboxHomeScreenContent("pl")).toMatchObject({
+      title: "Organizer leków",
+      createPlanLabel: "Utwórz plan",
+    });
+  });
+
+  it("localizes pillbox detail labels beyond ru and en", () => {
+    const detail = buildPillboxPlanDetailFromEntity({
+      plan: makePlan(),
+      locale: "de",
+      familyMembers: [],
+    });
+
+    expect(detail.statusText).toBe("Aktiv");
+    expect(detail.medicineCountLabel).toBe("1 Medikament");
+    expect(detail.scheduleNote).toBe("Nächste Einnahme um 09:00");
+    expect(detail.medicines[0]?.summary).toContain("Nach dem Essen");
   });
 });

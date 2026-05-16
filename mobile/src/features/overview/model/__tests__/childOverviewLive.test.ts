@@ -17,7 +17,7 @@ describe("childOverviewLive", () => {
       "ru",
       copy,
       "week",
-      "chip-Все",
+      "filter-all",
       {
         feedingRecords: [
           { recordedAt: "2026-05-10T09:00:00.000Z", feedingType: "breast" },
@@ -44,7 +44,7 @@ describe("childOverviewLive", () => {
       "ru",
       copy,
       "week",
-      "chip-Все",
+      "filter-all",
       {
         feedingRecords: [
           { recordedAt: "2026-05-10T09:00:00.000Z", feedingType: "breast" },

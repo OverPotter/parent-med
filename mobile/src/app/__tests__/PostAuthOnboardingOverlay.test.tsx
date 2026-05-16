@@ -4,6 +4,10 @@ import type { MobileAuthSession } from "../../features/auth/api/authApi";
 import { MobileThemeProvider } from "../../shared/theme/mobileSurfaceTheme";
 import { PostAuthOnboardingOverlay } from "../PostAuthOnboardingOverlay";
 
+jest.mock("expo-localization", () => ({
+  getLocales: jest.fn(() => [{ languageTag: "ru-RU", languageCode: "ru" }]),
+}));
+
 jest.mock("@expo/vector-icons", () => {
   const React = require("react");
   const { Text: MockText } = require("react-native");

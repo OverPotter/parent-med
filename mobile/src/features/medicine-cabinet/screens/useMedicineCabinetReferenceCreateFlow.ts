@@ -19,6 +19,7 @@ import {
 } from "../model/afterOpeningShelfLife";
 import { formatIsoDate, parseIsoDate } from "../model/manualMedicineCreateFlow";
 import {
+  getReferenceCategories,
   getReferenceCategoryMatch,
   type ReferenceCategoryKey,
   type ReferenceCreateStep,
@@ -29,6 +30,13 @@ function getUiLocale(locale: string): MobileLocale {
   if (locale === "de") return "de";
   if (locale === "pl") return "pl";
   return "en";
+}
+
+function formatOpenedShelfDaysLabel(days: string, locale: MobileLocale) {
+  if (locale === "ru") return `${days} дн.`;
+  if (locale === "de") return `${days} Tg.`;
+  if (locale === "pl") return `${days} dni`;
+  return `${days} days`;
 }
 
 export function useMedicineCabinetReferenceCreateFlow({
@@ -130,6 +138,7 @@ export function useMedicineCabinetReferenceCreateFlow({
     () => catalogItems.filter((item) => getReferenceCategoryMatch(item, activeCategory)),
     [activeCategory, catalogItems],
   );
+  const categories = useMemo(() => getReferenceCategories(uiLocale), [uiLocale]);
 
   useEffect(() => {
     if (step !== "search") {
@@ -141,8 +150,20 @@ export function useMedicineCabinetReferenceCreateFlow({
   const showEmptyState = step === "search" && hasLoadedSearch && !isSearching && visibleItems.length === 0;
   const emptyStateTitle =
     searchQuery.trim().length > 0
-      ? "Пока что ничего не найдено."
-      : "Пока что нет данных в справочнике.";
+      ? locale === "ru"
+        ? "Пока что ничего не найдено."
+        : locale === "de"
+          ? "Noch nichts gefunden."
+          : locale === "pl"
+            ? "Na razie nic nie znaleziono."
+            : "Nothing found yet."
+      : locale === "ru"
+        ? "Пока что нет данных в справочнике."
+        : locale === "de"
+          ? "Im Katalog sind noch keine Daten."
+          : locale === "pl"
+            ? "W katalogu nie ma jeszcze danych."
+            : "No catalog data yet.";
 
   const expiryDateLabel = expiryDate
     ? formatBackdatedDate(parseIsoDate(expiryDate, new Date()), uiLocale)
@@ -150,7 +171,9 @@ export function useMedicineCabinetReferenceCreateFlow({
   const openedDateLabel = openedDate
     ? formatBackdatedDate(parseIsoDate(openedDate, new Date()), uiLocale)
     : "";
-  const openedShelfLabel = openedShelfDays ? `${openedShelfDays} дн.` : "";
+  const openedShelfLabel = openedShelfDays
+    ? formatOpenedShelfDaysLabel(openedShelfDays, uiLocale)
+    : "";
 
   const handleBackPress = () => {
     if (step === "search") {
@@ -259,8 +282,23 @@ export function useMedicineCabinetReferenceCreateFlow({
         const message =
           error instanceof Error && error.message.trim().length > 0
             ? error.message
-            : "Не получилось добавить препарат. Попробуйте ещё раз.";
-        Alert.alert("Не получилось сохранить", message);
+            : locale === "ru"
+              ? "Не получилось добавить препарат. Попробуйте ещё раз."
+              : locale === "de"
+                ? "Das Medikament konnte nicht hinzugefügt werden. Versuchen Sie es erneut."
+                : locale === "pl"
+                  ? "Nie udało się dodać leku. Spróbuj ponownie."
+                  : "Couldn't add the medicine. Try again.";
+        Alert.alert(
+          locale === "ru"
+            ? "Не получилось сохранить"
+            : locale === "de"
+              ? "Speichern fehlgeschlagen"
+              : locale === "pl"
+                ? "Nie udało się zapisać"
+                : "Couldn't save",
+          message,
+        );
       })
       .finally(() => {
         setIsSaving(false);
@@ -274,6 +312,7 @@ export function useMedicineCabinetReferenceCreateFlow({
     activeCategory,
     setActiveCategory,
     visibleItems,
+    categories,
     selectedItem,
     setSelectedItem,
     showEmptyState,

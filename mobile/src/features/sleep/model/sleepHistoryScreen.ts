@@ -257,8 +257,10 @@ function localizeMetricLabel(label: string, locale: MobileLocale) {
 
 function buildSleepMeta(item: MobileSleepSession, locale: MobileLocale) {
   const parts = [
-    item.status === "active" ? localizeLabel("Сейчас спит", locale) : null,
-    item.endedAt ? `${localizeLabel("Конец", locale)} ${formatSessionTime(item.endedAt, locale)}` : null,
+    item.status === "active" ? getSleepingNowLabel(locale) : null,
+    item.endedAt
+      ? `${getSleepEndedLabel(locale)} ${formatSessionTime(item.endedAt, locale)}`
+      : null,
     formatDurationLabel(item.durationMinutes, locale),
   ].filter(Boolean);
 
@@ -284,7 +286,7 @@ function formatDurationLabel(durationMinutes: number | null, locale: MobileLocal
   }
 
   if (durationMinutes <= 0) {
-    return localizeLabel("меньше минуты", locale);
+    return getLessThanMinuteLabel(locale);
   }
 
   const hours = Math.floor(durationMinutes / 60);
@@ -302,6 +304,27 @@ function formatDurationLabel(durationMinutes: number | null, locale: MobileLocal
   return parts.join(" ");
 }
 
+function getSleepingNowLabel(locale: MobileLocale) {
+  if (locale === "ru") return "Сейчас спит";
+  if (locale === "de") return "Schläft gerade";
+  if (locale === "pl") return "Teraz śpi";
+  return "Sleeping now";
+}
+
+function getSleepEndedLabel(locale: MobileLocale) {
+  if (locale === "ru") return "Конец";
+  if (locale === "de") return "Ende";
+  if (locale === "pl") return "Koniec";
+  return "End";
+}
+
+function getLessThanMinuteLabel(locale: MobileLocale) {
+  if (locale === "ru") return "меньше минуты";
+  if (locale === "de") return "weniger als eine Minute";
+  if (locale === "pl") return "mniej niż minutę";
+  return "less than a minute";
+}
+
 function localizeHourSuffix(locale: MobileLocale) {
   if (locale === "de") return "Std.";
   if (locale === "pl") return "godz.";
@@ -314,31 +337,6 @@ function localizeMinuteSuffix(locale: MobileLocale) {
   if (locale === "pl") return "min";
   if (locale === "en") return "min";
   return "мин";
-}
-
-function localizeLabel(value: string, locale: MobileLocale) {
-  if (locale === "ru") {
-    return value;
-  }
-
-  if (locale === "de") {
-    return value
-      .replace("Конец", "Ende")
-      .replace("Сейчас спит", "Schläft gerade")
-      .replace("меньше минуты", "weniger als eine Minute");
-  }
-
-  if (locale === "pl") {
-    return value
-      .replace("Конец", "Koniec")
-      .replace("Сейчас спит", "Teraz śpi")
-      .replace("меньше минуты", "mniej niż minutę");
-  }
-
-  return value
-    .replace("Конец", "End")
-    .replace("Сейчас спит", "Sleeping now")
-    .replace("меньше минуты", "less than a minute");
 }
 
 function resolveSleepKind(item: MobileSleepSession): "night_sleep" | "day_sleep" {

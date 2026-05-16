@@ -195,10 +195,7 @@ export function FamilyScreen({
     {
       key: "owner",
       title: content.ownerRoleLabel,
-      description:
-        locale === "ru"
-          ? "Управляет семьёй, приглашениями и критичными решениями."
-          : "Manages the family, invitations, and critical decisions.",
+      description: content.roleRuleOwnerDescription,
       icon: "crown-outline",
       bg: palette.goldBg,
       color: palette.goldIcon,
@@ -206,10 +203,7 @@ export function FamilyScreen({
     {
       key: "admin",
       title: content.adminRoleLabel,
-      description:
-        locale === "ru"
-          ? "Помогает управлять доступом и ежедневными сценариями."
-          : "Helps manage access and daily routines.",
+      description: content.roleRuleAdminDescription,
       icon: "shield-account-outline",
       bg: palette.blueBg,
       color: palette.blueIcon,
@@ -217,10 +211,7 @@ export function FamilyScreen({
     {
       key: "member",
       title: content.memberRoleLabel,
-      description:
-        locale === "ru"
-          ? "Пользуется нужными функциями и видит только доступные разделы."
-          : "Uses the needed features and only sees allowed sections.",
+      description: content.roleRuleMemberDescription,
       icon: "account-group-outline",
       bg: palette.greenBg,
       color: palette.greenIcon,
@@ -269,10 +260,7 @@ export function FamilyScreen({
     }
 
     void Share.share({
-      message:
-        locale === "ru"
-          ? `Присоединяйтесь к семье в PillPath. Код приглашения: ${inviteCode}`
-          : `Join the family in PillPath. Invitation code: ${inviteCode}`,
+      message: content.shareInviteMessage(inviteCode),
     });
   };
 
@@ -280,9 +268,7 @@ export function FamilyScreen({
     const message =
       error instanceof Error
         ? error.message
-        : locale === "ru"
-          ? "Не удалось выполнить действие."
-          : "Could not complete the action.";
+        : content.genericActionError;
 
     Alert.alert(title, message);
   };
@@ -302,10 +288,7 @@ export function FamilyScreen({
       setInviteCopied(false);
       setInviteExpanded(true);
     } catch (error) {
-      showFamilyRequestError(
-        locale === "ru" ? "Не удалось создать приглашение" : "Could not create invite",
-        error,
-      );
+      showFamilyRequestError(content.createInviteErrorTitle, error);
     } finally {
       setIsCreatingInvite(false);
     }
@@ -366,12 +349,7 @@ export function FamilyScreen({
       setAccessDraft(null);
       await onRefreshFamilyMembers();
     } catch (error) {
-      showFamilyRequestError(
-        locale === "ru"
-          ? "Не удалось сохранить настройки доступа"
-          : "Could not save access settings",
-        error,
-      );
+      showFamilyRequestError(content.saveAccessErrorTitle, error);
     } finally {
       setIsSavingAccess(false);
     }
@@ -398,10 +376,7 @@ export function FamilyScreen({
       setSelectedMemberId(null);
       await onRefreshFamilyMembers();
     } catch (error) {
-      showFamilyRequestError(
-        locale === "ru" ? "Не удалось сохранить профиль" : "Could not save profile",
-        error,
-      );
+      showFamilyRequestError(content.saveProfileErrorTitle, error);
     } finally {
       setIsSavingProfile(false);
     }
@@ -500,7 +475,6 @@ export function FamilyScreen({
                   edit: childrenAccessOptionLabel(locale, "edit"),
                 }}
                 content={content}
-                localeIsRu={locale === "ru"}
                 memberName={selectedMember.name}
                 memberRelationship={selectedMember.relationship}
                 onChangePolicy={updateAccessDraft}
@@ -529,7 +503,6 @@ export function FamilyScreen({
               <FamilyProfileEditContent
                 content={content}
                 draft={profileEditDraft}
-                localeIsRu={locale === "ru"}
                 onChangeDraft={setProfileEditDraft}
                 onSave={handleSaveProfileEdit}
                 palette={palette}

@@ -26,6 +26,26 @@ export type JournalEntryScreenContent = {
   primaryActionLabel: string;
 };
 
+function formatJournalWeight(locale: MobileLocale, value: string) {
+  return locale === "ru" ? `${value} кг` : `${value} kg`;
+}
+
+function formatJournalHeight(locale: MobileLocale, value: string) {
+  return locale === "ru" ? `${value} см` : `${value} cm`;
+}
+
+function formatJournalDelta(
+  locale: MobileLocale,
+  value: string,
+  unit: "kg" | "cm",
+) {
+  if (locale === "ru") {
+    return unit === "kg" ? `+${value} кг` : `+${value} см`;
+  }
+
+  return `+${value} ${unit}`;
+}
+
 export function buildJournalEntryScreenContent(
   kind: JournalEntryKind,
   locale: MobileLocale,
@@ -54,7 +74,13 @@ export function buildJournalEntryScreenContent(
         },
         {
           id: "formula",
-          label: isRu ? "Смесь" : "Formula",
+          label: isRu
+            ? "Смесь"
+            : isDe
+              ? "Formula"
+              : isPl
+                ? "Mieszanka"
+                : "Formula",
         },
       ],
       notesTitle: isRu ? "Заметка к кормлению" : isDe ? "Notiz zur Fütterung" : isPl ? "Notatka do karmienia" : "Feeding note",
@@ -126,7 +152,7 @@ export function buildJournalEntryScreenContent(
         {
           id: "value",
           label: isRu ? "Вес" : isDe ? "Gewicht" : isPl ? "Waga" : "Weight",
-          value: "13.4 кг",
+          value: formatJournalWeight(locale, "13.4"),
         },
         {
           id: "date",
@@ -136,7 +162,7 @@ export function buildJournalEntryScreenContent(
         {
           id: "delta",
           label: isRu ? "Изменение" : isDe ? "Änderung" : isPl ? "Zmiana" : "Change",
-          value: isRu ? "+0.2 кг" : "+0.2 kg",
+          value: formatJournalDelta(locale, "0.2", "kg"),
           helper: isRu ? "с прошлого измерения" : isDe ? "seit der letzten Messung" : isPl ? "od poprzedniego pomiaru" : "since previous measurement",
         },
       ],
@@ -167,7 +193,7 @@ export function buildJournalEntryScreenContent(
       {
         id: "value",
         label: isRu ? "Рост" : isDe ? "Größe" : isPl ? "Wzrost" : "Height",
-        value: "92 см",
+        value: formatJournalHeight(locale, "92"),
       },
       {
         id: "date",
@@ -177,7 +203,7 @@ export function buildJournalEntryScreenContent(
       {
         id: "delta",
         label: isRu ? "Изменение" : isDe ? "Änderung" : isPl ? "Zmiana" : "Change",
-        value: isRu ? "+1 см" : "+1 cm",
+        value: formatJournalDelta(locale, "1", "cm"),
         helper: isRu ? "с прошлого измерения" : isDe ? "seit der letzten Messung" : isPl ? "od poprzedniego pomiaru" : "since previous measurement",
       },
     ],

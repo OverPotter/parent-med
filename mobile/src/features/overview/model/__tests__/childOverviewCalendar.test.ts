@@ -10,6 +10,7 @@ describe("childOverviewCalendar", () => {
       buildOverviewEvent(
         "2026-03-15T10:30:00.000Z",
         "ru",
+        "feeding",
         copy.eventTypes.feeding,
         "120 ml",
         overviewIconTokens.feeding,
@@ -17,6 +18,7 @@ describe("childOverviewCalendar", () => {
       buildOverviewEvent(
         "2026-04-02T08:00:00.000Z",
         "ru",
+        "sleep",
         copy.eventTypes.sleep,
         "45 мин",
         overviewIconTokens.sleep,
@@ -42,6 +44,7 @@ describe("childOverviewCalendar", () => {
       buildOverviewEvent(
         "2026-04-02T08:00:00.000Z",
         "ru",
+        "sleep",
         copy.eventTypes.sleep,
         "45 мин",
         overviewIconTokens.sleep,

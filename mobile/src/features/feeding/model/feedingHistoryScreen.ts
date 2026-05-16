@@ -221,15 +221,13 @@ export function mapFeedingTimelineFromApi(
 
 function buildFeedingMeta(item: MobileFeedingRecord, locale: MobileLocale) {
   const parts = [
-    item.status === "active"
-      ? localizeLabel("Активно", locale)
-      : null,
+    item.status === "active" ? getFeedingStatusLabel(locale) : null,
     item.feedingType === "breast"
       ? item.isExpressed
-        ? localizeLabel("Сцеженное", locale)
+        ? getExpressedLabel(locale)
         : localizeBreastSide(item.breastSide, locale)
       : item.formulaVolumeMl != null
-        ? `${Math.round(item.formulaVolumeMl)} ${localizeLabel("мл", locale)}`
+        ? `${Math.round(item.formulaVolumeMl)} ${getMillilitersLabel(locale)}`
         : null,
     formatDuration(item.durationMinutes, locale),
     item.note?.trim() || null,
@@ -266,10 +264,10 @@ function formatDuration(durationMinutes: number | null, locale: MobileLocale) {
   }
 
   if (durationMinutes <= 0) {
-    return localizeLabel("меньше минуты", locale);
+    return getLessThanMinuteLabel(locale);
   }
 
-  return `${durationMinutes} ${localizeLabel("мин", locale)}`;
+  return `${durationMinutes} ${getMinutesShortLabel(locale)}`;
 }
 
 function localizeBreastSide(
@@ -277,15 +275,15 @@ function localizeBreastSide(
   locale: MobileLocale,
 ) {
   if (side === "left") {
-    return localizeLabel("Левая", locale);
+    return getBreastSideLabel(locale, "left");
   }
 
   if (side === "right") {
-    return localizeLabel("Правая", locale);
+    return getBreastSideLabel(locale, "right");
   }
 
   if (side === "both") {
-    return localizeLabel("Обе", locale);
+    return getBreastSideLabel(locale, "both");
   }
 
   return null;
@@ -293,59 +291,84 @@ function localizeBreastSide(
 
 function localizeFeedingType(type: string, locale: MobileLocale) {
   if (type === "formula") {
-    return localizeLabel("Смесь", locale);
+    return getFeedingTypeLabel(locale, "formula");
   }
 
-  return localizeLabel("Грудь", locale);
+  return getFeedingTypeLabel(locale, "breast");
 }
 
-function localizeLabel(value: string, locale: MobileLocale) {
-  if (locale === "ru") {
-    return value;
+function getFeedingStatusLabel(locale: MobileLocale) {
+  if (locale === "ru") return "Активно";
+  if (locale === "de") return "Aktiv";
+  if (locale === "pl") return "Aktywne";
+  return "Active";
+}
+
+function getExpressedLabel(locale: MobileLocale) {
+  if (locale === "ru") return "Сцеженное";
+  if (locale === "de") return "Abgepumpt";
+  if (locale === "pl") return "Odciągnięte";
+  return "Expressed";
+}
+
+function getLessThanMinuteLabel(locale: MobileLocale) {
+  if (locale === "ru") return "меньше минуты";
+  if (locale === "de") return "weniger als eine Minute";
+  if (locale === "pl") return "mniej niż minutę";
+  return "less than a minute";
+}
+
+function getMinutesShortLabel(locale: MobileLocale) {
+  if (locale === "ru") return "мин";
+  if (locale === "de") return "Min";
+  if (locale === "pl") return "min";
+  return "min";
+}
+
+function getMillilitersLabel(locale: MobileLocale) {
+  if (locale === "ru") return "мл";
+  return "ml";
+}
+
+function getBreastSideLabel(
+  locale: MobileLocale,
+  side: "left" | "right" | "both",
+) {
+  if (side === "left") {
+    if (locale === "ru") return "Левая";
+    if (locale === "de") return "Links";
+    if (locale === "pl") return "Lewa";
+    return "Left";
   }
 
-  if (locale === "de") {
-    return value
-      .replace("Сохранено", "Gespeichert")
-      .replace("Активно", "Aktiv")
-      .replace("Сцеженное", "Abgepumpt")
-      .replace("Левая", "Links")
-      .replace("Правая", "Rechts")
-      .replace("Обе", "Beide")
-      .replace("меньше минуты", "weniger als eine Minute")
-      .replace("мин", "Min")
-      .replace("мл", "ml")
-      .replace("Смесь", "Formula")
-      .replace("Грудь", "Brust");
+  if (side === "right") {
+    if (locale === "ru") return "Правая";
+    if (locale === "de") return "Rechts";
+    if (locale === "pl") return "Prawa";
+    return "Right";
   }
 
-  if (locale === "pl") {
-    return value
-      .replace("Сохранено", "Zapisano")
-      .replace("Активно", "Aktywne")
-      .replace("Сцеженное", "Odciągnięte")
-      .replace("Левая", "Lewa")
-      .replace("Правая", "Prawa")
-      .replace("Обе", "Obie")
-      .replace("меньше минуты", "mniej niż minutę")
-      .replace("мин", "min")
-      .replace("мл", "ml")
-      .replace("Смесь", "Mieszanka")
-      .replace("Грудь", "Pierś");
+  if (locale === "ru") return "Обе";
+  if (locale === "de") return "Beide";
+  if (locale === "pl") return "Obie";
+  return "Both";
+}
+
+function getFeedingTypeLabel(
+  locale: MobileLocale,
+  type: "breast" | "formula",
+) {
+  if (type === "formula") {
+    if (locale === "ru") return "Смесь";
+    if (locale === "de") return "Formula";
+    if (locale === "pl") return "Mieszanka";
+    return "Formula";
   }
 
-  return value
-    .replace("Сохранено", "Saved")
-    .replace("Активно", "Active")
-    .replace("Сцеженное", "Expressed")
-    .replace("Левая", "Left")
-    .replace("Правая", "Right")
-    .replace("Обе", "Both")
-    .replace("меньше минуты", "less than a minute")
-    .replace("мин", "min")
-    .replace("мл", "ml")
-    .replace("Смесь", "Formula")
-    .replace("Грудь", "Breast");
+  if (locale === "ru") return "Грудь";
+  if (locale === "de") return "Brust";
+  if (locale === "pl") return "Pierś";
+  return "Breast";
 }
 
 function formatDayLabel(date: Date, locale: MobileLocale) {

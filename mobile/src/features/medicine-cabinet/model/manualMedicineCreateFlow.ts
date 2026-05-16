@@ -5,8 +5,12 @@ import {
 } from "./afterOpeningShelfLife";
 import { getManualCategoryLabel, type ManualCategory } from "./manualMedicineFlow";
 import type { FlowStep } from "../screens/MedicineCabinetManualCreateParts";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 
-export function formatExpiryForPreview(expiryDate: string) {
+export function formatExpiryForPreview(
+  expiryDate: string,
+  locale: MobileLocale,
+) {
   if (!expiryDate.trim()) {
     return "";
   }
@@ -16,7 +20,10 @@ export function formatExpiryForPreview(expiryDate: string) {
     return expiryDate.trim();
   }
 
-  return `До ${month}.${year}`;
+  if (locale === "ru") return `До ${month}.${year}`;
+  if (locale === "de") return `Bis ${month}.${year}`;
+  if (locale === "pl") return `Do ${month}.${year}`;
+  return `By ${month}.${year}`;
 }
 
 export function formatIsoDate(date: Date) {
@@ -56,7 +63,7 @@ export function buildManualCreatePreviewState({
   openedDateLabel,
   afterOpeningPeriod,
   afterOpeningMode,
-  isRu,
+  locale,
 }: {
   medicineName: string;
   category: ManualCategory | null;
@@ -64,29 +71,65 @@ export function buildManualCreatePreviewState({
   openedDateLabel: string;
   afterOpeningPeriod: string;
   afterOpeningMode: AfterOpeningMode;
-  isRu: boolean;
+  locale: MobileLocale;
 }) {
   const previewTitle =
     medicineName.trim().length > 0
       ? medicineName.trim()
-      : isRu
+      : locale === "ru"
         ? "Новый препарат"
-        : "New medicine";
+        : locale === "de"
+          ? "Neues Medikament"
+          : locale === "pl"
+            ? "Nowy lek"
+            : "New medicine";
 
-  const previewSubtitleBase = getManualCategoryLabel(category, isRu);
-  const previewExpiry = formatExpiryForPreview(expiryDate);
-  const previewOpened = openedDateLabel ? `Вскрыт ${openedDateLabel}` : "";
+  const previewSubtitleBase = getManualCategoryLabel(category, locale);
+  const previewExpiry = formatExpiryForPreview(expiryDate, locale);
+  const previewOpened = openedDateLabel
+    ? locale === "ru"
+      ? `Вскрыт ${openedDateLabel}`
+      : locale === "de"
+        ? `Geöffnet ${openedDateLabel}`
+        : locale === "pl"
+          ? `Otwarto ${openedDateLabel}`
+          : `Opened ${openedDateLabel}`
+    : "";
   const previewAfterOpening =
     afterOpeningPeriod.trim().length > 0
-      ? `После вскрытия ${afterOpeningPeriod.trim()} дн.`
+      ? locale === "ru"
+        ? `После вскрытия ${afterOpeningPeriod.trim()} дн.`
+        : locale === "de"
+          ? `Nach dem Öffnen ${afterOpeningPeriod.trim()} Tg.`
+          : locale === "pl"
+            ? `Po otwarciu ${afterOpeningPeriod.trim()} dni`
+            : `After opening ${afterOpeningPeriod.trim()} days`
       : "";
   const afterOpeningLabel =
     afterOpeningMode === "custom"
       ? afterOpeningPeriod.trim()
-        ? `${afterOpeningPeriod.trim()} дн.`
-        : "Свой срок"
+        ? locale === "ru"
+          ? `${afterOpeningPeriod.trim()} дн.`
+          : locale === "de"
+            ? `${afterOpeningPeriod.trim()} Tg.`
+            : locale === "pl"
+              ? `${afterOpeningPeriod.trim()} dni`
+              : `${afterOpeningPeriod.trim()} days`
+        : locale === "ru"
+          ? "Свой срок"
+          : locale === "de"
+            ? "Eigene Frist"
+            : locale === "pl"
+              ? "Własny termin"
+              : "Custom period"
       : afterOpeningMode
-        ? `${afterOpeningMode} дн.`
+        ? locale === "ru"
+          ? `${afterOpeningMode} дн.`
+          : locale === "de"
+            ? `${afterOpeningMode} Tg.`
+            : locale === "pl"
+              ? `${afterOpeningMode} dni`
+              : `${afterOpeningMode} days`
         : "";
 
   return {

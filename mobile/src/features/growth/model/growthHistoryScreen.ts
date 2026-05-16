@@ -95,6 +95,9 @@ export type GrowthHistoryScreenContent = {
 
 const spec = growthSpec as GrowthSpec;
 
+const growthMetricIds = ["ruler", "minus", "calendar"] as const;
+type GrowthMetricId = (typeof growthMetricIds)[number];
+
 export function buildGrowthHistoryScreenContent(
   locale: MobileLocale,
   childName: string,
@@ -103,7 +106,7 @@ export function buildGrowthHistoryScreenContent(
   const isRu = locale === "ru";
   const isDe = locale === "de";
   const isPl = locale === "pl";
-  const periods = spec.layout_blueprint.segmented_control.labels;
+  const periods = spec.layout_blueprint.segmented_control.labels.map(mapGrowthPeriodId);
   const defaultPeriodId = mapGrowthPeriodId(
     spec.layout_blueprint.segmented_control.active_label,
   );
@@ -131,10 +134,10 @@ export function buildGrowthHistoryScreenContent(
       : isPl
         ? "Opcjonalne pomiary dziecka z prostym widokiem ostatnich wartości i trendu."
         : "Optional child measurements with a simple view of recent values and trend.",
-    periods: periods.map((label) => ({
-      id: mapGrowthPeriodId(label),
-      label: localizePeriodLabel(label, locale),
-      active: mapGrowthPeriodId(label) === activePeriod,
+    periods: periods.map((periodId) => ({
+      id: periodId,
+      label: localizePeriodLabel(periodId, locale),
+      active: periodId === activePeriod,
     })),
     heroTitle: isRu
       ? `Как менялся рост ${childName}`
@@ -144,12 +147,12 @@ export function buildGrowthHistoryScreenContent(
         ? `Jak zmieniał się wzrost ${childName}`
         : `How ${childName}'s growth changed`,
     heroSubtitle: localizePeriodSubtitle(activePeriod, locale),
-    metrics: spec.layout_blueprint.hero_summary_card.metrics.map((metric) => ({
+    metrics: spec.layout_blueprint.hero_summary_card.metrics.map((metric, index) => ({
       id: metric.icon,
       icon: metric.icon,
       value: metric.value,
       suffix: metric.value_suffix,
-      label: localizeMetricLabel(metric.label, locale),
+      label: localizeMetricLabel(growthMetricIds[index] ?? metric.icon, locale),
     })),
     ctaLabel: isRu
       ? spec.layout_blueprint.hero_summary_card.primary_cta.text
@@ -235,41 +238,74 @@ export function mapHeightTimelineFromApi(
     }));
 }
 
-function localizePeriodLabel(label: string, locale: MobileLocale) {
-  if (locale === "ru") return label;
-  if (locale === "de") {
-    if (label === "24 часа") return "24 Std.";
-    if (label === "7 дней") return "7 Tage";
-    if (label === "30 дней") return "30 Tage";
-    return "Gesamter Zeitraum";
+function localizePeriodLabel(periodId: GrowthPeriodId, locale: MobileLocale) {
+  if (periodId === "24h") {
+    return locale === "ru"
+      ? "24 часа"
+      : locale === "de"
+        ? "24 Std."
+        : locale === "pl"
+          ? "24 godz."
+          : "24 hours";
   }
-  if (locale === "pl") {
-    if (label === "24 часа") return "24 godz.";
-    if (label === "7 дней") return "7 dni";
-    if (label === "30 дней") return "30 dni";
-    return "Cały okres";
+
+  if (periodId === "7d") {
+    return locale === "ru"
+      ? "7 дней"
+      : locale === "de"
+        ? "7 Tage"
+        : locale === "pl"
+          ? "7 dni"
+          : "7 days";
   }
-  if (label === "24 часа") return "24 hours";
-  if (label === "7 дней") return "7 days";
-  if (label === "30 дней") return "30 days";
-  return "All time";
+
+  if (periodId === "30d") {
+    return locale === "ru"
+      ? "30 дней"
+      : locale === "de"
+        ? "30 Tage"
+        : locale === "pl"
+          ? "30 dni"
+          : "30 days";
+  }
+
+  return locale === "ru"
+    ? "Всё время"
+    : locale === "de"
+      ? "Gesamter Zeitraum"
+      : locale === "pl"
+        ? "Cały okres"
+        : "All time";
 }
 
-function localizeMetricLabel(label: string, locale: MobileLocale) {
-  if (locale === "ru") return label;
-  if (locale === "de") {
-    if (label === "Текущий рост") return "Aktuelle Größe";
-    if (label === "С прошлого") return "Seit dem letzten";
-    return "Letzte Messung";
+function localizeMetricLabel(metricId: GrowthMetricId, locale: MobileLocale) {
+  if (metricId === "ruler") {
+    return locale === "ru"
+      ? "Текущий рост"
+      : locale === "de"
+        ? "Aktuelle Größe"
+        : locale === "pl"
+          ? "Aktualny wzrost"
+          : "Current height";
   }
-  if (locale === "pl") {
-    if (label === "Текущий рост") return "Aktualny wzrost";
-    if (label === "С прошлого") return "Od poprzedniego";
-    return "Ostatni pomiar";
+
+  if (metricId === "minus") {
+    return locale === "ru"
+      ? "С прошлого"
+      : locale === "de"
+        ? "Seit dem letzten"
+        : locale === "pl"
+          ? "Od poprzedniego"
+          : "From previous";
   }
-  if (label === "Текущий рост") return "Current height";
-  if (label === "С прошлого") return "From previous";
-  return "Last measurement";
+
+  return locale === "ru"
+    ? "Последнее измерение"
+    : locale === "de"
+      ? "Letzte Messung"
+      : locale === "pl"
+        ? "Ostatni pomiar"
+        : "Last measurement";
 }
 
 function localizePeriodSubtitle(periodId: GrowthPeriodId, locale: MobileLocale) {

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 
 export type ManualCategory =
   | "oral"
@@ -125,13 +126,38 @@ export const manualCategoryOptions: ManualCategoryOption[] = [
 
 export function getManualCategoryLabel(
   category: ManualCategory | null,
-  isRu: boolean,
+  locale: MobileLocale,
 ) {
   const option = manualCategoryOptions.find((entry) => entry.value === category);
   if (!option) {
-    return isRu ? "Категория не выбрана" : "No category yet";
+    if (locale === "ru") return "Категория не выбрана";
+    if (locale === "de") return "Keine Kategorie";
+    if (locale === "pl") return "Brak kategorii";
+    return "No category yet";
   }
-  return isRu ? option.labelRu : option.labelEn;
+
+  if (locale === "ru") return option.labelRu;
+  if (locale === "de") {
+    if (option.value === "oral") return "Oral";
+    if (option.value === "nose") return "Nase";
+    if (option.value === "throat") return "Hals";
+    if (option.value === "eyes") return "Augen";
+    if (option.value === "ears") return "Ohren";
+    if (option.value === "skin") return "Haut";
+    if (option.value === "inhalation") return "Inhalation";
+    return "Andere";
+  }
+  if (locale === "pl") {
+    if (option.value === "oral") return "Doustnie";
+    if (option.value === "nose") return "Nos";
+    if (option.value === "throat") return "Gardło";
+    if (option.value === "eyes") return "Oczy";
+    if (option.value === "ears") return "Uszy";
+    if (option.value === "skin") return "Skóra";
+    if (option.value === "inhalation") return "Inhalacja";
+    return "Inne";
+  }
+  return option.labelEn;
 }
 
 export function getManualCategoryPreviewImageSource(

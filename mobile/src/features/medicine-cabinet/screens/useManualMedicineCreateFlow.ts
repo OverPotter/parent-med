@@ -78,7 +78,7 @@ export function useManualMedicineCreateFlow({
     openedDateLabel,
     afterOpeningPeriod,
     afterOpeningMode,
-    isRu,
+    locale: uiLocale,
   });
 
   const handlePrimaryAction = () => {
@@ -114,22 +114,60 @@ export function useManualMedicineCreateFlow({
       comment: storageComment.trim() || null,
     })
       .then(() => {
-        Alert.alert("Препарат добавлен", "Теперь он появится в домашней аптечке.", [
+        Alert.alert(
+          isRu
+            ? "Препарат добавлен"
+            : locale === "de"
+              ? "Medikament hinzugefügt"
+              : locale === "pl"
+                ? "Lek dodany"
+                : "Medicine added",
+          isRu
+            ? "Теперь он появится в домашней аптечке."
+            : locale === "de"
+              ? "Es erscheint jetzt in der Hausapotheke."
+              : locale === "pl"
+                ? "Pojawi się teraz w domowej apteczce."
+                : "It will now appear in your home cabinet.",
+          [
           {
-            text: "Ок",
+            text:
+              isRu
+                ? "Ок"
+                : locale === "de"
+                  ? "OK"
+                  : locale === "pl"
+                    ? "OK"
+                    : "OK",
             onPress: () => {
               onCreated();
               onBack();
             },
           },
-        ]);
+          ],
+        );
       })
       .catch((error: unknown) => {
         const message =
           error instanceof Error && error.message.trim().length > 0
             ? error.message
-            : "Не получилось сохранить препарат. Попробуйте ещё раз.";
-        Alert.alert("Не получилось сохранить", message);
+            : isRu
+              ? "Не получилось сохранить препарат. Попробуйте ещё раз."
+              : locale === "de"
+                ? "Das Medikament konnte nicht gespeichert werden. Versuchen Sie es erneut."
+                : locale === "pl"
+                  ? "Nie udało się zapisać leku. Spróbuj ponownie."
+                  : "Couldn't save the medicine. Try again.";
+        Alert.alert(
+          isRu
+            ? "Не получилось сохранить"
+            : locale === "de"
+              ? "Speichern fehlgeschlagen"
+              : locale === "pl"
+                ? "Nie udało się zapisać"
+                : "Couldn't save",
+          message,
+        );
       })
       .finally(() => {
         setIsSaving(false);

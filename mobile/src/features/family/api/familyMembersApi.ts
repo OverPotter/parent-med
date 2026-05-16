@@ -3,6 +3,7 @@ import {
   requestIllnessAuthedJson,
   type MobileIllnessApiErrorOptions,
 } from "../../illness/api/illnessApiClient";
+import { normalizeMobileLocale, type MobileLocale } from "../../../shared/i18n/mobileI18n";
 
 type RawMobileFamilyAccessPolicy = {
   all_children?: boolean;
@@ -20,7 +21,7 @@ type RawMobileFamilyMemberResponse = {
   display_name: string;
   relationship_label: string | null;
   phone: string | null;
-  preferred_language?: "ru" | "en" | null;
+  preferred_language?: MobileLocale | null;
   family_role: string;
   access_policy?: RawMobileFamilyAccessPolicy;
 };
@@ -49,7 +50,7 @@ export type MobileFamilyMember = {
   displayName: string;
   relationshipLabel: string | null;
   phone: string | null;
-  preferredLanguage: "ru" | "en";
+  preferredLanguage: MobileLocale;
   familyRole: string;
   accessPolicy: MobileFamilyAccessPolicy;
 };
@@ -112,7 +113,7 @@ function toMobileFamilyMember(
     displayName: raw.display_name,
     relationshipLabel: raw.relationship_label ?? null,
     phone: raw.phone ?? null,
-    preferredLanguage: raw.preferred_language === "ru" ? "ru" : "en",
+    preferredLanguage: normalizeMobileLocale(raw.preferred_language),
     familyRole: raw.family_role,
     accessPolicy: toMobileFamilyAccessPolicy(raw.access_policy ?? null),
   };

@@ -294,7 +294,7 @@ function localizePeriodSubtitle(periodId: WeightPeriodId, locale: MobileLocale) 
 }
 
 function localizeWeightSuffix(locale: MobileLocale) {
-  return locale === "en" ? "lb" : "кг";
+  return locale === "ru" ? "кг" : "kg";
 }
 
 function localizeTimelineMeta(locale: MobileLocale) {

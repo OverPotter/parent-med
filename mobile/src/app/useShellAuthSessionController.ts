@@ -15,9 +15,10 @@ import {
 } from "../features/auth/session/mobileAuthSessionStorage";
 import { applyPreferredLanguageToSession } from "../features/settings/api/settingsApi";
 import { updatePreferredLanguage } from "../features/settings/api/settingsApi";
+import {
+  type MobileLocale,
+} from "../shared/i18n/mobileI18n";
 import { deleteStoredNativePushSubscription } from "../shared/push/nativePushSync";
-import { type MobileLocale } from "../shared/i18n/mobileI18n";
-import { resolveStoredSessionPreferredLocale } from "./pillPathExpoShellModel";
 
 export function useShellAuthSessionController({
   authSession,
@@ -31,10 +32,17 @@ export function useShellAuthSessionController({
   setLocale: (locale: MobileLocale) => void | Promise<void>;
 }) {
   const applyAuthenticatedSession = useCallback(
-    async (session: MobileAuthSession) => {
-      setAuthSession(session);
-      setLocale(session.account.preferredLanguage);
-      await writeStoredAuthSession(session);
+    async (
+      session: MobileAuthSession,
+      preferredLanguageOverride?: MobileLocale,
+    ) => {
+      const nextSession = preferredLanguageOverride
+        ? applyPreferredLanguageToSession(session, preferredLanguageOverride)
+        : session;
+
+      setAuthSession(nextSession);
+      setLocale(nextSession.account.preferredLanguage);
+      await writeStoredAuthSession(nextSession);
     },
     [setAuthSession, setLocale],
   );
@@ -186,11 +194,6 @@ export function useShellAuthSessionController({
         return;
       }
 
-      await updatePreferredLanguage({
-        accessToken: authSession.accessToken,
-        preferredLanguage: toBackendPreferredLanguage(preferredLanguage),
-      });
-
       const nextSession = applyPreferredLanguageToSession(
         authSession,
         preferredLanguage,
@@ -199,6 +202,15 @@ export function useShellAuthSessionController({
       setLocale(preferredLanguage);
       setAuthSession(nextSession);
       await writeStoredAuthSession(nextSession);
+
+      try {
+        await updatePreferredLanguage({
+          accessToken: authSession.accessToken,
+          preferredLanguage: toBackendPreferredLanguage(preferredLanguage),
+        });
+      } catch {
+        // App locale stays user-controlled even if the backend language endpoint lags behind.
+      }
     },
     [authSession, setAuthSession, setLocale],
   );
@@ -220,17 +232,14 @@ export function useShellAuthSessionController({
         const refreshedSession = await refreshMobileSession(
           storedSession.refreshToken,
         );
-        const preferredLocale = resolveStoredSessionPreferredLocale(
-          storedSession,
-          refreshedSession,
-        );
 
         if (cancelled) {
           return;
         }
 
         await applyAuthenticatedSession(
-          applyPreferredLanguageToSession(refreshedSession, preferredLocale),
+          refreshedSession,
+          storedSession.account.preferredLanguage,
         );
       } catch {
         await clearStoredAuthSession();

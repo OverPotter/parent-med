@@ -1,4 +1,5 @@
 import type { MobileMedicineCatalogItem } from "../api/mobileMedicineCatalogApi";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 
 export type ReferenceCategoryKey =
   | "all"
@@ -13,7 +14,7 @@ export type ReferenceCategoryKey =
 
 export type ReferenceCreateStep = "search" | "storage";
 
-export const referenceCategories: Array<{
+const referenceCategoryTemplates: Array<{
   key: ReferenceCategoryKey;
   label: string;
   imageSource?: number;
@@ -113,6 +114,84 @@ export const referenceCategories: Array<{
     activeTextColor: "#2E6A4A",
   },
 ];
+
+export function getReferenceCategories(locale: MobileLocale) {
+  return referenceCategoryTemplates.map((category) => ({
+    ...category,
+    label:
+      category.key === "all"
+        ? locale === "ru"
+          ? "Все"
+          : locale === "de"
+            ? "Alle"
+            : locale === "pl"
+              ? "Wszystkie"
+              : "All"
+        : category.key === "temperature_pain"
+          ? locale === "ru"
+            ? "Температура и боль"
+            : locale === "de"
+              ? "Fieber und Schmerz"
+              : locale === "pl"
+                ? "Gorączka i ból"
+                : "Fever and pain"
+          : category.key === "cold_cough"
+            ? locale === "ru"
+              ? "Простуда и кашель"
+              : locale === "de"
+                ? "Erkältung und Husten"
+                : locale === "pl"
+                  ? "Przeziębienie i kaszel"
+                  : "Cold and cough"
+            : category.key === "nose_throat"
+              ? locale === "ru"
+                ? "Нос и горло"
+                : locale === "de"
+                  ? "Nase und Hals"
+                  : locale === "pl"
+                    ? "Nos i gardło"
+                    : "Nose and throat"
+              : category.key === "allergy"
+                ? locale === "ru"
+                  ? "Аллергия"
+                  : locale === "de"
+                    ? "Allergie"
+                    : locale === "pl"
+                      ? "Alergia"
+                      : "Allergy"
+                : category.key === "gut"
+                  ? locale === "ru"
+                    ? "ЖКТ"
+                    : locale === "de"
+                      ? "Magen-Darm"
+                      : locale === "pl"
+                        ? "Jelita"
+                        : "Gut"
+                  : category.key === "eyes"
+                    ? locale === "ru"
+                      ? "Глаза"
+                      : locale === "de"
+                        ? "Augen"
+                        : locale === "pl"
+                          ? "Oczy"
+                          : "Eyes"
+                    : category.key === "ears"
+                      ? locale === "ru"
+                        ? "Уши"
+                        : locale === "de"
+                          ? "Ohren"
+                          : locale === "pl"
+                            ? "Uszy"
+                            : "Ears"
+                      : locale === "ru"
+                        ? "Кожа и раны"
+                        : locale === "de"
+                          ? "Haut und Wunden"
+                          : locale === "pl"
+                            ? "Skóra i rany"
+                            : "Skin and wounds",
+  }));
+}
 
 const GUT_CATEGORY_KEYWORDS = [
   "живот",
